@@ -1,0 +1,3 @@
+import {validateInstanceUrl} from '@rooms/stoat';
+export interface InviteLink {serverUrl:string;code:string}
+export function parseInviteLink(raw:string):InviteLink|null{try{if(raw.length>4096)return null;const url=new URL(raw);if(url.protocol!=='rooms:'||url.hostname!=='invite'||!['','/'].includes(url.pathname)||url.username||url.password||url.hash||[...url.searchParams.keys()].some(key=>!['server','code'].includes(key))||url.searchParams.getAll('server').length!==1||url.searchParams.getAll('code').length!==1)return null;const serverUrl=validateInstanceUrl(url.searchParams.get('server')??'');const code=url.searchParams.get('code')??'';if(!/^[A-Za-z0-9_-]{2,128}$/.test(code))return null;return{serverUrl,code};}catch{return null;}}
