@@ -1,0 +1,15 @@
+ROOMS — Desktop App Design + Build Kit
+====================================
+
+Files:
+1. ROOMS_DESKTOP_MASTER_PROMPT.md  — exhaustive master specification/prompt
+2. ROOMS_VISUAL_REFERENCES.html   — illustrated gallery that loads original published screenshots online
+3. ROOMS_VISUAL_REFERENCES.md     — direct original image URLs, credits, and design usage notes
+4. ROOMS_BEGIN_IMPLEMENTATION.txt — short companion message for a coding agent
+
+HOW TO USE
+- Place the .md prompt and visual gallery next to your repo, or attach them to Codex / Claude Code.
+- Start with the companion message and ask the agent to execute only Milestone 0 and Milestone 1 initially, producing a truly polished desktop shell before integrating providers.
+- Test real voice/screen-share with two accounts after Milestone 2.
+- Reference images are not bundled offline: this pack contains original links, not downloaded Apple / publisher artwork.
+- Don't copy Apple's IP / screenshots into your app. Screenshots are research references, not licensed production assets.

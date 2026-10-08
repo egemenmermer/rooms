@@ -1,0 +1,11 @@
+---
+description: Always use Astra/high for direct ROOMS design implementation
+alwaysApply: true
+---
+
+# Persistent ROOMS design workflow
+- Follow the project `AGENTS.md` and complete master specification.
+- Delegate substantial visual and interaction changes to `gpt-6-astra`, reasoning `high`, as a directly implementing subagent.
+- Give concrete file ownership, keep engineering edits separate, and require actual Electron screenshots.
+- Prioritize macOS Apple Silicon, cinematic media hierarchy, restrained glass controls, accessibility, and M1/8 GB performance.
+- Never replace unimplemented integrations with misleading demo connection states.
