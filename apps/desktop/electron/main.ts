@@ -1,0 +1,106 @@
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, protocol, session, Tray, screen, shell } from 'electron';
+import { readFileSync, writeFileSync, statSync, createReadStream } from 'node:fs';
+import { join, basename } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { Readable } from 'node:stream';
+import { setupCommunity } from './community';
+import {setupNotifications} from './notifications';
+import {setupUpdates} from './updates';
+import {setupProviders} from './providers';
+import {parseInviteLink,type InviteLink} from './native-links';
+import {setupAgent} from './agent';
+if(process.env.ROOMS_PROFILE&&/^[a-zA-Z0-9-]{1,40}$/.test(process.env.ROOMS_PROFILE))app.setPath('userData',join(app.getPath('appData'),'ROOMS',process.env.ROOMS_PROFILE));
+let win: BrowserWindow | null = null;
+let pendingInvite:InviteLink|null=null;
+function receiveLink(raw:string){const invite=parseInviteLink(raw);if(!invite)return;pendingInvite=invite;if(win){win.show();win.focus();win.webContents.send('rooms:invite-link',invite);}}
+app.on('open-url',(event,url)=>{event.preventDefault();receiveLink(url);});
+let primaryInstance=true;
+if(app.isPackaged&&!process.env.ROOMS_PROFILE){if(!app.requestSingleInstanceLock()){primaryInstance=false;app.quit();}else app.on('second-instance',(_event,argv)=>{const link=argv.find(arg=>arg.startsWith('rooms://'));if(link)receiveLink(link);else win?.show();});}
+const startupLink=process.argv.find(arg=>arg.startsWith('rooms://'));if(startupLink)receiveLink(startupLink);
+app.setName('ROOMS');
+let tray: Tray | null = null;
+const selectedMedia = new Map<string, string>();
+const devUrl = process.env.ROOMS_DEV_URL === 'http://127.0.0.1:5173' ? process.env.ROOMS_DEV_URL : undefined;
+protocol.registerSchemesAsPrivileged([{ scheme:'rooms-provider',privileges:{standard:true,secure:true,stream:true,supportFetchAPI:true,corsEnabled:true} },{ scheme: 'rooms-media', privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true } }]);
+function isTrusted(url: string) {
+  try{return devUrl ? new URL(url).origin === devUrl : url.startsWith('file://') && url.split('#')[0] === new URL(`file://${join(__dirname, '../dist/index.html')}`).href;}catch{return false;}
+}
+function assertSender(event: Electron.IpcMainInvokeEvent) {
+  if (!win || event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame || !isTrusted(event.senderFrame.url)) throw new Error('Untrusted IPC sender');
+}
+function createWindow() {
+  let bounds: { width: number; height: number; x?: number; y?: number } = { width: 1440, height: 900 };
+  try { const saved = JSON.parse(readFileSync(join(app.getPath('userData'), 'window.json'), 'utf8')); if (Number.isFinite(saved.width) && Number.isFinite(saved.height)) {const display=screen.getDisplayMatching({x:Number.isFinite(saved.x)?saved.x:0,y:Number.isFinite(saved.y)?saved.y:0,width:saved.width,height:saved.height}).workArea;bounds={width:Math.min(display.width,Math.max(900,saved.width)),height:Math.min(display.height,Math.max(640,saved.height))};if(Number.isFinite(saved.x)&&Number.isFinite(saved.y)){bounds.x=Math.max(display.x,Math.min(saved.x,display.x+display.width-bounds.width));bounds.y=Math.max(display.y,Math.min(saved.y,display.y+display.height-bounds.height));}}; } catch { /* First launch. */ }
+  win = new BrowserWindow({ ...bounds, minWidth: 900, minHeight: 640, backgroundColor: '#0b0d11', show: false,
+    title: 'ROOMS', titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 20, y: 20 },
+    ...(process.platform === 'win32' ? { titleBarOverlay: { color: '#0b0d11', symbolColor: '#f4f6f8', height: 50 } } : {}),
+    webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true },
+  });
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('will-navigate', (event, url) => { if (!isTrusted(url)) event.preventDefault(); });
+  win.webContents.on('will-attach-webview', event => event.preventDefault());
+  win.once('ready-to-show', () => win?.show());
+  win.on('close', () => { if (win && !win.isFullScreen()) { const { width, height, x, y } = win.getNormalBounds(); writeFileSync(join(app.getPath('userData'), 'window.json'), JSON.stringify({ width, height, x, y })); } });
+  win.on('closed', () => { win = null; selectedMedia.clear(); });
+  if (devUrl) void win.loadURL(devUrl); else void win.loadFile(join(__dirname, '../dist/index.html'));
+}
+app.whenReady().then(async() => {
+  if(!primaryInstance)return;
+  const notifications=setupNotifications(()=>win,assertSender);
+  const community=await setupCommunity(()=>win,assertSender,isTrusted,notifications.message);
+  const providers=setupProviders(assertSender);
+  setupUpdates(assertSender);
+  setupAgent(()=>win,assertSender,()=>community.snapshot().user?.id??null);
+  ipcMain.handle('rooms:activity-snapshot',(event,roomId,afterRevision)=>{assertSender(event);return community.activityRequest(roomId,undefined,afterRevision);});
+  ipcMain.handle('rooms:activity-command',(event,roomId,command)=>{assertSender(event);return community.activityRequest(roomId,command);});
+  app.on('before-quit',()=>providers.clearPlayback());
+  ipcMain.handle('rooms:youtube-player',(event,videoId)=>{assertSender(event);if(typeof videoId!=='string'||! /^[a-zA-Z0-9_-]{11}$/.test(videoId))throw new Error('Invalid YouTube video identifier.');const instance=community.snapshot().instanceUrl;if(!instance)throw new Error('Connect the community server first.');const origin=new URL(instance).origin;if(!origin.startsWith('https://'))throw new Error('YouTube requires the deployed HTTPS player origin. Local viewing has not been verified.');const nonce=randomUUID();return{url:`${origin}/rooms-activities/player/youtube?videoId=${videoId}&nonce=${nonce}`,nonce};});
+  session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => callback(details.isMainFrame && isTrusted(details.requestingUrl) && contents === win?.webContents && isTrusted(contents.getURL()) && (permission === 'media' || permission === 'fullscreen' || permission === 'clipboard-sanitized-write')));
+  session.defaultSession.setPermissionCheckHandler((contents, permission, _origin, details) => details.isMainFrame && !!details.requestingUrl && isTrusted(details.requestingUrl) && contents === win?.webContents && (permission === 'media' || permission === 'fullscreen' || permission === 'clipboard-sanitized-write') && isTrusted(contents.getURL()));
+  protocol.handle('rooms-media', request => {
+    const id = new URL(request.url).hostname;
+    const path = selectedMedia.get(id);
+    if (!path) return new Response('Media access expired. Choose the file again.', { status: 404 });
+    try {
+      const size = statSync(path).size;
+      const range = request.headers.get('range');
+      const match = range?.match(/^bytes=(\d+)-(\d*)$/);
+      const start = match ? Number(match[1]) : 0;
+      const end = match && match[2] ? Math.min(Number(match[2]), size - 1) : size - 1;
+      if (start >= size || end < start) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } });
+      const mime = path.toLowerCase().endsWith('.webm') ? 'video/webm' : path.toLowerCase().endsWith('.ogg') ? 'video/ogg' : 'video/mp4';
+      const headers: Record<string,string> = { 'Content-Type': mime, 'Content-Length': String(end-start+1), 'Accept-Ranges': 'bytes' };
+      if (match) headers['Content-Range'] = `bytes ${start}-${end}/${size}`;
+      return new Response(Readable.toWeb(createReadStream(path, { start, end })) as ReadableStream, { status: match ? 206 : 200, headers });
+    } catch { return new Response('The selected file is unavailable.', { status: 404 }); }
+  });
+  ipcMain.handle('rooms:pending-invite',event=>{assertSender(event);const invite=pendingInvite;pendingInvite=null;return invite;});
+  ipcMain.handle('rooms:window', (event, action) => { assertSender(event); if (action === 'minimize') win?.minimize(); else if (action === 'maximize') win?.isMaximized() ? win.unmaximize() : win?.maximize(); else if (action === 'close') win?.close(); else if (action === 'fullscreen') win?.setFullScreen(!win.isFullScreen()); else throw new Error('Unknown window action'); });
+  ipcMain.handle('rooms:always-on-top', (event, value) => { assertSender(event); if (typeof value !== 'boolean') throw new Error('Invalid value'); win?.setAlwaysOnTop(value); });
+  ipcMain.handle('rooms:login-item-status',event=>{assertSender(event);return app.isPackaged&&app.getLoginItemSettings().openAtLogin;});
+  ipcMain.handle('rooms:login-item', (event, value) => { assertSender(event); if (typeof value !== 'boolean') throw new Error('Invalid value'); if (!app.isPackaged) return false; app.setLoginItemSettings({ openAtLogin: value }); return app.getLoginItemSettings().openAtLogin; });
+  ipcMain.handle('rooms:choose-media', async event => {
+    assertSender(event); if (!win) return null;
+    const result = await dialog.showOpenDialog(win, { title: 'Choose your own media', properties: ['openFile'], filters: [{ name: 'Video', extensions: ['mp4','webm','ogg','mov','m4v'] }] });
+    if (result.canceled || !result.filePaths[0]) return null;
+    selectedMedia.clear(); const id = randomUUID(); selectedMedia.set(id, result.filePaths[0]);
+    return { url: `rooms-media://${id}/video`, name: basename(result.filePaths[0]) };
+  });
+  ipcMain.handle('rooms:external-media',async(event,url)=>{assertSender(event);if(typeof url!=='string')throw new Error('Invalid media selection.');const parsed=new URL(url);if(parsed.protocol!=='rooms-media:')throw new Error('Choose your own local media first.');const path=selectedMedia.get(parsed.hostname);if(!path)throw new Error('The selected media access expired. Choose the file again.');return (await shell.openPath(path))==='';});
+  ipcMain.handle('rooms:export-diagnostics', async event => {
+    assertSender(event); if (!win) return false;
+    const result = await dialog.showSaveDialog(win, { title: 'Export sanitized diagnostics', defaultPath: 'rooms-diagnostics.json', filters: [{ name: 'JSON', extensions: ['json'] }] });
+    if (result.canceled || !result.filePath) return false;
+    writeFileSync(result.filePath, JSON.stringify({ app: 'ROOMS', version: app.getVersion(), platform: process.platform, arch: process.arch, electron: process.versions.electron, social: community.snapshot().status, mode: community.snapshot().user?'authenticated':'local-demo', timestamp: new Date().toISOString() }, null, 2)); return true;
+  });
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    { label: 'ROOMS', submenu: [{ role: 'about' }, { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' }, { role: 'quit' }] },
+    { role: 'editMenu' }, { label: 'View', submenu: [{ role: 'reload' }, { role: 'toggleDevTools' }, { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { role: 'togglefullscreen' }] }, { role: 'windowMenu' },
+  ]));
+  createWindow();
+  if(process.platform==='darwin')app.dock?.setIcon(join(__dirname,'../dist/icon.png'));
+  const icon = nativeImage.createFromPath(join(__dirname, '../dist/tray.png')); icon.setTemplateImage(true);
+  if (!icon.isEmpty()) { tray = new Tray(icon); tray.setToolTip('ROOMS — Your private place'); tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Open ROOMS', click: () => { if (win) win.show(); else createWindow(); } }, { type: 'separator' }, { role: 'quit' }])); }
+  app.on('activate', () => { if (!win) createWindow(); else win.show(); });
+});
+app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
