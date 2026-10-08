@@ -1,0 +1,28 @@
+services:
+  egress:
+    build:
+      context: .
+      dockerfile: egress.Dockerfile
+    image: rooms-agent-egress:local
+    read_only: true
+    init: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 64
+    mem_limit: 128m
+    volumes:
+      - ${ROOMS_EGRESS_HOSTS_FILE:?A private host allowlist is required}:/etc/rooms-egress/hosts.json:ro
+    networks:
+      isolated:
+        aliases: [rooms-egress]
+      uplink: {}
+    restart: unless-stopped
+    # No published port. Only isolated job containers can reach the proxy.
+networks:
+  isolated:
+    name: rooms-agent-egress
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.name: br-rooms-agent
+  uplink:
+    name: rooms-agent-uplink
