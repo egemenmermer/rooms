@@ -1,0 +1,12 @@
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  electron: true
+  electron-winstaller: false
+  esbuild: true
+minimumReleaseAgeExclude:
+  - '@playwright/test@1.64.0'
+  - electron@44.7.0
+  - playwright-core@1.64.0
+  - playwright@1.64.0

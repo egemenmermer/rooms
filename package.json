@@ -1,0 +1,111 @@
+{
+  "name": "rooms",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A private desktop clubhouse",
+  "author": "ROOMS",
+  "license": "UNLICENSED",
+  "main": "dist-electron/main.cjs",
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "vite --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "build": "pnpm typecheck && vite build && node scripts/build-notices.mjs && node scripts/build-electron.mjs",
+    "test": "vitest run --config vitest.config.ts",
+    "test:desktop": "playwright test",
+    "start": "electron .",
+    "package:mac": "pnpm build && electron-builder --mac dmg zip --arm64",
+    "package:win": "pnpm build && electron-builder --win nsis --x64",
+    "services:build": "node scripts/build-services.mjs",
+    "services:native": "node scripts/services-native.mjs",
+    "spacebar:native": "node scripts/spacebar-native.mjs",
+    "livekit:native": "node scripts/livekit-native.mjs",
+    "verify:social": "node scripts/spacebar-integration.mjs",
+    "verify:media": "node scripts/livekit-verify.mjs",
+    "activities:native": "node dist-services/activities.cjs",
+    "agent:server": "node dist-services/agent.cjs",
+    "stoat:setup": "node scripts/stoat-setup.mjs",
+    "stoat:verify": "node scripts/stoat-integration.mjs",
+    "package:mac:signed": "node scripts/package-signed-mac.mjs",
+    "verify:activities": "node scripts/verify-activity-desktop.mjs"
+  },
+  "dependencies": {
+    "@fastify/rate-limit": "11.2.0",
+    "@tanstack/react-query": "5.104.1",
+    "electron-updater": "^6.8.9",
+    "fastify": "5.12.5",
+    "hls.js": "^1.7.3",
+    "livekit-client": "2.22.3",
+    "livekit-server-sdk": "2.19.1",
+    "lucide-react": "1.52.0",
+    "mongodb": "^7.7.0",
+    "pg": "^8.23.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-router-dom": "7.18.4",
+    "zod": "4.6.5",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "22.20.5",
+    "@types/pg": "^8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.2.3",
+    "@types/ws": "8.18.2",
+    "@vitejs/plugin-react": "5.2.0",
+    "electron": "44.7.0",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.28.2",
+    "jsdom": "26.1.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.7",
+    "vitest": "3.2.7"
+  },
+  "build": {
+    "appId": "private.rooms.desktop",
+    "productName": "ROOMS",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.social-networking",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "minimumSystemVersion": "14.0",
+      "hardenedRuntime": true,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "ROOMS uses your microphone only when you start a microphone test or join a voice room.",
+        "NSCameraUsageDescription": "ROOMS uses your camera only when you enable video."
+      },
+      "icon": "apps/desktop/public/icon.icns",
+      "identity": null,
+      "entitlements": "infra/release/entitlements.mac.plist",
+      "entitlementsInherit": "infra/release/entitlements.mac.plist"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "protocols": [
+      {
+        "name": "ROOMS invitation links",
+        "schemes": [
+          "rooms"
+        ]
+      }
+    ]
+  }
+}
