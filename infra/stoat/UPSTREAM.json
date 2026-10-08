@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/stoatchat/self-hosted",
+  "commit": "9af5e9063a8d1311477b7d2f24f5764ffe3e1cd1",
+  "apiImage": "ghcr.io/stoatchat/api:v0.15.5",
+  "eventsImage": "ghcr.io/stoatchat/events:v0.15.5",
+  "license": "AGPL-3.0",
+  "backendModified": false,
+  "runtimeStatus": "BLOCKED_DOCKER_UNAVAILABLE",
+  "imageDigestsVerified": false
+}
