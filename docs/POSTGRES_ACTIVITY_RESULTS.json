@@ -1,0 +1,10 @@
+{
+  "result": "PASS",
+  "checks": [
+    "real loopback PostgreSQL JSONB persistence",
+    "two authorized fixture HTTP clients",
+    "service and database-pool restart restores poll vote",
+    "idempotent command receipt survives restart"
+  ],
+  "authorization": "QA fixtures, not live Stoat"
+}

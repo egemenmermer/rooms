@@ -1,0 +1,9 @@
+{
+  "sourceRevision": "0eb6f04f6d8055dba0194d10c47c33e074a8a281",
+  "test": "Two distinct authenticated Gateway clients; guest requests idle",
+  "selfEvent": { "type": "PRESENCE_UPDATE", "statusPresent": false, "client_status": {} },
+  "observerEventWithin15Seconds": null,
+  "disconnectObserverEvent": { "status": "offline" },
+  "normalizationPossible": false,
+  "reason": "No authoritative status is supplied in the update, no peer update is routed, and client_status is empty. Inferring from a local UI action would fabricate peer presence."
+}

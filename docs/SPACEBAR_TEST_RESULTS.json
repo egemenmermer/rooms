@@ -1,0 +1,72 @@
+{
+  "timestamp": "2026-10-08T01:11:58.052Z",
+  "sourceRevision": "0eb6f04f6d8055dba0194d10c47c33e074a8a281",
+  "endpoint": "http://127.0.0.1:3011",
+  "results": [
+    {
+      "name": "Two distinct accounts authenticate through public access gate",
+      "status": "PASS"
+    },
+    {
+      "name": "Both accounts list real private community and channels",
+      "status": "PASS"
+    },
+    {
+      "name": "Two authenticated JSON gateways reach READY",
+      "status": "PASS"
+    },
+    {
+      "name": "Second account receives first account message over Gateway",
+      "status": "PASS"
+    },
+    {
+      "name": "Message edit, history and delete use real server state",
+      "status": "PASS"
+    },
+    {
+      "name": "Second account cannot edit first account message",
+      "status": "PASS"
+    },
+    {
+      "name": "Public invitation signup joins community and one-use invite cannot be reused",
+      "status": "PASS"
+    },
+    {
+      "name": "Missing invitation registration denied",
+      "status": "PASS"
+    },
+    {
+      "name": "Invalid invitation rejected before orphan-account authentication",
+      "status": "PASS"
+    },
+    {
+      "name": "Real member list, block/unblock and read acknowledgement APIs",
+      "status": "PASS"
+    },
+    {
+      "name": "Non-owner cannot remove community owner",
+      "status": "PASS"
+    },
+    {
+      "name": "Broker issues room-scoped short-lived media grants for both real accounts",
+      "status": "PASS"
+    },
+    {
+      "name": "Broker denies unknown room and unauthenticated media grant",
+      "status": "PASS"
+    },
+    {
+      "name": "Presence update is observed by second real account",
+      "status": "FAIL",
+      "error": "Gateway event timeout"
+    },
+    {
+      "name": "Abrupt gateway transport close reconnects and resumes server session",
+      "status": "PASS"
+    },
+    {
+      "name": "Session close and fresh connect recover actual gateway",
+      "status": "PASS"
+    }
+  ]
+}
