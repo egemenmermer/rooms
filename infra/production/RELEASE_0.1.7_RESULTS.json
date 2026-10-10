@@ -1,0 +1,47 @@
+{
+  "at": "2026-10-10T07:17:39.089Z",
+  "tag": "v0.1.7",
+  "url": "https://github.com/egemenmermer/rooms/releases/tag/v0.1.7",
+  "sourceCommit": "98231d3e8fb2ea7629e695ff5ba9f26c4d4fe971",
+  "tagMatchesSourceCommit": true,
+  "privateRepository": true,
+  "prerelease": true,
+  "immutable": false,
+  "publishedAssetsPreservedByPolicy": true,
+  "previousReleaseAssetsUnchanged": true,
+  "unsigned": true,
+  "notarized": false,
+  "assets": [
+    {
+      "name": "ROOMS-0.1.7-arm64.dmg",
+      "size": 152035432,
+      "sha256": "5b22413a76d5bdc574f6c9c81ec9822a966156ec15f3bbcde240c0bbfe8f8175",
+      "uploadedDigestMatches": true
+    },
+    {
+      "name": "ROOMS-0.1.7-arm64-mac.zip",
+      "size": 152151886,
+      "sha256": "53cd868a8d090d35ee47b63144580d87eaed333aa43ef9145492fb616a58fbb6",
+      "uploadedDigestMatches": true
+    },
+    {
+      "name": "RELEASE_SHA256_0.1.7.txt",
+      "size": 180,
+      "sha256": "1e2ee27404c06b114e01851f23d53d375551cba0bf5da15d2f6f0b54942cfd6c",
+      "uploadedDigestMatches": true
+    }
+  ],
+  "checks": [
+    "actual packaged launch/local video and 22 bundled files match",
+    "two public native whiteboard clients: per-user add/remove undo, restoration sequence, draft/history after Activity-process recovery and actual macOS SVG save/cancel"
+  ],
+  "limits": [
+    "whole-network interruption and six distinct native clients",
+    "physical second computer and packaged capture permissions",
+    "advanced native 101/Holdem acceptance and physical friends games",
+    "separate Agent and live provider accounts",
+    "Apple signing/notarization",
+    "Windows validation deferred",
+    "908-second soak and official shared YouTube apply to 0.1.4; ten-game suite and 101 draft isolation apply to 0.1.5; complete Batak hands, Blackjack and poll recovery apply to 0.1.6"
+  ]
+}
