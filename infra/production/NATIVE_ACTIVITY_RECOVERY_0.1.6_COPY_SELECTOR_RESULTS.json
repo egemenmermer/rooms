@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-10T06:04:45.493Z",
+  "scope": "Two actual packaged clients on one Mac; Activity-process stop/start and PostgreSQL state recovery with social transport remaining live. Not whole-network, voice, SFU, physical devices or full-evening acceptance.",
+  "cases": [
+    "native-note-delivered",
+    "native-poll-and-guest-vote-delivered"
+  ],
+  "rendererErrors": 0,
+  "appVersion": "0.1.6",
+  "actualDesktopClients": 2,
+  "stage": "interrupt",
+  "disconnectedObservedMs": 2962,
+  "status": "FAIL",
+  "failure": "locator.waitFor: Timeout 35000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Etkinlik hizmetine ulaşılamıyor. Bağlantı otomatik olarak yeniden denenecek.', { exact: true }) to be visible\u001b[22m\n",
+  "serviceRecoveredFinally": true,
+  "ownedChannelRemoved": true,
+  "serviceLeftStopped": false
+}

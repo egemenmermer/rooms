@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-10T06:00:51.652Z",
+  "scope": "Two actual packaged clients on one Mac; Activity-process stop/start and PostgreSQL state recovery with social transport remaining live. Not whole-network, voice, SFU, physical devices or full-evening acceptance.",
+  "cases": [
+    "native-note-delivered",
+    "native-poll-and-guest-vote-delivered",
+    "both-clients-observe-activity-disconnected",
+    "social-send-delivery-while-activity-stopped",
+    "automatic-two-client-recovery-and-persisted-board-poll-vote",
+    "post-recovery-native-write-delivered"
+  ],
+  "rendererErrors": 0,
+  "appVersion": "0.1.5",
+  "actualDesktopClients": 2,
+  "stage": "resume",
+  "disconnectedObservedMs": 3034,
+  "recoveredObservedMs": 2826,
+  "status": "PASS",
+  "ownedChannelRemoved": true,
+  "serviceLeftStopped": false
+}

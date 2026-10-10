@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-10T05:08:08.155Z",
+  "at": "2026-10-10T06:08:31.519Z",
   "platform": "darwin",
   "arch": "arm64",
   "packaged": true,
@@ -20,6 +20,7 @@
         "confirm-close"
       ],
       "labelledBotCount": 0,
+      "privateHandLabelCorrect": true,
       "rounds": [
         {
           "round": 1,
@@ -32,10 +33,8 @@
         {
           "round": 2,
           "actions": [
-            "hit-adds-card",
-            "stand-active-hand"
+            "hit-adds-card"
           ],
-          "postHitDisabled": true,
           "settledHands": 1,
           "status": "PASS"
         },
@@ -50,6 +49,22 @@
         {
           "round": 4,
           "actions": [
+            "stand-active-hand"
+          ],
+          "settledHands": 1,
+          "status": "PASS"
+        },
+        {
+          "round": 5,
+          "actions": [
+            "stand-active-hand"
+          ],
+          "settledHands": 1,
+          "status": "PASS"
+        },
+        {
+          "round": 6,
+          "actions": [
             "split-two-rendered-hands",
             "stand-active-hand",
             "stand-active-hand"
@@ -62,7 +77,7 @@
     }
   ],
   "rendererErrors": 0,
-  "appVersion": "0.1.5",
+  "appVersion": "0.1.6",
   "stage": "blackjack::",
   "status": "PASS",
   "ownedChannelRemoved": true
