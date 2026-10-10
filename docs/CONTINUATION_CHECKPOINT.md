@@ -25,7 +25,7 @@ Sanitized evidence lives under infra/production and infra/stoat. Actual screensh
 
 Unsigned Apple Silicon 0.1.3 DMG/ZIP were built. `node scripts/verify-package.mjs` passed matching all 22 bundled renderer/native/assets/notices files, actual packaged launch and local video advancement. `ROOMS_QA_PACKAGED=1 node scripts/verify-shared-youtube.mjs` passed two actual packaged clients against production: playback/pause, both-player pointer seek, keyboard seek, authoritative viewers and late rejoin with 0.055 seconds observed drift, zero renderer errors. The harness removed only its new queue item and logged out/deleted owned profiles. Earlier harness failures compared stale SDK positions and assumed queue count always increases; the new test tracks its unique item, including when starting a new Activity clears the previous queue.
 
-Generate/preserve checksums, commit/push and publish immutable private v0.1.3. v0.1.2 predates these changes. Never replace older assets. The installation guide/private handoff now refer to 0.1.3; native hardware TCC scope remains development-only. Check GitHub release state before retrying publication.
+Private v0.1.3 prerelease is published at https://github.com/egemenmermer/rooms/releases/tag/v0.1.3; source through 5e3197a was pushed. Uploaded DMG/ZIP server SHA-256 digests match local checksums. GitHub reports immutable:false; preserve published assets by policy and publish a new version for any change. v0.1.2 predates these changes. Never replace older assets. The installation guide/private handoff now refer to 0.1.3; native hardware TCC scope remains development-only. Check GitHub release state before retrying publication.
 
 ## Remaining acceptance and required inputs
 
