@@ -43,6 +43,18 @@ export default function Games() {
     const myView = seats.find(s => s.userId === c.user?.id) ?? hands.find(s => s.seat === own?.seat) ?? players.find(s => s.userId === c.user?.id);
     const cards = array<Card>(myView?.cards);
     const tiles = array<Tile>(view.tiles ?? myView?.tiles);
+    // Drafts belong to the current authenticated seat, table and hand lifecycle.
+    useEffect(() => {
+        setSelected([]); setMeldGroups([]); setTargetMeld(0); setReplaceJoker('');
+        setHistory(false); setEndConfirm(false); setCreate(null);
+    }, [roomId, c.user?.id, own?.seat, activity.room?.primary?.startedAt, game?.status]);
+    const handIds = JSON.stringify([...cards, ...tiles].map(item => item.id));
+    useEffect(() => {
+        const available = new Set<string>(JSON.parse(handIds));
+        setSelected(ids => ids.filter(id => available.has(id)));
+        // A discarded/processed tile invalidates its entire unfinished group.
+        setMeldGroups(groups => groups.filter(group => group.every(id => available.has(id))));
+    }, [handIds]);
     const stage = String(view.stage ?? '');
     const legal = array<string>(view.legalActions);
     const can = (action: string) => !!own && turn && !activity.busy && legal.includes(action);
