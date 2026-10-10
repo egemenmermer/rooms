@@ -54,7 +54,9 @@ describe('private authoritative tables over actual service clients', () => {
         for (let seat = 1; seat < (game === 'blackjack' ? 2 : 4); seat++) await command({ type: 'game.bot.add', seat });
         await command({ type: 'game.action', action: 'start' });
         // An idle human's turn timeout uses the same rules; bot seats do not reset the hand.
-        for (let step = 0; step < 160; step++) { time += 50000; await new Promise(resolve => setTimeout(resolve, 6)); const saved = await repository.load(game); if (saved?.game?.status === 'finished') break; }
+        for (let step = 0; step < 160; step++) { // The viewer remains authenticated and watching; advance the game deadline without expiring its 30-second room lease.
+          for (let heartbeat = 0; heartbeat < 2; heartbeat++) { time += 25000; await fetch(endpoint, { headers: { authorization: 'Bearer human' } }); }
+          await new Promise(resolve => setTimeout(resolve, 6)); const saved = await repository.load(game); if (saved?.game?.status === 'finished') break; }
         const saved = await repository.load(game); expect(saved!.game!.status).toBe('finished'); expect(saved!.game!.history).toHaveLength(1);
       } finally { await app.close(); }
     }

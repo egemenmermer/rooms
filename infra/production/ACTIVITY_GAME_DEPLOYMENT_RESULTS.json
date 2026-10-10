@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-10T04:13:08.962517+00:00",
+  "service": "activities",
+  "sha256": "8016819a22167e040dae7d52dc607d95f8390456493c44b39ed5942757930ad0",
+  "remoteBundleMatches": true,
+  "onlyServiceRestarted": "rooms-core-activities-1",
+  "rollbackBundle": "/opt/rooms/dist-services/activities.cjs.before-20261010T0411",
+  "publicHealthPassed": true,
+  "testCount": 101,
+  "testFiles": 23,
+  "defaultSweepIntervalMs": 1000,
+  "nativeGameAcceptance": "Record separately in NATIVE_GAMES_RESULTS.json; do not infer from unit tests."
+}

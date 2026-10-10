@@ -29,7 +29,7 @@ export function pruneDisconnected(room: StoredRoom, now: number): boolean {
   const remaining = room.snapshot.participants.filter(p => now - p.lastSeenAt <= 30000);
   const expired = room.snapshot.participants.filter(p => !remaining.some(r => r.userId === p.userId));
   for (const participant of expired) if (room.game) disconnectGame(room.game, participant.userId, now - 30000);
-  const botsChanged = room.game ? advanceGameBots(room.game, now) : false;
+  const botsChanged = room.game && room.snapshot.primary?.activity === room.game.kind ? advanceGameBots(room.game, now) : false;
   if (remaining.length === room.snapshot.participants.length && !botsChanged) return false;
   room.snapshot.participants = remaining; transferHost(room.snapshot, now);
   if (room.game && room.snapshot.primary?.activity === room.game.kind) room.game.ownerId = room.snapshot.primary.hostUserId;
