@@ -1,0 +1,26 @@
+{
+  "at": "2026-10-10T03:16:32.703128+00:00",
+  "assets": [
+    {
+      "digest": "sha256:21e7ba47c32eff81de5604dd16c8e3220c6093f075ad34fc96567aaebcb920f3",
+      "name": "RELEASE_SHA256_0.1.4.txt",
+      "size": 180
+    },
+    {
+      "digest": "sha256:f614ed25384eac7d8b9b3f224589b50cd170fccb82a52e9076fe4cf0426df4b8",
+      "name": "ROOMS-0.1.4-arm64-mac.zip",
+      "size": 152148981
+    },
+    {
+      "digest": "sha256:c5a9b2cf6c7eb5e6a28d874560d9f44bd98992368e3b7744fcb3deb63385ab5f",
+      "name": "ROOMS-0.1.4-arm64.dmg",
+      "size": 152041905
+    }
+  ],
+  "draft": false,
+  "immutable": false,
+  "prerelease": true,
+  "url": "https://github.com/egemenmermer/rooms/releases/tag/v0.1.4",
+  "installerDigestsMatch": true,
+  "assetReplacementPolicy": "Never replace published assets; GitHub repository immutability enforcement is disabled."
+}
