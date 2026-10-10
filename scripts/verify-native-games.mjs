@@ -50,6 +50,7 @@ try{
    await page.getByRole('button',{name:'Masa geçmişi',exact:true}).click();await page.waitForSelector('.game-history');assert((await current()).history.length>0);check.controls.push('completed-history');
   }else if(spec.kind==='blackjack'){
    if(blackjackAdvanced){
+    assert.equal(await page.locator('.your-hand .section-heading .eyebrow').textContent(),'SENİN ELİN');check.privateHandLabelCorrect=true;
     check.rounds=[];const covered=new Set();
     const ownPlayer=g=>{const p=g.view.players.find(p=>p.userId===config.owner.userId);assert(p);return p;};
     const nativeAction=async(label)=>{
