@@ -23,8 +23,9 @@ export default function YouTube() {
         url: string;
         nonce: string;
     } | null>(null), [ready, setReady] = useState(false), [blocked, setBlocked] = useState(false), [position, setPosition] = useState(0);
-    const frame = useRef<HTMLIFrameElement>(null), applying = useRef(0), latest = useRef(a.room);
+    const frame = useRef<HTMLIFrameElement>(null), applying = useRef(0), latest = useRef(a.room), serverOffset = useRef(a.serverOffsetMs);
     latest.current = a.room;
+    serverOffset.current = a.serverOffsetMs;
     const active = a.room?.queue.find(i => i.id === a.room?.timeline.itemId);
     const videoId = active?.media.kind === 'youtube' ? active.media.videoId : null;
     const send = useCallback((command: ActivityCommand) => void a.send(command).catch(() => { }), [a.send]);
@@ -52,15 +53,17 @@ export default function YouTube() {
         setPosition(data.positionSec);
         if (Date.now() > applying.current && latest.current?.primary?.activity === 'youtube') {
             const playing = data.state === 1;
-            if (playing !== latest.current.timeline.playing || Math.abs(data.positionSec - latest.current.timeline.positionSec) > 3)
+            const timeline = latest.current.timeline;
+            const expectedPosition = timeline.positionSec + (timeline.playing ? Math.max(0, Date.now() + serverOffset.current - timeline.effectiveServerTimeMs) / 1000 * timeline.rate : 0);
+            if (playing !== timeline.playing || Math.abs(data.positionSec - expectedPosition) > 3)
                 send({ type: 'playback', playing, positionSec: data.positionSec, rate: 1 });
         }
     } }; window.addEventListener('message', listener); return () => window.removeEventListener('message', listener); }, [player, send]);
     const synchronize = useCallback(() => { const timeline = latest.current?.timeline; if (!ready || !timeline)
-        return; applying.current = Date.now() + 1800; const expected = timeline.positionSec + (timeline.playing ? Math.max(0, Date.now() + a.serverOffsetMs - timeline.effectiveServerTimeMs) / 1000 * timeline.rate : 0); playerCommand('seek', expected); playerCommand(timeline.playing ? 'play' : 'pause'); }, [ready, playerCommand, a.serverOffsetMs]);
+        return; applying.current = Date.now() + 1800; const expected = timeline.positionSec + (timeline.playing ? Math.max(0, Date.now() + serverOffset.current - timeline.effectiveServerTimeMs) / 1000 * timeline.rate : 0); playerCommand('seek', expected); playerCommand(timeline.playing ? 'play' : 'pause'); }, [ready, playerCommand]);
     useEffect(() => { synchronize(); }, [a.room?.timeline.epoch, a.room?.timeline.effectiveServerTimeMs, synchronize]);
     useEffect(() => { if (!ready)
-        return; const timer = setInterval(() => playerCommand('position'), 1500); return () => clearInterval(timer); }, [ready, playerCommand, a.serverOffsetMs]);
+        return; const timer = setInterval(() => playerCommand('position'), 1500); return () => clearInterval(timer); }, [ready, playerCommand]);
     const add = async () => { const id = parseVideo(url.trim()); if (!id) {
         setError(tr("Ge\u00E7erli bir YouTube video adresi veya 11 karakterli video kimli\u011Fi gir."));
         return;
