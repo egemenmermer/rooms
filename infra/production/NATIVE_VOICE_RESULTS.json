@@ -14,5 +14,9 @@
   },
   "nativeCameraPublished": false,
   "nativeWindowPickerVerified": true,
-  "rendererErrors": 0
+  "rendererErrors": 0,
+  "packaged": false,
+  "permissionScope": "development Electron identity",
+  "platform": "darwin",
+  "arch": "arm64"
 }

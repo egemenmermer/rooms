@@ -30,7 +30,9 @@ Finish the actual product, not a demonstration or a container installation. A fr
 - [x] Prove the authorization reader cannot read accounts/sessions or perform writes; retain sanitized evidence.
 - [x] Install the corrected backup script and daily backup timer; document the brief writer maintenance window and retention. Preserve the owner's only decryption key off-host.
 - [x] Verify certificate reload, external port isolation, load/memory/disk and service health. Save nonsecret image-digest evidence.
-- [ ] Complete least-privilege deployment access without removing working owner access. Full core reboot acceptance passed: authenticated session, polls, whiteboard and queue survived, all 16 services and timers recovered. Least-privilege handoff remains pending.
+- [x] Complete scoped maintenance access without removing owner access: fixed ROOMS status/restart wrapper; general root, Docker, other-project and private-configuration access denied. Full core reboot passed with preserved session/state and recovered services/timers. Arbitrary code deployment remains owner-only.
+
+The latest encrypted backup also passed isolated object read with authenticated AES-GCM decoding using restored configuration/file metadata and restored TLS keypair matching. Both encrypted copies remain off-host. Owned plaintext recovery staging and test containers were removed; the first scheduled backup execution and seven-file retention threshold have not been observed.
 
 ### 2. Desktop connected to production
 
@@ -48,13 +50,13 @@ Finish the actual product, not a demonstration or a container installation. A fr
 - [x] Verify real official YouTube playback, pause and seek on the public HTTPS origin.
 - [x] Verify two actual desktop clients play the official YouTube sample and deliver shared pause with zero renderer errors.
 - [ ] Finish YouTube autoplay/blocked-video, late-join, seek and reconnect acceptance.
-- [ ] Complete real multiplayer acceptance for polls, whiteboard, Holdem, Blackjack, approved Batak variants and 101 Okey. Exercise hidden hands, bot substitution, disconnect grace, returning seats, timeout and history/statistics persistence.
+- [x] Public API/table-engine acceptance passed polls, whiteboard, seven full game hands, hidden hands, actual 30-second bot substitution, unchanged returning seats, host transfer and restored game history. Every game control has not been played manually in the desktop UI.
 - [ ] Verify Cinema local-source authorization and screen-sharing workflow; do not distribute provider tokens or personal media URLs through shared state.
 
 ### 4. Media acceptance
 
 - [ ] Configure and verify TURN/TLS where appropriate for the selected IP origin and port constraints. Do not claim restrictive-network reliability until tested.
-- [x] Verify native microphone and actual ROOMS window selection with received audio/video packets on two clients on this Mac.
+- [x] Verify native microphone and actual ROOMS window selection with received audio/video packets on two development Electron clients on this Mac. Fresh packaged ROOMS permission onboarding remains unverified.
 - [ ] Verify camera capture after explicit OS permission; current status is not-determined.
 - [ ] Obtain two physical-computer acceptance for audible voice, camera, screen/window capture, mute/deafen/PTT, device loss, navigation, SFU restart and reconnect. A second machine is a real prerequisite.
 
