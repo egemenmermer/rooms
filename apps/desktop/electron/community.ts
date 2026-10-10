@@ -43,6 +43,10 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   handle('rooms:social-logout',async()=>{await client?.logout();client=null;user=null;uploadedAttachments.clear();activePresenceSpace=null;remembered=false;unsubscribe?.();unsubscribe=null;selected=null;choices=[];if(existsSync(vault))unlinkSync(vault);emit({type:'LOGGED_OUT',data:null});});
   handle('rooms:social-spaces',()=>requireClient().listSpaces());
   handle('rooms:social-channels',async spaceId=>{const parsed=id.parse(spaceId);const channels=await requireClient().listChannels(parsed);activePresenceSpace=parsed;subscribePresence();return channels;});
+  const channelName=z.string().trim().min(1).max(32).refine(value=>!/[\x00-\x1f\x7f]/.test(value));
+  handle('rooms:social-create-channel',(spaceId,name,type)=>requireClient().createChannel(id.parse(spaceId),channelName.parse(name),z.enum(['text','voice']).parse(type)));
+  handle('rooms:social-rename-channel',(channelId,name)=>requireClient().renameChannel(id.parse(channelId),channelName.parse(name)));
+  handle('rooms:social-delete-channel',channelId=>requireClient().deleteChannel(id.parse(channelId)));
   handle('rooms:social-messages',(channelId,before)=>requireClient().listMessages(id.parse(channelId),before===undefined?undefined:id.parse(before)));
   handle('rooms:social-send',async(channelId,text,attachments)=>{
     const channel=id.parse(channelId);const attachmentIds=attachments===undefined?[]:z.array(id).max(10).parse(attachments);const value=messageContent.parse(text);

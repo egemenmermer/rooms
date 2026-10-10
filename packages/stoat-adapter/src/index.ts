@@ -113,6 +113,12 @@ export class StoatClient {
   async react(channelId:string,messageId:string,emoji:string,remove=false){if(!/^[A-Za-z0-9_-]{1,128}$/.test(emoji))throw new StoatError(400,'INVALID_EMOJI');await this.request(`/channels/${checked(channelId)}/messages/${checked(messageId)}/reactions/${checked(emoji)}`,remove?'DELETE':'PUT');const message=await this.request<Raw>(`/channels/${checked(channelId)}/messages/${checked(messageId)}`);this.emit('MESSAGE_UPDATE',await this.normalizeMessage(message));}
   async listSpaces(){await this.ensureReady();return [...this.servers.values()].map(normalizeSpace);}
   async listChannels(spaceId:string){const raw=await this.getServer(spaceId);const channels=await Promise.all((raw.channels??[]).map((id:string)=>this.getChannel(id)));return channels.map(c=>this.normalizeChannel(c));}
+  async createChannel(spaceId:string,name:string,type:'text'|'voice') {
+    const raw=await this.request<Raw>(`/servers/${checked(spaceId)}/channels`,'POST',{type:'Text',name,...(type==='voice'?{voice:{}}:{})});
+    this.channels.set(raw._id,raw);return this.normalizeChannel(raw);
+  }
+  async renameChannel(channelId:string,name:string) {const raw=await this.request<Raw>(`/channels/${checked(channelId)}`,'PATCH',{name});this.channels.set(raw._id,raw);return this.normalizeChannel(raw);}
+  async deleteChannel(channelId:string) {await this.request(`/channels/${checked(channelId)}`,'DELETE');this.channels.delete(channelId);}
   async getServer(spaceId:string){return this.request<Raw>(`/servers/${checked(spaceId)}`);}
   async getChannel(channelId:string){return this.request<Raw>(`/channels/${checked(channelId)}`);}
   async getMember(spaceId:string,userId:string){return this.request<Raw>(`/servers/${checked(spaceId)}/members/${checked(userId)}`);}
