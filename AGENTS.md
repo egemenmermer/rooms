@@ -17,3 +17,9 @@
 - Keep privileged operations and persistent authentication secrets out of the renderer. Validate IPC, navigation, permissions, and media-source access.
 - No account sharing, provider-token distribution, unauthorized rebroadcasting, or DRM bypass.
 - Record actual commands, results, screenshots, platform limitations, and unverified acceptance checks. Do not equate unit tests with two-client transport verification.
+
+## Copy and manual acceptance — owner instruction 2026-10-10
+- Keep product copy utilitarian: screen names, controls, concise empty states and necessary connection/error reasons. No slogans, promotional heroes, emotional taglines or generic explanatory filler.
+- Do not restore demo mode or synthetic social/media content.
+- The owner now performs all testing. Do not run automated tests, type checks, QA harnesses, acceptance scenarios or remote disruption/load tests unless explicitly reauthorized. Building and opening the application to deliver changes is allowed; do not call that acceptance or claim it passed tests.
+- Existing verification evidence is historical. New changes remain awaiting the owner's manual acceptance.
