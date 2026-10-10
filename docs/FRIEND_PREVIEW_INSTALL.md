@@ -1,8 +1,8 @@
 # Install the private Apple Silicon preview
 
-The latest tested preview is [v0.1.7](https://github.com/egemenmermer/rooms/releases/tag/v0.1.7). The private GitHub repository requires authorized repository access. Alternatively, the owner can supply the same DMG and checksum privately. This preview is unsigned and not notarized; it is not the finished signed release.
+The latest tested preview is [v0.1.8](https://github.com/egemenmermer/rooms/releases/tag/v0.1.8). The private GitHub repository requires authorized repository access. Alternatively, the owner can supply the same DMG and checksum privately. This preview is unsigned and not notarized; it is not the finished signed release.
 
-1. Download `ROOMS-0.1.7-arm64.dmg` and verify its SHA-256 against `docs/RELEASE_SHA256_0.1.7.txt`.
+1. Download `ROOMS-0.1.8-arm64.dmg` and verify its SHA-256 against `docs/RELEASE_SHA256_0.1.8.txt`.
 2. Open the DMG and drag ROOMS to Applications. Launch the installed copy.
 3. For a developer-verification block, follow Apple's per-app **System Settings → Privacy & Security → Open Anyway** flow only for the known ROOMS package. Do not disable Gatekeeper globally. [Apple's opening guidance](https://support.apple.com/en-us/102445).
 4. Open your privately supplied one-use `rooms://invite?...` link. Select **Yeni hesap** and enter your own username, email and password. Existing accounts use **Hesabım var**. Each delivery invitation expires and can be consumed only once.
@@ -21,3 +21,6 @@ Version 0.1.6 passed two actual packaged clients through an Activity-process sto
 The same 0.1.6 package subsequently passed complete native Ihaleli, Eşli, Koz Maça and Gömmeli Batak hands, including all human-seat cards, finished UI and matching per-player score history. These checks used one QA player and labelled bots, not four physical friends. No preview asset was replaced.
 
 Version 0.1.7 additionally passed two actual packaged clients for per-user whiteboard add/remove undo, successive undo after restoration, preserved draft/history through an Activity-process restart and a real macOS SVG save/cancel sheet. Seven cases passed, zero renderer errors; owned channel, exported file and temporary profiles were removed. Undo covers the last 50 successful own actions in this board view, resets on room/identity or leaving the view, and survives temporary Activity disconnection. SVG captures the shared board at export request time and omits identity/room metadata. Signing and external prerequisites remain unchanged.
+
+
+Version 0.1.7 subsequently passed actual pen/color/own eraser/undo input shared with a second native client and 1280/900-width native window layout (six further cases). Version 0.1.8 passed native Holdem call/check through all streets, all-in showdown, conserved virtual chips and matching history. A player below the 20-point blind now disables the new-hand button with a visible recovery explanation. These poker checks use one native human and a labelled bot, not multiple physical friends. All three uploaded 0.1.8 assets match their local size/SHA-256; the exact published source and unchanged 0.1.7 assets are verified.
