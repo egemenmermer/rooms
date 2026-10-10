@@ -20,7 +20,7 @@ Finish the actual product, not a demonstration or a container installation. A fr
 - Activity state survived a real writer-process stop/start (`infra/production/PERSISTENCE_RESULTS.json`). This does not certify full-machine recovery.
 - 101 tests across 23 files, typecheck, desktop build and service build passed after the production authorization adapter change.
 - An encrypted core backup was created, copied to the Mac and decrypted privately. Database dumps were copied to an isolated restore staging directory. Isolated offline Mongo/PostgreSQL database restores passed without modifying production. Daily backup timer is installed (04:30 UTC). Actual isolated object restore with authenticated AES-GCM decode and TLS keypair matching passed; owned plaintext staging was removed.
-- Apple Silicon v0.1.4 private DMG/ZIP/checksum publication, uploaded digest matching, 22 bundled files and actual packaged launch/local playback passed; signing remains unavailable. Native production login, invitation signup, send/edit/delete, session restart/logout and screenshots now pass. Packaged shared YouTube synchronization and seven public game hands passed. Ten native game startup/action/closure scenarios also passed; advanced meld/split/all-in and native full-hand coverage, restrictive-network TURN/TLS, personal providers and separate Agent deployment remain incomplete.
+- Apple Silicon v0.1.5 private DMG/ZIP/checksum publication, uploaded digest matching, 22 bundled files and actual packaged launch/local playback passed; signing remains unavailable. Native production login, invitation signup, send/edit/delete, session restart/logout and screenshots now pass. Packaged shared YouTube synchronization and seven public game hands passed. Ten native game startup/action/closure scenarios also passed; advanced meld/split/all-in and native full-hand coverage, restrictive-network TURN/TLS, personal providers and separate Agent deployment remain incomplete.
 
 ## Ordered execution checklist
 
@@ -72,7 +72,7 @@ The latest encrypted backup also passed isolated object read with authenticated 
 - [x] Produce an updated Apple Silicon installer with the production fixes and complete native onboarding instructions; deliver credentials/invitations only through protected files.
 - [ ] Complete Developer ID signing/notarization/stapling and signed updater when the owner's signing identity is available. Clearly label unsigned builds.
 - [ ] Run fresh-install/update and sustained M1/8 GB performance checks; keep Windows validation deferred and explicit.
-- [ ] Update implementation evidence and commit/push source, documentation and sanitized results to the authorized private GitHub repository in meaningful commits with actual current timestamps.
+- [x] Update implementation evidence and commit/push source, documentation and sanitized results to the authorized private GitHub repository in meaningful commits with actual current timestamps.
 - [ ] Report verified capabilities and remaining prerequisites. Do not mark the product finished while mandatory acceptance is missing.
 
 ## Authorized quota-reset and continuation policy
@@ -97,3 +97,7 @@ A separate Agent host/access, individual model/provider and bot account login, a
 ## 04:30 UTC acceptance update
 
 Packaged 0.1.4 local-demo playback passed 908 seconds and 15 navigation cycles with zero renderer/process errors. Approximate summed working set peaked at 528.06 MiB in the initial sample and ended at 369.86 MiB; this bounded single-client sample does not certify a full evening with voice/providers. Actual scheduled backup started at 04:30:19 UTC, completed, resumed all writers and matched its encrypted off-host copy. Sanitized evidence is PACKAGED_SOAK_RESULTS.json and SCHEDULED_BACKUP_RESULTS.json under infra/production.
+
+## 0.1.5 preview delivery
+
+The main agent fixed a reproduced native 101 draft-state leak between tables. Packaged 0.1.4 failure and 0.1.5 two-table acceptance are preserved separately. All ten paced public game scenarios passed on the actual 0.1.5 package with zero renderer errors and owned-data cleanup. Private DMG/ZIP/checksum publication, uploaded size/digest matching and exact source tag passed; 0.1.4 assets remain unchanged. Updated protected handoff and public installation guide refer to 0.1.5. Six-client Activity rate-limit headroom, advanced native game controls and external/device/signing prerequisites remain open.

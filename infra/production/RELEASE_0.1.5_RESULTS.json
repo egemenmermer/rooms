@@ -1,0 +1,49 @@
+{
+  "at": "2026-10-10T04:42:43.135335+00:00",
+  "tag": "v0.1.5",
+  "url": "https://github.com/egemenmermer/rooms/releases/tag/v0.1.5",
+  "sourceCommit": "a72ee82c98c1346ceb7acacbdffc135eb69867d2",
+  "tagMatchesSourceCommit": true,
+  "privateRepository": true,
+  "prerelease": true,
+  "immutable": false,
+  "publishedAssetsPreservedByPolicy": true,
+  "previousReleaseAssetsUnchanged": true,
+  "unsigned": true,
+  "notarized": false,
+  "assets": [
+    {
+      "name": "ROOMS-0.1.5-arm64.dmg",
+      "size": 152041859,
+      "sha256": "4410eb68ad4a3a8cbaecd2ec09cd8e353f0cf7ade5d656ae0547ce1b88244c62",
+      "uploadedDigestMatches": true
+    },
+    {
+      "name": "ROOMS-0.1.5-arm64-mac.zip",
+      "size": 152149349,
+      "sha256": "cb177b858e602f90af1f302b4c0745c65efa9232db6dd1af847b9067c13f6d43",
+      "uploadedDigestMatches": true
+    },
+    {
+      "name": "RELEASE_SHA256_0.1.5.txt",
+      "size": 180,
+      "sha256": "591b2e6dd41fc5a09b757693c5f1debea17e195a8db0dc92e51a24a5e504ecaa",
+      "uploadedDigestMatches": true
+    }
+  ],
+  "checks": [
+    "actual packaged launch/local video",
+    "22 bundled files match build",
+    "two public native 101 draft-isolation cases",
+    "ten public native game cases; zero renderer errors"
+  ],
+  "limits": [
+    "physical second computer and packaged permission onboarding",
+    "advanced native game actions/full hands",
+    "six-client rate-limit headroom",
+    "separate Agent and live provider accounts",
+    "Apple signing/notarization",
+    "Windows validation deferred",
+    "908-second local soak applies to 0.1.4"
+  ]
+}
