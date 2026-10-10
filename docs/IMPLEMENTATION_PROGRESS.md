@@ -1,6 +1,6 @@
 # Current implementation and acceptance evidence
 
-Date: 2026-10-08. Approved scope: `REMAINING_PHASES_PLAN.md`, phases A–G. Main owns architecture/native security/integrations; GPT-6 Astra/high directly implements substantial UI changes and running-app visual QA. Earlier Spacebar evidence is historical, not Stoat acceptance.
+Historical evidence begins on 2026-10-08. Current owner policy (2026-10-10): main agent implements all work, no delegation, all testing belongs to the owner. Local 0.1.14 is compiled/packaged but unaccepted. The owner authorized its private GitHub friends preview before final acceptance. Earlier Spacebar and versioned test evidence is historical and does not certify this revision. Approved scope: `REMAINING_PHASES_PLAN.md`, phases A–G.
 
 ## Delivered code
 

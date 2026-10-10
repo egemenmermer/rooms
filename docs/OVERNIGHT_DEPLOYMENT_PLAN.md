@@ -66,7 +66,7 @@ The latest encrypted backup also passed isolated object read with authenticated 
 
 ### 5. Separate Agent and personal connections
 
-- [ ] Prepare reproducible deployment/runbook for the existing Agent runtime, durable jobs, artifacts, cancellation, approval queue, authorized global YOLO mode, manual memory save and scoped per-user model connections.
+- [x] Prepare versioned deployment/runbook for the existing Agent runtime, durable jobs, artifacts, cancellation, approval queue, authorized global YOLO mode, manual memory save and scoped per-user model connections. Separate-host kit includes compiled service, systemd unit, explicit worker/proxy sources, fail-closed environment/auth/policy examples and license notices. Host deployment/egress/provider acceptance remains pending.
 - [ ] Deploy on a separate Hetzner host only when its access is available. Core IP is not authorization to cohost privileged workers.
 - [ ] Connect official per-user OpenRouter/Codex/Claude flows and dedicated bot GitHub/Drive/Discord accounts when supplied; test mentions only, no Discord voice, job restart/no duplicate external effects.
 - [ ] Verify personal IPTV and Real-Debrid with authorized individual credentials when supplied. Keep secrets native/private. No credential sharing, rebroadcasting or DRM circumvention.
