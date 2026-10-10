@@ -1,0 +1,164 @@
+{
+  "at": "2026-10-10T04:11:43.315Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "packaged": true,
+  "actualPublicAuthorization": true,
+  "socialFixtures": false,
+  "scope": "Native create/bots/start/action/close controls; not every legal rule or complete hand.",
+  "cases": [
+    {
+      "kind": "holdem",
+      "controls": [
+        "native-create",
+        "start-hand",
+        "raise",
+        "fold-to-result",
+        "completed-history",
+        "confirm-close"
+      ],
+      "labelledBotCount": 1,
+      "status": "PASS"
+    },
+    {
+      "kind": "blackjack",
+      "controls": [
+        "native-create",
+        "set-virtual-bet",
+        "start-hand",
+        "stand",
+        "completed-result",
+        "confirm-close"
+      ],
+      "labelledBotCount": 0,
+      "status": "PASS"
+    },
+    {
+      "kind": "batak",
+      "variant": "ihaleli",
+      "controls": [
+        "native-create",
+        "start-hand",
+        "choose-trump",
+        "play-legal-card",
+        "confirm-close"
+      ],
+      "labelledBotCount": 3,
+      "status": "PASS"
+    },
+    {
+      "kind": "batak",
+      "variant": "esli",
+      "controls": [
+        "native-create",
+        "start-hand",
+        "choose-trump",
+        "play-legal-card",
+        "confirm-close"
+      ],
+      "labelledBotCount": 3,
+      "status": "PASS"
+    },
+    {
+      "kind": "batak",
+      "variant": "koz-maca",
+      "controls": [
+        "native-create",
+        "start-hand",
+        "bid",
+        "play-legal-card",
+        "confirm-close"
+      ],
+      "labelledBotCount": 3,
+      "status": "PASS"
+    },
+    {
+      "kind": "batak",
+      "variant": "gommeli",
+      "controls": [
+        "native-create",
+        "start-hand",
+        "choose-trump",
+        "bury-four",
+        "play-legal-card",
+        "confirm-close"
+      ],
+      "labelledBotCount": 2,
+      "status": "PASS"
+    },
+    {
+      "kind": "101",
+      "folding": false,
+      "teams": false,
+      "controls": [
+        "native-create",
+        "start-hand",
+        "select-discard",
+        "draw",
+        "discard-after-draw",
+        "confirm-close"
+      ],
+      "labelledBotCount": 3,
+      "rulesMatch": true,
+      "botRoundTripElapsedMs": 13933,
+      "status": "PASS"
+    },
+    {
+      "kind": "101",
+      "folding": true,
+      "teams": false,
+      "controls": [
+        "native-create",
+        "start-hand",
+        "select-discard",
+        "draw",
+        "discard-after-draw",
+        "confirm-close"
+      ],
+      "labelledBotCount": 3,
+      "rulesMatch": true,
+      "botRoundTripElapsedMs": 8088,
+      "status": "PASS"
+    },
+    {
+      "kind": "101",
+      "folding": false,
+      "teams": true,
+      "controls": [
+        "native-create",
+        "start-hand",
+        "select-discard",
+        "draw",
+        "discard-after-draw",
+        "confirm-close"
+      ],
+      "labelledBotCount": 3,
+      "rulesMatch": true,
+      "botRoundTripElapsedMs": 7881,
+      "status": "PASS"
+    },
+    {
+      "kind": "101",
+      "folding": true,
+      "teams": true,
+      "controls": [
+        "native-create",
+        "start-hand",
+        "select-discard",
+        "draw",
+        "discard-after-draw",
+        "confirm-close"
+      ],
+      "labelledBotCount": 3,
+      "rulesMatch": true,
+      "botRoundTripElapsedMs": 8052,
+      "status": "PASS"
+    }
+  ],
+  "rendererErrors": 0,
+  "appVersion": "0.1.4",
+  "stage": "101:true:true",
+  "closedTableFrozenAcrossSweeps": true,
+  "status": "PASS",
+  "ownedChannelRemoved": true
+}
