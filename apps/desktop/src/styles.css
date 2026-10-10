@@ -29,3 +29,8 @@ html,body,#root{height:100%;overflow:hidden}.app.voice-active .chat-page{padding
 
 .board-actions{display:flex;gap:6px;margin-left:auto;flex-shrink:0}.whiteboard-toolbar{flex-wrap:wrap}.board-feedback{font-size:12px;color:var(--text-secondary,#abb3c0);line-height:1.6;padding:0 18px 12px;overflow-wrap:anywhere}
 .board-note-form input{min-width:0;border:1px solid #ffffff14;border-radius:10px;background:#0b1118;color:#f4f6f8;font:inherit;font-size:13px;padding:11px 13px;outline:none}.board-note-form input::placeholder{color:#78818e}.board-note-form input:focus-visible{border-color:#b8cdff80;box-shadow:0 0 0 3px #b8cdff12}.board-note-form input:disabled{opacity:.6}
+
+.community-indicator{font-size:8px;letter-spacing:1.4px;border:1px solid var(--line);border-radius:5px;padding:5px 8px;color:var(--muted)}
+.welcome-hero{min-height:310px;background:radial-gradient(ellipse at 75% 20%,#34475566,transparent 65%),#111820}.welcome-hero .hero-copy{position:relative;padding:45px}.welcome-hero .hero-copy h2{font-size:48px}.welcome-hero+.social-connection{margin-top:24px}.cinema-empty{display:grid;place-items:center;min-height:440px}.cinema-empty .empty-state{max-width:520px}.cinema-empty .button-row{justify-content:center;margin-top:22px}
+
+.welcome-hero{height:auto;min-height:0;margin-bottom:24px}.welcome-hero .hero-copy{left:0;top:0;padding:22px 28px}.welcome-hero .hero-copy h2{font-size:32px;margin:10px 0}.welcome-hero .hero-copy p{font-size:12px;margin-bottom:0}.cinema-empty{aspect-ratio:auto;min-height:420px}.cinema-stage video{object-fit:contain}

@@ -13,8 +13,7 @@ export function FriendsPanel({ notify }: {
 }) {
     const c = useCommunity(), r = useRealtime(), navigate = useNavigate();
     const [friends, setFriends] = useState<SocialFriend[]>([]), [show, setShow] = useState(false), [username, setUsername] = useState(''), [error, setError] = useState(''), [busy, setBusy] = useState(false);
-    const refresh = useCallback(async () => { if (!window.rooms?.social || !c.user)
-        return; try {
+    const refresh = useCallback(async () => { if (!window.rooms?.social || !c.user) { setFriends([]); return; } try {
         setFriends(await window.rooms.social.friends());
         setError('');
     }
