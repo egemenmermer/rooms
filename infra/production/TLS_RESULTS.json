@@ -1,0 +1,8 @@
+{
+  "origin": "https://62.238.119.134",
+  "certificateTrustVerified": true,
+  "renewalDryRunPassed": true,
+  "productionCaddyReloadPassed": true,
+  "renewalTimerInstalled": true,
+  "actualRenewalObserved": false
+}

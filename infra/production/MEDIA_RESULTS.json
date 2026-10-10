@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-10T01:12:37.833Z",
+  "verified": true,
+  "clients": 2,
+  "actualStoatAuthorizedGrants": true,
+  "publicTls": true,
+  "syntheticAudioReceived": true,
+  "syntheticVideoReceived": true,
+  "remoteMuteObserved": true,
+  "screenUnpublicationObserved": true,
+  "realSignalReconnectObserved": true,
+  "nativeDevicesAndPickerVerified": false
+}

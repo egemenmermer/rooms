@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew the ROOMS short-lived IP certificate
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/rooms/tooling/bin/certbot renew --quiet --webroot --webroot-path /opt/rooms/config/data/acme --deploy-hook "/usr/bin/docker compose -f /opt/rooms/config/compose.yml exec -T caddy caddy reload --config /etc/caddy/Caddyfile"
+PrivateTmp=true

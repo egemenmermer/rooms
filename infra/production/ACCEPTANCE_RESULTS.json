@@ -1,0 +1,46 @@
+{
+  "kind": "actual-owned-public-deployment",
+  "at": "2026-10-10T01:15:47.073Z",
+  "results": [
+    {
+      "name": "public TLS and registration gates",
+      "status": "PASS"
+    },
+    {
+      "name": "actual direct message and read marker restoration",
+      "status": "PASS"
+    },
+    {
+      "name": "actual attachment upload, receipt and download",
+      "status": "PASS"
+    },
+    {
+      "name": "actual broker registration consumes a scoped single-use invitation",
+      "status": "PASS"
+    },
+    {
+      "name": "outsider denied media and Activity access",
+      "status": "PASS"
+    },
+    {
+      "name": "signed webhook rejects unsigned callbacks",
+      "status": "PASS"
+    },
+    {
+      "name": "actual queue, timeline, poll and whiteboard shared state",
+      "status": "PASS"
+    },
+    {
+      "name": "actual holdem table keeps hands private and records result",
+      "status": "PASS"
+    },
+    {
+      "name": "official YouTube iframe served from the public HTTPS origin",
+      "status": "PASS"
+    },
+    {
+      "name": "current upstream membership revocation immediately denies both adapters",
+      "status": "PASS"
+    }
+  ]
+}

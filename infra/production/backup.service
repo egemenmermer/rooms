@@ -1,0 +1,9 @@
+[Unit]
+Description=Encrypted ROOMS core backup
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/rooms/backup.py
+TimeoutStartSec=300
+UMask=0077

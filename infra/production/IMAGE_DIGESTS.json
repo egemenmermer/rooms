@@ -1,0 +1,87 @@
+{
+  "database": {
+    "tag": "mongo:7",
+    "digest": "mongo@sha256:1f995ad6fdb93244a1addab1b58f934a0bc2f5643c38e02f5e9d7f0c7d227a7b",
+    "id": "sha256:1f995ad6fdb93244a1addab1b58f934a0bc2f5643c38e02f5e9d7f0c7d227a7b"
+  },
+  "redis": {
+    "tag": "valkey/valkey@sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11",
+    "digest": "valkey/valkey@sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11",
+    "id": "sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11"
+  },
+  "rabbit": {
+    "tag": "rabbitmq@sha256:42b190dffdd0cdb656f989f5404c30e1049d6b7d9c987089669b1905e5e3a1a6",
+    "digest": "rabbitmq@sha256:42b190dffdd0cdb656f989f5404c30e1049d6b7d9c987089669b1905e5e3a1a6",
+    "id": "sha256:42b190dffdd0cdb656f989f5404c30e1049d6b7d9c987089669b1905e5e3a1a6"
+  },
+  "minio": {
+    "tag": "pgsty/silo@sha256:635197cb9f36d01bee221d34d1c7d7960f6a95c48b0b6c01d99cd13bdae51a46",
+    "digest": "pgsty/silo@sha256:635197cb9f36d01bee221d34d1c7d7960f6a95c48b0b6c01d99cd13bdae51a46",
+    "id": "sha256:635197cb9f36d01bee221d34d1c7d7960f6a95c48b0b6c01d99cd13bdae51a46"
+  },
+  "caddy": {
+    "tag": "caddy@sha256:f2a1290d0463aad60660d4ec134943f183ee2a5f6c3eb7bf32dd984f2f020772",
+    "digest": "caddy@sha256:f2a1290d0463aad60660d4ec134943f183ee2a5f6c3eb7bf32dd984f2f020772",
+    "id": "sha256:f2a1290d0463aad60660d4ec134943f183ee2a5f6c3eb7bf32dd984f2f020772"
+  },
+  "api": {
+    "tag": "ghcr.io/stoatchat/api@sha256:35d3c03f0fc4aad4a7b23eb73af88b38fd134a274f991435fb23b32724619b52",
+    "digest": "ghcr.io/stoatchat/api@sha256:35d3c03f0fc4aad4a7b23eb73af88b38fd134a274f991435fb23b32724619b52",
+    "id": "sha256:35d3c03f0fc4aad4a7b23eb73af88b38fd134a274f991435fb23b32724619b52"
+  },
+  "events": {
+    "tag": "ghcr.io/stoatchat/events@sha256:e80d621d13560233b26d55cdc2a6ac2eb953ef54335912a23e27ce5e2b238990",
+    "digest": "ghcr.io/stoatchat/events@sha256:e80d621d13560233b26d55cdc2a6ac2eb953ef54335912a23e27ce5e2b238990",
+    "id": "sha256:e80d621d13560233b26d55cdc2a6ac2eb953ef54335912a23e27ce5e2b238990"
+  },
+  "autumn": {
+    "tag": "ghcr.io/stoatchat/file-server@sha256:5fd3354f5e0adf866a9875dd1cb7d15d45adbd5c49ba0ba96c65dbead1e175b3",
+    "digest": "ghcr.io/stoatchat/file-server@sha256:5fd3354f5e0adf866a9875dd1cb7d15d45adbd5c49ba0ba96c65dbead1e175b3",
+    "id": "sha256:5fd3354f5e0adf866a9875dd1cb7d15d45adbd5c49ba0ba96c65dbead1e175b3"
+  },
+  "january": {
+    "tag": "ghcr.io/stoatchat/proxy@sha256:338a01081d89a519c2588836e70abf43449306ab169ab746fd141abb25c4d302",
+    "digest": "ghcr.io/stoatchat/proxy@sha256:338a01081d89a519c2588836e70abf43449306ab169ab746fd141abb25c4d302",
+    "id": "sha256:338a01081d89a519c2588836e70abf43449306ab169ab746fd141abb25c4d302"
+  },
+  "gifbox": {
+    "tag": "ghcr.io/stoatchat/gifbox@sha256:de0e531e1412ee60941c1f3efcae099007e2eac2a2ad7359e8b5af98c8e56dee",
+    "digest": "ghcr.io/stoatchat/gifbox@sha256:de0e531e1412ee60941c1f3efcae099007e2eac2a2ad7359e8b5af98c8e56dee",
+    "id": "sha256:de0e531e1412ee60941c1f3efcae099007e2eac2a2ad7359e8b5af98c8e56dee"
+  },
+  "crond": {
+    "tag": "ghcr.io/stoatchat/crond@sha256:9a07f9414fbcea7f0161e140e12969aac41fd6655b61869cfa8916dce319c81a",
+    "digest": "ghcr.io/stoatchat/crond@sha256:9a07f9414fbcea7f0161e140e12969aac41fd6655b61869cfa8916dce319c81a",
+    "id": "sha256:9a07f9414fbcea7f0161e140e12969aac41fd6655b61869cfa8916dce319c81a"
+  },
+  "pushd": {
+    "tag": "ghcr.io/stoatchat/pushd@sha256:c2661c5cea6bb679dfc085cb3d2902ab1b3b34e14c89915630144342bdd1c7f3",
+    "digest": "ghcr.io/stoatchat/pushd@sha256:c2661c5cea6bb679dfc085cb3d2902ab1b3b34e14c89915630144342bdd1c7f3",
+    "id": "sha256:c2661c5cea6bb679dfc085cb3d2902ab1b3b34e14c89915630144342bdd1c7f3"
+  },
+  "createbuckets": {
+    "tag": "pgsty/mc@sha256:cfc83108c3abb371f8fb84d99c1fdc88f8c237e022409b0081fb7c0a3be634dd",
+    "digest": "pgsty/mc@sha256:cfc83108c3abb371f8fb84d99c1fdc88f8c237e022409b0081fb7c0a3be634dd",
+    "id": "sha256:cfc83108c3abb371f8fb84d99c1fdc88f8c237e022409b0081fb7c0a3be634dd"
+  },
+  "postgres": {
+    "tag": "postgres@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
+    "digest": "postgres@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
+    "id": "sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24"
+  },
+  "access": {
+    "tag": "node@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20",
+    "digest": "node@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20",
+    "id": "sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20"
+  },
+  "activities": {
+    "tag": "node@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20",
+    "digest": "node@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20",
+    "id": "sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20"
+  },
+  "media": {
+    "tag": "livekit/livekit-server@sha256:2c13cbf2edcbf13ea7b20d05c10b394d04d8fb3fe358269cff845a90b4de9576",
+    "digest": "livekit/livekit-server@sha256:2c13cbf2edcbf13ea7b20d05c10b394d04d8fb3fe358269cff845a90b4de9576",
+    "id": "sha256:2c13cbf2edcbf13ea7b20d05c10b394d04d8fb3fe358269cff845a90b4de9576"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-10T01:24:07.678103+00:00",
+  "tcpChecks": {
+    "27017": "not reachable from Mac",
+    "5432": "not reachable from Mac",
+    "5672": "not reachable from Mac",
+    "6379": "not reachable from Mac",
+    "9000": "not reachable from Mac",
+    "3022": "not reachable from Mac",
+    "3002": "not reachable from Mac",
+    "7880": "not reachable from Mac"
+  },
+  "udpNotAssessed": true
+}
