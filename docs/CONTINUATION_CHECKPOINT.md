@@ -21,6 +21,12 @@ Private credentials, QA identities and six delivery invitations are in gitignore
 
 Sanitized evidence lives under infra/production and infra/stoat. Actual screenshots are under docs/screenshots/production.
 
+## 2026-10-10 additional acceptance
+
+Actual macOS file picker cancellation preserved the draft; selected owned file upload, UI send, second-client receipt and downloaded byte matching passed. No native picker stubbing. Live dnd/invisible/online changes were observed as real gateway events in the other client (194–9882 ms including upstream request backpressure), zero renderer errors. Native two-client screen presenter exclusion/handoff, logout/session clearing, active membership revocation (7476 ms), denied fresh grant and freed presenter lease passed; owned QA membership was restored. Capture still uses development Electron identity on one Mac, not two physical computers.
+
+Actual packaged YouTube recovery passed an owned-client iframe API interruption, bounded 25-second loading failure, disabled controls, official external fallback, fresh nonce retry preserving selection, recovered official playback and provider error 150. No core/provider mutation. Screenshots were inspected. Disconnected voice now shows translated error and closed transmission instead of ready/microphone hints. Version 0.1.4 packaging/final checks are in progress; do not claim publication until checked.
+
 ## Current concrete action
 
 Unsigned Apple Silicon 0.1.3 DMG/ZIP were built. `node scripts/verify-package.mjs` passed matching all 22 bundled renderer/native/assets/notices files, actual packaged launch and local video advancement. `ROOMS_QA_PACKAGED=1 node scripts/verify-shared-youtube.mjs` passed two actual packaged clients against production: playback/pause, both-player pointer seek, keyboard seek, authoritative viewers and late rejoin with 0.055 seconds observed drift, zero renderer errors. The harness removed only its new queue item and logged out/deleted owned profiles. Earlier harness failures compared stale SDK positions and assumed queue count always increases; the new test tracks its unique item, including when starting a new Activity clears the previous queue.
@@ -29,7 +35,7 @@ Private v0.1.3 prerelease is published at https://github.com/egemenmermer/rooms/
 
 ## Remaining acceptance and required inputs
 
-Finish native attachment picker/live presence, presenter/logout/revocation lifecycle, blocked-video/reconnect UI, every game control and other 101 combinations where useful. Restrictive-network TURN/TLS, physical second-computer audible voice/camera/PTT/device loss/SFU reconnect, packaged permission onboarding, fresh install/update and sustained M1 performance remain unverified. Camera needs explicit OS permission.
+Native attachment picker/live presence, presenter/logout/revocation lifecycle and blocked-player recovery passed. Continue every game control, other 101 combinations and whole-network reconnect where useful. Restrictive-network TURN/TLS, physical second-computer audible voice/camera/PTT/device loss/SFU reconnect, packaged permission onboarding, fresh install/update and sustained M1 performance remain unverified. Camera needs explicit OS permission.
 
 Separate Agent host/access and individual model/bot/provider accounts were not supplied. Existing runtime/runbook/local tests do not prove deployed Agent or live providers. Do not cohost privileged workers on core or Hoppers. Apple Developer ID/notarization credentials are missing; releases are unsigned previews. Windows validation is deferred.
 

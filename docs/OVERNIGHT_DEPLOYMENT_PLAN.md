@@ -10,7 +10,7 @@ Finish the actual product, not a demonstration or a container installation. A fr
 
 - Dedicated core: 62.238.119.134, CX23 x86, 4 GB RAM, 40 GB disk, Helsinki, Ubuntu 26.04. The existing Hoppers machine is outside this deployment.
 - Existing owner SSH key works with the pinned host-key file `.local/ssh/known_hosts`. No password is stored in Git.
-- Docker 29.1.3, Compose 2.40.3, 1 GB persistent swap, bounded logs, private datastore ports, persistent volumes and firewall are configured. The deployment user exists but its SSH/privilege handoff remains unfinished.
+- Docker 29.1.3, Compose 2.40.3, 1 GB persistent swap, bounded logs, private datastore ports, persistent volumes and firewall are configured. Scoped maintenance SSH status/restart and general-root/Docker/other-project/configuration denials passed. Owner access remains intact.
 - Public origin: https://62.238.119.134, as requested. Caddy serves a publicly trusted short-lived IP certificate. Certificate renewal timer is installed; Certbot renewal simulation passed. Direct production Caddy reload also passed.
 - Unmodified upstream Stoat v0.15.5, access broker, PostgreSQL-backed Activities and independent LiveKit v1.9.12 are running. Actual image digests are pinned on the server. MongoDB 7.0.43 was selected after the upstream default MongoDB 8 refused this host kernel; no existing data was downgraded.
 - Private community, owner, isolated QA guest and outsider exist. Six expiring one-use signup invitations are saved privately. Do not publish account credentials or invitation codes.
@@ -18,9 +18,9 @@ Finish the actual product, not a demonstration or a container installation. A fr
 - Public production acceptance: 10/10 checks, including invite registration, public raw-registration denial, DM/friends, attachment delivery, authorized queue/poll/whiteboard/game state, deduplication, unsigned webhook denial and immediate membership revocation (`infra/production/ACCEPTANCE_RESULTS.json`).
 - Two Electron clients received synthetic audio/video through the public SFU using actual Stoat-authorized grants; mute, screen unpublish and signaling reconnect passed (`infra/production/MEDIA_RESULTS.json`). This does not certify physical microphone/camera/native screen-picker behavior.
 - Activity state survived a real writer-process stop/start (`infra/production/PERSISTENCE_RESULTS.json`). This does not certify full-machine recovery.
-- 96 tests across 21 files, typecheck, desktop build and service build passed after the production authorization adapter change.
-- An encrypted core backup was created, copied to the Mac and decrypted privately. Database dumps were copied to an isolated restore staging directory. Isolated offline Mongo/PostgreSQL database restores passed without modifying production. Daily backup timer is installed (04:30 UTC). Upload/certificate restore is not yet accepted.
-- Apple Silicon v0.1.1 DMG/ZIP was built and actual packaged launch/local playback passed; signing remains unavailable. Native production login, invitation signup, send/edit/delete, session restart/logout and screenshots now pass. Shared YouTube synchronization, full games acceptance, restrictive-network TURN/TLS, personal providers and separate Agent deployment are not complete.
+- 100 tests across 22 files, typecheck, desktop build and service build passed after the production authorization adapter change.
+- An encrypted core backup was created, copied to the Mac and decrypted privately. Database dumps were copied to an isolated restore staging directory. Isolated offline Mongo/PostgreSQL database restores passed without modifying production. Daily backup timer is installed (04:30 UTC). Actual isolated object restore with authenticated AES-GCM decode and TLS keypair matching passed; owned plaintext staging was removed.
+- Apple Silicon v0.1.3 DMG/ZIP was built and actual packaged launch/local playback passed; signing remains unavailable. Native production login, invitation signup, send/edit/delete, session restart/logout and screenshots now pass. Packaged shared YouTube synchronization and seven public game hands passed. Every native game control, restrictive-network TURN/TLS, personal providers and separate Agent deployment remain incomplete.
 
 ## Ordered execution checklist
 
@@ -38,18 +38,18 @@ The latest encrypted backup also passed isolated object read with authenticated 
 
 - [x] Run two actual Electron clients against the real origin: native sign-in form, community/chat navigation and UI message send/delivery passed with zero renderer errors.
 - [x] Finish native invitation signup, consumed-invite rejection, edit/delete, logout and restart restoration acceptance.
-- [ ] Finish native attachment picker and live presence acceptance.
+- [x] Actual native macOS attachment picker cancellation/upload/UI delivery/download byte matching passed. Three presence changes reached the other native client through observed gateway events; no renderer errors.
 - [x] Capture actual Electron screenshots and record version/platform. Keep fixture labels and honest disabled/error states.
 - [ ] Main agent directly implements all UI/interaction/Liquid Glass and engineering work, with running-app visual QA. Owner explicitly disabled Astra/high delegation on 2026-10-10; this supersedes the previous design policy.
 - [x] Verify actual native voice remains connected across Home/Chat/Cinema/Games navigation.
-- [ ] Finish presenter ownership, logout/revocation lifecycle acceptance.
+- [x] Two real development Electron clients passed native screen publication, precise second-presenter exclusion, presenter handoff, logout, active membership revocation (7.476 seconds in the passing run), denied fresh grant and released presenter lease. Owned QA membership was restored; no renderer errors.
 
 ### 3. Shared activities and games
 
 - [ ] Verify two-client queue/playback state, late join, host transfer, command replay/deduplication and recovery after service restart.
 - [x] Verify real official YouTube playback, pause and seek on the public HTTPS origin.
 - [x] Verify two actual packaged 0.1.3 desktop clients play the official YouTube sample, deliver shared pause and pointer/keyboard seek, join authoritatively and synchronize on late return (0.055 seconds observed drift), zero renderer errors.
-- [ ] Finish blocked-video/reconnect acceptance. Official player gesture, shared seek and late join passed; autoplay still depends on normal per-viewer permission.
+- [x] Owned-client iframe API interruption reached a bounded 25-second error; retry created a fresh player, preserved selection and recovered real official playback. Actual provider error 150 disabled controls with a precise explanation. Whole-service/network reconnect remains separate; autoplay depends on each viewer’s normal gesture.
 - [x] Public API/table-engine acceptance passed polls, whiteboard, seven full game hands, hidden hands, actual 30-second bot substitution, unchanged returning seats, host transfer and restored game history. Every game control has not been played manually in the desktop UI.
 - [ ] Verify Cinema local-source authorization and screen-sharing workflow; do not distribute provider tokens or personal media URLs through shared state.
 

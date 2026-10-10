@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-10T02:51:57.192Z",
+  "at": "2026-10-10T03:14:19.966Z",
   "actualDesktopClients": 2,
   "platform": "darwin",
   "arch": "arm64",
@@ -8,14 +8,14 @@
   "pauseDelivered": true,
   "rendererErrors": 0,
   "packaged": true,
-  "appVersion": "0.1.3",
+  "appVersion": "0.1.4",
   "stage": "late-rejoin",
-  "initialQueueCount": 1,
-  "initialUiQueueCount": 1,
+  "initialQueueCount": 0,
+  "initialUiQueueCount": 0,
   "seekDelivered": true,
   "keyboardSeekDelivered": true,
   "bothViewersJoinedAuthoritatively": true,
-  "lateRejoinDriftSec": 0.054880036239623564,
+  "lateRejoinDriftSec": 0.10784115258788773,
   "lateRejoinSynchronized": true,
   "qaQueueItemRemoved": true
 }
