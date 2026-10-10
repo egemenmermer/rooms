@@ -48,8 +48,8 @@ The latest encrypted backup also passed isolated object read with authenticated 
 
 - [ ] Verify two-client queue/playback state, late join, host transfer, command replay/deduplication and recovery after service restart.
 - [x] Verify real official YouTube playback, pause and seek on the public HTTPS origin.
-- [x] Verify two actual desktop clients play the official YouTube sample and deliver shared pause with zero renderer errors.
-- [ ] Finish YouTube autoplay/blocked-video, late-join, seek and reconnect acceptance.
+- [x] Verify two actual packaged 0.1.3 desktop clients play the official YouTube sample, deliver shared pause and pointer/keyboard seek, join authoritatively and synchronize on late return (0.055 seconds observed drift), zero renderer errors.
+- [ ] Finish blocked-video/reconnect acceptance. Official player gesture, shared seek and late join passed; autoplay still depends on normal per-viewer permission.
 - [x] Public API/table-engine acceptance passed polls, whiteboard, seven full game hands, hidden hands, actual 30-second bot substitution, unchanged returning seats, host transfer and restored game history. Every game control has not been played manually in the desktop UI.
 - [ ] Verify Cinema local-source authorization and screen-sharing workflow; do not distribute provider tokens or personal media URLs through shared state.
 
