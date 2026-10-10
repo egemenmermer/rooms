@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-10T04:11:43.315Z",
+  "at": "2026-10-10T04:36:50.442Z",
   "platform": "darwin",
   "arch": "arm64",
   "packaged": true,
@@ -100,7 +100,7 @@
       ],
       "labelledBotCount": 3,
       "rulesMatch": true,
-      "botRoundTripElapsedMs": 13933,
+      "botRoundTripElapsedMs": 6247,
       "status": "PASS"
     },
     {
@@ -117,7 +117,7 @@
       ],
       "labelledBotCount": 3,
       "rulesMatch": true,
-      "botRoundTripElapsedMs": 8088,
+      "botRoundTripElapsedMs": 6234,
       "status": "PASS"
     },
     {
@@ -134,7 +134,7 @@
       ],
       "labelledBotCount": 3,
       "rulesMatch": true,
-      "botRoundTripElapsedMs": 7881,
+      "botRoundTripElapsedMs": 6339,
       "status": "PASS"
     },
     {
@@ -151,12 +151,12 @@
       ],
       "labelledBotCount": 3,
       "rulesMatch": true,
-      "botRoundTripElapsedMs": 8052,
+      "botRoundTripElapsedMs": 6267,
       "status": "PASS"
     }
   ],
   "rendererErrors": 0,
-  "appVersion": "0.1.4",
+  "appVersion": "0.1.5",
   "stage": "101:true:true",
   "closedTableFrozenAcrossSweeps": true,
   "status": "PASS",

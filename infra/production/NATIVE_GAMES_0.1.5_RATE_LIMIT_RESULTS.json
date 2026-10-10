@@ -1,0 +1,111 @@
+{
+  "at": "2026-10-10T04:34:22.461Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "packaged": true,
+  "actualPublicAuthorization": true,
+  "socialFixtures": false,
+  "scope": "Native create/bots/start/action/close controls; not every legal rule or complete hand.",
+  "cases": [
+    {
+      "kind": "holdem",
+      "controls": [
+        "native-create",
+        "start-hand",
+        "raise",
+        "fold-to-result",
+        "completed-history",
+        "confirm-close"
+      ],
+      "labelledBotCount": 1,
+      "status": "PASS"
+    },
+    {
+      "kind": "blackjack",
+      "controls": [
+        "native-create",
+        "set-virtual-bet",
+        "start-hand",
+        "completed-result",
+        "confirm-close"
+      ],
+      "labelledBotCount": 0,
+      "naturalBlackjackCompleted": true,
+      "status": "PASS"
+    },
+    {
+      "kind": "batak",
+      "variant": "ihaleli",
+      "controls": [
+        "native-create",
+        "start-hand",
+        "choose-trump",
+        "play-legal-card",
+        "confirm-close"
+      ],
+      "labelledBotCount": 3,
+      "status": "PASS"
+    },
+    {
+      "kind": "batak",
+      "variant": "esli",
+      "controls": [
+        "native-create",
+        "start-hand",
+        "choose-trump",
+        "play-legal-card",
+        "confirm-close"
+      ],
+      "labelledBotCount": 3,
+      "status": "PASS"
+    },
+    {
+      "kind": "batak",
+      "variant": "koz-maca",
+      "controls": [
+        "native-create",
+        "start-hand",
+        "bid",
+        "play-legal-card",
+        "confirm-close"
+      ],
+      "labelledBotCount": 3,
+      "status": "PASS"
+    },
+    {
+      "kind": "batak",
+      "variant": "gommeli",
+      "controls": [
+        "native-create",
+        "start-hand",
+        "choose-trump",
+        "bury-four",
+        "play-legal-card",
+        "confirm-close"
+      ],
+      "labelledBotCount": 2,
+      "status": "PASS"
+    },
+    {
+      "kind": "101",
+      "folding": false,
+      "teams": false,
+      "controls": [
+        "native-create",
+        "start-hand"
+      ],
+      "labelledBotCount": 3,
+      "rulesMatch": true
+    }
+  ],
+  "rendererErrors": 0,
+  "appVersion": "0.1.5",
+  "stage": "101:false:false",
+  "status": "FAIL",
+  "failure": "page.evaluate: Error: Error invoking remote method 'rooms:activity-snapshot': StoatError: Too many requests. Please wait and retry.",
+  "alerts": [
+    "Kısa sürede çok fazla işlem yapıldı. Biraz bekleyip yeniden dene."
+  ],
+  "ownedTableClosed": true,
+  "ownedChannelRemoved": true
+}
