@@ -4,7 +4,7 @@ import {readFile,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 const [version,sourceCommit,previous,acceptance='recovery-blackjack']=process.argv.slice(2);
-assert(['recovery-blackjack','whiteboard','holdem'].includes(acceptance));
+assert(['recovery-blackjack','whiteboard','holdem','no-demo'].includes(acceptance));
 assert(/^\d+\.\d+\.\d+$/.test(version));assert(/^[a-f0-9]{40}$/.test(sourceCommit));assert(/^\d+\.\d+\.\d+$/.test(previous));assert.notEqual(version,previous);
 const api=path=>JSON.parse(execFileSync('gh',['api',`repos/egemenmermer/rooms${path?"/"+path:""}`],{encoding:'utf8',timeout:30000}));
 const repository=api('');assert.equal(repository.private,true);
@@ -13,7 +13,14 @@ let ref=api(`git/ref/tags/v${version}`).object;while(ref.type==='tag')ref=api(`g
 const packaged=JSON.parse(await readFile('docs/PACKAGE_TEST_RESULTS.json','utf8'));
 assert.equal(packaged.appVersion,version);assert.equal(packaged.status,'PASS');
 const checks=[`actual packaged launch/local video and ${packaged.bundledFileCount} bundled files match`];
-if(acceptance==='holdem'){
+if(acceptance==='no-demo'){
+ const actual=JSON.parse(await readFile('infra/production/NATIVE_NO_DEMO_RESULTS.json','utf8'));
+ const personal=JSON.parse(await readFile('infra/production/NATIVE_PERSONAL_PLAYBACK_RESULTS.json','utf8'));
+ for(const evidence of [actual,personal]){assert.equal(evidence.appVersion,version);assert.equal(evidence.status,'PASS');assert.equal(evidence.packaged,true);assert.equal(evidence.rendererErrors,0);}
+ assert.equal(actual.actualDesktopClients,2);assert.equal(actual.ownedChannelRemoved,true);
+ for(const required of ['two-native-real-sign-in-and-community-navigation','native-real-send-edit-delete-delivered','authenticated-cinema-has-no-sample-media','legacy-poll-navigation-opens-shared-activity','logout-clears-real-ui-without-demo-fallback'])assert(actual.cases.includes(required));
+ checks.push('legacy fixtures removed preserving device preferences; eight native empty-state routes and no bundled sample movie','two public packaged accounts exchange/edit/delete messages and logout without demo fallback','actual macOS personal-file selection, scoped native media playback, pause/seek/speed');
+}else if(acceptance==='holdem'){
  const game=JSON.parse(await readFile('infra/production/NATIVE_HOLDEM_FULL_RESULTS.json','utf8'));assert.equal(game.appVersion,version);assert.equal(game.status,'PASS');assert.equal(game.packaged,true);assert.equal(game.rendererErrors,0);assert.equal(game.ownedChannelRemoved,true);
  const table=game.cases[0];assert.equal(table.status,'PASS');assert.equal(table.insufficientChipsBlocked,true);assert(table.controls.includes('confirm-close'));assert(table.rounds.length>=2);assert(table.rounds[0].actions.some(a=>a.type==='call'));assert(table.rounds[0].actions.some(a=>a.type==='check'));assert(table.rounds.slice(1).some(r=>r.actions.some(a=>a.type==='raise-all-in')));
  for(const round of table.rounds){assert.equal(round.status,'PASS');assert.equal(round.totalVirtualChips,2000);assert.equal(round.pot,round.paid);assert.equal(round.nativeFinishedVisible,true);}

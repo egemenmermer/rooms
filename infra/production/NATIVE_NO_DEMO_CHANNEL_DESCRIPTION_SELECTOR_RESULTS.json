@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-10T08:48:27.390Z",
+  "packaged": true,
+  "platform": "darwin",
+  "arch": "arm64",
+  "actualPublicAuthorization": true,
+  "actualDesktopClients": 2,
+  "rendererErrors": 0,
+  "cases": [],
+  "appVersion": "0.1.9",
+  "status": "FAIL",
+  "failure": "The expression evaluated to a falsy value:\n\n  assert(!/Maya|Oliver|Sofia|Noah|demo/i.test(await page.locator('.main-view').innerText()))\n",
+  "ownedChannelRemoved": true
+}

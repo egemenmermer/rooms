@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-10T08:49:01.239Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "appVersion": "0.1.9",
+  "packaged": true,
+  "scope": "One packaged native client, actual OS file selection of private owned test video; no shared Cinema or real provider claim.",
+  "rendererErrors": 0,
+  "checks": [
+    "empty until explicit selection",
+    "actual macOS file picker selection",
+    "native scoped rooms-media URL",
+    "actual playback advances",
+    "pause and seek to 12 seconds",
+    "speed changes to 1.5"
+  ],
+  "status": "PASS"
+}

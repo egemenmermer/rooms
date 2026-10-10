@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-10T08:48:38.569Z",
+  "status": "PASS",
+  "platform": "darwin",
+  "arch": "arm64",
+  "packaged": true,
+  "appVersion": "0.1.9",
+  "bundledFileCount": 21,
+  "rendererErrors": 0,
+  "checks": [
+    "all packaged renderer/native/assets/license files match current build",
+    "actual packaged app launches with real sign-in form",
+    "legacy social fixtures removed while device preference preserved",
+    "signed-out spaces/chat/voice/profile route to real authentication",
+    "local poll route redirects to shared polls",
+    "eight routes contain no demo data or automatically loaded video",
+    "demonstration movie absent from packaged archive",
+    "Cinema asks for a personal source instead of playing sample media"
+  ]
+}

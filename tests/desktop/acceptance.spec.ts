@@ -1,19 +1,20 @@
 import { test, expect, _electron as electron, type ElectronApplication } from '@playwright/test';
-import { readFile } from 'node:fs/promises';
+import { readFile, rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 const launch=async()=>{const env:Record<string,string>={...Object.fromEntries(Object.entries(process.env).filter((entry):entry is [string,string]=>typeof entry[1]==='string')),ROOMS_PROFILE:`qa-${randomUUID()}`};delete env.ELECTRON_RUN_AS_NODE;return electron.launch({args:['.'],env});};
-test('desktop shell isolates native APIs and plays actual local media',async()=>{
-  const app=await launch();console.log('Shell launched');try{const page=await app.firstWindow();await page.waitForSelector('.hero');
+test('desktop shell isolates native APIs and shows real sign-in and empty Cinema',async()=>{
+  const app=await launch();const profile=await app.evaluate(({app})=>app.getPath('userData'));
+  try{const page=await app.firstWindow();await page.waitForSelector('.hero');
     expect(await page.evaluate(()=>({node:typeof (window as any).require,platform:(window as any).rooms.platform}))).toEqual({node:'undefined',platform:process.platform});
-    console.log('Bridge isolated');await expect(page.evaluate(()=>(window as any).rooms.windowAction('invalid'))).rejects.toThrow();
-    console.log('Invalid IPC rejected');await page.keyboard.press('Meta+k');await expect(page.getByRole('dialog')).toBeVisible();await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);
-    console.log('Command menu checked');await page.getByRole('button',{name:'Sinemaya gir',exact:true}).click();await page.getByRole('button',{name:'Mavi saati oynat',exact:true}).click();
-    await page.waitForFunction(()=>{const v=document.querySelector('video');return !!v&&!v.paused&&v.currentTime>0;});
-    expect(await page.locator('video').evaluate(v=>(v as HTMLVideoElement).duration)).toBe(30);
-    await page.getByRole('button',{name:'Videoyu duraklat',exact:true}).click();await page.getByRole('slider',{name:'Oynatma konumu',exact:true}).fill('12');expect(await page.locator('video').evaluate(v=>(v as HTMLVideoElement).currentTime)).toBeCloseTo(12,0);
-    console.log('Playback and seek checked');await page.getByRole('button',{name:'Sinemayı tam ekran yap',exact:true}).click();await expect(page.locator('.native-fullscreen')).toBeVisible();await expect.poll(()=>app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isFullScreen())).toBe(true);await page.getByRole('button',{name:'Tam ekrandan çık',exact:true}).click();await expect(page.locator('.native-fullscreen')).toHaveCount(0);await expect.poll(()=>app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isFullScreen())).toBe(false);
-    const metrics=await app.evaluate(({app})=>app.getAppMetrics().map(p=>({type:p.type,workingSetKB:p.memory.workingSetSize,cpuPercent:p.cpu.percentCPUUsage})));console.log(JSON.stringify({desktopMetrics:metrics}));
-  }finally{await app.close();}
+    await expect(page.evaluate(()=>(window as any).rooms.windowAction('invalid'))).rejects.toThrow();
+    await expect(page.locator('.social-connection form')).toBeVisible();
+    await page.keyboard.press('Meta+k');await expect(page.getByRole('dialog')).toBeVisible();await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.evaluate(()=>location.hash='/cinema');await expect(page.locator('.cinema-empty')).toBeVisible();await expect(page.locator('video')).toHaveCount(0);
+    await expect(page.getByRole('button',{name:'Dosya seç',exact:true})).toBeEnabled();
+    await page.getByRole('button',{name:'Birlikte YouTube',exact:true}).click();await expect(page.locator('.main-view')).not.toContainText('demo');
+    await page.evaluate(()=>location.hash='/chat');await expect(page.locator('.social-connection form')).toBeVisible();await expect(page.locator('.chat-transcript')).toHaveCount(0);
+    await expect(page.locator('body')).not.toContainText('Maya');
+  }finally{await app.close();await rm(profile,{recursive:true,force:true});}
 });
 test('two real Stoat desktop accounts exchange events and join one authorized room',async()=>{
   test.skip(!process.env.ROOMS_STOAT_DESKTOP_FIXTURES, 'Requires actual Stoat accounts; legacy Spacebar fixtures are not Stoat verification.');

@@ -1,0 +1,19 @@
+{
+  "at": "2026-10-10T08:48:58.266Z",
+  "packaged": true,
+  "platform": "darwin",
+  "arch": "arm64",
+  "actualPublicAuthorization": true,
+  "actualDesktopClients": 2,
+  "rendererErrors": 0,
+  "cases": [
+    "two-native-real-sign-in-and-community-navigation",
+    "native-real-send-edit-delete-delivered",
+    "authenticated-cinema-has-no-sample-media",
+    "legacy-poll-navigation-opens-shared-activity",
+    "logout-clears-real-ui-without-demo-fallback"
+  ],
+  "appVersion": "0.1.9",
+  "status": "PASS",
+  "ownedChannelRemoved": true
+}
