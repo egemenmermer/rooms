@@ -4,7 +4,7 @@ Updated 2026-10-10. Owner instruction: deliver a usable private desktop product 
 
 ## Current owner override and delivery
 
-Local 0.1.14 is the current unsigned Apple Silicon implementation preview; published v0.1.8 assets remain preserved. The owner performs all acceptance. Do not execute this document's historical test/QA/disruption steps without explicit reauthorization. Compilation, packaging and opening for delivery are allowed; those operations do not close acceptance gates. Read the latest CONTINUATION_CHECKPOINT.md entries and MANUAL_CHECKS.md before continuing. Main agent implements all work; no design delegation.
+Local 0.1.14 is the current unsigned Apple Silicon implementation preview; v0.1.14 is published for explicitly authorized owner/friend manual testing; earlier assets remain preserved. The owner performs all acceptance. Do not execute this document's historical test/QA/disruption steps without explicit reauthorization. Compilation, packaging and opening for delivery are allowed; those operations do not close acceptance gates. Read the latest CONTINUATION_CHECKPOINT.md entries and MANUAL_CHECKS.md before continuing. Main agent implements all work; no design delegation.
 
 ## Outcome and completion rule
 

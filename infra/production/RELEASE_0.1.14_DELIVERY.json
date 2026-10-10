@@ -1,0 +1,40 @@
+{
+  "version": "0.1.14",
+  "sourceCommit": "d8c41a749b9ed3a5bf99d1e38938717649bd6396",
+  "url": "https://github.com/egemenmermer/rooms/releases/tag/v0.1.14",
+  "prerelease": true,
+  "publishedAt": "2026-10-10T10:21:46Z",
+  "assets": [
+    {
+      "name": "ROOMS-0.1.14-arm64.dmg",
+      "size": 150720806,
+      "digest": "sha256:01a83cc73ee0aa2912d823a699e78809c71f583bce555d288da91872ff328d01",
+      "browser_download_url": "https://github.com/egemenmermer/rooms/releases/download/v0.1.14/ROOMS-0.1.14-arm64.dmg",
+      "state": "uploaded"
+    },
+    {
+      "name": "ROOMS-0.1.14-arm64-mac.zip",
+      "size": 150822547,
+      "digest": "sha256:3ac145f659cf0d0b01abc675769def1444fb817f6dd0c530c2229a9e2ae66e79",
+      "browser_download_url": "https://github.com/egemenmermer/rooms/releases/download/v0.1.14/ROOMS-0.1.14-arm64-mac.zip",
+      "state": "uploaded"
+    },
+    {
+      "name": "ROOMS-0.1.14-SHA256SUMS.txt",
+      "size": 274,
+      "digest": "sha256:d95a72d937128c3b5dfa56055ed257d88cb46e9117e29e17c9dadef3b0a575bd",
+      "browser_download_url": "https://github.com/egemenmermer/rooms/releases/download/v0.1.14/ROOMS-0.1.14-SHA256SUMS.txt",
+      "state": "uploaded"
+    },
+    {
+      "name": "rooms-agent-0.1.14.tar.gz",
+      "size": 470856,
+      "digest": "sha256:2226f1f8564a71780bddd891dbc1f638301919e1ded528e196f17fd7d04451ac",
+      "browser_download_url": "https://github.com/egemenmermer/rooms/releases/download/v0.1.14/rooms-agent-0.1.14.tar.gz",
+      "state": "uploaded"
+    }
+  ],
+  "scope": "Publication receipt: uploaded file size/digests and source tag only. No application tests, type checks or acceptance performed.",
+  "friendAccount": "Separately provisioned ordinary member; credentials only in ignored private delivery files.",
+  "remaining": "Owner acceptance, separate Agent host/accounts, authorized providers, signing, physical devices/Windows."
+}
