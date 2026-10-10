@@ -3,7 +3,7 @@
 ## Outcome and ownership
 Build a macOS 14+/Apple Silicon private Electron clubhouse. By M3 two distinct users must exchange actual Spacebar messages, join voice, and receive an explicitly selected screen/window through LiveKit. YouTube synchronization, IPTV, Real-Debrid, shared games, signed updates and production release remain M4–M7.
 
-The implementing designer is always a `gpt-6-astra` subagent with reasoning `high`. It owns UI components, CSS, interaction craft and actual visual QA. The main agent owns architecture, security, integration and final acceptance. This policy persists in root AGENTS.md. Use English application code/docs and Turkish user communication.
+Ownership updated by the user on 2026-10-10: the main agent implements UI, CSS, interaction craft, architecture, security, integrations and actual visual/final QA. Astra/high delegation is disabled; this supersedes the initial designer assignment. Use English application code/docs and Turkish user communication.
 
 ## Architecture
 Electron + React + strict TypeScript + Vite, pnpm workspace, React Router, Zustand for UI, TanStack Query for server state. Upstream pinned Spacebar with a separate adapter is the social identity and permissions authority. Self-hosted LiveKit behind RealtimeMediaProvider supplies audio/video/screen sharing. A small Fastify access service validates membership and issues short-lived room tokens; it never redistributes personal media credentials. PostgreSQL and Docker Compose provide local reproducibility. Bind development ports to loopback.

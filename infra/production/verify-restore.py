@@ -31,8 +31,9 @@ try:
         run(['docker','exec','-i',names[1],'psql','-v','ON_ERROR_STOP=1','-U','postgres','-d','rooms'],stdin=stream)
     mongo=json.loads(run(['docker','exec',names[0],'mongosh','--quiet','--eval',"const s=db.getSiblingDB('revolt');print(JSON.stringify({users:s.users.countDocuments({}),servers:s.servers.countDocuments({}),channels:s.channels.countDocuments({})}));"]).stdout)
     tables=run(['docker','exec',names[1],'psql','-U','postgres','-d','rooms','-tAc',"SELECT count(*) FROM information_schema.tables WHERE table_schema='public'"]).stdout.decode().strip()
-    if mongo['users']<3 or mongo['servers']<1 or mongo['channels']<2 or int(tables)<1: raise RuntimeError('Restored core records missing.')
-    result={'verifiedAt':datetime.now(timezone.utc).isoformat(),'databaseRestorePassed':True,'productionDatabasesModified':False,'network':'none','publishedPorts':False,'mongoCounts':mongo,'postgresPublicTables':int(tables),'uploadsAndTlsRestoreVerified':False}
+    activity=json.loads(run(['docker','exec',names[1],'psql','-U','postgres','-d','rooms','-tAc',"SELECT json_build_object('rooms',count(*),'polls',coalesce(sum(jsonb_array_length(state->'snapshot'->'polls')),0),'notes',coalesce(sum(jsonb_array_length(state->'snapshot'->'whiteboard')),0)) FROM rooms_activity_state"]).stdout)
+    if mongo['users']<3 or mongo['servers']<1 or mongo['channels']<2 or int(tables)<1 or activity['rooms']<1 or activity['polls']<1 or activity['notes']<1: raise RuntimeError('Restored core records missing.')
+    result={'verifiedAt':datetime.now(timezone.utc).isoformat(),'databaseRestorePassed':True,'productionDatabasesModified':False,'network':'none','publishedPorts':False,'mongoCounts':mongo,'postgresPublicTables':int(tables),'restoredActivityCounts':activity,'uploadsAndTlsRestoreVerified':False}
     Path('/opt/rooms/RESTORE_RESULTS.json').write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps(result))
 finally:

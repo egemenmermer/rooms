@@ -1,5 +1,5 @@
 {
-  "verifiedAt": "2026-10-10T01:23:02.422071+00:00",
+  "verifiedAt": "2026-10-10T01:42:54.297952+00:00",
   "databaseRestorePassed": true,
   "productionDatabasesModified": false,
   "network": "none",
@@ -10,5 +10,10 @@
     "channels": 3
   },
   "postgresPublicTables": 1,
+  "restoredActivityCounts": {
+    "rooms": 1,
+    "polls": 3,
+    "notes": 3
+  },
   "uploadsAndTlsRestoreVerified": false
 }

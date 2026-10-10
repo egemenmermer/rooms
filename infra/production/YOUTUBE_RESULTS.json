@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-10T01:46:01.430Z",
+  "origin": "https://62.238.119.134",
+  "officialDocumentationSample": true,
+  "playerReady": true,
+  "actualPlayback": true,
+  "sharedSyncVerified": false,
+  "failedRequests": [
+    {
+      "host": "googleads.g.doubleclick.net",
+      "error": "net::ERR_FAILED"
+    }
+  ],
+  "stage": "playback-progress",
+  "controlNames": [
+    "Play video",
+    "Hide player controls",
+    "Share"
+  ],
+  "pauseAndSeek": true
+}

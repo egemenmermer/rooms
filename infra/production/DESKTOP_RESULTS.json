@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-10T01:25:46.650Z",
+  "at": "2026-10-10T01:42:37.680Z",
   "platform": "darwin",
   "arch": "arm64",
   "realPublicStoatLogin": true,
@@ -7,5 +7,9 @@
   "uiMessageSendAndDelivery": true,
   "rendererErrors": 0,
   "nativeDevicesVerified": false,
-  "sessionRestartVerified": false
+  "sessionRestartVerified": true,
+  "uiEditAndDeleteDelivered": true,
+  "logoutClearsSession": true,
+  "nativeInvitationRegistration": true,
+  "consumedInvitationRejected": true
 }

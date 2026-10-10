@@ -3,7 +3,7 @@
 Approved by the user on 2026-10-08. This supersedes the original Spacebar choice, English-first UI and Windows-first release; retain the original brief as reference.
 
 ## Delivery policy
-Mac 14+ Apple Silicon first. Keep Electron + React and original cinematic design. Every substantial UI change is implemented directly by GPT-6 Astra/high. Main owns architecture, privileged operations, integration and final verification. No first friends release until every release acceptance gate passes. Labels: VERIFIED WORKING, IMPLEMENTED BUT UNVERIFIED, BLOCKED. Tests on a single host are not two physical computer validation.
+Mac 14+ Apple Silicon first. Keep Electron + React and original cinematic design. As updated by the owner on 2026-10-10, main agent directly implements all design and engineering; Astra/high delegation is disabled. Main owns privileged operations, integration, visual QA and final verification. No first friends release until every release acceptance gate passes. Labels: VERIFIED WORKING, IMPLEMENTED BUT UNVERIFIED, BLOCKED. Tests on a single host are not two physical computer validation.
 
 ## A — Stoat community
 Use unmodified pinned upstream Stoat behind provider-neutral typed domain. Opaque IDs, real REST/events auth, channels, messaging, DMs, presence, permissions, block/moderation. Distinguish account registration invites from community invites. Reauthenticate rather than sending legacy credentials to Stoat. Preserve Spacebar data/evidence as rollback until new acceptance passes. Two actual accounts plus an unauthorized identity must prove message delivery, permissions and reconnect.

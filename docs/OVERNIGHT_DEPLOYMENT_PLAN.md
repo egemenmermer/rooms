@@ -18,9 +18,9 @@ Finish the actual product, not a demonstration or a container installation. A fr
 - Public production acceptance: 10/10 checks, including invite registration, public raw-registration denial, DM/friends, attachment delivery, authorized queue/poll/whiteboard/game state, deduplication, unsigned webhook denial and immediate membership revocation (`infra/production/ACCEPTANCE_RESULTS.json`).
 - Two Electron clients received synthetic audio/video through the public SFU using actual Stoat-authorized grants; mute, screen unpublish and signaling reconnect passed (`infra/production/MEDIA_RESULTS.json`). This does not certify physical microphone/camera/native screen-picker behavior.
 - Activity state survived a real writer-process stop/start (`infra/production/PERSISTENCE_RESULTS.json`). This does not certify full-machine recovery.
-- 94 tests across 21 files, typecheck, desktop build and service build passed after the production authorization adapter change.
+- 96 tests across 21 files, typecheck, desktop build and service build passed after the production authorization adapter change.
 - An encrypted core backup was created, copied to the Mac and decrypted privately. Database dumps were copied to an isolated restore staging directory. Isolated offline Mongo/PostgreSQL database restores passed without modifying production. Daily backup timer is installed (04:30 UTC). Upload/certificate restore is not yet accepted.
-- Existing Apple Silicon v0.1.0 private prerelease is unsigned. Native production login/screenshots, real YouTube playback, full games acceptance, restrictive-network TURN/TLS, personal providers and separate Agent deployment are not complete.
+- Apple Silicon v0.1.1 DMG/ZIP was built and actual packaged launch/local playback passed; signing remains unavailable. Native production login, invitation signup, send/edit/delete, session restart/logout and screenshots now pass. Shared YouTube synchronization, full games acceptance, restrictive-network TURN/TLS, personal providers and separate Agent deployment are not complete.
 
 ## Ordered execution checklist
 
@@ -35,15 +35,17 @@ Finish the actual product, not a demonstration or a container installation. A fr
 ### 2. Desktop connected to production
 
 - [x] Run two actual Electron clients against the real origin: native sign-in form, community/chat navigation and UI message send/delivery passed with zero renderer errors.
-- [ ] Finish native invitation/onboarding, edit/delete, attachments, presence, logout and restart restoration acceptance.
+- [x] Finish native invitation signup, consumed-invite rejection, edit/delete, logout and restart restoration acceptance.
+- [ ] Finish native attachment picker and live presence acceptance.
 - [x] Capture actual Electron screenshots and record version/platform. Keep fixture labels and honest disabled/error states.
-- [ ] Any substantial UI/interaction/Liquid Glass work must be directly implemented by an Astra/high subagent with concrete file ownership and running-app visual QA. Main agent owns integration/security/acceptance. Report unavailable Astra instead of substituting.
+- [ ] Main agent directly implements all UI/interaction/Liquid Glass and engineering work, with running-app visual QA. Owner explicitly disabled Astra/high delegation on 2026-10-10; this supersedes the previous design policy.
 - [ ] Verify voice remains connected across navigation and Cinema/Activity lifecycle; check grants, presenter ownership, logout and membership removal cleanup.
 
 ### 3. Shared activities and games
 
 - [ ] Verify two-client queue/playback state, late join, host transfer, command replay/deduplication and recovery after service restart.
-- [ ] Test real official YouTube playback and autoplay/blocked-video/reconnect behavior; served iframe HTML alone is insufficient.
+- [x] Verify real official YouTube playback, pause and seek on the public HTTPS origin.
+- [ ] Verify two-client YouTube synchronization and autoplay/blocked-video/reconnect behavior.
 - [ ] Complete real multiplayer acceptance for polls, whiteboard, Holdem, Blackjack, approved Batak variants and 101 Okey. Exercise hidden hands, bot substitution, disconnect grace, returning seats, timeout and history/statistics persistence.
 - [ ] Verify Cinema local-source authorization and screen-sharing workflow; do not distribute provider tokens or personal media URLs through shared state.
 
@@ -62,7 +64,7 @@ Finish the actual product, not a demonstration or a container installation. A fr
 
 ### 6. Release and handoff
 
-- [ ] Produce an updated Apple Silicon installer with the production fixes and complete native onboarding instructions; deliver credentials/invitations only through protected files.
+- [x] Produce an updated Apple Silicon installer with the production fixes and complete native onboarding instructions; deliver credentials/invitations only through protected files.
 - [ ] Complete Developer ID signing/notarization/stapling and signed updater when the owner's signing identity is available. Clearly label unsigned builds.
 - [ ] Run fresh-install/update and sustained M1/8 GB performance checks; keep Windows validation deferred and explicit.
 - [ ] Update implementation evidence and commit/push source, documentation and sanitized results to the authorized private GitHub repository in meaningful commits with actual current timestamps.
@@ -70,7 +72,7 @@ Finish the actual product, not a demonstration or a container installation. A fr
 
 ## Authorized quota-reset and continuation policy
 
-The owner explicitly authorized using the account's existing free full usage reset when the weekly quota is exhausted, then continuing this plan. At this checkpoint weekly usage is 98% and one free Full reset entitlement is available.
+The owner explicitly authorized using the account's existing free full usage reset when the weekly quota is exhausted, then continuing this plan. At the latest checkpoint weekly usage is 100%, while ordinary usage was still allowed and one free Full reset entitlement is available.
 
 1. Continue authorized work while ordinary usage is available. Do not consume the reset prematurely.
 2. Before exhaustion, persist completed tasks, failing checks, active operations and the next concrete action in `docs/CONTINUATION_CHECKPOINT.md`. Keep passwords, tokens, private keys and live invitation codes out of documentation/Git.
