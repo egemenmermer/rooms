@@ -9,6 +9,8 @@ import {setupUpdates} from './updates';
 import {setupProviders} from './providers';
 import {parseInviteLink,type InviteLink} from './native-links';
 import {setupAgent} from './agent';
+import { whiteboardSvg } from './whiteboard-export';
+import type { ActivityResponse } from '@rooms/activity-protocol';
 if(process.env.ROOMS_PROFILE&&/^[a-zA-Z0-9-]{1,40}$/.test(process.env.ROOMS_PROFILE))app.setPath('userData',join(app.getPath('appData'),'ROOMS',process.env.ROOMS_PROFILE));
 let win: BrowserWindow | null = null;
 let pendingInvite:InviteLink|null=null;
@@ -92,6 +94,19 @@ app.whenReady().then(async() => {
     const result = await dialog.showSaveDialog(win, { title: 'Export sanitized diagnostics', defaultPath: 'rooms-diagnostics.json', filters: [{ name: 'JSON', extensions: ['json'] }] });
     if (result.canceled || !result.filePath) return false;
     writeFileSync(result.filePath, JSON.stringify({ app: 'ROOMS', version: app.getVersion(), platform: process.platform, arch: process.arch, electron: process.versions.electron, social: community.snapshot().status, mode: community.snapshot().user?'authenticated':'local-demo', timestamp: new Date().toISOString() }, null, 2)); return true;
+  });
+  ipcMain.handle('rooms:export-board', async (event, roomId) => {
+    assertSender(event); if (!win) return false;
+    // Membership and session are checked by the existing native Activity adapter.
+    const state = await community.activityRequest(roomId) as ActivityResponse;
+    const artwork = whiteboardSvg(state.room.whiteboard);
+    const identity = community.snapshot().user?.id;
+    const result = await dialog.showSaveDialog(win, { title: 'Save shared whiteboard', defaultPath: 'rooms-whiteboard.svg', filters: [{ name: 'SVG image', extensions: ['svg'] }] });
+    if (result.canceled || !result.filePath) return false;
+    if (!identity || community.snapshot().user?.id !== identity) throw new Error('The community session changed.');
+    await community.activityRequest(roomId);
+    if (community.snapshot().user?.id !== identity) throw new Error('The community session changed.');
+    writeFileSync(result.filePath, artwork, { encoding: 'utf8', mode: 0o600 }); return true;
   });
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: 'ROOMS', submenu: [{ role: 'about' }, { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' }, { role: 'quit' }] },

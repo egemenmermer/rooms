@@ -26,3 +26,6 @@ html,body,#root{height:100%;overflow:hidden}.app.voice-active .chat-page{padding
 .reminder-modal textarea{font:inherit;font-size:13px;line-height:1.6;color:var(--text-primary);background:#12161d;border:1px solid rgba(255,255,255,.11);border-radius:10px;padding:12px 14px}.reminder-modal .field-label .inline-help{letter-spacing:normal;text-transform:none;font-weight:400;font-size:11px}.task-detail>.inline-help{display:flex;align-items:center;gap:7px}
 
 .voice-roster-empty{width:100%;text-align:center;color:var(--text-secondary);font-size:14px;line-height:1.7;margin:auto;padding:32px;max-width:420px}
+
+.board-actions{display:flex;gap:6px;margin-left:auto;flex-shrink:0}.whiteboard-toolbar{flex-wrap:wrap}.board-feedback{font-size:12px;color:var(--text-secondary,#abb3c0);line-height:1.6;padding:0 18px 12px;overflow-wrap:anywhere}
+.board-note-form input{min-width:0;border:1px solid #ffffff14;border-radius:10px;background:#0b1118;color:#f4f6f8;font:inherit;font-size:13px;padding:11px 13px;outline:none}.board-note-form input::placeholder{color:#78818e}.board-note-form input:focus-visible{border-color:#b8cdff80;box-shadow:0 0 0 3px #b8cdff12}.board-note-form input:disabled{opacity:.6}
