@@ -1,0 +1,42 @@
+{
+  "at": "2026-10-10T04:30:36.228Z",
+  "expectedTimerExecution": "2026-10-10T04:30:00Z",
+  "scope": "Observed actual systemd timer, completed encrypted backup and resumed services. No manual backup invocation or restore is inferred.",
+  "service": {
+    "ActiveState": "inactive",
+    "Result": "success",
+    "ExecMainStartTimestamp": "Sat 2026-10-10 04:30:19 UTC",
+    "ExecMainExitTimestamp": "Sat 2026-10-10 04:30:33 UTC",
+    "ExecMainStatus": "0"
+  },
+  "timer": {
+    "ActiveState": "active",
+    "LastTriggerUSec": "Sat 2026-10-10 04:30:19 UTC"
+  },
+  "archive": {
+    "name": "rooms-20261010T043031Z.tar.age",
+    "size": 15620020,
+    "mtimeMs": 1791606631671.5037,
+    "sha256": "408a69be2e1efe59c859b60df70aa175cd575ddb82d94e1b985d772180d6639b"
+  },
+  "runningServices": [
+    "access",
+    "activities",
+    "api",
+    "autumn",
+    "caddy",
+    "crond",
+    "database",
+    "events",
+    "gifbox",
+    "january",
+    "media",
+    "minio",
+    "postgres",
+    "pushd",
+    "rabbit",
+    "redis"
+  ],
+  "offHostEncryptedCopyVerified": true,
+  "status": "PASS"
+}

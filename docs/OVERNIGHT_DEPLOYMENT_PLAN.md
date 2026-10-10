@@ -20,7 +20,7 @@ Finish the actual product, not a demonstration or a container installation. A fr
 - Activity state survived a real writer-process stop/start (`infra/production/PERSISTENCE_RESULTS.json`). This does not certify full-machine recovery.
 - 101 tests across 23 files, typecheck, desktop build and service build passed after the production authorization adapter change.
 - An encrypted core backup was created, copied to the Mac and decrypted privately. Database dumps were copied to an isolated restore staging directory. Isolated offline Mongo/PostgreSQL database restores passed without modifying production. Daily backup timer is installed (04:30 UTC). Actual isolated object restore with authenticated AES-GCM decode and TLS keypair matching passed; owned plaintext staging was removed.
-- Apple Silicon v0.1.3 DMG/ZIP was built and actual packaged launch/local playback passed; signing remains unavailable. Native production login, invitation signup, send/edit/delete, session restart/logout and screenshots now pass. Packaged shared YouTube synchronization and seven public game hands passed. Ten native game startup/action/closure scenarios also passed; advanced meld/split/all-in and native full-hand coverage, restrictive-network TURN/TLS, personal providers and separate Agent deployment remain incomplete.
+- Apple Silicon v0.1.4 private DMG/ZIP/checksum publication, uploaded digest matching, 22 bundled files and actual packaged launch/local playback passed; signing remains unavailable. Native production login, invitation signup, send/edit/delete, session restart/logout and screenshots now pass. Packaged shared YouTube synchronization and seven public game hands passed. Ten native game startup/action/closure scenarios also passed; advanced meld/split/all-in and native full-hand coverage, restrictive-network TURN/TLS, personal providers and separate Agent deployment remain incomplete.
 
 ## Ordered execution checklist
 
@@ -32,7 +32,7 @@ Finish the actual product, not a demonstration or a container installation. A fr
 - [x] Verify certificate reload, external port isolation, load/memory/disk and service health. Save nonsecret image-digest evidence.
 - [x] Complete scoped maintenance access without removing owner access: fixed ROOMS status/restart wrapper; general root, Docker, other-project and private-configuration access denied. Full core reboot passed with preserved session/state and recovered services/timers. Arbitrary code deployment remains owner-only.
 
-The latest encrypted backup also passed isolated object read with authenticated AES-GCM decoding using restored configuration/file metadata and restored TLS keypair matching. Both encrypted copies remain off-host. Owned plaintext recovery staging and test containers were removed; the first scheduled backup execution and seven-file retention threshold have not been observed.
+The latest encrypted backup also passed isolated object read with authenticated AES-GCM decoding using restored configuration/file metadata and restored TLS keypair matching. Both encrypted copies remain off-host. Owned plaintext recovery staging and test containers were removed; the first regular 04:30 UTC timer execution and encrypted off-host copy passed; the seven-file retention threshold has not been observed.
 
 ### 2. Desktop connected to production
 
@@ -48,7 +48,7 @@ The latest encrypted backup also passed isolated object read with authenticated 
 
 - [ ] Verify two-client queue/playback state, late join, host transfer, command replay/deduplication and recovery after service restart.
 - [x] Verify real official YouTube playback, pause and seek on the public HTTPS origin.
-- [x] Verify two actual packaged 0.1.3 desktop clients play the official YouTube sample, deliver shared pause and pointer/keyboard seek, join authoritatively and synchronize on late return (0.055 seconds observed drift), zero renderer errors.
+- [x] Verify two actual packaged 0.1.4 desktop clients play the official YouTube sample, deliver shared pause and pointer/keyboard seek, join authoritatively and synchronize on late return (0.108 seconds observed drift), zero renderer errors.
 - [x] Owned-client iframe API interruption reached a bounded 25-second error; retry created a fresh player, preserved selection and recovered real official playback. Actual provider error 150 disabled controls with a precise explanation. Whole-service/network reconnect remains separate; autoplay depends on each viewer’s normal gesture.
 - [x] Public API/table-engine acceptance passed polls, whiteboard, seven full game hands, hidden hands, actual 30-second bot substitution, unchanged returning seats, host transfer and restored game history. Ten actual packaged public game cases now verify startup, bots, common actions and close, including four 101 rule combinations. Advanced meld/pairs/joker processing, Blackjack split/double, other Holdem actions and complete native hands remain separate acceptance.
 - [ ] Verify Cinema local-source authorization and screen-sharing workflow; do not distribute provider tokens or personal media URLs through shared state.
@@ -93,3 +93,7 @@ The current-thread hourly continuation is ACTIVE in the Codex app (automation: r
 ## Inputs still needed for complete acceptance
 
 A separate Agent host/access, individual model/provider and bot account login, authorized personal media, Apple Developer signing identity, and a second physical client. Continue all independent implementation and test work without waking the owner for routine choices. Never substitute mock success for these prerequisites.
+
+## 04:30 UTC acceptance update
+
+Packaged 0.1.4 local-demo playback passed 908 seconds and 15 navigation cycles with zero renderer/process errors. Approximate summed working set peaked at 528.06 MiB in the initial sample and ended at 369.86 MiB; this bounded single-client sample does not certify a full evening with voice/providers. Actual scheduled backup started at 04:30:19 UTC, completed, resumed all writers and matched its encrypted off-host copy. Sanitized evidence is PACKAGED_SOAK_RESULTS.json and SCHEDULED_BACKUP_RESULTS.json under infra/production.
