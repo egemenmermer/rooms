@@ -1,6 +1,6 @@
 # Current feature status
 
-This matrix supersedes the Spacebar-era matrix. Historical transport evidence remains in `VERIFICATION.md`; it is not proof of the current Stoat deployment. All local fixtures are labeled. Acceptance means the precise test described, never an inferred production success.
+This matrix supersedes the Spacebar-era matrix. Historical transport evidence remains in `VERIFICATION.md`; it is not proof of the current Stoat deployment. No demo social/media mode is offered. The owner performs all current testing; historical fixture-based evidence is not current product acceptance. Acceptance means the precise test described, never an inferred production success.
 
 | Capability | Current evidence | Outstanding acceptance |
 |---|---|---|
