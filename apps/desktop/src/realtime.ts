@@ -9,7 +9,7 @@ const errorText=uiError;
 export function useRealtime():MediaSnapshot&{channelId:string|null;roomName:string|null;busy:boolean}{const snapshot=useSyncExternalStore(liveKitMediaProvider.subscribeState,liveKitMediaProvider.snapshot,liveKitMediaProvider.snapshot);const context=useVoiceContext();return {...snapshot,...context,error:context.error??(snapshot.error?uiError(snapshot.error):null)};}
 export async function joinVoice(channelId:string,roomName:string){
   if(useVoiceContext.getState().busy)return;await leaveVoice();useVoiceContext.setState({busy:true,error:null,channelId,roomName});
-  try{const grant=await bridge().grant(channelId);await liveKitMediaProvider.connectRoom(grant.roomName,grant.token,grant.serverUrl);await liveKitMediaProvider.deviceSelection(useRooms.getState().preferences.inputId,useRooms.getState().preferences.outputId);}
+  try{const grant=await bridge().grant(channelId);await liveKitMediaProvider.connectRoom(grant.roomName,grant.token,grant.serverUrl);await liveKitMediaProvider.setNoiseSuppression(useRooms.getState().preferences.noiseSuppression);await liveKitMediaProvider.deviceSelection(useRooms.getState().preferences.inputId,useRooms.getState().preferences.outputId);}
   catch(error){useVoiceContext.setState({error:errorText(error)});throw error;}
   finally{useVoiceContext.setState({busy:false});}
 }
@@ -23,3 +23,7 @@ export async function stopScreen(){const channelId=useVoiceContext.getState().ch
 export const setParticipantVolume=(id:string,volume:number)=>liveKitMediaProvider.setParticipantVolume(id,volume);
 export const startRoomAudio=()=>run(()=>liveKitMediaProvider.startAudio());
 export const attachMediaTrack=(id:string,element:HTMLMediaElement)=>liveKitMediaProvider.attachTrack(id,element);
+
+export const setNoiseSuppression=(value:boolean)=>run(()=>liveKitMediaProvider.setNoiseSuppression(value));
+export const playSoundboard=(buffer:AudioBuffer,volume:number)=>run(()=>liveKitMediaProvider.playSoundboard(buffer,volume));
+export const stopSoundboard=()=>liveKitMediaProvider.stopSoundboard();

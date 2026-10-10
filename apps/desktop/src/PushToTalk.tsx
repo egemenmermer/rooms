@@ -21,7 +21,7 @@ export function PushToTalk({ notify }: {
         const down = (event: KeyboardEvent) => {
             if (event.code !== 'Space' || !event.ctrlKey || !event.shiftKey || event.repeat || held || liveKitMediaProvider.snapshot().deafened)
                 return;
-            if ((event.target as HTMLElement).closest('input,textarea,select,[contenteditable="true"]') || document.querySelector('[role="dialog"]'))
+            if ((event.target as HTMLElement).closest('input,textarea,select,[contenteditable="true"]') || document.querySelector('[role="dialog"]') && !(event.target as HTMLElement).closest('[data-soundboard]'))
                 return;
             event.preventDefault();
             event.stopImmediatePropagation();
