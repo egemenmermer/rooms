@@ -7,6 +7,8 @@ import {join,resolve} from 'node:path';
 import {build} from 'esbuild';
 import {pathToFileURL} from 'node:url';
 const config=JSON.parse(await readFile('.local/production/test-accounts.json','utf8'));
+const staging=process.env.ROOMS_QA_GAME_STAGING==='1';
+const output=staging?'infra/production/NATIVE_GAME_STAGING_RESULTS.json':'infra/production/NATIVE_GAMES_RESULTS.json';
 const suffix=Date.now().toString(36),name=`qa-games-${suffix}`;
 const profile=await mkdtemp(join(tmpdir(),'rooms-native-games-'));let app,page,nativeProfile,channelId,ownedPrimary;
 const result={at:new Date().toISOString(),platform:process.platform,arch:process.arch,packaged:true,actualPublicAuthorization:true,socialFixtures:false,scope:'Native create/bots/start/action/close controls; not every legal rule or complete hand.',cases:[],rendererErrors:0};
@@ -24,7 +26,8 @@ try{
  await page.locator('.social-connection input[type=url]').fill(config.base);await page.locator('.social-connection input[type=email]').fill(config.owner.email);await page.locator('.social-connection input[type=password]').fill(config.owner.password);await page.locator('.social-connection button[type=submit]').click();await page.waitForSelector('.signed-in-profile');await page.evaluate(()=>location.hash='/chat');await page.waitForSelector('.chat-transcript');await page.locator('.channels').getByRole('button',{name,exact:true}).click();await page.waitForSelector('.chat-transcript');
  assert.equal((await snapshot()).room.primary,null,'Owned channel must start without an Activity');await page.evaluate(()=>location.hash='/games');await page.waitForSelector('.game-catalog');
  const cases=[{kind:'holdem'},{kind:'blackjack'},...['ihaleli','esli','koz-maca','gommeli'].map(variant=>({kind:'batak',variant})),...[[false,false],[true,false],[false,true],[true,true]].map(([folding,teams])=>({kind:'101',folding,teams}))];
- for(const spec of cases.filter(spec=>!process.env.ROOMS_QA_GAME_FILTER||spec.kind===process.env.ROOMS_QA_GAME_FILTER)){
+ const selectedCases=staging?[{kind:'101',folding:false,teams:false},{kind:'101',folding:false,teams:false}]:cases.filter(spec=>!process.env.ROOMS_QA_GAME_FILTER||spec.kind===process.env.ROOMS_QA_GAME_FILTER);
+ for(const [caseIndex,spec] of selectedCases.entries()){
   const check={...spec,controls:[]};result.cases.push(check);result.stage=`${spec.kind}:${spec.variant??`${spec.folding??''}:${spec.teams??''}`}`;
   await page.locator(`.game-tile`).filter({has:page.locator(`.game-symbol`)}).filter({hasText:spec.kind==='holdem'?'Texas Hold’em':spec.kind==='blackjack'?'Blackjack':spec.kind==='batak'?'Batak':'101 Okey'}).click();
   if(spec.variant)await page.getByRole('dialog').locator('select').selectOption(spec.variant);
@@ -50,11 +53,24 @@ try{
     else if(game.view.stage==='playing'){const hand=game.view.hands.find(h=>h.seat===0).cards,card=legalBatakCards(hand,game.view.trick,game.view.trump)[0];assert(card);await page.locator('.your-hand .playing-card').nth(hand.findIndex(c=>c.id===card.id)).click();check.controls.push('play-legal-card');played=true;break;}
    }assert(played,'Native Batak action must reach an actual legal card');
   }else{
+   if(staging){
+    assert.equal(await page.locator('.staged-melds > div').count(),0,'A new table must not retain the previous staged groups');
+    assert.equal(await page.locator('.your-hand .okey-tile.selected').count(),0,'A new table must clear tile selection');
+    await page.waitForFunction(()=>!!document.querySelector('.your-hand .okey-tile:not(:disabled)'));
+    const hand=page.locator('.your-hand .okey-tile');const n=await hand.count();
+    await hand.nth(n-2).click();await hand.nth(n-1).click();
+    await page.getByRole('button',{name:'Seçimi seri / çift yap',exact:true}).click();
+    assert.equal(await page.locator('.staged-melds > div').count(),1);assert.equal(await page.locator('.staged-melds .okey-tile').count(),2);
+    await page.getByRole('button',{name:'Hazır grubu kaldır',exact:true}).click();
+    assert.equal(await page.locator('.staged-melds > div').count(),0);
+    await hand.nth(n-2).click();await hand.nth(n-1).click();await page.getByRole('button',{name:'Seçimi seri / çift yap',exact:true}).click();
+    check.controls.push('stage-two-tiles','remove-staged-group','restage-before-table-close','fresh-table-state');
+   }
    assert.equal(game.view.rules.folding,spec.folding);assert.equal(game.view.rules.teams,spec.teams);check.rulesMatch=true;
    await page.waitForFunction(()=>!!document.querySelector('.your-hand .okey-tile:not(:disabled)'));if((await current()).view.stage==='draw'){await page.getByRole('button',{name:'Taş çek',exact:true}).click();check.controls.push('initial-draw');await page.waitForFunction(()=>document.querySelectorAll('.your-hand .okey-tile').length===22);}await page.locator('.your-hand .okey-tile').first().click();await page.getByRole('button',{name:'Seçili taşı at',exact:true}).click();check.controls.push('select-discard');const roundTripStarted=Date.now();
    await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Taş çek'&&!b.disabled));await page.getByRole('button',{name:'Taş çek',exact:true}).click();check.controls.push('draw');check.botRoundTripElapsedMs=Date.now()-roundTripStarted;await page.waitForFunction(()=>document.querySelectorAll('.your-hand .okey-tile').length===22);await page.waitForFunction(()=>!!document.querySelector('.your-hand .okey-tile:not(:disabled)'));await page.locator('.your-hand .okey-tile').first().click();await page.getByRole('button',{name:'Seçili taşı at',exact:true}).click();check.controls.push('discard-after-draw');
   }
-  await page.locator('.main-view').evaluate(e=>e.scrollTop=0);await page.screenshot({path:`docs/screenshots/production/game-${spec.kind}-${spec.variant??`${Number(spec.folding??false)}${Number(spec.teams??false)}`}.png`});await close();if(spec.kind==='101'&&spec.folding&&spec.teams){const stopped=(await snapshot()).room.game;assert.equal(stopped.status,'playing');await page.waitForTimeout(3500);assert.deepEqual((await snapshot()).room.game,stopped);result.closedTableFrozenAcrossSweeps=true;}check.controls.push('confirm-close');check.status='PASS';console.log(JSON.stringify(check));
+  await page.locator('.main-view').evaluate(e=>e.scrollTop=0);await page.screenshot({path:`docs/screenshots/production/game-${staging?'staging-'+caseIndex+'-':''}${spec.kind}-${spec.variant??`${Number(spec.folding??false)}${Number(spec.teams??false)}`}.png`});await close();if(spec.kind==='101'&&spec.folding&&spec.teams){const stopped=(await snapshot()).room.game;assert.equal(stopped.status,'playing');await page.waitForTimeout(3500);assert.deepEqual((await snapshot()).room.game,stopped);result.closedTableFrozenAcrossSweeps=true;}check.controls.push('confirm-close');check.status='PASS';console.log(JSON.stringify(check));
  }
  assert.equal(result.rendererErrors,0);result.status='PASS';
 }catch(error){result.status='FAIL';result.failure=error.message.slice(0,350);if(page){result.alerts=await page.locator('[role=alert]').allTextContents().catch(()=>[]);await page.screenshot({path:'.local/production/native-games-failure.png'}).catch(()=>{});}}
@@ -62,5 +78,5 @@ finally{
  if(ownedPrimary&&page){try{await close();result.ownedTableClosed=true;}catch{result.ownedTableClosed=false;result.status='FAIL';}}
  if(page)await page.evaluate(()=>window.rooms.social.logout()).catch(()=>{});if(app)await app.close().catch(()=>{});await rm(profile,{recursive:true,force:true});if(nativeProfile)await rm(nativeProfile,{recursive:true,force:true});
  if(channelId){try{const owned=await api(`/channels/${channelId}`);assert.equal(owned.name,name);assert.equal(owned.server,config.spaceId);await api(`/channels/${channelId}`,'DELETE');result.ownedChannelRemoved=true;}catch{result.ownedChannelRemoved=false;result.status='FAIL';}}
- await writeFile('infra/production/NATIVE_GAMES_RESULTS.json',JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
+ await writeFile(output,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
 }if(result.status!=='PASS')process.exitCode=1;

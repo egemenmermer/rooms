@@ -1,0 +1,50 @@
+{
+  "at": "2026-10-10T04:30:49.429Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "packaged": true,
+  "actualPublicAuthorization": true,
+  "socialFixtures": false,
+  "scope": "Native create/bots/start/action/close controls; not every legal rule or complete hand.",
+  "cases": [
+    {
+      "kind": "101",
+      "folding": false,
+      "teams": false,
+      "controls": [
+        "native-create",
+        "start-hand",
+        "stage-two-tiles",
+        "remove-staged-group",
+        "restage-before-table-close",
+        "fresh-table-state",
+        "select-discard",
+        "draw",
+        "discard-after-draw",
+        "confirm-close"
+      ],
+      "labelledBotCount": 3,
+      "rulesMatch": true,
+      "botRoundTripElapsedMs": 7486,
+      "status": "PASS"
+    },
+    {
+      "kind": "101",
+      "folding": false,
+      "teams": false,
+      "controls": [
+        "native-create",
+        "start-hand"
+      ],
+      "labelledBotCount": 3
+    }
+  ],
+  "rendererErrors": 0,
+  "appVersion": "0.1.4",
+  "stage": "101:false:false",
+  "status": "FAIL",
+  "failure": "A new table must not retain the previous staged groups\n\n1 !== 0\n",
+  "alerts": [],
+  "ownedTableClosed": true,
+  "ownedChannelRemoved": true
+}
