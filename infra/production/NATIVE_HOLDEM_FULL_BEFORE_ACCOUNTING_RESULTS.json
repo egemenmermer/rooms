@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-10T08:08:13.497Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "packaged": true,
+  "actualPublicAuthorization": true,
+  "socialFixtures": false,
+  "scope": "Actual packaged native Holdem call/check to showdown and all-in settlement, natural public production cards, one human QA seat and labelled bot. Not multiple physical friends or every poker rule.",
+  "cases": [
+    {
+      "kind": "holdem",
+      "controls": [
+        "native-create",
+        "start-hand"
+      ],
+      "labelledBotCount": 1,
+      "rounds": []
+    }
+  ],
+  "rendererErrors": 0,
+  "appVersion": "0.1.7",
+  "stage": "holdem::",
+  "status": "FAIL",
+  "failure": "Expected values to be strictly equal:\n\n2030 !== 2000\n",
+  "alerts": [],
+  "ownedTableClosed": true,
+  "ownedChannelRemoved": true
+}

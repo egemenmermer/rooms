@@ -8,13 +8,14 @@ import {build} from 'esbuild';
 import {pathToFileURL} from 'node:url';
 const config=JSON.parse(await readFile('.local/production/test-accounts.json','utf8'));
 const staging=process.env.ROOMS_QA_GAME_STAGING==='1';
+const holdemFull=process.env.ROOMS_QA_HOLDEM_FULL==='1';
 const batakFull=process.env.ROOMS_QA_BATAK_FULL==='1';
 const blackjackAdvanced=process.env.ROOMS_QA_BLACKJACK_ADVANCED==='1';
-assert(Number(staging)+Number(blackjackAdvanced)+Number(batakFull)<=1,'Choose only one optional acceptance mode');
-const output=batakFull?'infra/production/NATIVE_BATAK_FULL_RESULTS.json':blackjackAdvanced?'infra/production/NATIVE_BLACKJACK_ADVANCED_RESULTS.json':staging?'infra/production/NATIVE_GAME_STAGING_RESULTS.json':'infra/production/NATIVE_GAMES_RESULTS.json';
+assert(Number(staging)+Number(blackjackAdvanced)+Number(batakFull)+Number(holdemFull)<=1,'Choose only one optional acceptance mode');
+const output=holdemFull?'infra/production/NATIVE_HOLDEM_FULL_RESULTS.json':batakFull?'infra/production/NATIVE_BATAK_FULL_RESULTS.json':blackjackAdvanced?'infra/production/NATIVE_BLACKJACK_ADVANCED_RESULTS.json':staging?'infra/production/NATIVE_GAME_STAGING_RESULTS.json':'infra/production/NATIVE_GAMES_RESULTS.json';
 const suffix=Date.now().toString(36),name=`qa-games-${suffix}`;
 const profile=await mkdtemp(join(tmpdir(),'rooms-native-games-'));let app,page,nativeProfile,channelId,ownedPrimary;
-const result={at:new Date().toISOString(),platform:process.platform,arch:process.arch,packaged:true,actualPublicAuthorization:true,socialFixtures:false,scope:batakFull?'Actual packaged native complete Batak hands for four variants on natural public production deals; one human QA client plus clearly labelled bots, not four physical friends.':blackjackAdvanced?'Actual packaged native Blackjack double/split/hit and hand settlement on natural public production deals; not all rules, multi-player or physical friend acceptance.':'Native create/bots/start/action/close controls; not every legal rule or complete hand.',cases:[],rendererErrors:0};
+const result={at:new Date().toISOString(),platform:process.platform,arch:process.arch,packaged:true,actualPublicAuthorization:true,socialFixtures:false,scope:holdemFull?'Actual packaged native Holdem call/check to showdown and all-in settlement, natural public production cards, one human QA seat and labelled bot. Not multiple physical friends or every poker rule.':batakFull?'Actual packaged native complete Batak hands for four variants on natural public production deals; one human QA client plus clearly labelled bots, not four physical friends.':blackjackAdvanced?'Actual packaged native Blackjack double/split/hit and hand settlement on natural public production deals; not all rules, multi-player or physical friend acceptance.':'Native create/bots/start/action/close controls; not every legal rule or complete hand.',cases:[],rendererErrors:0};
 const api=async(path,method='GET',body)=>{const response=await fetch(config.base+'/api'+path,{method,headers:{'x-session-token':config.owner.token,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,redirect:'error',signal:AbortSignal.timeout(15000)});assert(response.ok,`Owned QA ${method} failed: ${response.status}`);return response.status===204?null:response.json();};
 let lastReadAt=0;
 const snapshot=async()=>{
@@ -34,7 +35,7 @@ try{
  await page.locator('.social-connection input[type=url]').fill(config.base);await page.locator('.social-connection input[type=email]').fill(config.owner.email);await page.locator('.social-connection input[type=password]').fill(config.owner.password);await page.locator('.social-connection button[type=submit]').click();await page.waitForSelector('.signed-in-profile');await page.evaluate(()=>location.hash='/chat');await page.waitForSelector('.chat-transcript');await page.locator('.channels').getByRole('button',{name,exact:true}).click();await page.waitForSelector('.chat-transcript');
  assert.equal((await snapshot()).room.primary,null,'Owned channel must start without an Activity');await page.evaluate(()=>location.hash='/games');await page.waitForSelector('.game-catalog');
  const cases=[{kind:'holdem'},{kind:'blackjack'},...['ihaleli','esli','koz-maca','gommeli'].map(variant=>({kind:'batak',variant})),...[[false,false],[true,false],[false,true],[true,true]].map(([folding,teams])=>({kind:'101',folding,teams}))];
- const selectedCases=batakFull?cases.filter(spec=>spec.kind==='batak'):blackjackAdvanced?[{kind:'blackjack'}]:staging?[{kind:'101',folding:false,teams:false},{kind:'101',folding:false,teams:false}]:cases.filter(spec=>!process.env.ROOMS_QA_GAME_FILTER||spec.kind===process.env.ROOMS_QA_GAME_FILTER);
+ const selectedCases=holdemFull?[{kind:'holdem'}]:batakFull?cases.filter(spec=>spec.kind==='batak'):blackjackAdvanced?[{kind:'blackjack'}]:staging?[{kind:'101',folding:false,teams:false},{kind:'101',folding:false,teams:false}]:cases.filter(spec=>!process.env.ROOMS_QA_GAME_FILTER||spec.kind===process.env.ROOMS_QA_GAME_FILTER);
  for(const [caseIndex,spec] of selectedCases.entries()){
   const check={...spec,controls:[]};result.cases.push(check);result.stage=`${spec.kind}:${spec.variant??`${spec.folding??''}:${spec.teams??''}`}`;
   await page.locator(`.game-tile`).filter({has:page.locator(`.game-symbol`)}).filter({hasText:spec.kind==='holdem'?'Texas Hold’em':spec.kind==='blackjack'?'Blackjack':spec.kind==='batak'?'Batak':'101 Okey'}).click();
@@ -47,8 +48,44 @@ try{
   if(spec.kind==='blackjack'){await page.locator('.table-amount input').fill('40');await page.getByRole('button',{name:'Bahsi belirle',exact:true}).click();check.controls.push('set-virtual-bet');}
   await page.getByRole('button',{name:'Yeni eli başlat',exact:true}).click();await page.waitForSelector('.your-hand .playing-card, .your-hand .okey-tile');check.controls.push('start-hand');game=await current();
   if(spec.kind==='holdem'){
+   if(holdemFull){
+    check.rounds=[];
+    const totals=g=>g.view.seats.reduce((sum,p)=>sum+p.chips,0);
+    const startingTotal=totals(game)+game.view.seats.reduce((sum,p)=>sum+p.contribution,0);
+    assert.equal(startingTotal,2000);
+    for(let round=0;round<6;round++){
+     const record={kind:round===0?'call-check-showdown':'all-in-showdown',actions:[],stages:[]};check.rounds.push(record);
+     const deadline=Date.now()+90000;let raised=false;
+     while(Date.now()<deadline){
+      game=await current();if(!record.stages.includes(game.view.stage))record.stages.push(game.view.stage);
+      if(game.status==='finished')break;
+      const self=game.view.seats.find(p=>p.userId===config.owner.userId);assert(self);assert.equal(self.cards.length,2);assert(game.view.seats.filter(p=>p.userId!==config.owner.userId).every(p=>p.cards.length===0&&p.hiddenCardCount===2),'Other cards stay private before showdown');
+      if(game.turn!==0){await page.waitForTimeout(300);continue;}
+      const before=structuredClone(game),legal=game.view.legalActions;
+      if(round>0&&!raised){
+       assert(legal.includes('raise'));const to=self.streetBet+self.chips;await page.locator('.table-amount input').fill(String(to));await page.getByRole('button',{name:'Artır',exact:true}).click();raised=true;record.actions.push({type:'raise-all-in',to});
+      }else if(legal.includes('call')){
+       assert.equal(await page.getByRole('button',{name:'Bekle',exact:true}).isEnabled(),false);const owed=game.view.maximumBet-self.streetBet;assert(owed>0);await page.getByRole('button',{name:/^Gör ·/}).click();record.actions.push({type:'call',owed});
+      }else{
+       assert(legal.includes('check'));await page.getByRole('button',{name:'Bekle',exact:true}).click();record.actions.push({type:'check',stage:game.view.stage});
+      }
+      let advanced=false;for(let i=0;i<8;i++){game=await current();if(game.view.revision>before.view.revision){advanced=true;break;}}assert(advanced,'Native action must advance the authoritative hand');
+      if(record.actions.at(-1).type==='raise-all-in'){const after=game.view.seats.find(p=>p.userId===config.owner.userId);if(game.status!=='finished')assert.equal(after.chips,0);}
+     }
+     assert.equal(game.status,'finished');assert.equal(game.view.stage,'ended');assert.equal(game.view.board.length,5);assert(game.view.seats.every(p=>p.cards.length===2),'Showdown exposes eligible cards only after the hand ends');assert.equal(totals(game),startingTotal);
+     const paid=Object.values(game.view.payouts).reduce((sum,p)=>sum+p,0),pot=game.view.seats.reduce((sum,p)=>sum+p.contribution,0);assert.equal(paid,pot);assert(paid>0);assert.deepEqual(game.history.at(-1).result.payouts,game.view.payouts);assert.deepEqual(game.history.at(-1).result.board,game.view.board);
+     if(round===0){for(const stage of ['preflop','flop','turn','river','ended'])assert(record.stages.includes(stage));assert(record.actions.some(a=>a.type==='call'));assert(record.actions.some(a=>a.type==='check'));}else assert(raised);
+     await page.waitForFunction(()=>document.querySelector('.table-state')?.textContent?.includes('El tamamlandı'));await page.getByRole('button',{name:'Masa geçmişi',exact:true}).click();await page.waitForSelector('.game-history');const summaries=await page.locator('.game-history small').allTextContents();assert.equal(summaries.length,round+1);for(const [id,points] of Object.entries(game.view.payouts)){const name=game.seats.find(p=>p.userId===id).name;assert(summaries.at(-1).includes(`${name} · ${points}`));}
+     record.pot=pot;record.paid=paid;record.totalVirtualChips=totals(game);record.nativeFinishedVisible=true;record.historySummary=summaries.at(-1);record.status='PASS';await page.locator('.game-history').scrollIntoViewIfNeeded();await page.screenshot({path:`docs/screenshots/production/game-holdem-full-${round}.png`});console.log(JSON.stringify(record));
+     if(round>0&&game.seats.some(p=>p.chips<20)){const button=page.getByRole('button',{name:'Yeni eli başlat',exact:true});assert.equal(await button.isEnabled(),false);assert((await button.getAttribute('title')).includes('20 puanlık blind'));await page.locator('#game-start-help').getByText('Bir oyuncunun puanı 20 puanlık blind için yetersiz. Masayı kapatıp yeni bir masa kurun.',{exact:true}).waitFor();check.insufficientChipsBlocked=true;await page.screenshot({path:'docs/screenshots/production/game-holdem-insufficient-chips.png'});break;}
+     if(round===5)throw Error('Natural all-in deals did not expose insufficient-blind state within six hands');
+     {const previous=game.history.length;await page.getByRole('button',{name:'Yeni eli başlat',exact:true}).click();let ready=false;for(let i=0;i<8;i++){game=await current();if(game.status==='playing'&&game.history.length===previous){ready=true;break;}}assert(ready);}
+    }
+    assert.equal(check.insufficientChipsBlocked,true);check.controls.push('insufficient-blind-start-disabled','call','check','all-in-raise','complete-five-card-showdowns','private-before-reveal','chip-conservation','native-matching-history');
+   }else{
    await page.getByRole('button',{name:'Artır',exact:true}).waitFor();await page.waitForFunction(()=>[...document.querySelectorAll('.table-action-bar button')].some(b=>b.textContent==='Artır'&&!b.disabled));await page.locator('.table-amount input').fill('60');await page.getByRole('button',{name:'Artır',exact:true}).click();check.controls.push('raise');await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Pas / bırak'&&!b.disabled));await page.getByRole('button',{name:'Pas / bırak',exact:true}).click();await page.getByRole('button',{name:'Yeni eli başlat',exact:true}).waitFor();check.controls.push('fold-to-result');
    await page.getByRole('button',{name:'Masa geçmişi',exact:true}).click();await page.waitForSelector('.game-history');assert((await current()).history.length>0);check.controls.push('completed-history');
+   }
   }else if(spec.kind==='blackjack'){
    if(blackjackAdvanced){
     assert.equal(await page.locator('.your-hand .section-heading .eyebrow').textContent(),'SENİN ELİN');check.privateHandLabelCorrect=true;

@@ -1,0 +1,88 @@
+{
+  "at": "2026-10-10T08:09:09.565Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "packaged": true,
+  "actualPublicAuthorization": true,
+  "socialFixtures": false,
+  "scope": "Actual packaged native Holdem call/check to showdown and all-in settlement, natural public production cards, one human QA seat and labelled bot. Not multiple physical friends or every poker rule.",
+  "cases": [
+    {
+      "kind": "holdem",
+      "controls": [
+        "native-create",
+        "start-hand",
+        "call",
+        "check",
+        "all-in-raise",
+        "complete-five-card-showdowns",
+        "private-before-reveal",
+        "chip-conservation",
+        "native-matching-history",
+        "confirm-close"
+      ],
+      "labelledBotCount": 1,
+      "rounds": [
+        {
+          "kind": "call-check-showdown",
+          "actions": [
+            {
+              "type": "call",
+              "owed": 10
+            },
+            {
+              "type": "check",
+              "stage": "flop"
+            },
+            {
+              "type": "check",
+              "stage": "turn"
+            },
+            {
+              "type": "check",
+              "stage": "river"
+            }
+          ],
+          "stages": [
+            "preflop",
+            "flop",
+            "turn",
+            "river",
+            "ended"
+          ],
+          "pot": 40,
+          "paid": 40,
+          "totalVirtualChips": 2000,
+          "nativeFinishedVisible": true,
+          "historySummary": "ROOMS Bot 2 · 40 puan kazandı",
+          "status": "PASS"
+        },
+        {
+          "kind": "all-in-showdown",
+          "actions": [
+            {
+              "type": "raise-all-in",
+              "to": 980
+            }
+          ],
+          "stages": [
+            "preflop",
+            "ended"
+          ],
+          "pot": 1960,
+          "paid": 1960,
+          "totalVirtualChips": 2000,
+          "nativeFinishedVisible": true,
+          "historySummary": "ROOMS Bot 2 · 1960 puan kazandı",
+          "status": "PASS"
+        }
+      ],
+      "status": "PASS"
+    }
+  ],
+  "rendererErrors": 0,
+  "appVersion": "0.1.7",
+  "stage": "holdem::",
+  "status": "PASS",
+  "ownedChannelRemoved": true
+}
