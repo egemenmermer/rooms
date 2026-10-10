@@ -34,8 +34,9 @@ Finish the actual product, not a demonstration or a container installation. A fr
 
 ### 2. Desktop connected to production
 
-- [ ] Run the Electron application against the real origin with the owned QA accounts; verify invitation/onboarding, login, channel/DM navigation, send/edit/delete, attachments, presence, logout and restoration.
-- [ ] Capture actual Electron screenshots and record version/platform. Keep fixture labels and honest disabled/error states.
+- [x] Run two actual Electron clients against the real origin: native sign-in form, community/chat navigation and UI message send/delivery passed with zero renderer errors.
+- [ ] Finish native invitation/onboarding, edit/delete, attachments, presence, logout and restart restoration acceptance.
+- [x] Capture actual Electron screenshots and record version/platform. Keep fixture labels and honest disabled/error states.
 - [ ] Any substantial UI/interaction/Liquid Glass work must be directly implemented by an Astra/high subagent with concrete file ownership and running-app visual QA. Main agent owns integration/security/acceptance. Report unavailable Astra instead of substituting.
 - [ ] Verify voice remains connected across navigation and Cinema/Activity lifecycle; check grants, presenter ownership, logout and membership removal cleanup.
 
