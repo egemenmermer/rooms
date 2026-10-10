@@ -53,6 +53,20 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   handle('rooms:social-friends',()=>requireClient().listFriends());
   handle('rooms:social-add-friend',username=>requireClient().addFriend(z.string().min(7).max(37).parse(username)));
   handle('rooms:social-remove-friend',userId=>requireClient().removeFriend(id.parse(userId)));
+  const avatarRequests=new Map<string,Promise<string|null>>();
+  handle('rooms:social-avatar',async userId=>{const selectedId=id.parse(userId),current=requireClient();const key=current.instanceUrl+':'+user!.id+':'+selectedId;let pending=avatarRequests.get(key);if(!pending){pending=current.avatar(selectedId);if(avatarRequests.size>=64)avatarRequests.delete(avatarRequests.keys().next().value!);avatarRequests.set(key,pending);setTimeout(()=>avatarRequests.delete(key),60000).unref();}return pending;});
+  handle('rooms:social-choose-avatar',async()=>{
+    const current=requireClient(),owner=user!.id,window=getWindow();if(!window)return null;
+    const choice=await dialog.showOpenDialog(window,{title:'Choose profile photo',properties:['openFile'],filters:[{name:'Images',extensions:['png','jpg','jpeg','webp']}]});
+    if(choice.canceled||!choice.filePaths[0])return null;
+    if(client!==current||user?.id!==owner)throw new SocialInputError('Sign in again before changing your photo.');
+    const file=openSync(choice.filePaths[0],'r');let bytes:Buffer;
+    try{const stat=fstatSync(file);if(!stat.isFile()||stat.size>2_000_000||stat.size<12)throw new SocialInputError('Choose a PNG, JPEG or WebP photo under 2 MB.');bytes=Buffer.alloc(stat.size);if(readSync(file,bytes,0,bytes.length,0)!==bytes.length)throw new SocialInputError('The photo could not be read.');}finally{closeSync(file);}
+    const mime=bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))?'image/png':bytes[0]===255&&bytes[1]===216&&bytes[2]===255?'image/jpeg':bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP'?'image/webp':null;
+    if(!mime)throw new SocialInputError('Choose a PNG, JPEG or WebP photo.');
+    const updated=await current.uploadAvatar(bytes,basename(choice.filePaths[0]),mime);if(client!==current||user?.id!==owner)return null;
+    user=updated;avatarRequests.clear();emit({type:'PROFILE_UPDATE',data:user});return user;
+  });
   handle('rooms:social-profile',async input=>{const body=z.object({displayName:z.string().min(2).max(32).regex(/^[^\u200B\n\r]+$/),bio:z.string().max(2000).optional(),statusText:z.string().max(128).optional()}).strict().parse(input);user=await requireClient().updateProfile(body);emit({type:'PROFILE_UPDATE',data:user});return user;});
   handle('rooms:social-react',(channelId,messageId,emoji,remove)=>requireClient().react(id.parse(channelId),id.parse(messageId),z.string().regex(/^[A-Za-z0-9_-]{1,128}$/).parse(emoji),remove===undefined?false:z.boolean().parse(remove)));
   handle('rooms:social-discard-attachment',fileId=>{uploadedAttachments.delete(id.parse(fileId));});

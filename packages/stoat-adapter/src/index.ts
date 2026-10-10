@@ -89,6 +89,26 @@ export class StoatClient {
   async listFriends():Promise<SocialFriend[]>{const self=await this.request<Raw>('/users/@me');const relations=(self.relations??[]).filter((r:Raw)=>['Friend','Incoming','Outgoing','Blocked'].includes(r.status));if(relations.length>1000)throw new StoatError(502,'RELATIONSHIP_LIMIT');return Promise.all(relations.map(async(r:Raw)=>{const u=await this.request<Raw>(`/users/${checked(r._id)}`);this.users.set(u._id,u);const status=u.online===false||u.status?.presence==='Invisible'?'invisible':u.online===true?({Idle:'idle',Busy:'dnd',Focus:'dnd'} as Record<string,string>)[u.status?.presence]??'online':'unknown';return{user:normalizeUser(u),relationship:r.status.toLowerCase(),status} as SocialFriend;}));}
   async addFriend(username:string){if(!/^.{2,32}#[0-9]{4}$/.test(username))throw new StoatError(400,'USERNAME_DISCRIMINATOR_REQUIRED');await this.request('/users/friend','POST',{username});}
   async removeFriend(userId:string){await this.request(`/users/${checked(userId)}/friend`,'DELETE');}
+  async avatar(userId:string):Promise<string|null>{
+    const raw=await this.request<Raw>(`/users/${checked(userId)}`);this.users.set(userId,raw);
+    if(typeof raw.avatar?._id!=='string')return null;
+    if(!this.fileOrigin)this.configureFileOrigin(await this.request<Raw>(''));
+    if(!this.fileOrigin)return null;
+    const response=await fetch(`${this.fileOrigin}/avatars/${checked(raw.avatar._id)}`,{redirect:'error',signal:AbortSignal.timeout(10000)});
+    if(!response.ok)return null;
+    const mime=response.headers.get('content-type')?.split(';')[0];if(!mime||!['image/png','image/jpeg','image/webp','image/gif'].includes(mime))return null;
+    const reader=response.body?.getReader();if(!reader)return null;let size=0;const parts:Uint8Array[]=[];
+    try{while(true){const next=await reader.read();if(next.done)break;size+=next.value.length;if(size>2_000_000)return null;parts.push(next.value);}}finally{await reader.cancel();}
+    return `data:${mime};base64,${Buffer.concat(parts).toString('base64')}`;
+  }
+  async uploadAvatar(bytes:Uint8Array,name:string,mime:string){
+    if(!bytes.length||bytes.length>2_000_000||!['image/png','image/jpeg','image/webp'].includes(mime))throw new StoatError(400,'INVALID_AVATAR');
+    if(!this.fileOrigin)this.configureFileOrigin(await this.request<Raw>(''));if(!this.fileOrigin)throw new StoatError(501,'ATTACHMENTS_UNAVAILABLE');
+    const form=new FormData();form.append('file',new Blob([new Uint8Array(bytes)],{type:mime}),name);
+    const response=await fetch(`${this.fileOrigin}/avatars`,{method:'POST',headers:this.token?{'x-session-token':this.token}:{},body:form,redirect:'error',signal:AbortSignal.timeout(30000)});
+    const data=await response.json().catch(()=>({})) as Raw;if(!response.ok||typeof data.id!=='string')throw new StoatError(response.status,'AVATAR_UPLOAD_FAILED');
+    const raw=await this.request<Raw>('/users/@me','PATCH',{avatar:data.id});this.users.set(raw._id,raw);this.currentUser=normalizeUser(raw);return this.currentUser;
+  }
   async updateProfile(input:{displayName:string;bio?:string;statusText?:string}){const body:Raw={display_name:input.displayName,remove:[]};if(input.bio!==undefined){if(input.bio)body.profile={content:input.bio};else body.remove.push('ProfileContent');}if(input.statusText!==undefined){if(input.statusText)body.status={text:input.statusText};else body.remove.push('StatusText');}const raw=await this.request<Raw>('/users/@me','PATCH',body);this.users.set(raw._id,raw);this.currentUser=normalizeUser(raw);return this.currentUser;}
   async react(channelId:string,messageId:string,emoji:string,remove=false){if(!/^[A-Za-z0-9_-]{1,128}$/.test(emoji))throw new StoatError(400,'INVALID_EMOJI');await this.request(`/channels/${checked(channelId)}/messages/${checked(messageId)}/reactions/${checked(emoji)}`,remove?'DELETE':'PUT');const message=await this.request<Raw>(`/channels/${checked(channelId)}/messages/${checked(messageId)}`);this.emit('MESSAGE_UPDATE',await this.normalizeMessage(message));}
   async listSpaces(){await this.ensureReady();return [...this.servers.values()].map(normalizeSpace);}

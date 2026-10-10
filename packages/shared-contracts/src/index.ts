@@ -57,6 +57,8 @@ export interface SocialBridge {
   createInvite(channelId:string):Promise<import('@rooms/social').SocialInvite>;
   inspectInvite(serverUrl:string,code:string):Promise<import('@rooms/social').SocialInvite>;
   acceptInvite(code:string):Promise<import('@rooms/social').SocialInvite>;
+  avatar(userId:string):Promise<string|null>;
+  chooseAvatar():Promise<import('@rooms/social').SocialUser|null>;
   friends():Promise<import('@rooms/social').SocialFriend[]>;
   addFriend(username:string):Promise<void>;
   removeFriend(id:string):Promise<void>;
