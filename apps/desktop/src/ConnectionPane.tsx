@@ -1,42 +1,126 @@
 import { tr, uiError } from './i18n';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, Fingerprint, Globe, LogOut, RefreshCw, ShieldCheck, Users } from 'lucide-react';
+import { ArrowRight, Check, Globe, LoaderCircle, LockKeyhole, LogOut, Users } from 'lucide-react';
 import { Avatar } from '@rooms/design';
 import { useCommunity } from './community';
 import { useRooms } from './store';
+import './onboarding.css';
+
+const productionServer = 'https://community.example.invalid';
+const localServer = 'http://127.0.0.1:3021';
+const normalizedServer = (value: string) => value.trim().replace(/\/+$/, '');
+
 export function ConnectionPane() {
     const c = useCommunity();
-    const [params] = useSearchParams();
+    const [params, setParams] = useSearchParams();
     const [registration, setRegistration] = useState(false);
-    const [server, setServer] = useState(useRooms.getState().preferences.serverUrl || 'http://127.0.0.1:3021');
+    const [server, setServer] = useState(() => useRooms.getState().preferences.serverUrl || productionServer);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
     const [invite, setInvite] = useState('');
     const [accountInvite, setAccountInvite] = useState('');
     const [localError, setLocalError] = useState('');
-    useEffect(() => { const code = params.get('invite'), address = params.get('server'); if (code && address && !c.user) {
-        setInvite(code);
-        setServer(address);
-        setRegistration(true);
-    } }, [params, c.user]);
+    const [working, setWorking] = useState(false);
+    const [joined, setJoined] = useState(false);
+    const errorRef = useRef<HTMLDivElement>(null);
+    const code = params.get('invite'), address = params.get('server'), access = params.get('access');
+    const busy = c.busy || working;
+    const error = localError || c.error;
+    const sameServer = normalizedServer(c.serverUrl) === normalizedServer(server);
+
+    useEffect(() => {
+        if (code && address) {
+            setInvite(code);
+            setServer(address);
+            setJoined(false);
+        }
+    }, [code, address]);
+    useEffect(() => { if (access) setRegistration(access === 'register'); }, [access]);
+    useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
+
+    const clearError = () => { setLocalError(''); c.clearError(); };
+    const completeInvite = () => {
+        setInvite('');
+        setAccountInvite('');
+        setJoined(true);
+        const next = new URLSearchParams(params);
+        next.delete('invite');
+        next.delete('access');
+        setParams(next, { replace: true });
+    };
+    const acceptInvite = async () => {
+        if (busy) return;
+        clearError();
+        setWorking(true);
+        try { await c.acceptInvite(invite.trim()); completeInvite(); }
+        catch (err) { setLocalError(uiError(err)); }
+        finally { setWorking(false); }
+    };
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLocalError('');
+        if (busy) return;
+        clearError();
+        setWorking(true);
         try {
-            if (registration)
-                await c.register({ serverUrl: server, email, password, username, inviteCode: invite, ...(accountInvite.trim() ? { accountInviteCode: accountInvite.trim() } : {}) });
-            else
-                await c.connect({ serverUrl: server, email, password });
+            const serverUrl = normalizedServer(server);
+            if (registration) {
+                await c.register({ serverUrl, email: email.trim(), password, username: username.trim(), inviteCode: invite.trim(), ...(accountInvite.trim() ? { accountInviteCode: accountInvite.trim() } : {}) });
+                completeInvite();
+            } else {
+                await c.connect({ serverUrl, email: email.trim(), password });
+                setPassword('');
+                if (invite.trim()) { await c.acceptInvite(invite.trim()); completeInvite(); }
+            }
             setPassword('');
-        }
-        catch (err) {
-            setLocalError(uiError(err));
-        }
+        } catch (err) { setLocalError(uiError(err)); }
+        finally { setWorking(false); }
     };
-    return <section className="connection-card social-connection"><div className="connection-card-heading"><span className="connection-icon"><Globe size={21}/></span><div><h4>{tr("Your private community")}</h4><p>{tr("Spacebar \u00B7 accounts, channels and conversations")}</p></div><span className={`connection-status ${c.status === 'connected' ? 'is-connected' : ''}`}>{c.status === 'connected' ? tr("Connected") : c.status === 'connecting' ? tr("Connecting\u2026") : c.status === 'reconnecting' ? tr("Reconnecting\u2026") : c.user ? tr("Disconnected") : tr("Sign in")}</span></div>
-    {c.user ? <><div className="signed-in-profile"><Avatar name={c.user.displayName || c.user.username}/><div><strong>{c.user.displayName || c.user.username}</strong><small>{c.status === 'connected' ? tr("Your community is connected.") : tr("Your session is saved. Waiting for the server.")}</small></div><button className="button secondary small" onClick={() => void c.logout()} disabled={c.busy}><LogOut size={14}/>{tr("Sign out")}</button></div><div className="connection-disclosure">{c.spaces.length}{" " + tr("private space") + ""} · {c.mode === 'real' ? tr("Real community mode") : tr("Demo view")}</div>{c.mode === 'demo' && <button className="button secondary small" onClick={() => void c.openSpace(c.spaces[0]?.id ?? '')} disabled={!c.spaces.length}>{tr("Open community")}<ArrowRight size={14}/></button>}</> : <><div className="segmented" aria-label={tr("Account access")}><button className={!registration ? 'selected' : ''} onClick={() => setRegistration(false)}>{tr("Sign in")}</button><button className={registration ? 'selected' : ''} onClick={() => setRegistration(true)}>{tr("Join with an invitation")}</button></div><form onSubmit={e => void submit(e)}><label className="field-label">{tr("SERVER ADDRESS")}<input required type="url" aria-label={tr("Community server address")} value={server} onChange={e => setServer(e.target.value)} placeholder="https://your-private-server.example"/></label><button type="button" className="text-button local-server-button" onClick={() => setServer('http://127.0.0.1:3021')}>{tr("Use this computer\u2019s server")}<ArrowRight size={12}/></button>{registration && <><label className="field-label">{tr("INVITATION CODE")}<input required aria-label={tr("Invitation code")} autoComplete="off" maxLength={128} value={invite} onChange={e => setInvite(e.target.value)} placeholder={tr("From someone in your circle")}/></label><label className="field-label">{tr("HESAP DAVET KODU \u00B7 SUNUCUN \u0130ST\u0130YORSA")}<input value={accountInvite} onChange={e => setAccountInvite(e.target.value)} autoComplete="off" placeholder={tr("Topluluk davetinden ayr\u0131 hesap a\u00E7ma kodu")}/></label><label className="field-label">{tr("YOUR NAME")}<input required aria-label={tr("Account username")} autoComplete="nickname" maxLength={32} minLength={2} value={username} onChange={e => setUsername(e.target.value)} placeholder={tr("How your friends know you")}/></label></>}<label className="field-label">{tr("EMAIL")}<input required type="email" aria-label={tr("Account email")} autoComplete="email" value={email} onChange={e => setEmail(e.target.value)}/></label><label className="field-label">{tr("PASSWORD")}<input required type="password" aria-label={tr("Account password")} autoComplete={registration ? 'new-password' : 'current-password'} minLength={registration ? 8 : 1} value={password} onChange={e => setPassword(e.target.value)}/></label><button className="button primary full" type="submit" disabled={c.busy || !email.trim() || !password || !server.trim() || (registration && (!invite.trim() || !username.trim()))}>{c.busy ? <><RefreshCw size={15}/>{tr("Connecting\u2026")}</> : <>{registration ? tr("Join your friends") : tr("Come on in")}<ArrowRight size={15}/></>}</button></form><p className="connection-disclosure">{tr("An invitation is required to create an account. Your server handles sign-in; ROOMS keeps the session in the desktop\u2019s secure storage.")}</p></>}
-    {(c.error || localError) && <div className="error-pane" role="alert"><strong>{tr("We couldn\u2019t complete that.")}</strong><p>{localError || c.error}</p></div>}
-  </section>;
+    const changeAccess = (next: boolean) => { setRegistration(next); clearError(); };
+
+    return <section className="connection-card social-connection rooms-onboarding" aria-labelledby="community-heading" aria-busy={busy}>
+        <div className="onboarding-heading">
+            <span className="onboarding-emblem"><Users size={23}/></span>
+            <div><span className="onboarding-eyebrow">ROOMS · ÖZEL TOPLULUĞUN</span><h4 id="community-heading">{c.user ? 'Yeniden bir arada.' : 'Dostlarına bir adım.'}</h4><p>{c.user ? 'Sohbetin ve odaların burada.' : 'Hesabınla giriş yap. Akşama birlikte devam edin.'}</p></div>
+            {c.user && <span className={`connection-status ${c.status === 'connected' ? 'is-connected' : ''}`} role="status">{c.status === 'connected' ? tr('Connected') : c.status === 'reconnecting' ? tr('Reconnecting…') : c.status === 'connecting' ? tr('Connecting…') : tr('Disconnected')}</span>}
+        </div>
+        {c.user ? <>
+            <div className="signed-in-profile"><Avatar name={c.user.displayName || c.user.username}/><div><strong>{c.user.displayName || c.user.username}</strong><small>{c.status === 'connected' ? tr('Your community is connected.') : tr('Your session is saved. Waiting for the server.')}</small></div><button className="button secondary small" disabled={busy} onClick={() => { clearError(); setWorking(true); void c.logout().catch(err => setLocalError(uiError(err))).finally(() => setWorking(false)); }}><LogOut size={14}/>{tr('Sign out')}</button></div>
+            <p className="connection-disclosure">{c.spaces.length} özel topluluk</p>
+            {!!invite && <div className="onboarding-invite-note"><Users size={17}/><div><strong>Davetin burada.</strong><p>{sameServer ? 'Hesabın açık. Topluluğa katılmak için davetini kabul et.' : 'Bu davet farklı bir sunucuda. Çıkış yapıp davetin sunucusunda giriş yap.'}</p><button className="button secondary small" disabled={busy || !sameServer} onClick={() => void acceptInvite()}>{busy ? <LoaderCircle size={14} className="spin"/> : <ArrowRight size={14}/>}Daveti kabul et</button></div></div>}
+            {joined && <p className="onboarding-success" role="status"><Check size={16}/>Davet kabul edildi. Topluluğuna hoş geldin.</p>}
+            {c.mode === 'demo' && <button className="button secondary small" onClick={() => void c.openSpace(c.spaces[0]?.id ?? '')} disabled={!c.spaces.length}>{tr('Open community')}<ArrowRight size={14}/></button>}
+        </> : <>
+            <div className="onboarding-access" role="group" aria-label={tr('Account access')}>
+                <button type="button" aria-pressed={!registration} className={!registration ? 'selected' : ''} disabled={busy} onClick={() => changeAccess(false)}>{tr('Sign in')}</button>
+                <button type="button" aria-pressed={registration} className={registration ? 'selected' : ''} disabled={busy} onClick={() => changeAccess(true)}>{tr('Join with an invitation')}</button>
+            </div>
+            {!!invite && !registration && <div className="onboarding-invite-note"><Users size={17}/><div><strong>Davetin hazır.</strong><p>Mevcut hesabınla giriş yaptığında bu topluluğa katılacaksın. Hesabın yoksa “Davetle katıl”ı seç.</p></div></div>}
+            <form onSubmit={e => void submit(e)}>
+                <fieldset disabled={busy}>
+                    <div className="onboarding-server">
+                        <div className="onboarding-server-label"><Globe size={14}/><span>BAĞLANACAĞIN SUNUCU</span></div>
+                        <div className="onboarding-presets">
+                            <button type="button" aria-pressed={normalizedServer(server) === productionServer} onClick={() => { setServer(productionServer); clearError(); }}><span>ROOMS sunucusu</span>{normalizedServer(server) === productionServer && <Check size={13}/>}</button>
+                            <button type="button" aria-pressed={normalizedServer(server) === localServer} onClick={() => { setServer(localServer); clearError(); }}>Bu bilgisayar{normalizedServer(server) === localServer && <Check size={13}/>}</button>
+                        </div>
+                        <label className="field-label onboarding-address"><span>Sunucu adresi</span><input required type="url" aria-label={tr('Community server address')} autoCapitalize="none" spellCheck={false} value={server} onChange={e => setServer(e.target.value)} placeholder="https://sunucun.example"/></label>
+                    </div>
+                    {registration && <div className="onboarding-registration">
+                        <label className="field-label">TOPLULUK DAVET KODU<input required aria-label={tr('Invitation code')} autoComplete="off" spellCheck={false} maxLength={128} value={invite} onChange={e => setInvite(e.target.value)} placeholder="Arkadaşından gelen kod"/></label>
+                        <label className="field-label">{tr('YOUR NAME')}<input required aria-label={tr('Account username')} autoComplete="nickname" maxLength={32} minLength={2} value={username} onChange={e => setUsername(e.target.value)} placeholder={tr('How your friends know you')}/></label>
+                        <label className="field-label onboarding-account-invite">HESAP DAVET KODU <span className="onboarding-optional">Sunucun istiyorsa</span><input aria-label="Hesap davet kodu" aria-describedby="account-invite-help" value={accountInvite} onChange={e => setAccountInvite(e.target.value)} maxLength={128} autoComplete="off" placeholder="Hesap açma kodu"/><small id="account-invite-help">Topluluk davetinden farklıdır. Sunucu yöneticin verdiyse ekle.</small></label>
+                    </div>}
+                    <div className="onboarding-credentials">
+                        <label className="field-label">{tr('EMAIL')}<input required type="email" aria-label={tr('Account email')} autoComplete="email" autoCapitalize="none" spellCheck={false} value={email} onChange={e => setEmail(e.target.value)} placeholder="sen@ornek.com"/></label>
+                        <label className="field-label">{tr('PASSWORD')}<input required type="password" aria-label={tr('Account password')} autoComplete={registration ? 'new-password' : 'current-password'} minLength={registration ? 8 : 1} value={password} onChange={e => setPassword(e.target.value)} placeholder={registration ? 'En az 8 karakter' : 'Şifren'}/></label>
+                    </div>
+                    <button className="button primary full onboarding-submit" type="submit" disabled={busy || !email.trim() || !password || !server.trim() || (registration && (!invite.trim() || !username.trim()))}>{busy ? <><LoaderCircle size={16} className="spin"/>Bağlanılıyor…</> : <>{registration ? tr('Join your friends') : invite ? 'Giriş yap ve katıl' : tr('Come on in')}<ArrowRight size={16}/></>}</button>
+                </fieldset>
+            </form>
+            <p className="onboarding-privacy"><LockKeyhole size={13}/><span>{registration ? 'Yeni hesap için davet gerekir. ' : ''}Oturumun bu cihazın korumalı deposunda saklanır.</span></p>
+        </>}
+        {error && <div className="error-pane onboarding-error" ref={errorRef} tabIndex={-1} role="alert"><strong>{c.user && invite ? 'Giriş yapıldı, davet tamamlanamadı.' : tr('We couldn’t complete that.')}</strong><p>{error}</p>{!c.user && <small>Bilgilerini kontrol edip yeniden dene.</small>}</div>}
+    </section>;
 }

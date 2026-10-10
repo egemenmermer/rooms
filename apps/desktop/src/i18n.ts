@@ -647,6 +647,19 @@ export const locale = 'tr-TR';
 export function tr(key: string): string { return trMessages[key] ?? activityMessages[key] ?? key; }
 
 const errorMessages: Record<string, string> = {
+  'Invitation provisioning is not configured on this server. Ask your administrator.': 'Bu sunucuda hesap davetleri henüz hazır değil. Sunucu yöneticine danış.',
+  'Only the space owner can create account invitations.': 'Hesap davetini yalnızca topluluk sahibi oluşturabilir.',
+  'This Stoat release cannot enforce invitation expiry or one-time use. Ask your administrator to provide an invitation.': 'Bu sunucuda süreli veya tek kullanımlık davet desteklenmiyor. Sunucu yöneticinden davet iste.',
+  'A separate account invitation is required. Ask your administrator.': 'Hesap açmak için ayrıca hesap davet kodu gerekiyor. Sunucu yöneticinden bu kodu iste.',
+  'Verify your email before signing in.': 'Giriş yapmadan önce e-posta adresini doğrula.',
+  'This account needs additional authentication. Complete the official Stoat sign-in flow.': 'Bu hesap ek doğrulama istiyor. Sunucunun web uygulamasında girişini tamamla.',
+  'Your session expired. Sign in again.': 'Oturumun doğrulanamadı. Hesap bilgilerini kontrol edip yeniden giriş yap.',
+  'You do not have permission for this action.': 'Bu işlem için hesabının gerekli izni yok.',
+  'This room, message or invitation is unavailable.': 'Bu oda, mesaj veya davet artık kullanılamıyor. Davetle geliyorsan arkadaşından yeni bir davet iste.',
+  'Too many requests. Please wait and retry.': 'Kısa sürede çok fazla işlem yapıldı. Biraz bekleyip yeniden dene.',
+  'The social server is unavailable. Retry shortly.': 'Topluluk sunucusuna ulaşılamıyor. Ağ bağlantını ve sunucu adresini kontrol edip yeniden dene.',
+  'The social server rejected this request. Check the supplied details.': 'Sunucu bu bilgileri kabul etmedi. Girdiğin bilgileri kontrol edip yeniden dene.',
+  'Use an HTTPS Stoat origin or /api endpoint, or HTTP loopback for development.': 'Geçerli bir HTTPS sunucu adresi gir. Bu bilgisayardaki sunucu için HTTP kullanılabilir.',
   STOAT_REMINDERS_UNAVAILABLE: 'Kaynak sohbete hatırlatma için sunucuda Stoat bot bağlantısı yapılandırılmalı.',
   REMINDER_TARGET_DENIED: 'Bu kaynak mesaj için botun oda eşlemesi veya senin oda iznin doğrulanamadı.',
   SCHEDULE_IN_FUTURE_REQUIRED: 'Gelecekte, bir yıl içindeki bir zaman seç.',
