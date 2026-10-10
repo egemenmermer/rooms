@@ -1,0 +1,69 @@
+{
+  "at": "2026-10-10T05:08:08.155Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "packaged": true,
+  "actualPublicAuthorization": true,
+  "socialFixtures": false,
+  "scope": "Actual packaged native Blackjack double/split/hit and hand settlement on natural public production deals; not all rules, multi-player or physical friend acceptance.",
+  "cases": [
+    {
+      "kind": "blackjack",
+      "controls": [
+        "native-create",
+        "set-virtual-bet",
+        "start-hand",
+        "double",
+        "hit",
+        "split",
+        "every-played-hand-settled",
+        "confirm-close"
+      ],
+      "labelledBotCount": 0,
+      "rounds": [
+        {
+          "round": 1,
+          "actions": [
+            "double-one-card-and-settle"
+          ],
+          "settledHands": 1,
+          "status": "PASS"
+        },
+        {
+          "round": 2,
+          "actions": [
+            "hit-adds-card",
+            "stand-active-hand"
+          ],
+          "postHitDisabled": true,
+          "settledHands": 1,
+          "status": "PASS"
+        },
+        {
+          "round": 3,
+          "actions": [
+            "stand-active-hand"
+          ],
+          "settledHands": 1,
+          "status": "PASS"
+        },
+        {
+          "round": 4,
+          "actions": [
+            "split-two-rendered-hands",
+            "stand-active-hand",
+            "stand-active-hand"
+          ],
+          "settledHands": 2,
+          "status": "PASS"
+        }
+      ],
+      "status": "PASS"
+    }
+  ],
+  "rendererErrors": 0,
+  "appVersion": "0.1.5",
+  "stage": "blackjack::",
+  "status": "PASS",
+  "ownedChannelRemoved": true
+}

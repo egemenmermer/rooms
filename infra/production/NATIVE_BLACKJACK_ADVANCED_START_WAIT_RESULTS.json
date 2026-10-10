@@ -1,0 +1,44 @@
+{
+  "at": "2026-10-10T05:06:41.346Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "packaged": true,
+  "actualPublicAuthorization": true,
+  "socialFixtures": false,
+  "scope": "Native create/bots/start/action/close controls; not every legal rule or complete hand.",
+  "cases": [
+    {
+      "kind": "blackjack",
+      "controls": [
+        "native-create",
+        "set-virtual-bet",
+        "start-hand"
+      ],
+      "labelledBotCount": 0,
+      "rounds": [
+        {
+          "round": 1,
+          "actions": [
+            "double-one-card-and-settle"
+          ],
+          "settledHands": 1,
+          "status": "PASS"
+        },
+        {
+          "round": 2,
+          "actions": [],
+          "settledHands": 1,
+          "status": "PASS"
+        }
+      ]
+    }
+  ],
+  "rendererErrors": 0,
+  "appVersion": "0.1.5",
+  "stage": "blackjack::",
+  "status": "FAIL",
+  "failure": "locator.click: Timeout 25000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Yeni eli başlat', exact: true })\u001b[22m\n",
+  "alerts": [],
+  "ownedTableClosed": true,
+  "ownedChannelRemoved": true
+}
