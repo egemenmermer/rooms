@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-10T02:58:59.930Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "packaged": false,
+  "actualClients": 2,
+  "nativePickerStubbed": false,
+  "cancelPreservesDraft": true,
+  "actualNativePickerAndUpload": true,
+  "actualUiAttachmentReceived": true,
+  "downloadedBytesMatch": true,
+  "rendererErrors": 0,
+  "status": "PASS"
+}

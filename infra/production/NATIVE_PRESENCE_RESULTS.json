@@ -1,0 +1,26 @@
+{
+  "at": "2026-10-10T03:03:02.118Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "actualClients": 2,
+  "packaged": false,
+  "checks": [
+    {
+      "status": "dnd",
+      "elapsedMs": 7863,
+      "gatewayEventReceived": true
+    },
+    {
+      "status": "invisible",
+      "elapsedMs": 194,
+      "gatewayEventReceived": true
+    },
+    {
+      "status": "online",
+      "elapsedMs": 9882,
+      "gatewayEventReceived": true
+    }
+  ],
+  "rendererErrors": 0,
+  "status": "PASS"
+}
