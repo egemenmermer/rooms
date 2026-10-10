@@ -98,3 +98,22 @@ html,body,#root{height:100%;overflow:hidden}.app.voice-active .chat-page{padding
 .voice-mode .real-voice-dock .dock-context,.voice-mode .real-voice-dock .dock-divider { display:none; }.voice-mode .real-voice-dock .icon-button { width:42px;height:42px;border-radius:10px; }.voice-mode .real-voice-dock .leave-control { background:#c83d4c;color:white;width:54px; }.voice-mode .real-voice-dock .muted-control { color:#e57b7b; }.voice-mode .voice-error-notice { display:none; }
 @media(max-width:1000px) { .voice-channel-sidebar { width:220px;min-width:220px; }.voice-call-grid.count-5,.voice-call-grid.count-6 { grid-template-columns:repeat(2,minmax(0,1fr)); }.voice-tile-avatar .avatar.large,.voice-tile-avatar .voice-photo.large { width:72px;height:72px;min-width:72px; } }
 @media(max-width:760px) { .voice-channel-sidebar { width:180px;min-width:180px; }.discord-voice-page { padding:0 12px 100px; }.voice-call-grid { grid-template-columns:1fr; }.voice-call-tile { min-height:130px; }.voice-mode .real-voice-dock { gap:2px;padding:7px; }.voice-mode .real-voice-dock .icon-button { width:30px;height:34px; }.voice-channel-sidebar footer { flex-wrap:wrap; }.sidebar-self { min-width:100%;margin-bottom:8px; } }
+
+.channel-tools { display: contents; }
+.channel-context-menu { position:fixed;z-index:1600;width:232px;padding:6px;border:1px solid #ffffff18;border-radius:10px;background:#181b20;box-shadow:0 14px 44px #0009; }
+.channel-context-menu button { display:block;width:100%;padding:10px 12px;text-align:left;border:0;background:transparent;border-radius:5px;color:#dee1e6;font-size:13px; }
+.channel-context-menu button:hover,.channel-context-menu button:focus-visible { background:#30363e;outline:none; }
+.channel-context-menu button.destructive { color:#ff8585; }
+.channel-context-menu hr { border:0;border-top:1px solid #ffffff12;margin:4px 6px; }
+.voice-channel-scroll .section-label { cursor:context-menu; }
+.soundboard-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:20px 0; }
+.soundboard-grid>div { display:flex;background:#ffffff06;border:1px solid #ffffff12;border-radius:10px;overflow:hidden; }
+.soundboard-grid button { background:transparent;border:0;color:var(--text);padding:12px; }
+.soundboard-grid .soundboard-play { flex:1;min-width:0;display:grid;gap:8px;text-align:left; }
+.soundboard-play strong { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.soundboard-play small { color:var(--muted); }
+.soundboard-grid button:hover:not(:disabled) { background:#ffffff0b; }
+.soundboard-grid button:disabled { opacity:.35;cursor:not-allowed; }
+.voice-channel-scroll .section-label { display:flex;align-items:center;justify-content:space-between; }
+.voice-channel-scroll .section-label button { display:grid;place-items:center;padding:3px;background:transparent;border:0;color:inherit;border-radius:4px; }
+.voice-channel-scroll .section-label button:hover { color:#fff;background:#ffffff12; }

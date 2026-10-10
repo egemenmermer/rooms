@@ -50,6 +50,9 @@ export interface SocialBridge {
   logout():Promise<void>;
   spaces():Promise<import('@rooms/social').SocialSpace[]>;
   channels(spaceId:string):Promise<import('@rooms/social').SocialChannel[]>;
+  createChannel(spaceId:string,name:string,type:'text'|'voice'):Promise<import('@rooms/social').SocialChannel>;
+  renameChannel(channelId:string,name:string):Promise<import('@rooms/social').SocialChannel>;
+  deleteChannel(channelId:string):Promise<void>;
   messages(channelId:string,before?:string):Promise<import('@rooms/social').SocialMessage[]>;
   send(channelId:string,content:string,attachmentIds?:string[]):Promise<import('@rooms/social').SocialMessage>;
   edit(channelId:string,messageId:string,content:string):Promise<import('@rooms/social').SocialMessage>;
