@@ -3,35 +3,36 @@
   "platform": "darwin",
   "arch": "arm64",
   "packaged": true,
+  "bundledFileCount": 22,
   "checks": [
-    "packaged main/preload/index/license notices match current build",
+    "all packaged renderer/native/assets/license files match current build",
     "actual packaged app launches",
     "bundled local video advances"
   ],
   "metrics": [
     {
       "type": "Browser",
-      "workingSetKB": 205440,
+      "workingSetKB": 148912,
       "cpuPercent": 0
     },
     {
       "type": "GPU",
-      "workingSetKB": 142688,
+      "workingSetKB": 138400,
       "cpuPercent": 0
     },
     {
       "type": "Utility",
-      "workingSetKB": 42912,
+      "workingSetKB": 39840,
       "cpuPercent": 0
     },
     {
       "type": "Tab",
-      "workingSetKB": 175984,
+      "workingSetKB": 162160,
       "cpuPercent": 0
     },
     {
       "type": "Utility",
-      "workingSetKB": 45808,
+      "workingSetKB": 41088,
       "cpuPercent": 0
     }
   ]
