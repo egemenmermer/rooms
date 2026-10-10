@@ -1,3 +1,4 @@
+import {restBucket,resetDelay} from './rate-limit';
 import type { ConnectionStatus } from '@rooms/contracts';
 import { SOCIAL_ID_PATTERN, type SocialUser, type SocialSpace, type SocialChannel, type SocialMessage, type SocialInvite, type SocialAttachment, type SocialFriend, type SocialReadState, type GatewayEvent } from '@rooms/social';
 export type { SocialUser, SocialSpace, SocialChannel, SocialMessage, SocialInvite, SocialAttachment, SocialFriend, SocialReadState, GatewayEvent } from '@rooms/social';
@@ -27,14 +28,35 @@ export class StoatClient {
   private listeners=new Set<(event:GatewayEvent)=>void>(); private users=new Map<string,Raw>(); private servers=new Map<string,Raw>(); private channels=new Map<string,Raw>(); private messages=new Map<string,Raw>();
   private presenceSubscriptions=new Map<string,number>();
   private readyWait:Promise<void>|null=null; private eventQueue=Promise.resolve();
+  private restQueues=new Map<string,Promise<unknown>>(); private restReset=new Map<string,number>(); private pendingRequests=0;
   constructor(value:string,token?:string,options?:{trustedInternalOrigin?:boolean;apiRoot?:boolean;botToken?:boolean}) { this.instanceUrl=validateInstanceUrl(value,options?.trustedInternalOrigin===true); this.apiUrl=this.instanceUrl.endsWith('/api')||options?.apiRoot?this.instanceUrl:`${this.instanceUrl}/api`; this.token=token??null;this.botToken=options?.botToken===true; }
   getToken(){return this.token;} subscribe(listener:(event:GatewayEvent)=>void){this.listeners.add(listener);return()=>this.listeners.delete(listener);}
   private emit(type:string,data:unknown){for(const listener of this.listeners)listener({type,data});}
   private setStatus(status:ConnectionStatus){this.status=status;this.emit('CONNECTION_STATUS',status);}
   private async request<T>(path:string,method='GET',body?:unknown,additionalHeaders:Record<string,string>={}):Promise<T>{
-    let response:Response;try{response=await fetch(`${this.apiUrl}${path}`,{method,headers:{'Content-Type':'application/json',...additionalHeaders,...(this.token?{[this.botToken?'x-bot-token':'x-session-token']:this.token}:{})},body:body===undefined?undefined:JSON.stringify(body),redirect:'error',signal:AbortSignal.timeout(15000)});}catch{throw new StoatError(503,'NETWORK_UNAVAILABLE');}
-    if(!response.ok){const data=await response.json().catch(()=>({})) as Raw;throw new StoatError(response.status,String(data.type??'REQUEST_FAILED'));}
-    return response.status===204?undefined as T:response.json() as Promise<T>;
+    if(this.pendingRequests>=128)throw new StoatError(429,'CLIENT_QUEUE_FULL');
+    const bucket=restBucket(path,method), token=this.token, payload=body===undefined?undefined:JSON.stringify(body);
+    this.pendingRequests++;
+    const work=(this.restQueues.get(bucket)??Promise.resolve()).catch(()=>{}).then(async()=>{
+      const deadline=Date.now()+60000;
+      for(let attempt=0;attempt<3;attempt++){
+        const wait=(this.restReset.get(bucket)??0)-Date.now();
+        if(wait>0){if(Date.now()+wait>deadline)throw new StoatError(429,'RATE_LIMITED');await new Promise(resolve=>setTimeout(resolve,wait));}
+        if(this.token!==token)throw new StoatError(401,'SESSION_CHANGED');
+        let response:Response;try{response=await fetch(`${this.apiUrl}${path}`,{method,headers:{'Content-Type':'application/json',...additionalHeaders,...(token?{[this.botToken?'x-bot-token':'x-session-token']:token}:{})},body:payload,redirect:'error',signal:AbortSignal.timeout(15000)});}catch{throw new StoatError(503,'NETWORK_UNAVAILABLE');}
+        if(response.ok){const delay=resetDelay(response);if(response.headers.get('x-ratelimit-remaining')==='0'&&delay!==null)this.restReset.set(bucket,Date.now()+delay);return response.status===204?undefined as T:response.json() as Promise<T>;}
+        const data=await response.json().catch(()=>({})) as Raw;
+        // Upstream's rate-limit fairing rejects before route execution. Only a
+        // definite 429 with bounded reset metadata is safe to retry. Never retry
+        // a network failure or an ambiguous mutation response.
+        const delay=response.status===429?resetDelay(response,data):null;
+        if(delay!==null&&attempt<2&&Date.now()+delay<=deadline){this.restReset.set(bucket,Date.now()+delay);continue;}
+        throw new StoatError(response.status,String(data.type??'REQUEST_FAILED'));
+      }
+      throw new StoatError(429,'RATE_LIMITED');
+    });
+    this.restQueues.set(bucket,work);
+    try{return await work;}finally{this.pendingRequests--;if(this.restQueues.get(bucket)===work)this.restQueues.delete(bucket);}
   }
   private async authenticate(email:string,password:string){const response=await this.request<Raw>('/auth/session/login','POST',{email,password,friendly_name:'ROOMS Desktop'});if(typeof response.token!=='string')throw new StoatError(400,'ADDITIONAL_AUTHENTICATION_REQUIRED');this.token=response.token;}
   async login(email:string,password:string){await this.authenticate(email,password);return this.getCurrentUser();}
