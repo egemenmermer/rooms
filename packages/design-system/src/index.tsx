@@ -7,7 +7,7 @@ export function Avatar({ name, size='normal', tone }: { name: string; size?: 'sm
   const tones=['sand','lavender','sage','blue']; const color=tone ?? tones[name.charCodeAt(0)%tones.length];
   return <span className={`avatar ${size} ${color}`} aria-label={name}><span>{name.split(' ').map(n=>n[0]).slice(0,2).join('')}</span></span>;
 }
-export function AvatarStack({ names=['Maya','Oliver','Sofia'] }: { names?: string[] }) {
+export function AvatarStack({ names=[] }: { names?: string[] }) {
   return <span className="avatar-stack">{names.map(n=><Avatar name={n} size="small" key={n}/>)}</span>;
 }
 export function Modal({ title, children, onClose, className='' }: { title: string; children: ReactNode; onClose(): void; className?: string }) {

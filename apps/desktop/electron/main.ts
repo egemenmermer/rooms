@@ -93,7 +93,7 @@ app.whenReady().then(async() => {
     assertSender(event); if (!win) return false;
     const result = await dialog.showSaveDialog(win, { title: 'Export sanitized diagnostics', defaultPath: 'rooms-diagnostics.json', filters: [{ name: 'JSON', extensions: ['json'] }] });
     if (result.canceled || !result.filePath) return false;
-    writeFileSync(result.filePath, JSON.stringify({ app: 'ROOMS', version: app.getVersion(), platform: process.platform, arch: process.arch, electron: process.versions.electron, social: community.snapshot().status, mode: community.snapshot().user?'authenticated':'local-demo', timestamp: new Date().toISOString() }, null, 2)); return true;
+    writeFileSync(result.filePath, JSON.stringify({ app: 'ROOMS', version: app.getVersion(), platform: process.platform, arch: process.arch, electron: process.versions.electron, social: community.snapshot().status, mode: community.snapshot().user?'authenticated':'signed-out', timestamp: new Date().toISOString() }, null, 2)); return true;
   });
   ipcMain.handle('rooms:export-board', async (event, roomId) => {
     assertSender(event); if (!win) return false;

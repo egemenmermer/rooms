@@ -9,7 +9,7 @@ import { tr, uiError } from './i18n';
 const taskNames: Record<AgentTask['state'], string> = { scheduled: tr("Zamanland\u0131"), queued: tr("S\u0131rada"), running: tr("\u00C7al\u0131\u015F\u0131yor"), 'awaiting-approval': 'Onay bekliyor', completed: tr("Tamamland\u0131"), failed: tr("Ba\u015Far\u0131s\u0131z"), cancelled: tr("\u0130ptal edildi"), interrupted: 'Kesildi' };
 const date = (value: string) => new Date(value).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const reason = uiError;
-export function useCurrentRoom() { const c = useCommunity(); const r = useRealtime(); return c.mode === 'real' ? (r.channelId ?? c.activeChannelId) : null; }
+export function useCurrentRoom() { const c = useCommunity(); const r = useRealtime(); return c.user ? (r.channelId ?? c.activeChannelId) : null; }
 export function AgentSettings({ notify }: {
     notify(message: string): void;
 }) {

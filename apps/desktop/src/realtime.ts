@@ -8,7 +8,7 @@ const bridge=()=>{if(!window.rooms?.media)throw new Error('Open the Electron des
 const errorText=uiError;
 export function useRealtime():MediaSnapshot&{channelId:string|null;roomName:string|null;busy:boolean}{const snapshot=useSyncExternalStore(liveKitMediaProvider.subscribeState,liveKitMediaProvider.snapshot,liveKitMediaProvider.snapshot);const context=useVoiceContext();return {...snapshot,...context,error:context.error??(snapshot.error?uiError(snapshot.error):null)};}
 export async function joinVoice(channelId:string,roomName:string){
-  if(useVoiceContext.getState().busy)return;await leaveVoice();useRooms.getState().leavePreview();useVoiceContext.setState({busy:true,error:null,channelId,roomName});
+  if(useVoiceContext.getState().busy)return;await leaveVoice();useVoiceContext.setState({busy:true,error:null,channelId,roomName});
   try{const grant=await bridge().grant(channelId);await liveKitMediaProvider.connectRoom(grant.roomName,grant.token,grant.serverUrl);await liveKitMediaProvider.deviceSelection(useRooms.getState().preferences.inputId,useRooms.getState().preferences.outputId);}
   catch(error){useVoiceContext.setState({error:errorText(error)});throw error;}
   finally{useVoiceContext.setState({busy:false});}
