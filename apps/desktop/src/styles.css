@@ -44,18 +44,19 @@ html,body,#root{height:100%;overflow:hidden}.app.voice-active .chat-page{padding
 .real-home-rooms small { color:#abb3c0;font-size:11px; }
 .settings-version br:last-child { display:none; }
 
-/* Settings replaces the navigation shell while preserving active room state. */
-.settings-mode .app-layout { padding:0; }
-.settings-mode .workspace { width:100%;margin:0;border-radius:0; }
-.settings-mode .main-view { overflow:hidden; }
-.settings-mode .settings-page { position:relative;height:100%;padding:0;max-width:none; }
-.settings-mode .settings-layout { height:100%;margin:0;gap:0;display:grid;grid-template-columns:minmax(220px,calc((100% - 680px)/2)) minmax(0,680px) minmax(80px,1fr); }
-.settings-mode .settings-tabs { width:auto;min-width:0;background:#11161d;overflow:auto;padding:44px 22px 30px max(24px,calc(100% - 218px));border-right:1px solid #ffffff08; }
-.settings-mode .settings-tabs > button { width:100%;font-size:13px;min-height:40px; }
-.settings-mode .settings-content { overflow:auto;min-width:0;padding:46px 40px 64px; }
-.settings-mode .settings-content > h3 { font-size:24px;margin-bottom:28px; }
-.settings-dismiss { position:absolute;z-index:4;top:40px;left:calc(50% + 365px);display:flex;flex-direction:column;align-items:center;gap:8px; }
-.settings-dismiss .icon-button { border:1px solid #ffffff30;border-radius:50%;height:38px;width:38px; }
-.settings-dismiss kbd { font-size:10px;color:#78818e;background:none;border:0; }
-@media(max-width:1100px) { .settings-mode .settings-layout { grid-template-columns:220px minmax(0,1fr) 64px; }.settings-dismiss { left:auto;right:15px; }.settings-mode .settings-content { padding:42px 28px 60px; } }
-@media(max-width:760px) { .settings-mode .settings-layout { grid-template-columns:170px minmax(0,1fr) 50px; }.settings-mode .settings-tabs { display:block;padding:35px 12px; }.settings-mode .settings-tabs>button { font-size:11px; }.settings-mode .settings-content { padding:35px 20px 50px; }.settings-dismiss { right:8px;top:30px; } }
+/* A near-full-window settings sheet above the preserved community screen. */
+.modal-backdrop:has(.settings-modal) { padding:28px; background:#000a;backdrop-filter:none; }
+.modal.settings-modal { position:relative;width:100%;max-width:1560px;height:calc(100% - 8px);max-height:none;padding:0;border-radius:18px;overflow:hidden;background:#181d24;box-shadow:0 24px 80px #0007;border:1px solid #ffffff0b;backdrop-filter:none; }
+.settings-modal .settings-page { position:relative;height:100%;padding:0;max-width:none;animation:none; }
+.settings-modal .settings-layout { height:100%;margin:0;gap:0;display:grid;grid-template-columns:260px minmax(0,1fr); }
+.settings-modal .settings-tabs { width:auto;min-width:0;background:#12171e;overflow:auto;padding:32px 20px;border-right:1px solid #ffffff08; }
+.settings-modal .settings-tabs > button { width:100%;font-size:13px;min-height:42px; }
+.settings-modal .settings-content { overflow:auto;min-width:0;max-width:none;padding:54px clamp(32px,7vw,140px) 64px; }
+.settings-modal .settings-content > h3 { font-size:24px;margin-bottom:30px; }
+.settings-dismiss { position:absolute;z-index:4;top:18px;right:18px;display:flex;flex-direction:column;align-items:center;gap:5px; }
+.settings-dismiss .icon-button { height:32px;width:32px;border-radius:8px; }
+.settings-dismiss kbd { font-size:9px;color:#78818e;background:none;border:0; }
+@media(max-width:1100px) { .settings-modal .settings-layout { grid-template-columns:220px minmax(0,1fr); }.settings-modal .settings-content { padding:52px 32px 60px; } }
+@media(max-width:760px) { .modal-backdrop:has(.settings-modal) { padding:12px; }.settings-modal .settings-layout { grid-template-columns:170px minmax(0,1fr); }.settings-modal .settings-tabs { display:block;padding:30px 12px; }.settings-modal .settings-tabs>button { font-size:11px; }.settings-modal .settings-content { padding:50px 20px 50px; } }
+
+.app.voice-active .settings-modal .settings-page { padding:0; }
