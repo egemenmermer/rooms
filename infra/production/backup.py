@@ -14,11 +14,12 @@ from datetime import datetime,timezone
 os.umask(0o077)
 root=Path('/opt/rooms/config')
 compose=['docker','compose','-f',str(root/'compose.yml')]
-writers=['access','activities','api','events','autumn','crond','pushd']
+writers=['access','activities','api','events','autumn','crond','pushd','minio']
 recipient=(root/'backup-recipient.txt').read_text().strip()
 if not recipient.startswith('ssh-ed25519 '): raise RuntimeError('Owned backup recipient is missing.')
 stage=Path(tempfile.mkdtemp(prefix='rooms-backup-',dir='/opt/rooms'))
 started=False
+pending=None
 try:
     started=True
     subprocess.run(compose+['stop']+writers,check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
@@ -36,7 +37,13 @@ try:
     archive=stage/'rooms.tar'
     subprocess.run(['tar','-cf',str(archive),'-C',str(stage),'config','uploads','letsencrypt','dist-services','mongo.archive.gz','activity.sql'],check=True)
     output=Path('/opt/rooms/backups')/('rooms-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'.tar.age')
-    subprocess.run(['age','-r',recipient,'-o',str(output),str(archive)],check=True,stderr=subprocess.DEVNULL)
+    pending=output.with_suffix(output.suffix+'.partial')
+    subprocess.run(['age','-r',recipient,'-o',str(pending),str(archive)],check=True,stderr=subprocess.DEVNULL)
+    os.replace(pending,output)
+    # Keep the seven newest complete, owned encrypted snapshots; never prune partials.
+    complete=sorted(output.parent.glob('rooms-????????T??????Z.tar.age'))
+    for old in complete[:-7]:
+        if old.is_file() and not old.is_symlink(): old.unlink()
     print('Encrypted backup completed: '+str(output))
 finally:
     subprocess.run(compose+['exec','-T','database','rm','-f','/tmp/rooms-dump.yml'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
@@ -45,4 +52,5 @@ finally:
             subprocess.run(compose+['start']+writers,check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
     finally:
         # A service restart failure must never leave plaintext credentials/dumps behind.
+        if pending is not None: pending.unlink(missing_ok=True)
         shutil.rmtree(stage)

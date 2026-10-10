@@ -1,10 +1,10 @@
 {
-  "at": "2026-10-10T01:58:31.723899+00:00",
-  "encryptedArchivePreviouslyDecryptedPrivately": true,
-  "objectFilesExtracted": 0,
-  "objectBytes": 0,
+  "at": "2026-10-10T02:12:51.300705+00:00",
+  "freshEncryptedArchiveDecryptedPrivately": true,
   "tlsCertificateAndPrivateKeyRestoredAndMatched": true,
   "tlsLineages": 1,
   "productionFilesModified": false,
-  "liveObjectServerReadVerified": false
+  "liveObjectServerReadVerified": true,
+  "restoredEncryptionKeyAndMetadataVerified": true,
+  "knownOwnedObjectBytesMatched": true
 }

@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-10T02:24:59.395531+00:00",
+  "liveRestoredObjectReadPassed": true,
+  "knownOwnedObjectBytesMatched": true,
+  "restoredEncryptionKeyAndMetadataVerified": true,
+  "gcmAuthenticationTagVerified": true,
+  "network": "none",
+  "publishedPorts": false,
+  "productionObjectStoreModified": false
+}
