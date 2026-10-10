@@ -1,0 +1,74 @@
+{
+  "at": "2026-10-10T05:05:37.734499+00:00",
+  "status": "PASS",
+  "scope": "Activity-only server deployment and bounded public HTTP acceptance. No desktop release, six-identity/native-client or full-evening certification.",
+  "commands": [
+    "pnpm test",
+    "pnpm typecheck",
+    "pnpm services:build",
+    "node scripts/verify-activity-load.mjs",
+    "curl --fail --silent --show-error https://62.238.119.134/rooms-activities/health",
+    "pinned owner SSH: verify pending/current digest, atomic bundle replacement, restart only rooms-core-activities-1, verify digest and core service states"
+  ],
+  "tests": {
+    "passed": 104,
+    "files": 24,
+    "typecheck": "PASS",
+    "serviceBuild": "PASS"
+  },
+  "limits": {
+    "anonymousIngressPerMinute": 600,
+    "verifiedUserPerMinute": 120,
+    "identityAggregatesRoomsAndSessions": true,
+    "trustForwardedIdentity": false,
+    "currentMembershipRequired": true
+  },
+  "deployedBundleSha256": "02dbb4d99c533689a952956ced6198dca24f4a270895866f2ec89190fe9a652e",
+  "remoteDigestMatched": true,
+  "restartedServices": [
+    "rooms-core-activities-1"
+  ],
+  "rollbackPaths": [
+    "/opt/rooms/dist-services/activities.cjs.before-20261010T0459",
+    "/opt/rooms/dist-services/activities.cjs.before-20261010T0501"
+  ],
+  "health": {
+    "service": "rooms-activities",
+    "protocolVersion": 1,
+    "authorizationConfigured": true
+  },
+  "runningCoreServices": [
+    "access",
+    "activities",
+    "api",
+    "autumn",
+    "caddy",
+    "crond",
+    "database",
+    "events",
+    "gifbox",
+    "january",
+    "media",
+    "minio",
+    "postgres",
+    "pushd",
+    "rabbit",
+    "redis"
+  ],
+  "duringLoadPointSample": {
+    "cpuPercent": 5.11,
+    "memoryMiB": 65.8,
+    "memoryLimitMiB": 256,
+    "scope": "Single point, not peak or sustained guarantee"
+  },
+  "beforeEvidence": "ACTIVITY_LOAD_BEFORE_RESULTS.json",
+  "authorizationBeforeEvidence": "ACTIVITY_AUTH_ERROR_BEFORE_RESULTS.json",
+  "afterEvidence": "ACTIVITY_LOAD_RESULTS.json",
+  "desktopAssetsChanged": false,
+  "hoppersTouched": false,
+  "remaining": [
+    "Six distinct identities and native clients",
+    "Sustained room capacity and voice",
+    "External account, Agent host, signing and physical-device acceptance"
+  ]
+}

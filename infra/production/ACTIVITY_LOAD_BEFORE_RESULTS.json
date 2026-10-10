@@ -1,0 +1,64 @@
+{
+  "at": "2026-10-10T04:55:47.872Z",
+  "scope": "Six public HTTP long-poll transports, two distinct existing owned QA identities, 3-second observer cadence and one 3-second whiteboard writer. Not six identities, native rendering, voice or full-evening acceptance.",
+  "requestedSeconds": 150,
+  "readers": [
+    {
+      "index": 0,
+      "role": "owner",
+      "received": 43,
+      "rateLimited": 6,
+      "maxRequestMs": 520,
+      "lastRevision": 45
+    },
+    {
+      "index": 1,
+      "role": "guest",
+      "received": 42,
+      "rateLimited": 7,
+      "maxRequestMs": 519,
+      "lastRevision": 45
+    },
+    {
+      "index": 2,
+      "role": "owner",
+      "received": 43,
+      "rateLimited": 6,
+      "maxRequestMs": 516,
+      "lastRevision": 45
+    },
+    {
+      "index": 3,
+      "role": "guest",
+      "received": 43,
+      "rateLimited": 6,
+      "maxRequestMs": 521,
+      "lastRevision": 45
+    },
+    {
+      "index": 4,
+      "role": "owner",
+      "received": 43,
+      "rateLimited": 5,
+      "maxRequestMs": 3614,
+      "lastRevision": 45
+    },
+    {
+      "index": 5,
+      "role": "guest",
+      "received": 43,
+      "rateLimited": 6,
+      "maxRequestMs": 522,
+      "lastRevision": 45
+    }
+  ],
+  "writes": 43,
+  "writeRateLimited": 6,
+  "conflicts": 0,
+  "failures": [],
+  "elapsedSeconds": 152,
+  "totalRateLimited": 42,
+  "status": "FAIL",
+  "failure": "Normal six-observer cadence must not share an exhausted bucket\n\n42 !== 0\n",
+  "ownedChannelRemoved": true
+}

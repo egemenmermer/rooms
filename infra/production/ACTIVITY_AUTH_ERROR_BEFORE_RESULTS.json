@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-10T05:00:05.394Z",
+  "scope": "Six public HTTP long-poll transports, two distinct existing owned QA identities, 3-second observer cadence and one 3-second whiteboard writer. Not six identities, native rendering, voice or full-evening acceptance.",
+  "requestedSeconds": 150,
+  "readers": [],
+  "writes": 0,
+  "writeRateLimited": 0,
+  "conflicts": 0,
+  "failures": [],
+  "status": "FAIL",
+  "failure": "Expected values to be strictly equal:\n\n503 !== 403\n",
+  "ownedChannelRemoved": true
+}

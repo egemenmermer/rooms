@@ -1,0 +1,65 @@
+{
+  "at": "2026-10-10T05:01:33.771Z",
+  "scope": "Six public HTTP long-poll transports, two distinct existing owned QA identities, 3-second observer cadence and one 3-second whiteboard writer. Not six identities, native rendering, voice or full-evening acceptance.",
+  "requestedSeconds": 150,
+  "readers": [
+    {
+      "index": 0,
+      "role": "owner",
+      "received": 48,
+      "rateLimited": 0,
+      "maxRequestMs": 722,
+      "lastRevision": 50
+    },
+    {
+      "index": 1,
+      "role": "guest",
+      "received": 48,
+      "rateLimited": 0,
+      "maxRequestMs": 760,
+      "lastRevision": 50
+    },
+    {
+      "index": 2,
+      "role": "owner",
+      "received": 48,
+      "rateLimited": 0,
+      "maxRequestMs": 692,
+      "lastRevision": 50
+    },
+    {
+      "index": 3,
+      "role": "guest",
+      "received": 48,
+      "rateLimited": 0,
+      "maxRequestMs": 711,
+      "lastRevision": 50
+    },
+    {
+      "index": 4,
+      "role": "owner",
+      "received": 48,
+      "rateLimited": 0,
+      "maxRequestMs": 717,
+      "lastRevision": 50
+    },
+    {
+      "index": 5,
+      "role": "guest",
+      "received": 48,
+      "rateLimited": 0,
+      "maxRequestMs": 756,
+      "lastRevision": 50
+    }
+  ],
+  "writes": 48,
+  "writeRateLimited": 0,
+  "conflicts": 0,
+  "failures": [],
+  "outsiderDenied": true,
+  "anonymousDenied": true,
+  "elapsedSeconds": 151,
+  "totalRateLimited": 0,
+  "status": "PASS",
+  "ownedChannelRemoved": true
+}
