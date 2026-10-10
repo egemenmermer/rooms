@@ -1,0 +1,38 @@
+{
+  "kind": "actual-upstream",
+  "at": "2026-10-10T01:09:07.847Z",
+  "results": [
+    {
+      "name": "two actual accounts sign in and receive Ready",
+      "status": "PASS"
+    },
+    {
+      "name": "actual memberships and channel IDs",
+      "status": "PASS"
+    },
+    {
+      "name": "actual send and other client gateway receipt",
+      "status": "PASS"
+    },
+    {
+      "name": "actual edit propagated to other client",
+      "status": "PASS"
+    },
+    {
+      "name": "actual user presence update observed by other client",
+      "status": "PASS"
+    },
+    {
+      "name": "actual delete propagated",
+      "status": "PASS"
+    },
+    {
+      "name": "actual session can restore authenticated REST",
+      "status": "PASS"
+    },
+    {
+      "name": "third actual nonmember denied channel access",
+      "status": "PASS"
+    }
+  ]
+}
