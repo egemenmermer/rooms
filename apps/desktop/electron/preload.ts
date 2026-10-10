@@ -35,7 +35,7 @@ const bridge: DesktopBridge = {
     presence:status=>ipcRenderer.invoke('rooms:social-presence',status),
     onEvent:listener=>{const handler=(_event:Electron.IpcRendererEvent,event:import('@rooms/social').GatewayEvent)=>listener(event);ipcRenderer.on('rooms:social-event',handler);return()=>{ipcRenderer.removeListener('rooms:social-event',handler);};},
   },
-  activity: {youtubePlayer:videoId=>ipcRenderer.invoke('rooms:youtube-player',videoId),snapshot:(roomId,afterRevision)=>ipcRenderer.invoke('rooms:activity-snapshot',roomId,afterRevision),command:(roomId,envelope)=>ipcRenderer.invoke('rooms:activity-command',roomId,envelope)},
+  activity: {exportBoard:roomId=>ipcRenderer.invoke('rooms:export-board',roomId),youtubePlayer:videoId=>ipcRenderer.invoke('rooms:youtube-player',videoId),snapshot:(roomId,afterRevision)=>ipcRenderer.invoke('rooms:activity-snapshot',roomId,afterRevision),command:(roomId,envelope)=>ipcRenderer.invoke('rooms:activity-command',roomId,envelope)},
   updates:{status:()=>ipcRenderer.invoke('rooms:update-status'),setOptIn:value=>ipcRenderer.invoke('rooms:update-opt-in',value),check:()=>ipcRenderer.invoke('rooms:update-check'),download:()=>ipcRenderer.invoke('rooms:update-download'),install:()=>ipcRenderer.invoke('rooms:update-install')},
   notifications:{status:()=>ipcRenderer.invoke('rooms:notification-status'),setOptIn:value=>ipcRenderer.invoke('rooms:notification-opt-in',value)},
   providers: {
