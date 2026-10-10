@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-10T03:12:23.407Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "packaged": true,
+  "actualProductionOrigin": true,
+  "faultScope": "Only this client aborts the official iframe_api request; no core or provider mutation.",
+  "rendererErrors": 0,
+  "stage": "actual-unavailable-video",
+  "timeoutDisablesControls": true,
+  "officialExternalFallback": true,
+  "retryPreservesSelectedItem": true,
+  "retryUsesFreshNonce": true,
+  "actualOfficialPlaybackAfterRetry": true,
+  "actualProviderErrorCode": 150,
+  "unavailableVideoDisablesControls": true,
+  "status": "PASS"
+}
