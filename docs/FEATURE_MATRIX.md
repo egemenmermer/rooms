@@ -34,3 +34,9 @@ The owner requested removal of all demo data. Version 0.1.9 removes the local so
 ### 0.1.12 owner-requested voice layout
 
 Familiar channel sidebar, joined-channel roster, large participant/camera tiles, real speaking outlines, bottom call controls and profile avatar picker are implemented in the local unsigned preview. New layout/avatar paths await owner manual acceptance; historical transport results do not certify this revision. Other channels do not synthesize occupancy. Missing photos use initials.
+
+### Local 0.1.13 additions — implemented, owner acceptance pending
+- Actual upstream text/voice channel create/rename/delete through context menus; delete confirmation, typed native IPC and gateway-driven list refresh.
+- Persistent Chromium/WebRTC microphone noise-suppression toggle, applied to active capture. No Krisp equivalence claimed.
+- Personal session-only Soundboard: user-picked bounded audio clips mixed into the existing microphone track, clip gain/replace/stop, mute/deafen/leave/PTT gates. No server upload or fixture audio.
+- All three additions require owner manual validation; no new automated/type/transport acceptance evidence.
