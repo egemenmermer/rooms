@@ -20,7 +20,7 @@ This matrix supersedes the Spacebar-era matrix. Historical transport evidence re
 | Source-message reminders without models or automatic memory | Durable scheduler/outbox HTTP tests and actual Electron UI fixture | Real configured bot source-chat delivery |
 | Agent GitHub/Drive/browser, mention replies | Scoped connectors, persistent browser and operation-specific approval/outbox code; tests | Bot accounts, restricted egress and actual remote operations |
 | Signed updates, invitation deep links | Strict native deep-link validation; signing/update implementation | Own Developer ID, notarization and signed update cycle |
-| ARM64 preview distribution | Private v0.1.5 DMG/ZIP/checksum publication and uploaded digest matching passed; actual package launch/video and 22 bundled files match | Signing/notarization, friend fresh install/update and public distribution remain separate |
+| ARM64 preview distribution | Private v0.1.6 DMG/ZIP/checksum publication and uploaded digest matching passed; actual 0.1.6 package launch/video and 22 bundled files match | Signing/notarization, friend fresh install/update and public distribution remain separate |
 | Windows | Compatible configuration and source retained | Windows machine/build/capture validation |
 | Production TLS/TURN, backups, recovery | Dedicated core with trusted IP TLS, scoped maintenance and full reboot; encrypted off-host database/object/TLS restore passed; actual regular scheduled backup and encrypted off-host copy passed | Seven-archive retention threshold, real certificate renewal and restrictive-network TURN/TLS acceptance |
 
