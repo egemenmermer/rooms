@@ -1,6 +1,7 @@
 import Fastify, { type FastifyRequest } from 'fastify';
 import { RegistrationGate, issueRegistrationInvite } from './registration';
 import { MongoClient } from 'mongodb';
+import {StoatAuthorizationReader} from './stoat-authorization';
 import { randomBytes } from 'node:crypto';
 import rateLimit from '@fastify/rate-limit';
 import { AccessToken, RoomServiceClient, TrackSource, WebhookReceiver } from 'livekit-server-sdk';
@@ -9,7 +10,7 @@ import { StoatClient, StoatError } from '@rooms/stoat';
 import { SOCIAL_ID_PATTERN } from '@rooms/social';
 import { stoatChannelPermissions, StoatPermissions as Permissions, type StoatServer, type StoatChannel, type StoatMember } from './stoat-permissions';
 
-export interface AccessConfig { stoatUrl?:string; /** Legacy configuration accepted only for validation tests; never contacts Spacebar. */ spacebarUrl?:string; livekitUrl:string; publicLivekitUrl:string; apiKey:string; apiSecret:string;registrationInvitesFile?:string;accountInviteMongoUrl?:string }
+export interface AccessConfig { stoatUrl?:string; /** Legacy configuration accepted only for validation tests; never contacts Spacebar. */ spacebarUrl?:string; livekitUrl:string; publicLivekitUrl:string; apiKey:string; apiSecret:string;registrationInvitesFile?:string;accountInviteMongoUrl?:string;socialReadMongoUrl?:string }
 const opaqueId=z.string().regex(SOCIAL_ID_PATTERN); const channelBody=z.object({channelId:opaqueId}).strict();
 const credentialBody=z.object({email:z.string().email().max(254),password:z.string().min(1).max(256)}).strict();
 const registrationBody=credentialBody.extend({username:z.string().min(2).max(32).regex(/^[\p{L}\d_.-]+$/u),inviteCode:z.string().regex(/^[a-zA-Z0-9_-]{2,128}$/)});
@@ -28,12 +29,16 @@ export async function createAccessServer(config:AccessConfig){
   const screenLeases=new Map<string,{userId:string;createdAt:number}>();
   const inviteLocks=new Map<string,Promise<unknown>>();
   const socialOptions={trustedInternalOrigin:true,apiRoot:!new URL(config.stoatUrl??'http://127.0.0.1:3022').pathname.startsWith('/api')};
+  const reader=config.socialReadMongoUrl?new StoatAuthorizationReader(config.socialReadMongoUrl):null;
+  server.addHook('onClose',async()=>{await reader?.close();});
   const roomName=(id:string)=>`stoat-channel-${id}`;
   const authorize=async(token:string,channelId:string)=>{
     const client=new StoatClient(config.stoatUrl??'http://127.0.0.1:3022',token,socialOptions);
-    const [user,channel]=await Promise.all([client.getCurrentUser(),client.getChannel(channelId)]);
+    const user=await client.getCurrentUser();
+    const context=reader?await reader.read(channelId,user.id):null;
+    const channel=context?.channel??await client.getChannel(channelId);
     if(channel.channel_type!=='TextChannel'||!channel.voice||typeof channel.server!=='string')throw new StoatError(403,'VOICE_CHANNEL_REQUIRED');
-    const [rawServer,rawMember]=await Promise.all([client.getServer(channel.server),client.getMember(channel.server,user.id)]);
+    const [rawServer,rawMember]=context?[context.server,context.member]:await Promise.all([client.getServer(channel.server),client.getMember(channel.server,user.id)]);
     const permissions=stoatChannelPermissions(rawServer as StoatServer,channel as StoatChannel,rawMember as StoatMember,user.id);
     if((permissions&Permissions.VIEW_CHANNEL)===0n||(permissions&Permissions.CONNECT)===0n)throw new StoatError(403,'ROOM_ACCESS_DENIED');
     return {user,permissions};
