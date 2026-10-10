@@ -1,0 +1,60 @@
+{
+  "at": "2026-10-10T02:10:52.847Z",
+  "kind": "actual-public-permissions-real-clock-full-hands",
+  "results": [
+    {
+      "game": "holdem",
+      "hiddenHands": true,
+      "completeHand": true,
+      "historyRecorded": true,
+      "status": "PASS"
+    },
+    {
+      "game": "blackjack",
+      "hiddenHands": "public table hands by rules",
+      "completeHand": true,
+      "historyRecorded": true,
+      "status": "PASS"
+    },
+    {
+      "game": "batak",
+      "variant": "ihaleli",
+      "hiddenHands": true,
+      "completeHand": true,
+      "historyRecorded": true,
+      "status": "PASS"
+    },
+    {
+      "game": "batak",
+      "variant": "esli",
+      "hiddenHands": true,
+      "completeHand": true,
+      "historyRecorded": true,
+      "status": "PASS"
+    },
+    {
+      "game": "batak",
+      "variant": "koz-maca",
+      "hiddenHands": true,
+      "completeHand": true,
+      "historyRecorded": true,
+      "status": "PASS"
+    },
+    {
+      "game": "batak",
+      "variant": "gommeli",
+      "hiddenHands": true,
+      "completeHand": true,
+      "historyRecorded": true,
+      "status": "PASS"
+    },
+    {
+      "game": "101",
+      "hiddenHands": true,
+      "completeHand": true,
+      "historyRecorded": true,
+      "status": "PASS"
+    }
+  ],
+  "disconnectGraceAndReturnVerified": false
+}

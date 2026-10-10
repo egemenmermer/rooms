@@ -89,3 +89,11 @@ The actual official YouTube documentation sample on the public HTTPS player reac
 Two real desktop clients passed official YouTube playback and shared pause delivery with zero renderer errors. An observed polling-induced re-seek/pause loop was fixed by decoupling clock sampling from synchronization triggers and comparing state feedback against elapsed authoritative position. Unsigned v0.1.2 includes this fix and passed actual packaged launch/source matching/local video verification. The 96-test suite passed again. v0.1.1 remains an immutable earlier preview.
 
 A fresh encrypted backup completed at 01:51:10Z. Plaintext staging cleanup now survives a writer restart failure. Full core reboot acceptance passed with a changed boot ID, existing authenticated session, preserved Activity polls/whiteboard/queue, 16 running services and active backup/certificate timers. Startup service-state checks now wait for convergence; an earlier immediate assertion encountered transient startup state. Physical media reconnect is not inferred from core recovery.
+
+## 2026-10-10 — real devices and seven public game hands
+
+Two actual desktop clients on the same Mac passed native microphone publication/received audio packets, actual ROOMS window-picker capture/received video packets, and voice persistence across Home/Chat/Cinema/Games. Camera remains untested with OS permission not determined; two physical-computer audible acceptance is still outstanding.
+
+All seven real public API full-hand cases passed: Holdem, Blackjack, four approved Batak variants and 101. Private hands stayed hidden from the other authorized participant, and completed-hand history was recorded. A real-clock lifecycle check passed 30-second disconnect bot substitution, the same cards on returning to the existing seat and automatic host transfer. These are public API/table-engine checks, not a claim that every native game control has been played manually.
+
+Scoped maintenance SSH passed permitted ROOMS status and denial of general root, direct Docker, other projects and private deployment reads. The owner keeps root access; arbitrary code deployment is intentionally not delegated through the status/restart wrapper. Native evidence and the 0.1.2 private unsigned installation guide are committed.
