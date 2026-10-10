@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { create } from 'zustand';
 import { Modal } from '@rooms/design';
 import { Music2, Plus, Play, Square, Trash2 } from 'lucide-react';
@@ -8,18 +8,23 @@ import { uiError } from './i18n';
 
 type Clip={id:string;name:string;buffer:AudioBuffer};
 const useClips=create<{owner:string;clips:Clip[];volume:number}>(()=>({owner:'',clips:[],volume:.5}));
+let sessionGeneration=0;
+const sessionKey=()=>{const state=useCommunity.getState();return state.user?`${state.serverUrl}:${state.user.id}`:'';};
+/** Observe authentication even while the call controls are unmounted. */
+function syncSession(){const owner=sessionKey();if(useClips.getState().owner!==owner){++sessionGeneration;stopSoundboard();useClips.setState({owner,clips:[],volume:.5});}}
+syncSession();
+useCommunity.subscribe(syncSession);
+
 /** Files remain in memory on this device; no upload or bundled fixtures. */
 export function SoundboardButton(){
   const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
-  const {clips,volume,owner}=useClips(),c=useCommunity(),r=useRealtime(),picker=useRef<HTMLInputElement>(null);
-  const userKey=c.user?`${c.serverUrl}:${c.user.id}`:'';
-  useEffect(()=>{if(owner!==userKey){stopSoundboard();useClips.setState({owner:userKey,clips:[],volume:.5});}},[owner,userKey]);
+  const {clips,volume}=useClips(),r=useRealtime(),picker=useRef<HTMLInputElement>(null);
   const close=useCallback(()=>setOpen(false),[]);
-  async function add(file:File){setBusy(true);setError('');let context:AudioContext|null=null;try{
+  async function add(file:File){const generation=sessionGeneration;setBusy(true);setError('');let context:AudioContext|null=null;try{
     if(file.size>2_000_000||!file.size)throw new Error('En fazla 2 MB bir ses dosyası seç.');
     context=new AudioContext({sampleRate:48000});const buffer=await context.decodeAudioData(await file.arrayBuffer());
     if(buffer.duration>8||buffer.duration<=0||buffer.numberOfChannels>2)throw new Error('En fazla 8 saniyelik mono veya stereo bir ses seç.');
-    if(useClips.getState().owner!==userKey)return;
+    if(generation!==sessionGeneration||!sessionKey())return;
     if(useClips.getState().clips.length>=8)throw new Error('En fazla 8 ses ekleyebilirsin.');
     useClips.setState(state=>({clips:[...state.clips,{id:crypto.randomUUID(),name:file.name.replace(/\.[^.]+$/,'').slice(0,40),buffer}]}));
   }catch(e){setError(e instanceof Error?e.message:'Ses dosyası okunamadı.');}finally{await context?.close();setBusy(false);}}
