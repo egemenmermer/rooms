@@ -1,0 +1,164 @@
+{
+  "at": "2026-10-10T08:05:49.064Z",
+  "scope": "Two actual packaged clients on one Mac against public Activity; real pointer strokes, color, eraser, undo and actual native window resizing. No network, voice, physical friends or full-evening claim.",
+  "cases": [
+    "real-pointer-stroke-color-delivered-with-bounded-coordinates",
+    "foreign-note-protected-from-pointer-eraser",
+    "own-painted-stroke-erased-and-foreign-note-preserved",
+    "erased-stroke-undo-delivered",
+    "1280-and-900-native-window-controls-fit-without-overlap",
+    "window-resizing-preserves-note-draft"
+  ],
+  "rendererErrors": 0,
+  "sourceVersion": "0.1.7",
+  "buildKind": "packaged",
+  "appVersion": "0.1.7",
+  "actualDesktopClients": 2,
+  "layouts": [
+    {
+      "requestedWidth": 1280,
+      "bounds": {
+        "x": 0,
+        "y": 30,
+        "width": 1280,
+        "height": 774
+      },
+      "windowWidth": 1280,
+      "documentWidth": 1280,
+      "items": {
+        ".whiteboard-toolbar": {
+          "x": 324,
+          "y": 325,
+          "width": 912,
+          "height": 100,
+          "right": 1236,
+          "bottom": 425
+        },
+        ".board-colors": {
+          "x": 488,
+          "y": 365,
+          "width": 131,
+          "height": 19,
+          "right": 619,
+          "bottom": 384
+        },
+        ".whiteboard-toolbar .segmented": {
+          "x": 339,
+          "y": 354,
+          "width": 127,
+          "height": 41,
+          "right": 466,
+          "bottom": 395
+        },
+        ".board-actions": {
+          "x": 1052.3984375,
+          "y": 358,
+          "width": 168.6015625,
+          "height": 33,
+          "right": 1221,
+          "bottom": 391
+        },
+        ".board-note-form input": {
+          "x": 339,
+          "y": 437,
+          "width": 782.6953125,
+          "height": 39,
+          "right": 1121.6953125,
+          "bottom": 476
+        }
+      },
+      "buttons": [
+        {
+          "x": 1052.3984375,
+          "y": 358,
+          "width": 80.109375,
+          "height": 33,
+          "right": 1132.5078125,
+          "bottom": 391
+        },
+        {
+          "x": 1138.5078125,
+          "y": 358,
+          "width": 82.4921875,
+          "height": 33,
+          "right": 1221,
+          "bottom": 391
+        }
+      ]
+    },
+    {
+      "requestedWidth": 900,
+      "bounds": {
+        "x": 0,
+        "y": 30,
+        "width": 900,
+        "height": 774
+      },
+      "windowWidth": 900,
+      "documentWidth": 900,
+      "items": {
+        ".whiteboard-toolbar": {
+          "x": 268,
+          "y": 315,
+          "width": 604,
+          "height": 100,
+          "right": 872,
+          "bottom": 415
+        },
+        ".board-colors": {
+          "x": 425,
+          "y": 355,
+          "width": 131,
+          "height": 19,
+          "right": 556,
+          "bottom": 374
+        },
+        ".whiteboard-toolbar .segmented": {
+          "x": 283,
+          "y": 344,
+          "width": 127,
+          "height": 41,
+          "right": 410,
+          "bottom": 385
+        },
+        ".board-actions": {
+          "x": 688.3984375,
+          "y": 348,
+          "width": 168.6015625,
+          "height": 33,
+          "right": 857,
+          "bottom": 381
+        },
+        ".board-note-form input": {
+          "x": 283,
+          "y": 427,
+          "width": 474.6953125,
+          "height": 39,
+          "right": 757.6953125,
+          "bottom": 466
+        }
+      },
+      "buttons": [
+        {
+          "x": 688.3984375,
+          "y": 348,
+          "width": 80.109375,
+          "height": 33,
+          "right": 768.5078125,
+          "bottom": 381
+        },
+        {
+          "x": 774.5078125,
+          "y": 348,
+          "width": 82.4921875,
+          "height": 33,
+          "right": 857,
+          "bottom": 381
+        }
+      ]
+    }
+  ],
+  "status": "PASS",
+  "ownedChannelRemoved": true,
+  "serviceLeftStopped": false
+}
