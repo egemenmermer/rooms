@@ -8,7 +8,7 @@ const config=JSON.parse(await readFile('.local/production/test-accounts.json','u
 const clients=[],profiles=[],errors=[],launches=[];
 const suffix=Date.now().toString(36),content=`Owned native production check ${suffix}`;
 let delivered;
-const result={at:new Date().toISOString(),actualDesktopClients:2,syntheticMedia:false,voiceAcrossNavigation:false,nativeMicrophonePublished:false,remoteAudioPackets:false,physicalTwoComputerVerified:false};
+const result={at:new Date().toISOString(),actualDesktopClients:2,platform:process.platform,arch:process.arch,syntheticMedia:false,packaged:false,permissionScope:'development Electron identity',voiceAcrossNavigation:false,nativeMicrophonePublished:false,remoteAudioPackets:false,physicalTwoComputerVerified:false};
 try{
  for(const role of ['owner','guest']){
   const profile=await mkdtemp(join(tmpdir(),'rooms-production-ui-'));profiles.push(profile);
