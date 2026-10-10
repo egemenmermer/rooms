@@ -32,3 +32,15 @@ Open Settings while a conversation or video is open. Confirm the previous screen
 5. Switch channels and navigate between chat/Activities. Check the actual participant lists, connection state and persistent audio.
 
 The owner performs these checks. No new automatic verification has run.
+
+## Local 0.1.13 — channel menus, microphone filtering and Soundboard
+
+Implemented, compiled and packaged only; no agent tests or type checks. Owner checks:
+
+1. Sign in. Right-click a channel or the TEXT/VOICE section heading (or use its +). Create a text channel and a voice room. Confirm a friend's channel list updates. Rename each; renaming a connected room should preserve the call.
+2. Delete only a disposable channel: cancel first, then confirm. Check the friend sees removal. Deleting your joined voice room should leave that call; deleting another channel should preserve it. An account without ManageChannel permission must receive the upstream permission error. Shift+F10/Context Menu opens the menu; arrows and Escape control it.
+3. Settings → Voice → noise reduction: switch it with the microphone active, and reconnect with it disabled. Compare with a friend. This uses Chromium/WebRTC noise suppression, not a Krisp-quality guarantee; hardware/OS support varies.
+4. In voice, open the musical-note Soundboard button. Add your own audio file (maximum 8 seconds, 2 MB; 8 clips per session). Unmute, play and ask the friend whether it arrives. Use Stop, mute, deafen and leave during playback: transmission must stop. A subsequent play replaces the prior clip. Volume affects the clip, not the microphone. With push-to-talk, hold its shortcut on a Soundboard control while playing; key release must stop the clip.
+5. Sign out/restart: selected clips should be gone. They are memory-only, not uploaded to the server. No sample sounds are bundled. The sender does not locally monitor their own transmitted clip.
+
+No remote service modification, physical-device or Windows validation is claimed. Report the action and observed result.
