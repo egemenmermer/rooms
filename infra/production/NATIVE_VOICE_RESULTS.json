@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-10T02:02:51.848Z",
+  "actualDesktopClients": 2,
+  "syntheticMedia": false,
+  "voiceAcrossNavigation": true,
+  "nativeMicrophonePublished": true,
+  "remoteAudioPackets": true,
+  "physicalTwoComputerVerified": false,
+  "permissions": {
+    "microphone": "granted",
+    "camera": "not-determined",
+    "screen": "granted",
+    "systemAudio": false
+  },
+  "nativeCameraPublished": false,
+  "nativeWindowPickerVerified": true,
+  "rendererErrors": 0
+}

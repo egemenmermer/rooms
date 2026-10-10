@@ -39,7 +39,8 @@ Finish the actual product, not a demonstration or a container installation. A fr
 - [ ] Finish native attachment picker and live presence acceptance.
 - [x] Capture actual Electron screenshots and record version/platform. Keep fixture labels and honest disabled/error states.
 - [ ] Main agent directly implements all UI/interaction/Liquid Glass and engineering work, with running-app visual QA. Owner explicitly disabled Astra/high delegation on 2026-10-10; this supersedes the previous design policy.
-- [ ] Verify voice remains connected across navigation and Cinema/Activity lifecycle; check grants, presenter ownership, logout and membership removal cleanup.
+- [x] Verify actual native voice remains connected across Home/Chat/Cinema/Games navigation.
+- [ ] Finish presenter ownership, logout/revocation lifecycle acceptance.
 
 ### 3. Shared activities and games
 
@@ -53,7 +54,8 @@ Finish the actual product, not a demonstration or a container installation. A fr
 ### 4. Media acceptance
 
 - [ ] Configure and verify TURN/TLS where appropriate for the selected IP origin and port constraints. Do not claim restrictive-network reliability until tested.
-- [ ] Exercise actual native microphone/camera/screen picker and permissions on this Mac, recording the real received streams separately from synthetic transport tests.
+- [x] Verify native microphone and actual ROOMS window selection with received audio/video packets on two clients on this Mac.
+- [ ] Verify camera capture after explicit OS permission; current status is not-determined.
 - [ ] Obtain two physical-computer acceptance for audible voice, camera, screen/window capture, mute/deafen/PTT, device loss, navigation, SFU restart and reconnect. A second machine is a real prerequisite.
 
 ### 5. Separate Agent and personal connections

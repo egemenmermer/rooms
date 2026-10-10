@@ -29,3 +29,9 @@ Backup commands are a runbook, not a completed restore test. The first friends r
 ## Release gates
 
 Own Developer ID signing/notarization, signed update cycle, fresh installation, Internet two-client social/media/Activity tests, physical two-Mac audio/video/screen sharing, and a sustained M1/8 GB performance run remain gates. Windows compatibility is preserved in source; this Mac does not establish Windows acceptance.
+
+## Scoped core maintenance
+
+The dedicated `rooms-deploy` account accepts the existing owner public SSH key. The owner's root account remains available. The maintenance account has no Docker group membership and cannot read private deployment configuration. Its sole passwordless sudo entry runs the root-owned `/usr/local/sbin/rooms-maintain` wrapper. `status` reports the fixed ROOMS Compose project; `restart <service>` accepts only the known ROOMS service names. Arbitrary commands, other project names and bundle uploads are not granted. A code deployment remains an owner operation rather than a claim of unrestricted least-privilege deployment.
+
+Actual SSH checks passed permitted status, general-root denial, direct-Docker denial, other-project denial and private-config denial (`infra/production/MAINTENANCE_ACCESS_RESULTS.json`). Root-owned wrapper source is in `infra/production/rooms-maintain.py`; it ignores caller-supplied Docker endpoints, Compose overrides and executable paths. Routine status: `ssh rooms-deploy@62.238.119.134 sudo -n /usr/local/sbin/rooms-maintain status` with the same pinned host-key settings used for deployment.

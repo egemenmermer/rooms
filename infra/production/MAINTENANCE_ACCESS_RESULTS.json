@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-10T01:58:08.659737+00:00",
+  "account": "rooms-deploy",
+  "ownerRootPreserved": true,
+  "arbitraryBundleDeploymentGranted": false,
+  "checks": {
+    "scopedStatus": true,
+    "allServicesVisible": true,
+    "generalRootDenied": true,
+    "otherProjectDenied": true,
+    "directDockerDenied": true,
+    "privateConfigurationDenied": true
+  }
+}
