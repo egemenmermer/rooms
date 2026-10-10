@@ -11,7 +11,7 @@ This matrix supersedes the Spacebar-era matrix. Historical transport evidence re
 | Independent LiveKit transport and safe native source picker | Existing transport implementation; historical two-client synthetic RTP evidence | Current Stoat grants, signed webhook, physical two-Mac audio/video/screen share |
 | Authoritative shared Activity timeline, queue and host transfer | Service tests; two actual Electron clients synchronize local Cinema play/pause/seek | Internet reconnect/restart and sustained synchronization |
 | Shared polls and whiteboard | Actual service + two Electron UI clients | Real Stoat membership deployment |
-| Holdem, Blackjack, four Batak variants, 101 | Authoritative engines, hidden-state/public-result tests, completed bot games; two Electron Holdem clients | Friends' full rules/play sessions and Internet reconnect acceptance |
+| Holdem, Blackjack, four Batak variants, 101 | Authoritative engines, seven public full hands, hidden-state/public-result tests, completed bot games; ten packaged public create/action/close cases including four 101 rule combinations | Advanced native meld/pairs/joker/split/double actions, friends’ full rules/play sessions and Internet reconnect acceptance |
 | YouTube Together | Official iframe shim and shared controls implemented | Deployed HTTPS origin and actual YouTube playback/autoplay/error tests |
 | Personal IPTV M3U/HLS, Xtream and XMLTV | Native vault, opaque media handles, parsers and network/security tests; UI implemented | Authorized provider playback, EPG and codec tests |
 | Personal Real-Debrid | Documented device-flow client/native vault and personal library UI | Owner public client ID and authorized account acceptance |
