@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-10T03:11:29.674Z",
+  "at": "2026-10-10T03:13:46.741Z",
   "platform": "darwin",
   "arch": "arm64",
   "actualClients": 2,
@@ -13,7 +13,7 @@
   "presenterHandoffReceived": true,
   "logoutStopsPublicationAndSession": true,
   "activeRevocationStopsScreen": true,
-  "revocationElapsedMs": 5511,
+  "revocationElapsedMs": 7476,
   "revokedClientShowsDisconnected": true,
   "revokedFreshGrantDenied": true,
   "revokedPresenterLeaseReleased": true,
