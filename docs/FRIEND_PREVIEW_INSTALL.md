@@ -1,8 +1,8 @@
 # Install the private Apple Silicon preview
 
-The latest tested preview is [v0.1.6](https://github.com/egemenmermer/rooms/releases/tag/v0.1.6). The private GitHub repository requires authorized repository access. Alternatively, the owner can supply the same DMG and checksum privately. This preview is unsigned and not notarized; it is not the finished signed release.
+The latest tested preview is [v0.1.7](https://github.com/egemenmermer/rooms/releases/tag/v0.1.7). The private GitHub repository requires authorized repository access. Alternatively, the owner can supply the same DMG and checksum privately. This preview is unsigned and not notarized; it is not the finished signed release.
 
-1. Download `ROOMS-0.1.6-arm64.dmg` and verify its SHA-256 against `docs/RELEASE_SHA256_0.1.6.txt`.
+1. Download `ROOMS-0.1.7-arm64.dmg` and verify its SHA-256 against `docs/RELEASE_SHA256_0.1.7.txt`.
 2. Open the DMG and drag ROOMS to Applications. Launch the installed copy.
 3. For a developer-verification block, follow Apple's per-app **System Settings → Privacy & Security → Open Anyway** flow only for the known ROOMS package. Do not disable Gatekeeper globally. [Apple's opening guidance](https://support.apple.com/en-us/102445).
 4. Open your privately supplied one-use `rooms://invite?...` link. Select **Yeni hesap** and enter your own username, email and password. Existing accounts use **Hesabım var**. Each delivery invitation expires and can be consumed only once.
@@ -19,3 +19,5 @@ The 0.1.5 preview additionally passed two successive-table 101 draft-isolation c
 Version 0.1.6 passed two actual packaged clients through an Activity-process stop/start: clear Activity-only outage wording, preserved note/poll/guest vote, actual chat delivery during the stop, automatic recovery and a new shared write afterward. It also passed the correct Blackjack hand label, double/hit/split/stand and six naturally dealt settled rounds. Zero renderer errors and owned-data cleanup passed. This is one physical Mac and a service interruption, not complete network/voice recovery or six friends' sustained usage. The preview is still unsigned and not notarized.
 
 The same 0.1.6 package subsequently passed complete native Ihaleli, Eşli, Koz Maça and Gömmeli Batak hands, including all human-seat cards, finished UI and matching per-player score history. These checks used one QA player and labelled bots, not four physical friends. No preview asset was replaced.
+
+Version 0.1.7 additionally passed two actual packaged clients for per-user whiteboard add/remove undo, successive undo after restoration, preserved draft/history through an Activity-process restart and a real macOS SVG save/cancel sheet. Seven cases passed, zero renderer errors; owned channel, exported file and temporary profiles were removed. Undo covers the last 50 successful own actions in this board view, resets on room/identity or leaving the view, and survives temporary Activity disconnection. SVG captures the shared board at export request time and omits identity/room metadata. Signing and external prerequisites remain unchanged.

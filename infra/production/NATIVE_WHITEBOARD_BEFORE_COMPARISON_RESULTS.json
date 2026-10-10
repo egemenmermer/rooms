@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-10T07:08:13.400Z",
+  "scope": "Two development Electron clients on one Mac running the current built source against public production Activity service. Real native SVG save sheet; not packaged release acceptance.",
+  "cases": [
+    "foreign-note-does-not-enter-guest-undo-history"
+  ],
+  "rendererErrors": 0,
+  "sourceVersion": "0.1.6",
+  "buildKind": "development",
+  "actualDesktopClients": 2,
+  "status": "FAIL",
+  "failure": "locator.waitFor: Timeout 35000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.board-canvas text').getByText('Owned board owner mv21yp5k', { exact: true }) to be detached\u001b[22m\n\u001b[2m    73 × locator resolved to visible <text x=\"60\" y=\"80\" fill=\"#B8CDFF\" font-size=\"20\">Owned board owner mv21yp5k</text>\u001b[22m\n",
+  "ownedChannelRemoved": true,
+  "serviceLeftStopped": false
+}

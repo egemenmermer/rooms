@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "platform": "darwin",
+  "arch": "arm64",
+  "packaged": true,
+  "appVersion": "0.1.6",
+  "bundledFileCount": 22,
+  "checks": [
+    "all packaged renderer/native/assets/license files match current build",
+    "actual packaged app launches",
+    "bundled local video advances"
+  ],
+  "metrics": [
+    {
+      "type": "Browser",
+      "workingSetKB": 116016,
+      "cpuPercent": 0
+    },
+    {
+      "type": "GPU",
+      "workingSetKB": 111424,
+      "cpuPercent": 0
+    },
+    {
+      "type": "Utility",
+      "workingSetKB": 35632,
+      "cpuPercent": 0
+    },
+    {
+      "type": "Tab",
+      "workingSetKB": 123584,
+      "cpuPercent": 0
+    },
+    {
+      "type": "Utility",
+      "workingSetKB": 41104,
+      "cpuPercent": 0
+    }
+  ]
+}

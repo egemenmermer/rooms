@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-10T07:13:20.804Z",
+  "scope": "Two actual packaged clients on one Mac against the public Activity service, scoped Activity-process recovery and real macOS SVG save sheet. Not physical-device, network, SFU or full-evening acceptance.",
+  "cases": [
+    "foreign-note-does-not-enter-guest-undo-history",
+    "owner-add-undo-preserves-guest-note",
+    "guest-removal-undo-restores-shared-note",
+    "undo-sequence-follows-restored-element-id",
+    "activity-recovery-preserves-unsent-note-and-undo-history",
+    "native-save-cancel",
+    "native-svg-file-contains-shared-artwork-without-identities-or-auth"
+  ],
+  "rendererErrors": 0,
+  "sourceVersion": "0.1.7",
+  "buildKind": "packaged",
+  "appVersion": "0.1.7",
+  "actualDesktopClients": 2,
+  "ownedExportRemoved": true,
+  "status": "PASS",
+  "ownedChannelRemoved": true,
+  "serviceLeftStopped": false
+}

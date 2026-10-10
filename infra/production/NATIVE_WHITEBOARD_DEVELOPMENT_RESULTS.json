@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-10T07:10:22.638Z",
+  "scope": "Two development Electron clients on one Mac running the current built source against public production Activity service. Real native SVG save sheet; not packaged release acceptance.",
+  "cases": [
+    "foreign-note-does-not-enter-guest-undo-history",
+    "owner-add-undo-preserves-guest-note",
+    "guest-removal-undo-restores-shared-note",
+    "undo-sequence-follows-restored-element-id",
+    "activity-recovery-preserves-unsent-note-and-undo-history",
+    "native-save-cancel",
+    "native-svg-file-contains-shared-artwork-without-identities-or-auth"
+  ],
+  "rendererErrors": 0,
+  "sourceVersion": "0.1.6",
+  "buildKind": "development",
+  "actualDesktopClients": 2,
+  "ownedExportRemoved": true,
+  "status": "PASS",
+  "ownedChannelRemoved": true,
+  "serviceLeftStopped": false
+}
