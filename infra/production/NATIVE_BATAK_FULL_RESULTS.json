@@ -1,0 +1,152 @@
+{
+  "at": "2026-10-10T06:22:45.408Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "packaged": true,
+  "actualPublicAuthorization": true,
+  "socialFixtures": false,
+  "scope": "Actual packaged native complete Batak hands for four variants on natural public production deals; one human QA client plus clearly labelled bots, not four physical friends.",
+  "cases": [
+    {
+      "kind": "batak",
+      "variant": "ihaleli",
+      "controls": [
+        "native-create",
+        "start-hand",
+        "choose-trump",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "native-complete-hand-history",
+        "confirm-close"
+      ],
+      "labelledBotCount": 3,
+      "nativeCardsPlayed": 13,
+      "completedTricks": 13,
+      "completedHistory": true,
+      "nativeFinishedStateVisible": true,
+      "historySummary": [
+        "egemen · 8 / ROOMS Bot 2 · 2 / ROOMS Bot 3 · 2 / ROOMS Bot 4 · 1"
+      ],
+      "status": "PASS"
+    },
+    {
+      "kind": "batak",
+      "variant": "esli",
+      "controls": [
+        "native-create",
+        "start-hand",
+        "choose-trump",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "native-complete-hand-history",
+        "confirm-close"
+      ],
+      "labelledBotCount": 3,
+      "nativeCardsPlayed": 13,
+      "completedTricks": 13,
+      "completedHistory": true,
+      "nativeFinishedStateVisible": true,
+      "historySummary": [
+        "egemen · -8 / ROOMS Bot 2 · 7 / ROOMS Bot 3 · -8 / ROOMS Bot 4 · 7"
+      ],
+      "status": "PASS"
+    },
+    {
+      "kind": "batak",
+      "variant": "koz-maca",
+      "controls": [
+        "native-create",
+        "start-hand",
+        "bid",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "native-complete-hand-history",
+        "confirm-close"
+      ],
+      "labelledBotCount": 3,
+      "nativeCardsPlayed": 13,
+      "completedTricks": 13,
+      "completedHistory": true,
+      "nativeFinishedStateVisible": true,
+      "historySummary": [
+        "egemen · 3 / ROOMS Bot 2 · 3 / ROOMS Bot 3 · 5 / ROOMS Bot 4 · 2"
+      ],
+      "status": "PASS"
+    },
+    {
+      "kind": "batak",
+      "variant": "gommeli",
+      "controls": [
+        "native-create",
+        "start-hand",
+        "choose-trump",
+        "bury-four",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "play-legal-card",
+        "native-complete-hand-history",
+        "confirm-close"
+      ],
+      "labelledBotCount": 2,
+      "nativeCardsPlayed": 16,
+      "completedTricks": 16,
+      "completedHistory": true,
+      "nativeFinishedStateVisible": true,
+      "historySummary": [
+        "egemen · -8 / ROOMS Bot 2 · 6 / ROOMS Bot 3 · 6"
+      ],
+      "status": "PASS"
+    }
+  ],
+  "rendererErrors": 0,
+  "appVersion": "0.1.6",
+  "stage": "batak:gommeli",
+  "status": "PASS",
+  "ownedChannelRemoved": true
+}
