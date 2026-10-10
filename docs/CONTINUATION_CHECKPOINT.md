@@ -1,44 +1,42 @@
 # ROOMS continuation checkpoint — 2026-10-10
 
-Read docs/OVERNIGHT_DEPLOYMENT_PLAN.md and AGENTS.md first. Current owner wants the actual usable product completed overnight and explicitly authorizes one existing free quota reset only when weekly usage is exhausted. Usage was 98%; no reset has been consumed or confirmed.
+Read AGENTS.md, docs/OVERNIGHT_DEPLOYMENT_PLAN.md and docs/REMAINING_PHASES_PLAN.md. The owner explicitly disabled Astra/high and requested main-agent-only implementation, including UI and visual QA. Do not spawn design agents. Continue the authorized product work; do not imply completion from tests alone.
 
-## Next concrete action
+## Current core and access
 
-Two actual Electron clients now passed native production sign-in and UI message send/delivery with zero renderer errors; screenshots are under docs/screenshots/production. Native invitation signup, consumed invitation rejection, edit/delete, restart restoration and logout now PASS. Next: actual two-client Activity/media acceptance. Database restore, find-only authorization role denial, daily backup timer and direct certificate reload now pass. Temporary offline restore containers were removed. Upload/certificate restore and full-host reboot remain unverified.
+Dedicated core: `https://62.238.119.134`, unmodified pinned Stoat v0.15.5, independent LiveKit and scoped access/Activity services. Sixteen services run. Hoppers is out of scope. SSH owner access uses `/Users/egemenmermer/.ssh/id_ed25519`, IdentitiesOnly/BatchMode, StrictHostKeyChecking and `.local/ssh/known_hosts`. Compose is `/opt/rooms/config/compose.yml`, project `rooms-core`. The `rooms-deploy` account can invoke only the root-owned bounded ROOMS status/restart wrapper; generic root, Docker, other projects and private configuration are denied. Owner access remains intact. Arbitrary code deployment is owner-only.
 
-## Access and private state
+Private credentials, QA identities and six delivery invitations are in gitignored `.local/production/`. `.local/production/FRIENDS_ACCESS.md` is mode 0600. Never print/commit these contents or use friend identities for QA. Do not expose owner/provider credentials to friends.
 
-Core is https://62.238.119.134. SSH uses `/Users/egemenmermer/.ssh/id_ed25519`, IdentitiesOnly/BatchMode and StrictHostKeyChecking with `.local/ssh/known_hosts`. The core host project is `/opt/rooms/config/compose.yml` (rooms-core). Preserve existing secrets and pinned image digests. Hoppers is out of scope.
+## Actual evidence
 
-Private local data is under `.local/production/` (gitignored). It contains bootstrap/test-account credentials, QA registration files, the encrypted backup and a private decrypted restore staging area. Never print or commit their contents. Existing encrypted backup is `/opt/rooms/backups/rooms-20261010T011703Z.tar.age`; a copy is on the Mac. The owner private key was not sent to the server. Corrected production backup.py is installed and the daily backup timer is enabled (04:30 UTC).
+- Social integration: eight real public checks; production acceptance: ten invite/DM/attachment/authorization/deduplication/revocation checks.
+- Native production desktop: actual two-client signup/login/message send/edit/delete/session restart/logout passed, zero renderer errors.
+- Public SFU: actual upstream-authorized two-client transport with synthetic media passed. Separate native microphone and exact ROOMS window picker passed received packets and voice across Home/Chat/Cinema/Games. Native hardware checks use development Electron identity and two clients on one physical Mac; camera permission is not determined. Fresh packaged ROOMS TCC onboarding and two physical devices are not certified.
+- Seven public full-hand game cases passed: Holdem, Blackjack, four Batak variants, default 101. Hidden hands/history passed. Actual 30-second grace/bot replacement, same cards on returning and host transfer passed. These are API/table-engine checks, not every native game button manually played.
+- Full core reboot passed: changed boot ID, preserved session/polls/notes/queue, recovered sixteen services and timers.
+- Fresh backup `rooms-20261010T021147Z.tar.age`: consistent writer/MinIO pause, atomic encrypted completion and bounded seven-archive retention implemented. Actual isolated Mongo/PostgreSQL and ten archived-hand recovery, restored TLS keypair matching, isolated MinIO object read plus authenticated AES-GCM decode with restored metadata/configuration passed. Encrypted copies remain off-host. Owned plaintext staging, restore containers and temporary QA attachment message were removed. First scheduled backup and seven-archive retention threshold have not been observed.
+- Native Activity commands schema-validate and retry only explicit `409 REVISION_CONFLICT`, at most three writes with unchanged UUID/payload. Same-room and current-session guards apply. Ambiguous network outcomes are never retried. 100 tests / 22 files, typecheck and full build pass.
+- Latest two-client official YouTube UI acceptance passed play/pause, pointer seek in both players, keyboard seek, actual participant membership and late rejoin (0.057 seconds observed drift), zero renderer errors. Paused stale SDK positions cannot undo authoritative seeks. Official autoplay remains subject to each viewer's normal player gesture.
 
-## Already passed
+Sanitized evidence lives under infra/production and infra/stoat. Actual screenshots are under docs/screenshots/production.
 
-Social 8 checks; production 10 checks; two-client synthetic public-SFU transport; Activity writer-process persistence; 96 unit tests; typecheck and build; short-lived IP certificate renewal dry run. Refer to sanitized JSON results under infra/stoat and infra/production. Official public YouTube player playback, pause and seek now pass; shared player synchronization remains unverified. No physical-device, separate Agent, provider-account, signed-release or full-host-reboot acceptance has been claimed.
+## Current concrete action
+
+Unsigned Apple Silicon 0.1.3 DMG/ZIP were built. `node scripts/verify-package.mjs` passed matching all 22 bundled renderer/native/assets/notices files, actual packaged launch and local video advancement. `ROOMS_QA_PACKAGED=1 node scripts/verify-shared-youtube.mjs` passed two actual packaged clients against production: playback/pause, both-player pointer seek, keyboard seek, authoritative viewers and late rejoin with 0.055 seconds observed drift, zero renderer errors. The harness removed only its new queue item and logged out/deleted owned profiles. Earlier harness failures compared stale SDK positions and assumed queue count always increases; the new test tracks its unique item, including when starting a new Activity clears the previous queue.
+
+Generate/preserve checksums, commit/push and publish immutable private v0.1.3. v0.1.2 predates these changes. Never replace older assets. The installation guide/private handoff now refer to 0.1.3; native hardware TCC scope remains development-only. Check GitHub release state before retrying publication.
+
+## Remaining acceptance and required inputs
+
+Finish native attachment picker/live presence, presenter/logout/revocation lifecycle, blocked-video/reconnect UI, every game control and other 101 combinations where useful. Restrictive-network TURN/TLS, physical second-computer audible voice/camera/PTT/device loss/SFU reconnect, packaged permission onboarding, fresh install/update and sustained M1 performance remain unverified. Camera needs explicit OS permission.
+
+Separate Agent host/access and individual model/bot/provider accounts were not supplied. Existing runtime/runbook/local tests do not prove deployed Agent or live providers. Do not cohost privileged workers on core or Hoppers. Apple Developer ID/notarization credentials are missing; releases are unsigned previews. Windows validation is deferred.
+
+## Continuation and quota
+
+Current-thread hourly heartbeat exists and is main-agent-only, quiet on unchanged status. Mac/app must remain online and usage available. Weekly usage displayed 100% while ordinary usage remained allowed. The owner authorized one existing free Full reset only on exhaustion, not a paid purchase. No documented reset mutation is available; CUA explicitly blocks Codex app control. Manual reset was requested asynchronously. No reset has been performed or claimed. Do not bypass the control restriction.
 
 ## Useful commands
 
-- `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm services:build`
-- `ROOMS_STOAT_TEST_ACCOUNTS=.local/production/test-accounts.json node scripts/stoat-integration.mjs`
-- Read scripts/livekit-verify.mjs and scripts/verify-production.mjs for their actual production account/environment options before running. They create owned QA state; never run with friend identities.
-- SSH: `ssh -i /Users/egemenmermer/.ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=.local/ssh/known_hosts root@62.238.119.134`
-
-## Source handoff
-
-Production deployment, scoped authorization adapter, evidence and continuation plan are committed and pushed through 4f77482; inspect latest Git state for subsequent desktop acceptance commits. Check git status before editing. Commit meaningful source/runbook/evidence groups and push to the already authorized private egemenmermer/rooms main branch. Exclude .local, generated bytecode, secrets and deployment configuration containing credentials. Use current timestamps.
-
-Continue through the ordered plan. Keep this checkpoint current, including actual failures and next action. Do not equate healthy containers or synthetic audio with a finished product.
-
-## Latest owner steering
-
-On 2026-10-10 the owner disabled Astra/high delegation and requested main-agent-only implementation, including all design. AGENTS.md is updated. Existing production_onboarding subagent completed before this change; do not spawn another. Weekly usage displays 100% but ordinaryUsageAllowed was still true. One free Full reset remains available. No documented reset mutation exists and CUA explicitly blocks com.openai.codex; manual reset was requested asynchronously. Continue while allowed without claiming an automatic reset.
-
-Latest: native login/send/edit/delete/restart restore/logout and new-account invitation signup PASS after bucket-aware REST backpressure. Full build and 96 tests pass. Rebuilt access/Activity bundles are deployed and healthy. Official public YouTube sample playback, pause and seek PASS; shared synchronization is not yet accepted. The first click selector was wrong, not an actual playback failure. Unsigned Apple Silicon v0.1.1 DMG/ZIP built; actual packaged launch, current source byte matching and bundled local playback PASS. Protected six-invitation handoff exists at `.local/production/FRIENDS_ACCESS.md` (0600); never commit its contents. Next: save/push these changes and publish the clearly unsigned private preview, then real shared Activity and remaining recovery/media acceptance.
-
-Two actual native Electron clients now PASS shared official YouTube playback and pause delivery with zero renderer errors (`YOUTUBE_SHARED_RESULTS.json`). A real polling-induced seek/pause loop was corrected by keeping server clock sampling separate from the synchronization trigger; playing-state feedback now compares against elapsed authoritative position. The published unsigned v0.1.1 preview predates this fix; prepare v0.1.2 rather than replacing immutable release assets. A fresh encrypted backup completed at 01:51:10Z. Backup plaintext cleanup now runs even if writer restart fails. Next: full core reboot/recovery acceptance and v0.1.2 packaged verification.
-
-Actual full core reboot acceptance PASS at 01:54:54Z: boot ID changed, existing authenticated session survived, polls/whiteboard/queue unchanged, all 16 services and both timers recovered. Initial immediate service-state assertion was premature while startup was still converging; the verification now waits for recovery before asserting. `REBOOT_RESULTS.json` is sanitized. Unsigned v0.1.2 packaged verification PASS after the YouTube fix, and 96 tests passed again. Next: publish this patch, complete real games/lifecycle and native media acceptance, least-privilege deployment handoff and full uploads/TLS restore.
-
-Native voice QA PASS with real microphone audio packets, actual ROOMS window picker and received video, zero renderer errors and voice maintained across Home/Chat/Cinema/Games. Screen/mic permission granted; camera not-determined and not exercised. Two clients share the same physical Mac. Scoped `rooms-deploy` status access passes denial of general root, direct Docker, other-project restart and private configuration reads. Wrapper allows bounded status/restart only, not arbitrary deployment. Full-hand public game tests are running in exec session 58477: Holdem, Blackjack, ihale/esli Batak PASS so far; do not stop Activities or reboot while these are active. Backup source currently changed to stop MinIO for a consistent filesystem snapshot, atomic encrypted completion and seven-snapshot retention; not yet installed/exercised. A temporary owned attachment for restore QA exists (private `.local/production/object-restore-check.json`), keep it until backup/restore verifies then delete its QA message. TLS archive extraction/key matching passed; the earlier object snapshot contains no live user objects, so object read restore is not accepted. Next: remaining game results, then install/test new backup and a live object restore; finish lifecycle/media/prerequisite gates.
-
-All seven actual public full-hand cases now PASS: Holdem, Blackjack, ihale/esli/koz-maca/gommeli Batak and 101, hidden hands and completed-hand history. `GAME_LIFECYCLE_RESULTS.json` PASS actual 30-second grace/bot substitution, same cards on seat return, and host transfer. The harness now explicitly joins on return as the real UI does; earlier direct commands correctly received JOIN_ACTIVITY_FIRST after leases expired. No active games verification process remains. Updated MinIO-quiescing/atomic-encryption/seven-snapshot backup is installed and running (exec session 43942). Next: fetch completed fresh archive, restore the known owned attachment through an isolated MinIO and validate database/history/TLS recovery, then delete only its QA message. Finish remaining acceptance and report prerequisites.
+`pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm services:build`. Read each verification script's private configuration before running. Use owned QA identities only. Check git status before edits, preserve credentials/pinned images and commit with actual timestamps to the authorized private `egemenmermer/rooms` main branch. No backdating.
