@@ -34,3 +34,12 @@ html,body,#root{height:100%;overflow:hidden}.app.voice-active .chat-page{padding
 .welcome-hero{min-height:310px;background:radial-gradient(ellipse at 75% 20%,#34475566,transparent 65%),#111820}.welcome-hero .hero-copy{position:relative;padding:45px}.welcome-hero .hero-copy h2{font-size:48px}.welcome-hero+.social-connection{margin-top:24px}.cinema-empty{display:grid;place-items:center;min-height:440px}.cinema-empty .empty-state{max-width:520px}.cinema-empty .button-row{justify-content:center;margin-top:22px}
 
 .welcome-hero{height:auto;min-height:0;margin-bottom:24px}.welcome-hero .hero-copy{left:0;top:0;padding:22px 28px}.welcome-hero .hero-copy h2{font-size:32px;margin:10px 0}.welcome-hero .hero-copy p{font-size:12px;margin-bottom:0}.cinema-empty{aspect-ratio:auto;min-height:420px}.cinema-stage video{object-fit:contain}
+
+/* Production Home: content follows the actual community, without editorial filler. */
+.home-page > .rooms-onboarding { max-width: 500px; margin: 0 auto; }
+.real-home-rooms { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 10px; }
+.real-home-rooms > button { display:flex;align-items:center;gap:14px;text-align:left;padding:16px;border-radius:14px;background:var(--surface,#151a22);border:1px solid #ffffff0a; }
+.real-home-rooms > button:hover { background:#1b212a; }
+.real-home-rooms > button > span:nth-child(2) { display:flex;flex-direction:column;gap:4px;flex:1; }
+.real-home-rooms small { color:#abb3c0;font-size:11px; }
+.settings-version br:last-child { display:none; }

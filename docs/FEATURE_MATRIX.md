@@ -25,3 +25,8 @@ This matrix supersedes the Spacebar-era matrix. Historical transport evidence re
 | Production TLS/TURN, backups, recovery | Dedicated core with trusted IP TLS, scoped maintenance and full reboot; encrypted off-host database/object/TLS restore passed; actual regular scheduled backup and encrypted off-host copy passed | Seven-archive retention threshold, real certificate renewal and restrictive-network TURN/TLS acceptance |
 
 The approved phases are not all accepted. Environment and account gates remain explicit in `IMPLEMENTATION_PROGRESS.md`.
+
+
+## 2026-10-10 production-only UI policy
+
+The owner requested removal of all demo data. Version 0.1.9 removes the local social mode, synthetic friends/spaces/messages, local-only polls/queue and bundled sample movie. Legacy persisted social fixtures are discarded while supported device/appearance preferences survive. Signed-out Home/Chat/Spaces/Voice/Profile show real authentication; logout never falls back to fixtures. Cinema requires an explicitly selected personal file and stays local; together viewing uses the existing official YouTube or authorized screen-share path. The removed demo-film shared-Cinema path is no longer offered. Original scenic Home artwork is decorative artwork, not a current movie, person or session. Historical demo playback evidence remains historical and does not certify the current Cinema workflow.
