@@ -1,0 +1,5 @@
+.youtube-timeline { display:flex; align-items:center; gap:12px; padding:4px 2px 16px; color:var(--text-secondary); font-size:11px; font-variant-numeric:tabular-nums; }
+.youtube-timeline span { min-width:34px; text-align:center; }
+.youtube-timeline input { flex:1; min-width:0; height:18px; padding:0; border:0; background:transparent; border-radius:0; box-shadow:none; accent-color:var(--accent,#c9b5f0); cursor:pointer; }
+.youtube-timeline input:disabled { opacity:.35; cursor:default; }
+.youtube-timeline input:focus-visible { outline:2px solid var(--accent,#c9b5f0); outline-offset:5px; border-radius:8px; }
