@@ -1,0 +1,48 @@
+{
+  "at": "2026-10-10T06:12:44.547Z",
+  "tag": "v0.1.6",
+  "url": "https://github.com/egemenmermer/rooms/releases/tag/v0.1.6",
+  "sourceCommit": "a09f4dac5dba51579c6e1b9fba44b93be2941279",
+  "tagMatchesSourceCommit": true,
+  "privateRepository": true,
+  "prerelease": true,
+  "immutable": false,
+  "publishedAssetsPreservedByPolicy": true,
+  "previousReleaseAssetsUnchanged": true,
+  "unsigned": true,
+  "notarized": false,
+  "assets": [
+    {
+      "name": "ROOMS-0.1.6-arm64.dmg",
+      "size": 152042419,
+      "sha256": "6ff6869d7a8277cb0e7f4754bb3a4378c685650a637647f67e8a8a4a16e57ce3",
+      "uploadedDigestMatches": true
+    },
+    {
+      "name": "ROOMS-0.1.6-arm64-mac.zip",
+      "size": 152149555,
+      "sha256": "b87c4f0ca6c4f5b01eead5f41963778d558183ed573caa3816a68e2f7e282802",
+      "uploadedDigestMatches": true
+    },
+    {
+      "name": "RELEASE_SHA256_0.1.6.txt",
+      "size": 180,
+      "sha256": "ceb399b01efe6bbf2797be4657a2b55d0e8bf6626239b3d3f77c224c3e1d0fc0",
+      "uploadedDigestMatches": true
+    }
+  ],
+  "checks": [
+    "actual packaged launch/local video and 22 bundled files match",
+    "two public native Activity-process recovery clients, preserved note/poll/vote and live social chat",
+    "native Blackjack correct hand label, double/hit/split/stand and 6 natural settled rounds"
+  ],
+  "limits": [
+    "whole-network interruption and six distinct native clients",
+    "physical second computer and packaged capture permissions",
+    "advanced native 101/Batak/Holdem acceptance",
+    "separate Agent and live provider accounts",
+    "Apple signing/notarization",
+    "Windows validation deferred",
+    "908-second soak and official shared YouTube apply to 0.1.4; ten-game suite and 101 draft isolation apply to 0.1.5"
+  ]
+}
