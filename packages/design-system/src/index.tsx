@@ -10,19 +10,23 @@ export function Avatar({ name, size='normal', tone }: { name: string; size?: 'sm
 export function AvatarStack({ names=[] }: { names?: string[] }) {
   return <span className="avatar-stack">{names.map(n=><Avatar name={n} size="small" key={n}/>)}</span>;
 }
-export function Modal({ title, children, onClose, className='' }: { title: string; children: ReactNode; onClose(): void; className?: string }) {
+const modalStack: symbol[] = [];
+export function Modal({ title, children, onClose, className='', hideHeading=false }: { title: string; children: ReactNode; onClose(): void; className?: string; hideHeading?: boolean }) {
+  const token=useRef(Symbol());
   const ref=useRef<HTMLDivElement>(null);
   useEffect(()=> {
+    const id=token.current;modalStack.push(id);
     const previous=document.activeElement as HTMLElement | null;
     const focusable=()=> Array.from(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input, textarea, select, [tabindex="0"]') ?? []);
     (ref.current?.querySelector<HTMLElement>('input,textarea,select') ?? focusable()[0])?.focus();
     const handler=(event: KeyboardEvent)=> {
+      if(modalStack.at(-1)!==id)return;
       if(event.key==='Escape'){ event.preventDefault(); event.stopPropagation(); onClose(); }
       if(event.key==='Tab'){ const elements=focusable(); const first=elements[0]; const last=elements.at(-1); if(event.shiftKey && document.activeElement===first){event.preventDefault();last?.focus();} else if(!event.shiftKey && document.activeElement===last){event.preventDefault();first?.focus();} }
     };
-    document.addEventListener('keydown',handler,true); return()=>{document.removeEventListener('keydown',handler,true);previous?.focus();};
+    document.addEventListener('keydown',handler,true); return()=>{document.removeEventListener('keydown',handler,true);const index=modalStack.indexOf(id);if(index>=0)modalStack.splice(index,1);if(previous?.isConnected)previous.focus();};
   },[onClose]);
-  return <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}><div ref={ref} role="dialog" aria-modal="true" aria-label={title} className={`modal glass ${className}`}><div className="modal-heading"><div><span className="eyebrow">ROOMS / SİZE ÖZEL BİR YER</span><h2>{title}</h2></div><IconButton label="Pencereyi kapat" onClick={onClose}><X size={18}/></IconButton></div>{children}</div></div>;
+  return <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}><div ref={ref} role="dialog" aria-modal="true" aria-label={title} className={`modal glass ${className}`}>{!hideHeading && <div className="modal-heading"><div><h2>{title}</h2></div><IconButton label="Pencereyi kapat" onClick={onClose}><X size={18}/></IconButton></div>}{children}</div></div>;
 }
 export function EmptyState({ icon, title, children, action }: { icon: ReactNode; title: string; children: ReactNode; action?: ReactNode }) {
   return <div className="empty-state"><span className="empty-icon">{icon}</span><h2>{title}</h2><div className="empty-description">{children}</div>{action}</div>;

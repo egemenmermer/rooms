@@ -18,3 +18,7 @@ Send the screen name, action and observed result for any failure. Separate Agent
 Use the existing owner account's ROOMS password from the privately delivered file, rather than registering the same email again. The failed signup ticket cannot be reused. This is not the root or Gmail password.
 
 Open Settings from each screen. Confirm main navigation is hidden, settings content fills the window, X and Escape return to the preceding screen, category switching works, and a joined voice call continues while Settings is open. No automatic acceptance has been performed for this revision.
+
+## 0.1.11 popup follow-up
+
+Open Settings while a conversation or video is open. Confirm the previous screen remains behind a dark scrim, the sheet fills most of the window with a small margin, the background cannot be clicked, categories/content scroll normally, and X/Escape/scrim click returns to the same position. Open a nested provider/settings dialog and confirm Escape closes only that dialog first. Check ongoing voice/video yourself. This revision is not agent-tested.
