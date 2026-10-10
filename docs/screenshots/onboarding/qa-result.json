@@ -1,0 +1,19 @@
+{
+  "result": "PASS",
+  "profile": "onboarding-qa-1791596333403",
+  "platform": "darwin",
+  "arch": "arm64",
+  "checks": [
+    "fresh production default",
+    "production/local/custom shortcuts",
+    "1440/1280/900 no document overflow",
+    "community and account invite preserved across access tabs",
+    "registration route entry",
+    "real unreachable-native-request error and focus",
+    "keyboard server shortcut",
+    "reduced effects",
+    "actual production invalid-invite rejection and retry",
+    "Escape modal close"
+  ],
+  "errors": []
+}

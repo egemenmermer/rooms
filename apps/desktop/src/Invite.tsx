@@ -1,31 +1,74 @@
-import { tr, uiError } from './i18n';
-import { useEffect, useState } from 'react';
+import { uiError } from './i18n';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Globe, LoaderCircle, ShieldCheck, Users } from 'lucide-react';
 import { Modal } from '@rooms/design';
 import type { SocialInvite } from '@rooms/social';
 import { useCommunity } from './community';
+import './onboarding.css';
+
 export function InviteLanding({ invite, onClose, notify }: {
-    invite: {
-        serverUrl: string;
-        code: string;
-    };
+    invite: { serverUrl: string; code: string };
     onClose(): void;
     notify(message: string): void;
 }) {
     const c = useCommunity(), navigate = useNavigate();
-    const [preview, setPreview] = useState<SocialInvite | null>(null), [error, setError] = useState(''), [loading, setLoading] = useState(true), [busy, setBusy] = useState(false);
-    const sameServer = c.serverUrl.replace(/\/$/, '') === invite.serverUrl.replace(/\/$/, '');
-    useEffect(() => { let stale = false; void window.rooms?.social.inspectInvite(invite.serverUrl, invite.code).then(value => { if (!stale)
-        setPreview(value); }).catch(e => { if (!stale)
-        setError(uiError(e)); }).finally(() => { if (!stale)
-        setLoading(false); }); return () => { stale = true; }; }, [invite.serverUrl, invite.code]);
-    return <Modal title={tr("Dostlar\u0131n seni bekliyor.")} onClose={onClose}><div className="invitation-art"><Users size={38}/></div>{loading ? <p className="modal-description"><LoaderCircle size={15} className="spin"/>{tr("Davet do\u011Frulan\u0131yor\u2026")}</p> : <><h3>{preview?.space?.name ?? tr("\u00D6zel topluluk daveti")}</h3><p className="modal-description">{preview?.channel?.name ? `${preview.channel.name} kanalına davet edildin.` : tr("Bu davet, \u00F6zel bir toplulu\u011Fa kat\u0131lmak i\u00E7in.")}</p></>}<div className="connection-info"><Globe size={15}/>{new URL(invite.serverUrl).host}</div>{preview?.expiresAt && <p className="modal-footnote">{tr("Son kullan\u0131m:")}{new Date(preview.expiresAt).toLocaleString('tr-TR')}</p>}{c.user && !sameServer ? <div className="settings-note"><ShieldCheck size={19}/><p>{tr("\u015Eu anda farkl\u0131 bir sunucuya ba\u011Fl\u0131s\u0131n. Bu daveti kullanmak i\u00E7in Ayarlar'dan mevcut hesab\u0131ndan \u00E7\u0131k\u0131\u015F yap\u0131p davetin sunucusunda giri\u015F yap.")}</p></div> : null}{error && <div className="error-pane" role="alert">{error}</div>}<button className="button primary full" disabled={loading || busy || !!error || (!!c.user && !sameServer)} onClick={() => { if (c.user) {
-        setBusy(true);
-        void c.acceptInvite(invite.code).then(() => { notify(tr("Davet kabul edildi. Toplulu\u011Funa ho\u015F geldin.")); onClose(); navigate('/spaces'); }).catch(e => setError(uiError(e))).finally(() => setBusy(false));
-    }
-    else {
-        navigate(`/settings?tab=connections&server=${encodeURIComponent(invite.serverUrl)}&invite=${encodeURIComponent(invite.code)}`);
+    const [preview, setPreview] = useState<SocialInvite | null>(null);
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [busy, setBusy] = useState(false);
+    const [attempt, setAttempt] = useState(0);
+    const errorRef = useRef<HTMLDivElement>(null);
+    const sameServer = c.serverUrl.replace(/\/+$/, '') === invite.serverUrl.replace(/\/+$/, '');
+    let host = invite.serverUrl;
+    try { host = new URL(invite.serverUrl).host; } catch { /* Native validation rejects malformed invitation URLs. */ }
+
+    useEffect(() => {
+        let stale = false;
+        setLoading(true); setError(''); setPreview(null);
+        const inspect = async () => {
+            try {
+                if (!window.rooms?.social) throw new Error('Daveti açmak için ROOMS masaüstü uygulamasını kullan.');
+                const value = await window.rooms.social.inspectInvite(invite.serverUrl, invite.code);
+                if (!stale) setPreview(value);
+            } catch (err) { if (!stale) setError(uiError(err)); }
+            finally { if (!stale) setLoading(false); }
+        };
+        void inspect();
+        return () => { stale = true; };
+    }, [invite.serverUrl, invite.code, attempt]);
+    useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
+
+    const openAccess = (registration = false) => {
+        navigate(`/settings?tab=connections&server=${encodeURIComponent(invite.serverUrl)}&invite=${encodeURIComponent(invite.code)}&access=${registration ? 'register' : 'login'}`);
         onClose();
-    } }}>{c.user ? 'Daveti kabul et' : tr("Hesab\u0131nla kat\u0131l")}<ArrowRight size={16}/></button>{c.user && !sameServer && <button className="button secondary full" onClick={() => { navigate(`/settings?tab=connections&server=${encodeURIComponent(invite.serverUrl)}&invite=${encodeURIComponent(invite.code)}`); onClose(); }}>{tr("Ba\u011Flant\u0131 ayarlar\u0131n\u0131 a\u00E7")}</button>}</Modal>;
+    };
+    const accept = async () => {
+        if (busy || loading || !preview) return;
+        setBusy(true); setError('');
+        try {
+            await c.acceptInvite(invite.code);
+            notify('Davet kabul edildi. Topluluğuna hoş geldin.');
+            onClose(); navigate('/spaces');
+        } catch (err) { setError(uiError(err)); }
+        finally { setBusy(false); }
+    };
+
+    return <Modal title="Birlikte daha güzel." onClose={onClose} className="rooms-invitation">
+        <div className="invitation-art" aria-hidden="true"><Users size={29}/></div>
+        {loading ? <p className="modal-description invitation-loading" role="status"><LoaderCircle size={16} className="spin"/>Davet kontrol ediliyor…</p> : <div className="invitation-copy">
+            <h3>{preview?.space?.name ?? (error ? 'Davet açılamadı.' : 'Özel topluluk daveti')}</h3>
+            {preview && <p className="modal-description">{preview.channel?.name ? `${preview.channel.name} kanalına davetlisin.` : 'Dostlarının topluluğuna katılmak için davet edildin.'}</p>}
+        </div>}
+        <div className="connection-info"><Globe size={14}/><span>{host}</span></div>
+        {preview?.expiresAt && <p className="modal-footnote">Son kullanım: {new Date(preview.expiresAt).toLocaleString('tr-TR')}</p>}
+        {c.user && !sameServer && <div className="settings-note"><ShieldCheck size={18}/><p>Farklı bir sunucuda oturumun açık. Bağlantı ayarlarından çıkış yapıp bu davetin sunucusunda giriş yap.</p></div>}
+        {error && <div className="error-pane onboarding-error" ref={errorRef} tabIndex={-1} role="alert"><p>{error}</p><button className="text-button invitation-retry" disabled={busy || loading} onClick={() => setAttempt(value => value + 1)}>Daveti yeniden kontrol et<ArrowRight size={13}/></button></div>}
+        {!c.user && preview && <p className="invitation-access-note">Zaten hesabın varsa giriş yaparak katılabilirsin. İlk kez geliyorsan davetinle bir hesap oluştur.</p>}
+        <button className="button primary full" disabled={loading || busy || !preview || (!!c.user && !sameServer)} onClick={() => c.user ? void accept() : openAccess()}>
+            {busy ? <><LoaderCircle size={16} className="spin"/>Katılınıyor…</> : <>{c.user ? 'Daveti kabul et' : 'Hesabımla giriş yap'}<ArrowRight size={16}/></>}
+        </button>
+        {!c.user && preview && <button className="button secondary full" disabled={loading || busy} onClick={() => openAccess(true)}>Davetle hesap oluştur</button>}
+        {c.user && !sameServer && <button className="button secondary full" onClick={() => openAccess()}>Bağlantı ayarlarını aç<ArrowRight size={15}/></button>}
+    </Modal>;
 }

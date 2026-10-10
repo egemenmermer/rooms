@@ -1,0 +1,54 @@
+/* Restrained materials belong to controls; the form remains a solid reading surface. */
+.rooms-onboarding.connection-card{padding:26px;border:1px solid #d6e3fa17;border-radius:20px;background:linear-gradient(145deg,#1b222c,#151a22 55%);box-shadow:inset 0 1px #ffffff08,0 12px 32px #00000012}
+.onboarding-heading{display:flex;align-items:center;gap:15px;margin-bottom:24px}
+.onboarding-emblem{display:grid;place-items:center;width:48px;height:48px;flex-shrink:0;border:1px solid #dbe6fa20;border-radius:15px;background:linear-gradient(145deg,#dbe6fa13,#dbe6fa03);color:#c6d5ee;box-shadow:inset 0 1px #ffffff09}
+.onboarding-eyebrow{font-size:8px;letter-spacing:1.6px;color:#98a7bc;font-weight:600}
+.onboarding-heading h4{font-size:24px;font-weight:550;letter-spacing:-.7px;margin:6px 0 5px;color:#eef2f7}
+.onboarding-heading p{font-size:11px;color:#a1acbb;line-height:1.6}
+.onboarding-heading>.connection-status{margin-left:auto;white-space:nowrap}
+.onboarding-access{display:flex;padding:4px;border:1px solid #e2eafd0c;border-radius:12px;background:#090e1566;box-shadow:inset 0 1px 3px #0002;margin-bottom:22px}
+.onboarding-access button{flex:1;min-height:37px;padding:9px 12px;border-radius:9px;color:#93a0b2;font-size:11px;font-weight:550}
+.onboarding-access button:hover:not(:disabled){color:#e4ebf7;background:#ffffff05}
+.onboarding-access button.selected{color:#e9edf5;background:linear-gradient(135deg,#e2ebfc18,#e2ebfc0a);box-shadow:inset 0 1px #fff1,0 2px 5px #0002}
+.rooms-onboarding fieldset{padding:0;margin:0;border:0;min-width:0}
+.rooms-onboarding .field-label{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:0;font-size:9px;letter-spacing:.8px;color:#a8b3c2}
+.rooms-onboarding .field-label input{margin:0;min-width:0;width:100%;height:41px;padding:10px 12px;background:#0e131bcc;border:1px solid #c4d4ed16;border-radius:10px;font-size:12px;letter-spacing:0;color:#e4ebf5;transition:border-color .15s,background .15s}
+.rooms-onboarding .field-label input::placeholder{color:#778395}
+.rooms-onboarding .field-label input:hover:not(:disabled){border-color:#c4d4ed30}
+.rooms-onboarding .field-label input:focus-visible{border-color:#aec7f373;background:#111a28;outline:2px solid #b8cdff9c;outline-offset:2px}
+.rooms-onboarding .field-label input:disabled{opacity:.55}
+.onboarding-server{padding-bottom:20px;margin-bottom:20px;border-bottom:1px solid #ffffff0a}
+.onboarding-server-label{display:flex;align-items:center;gap:7px;font-size:8px;font-weight:600;letter-spacing:1.1px;color:#a1aec0;margin-bottom:10px}
+.onboarding-presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.onboarding-presets button{display:flex;align-items:center;gap:8px;border:1px solid #d6e3fa12;border-radius:8px;padding:7px 10px;font-size:10px;color:#9aa9bd;background:#ffffff02;min-height:30px}
+.onboarding-presets button[aria-pressed=true]{border-color:#b8cdff35;background:#b8cdff0b;color:#d4e0f5}
+.onboarding-presets button:hover:not(:disabled){background:#b8cdff12;color:#e2eaf6}
+.rooms-onboarding .onboarding-address{font-size:10px;letter-spacing:0;gap:7px}
+.rooms-onboarding .onboarding-address input{height:35px;font-size:11px;color:#b7c4d6}
+.onboarding-credentials,.onboarding-registration{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.onboarding-registration{margin-bottom:18px}
+.onboarding-account-invite{grid-column:1/-1;position:relative}
+.onboarding-optional{position:absolute;right:0;top:0;font-size:9px;letter-spacing:0;color:#8696ad;font-weight:400}
+.onboarding-account-invite small{font-size:10px;letter-spacing:0;line-height:1.5;color:#8f9caf;font-weight:400}
+.rooms-onboarding .onboarding-submit{min-height:43px;margin-top:21px;font-size:12px;border-radius:10px}
+.onboarding-privacy{display:flex;justify-content:center;align-items:flex-start;gap:7px;font-size:10px;line-height:1.6;color:#8e9bae;margin-top:16px}
+.onboarding-privacy svg{margin-top:1px}
+.onboarding-invite-note{display:flex;align-items:flex-start;gap:10px;padding:13px 14px;margin:0 0 19px;border-left:2px solid #b8cdff55;background:#b8cdff06;border-radius:0 10px 10px 0;color:#adc3e5}
+.onboarding-invite-note strong{font-size:11px;color:#d4e0f2;font-weight:550}
+.onboarding-invite-note p{font-size:11px;line-height:1.65;color:#99aac0;margin-top:3px}
+.onboarding-invite-note svg{margin-top:1px}
+.onboarding-invite-note .button{margin-top:11px}
+.onboarding-success{display:flex;align-items:center;gap:8px;color:#a7cfb8;font-size:11px;line-height:1.6;margin-top:16px}
+.onboarding-error{margin-top:18px;overflow-wrap:anywhere}
+.onboarding-error small{display:block;margin-top:7px;font-size:10px;color:#c1a5a5}
+.rooms-onboarding button:disabled{opacity:.48}
+.rooms-invitation .invitation-art{width:66px;height:66px;margin:8px 0 23px;border:1px solid #c8d9f326;border-radius:20px;background:linear-gradient(145deg,#b8cdff16,#b8cdff03);color:#c0d1ec;box-shadow:inset 0 1px #ffffff10}
+.rooms-invitation .invitation-copy h3{font-size:23px;letter-spacing:-.5px;font-weight:550;margin-bottom:8px;overflow-wrap:anywhere}
+.rooms-invitation .modal-description{font-size:12px;line-height:1.7;color:#a5b3c5}
+.rooms-invitation .invitation-loading{display:flex;align-items:center;gap:8px;min-height:66px}
+.rooms-invitation .connection-info{margin:23px 0 16px;color:#99aac0;overflow-wrap:anywhere}
+.rooms-invitation .invitation-access-note{font-size:11px;line-height:1.7;color:#94a4ba;margin:15px 0 5px}
+.rooms-invitation .invitation-retry{margin-top:10px}
+[data-transparency=reduce] .rooms-onboarding,[data-transparency=reduce] .onboarding-access,[data-transparency=reduce] .rooms-invitation{backdrop-filter:none;background:#181f29}
+@media(max-width:1100px){.rooms-onboarding.connection-card{padding:21px}.onboarding-heading h4{font-size:22px}.onboarding-heading{gap:12px}.onboarding-heading>.connection-status{font-size:8px}.onboarding-credentials,.onboarding-registration{grid-template-columns:1fr}.onboarding-account-invite{grid-column:auto}}
+@media(max-width:760px){.onboarding-heading{flex-wrap:wrap}.onboarding-heading>.connection-status{margin-left:63px}.onboarding-access button{padding:9px 6px;font-size:10px}.rooms-onboarding.connection-card{padding:18px}.onboarding-privacy{justify-content:flex-start}}
