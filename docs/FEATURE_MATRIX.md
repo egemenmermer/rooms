@@ -30,3 +30,7 @@ The approved phases are not all accepted. Environment and account gates remain e
 ## 2026-10-10 production-only UI policy
 
 The owner requested removal of all demo data. Version 0.1.9 removes the local social mode, synthetic friends/spaces/messages, local-only polls/queue and bundled sample movie. Legacy persisted social fixtures are discarded while supported device/appearance preferences survive. Signed-out Home/Chat/Spaces/Voice/Profile show real authentication; logout never falls back to fixtures. Cinema requires an explicitly selected personal file and stays local; together viewing uses the existing official YouTube or authorized screen-share path. The removed demo-film shared-Cinema path is no longer offered. Original scenic Home artwork is decorative artwork, not a current movie, person or session. Historical demo playback evidence remains historical and does not certify the current Cinema workflow.
+
+### 0.1.12 owner-requested voice layout
+
+Familiar channel sidebar, joined-channel roster, large participant/camera tiles, real speaking outlines, bottom call controls and profile avatar picker are implemented in the local unsigned preview. New layout/avatar paths await owner manual acceptance; historical transport results do not certify this revision. Other channels do not synthesize occupancy. Missing photos use initials.

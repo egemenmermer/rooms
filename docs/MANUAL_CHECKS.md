@@ -22,3 +22,13 @@ Open Settings from each screen. Confirm main navigation is hidden, settings cont
 ## 0.1.11 popup follow-up
 
 Open Settings while a conversation or video is open. Confirm the previous screen remains behind a dark scrim, the sheet fills most of the window with a small margin, the background cannot be clicked, categories/content scroll normally, and X/Escape/scrim click returns to the same position. Open a nested provider/settings dialog and confirm Escape closes only that dialog first. Check ongoing voice/video yourself. This revision is not agent-tested.
+
+## 0.1.12 voice rooms and photos
+
+1. Profile → Photo: select a PNG/JPEG/WebP under 2 MB. Confirm it appears in the room and channel roster; an account without a photo should show initials.
+2. Join one voice channel with a friend. Speak while unmuted, then mute. Confirm real green speaking outlines in both clients, without a false outline when muted.
+3. Enable camera; select a screen/window, then stop sharing. Confirm received video and stop behavior with the friend.
+4. Click a participant, adjust personal volume and open a DM. Check microphone/deafen/leave controls and Settings overlay.
+5. Switch channels and navigate between chat/Activities. Check the actual participant lists, connection state and persistent audio.
+
+The owner performs these checks. No new automatic verification has run.
