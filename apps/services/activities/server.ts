@@ -85,7 +85,7 @@ export async function createActivityServer(options: ActivityServerOptions) {
       if (room && pruneDisconnected(room, now())) { await options.repository.save(room); notify(room.snapshot.roomId); }
     }); } catch { /* The next sweep retries. Never expose stale leases as an auth substitute. */ }
     finally { sweeping = false; }
-  }, options.sweepIntervalMs ?? 5000); sweep.unref();
+  }, options.sweepIntervalMs ?? 1000); sweep.unref();
   app.addHook('onClose', async () => { clearInterval(sweep); for (const id of listeners.keys()) notify(id); });
   return app;
 }
