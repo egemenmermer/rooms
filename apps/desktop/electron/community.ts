@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { StoatClient, StoatError } from '@rooms/stoat';
 import { SOCIAL_ID_PATTERN, type SocialUser, type GatewayEvent } from '@rooms/social';
 import type { SocialSession } from '@rooms/contracts';
+import { postActivityCommand } from './activity-http';
 
 class SocialInputError extends Error {}
 
@@ -105,6 +106,7 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   async function activityRequest(roomId:string,command?:unknown,afterRevision?:number):Promise<unknown>{
     const current=requireClient();const room=id.parse(roomId);
     if(command!==undefined&&Buffer.byteLength(JSON.stringify(command),'utf8')>65536)throw new Error('The activity command is too large.');
+    if(command!==undefined){const token=current.getToken()!;return postActivityCommand(`${new URL(current.instanceUrl).origin}/rooms-activities/v1/rooms/${encodeURIComponent(room)}/activity`,room,token,command,fetch,()=>{if(client!==current||current.getToken()!==token)throw new StoatError(401,'SESSION_CHANGED');});}
     const revision=afterRevision===undefined?undefined:z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).parse(afterRevision);
     const query=command===undefined&&revision!==undefined?`?afterRevision=${revision}&waitMs=20000`:'';
     const response=await fetch(`${new URL(current.instanceUrl).origin}/rooms-activities/v1/rooms/${encodeURIComponent(room)}/${command===undefined?'activity':'activity/commands'}${query}`,{method:command===undefined?'GET':'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${current.getToken()!}`},body:command===undefined?undefined:JSON.stringify(command),redirect:'error',signal:AbortSignal.timeout(30000)});
