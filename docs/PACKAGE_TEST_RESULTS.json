@@ -11,27 +11,27 @@
   "metrics": [
     {
       "type": "Browser",
-      "workingSetKB": 208736,
+      "workingSetKB": 138704,
       "cpuPercent": 0
     },
     {
       "type": "GPU",
-      "workingSetKB": 148304,
+      "workingSetKB": 114256,
       "cpuPercent": 0
     },
     {
       "type": "Utility",
-      "workingSetKB": 42464,
+      "workingSetKB": 36256,
       "cpuPercent": 0
     },
     {
       "type": "Tab",
-      "workingSetKB": 178368,
+      "workingSetKB": 147360,
       "cpuPercent": 0
     },
     {
       "type": "Utility",
-      "workingSetKB": 45888,
+      "workingSetKB": 41120,
       "cpuPercent": 0
     }
   ]

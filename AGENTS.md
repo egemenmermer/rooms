@@ -1,12 +1,11 @@
 # ROOMS project instructions
 
-## Design ownership — persistent user preference
-- For every substantial UI, interaction, animation, visual-system, or Liquid Glass change, delegate direct implementation to a subagent using `gpt-6-astra` with reasoning effort `high`.
-- This is an implementation role, not a read-only review. Give the designer ownership of concrete UI files and require working interactions and visual QA in the running Electron app.
+## Implementation ownership — persistent user preference
+- As explicitly requested on 2026-10-10, the main agent implements all work, including UI, interactions, animations and Liquid Glass. Do not delegate to Astra/high or open design subagents unless the user explicitly re-enables delegation.
+- This supersedes earlier Astra/high design-ownership requirements in historical milestone and continuation documents.
 - Read `docs/reference/ROOMS_DESKTOP_MASTER_PROMPT.md` in full and study both visual-reference files before implementing product changes.
 - macOS 14+ and Apple Silicon come first. Preserve Windows compatibility without claiming Windows validation on macOS.
-- Keep the main agent responsible for architecture, security, real integrations, acceptance testing, and final verification. Assign non-overlapping file ownership to concurrent agents.
-- If Astra/high is unavailable, report it instead of silently substituting another model.
+- Main agent owns product design, architecture, security, real integrations, visual QA, acceptance testing and final verification.
 
 ## Product and engineering
 - Communicate with the user in Turkish. Write code, comments, and technical documents in English.
