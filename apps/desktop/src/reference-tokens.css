@@ -1,0 +1,82 @@
+@font-face {
+  font-family: "Inter";
+  src: url("/reference-brand/fonts/InterVariable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --color-background-canvas: #141518;
+  --color-background-sidebar: #1b1d22;
+  --color-background-main: #22252c;
+  --color-background-raised: #2b2f38;
+  --color-background-hover: #343946;
+
+  --color-text-primary: #f2f3f7;
+  --color-text-secondary: #b1b5c2;
+  --color-text-muted: #9197a7;
+  --color-text-onAccent: #151324;
+
+  --color-border-default: #3c414e;
+  --color-border-subtle: #30343d;
+  --color-border-interactive: #6c7385;
+
+  --color-action-primary: #8b83ff;
+  --color-action-primaryHover: #a49dff;
+  --color-action-focus: #c1bcff;
+
+  --color-status-success: #53c793;
+  --color-status-warning: #f2bb67;
+  --color-status-error: #f17984;
+
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-64: 64px;
+
+  --radius-4: 4px;
+  --radius-7: 7px;
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-24: 24px;
+
+  --font-family: Inter, system-ui, sans-serif;
+  --font-size-body: 15px;
+  /* tokens.json says 12px; D01 Foundations labels metadata as 11/16/400. */
+  --font-size-metadata: 12px;
+  --font-size-metadata-visual: 11px;
+  --font-size-ui: 13px;
+  --font-size-h2: 20px;
+  --font-size-h1: 26px;
+  --font-size-display: 32px;
+  --line-height-body: 23px;
+  --line-height-metadata: 16px;
+  --line-height-ui: 20px;
+  --line-height-h2: 26px;
+  --line-height-h1: 32px;
+  --line-height-display: 38px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-h2: 600;
+  --font-weight-h1: 650;
+  --font-weight-display: 600;
+  --motion-quick: 140ms;
+  --motion-modal: 180ms;
+
+  --layout-rail: 72px;
+  --layout-sidebar: 248px;
+  --layout-context: 278px;
+  --layout-titlebar: 30px;
+  --layout-toolbar: 59px;
+  --layout-min-window-width: 900px;
+  --layout-min-window-height: 700px;
+}
