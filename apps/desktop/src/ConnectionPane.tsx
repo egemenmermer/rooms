@@ -6,11 +6,9 @@ import { Avatar } from '@rooms/design';
 import { useCommunity } from './community';
 import { useRooms } from './store';
 import './onboarding.css';
-
 const productionServer = 'https://62.238.119.134';
 const localServer = 'http://127.0.0.1:3021';
 const normalizedServer = (value: string) => value.trim().replace(/\/+$/, '');
-
 export function ConnectionPane() {
     const c = useCommunity();
     const [params, setParams] = useSearchParams();
@@ -29,7 +27,6 @@ export function ConnectionPane() {
     const busy = c.busy || working;
     const error = localError || c.error;
     const sameServer = normalizedServer(c.serverUrl) === normalizedServer(server);
-
     useEffect(() => {
         if (code && address) {
             setInvite(code);
@@ -37,9 +34,10 @@ export function ConnectionPane() {
             setJoined(false);
         }
     }, [code, address]);
-    useEffect(() => { if (access) setRegistration(access === 'register'); }, [access]);
-    useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
-
+    useEffect(() => { if (access)
+        setRegistration(access === 'register'); }, [access]);
+    useEffect(() => { if (error)
+        errorRef.current?.focus(); }, [error]);
     const clearError = () => { setLocalError(''); c.clearError(); };
     const completeInvite = () => {
         setInvite('');
@@ -51,16 +49,25 @@ export function ConnectionPane() {
         setParams(next, { replace: true });
     };
     const acceptInvite = async () => {
-        if (busy) return;
+        if (busy)
+            return;
         clearError();
         setWorking(true);
-        try { await c.acceptInvite(invite.trim()); completeInvite(); }
-        catch (err) { setLocalError(uiError(err)); }
-        finally { setWorking(false); }
+        try {
+            await c.acceptInvite(invite.trim());
+            completeInvite();
+        }
+        catch (err) {
+            setLocalError(uiError(err));
+        }
+        finally {
+            setWorking(false);
+        }
     };
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (busy) return;
+        if (busy)
+            return;
         clearError();
         setWorking(true);
         try {
@@ -68,17 +75,25 @@ export function ConnectionPane() {
             if (registration) {
                 await c.register({ serverUrl, email: email.trim(), password, username: username.trim(), inviteCode: invite.trim(), ...(accountInvite.trim() ? { accountInviteCode: accountInvite.trim() } : {}) });
                 completeInvite();
-            } else {
+            }
+            else {
                 await c.connect({ serverUrl, email: email.trim(), password });
                 setPassword('');
-                if (invite.trim()) { await c.acceptInvite(invite.trim()); completeInvite(); }
+                if (invite.trim()) {
+                    await c.acceptInvite(invite.trim());
+                    completeInvite();
+                }
             }
             setPassword('');
-        } catch (err) { setLocalError(uiError(err)); }
-        finally { setWorking(false); }
+        }
+        catch (err) {
+            setLocalError(uiError(err));
+        }
+        finally {
+            setWorking(false);
+        }
     };
     const changeAccess = (next: boolean) => { setRegistration(next); clearError(); };
-
     return <section className="connection-card social-connection rooms-onboarding" aria-labelledby="community-heading" aria-busy={busy}>
         <div className="onboarding-heading">
             <span className="onboarding-emblem"><Users size={23}/></span>
@@ -90,7 +105,6 @@ export function ConnectionPane() {
             <p className="connection-disclosure">{c.spaces.length} özel topluluk</p>
             {!!invite && <div className="onboarding-invite-note"><Users size={17}/><div><strong>Davetin burada.</strong><p>{sameServer ? 'Hesabın açık. Topluluğa katılmak için davetini kabul et.' : 'Bu davet farklı bir sunucuda. Çıkış yapıp davetin sunucusunda giriş yap.'}</p><button className="button secondary small" disabled={busy || !sameServer} onClick={() => void acceptInvite()}>{busy ? <LoaderCircle size={14} className="spin"/> : <ArrowRight size={14}/>}Daveti kabul et</button></div></div>}
             {joined && <p className="onboarding-success" role="status"><Check size={16}/>Davet kabul edildi. Topluluğuna hoş geldin.</p>}
-            {c.mode === 'demo' && <button className="button secondary small" onClick={() => void c.openSpace(c.spaces[0]?.id ?? '')} disabled={!c.spaces.length}>{tr('Open community')}<ArrowRight size={14}/></button>}
         </> : <>
             <div className="onboarding-access" role="group" aria-label={tr('Account access')}>
                 <button type="button" aria-pressed={!registration} className={!registration ? 'selected' : ''} disabled={busy} onClick={() => changeAccess(false)}>{tr('Sign in')}</button>
