@@ -79,7 +79,14 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   handle('rooms:social-presence',status=>requireClient().updatePresence(z.enum(['online','idle','dnd','invisible']).parse(status)));
   async function broker(path:string,channelId:unknown){
     const current=requireClient();const response=await fetch(`${new URL(current.instanceUrl).origin}/rooms-access/v1/media/${path}`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:current.getToken()!},body:JSON.stringify({channelId:id.parse(channelId)}),redirect:'error',signal:AbortSignal.timeout(15000)});
-    if(!response.ok)throw new StoatError(response.status,'MEDIA_GRANT_DENIED');return response.json();
+    const value=await response.json().catch(()=>null);
+    if(current!==client)throw new SocialInputError('The conversation session changed. Join the voice room again.');
+    if(!response.ok){
+      const reasons:Record<string,string>={PRESENTER_BUSY:'Someone is already sharing in this room. Ask them to stop before you share.',PRESENT_PERMISSION_REQUIRED:'Your room role does not allow screen sharing.',VOICE_CHANNEL_REQUIRED:'Choose a voice room before joining.',ROOM_ACCESS_DENIED:'Your access to this voice room changed. Rejoin after your membership is restored.'};
+      if(typeof value?.error==='string'&&Object.hasOwn(reasons,value.error))throw new SocialInputError(reasons[value.error]);
+      throw new StoatError(response.status,'MEDIA_GRANT_DENIED');
+    }
+    return value;
   }
   handle('rooms:media-grant',channelId=>broker('grant',channelId));
   handle('rooms:media-presenter',(channelId,action)=>broker(`screen/${z.enum(['acquire','release']).parse(action)}`,channelId));

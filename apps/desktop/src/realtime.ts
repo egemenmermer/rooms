@@ -1,11 +1,12 @@
+import { uiError } from './i18n';
 import { create } from 'zustand';
 import { useSyncExternalStore } from 'react';
 import { liveKitMediaProvider, type MediaSnapshot } from '@rooms/media';
 import { useRooms } from './store';
 export const useVoiceContext=create<{channelId:string|null;roomName:string|null;error:string|null;busy:boolean}>(()=>({channelId:null,roomName:null,error:null,busy:false}));
 const bridge=()=>{if(!window.rooms?.media)throw new Error('Open the Electron desktop app to use voice and screen sharing.');return window.rooms.media;};
-const errorText=(e:unknown)=>e instanceof Error?e.message.replace(/^Error invoking remote method '[^']+': Error: /,''):'The media operation failed. Retry after checking your devices.';
-export function useRealtime():MediaSnapshot&{channelId:string|null;roomName:string|null;busy:boolean}{const snapshot=useSyncExternalStore(liveKitMediaProvider.subscribeState,liveKitMediaProvider.snapshot,liveKitMediaProvider.snapshot);const context=useVoiceContext();return {...snapshot,...context,error:context.error??snapshot.error};}
+const errorText=uiError;
+export function useRealtime():MediaSnapshot&{channelId:string|null;roomName:string|null;busy:boolean}{const snapshot=useSyncExternalStore(liveKitMediaProvider.subscribeState,liveKitMediaProvider.snapshot,liveKitMediaProvider.snapshot);const context=useVoiceContext();return {...snapshot,...context,error:context.error??(snapshot.error?uiError(snapshot.error):null)};}
 export async function joinVoice(channelId:string,roomName:string){
   if(useVoiceContext.getState().busy)return;await leaveVoice();useRooms.getState().leavePreview();useVoiceContext.setState({busy:true,error:null,channelId,roomName});
   try{const grant=await bridge().grant(channelId);await liveKitMediaProvider.connectRoom(grant.roomName,grant.token,grant.serverUrl);await liveKitMediaProvider.deviceSelection(useRooms.getState().preferences.inputId,useRooms.getState().preferences.outputId);}
