@@ -2,6 +2,10 @@
 
 Updated 2026-10-10. Owner instruction: deliver a usable private desktop product for 3–6 friends, continue overnight, and resume after a usage reset. Follow AGENTS.md, the full master brief and docs/REMAINING_PHASES_PLAN.md. Technical documentation is English; user communication and product UI are Turkish.
 
+## Current owner override and delivery
+
+Local 0.1.14 is the current unsigned Apple Silicon implementation preview; published v0.1.8 assets remain preserved. The owner performs all acceptance. Do not execute this document's historical test/QA/disruption steps without explicit reauthorization. Compilation, packaging and opening for delivery are allowed; those operations do not close acceptance gates. Read the latest CONTINUATION_CHECKPOINT.md entries and MANUAL_CHECKS.md before continuing. Main agent implements all work; no design delegation.
+
 ## Outcome and completion rule
 
 Finish the actual product, not a demonstration or a container installation. A friend must be able to install ROOMS on Apple Silicon/macOS 14+, accept a private invitation, authenticate against the real core, exchange messages and attachments, join persistent voice, start a shared Activity and recover after reconnect. Only mark a capability VERIFIED WORKING when its specified acceptance actually passes. Unavailable accounts, signing identities and a second physical computer remain explicit prerequisites, never invented successes. Do all independent work while prerequisites remain unavailable. Do not silently change the approved separate-Agent-host requirement.

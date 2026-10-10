@@ -44,3 +44,8 @@ Implemented, compiled and packaged only; no agent tests or type checks. Owner ch
 5. Sign out/restart: selected clips should be gone. They are memory-only, not uploaded to the server. No sample sounds are bundled. The sender does not locally monitor their own transmitted clip.
 
 No remote service modification, physical-device or Windows validation is claimed. Report the action and observed result.
+
+
+## Local 0.1.14 follow-up
+
+Soundboard files must clear on logout even when the call dock has already disappeared. Import a clip, leave voice, sign out and sign in to the same account, then rejoin: the board must be empty. Also sign out while importing a clip; its asynchronous decode must not repopulate the next session. These checks are for the owner and have not been run by the agent.

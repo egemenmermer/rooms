@@ -2,6 +2,10 @@
 
 Read AGENTS.md, docs/OVERNIGHT_DEPLOYMENT_PLAN.md and docs/REMAINING_PHASES_PLAN.md. The owner explicitly disabled Astra/high and requested main-agent-only implementation, including UI and visual QA. Do not spawn design agents. Continue the authorized product work; do not imply completion from tests alone.
 
+## Active delivery and owner acceptance policy
+
+Latest local preview: 0.1.14, unsigned Apple Silicon app/ZIP. Published GitHub release stays at v0.1.8; preserve its assets. Versions 0.1.9 (minimal-copy revision) onward are implementation deliveries awaiting owner acceptance, not certified by earlier evidence. The owner performs ALL testing: do not run tests, type checks, QA/acceptance scripts, screenshots for acceptance or remote disruption/load scenarios. Allowed delivery commands are `pnpm exec vite build`, `node scripts/build-notices.mjs`, `node scripts/build-electron.mjs` and direct electron-builder packaging. Do not use package.json build/package scripts that invoke typecheck. Read the latest dated entries below before choosing the next action.
+
 ## Current core and access
 
 Dedicated core: `https://62.238.119.134`, unmodified pinned Stoat v0.15.5, independent LiveKit and scoped access/Activity services. Sixteen services run. Hoppers is out of scope. SSH owner access uses `/Users/egemenmermer/.ssh/id_ed25519`, IdentitiesOnly/BatchMode, StrictHostKeyChecking and `.local/ssh/known_hosts`. Compose is `/opt/rooms/config/compose.yml`, project `rooms-core`. The `rooms-deploy` account can invoke only the root-owned bounded ROOMS status/restart wrapper; generic root, Docker, other projects and private configuration are denied. Owner access remains intact. Arbitrary code deployment is owner-only.
@@ -47,7 +51,7 @@ Current-thread hourly heartbeat exists and is main-agent-only, quiet on unchange
 
 ## Useful commands
 
-`pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm services:build`. Read each verification script's private configuration before running. Use owned QA identities only. Check git status before edits, preserve credentials/pinned images and commit with actual timestamps to the authorized private `egemenmermer/rooms` main branch. No backdating.
+Historical commands included type checks, tests and acceptance scripts. They are now prohibited by the owner; use only the delivery commands in the active policy above. Use owned QA identities only. Check git status before edits, preserve credentials/pinned images and commit with actual timestamps to the authorized private `egemenmermer/rooms` main branch. No backdating.
 
 ## 2026-10-10 04:11 UTC game acceptance
 
@@ -202,3 +206,10 @@ Soundboard accepts explicitly user-selected local files, bounded to 2 MB/8 secon
 Primary API references consulted without invoking acceptance scenarios: [channel creation and ManageChannel enforcement](https://github.com/stoatchat/stoatchat/blob/v0.15.5/crates/delta/src/routes/servers/channel_create.rs), [TextChannel voice metadata construction](https://github.com/stoatchat/stoatchat/blob/v0.15.5/crates/core/database/src/models/channels/model.rs). The installed LiveKit 2.22.3 source supplies TrackProcessor, LocalAudioTrack.setProcessor/applyConstraints and mute lifecycle contracts.
 
 0.1.13 delivery: `pnpm exec vite build`, `node scripts/build-notices.mjs`, `node scripts/build-electron.mjs`, `pnpm exec electron-builder --mac zip --arm64` completed. Final rerun includes section + controls, Soundboard/PTT handling and cancellation cleanup. Unsigned Apple Silicon app/ZIP only; no published release, DMG, remote service change, tests, type checks or acceptance claims. Existing renderer chunk/import warnings remain. Owner checklist is appended in MANUAL_CHECKS.md.
+
+
+## 2026-10-10 — Soundboard authentication cleanup follow-up
+
+Static implementation inspection found Soundboard's component-scoped authentication effect could miss logout after the call dock unmounted. Version 0.1.14 observes authentication in the session store independently of mounted UI, immediately stops clips and clears their decoded buffers when identity/origin changes or signs out. A session generation also rejects a file decode completing after logout and sign-in to the same identity. This is an implementation correction, not a reproduced/accepted test result. Owner acceptance remains pending; no tests/type checks were run. Core/Hoppers, credentials and published releases remain unchanged.
+
+0.1.14 delivery completed: Vite renderer, notices and Electron compilation, then direct unsigned Apple Silicon ZIP packaging. Existing chunk/import warnings remain. No tests, type checks, acceptance scenarios or remote operations ran. The already running owner app was not forcibly restarted during this heartbeat; the rebuilt local app is available at its existing release/mac-arm64 path for the owner's next launch. No published release or prior asset was changed. Remaining mandatory gates are owner acceptance and supplied external/device/signing prerequisites.
