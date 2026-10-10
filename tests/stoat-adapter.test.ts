@@ -44,3 +44,17 @@ it('restores only authoritative own read markers and resyncs after acknowledgeme
 });
 it('does not invent empty read markers when the sync response is unsupported or invalid',async()=>{const url=await fixture(path=>path==='/api/users/@me'?{_id:'self',username:'self'}:{type:'NotFound'});await expect(new StoatClient(url,'fixture-token').readStates()).rejects.toMatchObject({code:'INVALID_READ_STATES'});});
 it('fetches one authoritative message and rejects a mismatched reminder source scope (protocol fixture)',async()=>{let mismatch=false;const paths:string[]=[];const messageId='01ARZ3NDEKTSV4RRFFQ69G5FAV';const url=await fixture(path=>{paths.push(path);return{_id:messageId,channel:mismatch?'another-channel':'channel',user:{_id:'friend',username:'Friend'},author:'friend',content:'Remind me later'};});const client=new StoatClient(url,'fixture-token',{botToken:true});expect(await client.getMessage('channel',messageId)).toMatchObject({id:messageId,channelId:'channel',content:'Remind me later'});expect(paths).toEqual([`/api/channels/channel/messages/${messageId}`]);mismatch=true;await expect(client.getMessage('channel',messageId)).rejects.toMatchObject({code:'MESSAGE_SCOPE_MISMATCH'});await expect(client.getMessage('../channel',messageId)).rejects.toMatchObject({code:'INVALID_ID'});expect(paths).toHaveLength(2);});
+
+it('queues same-bucket REST calls until authoritative headers replenish (protocol fixture)',async()=>{
+ const times:number[]=[];
+ server=createServer((_req,res)=>{times.push(Date.now());res.setHeader('Content-Type','application/json');if(times.length===1){res.setHeader('X-RateLimit-Remaining','0');res.setHeader('X-RateLimit-Reset-After','60');}res.end(JSON.stringify({_id:'channel',channel_type:'TextChannel',name:'QA'}));});
+ await new Promise<void>(resolve=>server!.listen(0,'127.0.0.1',resolve));
+ const client=new StoatClient(`http://127.0.0.1:${(server.address() as {port:number}).port}`,'fixture-token');
+ await Promise.all([client.getChannel('channel'),client.getChannel('channel')]);expect(times).toHaveLength(2);expect(times[1]-times[0]).toBeGreaterThanOrEqual(60);
+});
+it('retries only definite pre-route 429 and does not retry ambiguous mutation failure (protocol fixture)',async()=>{
+ let count=0,mutations=0;
+ server=createServer(async(req,res)=>{for await(const _chunk of req){}count++;res.setHeader('Content-Type','application/json');if(count===1){res.statusCode=429;res.setHeader('X-RateLimit-Reset-After','1');res.end(JSON.stringify({retry_after:1}));return;}if(req.method==='DELETE'){mutations++;res.statusCode=503;res.end('{}');return;}res.end(JSON.stringify({_id:'channel',channel_type:'TextChannel'}));});
+ await new Promise<void>(resolve=>server!.listen(0,'127.0.0.1',resolve));const client=new StoatClient(`http://127.0.0.1:${(server.address() as {port:number}).port}`,'fixture-token');
+ await client.getChannel('channel');expect(count).toBe(2);await expect(client.deleteMessage('channel','message')).rejects.toMatchObject({status:503});expect(mutations).toBe(1);
+});
