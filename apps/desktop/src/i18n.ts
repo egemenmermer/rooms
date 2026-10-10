@@ -653,6 +653,7 @@ export const locale = 'tr-TR';
 export function tr(key: string): string { return trMessages[key] ?? activityMessages[key] ?? key; }
 
 const errorMessages: Record<string, string> = {
+  'The activity service is unavailable. It will reconnect automatically.': 'Etkinlik hizmetine ulaşılamıyor. Bağlantı otomatik olarak yeniden denenecek.',
   'Invitation provisioning is not configured on this server. Ask your administrator.': 'Bu sunucuda hesap davetleri henüz hazır değil. Sunucu yöneticine danış.',
   'Only the space owner can create account invitations.': 'Hesap davetini yalnızca topluluk sahibi oluşturabilir.',
   'This Stoat release cannot enforce invitation expiry or one-time use. Ask your administrator to provide an invitation.': 'Bu sunucuda süreli veya tek kullanımlık davet desteklenmiyor. Sunucu yöneticinden davet iste.',

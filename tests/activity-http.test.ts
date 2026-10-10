@@ -1,6 +1,6 @@
 import {describe,it,expect,vi} from 'vitest';
 import {randomUUID} from 'node:crypto';
-import {postActivityCommand} from '../apps/desktop/electron/activity-http';
+import {postActivityCommand,getActivitySnapshot} from '../apps/desktop/electron/activity-http';
 const envelope=()=>({protocolVersion:1,commandId:randomUUID(),expectedRevision:1,command:{type:'playback',playing:true,positionSec:12,rate:1}});
 const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json'}});
 describe('native Activity command conflict recovery',()=>{
@@ -24,5 +24,25 @@ describe('native Activity command conflict recovery',()=>{
  it('bounds repeated precondition conflicts to three writes',async()=>{
   let posts=0;const fetcher=vi.fn(async(_url:unknown,options?:RequestInit)=>options?.method==='POST'?(posts++,json({error:'REVISION_CONFLICT'},409)):json({protocolVersion:1,room:{roomId:'room',revision:posts+1}}));
   await expect(postActivityCommand('https://example.test/activity','room','owned-test-token',envelope(),fetcher as typeof fetch)).rejects.toMatchObject({code:'REVISION_CONFLICT',status:409});expect(posts).toBe(3);expect(fetcher).toHaveBeenCalledTimes(5);
+ });
+});
+
+describe('native Activity snapshot boundaries',()=>{
+ it('rejects a delayed response after the authenticated session changed',async()=>{
+  let current=true;const assertSession=()=>{if(!current)throw new Error('SESSION_CHANGED');};
+  const fetcher=vi.fn(async()=>{current=false;return json({protocolVersion:1,room:{roomId:'room',revision:3}});});
+  await expect(getActivitySnapshot('https://example.test/activity','room','owned-test-token',fetcher,assertSession)).rejects.toThrow('SESSION_CHANGED');
+  expect(fetcher).toHaveBeenCalledTimes(1);
+ });
+ it('rejects foreign rooms and invalid revisions before returning renderer data',async()=>{
+  for(const room of [{roomId:'other',revision:3},{roomId:'room',revision:-1},{roomId:'room',revision:1.5}]){
+   await expect(getActivitySnapshot('https://example.test/activity','room','owned-test-token',vi.fn().mockResolvedValue(json({protocolVersion:1,room})))).rejects.toMatchObject({code:'INVALID_ACTIVITY_RESPONSE'});
+  }
+ });
+ it('distinguishes Activity outage from social transport and bounds upstream errors',async()=>{
+  for(const fetcher of [vi.fn().mockRejectedValue(new Error('private endpoint detail')),vi.fn().mockResolvedValue(new Response('untrusted HTML',{status:502}))]){
+   await expect(getActivitySnapshot('https://example.test/activity','room','owned-test-token',fetcher)).rejects.toThrow('The activity service is unavailable. It will reconnect automatically.');expect(fetcher).toHaveBeenCalledTimes(1);
+  }
+  await expect(getActivitySnapshot('https://example.test/activity','room','owned-test-token',vi.fn().mockResolvedValue(json({error:'ROOM_ACCESS_DENIED'},403)))).rejects.toMatchObject({status:403,code:'ROOM_ACCESS_DENIED'});
  });
 });
