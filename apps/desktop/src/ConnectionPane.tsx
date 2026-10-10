@@ -128,7 +128,7 @@ export function ConnectionPane() {
                     {registration && <div className="onboarding-registration">
                         <label className="field-label">TOPLULUK DAVET KODU<input required aria-label={tr('Invitation code')} autoComplete="off" spellCheck={false} maxLength={128} value={invite} onChange={e => setInvite(e.target.value)} placeholder="Arkadaşından gelen kod"/></label>
                         <label className="field-label">{tr('YOUR NAME')}<input required aria-label={tr('Account username')} autoComplete="nickname" maxLength={32} minLength={2} value={username} onChange={e => setUsername(e.target.value)} placeholder={'Kullanıcı adı'}/></label>
-                        <label className="field-label onboarding-account-invite">HESAP DAVET KODU <span className="onboarding-optional">Sunucun istiyorsa</span><input aria-label="Hesap davet kodu" aria-describedby="account-invite-help" value={accountInvite} onChange={e => setAccountInvite(e.target.value)} maxLength={128} autoComplete="off" placeholder="Hesap açma kodu"/><small id="account-invite-help">Topluluk davetinden farklıdır. Sunucu yöneticin verdiyse ekle.</small></label>
+
                     </div>}
                     <div className="onboarding-credentials">
                         <label className="field-label">{tr('EMAIL')}<input required type="email" aria-label={tr('Account email')} autoComplete="email" autoCapitalize="none" spellCheck={false} value={email} onChange={e => setEmail(e.target.value)} placeholder="sen@ornek.com"/></label>
@@ -139,6 +139,6 @@ export function ConnectionPane() {
             </form>
             
         </>}
-        {error && <div className="error-pane onboarding-error" ref={errorRef} tabIndex={-1} role="alert"><strong>{c.user && invite ? 'Giriş yapıldı, davet tamamlanamadı.' : tr('We couldn’t complete that.')}</strong><p>{error}</p>{!c.user && <small>Bilgilerini kontrol edip yeniden dene.</small>}</div>}
+        {error && <div className="error-pane onboarding-error" ref={errorRef} tabIndex={-1} role="alert"><strong>{c.user && invite ? 'Giriş yapıldı, davet tamamlanamadı.' : tr('We couldn’t complete that.')}</strong><p>{error}</p></div>}
     </section>;
 }

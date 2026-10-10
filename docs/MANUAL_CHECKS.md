@@ -12,3 +12,9 @@ Open `release/mac-arm64/ROOMS.app`. This is an unsigned Apple Silicon preview. P
 6. Change compact mode, transparency and accent. Restart and check preferences persist.
 
 Send the screen name, action and observed result for any failure. Separate Agent hosting/model accounts, authorized media-provider credentials, signing, Windows and physical-device acceptance remain pending. Do not treat compilation as completed product acceptance.
+
+## 0.1.10 owner follow-up
+
+Use the existing owner account's ROOMS password from the privately delivered file, rather than registering the same email again. The failed signup ticket cannot be reused. This is not the root or Gmail password.
+
+Open Settings from each screen. Confirm main navigation is hidden, settings content fills the window, X and Escape return to the preceding screen, category switching works, and a joined voice call continues while Settings is open. No automatic acceptance has been performed for this revision.
