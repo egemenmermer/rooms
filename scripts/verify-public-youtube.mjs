@@ -24,3 +24,5 @@ try{
  result.pauseAndSeek=true;
 }catch(error){result.reason=error.name==='TimeoutError'?'Official player did not reach ready/playback in this environment':error.message.slice(0,160);if(app){const page=await app.firstWindow();await page.screenshot({path:'.local/production/youtube-debug.png'});result.state=await page.evaluate(()=>typeof player!=='undefined'?{state:player.getPlayerState(),position:player.getCurrentTime()}:null).catch(()=>null);result.errorEvents=await page.evaluate(()=>window.roomsPlayerEvents?.filter(x=>x.event==='error'||x.event==='autoplay-blocked')??[]).catch(()=>[]);const frame=page.frames().find(f=>f.url().startsWith('https://www.youtube.com/embed/'));result.playerErrorText=frame?await frame.locator('.ytp-error-content-wrap').innerText({timeout:1000}).catch(()=> ''):'';}}
 finally{await writeFile('infra/production/YOUTUBE_RESULTS.json',JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));if(app)await app.close();await rm(dir,{recursive:true,force:true});}
+
+if(!result.actualPlayback || !result.pauseAndSeek)process.exitCode=1;

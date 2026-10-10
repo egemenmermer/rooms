@@ -29,8 +29,8 @@ Finish the actual product, not a demonstration or a container installation. A fr
 - [x] Run isolated Mongo/PostgreSQL restores with no published ports and no outbound network. Verify restored community/account records and Activity state, then remove only owned restore-test containers.
 - [x] Prove the authorization reader cannot read accounts/sessions or perform writes; retain sanitized evidence.
 - [x] Install the corrected backup script and daily backup timer; document the brief writer maintenance window and retention. Preserve the owner's only decryption key off-host.
-- [ ] Verify certificate reload, external port isolation, load/memory/disk and service health. Save nonsecret image-digest evidence.
-- [ ] Complete least-privilege deployment access without removing working owner access. Test restart recovery without generating new secrets or losing persisted state.
+- [x] Verify certificate reload, external port isolation, load/memory/disk and service health. Save nonsecret image-digest evidence.
+- [ ] Complete least-privilege deployment access without removing working owner access. Full core reboot acceptance passed: authenticated session, polls, whiteboard and queue survived, all 16 services and timers recovered. Least-privilege handoff remains pending.
 
 ### 2. Desktop connected to production
 
@@ -45,7 +45,8 @@ Finish the actual product, not a demonstration or a container installation. A fr
 
 - [ ] Verify two-client queue/playback state, late join, host transfer, command replay/deduplication and recovery after service restart.
 - [x] Verify real official YouTube playback, pause and seek on the public HTTPS origin.
-- [ ] Verify two-client YouTube synchronization and autoplay/blocked-video/reconnect behavior.
+- [x] Verify two actual desktop clients play the official YouTube sample and deliver shared pause with zero renderer errors.
+- [ ] Finish YouTube autoplay/blocked-video, late-join, seek and reconnect acceptance.
 - [ ] Complete real multiplayer acceptance for polls, whiteboard, Holdem, Blackjack, approved Batak variants and 101 Okey. Exercise hidden hands, bot substitution, disconnect grace, returning seats, timeout and history/statistics persistence.
 - [ ] Verify Cinema local-source authorization and screen-sharing workflow; do not distribute provider tokens or personal media URLs through shared state.
 

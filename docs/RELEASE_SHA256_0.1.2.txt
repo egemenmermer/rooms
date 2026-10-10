@@ -1,0 +1,2 @@
+fb7886cb44791cefb849185591853fdb4a198da3bebf7f7d34acf5d3dd5740d4  release/ROOMS-0.1.2-arm64.dmg
+d9348f653b05241cb7f2afcd3598a55067a57fd27ed0a29803a4ce99b6b13cb3  release/ROOMS-0.1.2-arm64-mac.zip

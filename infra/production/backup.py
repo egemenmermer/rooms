@@ -40,6 +40,9 @@ try:
     print('Encrypted backup completed: '+str(output))
 finally:
     subprocess.run(compose+['exec','-T','database','rm','-f','/tmp/rooms-dump.yml'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-    if started:
-        subprocess.run(compose+['start']+writers,check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-    shutil.rmtree(stage)
+    try:
+        if started:
+            subprocess.run(compose+['start']+writers,check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    finally:
+        # A service restart failure must never leave plaintext credentials/dumps behind.
+        shutil.rmtree(stage)

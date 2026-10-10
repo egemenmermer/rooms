@@ -2,7 +2,7 @@
 
 The active backend is Stoat. `LEGACY_SPACEBAR_DEPLOYMENT.md` preserves the earlier environment and evidence; do not use its accounts or configuration as Stoat acceptance.
 
-Follow `infra/stoat/README.md` to generate the pinned upstream configuration and private keys, and `docs/AGENT_DEPLOYMENT.md` for the separate agent host. Build native services with `pnpm services:build`. No production host, domain or account credentials have been supplied; there is no production deployment claim.
+Follow `infra/stoat/README.md` to generate the pinned upstream configuration and private keys, and `docs/AGENT_DEPLOYMENT.md` for the separate agent host. Build native services with `pnpm services:build`. The dedicated core is deployed at `https://62.238.119.134` using a publicly trusted IP certificate. See `docs/OVERNIGHT_DEPLOYMENT_PLAN.md` and sanitized `infra/production/*_RESULTS.json` for actual acceptance and limits. The separate Agent host, personal provider/model account connections and signing identity are still unavailable. Private deployment files are under `/opt/rooms/config` on the core; do not regenerate them or expose credentials.
 
 ## Core host
 
