@@ -49,3 +49,27 @@ Evidence: `docs/screenshots/tr/`, `PERFORMANCE_CURRENT.json`, `POSTGRES_ACTIVITY
 7. Encrypted off-host backup and isolated restore drill; full evening M1/8 GB performance with voice/Activities; friends' rules/play sessions. Windows is preserved in source and has not been validated here.
 
 The user deferred servers, domain, signing and external accounts until later. These are missing deployment inputs, not permission questions. No production deployment, signed release or complete first-friends acceptance is claimed.
+
+## Actual dedicated-core deployment — 2026-10-10
+
+This checkpoint supersedes the earlier absent-core/public-origin gates. The authorized dedicated core is running at `https://62.238.119.134` with trusted IP TLS, unmodified pinned Stoat v0.15.5, independent LiveKit, scoped access broker and PostgreSQL-backed Activities. Hoppers was not used for this deployment. Application/database image digests are recorded in `infra/production/IMAGE_DIGESTS.json`.
+
+Actual production checks:
+
+| Command / exercise | Observed result |
+|---|---|
+| `ROOMS_STOAT_TEST_ACCOUNTS=.local/production/test-accounts.json node scripts/stoat-integration.mjs` | 8 actual public-deployment social checks PASS; two identities plus outsider, events/presence/restore |
+| `node scripts/verify-production.mjs` with owned private QA configuration | 10 PASS: invite registration, DM/read markers, attachment upload/download, membership-based Activity authorization, hidden Holdem view, deduplication, unsigned webhook denial and membership revocation. Served YouTube iframe is not real playback acceptance |
+| `node scripts/livekit-verify.mjs` with real QA account file | Two Electron clients PASS through public SFU with actual upstream-authorized grants; synthetic audio/video, mute, screen unpublish and signaling reconnect. Native devices/picker not certified |
+| `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm services:build` | PASS after fresh find-only authorization adapter; 94 tests/21 files. Existing renderer chunk-size warning remains |
+| `python3 /opt/rooms/backup.py` | Encrypted backup generated with owner's SSH public key recipient, writer services resumed; backup copied/decrypted privately on the Mac |
+| `python3 /opt/rooms/verify-restore.py` | Offline isolated Mongo/PostgreSQL dump restores PASS: 4 users, 1 community, 3 channels, Activity schema restored; disposable containers removed. No production restore or upload/TLS restore acceptance |
+| `python3 /opt/rooms/verify-authorization.py` | Membership find allowed; accounts/sessions find and membership writes denied by actual database role |
+| Certbot renewal dry run and Caddy reload | PASS for the short-lived trusted IP certificate; recurring renewal timer installed |
+| Daily backup timer installation | ACTIVE, 04:30 UTC; brief authoritative-writer pause. Scheduled first execution not yet observed |
+| External Mac TCP probes | Datastore/raw API/broker/internal SFU ports 27017/5432/5672/6379/9000/3022/3002/7880 not reachable; UDP not assessed by these probes |
+| Activity process stop/start | Actual previously written revision, poll, whiteboard and game result retained; full-host reboot not yet tested |
+
+Production adapters authenticate via upstream REST and read fresh channel/server/membership context through a database role limited to find on those three collections. This resolved an observed upstream five-server-reads/ten-second throttle without permission caching or modifying upstream Stoat. The schema adapter is explicitly pinned to the deployed version.
+
+Remaining full-product gates are tracked in `OVERNIGHT_DEPLOYMENT_PLAN.md`: real native desktop production acceptance/screenshots, complete multiplayer games, actual YouTube playback, physical devices and restrictive-network relay, separate Agent host/accounts, personal providers and signed distribution. The current-thread hourly continuation is enabled; the owner authorized the one existing free usage reset at weekly exhaustion, not paid purchases. This authorization does not prove an automatic reset is available or that the product is finished.
