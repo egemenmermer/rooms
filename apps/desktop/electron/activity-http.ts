@@ -27,3 +27,20 @@ export async function postActivityCommand(url:string,roomId:string,token:string,
  }
  throw new StoatError(409,'REVISION_CONFLICT');
 }
+
+/** Bounded reads cannot cross a room/session boundary after an asynchronous fetch. */
+export async function getActivitySnapshot(url:string,roomId:string,token:string,fetcher:typeof fetch=fetch,assertSession:()=>void=()=>{}):Promise<ActivityResponse>{
+ assertSession();
+ let response:Response;
+ try{response=await fetcher(url,{headers:{Authorization:`Bearer ${token}`},redirect:'error',signal:AbortSignal.timeout(30000)});}
+ catch{assertSession();const failure=new StoatError(503,'ACTIVITY_SERVICE_UNAVAILABLE');failure.message='The activity service is unavailable. It will reconnect automatically.';throw failure;}
+ const value=await response.json().catch(()=>null);assertSession();
+ if(!response.ok){
+  const code=typeof value?.error==='string'&&/^[A-Z_]{1,64}$/.test(value.error)?value.error:'ACTIVITY_ACCESS_DENIED';
+  const failure=new StoatError(response.status,code);
+  if(response.status>=500)failure.message='The activity service is unavailable. It will reconnect automatically.';
+  throw failure;
+ }
+ if(value?.protocolVersion!==1||value.room?.roomId!==roomId||!Number.isSafeInteger(value.room?.revision)||value.room.revision<0)throw new StoatError(502,'INVALID_ACTIVITY_RESPONSE');
+ return value as ActivityResponse;
+}
