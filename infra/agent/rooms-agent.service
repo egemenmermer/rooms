@@ -1,0 +1,28 @@
+[Unit]
+Description=ROOMS separate Agent service
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=rooms-agent
+Group=rooms-agent
+SupplementaryGroups=docker
+WorkingDirectory=/opt/rooms-agent
+EnvironmentFile=/etc/rooms-agent/service.env
+ExecStart=/usr/bin/node /opt/rooms-agent/agent.cjs
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=45
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/rooms-agent
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target
