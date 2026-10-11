@@ -1,6 +1,6 @@
 # Install ROOMS reference.4 — private Apple Silicon preview
 
-The current friend preview is `0.1.15-reference.4`, built from source4f3e6fb. The owner can send its DMG or ZIP privately. It requires an Apple Silicon Mac and macOS14+. The earlier [v0.1.14 GitHub release](https://github.com/egemenmermer/rooms/releases/tag/v0.1.14) is preserved; it does not contain the current redesign/fixes. Windows and Intel Mac packages are not included.
+The current friend preview is `0.1.15-reference.4`, built from source4f3e6fb. Download the [reference.4 prerelease](https://github.com/egemenmermer/rooms/releases/tag/v0.1.15-reference.4); private repository access is required. The owner can also send its DMG or ZIP privately. It requires an Apple Silicon Mac and macOS14+. The earlier [v0.1.14 GitHub release](https://github.com/egemenmermer/rooms/releases/tag/v0.1.14) is preserved; it does not contain the current redesign/fixes. Windows and Intel Mac packages are not included.
 
 1. Use `ROOMS-0.1.15-reference.4-arm64.dmg` or unzip `ROOMS-0.1.15-reference.4-arm64-mac.zip`. Checksums accompany the privately supplied installers.
 2. Open the DMG and drag ROOMS to Applications. Quit an older ROOMS copy before replacing it, then launch the installed copy.
