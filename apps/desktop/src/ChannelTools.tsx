@@ -27,10 +27,14 @@ export function ChannelTools({children}:{children:ReactNode}) {
     if(channel&&useVoiceContext.getState().channelId===channel.id)useVoiceContext.setState({roomName:channel.name});
     // The mutation already succeeded. A refresh failure must not invite duplicate creation.
     const currentChannels=useCommunity.getState().channels;
-    if(useCommunity.getState().activeSpaceId===spaceId)useCommunity.setState({channels:channel?[...currentChannels.filter(item=>item.id!==channel.id),channel]:currentChannels.filter(item=>item.id!==deletedId)});
+    if(useCommunity.getState().activeSpaceId===spaceId){
+      const channels=channel?[...currentChannels.filter(item=>item.id!==channel.id),channel]:currentChannels.filter(item=>item.id!==deletedId);
+      const deletedActive=!!deletedId&&useCommunity.getState().activeChannelId===deletedId;
+      useCommunity.setState({channels,...(deletedActive?{activeChannelId:null,messages:[]}: {})});
+    }
     let channels:SocialChannel[];
     try{channels=await window.rooms!.social.channels(spaceId);setRefreshWarning('');}
-    catch{if(sameAccount())setRefreshWarning(deletedId?'Kanal silindi. Liste yenilenemedi.':'Kanal kaydedildi. Liste yenilenemedi.');return;}
+    catch{if(sameAccount()&&useCommunity.getState().activeSpaceId===spaceId)setRefreshWarning(deletedId?'Kanal silindi. Liste yenilenemedi.':'Kanal kaydedildi. Liste yenilenemedi.');return;}
     if(!sameAccount()||useCommunity.getState().activeSpaceId!==spaceId)return;
     useCommunity.setState({channels});const active=useCommunity.getState().activeChannelId;
     if(action?.kind==='create'&&channel?.type===0)await useCommunity.getState().openChannel(channel.id);
