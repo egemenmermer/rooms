@@ -11,7 +11,7 @@
     "variants": 322,
     "responsive": 19
   },
-  "updated_at": "2026-10-11T01:00:05.528595+00:00",
+  "updated_at": "2026-10-11T01:22:04.222747+00:00",
   "records": [
     {
       "id": "S01",
@@ -428,7 +428,9 @@
       "component_paths": [
         "apps/desktop/src/ConnectionPane.tsx",
         "apps/desktop/src/ReferenceOnboarding.tsx",
-        "apps/desktop/src/reference-onboarding.css"
+        "apps/desktop/src/reference-onboarding.css",
+        "apps/desktop/src/PasswordResetPane.tsx",
+        "apps/desktop/electron/password-recovery.ts"
       ],
       "dependencies": [
         "reference-tokens",
@@ -438,25 +440,29 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/ConnectionPane.tsx",
         "apps/desktop/src/ReferenceOnboarding.tsx",
         "apps/desktop/src/reference-onboarding.css"
       ],
-      "implementation_revision": "bcb4a98 + uncommitted reference implementation",
+      "implementation_revision": "2eb6357",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see ONBOARDING_REPORT.md",
       "evidence_paths": [
         "docs/rooms-implementation/reports/ONBOARDING_REPORT.md",
-        "docs/rooms-implementation/reports/S04_RECOVERY_REQUEST_INTEGRATION_REPORT.md"
+        "docs/rooms-implementation/reports/S04_RECOVERY_REQUEST_INTEGRATION_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S04-default.receipt.json",
+        "docs/rooms-implementation/reports/INSET_RECOVERY_INTEGRATION.md"
       ],
-      "functional_checks": [],
+      "functional_checks": [
+        "Full local suite: 69 files / 567 tests before final UI navigation fixes. Final focused suite: 3 files / 25 tests, including three new navigation regressions. Final pnpm build exit 0."
+      ],
       "visual_findings": [],
       "blockers": [
-        "Request-only native UI and privacy-bounded Stoat recovery request are implemented. SMTP delivery, actual server feature flags, account-email behavior and exact current screenshot remain unverified; HTTP 204 is not proof of email delivery."
+        "Actual SMTP delivery, hCaptcha/server configuration and authorized-account acceptance remain unverified. Reset links must use the configured API origin; a separate web-app origin is not silently trusted."
       ],
-      "next_action": "Capture this exact state; verify against a configured authorized test account/server and confirm email delivery manually.",
-      "updated_at": "2026-10-10T00:00:00Z"
+      "next_action": "Compare current original/application pair and verify with an authorized account. Expired variant represents session expiry, not a reset-token state.",
+      "updated_at": "2026-10-11T01:22:04.222747+00:00"
     },
     {
       "id": "S04",
@@ -473,35 +479,41 @@
       "component_paths": [
         "apps/desktop/src/ConnectionPane.tsx",
         "apps/desktop/src/ReferenceOnboarding.tsx",
-        "apps/desktop/src/reference-onboarding.css"
+        "apps/desktop/src/reference-onboarding.css",
+        "apps/desktop/src/PasswordResetPane.tsx",
+        "apps/desktop/electron/password-recovery.ts"
       ],
       "dependencies": [
         "reference-tokens",
         "app-shell"
       ],
-      "status": "BLOCKED",
-      "integration_status": "MISSING_DEPENDENCY",
+      "status": "NEEDS_RECHECK",
+      "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/ConnectionPane.tsx",
         "apps/desktop/src/ReferenceOnboarding.tsx",
         "apps/desktop/src/reference-onboarding.css"
       ],
-      "implementation_revision": "bcb4a98 + uncommitted reference implementation",
+      "implementation_revision": "2eb6357",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see ONBOARDING_REPORT.md Responsive original still requires separate review.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/ONBOARDING_REPORT.md",
-        "docs/rooms-implementation/reports/S04_RECOVERY_REQUEST_INTEGRATION_REPORT.md"
+        "docs/rooms-implementation/reports/S04_RECOVERY_REQUEST_INTEGRATION_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S04-expired.receipt.json",
+        "docs/rooms-implementation/reports/INSET_RECOVERY_INTEGRATION.md"
       ],
-      "functional_checks": [],
+      "functional_checks": [
+        "Full local suite: 69 files / 567 tests before final UI navigation fixes. Final focused suite: 3 files / 25 tests, including three new navigation regressions. Final pnpm build exit 0."
+      ],
       "visual_findings": [],
       "blockers": [
-        "Expired-token and password-reset confirmation remain unimplemented. The one-time reset token must be handled outside the application renderer/session and requires the configured upstream reset-link web flow; do not claim the password was changed."
+        "Actual SMTP delivery, hCaptcha/server configuration and authorized-account acceptance remain unverified. Reset links must use the configured API origin; a separate web-app origin is not silently trusted."
       ],
-      "next_action": "Implement and threat-review a secure reset-link boundary or keep this state explicitly unavailable until the upstream reset flow is configured.",
-      "updated_at": "2026-10-10T00:00:00Z"
+      "next_action": "Compare current original/application pair and verify with an authorized account. Expired variant represents session expiry, not a reset-token state.",
+      "updated_at": "2026-10-11T01:22:04.222747+00:00"
     },
     {
       "id": "S04",
@@ -518,35 +530,41 @@
       "component_paths": [
         "apps/desktop/src/ConnectionPane.tsx",
         "apps/desktop/src/ReferenceOnboarding.tsx",
-        "apps/desktop/src/reference-onboarding.css"
+        "apps/desktop/src/reference-onboarding.css",
+        "apps/desktop/src/PasswordResetPane.tsx",
+        "apps/desktop/electron/password-recovery.ts"
       ],
       "dependencies": [
         "reference-tokens",
         "app-shell"
       ],
-      "status": "BLOCKED",
-      "integration_status": "MISSING_DEPENDENCY",
+      "status": "NEEDS_RECHECK",
+      "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/ConnectionPane.tsx",
         "apps/desktop/src/ReferenceOnboarding.tsx",
         "apps/desktop/src/reference-onboarding.css"
       ],
-      "implementation_revision": "bcb4a98 + uncommitted reference implementation",
+      "implementation_revision": "2eb6357",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see ONBOARDING_REPORT.md",
       "evidence_paths": [
         "docs/rooms-implementation/reports/ONBOARDING_REPORT.md",
-        "docs/rooms-implementation/reports/S04_RECOVERY_REQUEST_INTEGRATION_REPORT.md"
+        "docs/rooms-implementation/reports/S04_RECOVERY_REQUEST_INTEGRATION_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S04-reset.receipt.json",
+        "docs/rooms-implementation/reports/INSET_RECOVERY_INTEGRATION.md"
       ],
-      "functional_checks": [],
+      "functional_checks": [
+        "Full local suite: 69 files / 567 tests before final UI navigation fixes. Final focused suite: 3 files / 25 tests, including three new navigation regressions. Final pnpm build exit 0."
+      ],
       "visual_findings": [],
       "blockers": [
-        "Expired-token and password-reset confirmation remain unimplemented. The one-time reset token must be handled outside the application renderer/session and requires the configured upstream reset-link web flow; do not claim the password was changed."
+        "Actual SMTP delivery, hCaptcha/server configuration and authorized-account acceptance remain unverified. Reset links must use the configured API origin; a separate web-app origin is not silently trusted."
       ],
-      "next_action": "Implement and threat-review a secure reset-link boundary or keep this state explicitly unavailable until the upstream reset flow is configured.",
-      "updated_at": "2026-10-10T00:00:00Z"
+      "next_action": "Compare current original/application pair and verify with an authorized account. Expired variant represents session expiry, not a reset-token state.",
+      "updated_at": "2026-10-11T01:22:04.222747+00:00"
     },
     {
       "id": "S04",
@@ -563,7 +581,9 @@
       "component_paths": [
         "apps/desktop/src/ConnectionPane.tsx",
         "apps/desktop/src/ReferenceOnboarding.tsx",
-        "apps/desktop/src/reference-onboarding.css"
+        "apps/desktop/src/reference-onboarding.css",
+        "apps/desktop/src/PasswordResetPane.tsx",
+        "apps/desktop/electron/password-recovery.ts"
       ],
       "dependencies": [
         "reference-tokens",
@@ -573,25 +593,29 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/ConnectionPane.tsx",
         "apps/desktop/src/ReferenceOnboarding.tsx",
         "apps/desktop/src/reference-onboarding.css"
       ],
-      "implementation_revision": "bcb4a98 + uncommitted reference implementation",
+      "implementation_revision": "2eb6357",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see ONBOARDING_REPORT.md",
       "evidence_paths": [
         "docs/rooms-implementation/reports/ONBOARDING_REPORT.md",
-        "docs/rooms-implementation/reports/S04_RECOVERY_REQUEST_INTEGRATION_REPORT.md"
+        "docs/rooms-implementation/reports/S04_RECOVERY_REQUEST_INTEGRATION_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S04-sent.receipt.json",
+        "docs/rooms-implementation/reports/INSET_RECOVERY_INTEGRATION.md"
       ],
-      "functional_checks": [],
+      "functional_checks": [
+        "Full local suite: 69 files / 567 tests before final UI navigation fixes. Final focused suite: 3 files / 25 tests, including three new navigation regressions. Final pnpm build exit 0."
+      ],
       "visual_findings": [],
       "blockers": [
-        "Request-only native UI and privacy-bounded Stoat recovery request are implemented. SMTP delivery, actual server feature flags, account-email behavior and exact current screenshot remain unverified; HTTP 204 is not proof of email delivery."
+        "Actual SMTP delivery, hCaptcha/server configuration and authorized-account acceptance remain unverified. Reset links must use the configured API origin; a separate web-app origin is not silently trusted."
       ],
-      "next_action": "Capture this exact state; verify against a configured authorized test account/server and confirm email delivery manually.",
-      "updated_at": "2026-10-10T00:00:00Z"
+      "next_action": "Compare current original/application pair and verify with an authorized account. Expired variant represents session expiry, not a reset-token state.",
+      "updated_at": "2026-10-11T01:22:04.222747+00:00"
     },
     {
       "id": "S05",
@@ -6695,7 +6719,7 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+      "implementation_revision": "2eb6357",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6703,11 +6727,14 @@
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
-        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S36-default.receipt.json",
+        "docs/rooms-implementation/reports/INSET_RECOVERY_INTEGRATION.md"
       ],
       "functional_checks": [
         "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
-        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance.",
+        "Full local suite: 69 files / 567 tests before final UI navigation fixes. Final focused suite: 3 files / 25 tests, including three new navigation regressions. Final pnpm build exit 0."
       ],
       "visual_findings": [
         "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused.",
@@ -6715,10 +6742,10 @@
         "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
-        "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused."
+        "Actual personally authorized provider playback, native fullscreen, physical-device and two-client voice coexistence remain unverified."
       ],
-      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
-      "updated_at": "2026-10-11T01:00:05.528595+00:00"
+      "next_action": "Review exact current original/application geometry, then verify authorized native media behavior. Do not infer acceptance from a fixture screenshot.",
+      "updated_at": "2026-10-11T01:22:04.222747+00:00"
     },
     {
       "id": "S36",
@@ -6752,7 +6779,7 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+      "implementation_revision": "2eb6357",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6760,11 +6787,14 @@
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
-        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S36-buffering.receipt.json",
+        "docs/rooms-implementation/reports/INSET_RECOVERY_INTEGRATION.md"
       ],
       "functional_checks": [
         "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
-        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance.",
+        "Full local suite: 69 files / 567 tests before final UI navigation fixes. Final focused suite: 3 files / 25 tests, including three new navigation regressions. Final pnpm build exit 0."
       ],
       "visual_findings": [
         "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused.",
@@ -6772,10 +6802,10 @@
         "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
-        "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused."
+        "Actual personally authorized provider playback, native fullscreen, physical-device and two-client voice coexistence remain unverified."
       ],
-      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
-      "updated_at": "2026-10-11T01:00:05.528595+00:00"
+      "next_action": "Review exact current original/application geometry, then verify authorized native media behavior. Do not infer acceptance from a fixture screenshot.",
+      "updated_at": "2026-10-11T01:22:04.222747+00:00"
     },
     {
       "id": "S36",
@@ -6809,7 +6839,7 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+      "implementation_revision": "2eb6357",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6817,11 +6847,14 @@
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
-        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S36-error.receipt.json",
+        "docs/rooms-implementation/reports/INSET_RECOVERY_INTEGRATION.md"
       ],
       "functional_checks": [
         "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
-        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance.",
+        "Full local suite: 69 files / 567 tests before final UI navigation fixes. Final focused suite: 3 files / 25 tests, including three new navigation regressions. Final pnpm build exit 0."
       ],
       "visual_findings": [
         "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused.",
@@ -6829,10 +6862,10 @@
         "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
-        "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused."
+        "Actual personally authorized provider playback, native fullscreen, physical-device and two-client voice coexistence remain unverified."
       ],
-      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
-      "updated_at": "2026-10-11T01:00:05.528595+00:00"
+      "next_action": "Review exact current original/application geometry, then verify authorized native media behavior. Do not infer acceptance from a fixture screenshot.",
+      "updated_at": "2026-10-11T01:22:04.222747+00:00"
     },
     {
       "id": "S36",
@@ -6866,7 +6899,7 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+      "implementation_revision": "2eb6357",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6874,11 +6907,14 @@
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
-        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S36-expired.receipt.json",
+        "docs/rooms-implementation/reports/INSET_RECOVERY_INTEGRATION.md"
       ],
       "functional_checks": [
         "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
-        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance.",
+        "Full local suite: 69 files / 567 tests before final UI navigation fixes. Final focused suite: 3 files / 25 tests, including three new navigation regressions. Final pnpm build exit 0."
       ],
       "visual_findings": [
         "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused.",
@@ -6886,10 +6922,10 @@
         "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
-        "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused."
+        "Actual personally authorized provider playback, native fullscreen, physical-device and two-client voice coexistence remain unverified."
       ],
-      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
-      "updated_at": "2026-10-11T01:00:05.528595+00:00"
+      "next_action": "Review exact current original/application geometry, then verify authorized native media behavior. Do not infer acceptance from a fixture screenshot.",
+      "updated_at": "2026-10-11T01:22:04.222747+00:00"
     },
     {
       "id": "S36",
@@ -6923,7 +6959,7 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+      "implementation_revision": "2eb6357",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6931,11 +6967,14 @@
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
-        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S36-rewound.receipt.json",
+        "docs/rooms-implementation/reports/INSET_RECOVERY_INTEGRATION.md"
       ],
       "functional_checks": [
         "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
-        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance.",
+        "Full local suite: 69 files / 567 tests before final UI navigation fixes. Final focused suite: 3 files / 25 tests, including three new navigation regressions. Final pnpm build exit 0."
       ],
       "visual_findings": [
         "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused.",
@@ -6943,10 +6982,10 @@
         "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
-        "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused."
+        "Actual personally authorized provider playback, native fullscreen, physical-device and two-client voice coexistence remain unverified."
       ],
-      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
-      "updated_at": "2026-10-11T01:00:05.528595+00:00"
+      "next_action": "Review exact current original/application geometry, then verify authorized native media behavior. Do not infer acceptance from a fixture screenshot.",
+      "updated_at": "2026-10-11T01:22:04.222747+00:00"
     },
     {
       "id": "S37",
@@ -7550,7 +7589,7 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+      "implementation_revision": "2eb6357",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -7558,11 +7597,14 @@
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
-        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S38-playing.receipt.json",
+        "docs/rooms-implementation/reports/INSET_RECOVERY_INTEGRATION.md"
       ],
       "functional_checks": [
         "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
-        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance.",
+        "Full local suite: 69 files / 567 tests before final UI navigation fixes. Final focused suite: 3 files / 25 tests, including three new navigation regressions. Final pnpm build exit 0."
       ],
       "visual_findings": [
         "Original artwork, quality, duration and real track metadata are unavailable. S38/playing exact persistent inset projection is unfinished; no generic capture substitutes for it.",
@@ -7570,10 +7612,10 @@
         "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
-        "Original artwork, quality, duration and real track metadata are unavailable. S38/playing exact persistent inset projection is unfinished; no generic capture substitutes for it."
+        "Actual personally authorized provider playback, native fullscreen, physical-device and two-client voice coexistence remain unverified."
       ],
-      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
-      "updated_at": "2026-10-11T01:00:05.528595+00:00"
+      "next_action": "Review exact current original/application geometry, then verify authorized native media behavior. Do not infer acceptance from a fixture screenshot.",
+      "updated_at": "2026-10-11T01:22:04.222747+00:00"
     },
     {
       "id": "S39",
@@ -7607,7 +7649,7 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+      "implementation_revision": "2eb6357",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -7615,11 +7657,14 @@
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
-        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S39-default.receipt.json",
+        "docs/rooms-implementation/reports/INSET_RECOVERY_INTEGRATION.md"
       ],
       "functional_checks": [
         "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
-        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance.",
+        "Full local suite: 69 files / 567 tests before final UI navigation fixes. Final focused suite: 3 files / 25 tests, including three new navigation regressions. Final pnpm build exit 0."
       ],
       "visual_findings": [
         "Precise unsupported/external modal entry and safe authorized external broker remain; exact capture is refused.",
@@ -7627,10 +7672,11 @@
         "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
-        "Precise unsupported/external modal entry and safe authorized external broker remain; exact capture is refused."
+        "Actual personally authorized provider playback, native fullscreen, physical-device and two-client voice coexistence remain unverified.",
+        "External player launch is disabled until an authorized native transport broker exists; no provider URL is exported."
       ],
-      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
-      "updated_at": "2026-10-11T01:00:05.528595+00:00"
+      "next_action": "Review exact current original/application geometry, then verify authorized native media behavior. Do not infer acceptance from a fixture screenshot.",
+      "updated_at": "2026-10-11T01:22:04.222747+00:00"
     },
     {
       "id": "S39",
@@ -7664,7 +7710,7 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+      "implementation_revision": "2eb6357",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -7672,11 +7718,14 @@
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
-        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S39-external.receipt.json",
+        "docs/rooms-implementation/reports/INSET_RECOVERY_INTEGRATION.md"
       ],
       "functional_checks": [
         "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
-        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance.",
+        "Full local suite: 69 files / 567 tests before final UI navigation fixes. Final focused suite: 3 files / 25 tests, including three new navigation regressions. Final pnpm build exit 0."
       ],
       "visual_findings": [
         "Precise unsupported/external modal entry and safe authorized external broker remain; exact capture is refused.",
@@ -7684,10 +7733,11 @@
         "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
-        "Precise unsupported/external modal entry and safe authorized external broker remain; exact capture is refused."
+        "Actual personally authorized provider playback, native fullscreen, physical-device and two-client voice coexistence remain unverified.",
+        "External player launch is disabled until an authorized native transport broker exists; no provider URL is exported."
       ],
-      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
-      "updated_at": "2026-10-11T01:00:05.528595+00:00"
+      "next_action": "Review exact current original/application geometry, then verify authorized native media behavior. Do not infer acceptance from a fixture screenshot.",
+      "updated_at": "2026-10-11T01:22:04.222747+00:00"
     },
     {
       "id": "S39",
@@ -7721,7 +7771,7 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+      "implementation_revision": "2eb6357",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -7729,11 +7779,14 @@
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
-        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S39-unsupported.receipt.json",
+        "docs/rooms-implementation/reports/INSET_RECOVERY_INTEGRATION.md"
       ],
       "functional_checks": [
         "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
-        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance.",
+        "Full local suite: 69 files / 567 tests before final UI navigation fixes. Final focused suite: 3 files / 25 tests, including three new navigation regressions. Final pnpm build exit 0."
       ],
       "visual_findings": [
         "Precise unsupported/external modal entry and safe authorized external broker remain; exact capture is refused.",
@@ -7741,10 +7794,11 @@
         "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
-        "Precise unsupported/external modal entry and safe authorized external broker remain; exact capture is refused."
+        "Actual personally authorized provider playback, native fullscreen, physical-device and two-client voice coexistence remain unverified.",
+        "External player launch is disabled until an authorized native transport broker exists; no provider URL is exported."
       ],
-      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
-      "updated_at": "2026-10-11T01:00:05.528595+00:00"
+      "next_action": "Review exact current original/application geometry, then verify authorized native media behavior. Do not infer acceptance from a fixture screenshot.",
+      "updated_at": "2026-10-11T01:22:04.222747+00:00"
     },
     {
       "id": "S40",

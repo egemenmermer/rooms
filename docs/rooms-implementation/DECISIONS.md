@@ -43,3 +43,11 @@ The saved hourly heartbeat prompt was corrected through automation_update to per
 ## 2026-10-11 — Astra high reauthorized
 
 The owner's new direct instruction permits Astra with high reasoning again. Eligible additional models are GPT-6.1 Sol and GPT-6 Astra/high; Luna remains unapproved. The previous Sol-only decision and saved continuation prompts are historical where they conflict. Root remains sole tracker/shared-file owner and final integration/acceptance owner. Preserve the maximum of two independent implementers and one read-only reviewer, and assign disjoint files.
+
+## 2026-10-11 — Source publication and recovery completion
+
+The owner explicitly authorized GitHub source publication in coherent commits. Push the reference branch without deploying or replacing the earlier release. Six existing commits through 2aec77c were pushed, followed by separate native recovery/history, renderer recovery, inset player, navigation fix and capture-tool commits. Root integration evidence remains distinct from owner acceptance.
+
+Recovery links are imported only through an explicit native clipboard action, validated against the configured HTTPS API origin, and represented in the renderer by a one-use expiring opaque handle. An unrelated web-app origin is not automatically trusted. S04/expired represents session expiry and returns to sign-in. External-player launch remains disabled pending a safe native broker.
+
+For new delegation, follow the latest directly supplied AGENTS instruction: GPT-6.1 Sol only. Historical Astra work was already delivered and remains historical evidence, not permission for a new assignment.

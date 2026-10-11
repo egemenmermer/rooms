@@ -40,6 +40,8 @@ pnpm exec vitest run --config vitest.config.ts tests/stoat-password-reset-broker
 
 Observed exit 0 at 03:13:35 Europe/Amsterdam: **6 files, 67 tests passed**, 2.66s. Breakdown: broker 25, reset pane 7, actual onboarding/DEV entry 5, prior request pane 6, expanded validated native IPC 13, existing upstream adapter 11. Fetch/Electron/clipboard are mocked; tests are development-only. Cases include exact-origin URL rejection, no renderer token, one-use capabilities, sender/server/auth fences, delayed clipboard invalidation, native timed deletion, uncertain mutation handling, transient draft clearing, saved-server versus query isolation, real sign-in callback and fixture denial of native operations.
 
+After a DEV-only label placement adjustment, `pnpm exec vitest run --config vitest.config.ts tests/stoat-password-reset-onboarding.test.tsx` also exited 0: 5/5 passed. The label is fixed in the titlebar and does not affect the auth-form flex geometry.
+
 An initial UI test run lacked the explicit jsdom environment; that test harness declaration was fixed before the passing run. The asynchronous clipboard integration initially bypassed the main import catch; root added `await` so sanitized errors are verified. Early epoch tests were updated to reflect native deletion of invalidated handles rather than an assumed retained handle. These failures are not acceptance evidence.
 
 No standalone build/typecheck, broad test suite, native clipboard OS check, actual password reset, SMTP delivery, external challenge, Windows check or visual acceptance was performed by this bounded implementer. Root owns integrated build/capture and tracker updates; their separate receipts must be retained with actual timestamps/source manifests.
