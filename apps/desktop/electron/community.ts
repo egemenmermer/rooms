@@ -12,7 +12,7 @@ import { postActivityCommand, getActivitySnapshot } from './activity-http';
 
 class SocialInputError extends Error {}
 
-export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSender:(event:IpcMainInvokeEvent)=>void,isTrusted:(url:string)=>boolean,onIncomingMessage:()=>void=()=>{}){
+export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSender:(event:IpcMainInvokeEvent)=>void,isTrusted:(url:string)=>boolean,onIncomingMessage:(scope:{serverUrl:string;userId:string},channelId:string)=>void=()=>{}){
   let dmNativeEpoch=0;
   let pendingDmCall:{client:StoatClient;id:string}|null=null;
   const closeDmCall=async()=>{++dmNativeEpoch;const previous=pendingDmCall;pendingDmCall=null;if(previous)await requestDmCall(previous.client,'respond',{callId:previous.id,action:'end'}).catch(()=>{});};
@@ -38,7 +38,7 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
     if(event.type==='AUTH_EXPIRED'){recoveryEpoch++;passwordReset.clear();}
     if(event.type==='READY')subscribePresence();
     if(event.type==='CHANNEL_ACCESS_INVALIDATED'){const ids=(event.data as {channelIds:string[]}).channelIds;for(const [fileId,file]of uploadedAttachments)if(ids.includes(file.channelId))uploadedAttachments.delete(fileId);}
-    if(event.type==='MESSAGE_CREATE'){const authorId=(event.data as {author?:{id?:unknown}}).author?.id;if(user&&typeof authorId==='string'&&authorId!==user.id)onIncomingMessage();}
+    if(event.type==='MESSAGE_CREATE'){const message=event.data as {author?:{id?:unknown};channelId?:unknown},authorId=message.author?.id;if(user&&typeof authorId==='string'&&authorId!==user.id&&typeof message.channelId==='string'&&SOCIAL_ID_PATTERN.test(message.channelId))onIncomingMessage({serverUrl:next.instanceUrl,userId:user.id},message.channelId);}
     if(['READY','RESUMED','CONNECTION_STATUS','AUTH_EXPIRED','MESSAGE_CREATE','MESSAGE_UPDATE','PRESENCE_UPDATE','SOCIAL_REFRESH','MESSAGE_ACK','READ_STATE_SYNC','READ_STATE_UNAVAILABLE','TYPING_UPDATE','CHANNEL_ACCESS_INVALIDATED'].includes(event.type))emit(event);
     else if(event.type==='MESSAGE_DELETE'){const raw=event.data as Record<string,unknown>;emit({type:event.type,data:{id:String(raw.id),channel_id:String(raw.channel_id)}});}
     else if(event.type==='PRESENCE_UPDATE'){const raw=event.data as {user?:{id?:string};status?:string;guild_id?:string};emit({type:event.type,data:{userId:raw.user?.id,status:raw.status,guildId:raw.guild_id}});}

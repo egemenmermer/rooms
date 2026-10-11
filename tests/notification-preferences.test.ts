@@ -5,11 +5,33 @@ vi.mock('node:fs',()=>({readFileSync:()=>mock.saved,writeFileSync:(_path:string,
 import {setupNotifications} from '../apps/desktop/electron/notifications';
 import type {BrowserWindow,IpcMainInvokeEvent} from 'electron';
 const event={} as IpcMainInvokeEvent;
+let scope={serverUrl:'https://rooms.example',userId:'owner'};
 const invoke=(name:string,value?:unknown)=>mock.handlers.get('rooms:notification-'+name)!(event,value);
-function setup(){return setupNotifications(()=>({isFocused:()=>mock.focused}) as BrowserWindow,e=>{if(e!==event)throw new Error('untrusted');});}
-beforeEach(()=>{mock.handlers.clear();mock.saved='{}';mock.fail=false;mock.shown=[];mock.focused=false;});
+function setup(){return setupNotifications(()=>({isFocused:()=>mock.focused,webContents:{getURL:()=> 'https://rooms.example'}}) as unknown as BrowserWindow,e=>{if(e!==event)throw new Error('untrusted');},()=>scope);}
+beforeEach(()=>{mock.handlers.clear();mock.saved='{}';mock.fail=false;mock.shown=[];mock.focused=false;scope={serverUrl:'https://rooms.example',userId:'owner'};});
 afterEach(()=>vi.useRealTimers());
 describe('native notification preferences',()=>{
+ it('persists account/server-scoped channel mutes without message contents or identifiers',()=>{
+  vi.useFakeTimers();vi.setSystemTime(new Date('2026-10-11T07:00:00Z'));let service=setup();invoke('opt-in',true);
+  const input={...scope,channelId:'channel-1',muted:true};invoke('channel-mute',input);service=setup();
+  expect(invoke('channel-status',input)).toEqual({muted:true});service.message(scope,'channel-1');expect(mock.shown).toHaveLength(0);
+  service.message({...scope,userId:'other'},'channel-1');expect(mock.shown).toHaveLength(1);vi.advanceTimersByTime(5001);
+  service.message({...scope,serverUrl:'https://other.example'},'channel-1');expect(mock.shown).toHaveLength(2);
+  expect(mock.saved).not.toContain('owner');expect(mock.saved).not.toContain('channel-1');expect(mock.saved).not.toContain('rooms.example');
+ });
+ it('unmutes only the selected channel and does not consume the global notification rate limit when muted',()=>{
+  const service=setup();invoke('opt-in',true);const input={...scope,channelId:'channel-1'};invoke('channel-mute',{...input,muted:true});
+  service.message(scope,'channel-1');service.message(scope,'channel-2');expect(mock.shown).toHaveLength(1);
+  invoke('channel-mute',{...input,muted:false});expect(invoke('channel-status',input)).toEqual({muted:false});
+ });
+ it('rejects stale identity, invalid channel values and failed mute persistence without changing state',()=>{
+  setup();const input={...scope,channelId:'channel-1',muted:true};
+  expect(()=>invoke('channel-mute',{...input,userId:'other'})).toThrow('account changed');
+  expect(()=>invoke('channel-mute',{...input,channelId:'../private'})).toThrow();
+  expect(()=>invoke('channel-mute',{...input,muted:'yes'})).toThrow('Invalid channel');
+  mock.fail=true;expect(()=>invoke('channel-mute',input)).toThrow('disk failure');expect(invoke('channel-status',input)).toEqual({muted:false});
+ });
+
  it('pauses notifications during a refreshed voice lease and expires crash-stale state',()=>{
   vi.useFakeTimers();vi.setSystemTime(new Date('2026-10-11T06:00:00Z'));const service=setup();
   invoke('opt-in',true);invoke('pause-voice',true);invoke('voice-active',true);service.message();expect(mock.shown).toHaveLength(0);
@@ -18,7 +40,7 @@ describe('native notification preferences',()=>{
  });
  it('releases suppression on disconnect without persisting transient voice state',()=>{
   const service=setup();invoke('opt-in',true);invoke('pause-voice',true);invoke('voice-active',true);invoke('voice-active',false);service.message();expect(mock.shown).toHaveLength(1);
-  expect(JSON.parse(mock.saved)).toEqual({enabled:true,sound:false,pauseDuringVoice:true});
+  expect(JSON.parse(mock.saved)).toEqual({enabled:true,sound:false,pauseDuringVoice:true,mutedChannels:[]});
  });
  it('ignores voice state unless the owner enabled suppression',()=>{
   const service=setup();invoke('opt-in',true);invoke('voice-active',true);service.message();expect(mock.shown).toHaveLength(1);
