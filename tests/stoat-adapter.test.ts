@@ -58,3 +58,34 @@ it('retries only definite pre-route 429 and does not retry ambiguous mutation fa
  await new Promise<void>(resolve=>server!.listen(0,'127.0.0.1',resolve));const client=new StoatClient(`http://127.0.0.1:${(server.address() as {port:number}).port}`,'fixture-token');
  await client.getChannel('channel');expect(count).toBe(2);await expect(client.deleteMessage('channel','message')).rejects.toMatchObject({status:503});expect(mutations).toBe(1);
 });
+it('normalizes authorized community members without exposing upstream secrets or inventing presence',async()=>{
+ const url=await fixture(path=>path==='/api/servers/community/members'?{users:[{_id:'known',username:'friend',online:true,status:{presence:'Idle',text:'Tea time'},private_token:'must-not-expose'},{_id:'unknown',username:'quiet'}],members:[{_id:{server:'community',user:'known'},roles:['moderator'],private_notes:'must-not-expose'},{_id:{server:'community',user:'unknown'},roles:[]},{_id:{server:'community',user:'missing'}}]}:{});
+ const client=new StoatClient(url,'fixture-token');const members=await client.listCommunityMembers('community');
+ expect(members).toMatchObject([{user:{id:'known',username:'friend'},status:'idle',statusText:'Tea time',roles:['moderator']},{user:{id:'unknown'},status:'unknown',roles:[]}]);
+ expect(JSON.stringify(members)).not.toContain('must-not-expose');
+});
+it('rejects malformed member responses rather than displaying invented empty membership',async()=>{
+ const url=await fixture(()=>({users:[],members:null}));const client=new StoatClient(url,'fixture-token');
+ await expect(client.listCommunityMembers('community')).rejects.toMatchObject({code:'INVALID_MEMBERS_RESPONSE'});
+});
+
+
+describe('community mutation boundaries (isolated protocol fixtures)',()=>{
+ it('uses official create/edit contracts and returns normalized public metadata only',async()=>{
+  const calls:unknown[]=[];const url=await fixture((path,method,body)=>{calls.push({path,method,body});const value={_id:'community',name:body.name,owner:'owner',channels:['channel'],private_token:'must-not-expose'};return path==='/api/servers/create'?{server:value,channels:[{_id:'channel',channel_type:'TextChannel',name:'general'}]}:value;});
+  const client=new StoatClient(url,'fixture-token');const events:unknown[]=[];client.subscribe(e=>events.push(e));
+  expect(await client.createSpace(' Friends ')).toMatchObject({id:'community',name:'Friends',ownerId:'owner'});expect(await client.renameSpace('community','Evening')).toMatchObject({id:'community',name:'Evening'});
+  expect(calls).toEqual([{path:'/api/servers/create',method:'POST',body:{name:'Friends'}},{path:'/api/servers/community',method:'PATCH',body:{name:'Evening'}}]);expect(JSON.stringify(events)).not.toContain('must-not-expose');
+ });
+ it('rejects malformed returned identity and mismatched edit identity',async()=>{
+  const url=await fixture(path=>path==='/api/servers/create'?{server:{name:'Friends'}}:{_id:'other',name:'Friends'});const client=new StoatClient(url,'fixture-token');
+  await expect(client.createSpace('Friends')).rejects.toMatchObject({code:'INVALID_SERVER_RESPONSE'});await expect(client.renameSpace('community','Friends')).rejects.toMatchObject({code:'INVALID_SERVER_RESPONSE'});
+  await expect(client.createSpace('x'.repeat(33))).rejects.toMatchObject({code:'INVALID_SERVER_NAME'});await expect(client.renameSpace('community','invalid\nname')).rejects.toMatchObject({code:'INVALID_SERVER_NAME'});
+ });
+ it('normalizes the official ServerCreate event into cached server and channels',async()=>{
+  const client=new StoatClient('http://localhost','fixture-token');const internal=client as unknown as {servers:Map<string,unknown>;channels:Map<string,unknown>;processPacket(packet:unknown):Promise<void>};
+  await internal.processPacket({type:'ServerCreate',_id:'community',name:'Friends',owner:'owner',channels:[{_id:'channel',channel_type:'TextChannel',name:'general'}]});
+  expect(internal.servers.get('community')).toMatchObject({_id:'community',name:'Friends'});expect(internal.channels.get('channel')).toMatchObject({_id:'channel'});
+  await internal.processPacket({type:'ServerCreate',name:'Invalid',channels:[{name:'Invalid'}]});expect(internal.servers.size).toBe(1);expect(internal.channels.size).toBe(1);
+ });
+});
