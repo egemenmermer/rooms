@@ -462,7 +462,7 @@ export const activityMessages: Record<string, string> = {
 "Invalid provider base URL.": "Sağlayıcı adresi geçersiz. HTTPS adresini kontrol et.",
 "Personal channel not found.": "Kişisel kanal bulunamadı.",
 "Personal channel not found. Refresh the list.": "Kişisel kanal bulunamadı. Listeyi yenile.",
-"Real-Debrid device login requires the ROOMS registered public client ID.": "Real-Debrid bağlantısı için ROOMS uygulamasının kayıtlı istemci kimliği sunucuda yapılandırılmalı.",
+"Real-Debrid device login requires the ROOMS registered public client ID.": "Bu ROOMS sürümünde Real-Debrid istemci kaydı yapılandırılmamış.",
 "Real-Debrid returned an invalid authorization request.": "Real-Debrid geçerli bir yetkilendirme isteği döndürmedi.",
 "Real-Debrid authorization did not complete.": "Real-Debrid yetkilendirmesi tamamlanmadı.",
 "Real-Debrid library is unavailable.": "Real-Debrid arşivi kullanılamıyor.",
