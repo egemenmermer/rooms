@@ -106,6 +106,7 @@
           "rooms"
         ]
       }
-    ]
+    ],
+    "afterPack": "scripts/mac-preview-after-pack.cjs"
   }
 }
