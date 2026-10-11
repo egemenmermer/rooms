@@ -23,3 +23,7 @@
 - Do not restore demo mode or synthetic social/media content.
 - The owner now performs all testing. Do not run automated tests, type checks, QA harnesses, acceptance scenarios or remote disruption/load tests unless explicitly reauthorized. Building and opening the application to deliver changes is allowed; do not call that acceptance or claim it passed tests.
 - Existing verification evidence is historical. New changes remain awaiting the owner's manual acceptance.
+
+## Current reference implementation task
+- For the owner's 2026-10-10 design-package task, read `docs/rooms-implementation/BRIEF.md`, `CHECKPOINT.md`, `PROGRESS.json` and `DECISIONS.md` before continuing. The new user request explicitly reauthorizes scoped model delegation and QA; preserve all other instructions and production-data boundaries.
+- Model restriction from the owner (2026-10-10): if an additional agent is useful, use only `gpt-6.1-sol`; do not use Astra, Luna or any other model. This overrides historical model recommendations in reference-task documents. Root remains responsible for all shared files and `PROGRESS.json`.
