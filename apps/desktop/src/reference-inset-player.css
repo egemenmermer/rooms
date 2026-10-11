@@ -219,8 +219,10 @@
   .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-stage-state { padding: 20px; }
   .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-stage-state h2 { font-size: 18px; margin-top: 14px; }
 }
-@media (prefers-reduced-transparency: reduce) {
-  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-controls { background: #11141d; }
+@media (prefers-reduced-transparency: reduce) {html:not([data-transparency]) .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-controls{ background: #11141d; }
 }
 
 .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-programme-grid small time { display:inline; }
+
+/* Effective app preference, including manual and followed system reductions. */
+html[data-transparency=reduce] .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-controls{ background: #11141d; }

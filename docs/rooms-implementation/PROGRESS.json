@@ -11,7 +11,7 @@
     "variants": 322,
     "responsive": 19
   },
-  "updated_at": "2026-10-11T02:04:34.886488+00:00",
+  "updated_at": "2026-10-11T03:05:49.639794+00:00",
   "records": [
     {
       "id": "S01",
@@ -16357,19 +16357,21 @@
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
-        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json"
+        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json",
+        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json"
       ],
       "functional_checks": [
-        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0."
+        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0.",
+        "System accessibility: eight focused preference tests passed; local Chromium verified live system motion changes, opt-out, manual precedence and effective motion/transparency CSS."
       ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "System accessibility preference synchronization remains unimplemented and disabled. Exact named-state/responsive visual review and owner acceptance remain open."
+        "Exact named-state/responsive visual comparison and owner acceptance remain open. Native OS accessibility signals on physical macOS/Windows devices remain unverified. Unsupported browser transparency queries cannot report system reduction; manual reduction remains available."
       ],
-      "next_action": "Implement system accessibility preference synchronization; capture and compare all S66 variants/responsive originals. Font-size control now works; no visual acceptance claimed.",
-      "updated_at": "2026-10-11T02:04:34.886488+00:00"
+      "next_action": "Capture and compare exact S66 variants and responsive layouts; verify native accessibility signals on physical devices.",
+      "updated_at": "2026-10-11T03:05:49.639794+00:00"
     },
     {
       "id": "S66",
@@ -16404,19 +16406,21 @@
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
-        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json"
+        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json",
+        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json"
       ],
       "functional_checks": [
-        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0."
+        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0.",
+        "System accessibility: eight focused preference tests passed; local Chromium verified live system motion changes, opt-out, manual precedence and effective motion/transparency CSS."
       ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "System accessibility preference synchronization remains unimplemented and disabled. Exact named-state/responsive visual review and owner acceptance remain open."
+        "Exact named-state/responsive visual comparison and owner acceptance remain open. Native OS accessibility signals on physical macOS/Windows devices remain unverified. Unsupported browser transparency queries cannot report system reduction; manual reduction remains available."
       ],
-      "next_action": "Implement system accessibility preference synchronization; capture and compare all S66 variants/responsive originals. Font-size control now works; no visual acceptance claimed.",
-      "updated_at": "2026-10-11T02:04:34.886488+00:00"
+      "next_action": "Capture and compare exact S66 variants and responsive layouts; verify native accessibility signals on physical devices.",
+      "updated_at": "2026-10-11T03:05:49.639794+00:00"
     },
     {
       "id": "S66",
@@ -16451,19 +16455,21 @@
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
-        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json"
+        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json",
+        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json"
       ],
       "functional_checks": [
-        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0."
+        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0.",
+        "System accessibility: eight focused preference tests passed; local Chromium verified live system motion changes, opt-out, manual precedence and effective motion/transparency CSS."
       ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "System accessibility preference synchronization remains unimplemented and disabled. Exact named-state/responsive visual review and owner acceptance remain open."
+        "Exact named-state/responsive visual comparison and owner acceptance remain open. Native OS accessibility signals on physical macOS/Windows devices remain unverified. Unsupported browser transparency queries cannot report system reduction; manual reduction remains available."
       ],
-      "next_action": "Implement system accessibility preference synchronization; capture and compare all S66 variants/responsive originals. Font-size control now works; no visual acceptance claimed.",
-      "updated_at": "2026-10-11T02:04:34.886488+00:00"
+      "next_action": "Capture and compare exact S66 variants and responsive layouts; verify native accessibility signals on physical devices.",
+      "updated_at": "2026-10-11T03:05:49.639794+00:00"
     },
     {
       "id": "S66",
@@ -16498,19 +16504,21 @@
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
-        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json"
+        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json",
+        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json"
       ],
       "functional_checks": [
-        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0."
+        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0.",
+        "System accessibility: eight focused preference tests passed; local Chromium verified live system motion changes, opt-out, manual precedence and effective motion/transparency CSS."
       ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "System accessibility preference synchronization remains unimplemented and disabled. Exact named-state/responsive visual review and owner acceptance remain open."
+        "Exact named-state/responsive visual comparison and owner acceptance remain open. Native OS accessibility signals on physical macOS/Windows devices remain unverified. Unsupported browser transparency queries cannot report system reduction; manual reduction remains available."
       ],
-      "next_action": "Implement system accessibility preference synchronization; capture and compare all S66 variants/responsive originals. Font-size control now works; no visual acceptance claimed.",
-      "updated_at": "2026-10-11T02:04:34.886488+00:00"
+      "next_action": "Capture and compare exact S66 variants and responsive layouts; verify native accessibility signals on physical devices.",
+      "updated_at": "2026-10-11T03:05:49.639794+00:00"
     },
     {
       "id": "S67",
@@ -18585,19 +18593,21 @@
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
-        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json"
+        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json",
+        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json"
       ],
       "functional_checks": [
-        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0."
+        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0.",
+        "System accessibility: eight focused preference tests passed; local Chromium verified live system motion changes, opt-out, manual precedence and effective motion/transparency CSS."
       ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "System accessibility preference synchronization remains unimplemented and disabled. Exact named-state/responsive visual review and owner acceptance remain open."
+        "Exact named-state/responsive visual comparison and owner acceptance remain open. Native OS accessibility signals on physical macOS/Windows devices remain unverified. Unsupported browser transparency queries cannot report system reduction; manual reduction remains available."
       ],
-      "next_action": "Implement system accessibility preference synchronization; capture and compare all S66 variants/responsive originals. Font-size control now works; no visual acceptance claimed.",
-      "updated_at": "2026-10-11T02:04:34.886488+00:00"
+      "next_action": "Capture and compare exact S66 variants and responsive layouts; verify native accessibility signals on physical devices.",
+      "updated_at": "2026-10-11T03:05:49.639794+00:00"
     },
     {
       "id": "S10",
@@ -18861,19 +18871,21 @@
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
-        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json"
+        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json",
+        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json"
       ],
       "functional_checks": [
-        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0."
+        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0.",
+        "System accessibility: eight focused preference tests passed; local Chromium verified live system motion changes, opt-out, manual precedence and effective motion/transparency CSS."
       ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "System accessibility preference synchronization remains unimplemented and disabled. Exact named-state/responsive visual review and owner acceptance remain open."
+        "Exact named-state/responsive visual comparison and owner acceptance remain open. Native OS accessibility signals on physical macOS/Windows devices remain unverified. Unsupported browser transparency queries cannot report system reduction; manual reduction remains available."
       ],
-      "next_action": "Implement system accessibility preference synchronization; capture and compare all S66 variants/responsive originals. Font-size control now works; no visual acceptance claimed.",
-      "updated_at": "2026-10-11T02:04:34.886488+00:00"
+      "next_action": "Capture and compare exact S66 variants and responsive layouts; verify native accessibility signals on physical devices.",
+      "updated_at": "2026-10-11T03:05:49.639794+00:00"
     },
     {
       "id": "S10",
@@ -19135,19 +19147,21 @@
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
-        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json"
+        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json",
+        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json"
       ],
       "functional_checks": [
-        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0."
+        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0.",
+        "System accessibility: eight focused preference tests passed; local Chromium verified live system motion changes, opt-out, manual precedence and effective motion/transparency CSS."
       ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "System accessibility preference synchronization remains unimplemented and disabled. Exact named-state/responsive visual review and owner acceptance remain open."
+        "Exact named-state/responsive visual comparison and owner acceptance remain open. Native OS accessibility signals on physical macOS/Windows devices remain unverified. Unsupported browser transparency queries cannot report system reduction; manual reduction remains available."
       ],
-      "next_action": "Implement system accessibility preference synchronization; capture and compare all S66 variants/responsive originals. Font-size control now works; no visual acceptance claimed.",
-      "updated_at": "2026-10-11T02:04:34.886488+00:00"
+      "next_action": "Capture and compare exact S66 variants and responsive layouts; verify native accessibility signals on physical devices.",
+      "updated_at": "2026-10-11T03:05:49.639794+00:00"
     },
     {
       "id": "S29",

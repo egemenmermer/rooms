@@ -1,0 +1,10 @@
+{
+  "capturedAt": "2026-10-11T03:05:21.133Z",
+  "environment": "local Chromium, emulated reduced motion; manual reduced transparency",
+  "reduced": "none",
+  "optedOut": "page-in",
+  "transparency": {
+    "background": "rgb(23, 26, 38)",
+    "backdrop": "none"
+  }
+}
