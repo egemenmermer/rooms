@@ -9,7 +9,7 @@ import './onboarding.css';
 const productionServer = 'https://community.example.invalid';
 const localServer = 'http://127.0.0.1:3021';
 const normalizedServer = (value: string) => value.trim().replace(/\/+$/, '');
-export function ConnectionPane({ referenceMode, onAuthenticated, onAccessChange, onRecovery }: { referenceMode?: 'signin' | 'register'; onAuthenticated?(): void; onAccessChange?(mode: 'signin' | 'register'): void; onRecovery?(): void } = {}) {
+export function ConnectionPane({ referenceMode, sessionExpired = false, onAuthenticated, onAccessChange, onRecovery }: { sessionExpired?: boolean; referenceMode?: 'signin' | 'register'; onAuthenticated?(): void; onAccessChange?(mode: 'signin' | 'register'): void; onRecovery?(): void } = {}) {
     const c = useCommunity();
     const [params, setParams] = useSearchParams();
     const [registration, setRegistration] = useState(referenceMode === 'register');
@@ -104,9 +104,8 @@ export function ConnectionPane({ referenceMode, onAuthenticated, onAccessChange,
     };
     const changeAccess = (next: boolean) => { setRegistration(next); clearError(); };
     if (referenceMode) return <section className="ref-auth-form" aria-busy={busy} aria-labelledby="reference-account-title">
-        <span className="ref-auth-eyebrow">ARKADAŞLARININ OLDUĞU YER</span>
-        <h2 id="reference-account-title">{registration ? 'Sana da yer var.' : 'Yeniden hoş geldin.'}</h2>
-        <p>{registration ? 'Davetinle bir hesap oluştur.' : 'Arkadaşların seni bekliyor.'}</p>
+        <h2 id="reference-account-title">{registration ? 'Hesap oluştur' : sessionExpired ? 'Yeniden giriş yap' : 'Giriş yap'}</h2>
+        {sessionExpired&&!registration&&<p>Oturumunun süresi doldu. Hesabına yeniden giriş yap.</p>}
         {c.user ? <><div className="ref-auth-notice"><Avatar name={c.user.displayName || c.user.username}/><span>{c.user.displayName || c.user.username}</span></div><button className="button primary full" disabled={busy || !onAuthenticated} onClick={() => onAuthenticated?.()}>Devam et<ArrowRight size={16}/></button><button className="button secondary full" disabled={busy} onClick={() => { clearError(); setWorking(true); void c.logout().catch(err => setLocalError(uiError(err))).finally(() => setWorking(false)); }}>Çıkış yap</button></> : <form onSubmit={e => void submit(e)}>
         <fieldset disabled={busy}>
             {registration && <><label className="field-label">Topluluk davet kodu<input required autoComplete="off" spellCheck={false} maxLength={128} value={invite} onChange={e => setInvite(e.target.value)} placeholder="Davet kodun"/></label><label className="field-label">Kullanıcı adı<input required autoComplete="nickname" maxLength={32} minLength={2} value={username} onChange={e => setUsername(e.target.value)} placeholder="Kullanıcı adın"/></label></>}
@@ -114,7 +113,7 @@ export function ConnectionPane({ referenceMode, onAuthenticated, onAccessChange,
             <label className="field-label">Şifre<span className="ref-auth-password"><input required type={showPassword ? 'text' : 'password'} autoComplete={registration ? 'new-password' : 'current-password'} minLength={registration ? 8 : 1} value={password} onChange={e => setPassword(e.target.value)} placeholder={registration ? 'En az 8 karakter' : 'Şifren'}/><button type="button" aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}</button></span></label>
             {!registration && <div className="ref-auth-options"><label title="Bu sürümde oturum, sistemin güvenli deposunda saklanır."><input type="checkbox" checked disabled/>Beni hatırla</label><button type="button" onClick={onRecovery} disabled={!onRecovery}>Şifreni mi unuttun?</button></div>}
             <details className="ref-auth-server"><summary>Sunucu ve davet seçenekleri</summary><label className="field-label">Sunucu adresi<input required type="url" autoCapitalize="none" spellCheck={false} value={server} onChange={e => setServer(e.target.value)}/></label>{registration ? <label className="field-label">Kayıt davet kodu (sunucu istiyorsa)<input autoComplete="off" maxLength={128} spellCheck={false} value={accountInvite} onChange={e => setAccountInvite(e.target.value)}/></label> : <label className="field-label">Topluluk davet kodu (isteğe bağlı)<input autoComplete="off" maxLength={128} spellCheck={false} value={invite} onChange={e => setInvite(e.target.value)}/></label>}</details>
-            <button className="button primary full" type="submit" disabled={busy || !email.trim() || !password || !server.trim() || (registration && (!invite.trim() || !username.trim()))}>{busy ? <><LoaderCircle size={16} className="spin"/>{registration ? 'Hesap oluşturuluyor…' : 'Giriş yapılıyor…'}</> : <>{registration ? 'Hesap oluştur ve katıl' : invite ? 'Giriş yap ve katıl' : 'Giriş yap'}<ArrowRight size={16}/></>}</button>
+            <button className="button primary full" type="submit" disabled={busy || !email.trim() || !password || !server.trim() || (registration && (!invite.trim() || !username.trim()))}>{busy ? <><LoaderCircle size={16} className="spin"/>{registration ? 'Hesap oluşturuluyor…' : 'Giriş yapılıyor…'}</> : <>{registration ? 'Hesap oluştur ve katıl' : invite ? 'Giriş yap ve katıl' : sessionExpired ? 'Giriş yap ve devam et' : 'Giriş yap'}<ArrowRight size={16}/></>}</button>
         </fieldset>
         </form>}
         {error && <div className="ref-auth-notice error" ref={errorRef} tabIndex={-1} role="alert">{error}</div>}
