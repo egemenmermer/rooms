@@ -1,36 +1,77 @@
 import { tr, uiError } from './i18n';
 import { DesktopUpdates } from './Updates';
-import { AccountProfile } from './People';
-import { AgentSettings } from './Agent';
+import { ChannelPermissionsSurface } from './ChannelPermissionsSurface';
+import {CommunityManagementEntry} from './CommunityManagementEntry';
+import { About } from './About';
+import { SettingsConnection } from './SettingsConnection';
+import { AssistantManagement } from './AssistantManagement';
+import { VoiceAvatar } from './VoiceAvatar';
+import './reference-settings.css';
+import { AgentReferenceSettingsContent, AgentSettings } from './Agent';
 import { PersonalProviders } from './Providers';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowDownToLine, ArrowRight, AudioLines, Check, ChevronRight, CircleHelp, Fingerprint, Globe, Keyboard, Link, Mic, Moon, Monitor, Palette, Play, RefreshCw, Settings2, ShieldCheck, SlidersHorizontal, Square, Trash2, User, Volume2, X } from 'lucide-react';
+import { ArrowLeft, Bookmark, Bot, Clock3, Info, KeyRound, Sparkles, Users, ChevronDown, Bell, Eye, LogOut, Sun, Video, VideoOff, ArrowDownToLine, ArrowRight, AudioLines, Check, ChevronRight, CircleHelp, Fingerprint, Globe, Keyboard, Link, Mic, Moon, Monitor, Palette, Play, RefreshCw, Settings2, ShieldCheck, SlidersHorizontal, Square, Trash2, User, Volume2, X } from 'lucide-react';
 import { Avatar, IconButton, Modal, Toggle } from '@rooms/design';
 import { useRooms } from './store';
 import { ConnectionPane } from './ConnectionPane';
 import { useCommunity } from './community';
 import { useRealtime, setNoiseSuppression } from './realtime';
-const tabs = [{ id: 'appearance', label: tr("Appearance"), icon: Palette }, { id: 'audio', label: tr("Voice & audio"), icon: AudioLines }, { id: 'connections', label: tr("Connections"), icon: Link }, { id: 'agent', label: 'Agent', icon: Fingerprint }, { id: 'profile', label: tr("Your profile"), icon: User }, { id: 'shortcuts', label: tr("Keyboard"), icon: Keyboard }, { id: 'desktop', label: tr("Desktop"), icon: Monitor }, { id: 'diagnostics', label: tr("Diagnostics"), icon: SlidersHorizontal }];
+const tabs = [{ id: 'profile', label: 'Hesap ve profil', icon: User }, { id: 'audio', label: 'Ses ve video', icon: Mic }, { id: 'appearance', label: 'Görünüm', icon: Sun }, { id: 'desktop', label: 'Bildirimler', icon: Bell }, { id: 'agent', label: 'Model bağlantılarım', icon: KeyRound }, { id: 'connections', label: 'Uygulama bağlantıları', icon: Link }, {id:'room-memory',label:'Oda hafızası',icon:Bookmark}, {id:'schedules',label:'Tek seferlik görevler',icon:Clock3}, {id:'services',label:'ROOMS bağlantıları',icon:Globe}, { id: 'shortcuts', label: 'Klavye', icon: Keyboard }, { id: 'diagnostics', label: 'Tanılama', icon: SlidersHorizontal }, {id:'community-management',label:'Üyeler ve roller',icon:Users}, {id:'channel-permissions',label:'Kanal izinleri',icon:ShieldCheck}, {id:'assistant-permissions',label:'Asistan yetkileri',icon:Bot}, {id:'automation',label:'Otomasyon modu',icon:Sparkles}, {id:'about',label:'Güncelleme ve hakkında',icon:Info}];
+function Heading({ title }: { title: string }) { return <div className="ref-settings-heading"><span>KULLANICI AYARLARI</span><h1>{title}</h1></div>; }
+function Unsupported({ title, reason, value = false }: { title: string; reason: string; value?: boolean }) { return <Row title={title} description={reason}><Toggle label={`${title}: ${reason}`} disabled value={value} onChange={() => {}} /></Row>; }
+function ReferenceAccount({ notify, onClose }: { notify(message:string):void; onClose():void }) {
+ const c=useCommunity(), realtime=useRealtime();
+ const [name,setName]=useState(c.user?.displayName??''),[bio,setBio]=useState(''),[status,setStatus]=useState(''),[presence,setPresence]=useState<'online'|'idle'|'dnd'|'invisible'|''>(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[saved,setSaved]=useState(false),[logout,setLogout]=useState(false);
+ const reset=()=>{setName(c.user?.displayName??'');setBio('');setStatus('');setSaved(false);};
+ if(!c.user) return <><Heading title="Hesap ve profil"/><ConnectionPane/></>;
+ return <><Heading title="Hesap ve profil"/>{saved&&<div className="ref-settings-callout success" role="status"><Check size={17}/>Profil değişikliklerin sunucuda kaydedildi.</div>}
+ <div className="ref-profile-columns"><form onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');setSaved(false);try{const user=await window.rooms!.social.updateProfile({displayName:name.trim(),...(bio.trim()?{bio:bio.trim()}:{}),...(status.trim()?{statusText:status.trim()}: {})});useCommunity.setState({user});setSaved(true);}catch(e){setError(uiError(e));}finally{setBusy(false);}}}>
+ <div className="ref-settings-grid"><label className="field-label">Görünen ad<input required maxLength={32} value={name} onChange={e=>{setName(e.target.value);setSaved(false);}}/></label><label className="field-label">Kullanıcı adı<input readOnly value={c.user.username}/></label></div>
+ <label className="field-label">E-posta<input readOnly disabled value="" placeholder="Hesap bağlantısı e-postayı paylaşmıyor"/></label>
+ <label className="field-label">Durum mesajı<input maxLength={128} value={status} onChange={e=>{setStatus(e.target.value);setSaved(false);}} placeholder="Yeni durum mesajı"/></label>
+ <label className="field-label">Hakkında<textarea maxLength={2000} value={bio} onChange={e=>setBio(e.target.value)} placeholder="Yeni profil açıklaması"/></label>
+ <Row title="Görünürlük" description={presence==='invisible'?'Diğer üyelere çevrimdışı görünüyorsun.':'Durumunu sunucuna bildir.'}><select aria-label="Görünürlük" value={presence} disabled={busy||!window.rooms} onChange={async e=>{const next=e.target.value as 'online'|'idle'|'dnd'|'invisible';setBusy(true);setError('');try{await c.setPresence(next);setPresence(next);}catch(e){setError(uiError(e));}finally{setBusy(false);}}}><option value="" disabled>Durum seç</option><option value="online">Çevrimiçi</option><option value="idle">Uzakta</option><option value="dnd">Rahatsız etmeyin</option><option value="invisible">Görünmez</option></select></Row>
+ {presence==='invisible'&&<div className="ref-settings-callout"><Eye size={16}/>Görünmezlik yalnızca sana gösterilir.</div>}
+ <div className="button-row"><button className="button primary" disabled={busy||!name.trim()||!window.rooms}>{busy?'Kaydediliyor…':'Değişiklikleri kaydet'}</button><button type="button" className="button secondary" disabled={busy} onClick={reset}>Vazgeç</button></div></form>
+ <aside><span className="ref-preview-label">PROFİL ÖNİZLEMESİ</span><div className="ref-profile-preview"><div className="ref-profile-banner"/><div className="ref-profile-body"><div className="ref-profile-avatar"><VoiceAvatar id={c.user.id} name={name||c.user.displayName} large/><button className="text-button" disabled={busy||!window.rooms} onClick={async()=>{setBusy(true);setError('');try{const user=await window.rooms!.social.chooseAvatar();if(user){useCommunity.setState({user});notify('Avatar sunucuda güncellendi.');}}catch(e){setError(uiError(e));}finally{setBusy(false);}}}>Avatarı değiştir</button></div><h2>{name||c.user.displayName}</h2><small>@{c.user.username}</small>{status&&<p>{status}</p>}<div className="ref-settings-divider"/><div className="ref-settings-inline"><User size={14}/>{presence==='invisible'?'Görünmez · yalnızca sen görürsün':presence==='online'?'Çevrimiçi':presence==='idle'?'Uzakta':presence==='dnd'?'Rahatsız etmeyin':'Görünürlük durumu alınamadı'}</div></div></div></aside></div>
+ <section className="ref-settings-section"><h2>Gizlilik</h2><Unsupported title="Topluluk üyelerinden özel mesaj al" reason="Topluluk bağlantısı bu tercihi desteklemiyor."/><Unsupported title="Etkinliğimi arkadaşlarıma göster" reason="Etkinlik görünürlüğü bağlantısı henüz uygulanmadı."/><Unsupported title="Arkadaşlık isteklerine izin ver" reason="Topluluk bağlantısı bu tercihi desteklemiyor."/></section>
+ <div className="ref-settings-bottom"><span>Bu cihaz · {window.rooms?.platform??'Tarayıcı'}</span><button className="text-button" onClick={()=>setLogout(true)}><LogOut size={16}/>Oturumu kapat</button></div>{error&&<div className="ref-settings-callout error" role="alert">{error}</div>}
+ {logout&&<Modal title="ROOMS’tan çıkış yap?" className="ref-settings-confirm" onClose={()=>{if(!busy)setLogout(false);}}><p>Bu cihazdaki oturumun kapanacak.{realtime.status==='connected'?` ${realtime.roomName} ses görüşmesinden ayrılacaksın.`:''}</p><div className="ref-settings-inline"><Avatar name={c.user.displayName}/><strong>{c.user.displayName}</strong></div><div className="button-row"><button className="button secondary" disabled={busy} onClick={()=>setLogout(false)}>Vazgeç</button><button className="button danger" disabled={busy} onClick={async()=>{setBusy(true);try{await c.logout();onClose();}catch(e){setError(uiError(e));setLogout(false);}finally{setBusy(false);}}}><LogOut size={16}/>Çıkış yap</button></div></Modal>}</>;
+}
 function Row({ title, description, children }: {
     title: string;
     description: string;
     children: React.ReactNode;
 }) { return <div className="settings-row"><div><h4>{title}</h4>{description && <p>{description}</p>}</div>{children}</div>; }
-export default function Settings({ notify, onClose }: {
+export default function Settings({ notify, onClose, onInvite }: {
     notify(message: string): void;
     onClose(): void;
+    onInvite?():void;
 }) {
     const community = useCommunity();
     const realtime = useRealtime();
     const [params, setParams] = useSearchParams();
     const tab = tabs.some(t => t.id === params.get('tab')) ? params.get('tab')! : 'appearance';
     const { preferences: p, setPreference } = useRooms();
-    const [server, setServer] = useState(p.serverUrl);
     const [error, setError] = useState('');
+    const [extraSettings,setExtraSettings]=useState(false);
+    const extraSettingsRef=useRef<HTMLDivElement|null>(null);
+    useEffect(()=>{if(!extraSettings)return;const dismiss=(event:PointerEvent)=>{if(event.target instanceof Node&&!extraSettingsRef.current?.contains(event.target))setExtraSettings(false);};const key=(event:KeyboardEvent)=>{if(event.key==='Escape'){event.stopPropagation();setExtraSettings(false);extraSettingsRef.current?.querySelector('button')?.focus();}};window.addEventListener('pointerdown',dismiss);window.addEventListener('keydown',key,true);return()=>{window.removeEventListener('pointerdown',dismiss);window.removeEventListener('keydown',key,true);};},[extraSettings]);
     const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+    const [devicesLoaded,setDevicesLoaded]=useState(false);
+    const micEpoch=useRef(0);
+    useEffect(()=>{const previous=document.activeElement as HTMLElement|null;const timer=requestAnimationFrame(()=>document.querySelector<HTMLElement>('.settings-reference-surface .settings-tabs button.selected')?.focus());return()=>{cancelAnimationFrame(timer);if(previous?.isConnected)previous.focus();};},[]);
+    const cameraEpoch=useRef(0);
     const [testing, setTesting] = useState(false);
     const [level, setLevel] = useState(0);
+    const [cameraId,setCameraId]=useState('');
+    const [cameraStream,setCameraStream]=useState<MediaStream|null>(null);
+    const cameraRef=useRef<MediaStream|null>(null);
+    const cameraVideo=useRef<HTMLVideoElement|null>(null);
+    const stopCamera=useCallback(()=>{cameraEpoch.current++;cameraRef.current?.getTracks().forEach(t=>t.stop());cameraRef.current=null;setCameraStream(null);},[]);
+    const toggleCamera=async()=>{if(cameraRef.current){stopCamera();return;}setError('');const epoch=++cameraEpoch.current;try{const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:cameraId?{deviceId:{exact:cameraId}}:true});if(!mounted.current||epoch!==cameraEpoch.current){stream.getTracks().forEach(t=>t.stop());return;}cameraRef.current=stream;setCameraStream(stream);void refreshDevices();stream.getVideoTracks()[0]?.addEventListener('ended',()=>{stopCamera();setError('Kamera bağlantısı kesildi. Cihaz listesini yenile.');});}catch(e){setError(e instanceof DOMException&&e.name==='NotAllowedError'?'Kamera izni kapalı. Sistem gizlilik ayarlarından ROOMS’a kamera izni ver.':'Kamera kullanılamıyor. Cihaz listesini yenile ve başka bir kamera seç.');}};
+    useEffect(()=>{if(cameraVideo.current)cameraVideo.current.srcObject=cameraStream;},[cameraStream]);
     const [micState, setMicState] = useState(tr("Not requested"));
     const [onTop, setOnTop] = useState(false);
     const [autoStart, setAutoStart] = useState(false);
@@ -45,6 +86,7 @@ export default function Settings({ notify, onClose }: {
     const frame = useRef(0);
     const mounted = useRef(true);
     const stopMic = useCallback(() => {
+        micEpoch.current++;
         streamRef.current?.getTracks().forEach(t => t.stop());
         streamRef.current = null;
         if (audioRef.current)
@@ -57,16 +99,16 @@ export default function Settings({ notify, onClose }: {
     const refreshDevices = useCallback(async () => {
         try {
             setDevices(await navigator.mediaDevices.enumerateDevices());
+            setDevicesLoaded(true);
         }
         catch {
             setError(tr("Audio devices are unavailable. Open the desktop app and try again."));
         }
     }, []);
-    useEffect(() => { mounted.current = true; void refreshDevices(); const changed = () => void refreshDevices(); navigator.mediaDevices?.addEventListener('devicechange', changed); return () => { mounted.current = false; stopMic(); navigator.mediaDevices?.removeEventListener('devicechange', changed); }; }, [refreshDevices, stopMic]);
+    useEffect(() => { mounted.current = true; void refreshDevices(); const changed = () => void refreshDevices(); navigator.mediaDevices?.addEventListener('devicechange', changed); return () => { mounted.current = false; stopMic(); stopCamera(); navigator.mediaDevices?.removeEventListener('devicechange', changed); }; }, [refreshDevices, stopMic, stopCamera]);
     useEffect(() => {
-        if (tab !== 'audio')
-            stopMic();
-    }, [tab, stopMic]);
+        if (tab !== 'audio') { stopMic(); stopCamera(); }
+    }, [tab, stopMic, stopCamera]);
     const startMic = async () => {
         if (testing) {
             stopMic();
@@ -74,9 +116,10 @@ export default function Settings({ notify, onClose }: {
         }
         setError('');
         setMicState(tr("Requesting permission\u2026"));
+        const epoch=++micEpoch.current;
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: p.inputId ? { exact: p.inputId } : undefined, echoCancellation: true, noiseSuppression: p.noiseSuppression }, video: false });
-            if (!mounted.current) {
+            if (!mounted.current || epoch !== micEpoch.current) {
                 stream.getTracks().forEach(t => t.stop());
                 return;
             }
@@ -113,8 +156,10 @@ export default function Settings({ notify, onClose }: {
             setSinkId?(id: string): Promise<void>;
         };
         try {
-            if (p.outputId && context.setSinkId)
+            if (p.outputId) {
+                if (!context.setSinkId) throw new Error('Output selection unavailable');
                 await context.setSinkId(p.outputId);
+            }
             const oscillator = context.createOscillator();
             const gain = context.createGain();
             gain.gain.setValueAtTime(0, context.currentTime);
@@ -147,50 +192,24 @@ export default function Settings({ notify, onClose }: {
             notify(tr("Sanitized diagnostics exported."));
         }
     };
-    return <div className="settings-page page-enter"><div className="settings-dismiss"><IconButton label="Ayarları kapat" onClick={onClose}><X size={22}/></IconButton><kbd>ESC</kbd></div><div className="settings-layout"><nav className="settings-tabs" aria-label={tr("Settings categories")}>{tabs.map(t => <button key={t.id} className={tab === t.id ? 'selected' : ''} onClick={() => { setParams({ tab: t.id }); setError(''); }}><t.icon size={17}/>{t.label}<ChevronRight size={13}/></button>)}<span className="settings-version">{tr("ROOMS 0.1.14")}<br />{""}</span></nav><div className="settings-content">
-  {tab === 'appearance' && <><h3>{"G\u00F6r\u00FCn\u00FCm"}</h3><Row title={tr("Appearance")} description={tr("Dark first. System and light themes are planned.")}><div className="segmented small"><button disabled title={tr("System appearance is planned")}>{tr("System")}</button><button className="selected" aria-pressed="true" onClick={() => notify(tr("Dark appearance is selected."))}>{tr("Dark")}</button><button disabled title={tr("Light appearance is planned")}>{tr("Light")}</button></div></Row><Row title={tr("Accent")} description={""}><div className="accent-options"><button aria-label={tr("Pearl accent")} aria-pressed={p.accent === 'pearl'} className={`accent pearl ${p.accent === 'pearl' ? 'chosen' : ''}`} onClick={() => setPreference('accent', 'pearl')}>{p.accent === 'pearl' && <Check size={13}/>}</button><button aria-label={tr("Sage accent")} aria-pressed={p.accent === 'sage'} className={`accent sage ${p.accent === 'sage' ? 'chosen' : ''}`} onClick={() => setPreference('accent', 'sage')}>{p.accent === 'sage' && <Check size={13}/>}</button></div></Row><Row title={tr("Reduce transparency")} description={""}><Toggle label={tr("Reduce transparency")} value={p.reduceTransparency} onChange={v => setPreference('reduceTransparency', v)}/></Row><Row title={tr("Reduce motion")} description={""}><Toggle label={tr("Reduce motion")} value={p.reduceMotion} onChange={v => setPreference('reduceMotion', v)}/></Row><Row title={tr("Compact conversations")} description={""}><Toggle label={tr("Compact conversations")} value={p.compact} onChange={v => setPreference('compact', v)}/></Row><Row title={tr("Friends panel")} description={""}><Toggle label={tr("Show friends panel")} value={p.showFriends} onChange={v => setPreference('showFriends', v)}/></Row></>}
-  {tab === 'audio' && <><h3>{"Ses"}</h3><Row title="Gürültü azaltma" description="Mikrofonun arka plan gürültüsünü azaltır."><Toggle label="Gürültü azaltma" value={p.noiseSuppression} onChange={value=>{stopMic();void setNoiseSuppression(value).then(()=>setPreference('noiseSuppression',value)).catch(error=>notify(uiError(error)));}}/></Row><div className="connection-info"><span className={`status-dot ${realtime.status === 'connected' ? '' : 'unavailable'}`}/>{realtime.status === 'connected' ? `${realtime.roomName} odasına bağlı` : "Ses odas\u0131na ba\u011Fl\u0131 de\u011Fil"}</div><label className="field-label">{tr("INPUT DEVICE")}<select aria-label={tr("Input device")} value={p.inputId} onChange={e => { stopMic(); setPreference('inputId', e.target.value); }}><option value="">{tr("System default microphone")}</option>{devices.filter(d => d.kind === 'audioinput' && d.deviceId !== 'default').map((d, i) => <option value={d.deviceId} key={d.deviceId}>{d.label || `Mikrofon ${i + 1}`}</option>)}</select></label><label className="field-label">{tr("OUTPUT DEVICE")}<select aria-label={tr("Output device")} value={p.outputId} onChange={e => setPreference('outputId', e.target.value)}><option value="">{tr("System default speakers")}</option>{devices.filter(d => d.kind === 'audiooutput' && d.deviceId !== 'default').map((d, i) => <option value={d.deviceId} key={d.deviceId}>{d.label || `Hoparlör ${i + 1}`}</option>)}</select></label><div className="mic-test"><div><Mic size={19}/><h4>{tr("Try your microphone")}</h4><span>{micState}</span></div><div className="mic-meter" role="meter" aria-label={tr("Microphone input level")} aria-valuenow={Math.round(level)} aria-valuemin={0} aria-valuemax={100}><span style={{ width: `${level}%` }}/></div><div className="button-row"><button className="button secondary" onClick={() => void startMic()}>{testing ? <Square size={15}/> : <Mic size={15}/>}{testing ? tr("Stop test") : tr("Test microphone")}</button><button className="button secondary" onClick={() => void speakerTest()}><Volume2 size={16}/>{tr("Test speaker")}</button></div></div><button className="text-button" onClick={() => void refreshDevices()}><RefreshCw size={14}/>{tr("Refresh devices")}</button></>}
-  {tab === 'connections' && <><h3>{"Ba\u011Flant\u0131lar"}</h3><ConnectionPane /><PersonalProviders notify={notify}/>{[{ name: 'LiveKit', description: tr("Voice, video & screen sharing"), note: realtime.status === 'connected' ? `${realtime.roomName} odasına bağlı. Mikrofonu, kamerayı ve paylaşımı odandan yönet.` : tr("Sign in, open a voice channel, and join with your mic off. Screen capture starts only after you select a source.") }].map(c => <section className="connection-card compact-connection" key={c.name}><div className="connection-card-heading"><span className="connection-icon"><Link size={20}/></span><div><h4>{c.name}</h4><p>{c.description}</p></div><span className="connection-status">{c.name === 'LiveKit' ? (realtime.status === 'connected' ? tr("Connected") : community.user ? tr("Ready to join") : tr("Sign in first")) : tr("Not configured")}</span></div><p className="connection-disclosure">{c.note}</p></section>)}</>}
-  {tab === 'agent' && <AgentSettings notify={notify}/>}
-  {tab === 'profile' && (community.user ? <AccountProfile notify={notify}/> : <ConnectionPane />)}
+    return <div className={`settings-page reference-settings page-enter ref-tab-${tab}`}><div className="settings-dismiss"><IconButton label="Ayarları kapat" onClick={onClose}><X size={22}/></IconButton><kbd>ESC</kbd></div><div className="settings-layout"><nav className="settings-tabs" aria-label={tr("Settings categories")}><div className="ref-nav-title" ref={extraSettingsRef}><button aria-expanded={extraSettings} aria-label="Diğer ayarlar" onClick={()=>setExtraSettings(value=>!value)}>Ayarlar<ChevronDown size={17}/></button>{extraSettings&&<div className="ref-settings-extra" role="menu">{tabs.filter(t=>['shortcuts','diagnostics'].includes(t.id)).map(t=><button role="menuitem" key={t.id} onClick={()=>{setParams({tab:t.id});setExtraSettings(false);setError('');}}><t.icon size={17}/>{t.label}</button>)}</div>}</div>{[{label:'KULLANICI AYARLARI',ids:['profile','audio','appearance','desktop','agent','connections','room-memory','schedules','services']},{label:community.spaces.find(space=>space.id===community.activeSpaceId)?.name.toLocaleUpperCase('tr-TR')||'TOPLULUK',ids:['community-management','channel-permissions','assistant-permissions','automation']},{label:'ROOMS',ids:['about']}].map(group=><div className="ref-settings-nav-group" key={group.label}><span className="ref-nav-group">{group.label}</span>{group.ids.map(id=>{const t=tabs.find(item=>item.id===id)!;return <button key={t.id} className={tab===t.id?'selected':''} aria-current={tab===t.id?'page':undefined} onClick={()=>{setParams({tab:t.id});setError('');}}><t.icon size={17}/>{t.label}</button>;})}{group.label==='ROOMS'&&<button onClick={onClose}><ArrowLeft size={17}/>Sohbete dön</button>}</div>)}<SettingsConnection notify={notify}/></nav><main className="ref-settings-main"><header className="ref-settings-toolbar"><Settings2 size={22}/><strong>{tabs.find(t=>t.id===tab)?.label}</strong>{['community-management','channel-permissions','assistant-permissions','automation'].includes(tab)&&<span className="ref-settings-community-name">{community.spaces.find(space=>space.id===community.activeSpaceId)?.name||'Topluluk'}</span>}</header><div className="settings-content">
+  {tab === 'appearance' && <><Heading title="Görünüm ve erişilebilirlik"/><div className="ref-settings-grid"><section><h2>Yoğunluk</h2><p className="ref-settings-description">Mesajlar ve kanallar arasındaki boşluğu seç.</p><div className="ref-density-options">{[false,true].map(compact=><button key={String(compact)} aria-pressed={p.compact===compact} className={`ref-density ${compact?'compact':''} ${p.compact===compact?'selected':''}`} onClick={()=>setPreference('compact',compact)}><span>{Array.from({length:compact?5:3},(_,i)=><i key={i}/>)}</span>{compact?'Kompakt':'Rahat'}</button>)}</div></section><section><h2>Metin boyutu</h2><p className="ref-settings-description">Sohbet mesajlarının metin boyutu.</p><input type="range" aria-label="Sohbet metni boyutu: henüz desteklenmiyor" min={14} max={18} value={15} disabled/><p className="ref-settings-note">Metin boyutu tercihi henüz uygulanmadı.</p></section></div><div className="ref-settings-grid ref-appearance-surfaces"><section><h2>Hareket ve yüzeyler</h2><Row title="Hareketi azalt" description="Animasyonlar ve geçiş hareketleri azaltılır."><Toggle label="Hareketi azalt" value={p.reduceMotion} onChange={v=>setPreference('reduceMotion',v)}/></Row><Row title="Şeffaflığı azalt" description="Cam paneller ve açılır yüzeyler opak görünür."><Toggle label="Şeffaflığı azalt" value={p.reduceTransparency} onChange={v=>setPreference('reduceTransparency',v)}/></Row><Unsupported title="Sistem tercihlerimi kullan" reason="Sistem tercihi eşitlemesi henüz uygulanmadı."/></section><aside className="ref-chat-preview"><span className="ref-preview-label">METİN ÖNİZLEMESİ</span><div className="ref-settings-inline"><Avatar name={community.user?.displayName||'ROOMS'}/><div><strong>{community.user?.displayName||'ROOMS'}</strong><p>Metin ve durum işaretleri.</p></div></div></aside></div><section className="ref-settings-section"><h2>Klavye ve odak</h2><p className="ref-settings-description">Tab ile ilerle, Shift + Tab ile geri dön. Escape açık paneli kapatır.</p><div className="ref-settings-inline"><button className="button primary ref-focus-sample" onClick={e=>e.currentTarget.focus()}>Odaklı düğme</button><kbd>Tab</kbd><span className="ref-settings-note">Odak çevre çizgisiyle gösterilir.</span></div></section><Row title="Vurgu" description=""><div className="accent-options"><button aria-label="İnci vurgusu" aria-pressed={p.accent==='pearl'} className={`accent pearl ${p.accent==='pearl'?'chosen':''}`} onClick={()=>setPreference('accent','pearl')}>{p.accent==='pearl'&&<Check size={13}/>}</button><button aria-label="Adaçayı vurgusu" aria-pressed={p.accent==='sage'} className={`accent sage ${p.accent==='sage'?'chosen':''}`} onClick={()=>setPreference('accent','sage')}>{p.accent==='sage'&&<Check size={13}/>}</button></div></Row><Row title="Arkadaşlar paneli" description=""><Toggle label="Arkadaşlar panelini göster" value={p.showFriends} onChange={v=>setPreference('showFriends',v)}/></Row><div className="ref-settings-bottom"><Eye size={14}/>Koyu tema</div></>}
+  {tab === 'audio' && <><Heading title="Ses ve video"/>{devicesLoaded&&!devices.some(d=>d.kind==='audioinput'||d.kind==='videoinput')&&!error&&<div className="ref-settings-callout warning" role="status">Mikrofon veya kamera bulunamadı. Cihaz bağladıktan sonra listeyi yenile.</div>}{error&&<div className="ref-settings-callout warning" role="alert">{error}</div>}<div className="ref-settings-grid"><section><h2>Ses girişi</h2><label className="field-label">Mikrofon<select aria-label="Mikrofon" value={p.inputId} onChange={e=>{stopMic();setPreference('inputId',e.target.value);}}><option value="">Sistem varsayılanı</option>{p.inputId&&!devices.some(d=>d.deviceId===p.inputId)&&<option value={p.inputId}>Seçili mikrofon kullanılamıyor</option>}{devices.filter(d=>d.kind==='audioinput'&&d.deviceId!=='default').map((d,i)=><option key={d.deviceId} value={d.deviceId}>{d.label||`Mikrofon ${i+1}`}</option>)}</select></label><Row title="Giriş seviyesi" description="Mikrofon denemesinde ölçülen yerel seviye."><span>{Math.round(level)}%</span></Row><div className="ref-level-meter" role="meter" aria-label="Mikrofon giriş seviyesi" aria-valuenow={Math.round(level)} aria-valuemin={0} aria-valuemax={100}>{Array.from({length:30},(_,i)=><i key={i} className={testing&&i<level*.3?'on':''}/>)}</div><div className="ref-settings-inline spread"><button className="button secondary" onClick={()=>void startMic()}>{testing?<Square size={16}/>:<Mic size={16}/>} {testing?'Denemeyi bitir':'Mikrofonu dene'}</button><span className="ref-settings-note">{micState}</span></div></section><section><h2>Ses çıkışı</h2><label className="field-label">Hoparlör veya kulaklık<select aria-label="Hoparlör veya kulaklık" value={p.outputId} onChange={e=>setPreference('outputId',e.target.value)}><option value="">Sistem varsayılanı</option>{p.outputId&&!devices.some(d=>d.deviceId===p.outputId)&&<option value={p.outputId}>Seçili hoparlör kullanılamıyor</option>}{devices.filter(d=>d.kind==='audiooutput'&&d.deviceId!=='default').map((d,i)=><option key={d.deviceId} value={d.deviceId}>{d.label||`Hoparlör ${i+1}`}</option>)}</select></label><Row title="Çıkış seviyesi" description="Sistem ses ayarlarından yönetilir."><Volume2 size={16}/></Row><button className="button secondary" onClick={()=>void speakerTest()}><Volume2 size={16}/>Test sesini çal</button><p className="ref-settings-note">Test sesi yalnızca bu cihazda çalar.</p></section></div><div className="ref-settings-grid ref-audio-lower"><section><h2>Konuşma davranışı</h2><Row title="Bas konuş" description="Uygulama odaktayken tuşları basılı tut."><Toggle label="Bas konuş" value={p.pushToTalk} onChange={v=>setPreference('pushToTalk',v)}/></Row><Row title="Bas konuş tuşu" description="Sabit kısayol."><kbd>Ctrl Shift Space</kbd></Row><Unsupported title="Girişte mikrofonumu sessize al" reason="Ses odalarına katılırken mikrofon her zaman kapalı başlar." value/><Row title="Gürültü azaltma" description="Mikrofonun arka plan gürültüsünü azaltır."><Toggle label="Gürültü azaltma" value={p.noiseSuppression} onChange={value=>{stopMic();void setNoiseSuppression(value).then(()=>setPreference('noiseSuppression',value)).catch(e=>setError(uiError(e)));}}/></Row></section><section><h2>Kamera</h2><label className="field-label">Kamera<select aria-label="Kamera" value={cameraId} onChange={e=>{stopCamera();setCameraId(e.target.value);}}><option value="">Sistem varsayılanı</option>{devices.filter(d=>d.kind==='videoinput').map((d,i)=><option key={d.deviceId} value={d.deviceId}>{d.label||`Kamera ${i+1}`}</option>)}</select></label><button className="button secondary" onClick={()=>void toggleCamera()}><Video size={16}/>{cameraStream?'Önizlemeyi kapat':'Kamerayı dene'}</button><p className="ref-settings-note">Kamera denemesi odaya yayınlanmaz.</p><div className="ref-camera-preview">{cameraStream?<video ref={cameraVideo} autoPlay muted playsInline aria-label="Yerel kamera önizlemesi"/>:<><VideoOff size={33}/><span>Kamera kapalı</span></>}</div></section></div><Unsupported title="Ekran paylaşımında sistem sesi" reason="Bu sistem ve paylaşım yöntemi için destek doğrulanmadı."/><div className="ref-settings-bottom"><button className="text-button" onClick={()=>void refreshDevices()}><RefreshCw size={14}/>Cihaz listesini yenile</button><span>{realtime.status==='connected'?`${realtime.roomName} · Ses bağlı`:'Ses odasına bağlı değil'}</span></div></>}
+    {tab === 'connections' && <AgentReferenceSettingsContent view="connections"/>}
+    {tab === 'room-memory' && <AgentReferenceSettingsContent view="memory"/>}
+    {tab === 'schedules' && <AgentReferenceSettingsContent view="schedules"/>}
+    {tab === 'services' && <><h3>{"Ba\u011Flant\u0131lar"}</h3><ConnectionPane /><PersonalProviders notify={notify}/>{[{ name: 'LiveKit', description: tr("Voice, video & screen sharing"), note: realtime.status === 'connected' ? `${realtime.roomName} odasına bağlı. Mikrofonu, kamerayı ve paylaşımı odandan yönet.` : tr("Sign in, open a voice channel, and join with your mic off. Screen capture starts only after you select a source.") }].map(c => <section className="connection-card compact-connection" key={c.name}><div className="connection-card-heading"><span className="connection-icon"><Link size={20}/></span><div><h4>{c.name}</h4><p>{c.description}</p></div><span className="connection-status">{c.name === 'LiveKit' ? (realtime.status === 'connected' ? tr("Connected") : community.user ? tr("Ready to join") : tr("Sign in first")) : tr("Not configured")}</span></div><p className="connection-disclosure">{c.note}</p></section>)}</>}
+  {tab === 'agent' && <AgentReferenceSettingsContent view="models"/>}
+  {tab === 'automation' && <AgentSettings notify={notify} view="automation"/>}
+  {tab === 'profile' && <ReferenceAccount notify={notify} onClose={onClose}/>}
 
   {tab === 'shortcuts' && <><h3>{"Klavye"}</h3>{[[tr("Find a room or command"), '⌘ / Ctrl K'], [tr("Home / Spaces / Chat / Voice / Cinema"), '⌘ / Ctrl 1–5'], [tr("Open settings"), '⌘ / Ctrl ,'], [tr("Mikrofonu aç / kapat"), '⌘ / Ctrl Shift M'], [tr("Push to talk (when enabled)"), 'Ctrl Shift Space'], [tr("Play / pause local media"), 'Space'], [tr("Seek local media 5 seconds"), '← / →'], [tr("Close topmost dialog"), 'Esc'], [tr("Mesaj gönder"), 'Enter'], [tr("New line"), 'Shift Enter']].map(([a, b]) => <div className="shortcut-row" key={a}><span>{a}</span><kbd>{b}</kbd></div>)}</>}
-  {tab === 'desktop' && <><h3>{"Masa\u00FCst\u00FC"}</h3><Row title={tr("Push to talk")} description={tr("Hold Ctrl + Shift + Space to speak while ROOMS is focused. Typing fields are excluded; releasing the keys or switching apps mutes you.")}><Toggle label={tr("Push to talk")} value={p.pushToTalk ?? false} onChange={v => setPreference('pushToTalk', v)}/></Row><Row title={tr('Mesaj bildirimleri')} description={notifications?.supported ? tr('ROOMS arka plandayken yeni mesajı haber verir. Mesaj içeriği bildirime eklenmez.') : tr('Sistem bildirimleri bu ortamda kullanılamıyor.')}><Toggle label={tr('Mesaj bildirimlerini etkinleştir')} value={notifications?.enabled ?? false} disabled={!notifications?.supported || notificationBusy} onChange={async (value) => {
-                setNotificationBusy(true);
-                try {
-                    setNotifications(await window.rooms!.notifications.setOptIn(value));
-                }
-                catch (e) {
-                    setError(uiError(e));
-                }
-                finally {
-                    setNotificationBusy(false);
-                }
-            }}/></Row><Row title={tr("Keep window on top")} description={""}><Toggle label={tr("Always on top")} value={onTop} onChange={async (v) => {
-                if (!window.rooms) {
-                    notify(tr("Always on top is available in the Electron app."));
-                    return;
-                }
-                await window.rooms.setAlwaysOnTop(v);
-                setOnTop(v);
-            }}/></Row><Row title={tr("Open at login")} description={tr("Opt-in. Available in the packaged macOS application.")}><Toggle label={tr("Open at login")} value={autoStart} onChange={async (v) => {
-                if (!window.rooms) {
-                    notify(tr("Login behavior requires the packaged desktop app."));
-                    return;
-                }
-                const applied = await window.rooms.setLoginItem(v);
-                setAutoStart(applied);
-                if (v && !applied)
-                    notify(tr("Login launch is unavailable in development. Use the packaged app."));
-            }}/></Row><Row title={tr("Native fullscreen")} description={tr("Give your room the whole screen.")}><button className="button secondary small" onClick={() => {
-                if (window.rooms)
-                    void window.rooms.windowAction('fullscreen');
-                else if (document.fullscreenElement)
-                    void document.exitFullscreen();
-                else
-                    void document.documentElement.requestFullscreen();
-            }}>{tr("Toggle fullscreen")}</button></Row><DesktopUpdates /></>}
+  {tab === 'desktop' && <><Heading title="Bildirimler ve masaüstü"/><div className="ref-notification-columns"><section><h2>Bildirimler</h2><Row title="Masaüstü bildirimleri" description={notifications?.supported?'ROOMS arka plandayken yeni mesajı haber verir.':'Sistem bildirimleri bu ortamda kullanılamıyor.'}><Toggle label="Masaüstü bildirimleri" value={notifications?.enabled??false} disabled={!notifications?.supported||notificationBusy} onChange={async value=>{setNotificationBusy(true);try{setNotifications(await window.rooms!.notifications.setOptIn(value));}catch(e){setError(uiError(e));}finally{setNotificationBusy(false);}}}/></Row><Unsupported title="Bildirim sesleri" reason="Bildirim sesi tercihi henüz uygulanmadı."/><Unsupported title="Mesaj önizlemesini göster" reason="Mesaj içerikleri masaüstü bildirimlerine eklenmez."/><Unsupported title="Ses odasındayken bildirimleri azalt" reason="Ses bağlantısına göre bildirim filtreleme henüz uygulanmadı."/><section className="ref-settings-section"><h2>Bu oda</h2><Unsupported title="Kanal bildirimleri" reason="Kanal bazında bildirim tercihi henüz uygulanmadı."/></section></section><aside><span className="ref-preview-label">BİLDİRİM BİÇİMİ</span><div className="ref-notification-preview"><Bell size={22}/><div><strong>ROOMS</strong><p>Mesaj içeriği gizli.</p></div></div><div className="ref-settings-divider"/><span className="ref-preview-label">MASAÜSTÜ</span><div className="ref-desktop-summary"><strong>ROOMS</strong><p>{realtime.status==='connected'?`${realtime.roomName} · Ses bağlı`:'Ses odasına bağlı değil'}</p><span>Menü çubuğu tercihleri bu sürümde sunulmuyor.</span></div></aside></div><section className="ref-settings-section"><h2>Masaüstü davranışı</h2><Row title="Oturum açınca başlat" description={window.rooms?'Paketlenmiş macOS uygulamasında kullanılabilir.':'Bu tercih masaüstü uygulamasını gerektirir.'}><Toggle label="Oturum açınca başlat" value={autoStart} disabled={!window.rooms} onChange={async v=>{try{const applied=await window.rooms!.setLoginItem(v);setAutoStart(applied);if(v&&!applied)notify('Geliştirme uygulamasında başlangıç kaydı kullanılamıyor.');}catch(e){setError(uiError(e));}}}/></Row><Unsupported title="Pencereyi kapatınca menü çubuğunda açık tut" reason="Pencere kapatma tercihi bu sürümde değiştirilemiyor."/><Unsupported title="Kapatırken etkin bağlantıyı hatırlat" reason="Çıkış onayı tercihi bu sürümde değiştirilemiyor."/><Row title="Pencereyi üstte tut" description={window.rooms?'':'Masaüstü uygulamasını gerektirir.'}><Toggle label="Pencereyi üstte tut" value={onTop} disabled={!window.rooms} onChange={async v=>{try{await window.rooms!.setAlwaysOnTop(v);setOnTop(v);}catch(e){setError(uiError(e));}}}/></Row><Row title="Tam ekran" description=""><button className="button secondary" onClick={async()=>{try{if(window.rooms)await window.rooms.windowAction('fullscreen');else if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch(e){setError(uiError(e));}}}>Tam ekranı değiştir</button></Row></section><DesktopUpdates/></>}
+  {tab === 'community-management' && <CommunityManagementEntry onCreateInvite={onInvite} onBack={onClose} onChannelPermissions={()=>setParams({tab:'channel-permissions'})}/>}
+  {tab === 'channel-permissions' && <ChannelPermissionsSurface channelId={params.get('channel')??community.activeChannelId}/>}
+  {tab === 'about' && <About notify={notify}/>}
+  {tab === 'assistant-permissions' && <AssistantManagement/>}
   {tab === 'diagnostics' && <><h3>{"Tan\u0131lama"}</h3><div className="diagnostic-list">{[[tr("Application"), tr("ROOMS 0.1.14 / Desktop")], [tr("Runtime"), window.rooms ? 'Electron 44.7.0' : tr("Browser preview")], [tr("Platform"), window.rooms?.platform ?? tr("Browser")], [tr("Social / gateway"), community.status], ['WebRTC / SFU', realtime.status], [tr("Activity service"), tr("Durum, seçili odanın etkinlik ekranında gösterilir")], [tr("Provider connections"), tr("Kişisel kaynaklar için Bağlantılar ekranını aç")], [tr("Microphone permission"), micState], [tr("Bitrate / packet loss / ping"), realtime.status === 'connected' ? `${realtime.diagnostics.bitrate === null ? '—' : Math.round(realtime.diagnostics.bitrate / 1000) + ' kbps'} / ${realtime.diagnostics.packetLoss === null ? '—' : (realtime.diagnostics.packetLoss * 100).toFixed(1) + '%'} / ${realtime.diagnostics.rtt === null ? '—' : Math.round(realtime.diagnostics.rtt) + ' ms'}` : tr("Unavailable \u2014 no active transport")], [tr("Data mode"), community.user ? tr('Gerçek topluluk hesabı') : tr('Giriş yapılmadı')]].map(([a, b]) => <div key={a}><span>{a}</span><strong>{b}</strong></div>)}</div><button className="button secondary" onClick={() => void exportDiagnostics()}><ArrowDownToLine size={16}/>{tr("Export sanitized diagnostics")}</button></>}
-  {error && <div className="error-pane" role="alert"><strong>{tr("Let\u2019s check that.")}</strong><p>{error}</p></div>}
-  </div></div></div>;
+  {error && tab !== 'audio' && <div className="error-pane" role="alert"><strong>{tr("Let\u2019s check that.")}</strong><p>{error}</p></div>}
+  </div></main></div></div>;
 }

@@ -1,0 +1,45 @@
+.reference-agent-management{max-width:966px;margin:0 auto;color:var(--color-text-primary,#f2f3f7)}
+.agent-management-tabs{display:flex;gap:24px;border-bottom:1px solid var(--color-border-subtle,#30343d);margin:24px 0 30px}
+.agent-management-tabs>button{padding:0 0 16px;color:var(--color-text-secondary,#b1b5c2);background:none;border:0;border-bottom:2px solid transparent;font-weight:600}
+.agent-management-tabs>button[aria-selected=true]{color:var(--color-text-primary,#f2f3f7);border-bottom-color:var(--color-accent-primary,#8b83ff)}
+.agent-management-tabs>.agent-management-refresh{margin-left:auto}
+.agent-management-title{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:20px 0}
+.agent-management-title h2,.reference-agent-management section>h2{font-size:18px;margin:0}
+.reference-agent-management p,.reference-agent-management small{color:var(--color-text-secondary,#b1b5c2);line-height:1.6}
+.agent-management-table{border-collapse:collapse;width:100%;margin:24px 0 40px;text-align:left}
+.agent-management-table th{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--color-text-secondary,#b1b5c2);font-weight:600;padding:12px 0}
+.agent-management-table td{padding:12px 0;border-top:1px solid var(--color-border-subtle,#30343d);font-size:13px}
+.agent-management-person{display:flex;align-items:center;gap:10px}
+.agent-management-check{color:#62c6a5}
+.agent-management-badge{font-size:11px;letter-spacing:.02em;padding:6px 8px;white-space:nowrap;background:#8b83ff20;color:#bcb5ff;border-radius:5px;font-weight:600}
+.agent-management-scope{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#ffffff02;padding:13px 14px;border-bottom:1px solid var(--color-border-subtle,#30343d);min-width:0;font-size:13px}
+.agent-management-scope>span:first-child{display:flex;align-items:center;gap:10px;min-width:160px;color:var(--color-text-secondary,#b1b5c2)}
+.agent-management-scope strong{overflow-wrap:anywhere;flex:1}
+.agent-management-callout{display:flex;align-items:center;gap:12px;border:1px solid #8b83ff55;background:#8b83ff08;padding:16px;border-radius:8px;margin:22px 0;font-size:13px;color:#cbc5ef;line-height:1.6}
+.agent-management-callout.error{color:#eaa49c;border-color:#b5675c66;flex-wrap:wrap}
+.agent-management-bottom{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:18px 0}.agent-management-bottom small{max-width:65%}
+.agent-management-filters{display:flex;gap:12px;margin-bottom:26px}.agent-management-filters select{min-width:140px}
+.agent-management-log{display:flex;align-items:center;gap:22px;border-bottom:1px solid var(--color-border-subtle,#30343d);padding:18px 0;font-size:13px}.agent-management-log time{min-width:110px;color:var(--color-text-secondary,#b1b5c2);font-size:11px}.agent-management-log>div{flex:1}.agent-management-log small{display:block;margin-top:5px}
+.agent-management-provider{display:flex;gap:18px;margin-top:40px;padding-bottom:24px;border-bottom:1px solid var(--color-border-subtle,#30343d)}.agent-management-provider>div{flex:1;min-width:0}
+.agent-management-denied{text-align:center;padding:90px 25px}.agent-management-denied h1{font-size:24px}.agent-management-denied p{max-width:480px;margin:15px auto 24px}
+.reference-agent-management section{margin:30px 0}
+@media(max-width:900px){.agent-management-table{display:block;overflow:auto}.agent-management-table td,.agent-management-table th{min-width:125px}.agent-management-scope{flex-wrap:wrap}.agent-management-tabs{gap:14px}.agent-management-bottom{align-items:flex-start;flex-direction:column}.agent-management-bottom small{max-width:none}.agent-management-log{gap:12px;flex-wrap:wrap}}
+.reference-agent-management .ref-settings-heading p{font-size:13px;margin-top:8px;line-height:1.6}
+.reference-agent-management .agent-management-title{margin:0 0 14px}
+.reference-agent-management .agent-management-title h2{margin:0;font-size:17px}
+.reference-agent-management .agent-management-tabs{margin-bottom:22px}
+.reference-agent-management .agent-management-table{font-size:12px;margin:0 0 22px;line-height:18px}
+.reference-agent-management .agent-management-table td{font-size:12px;line-height:18px;padding:11px 12px}
+.reference-agent-management .agent-management-table th{padding:10px 12px}
+.reference-agent-management .agent-management-table td:first-child,.reference-agent-management .agent-management-table th:first-child{padding-left:0}
+.reference-agent-management .agent-management-person .voice-avatar{width:28px;height:28px;min-width:28px}
+.reference-agent-management .agent-management-person .voice-avatar img{width:100%;height:100%}
+.reference-agent-management section{margin:22px 0}
+.reference-agent-management .ref-settings-heading{margin-bottom:20px}.reference-agent-management .ref-settings-heading p{font-size:12px;line-height:1.5;margin-top:6px}
+.reference-agent-management .agent-management-tabs>button{font-size:12px;line-height:18px}
+.reference-agent-management .agent-management-person>.voice-photo,.reference-agent-management .agent-management-person>.avatar{width:28px;height:28px;min-width:28px}
+.reference-agent-management .agent-management-badge{font-size:10px;padding:4px 7px}
+.reference-agent-management .agent-management-scope{font-size:12px;padding:10px 13px}
+.reference-agent-management .agent-management-callout{font-size:12px;padding:14px 16px;margin:3px 0 17px}
+
+.agent-management-audit-day>h3{font-size:18px;font-weight:650;margin:0 0 8px}.agent-management-audit-day .agent-management-log time{min-width:54px}.agent-management-badge.warning{background:#d1a66314;color:#e5bd7e}.agent-management-badge.success{background:#62c6a514;color:#62c6a5}.agent-management-badge.muted,.agent-management-closed{color:#969daf}.reference-agent-management .agent-management-filters select{min-height:36px;padding:8px 12px;background:#1b1d22;border:1px solid #50596a;border-radius:7px;color:#e5e8ef}.reference-agent-management .agent-management-callout>svg{flex-shrink:0}
