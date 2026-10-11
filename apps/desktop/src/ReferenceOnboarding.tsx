@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, ChevronRight, LockKeyhole, Mail, Mic, Monitor, Users, Video } from 'lucide-react';
 import type { SocialInvite } from '@rooms/social';
-import type { SocialPasswordRecoveryCapabilities } from '@rooms/contracts';
+import type { SocialBridge, SocialPasswordRecoveryCapabilities } from '@rooms/contracts';
+import { PasswordResetPane } from './PasswordResetPane';
 import { ConnectionPane } from './ConnectionPane';
 import { VoiceAvatar } from './VoiceAvatar';
 import { useCommunity } from './community';
@@ -19,8 +20,9 @@ export interface ReferenceOnboardingProps {
 }
 const normalizeServer = (value: string) => value.trim().replace(/\/+$/, '');
 
-/** Request-only recovery. Reset secrets remain in the configured upstream web flow. */
-export function PasswordRecoveryPane({serverUrl,onBack}:{serverUrl:string;onBack():void}) {
+/** Account-neutral recovery request; reset link ingress is a separate main-only operation. */
+export function PasswordRecoveryPane({serverUrl,onBack,onReset,bridge}:{serverUrl:string;onBack():void;onReset?():void;bridge?:Pick<SocialBridge,'passwordRecoveryCapabilities'|'requestPasswordRecovery'>|null}) {
+    const social=bridge===undefined?window.rooms?.social:bridge;
     const [email,setEmail]=useState('');
     const [capabilities,setCapabilities]=useState<SocialPasswordRecoveryCapabilities|null>(null);
     const [loading,setLoading]=useState(true);
@@ -32,19 +34,19 @@ export function PasswordRecoveryPane({serverUrl,onBack}:{serverUrl:string;onBack
     const load=async()=>{
         const epoch=++generation.current;setLoading(true);setCapabilities(null);setError('');setAccepted(false);setBusy(false);
         try{
-            if(!window.rooms?.social.passwordRecoveryCapabilities)throw new Error('Kurtarma isteği yalnızca masaüstü uygulamasında kullanılabilir.');
-            const result=await window.rooms.social.passwordRecoveryCapabilities(serverUrl);
+            if(!social?.passwordRecoveryCapabilities)throw new Error('Kurtarma isteği yalnızca masaüstü uygulamasında kullanılabilir.');
+            const result=await social.passwordRecoveryCapabilities(serverUrl);
             if(epoch===generation.current)setCapabilities(result);
         }catch{if(epoch===generation.current)setError('Sunucunun kurtarma ayarları alınamadı. Bağlantını ve giriş ekranındaki sunucu adresini kontrol et.');}
         finally{if(epoch===generation.current)setLoading(false);}
     };
-    useEffect(()=>{setEmail('');void load();return()=>{generation.current++;};},[serverUrl]);
+    useEffect(()=>{setEmail('');void load();return()=>{generation.current++;};},[serverUrl,social]);
     useEffect(()=>{if(accepted||error)notice.current?.focus();},[accepted,error]);
-    const reason=loading?'Sunucu ayarları alınıyor…':!window.rooms?.social.requestPasswordRecovery?'Kurtarma isteği yalnızca masaüstü uygulamasında kullanılabilir.':!capabilities?'Sunucunun kurtarma ayarları doğrulanamadı.':!capabilities.emailEnabled?'Sunucuda kurtarma e-postası yapılandırılmamış.':capabilities.captcha.required?'Sunucu hCaptcha doğrulaması istiyor. Kurtarmayı Stoat web uygulamasından başlat.':null;
+    const reason=loading?'Sunucu ayarları alınıyor…':!social?.requestPasswordRecovery?'Kurtarma isteği yalnızca masaüstü uygulamasında kullanılabilir.':!capabilities?'Sunucunun kurtarma ayarları doğrulanamadı.':!capabilities.emailEnabled?'Sunucuda kurtarma e-postası yapılandırılmamış.':capabilities.captcha.required?'Sunucu hCaptcha doğrulaması istiyor. Kurtarmayı Stoat web uygulamasından başlat.':null;
     const submit=async(event:React.FormEvent)=>{
-        event.preventDefault();if(reason||busy||!email.trim()||!window.rooms)return;
+        event.preventDefault();if(reason||busy||!email.trim()||!social)return;
         const epoch=++generation.current;setBusy(true);setError('');
-        try{await window.rooms.social.requestPasswordRecovery({serverUrl,email:email.trim()});if(epoch===generation.current){setEmail('');setAccepted(true);}}
+        try{await social.requestPasswordRecovery({serverUrl,email:email.trim()});if(epoch===generation.current){setEmail('');setAccepted(true);}}
         catch{if(epoch===generation.current)setError('Kurtarma isteği tamamlanamadı. Biraz bekleyip yeniden dene.');}
         finally{if(epoch===generation.current)setBusy(false);}
     };
@@ -59,14 +61,27 @@ export function PasswordRecoveryPane({serverUrl,onBack}:{serverUrl:string;onBack
             {error&&<div className="ref-auth-notice error" role="alert" tabIndex={-1} ref={notice}>{error}</div>}
             {!loading&&!capabilities&&<button className="button secondary full" onClick={()=>void load()}>Yeniden bağlan</button>}
         </>}
+        {onReset&&<button className="button secondary full" disabled={busy} onClick={onReset}>Kurtarma bağlantım var</button>}
         <button className="ref-auth-back" onClick={onBack}><ArrowLeft size={14}/>Giriş ekranına dön</button>
     </div>;
+}
+
+export function ReferenceAuthFrame({mode,children}:{mode:ReferenceOnboardingMode;children:React.ReactNode}) {
+    return <main className={`ref-onboarding mode-${mode}`}><div className="ref-auth-content">
+        <aside className="ref-auth-art" aria-label="ROOMS"><div className="ref-auth-wordmark"><img src="./reference-brand/brand/logo-symbol-lilac.svg" alt=""/>ROOMS</div><div className="ref-auth-sculpture" aria-hidden="true"><div className="ref-auth-portal"/></div></aside>
+        <div className="ref-auth-panel">{children}</div>
+    </div></main>;
 }
 
 /** Reference geometry with real native account operations; no prototype scenario state. */
 export function ReferenceOnboarding({ mode, onNavigate, onComplete, onOpenSettings }: ReferenceOnboardingProps) {
     const c = useCommunity();
     const recoveryServer = useRooms(state=>state.preferences.serverUrl);
+    const [recoveryView,setRecoveryView]=useState<'request'|'reset'>('request');
+    const resetBridge=window.rooms?.social;
+    const resetAvailable=!!resetBridge&&[resetBridge.importPasswordRecoveryLink,resetBridge.confirmPasswordRecovery,resetBridge.cancelPasswordRecovery].every(method=>typeof method==='function');
+    const recoveryScope=`${c.serverUrl}:${c.user?.id??'signed-out'}:${c.status}`;
+    const sessionExpired=!c.user&&c.status==='error'&&c.error==='Oturumunun süresi doldu. Çıkış yapıp yeniden giriş yap.';
     const [params, setParams] = useSearchParams();
     const [server, setServer] = useState(() => params.get('server') || useRooms.getState().preferences.serverUrl || 'https://62.238.119.134');
     const [code, setCode] = useState(() => params.get('invite') || '');
@@ -82,7 +97,7 @@ export function ReferenceOnboarding({ mode, onNavigate, onComplete, onOpenSettin
     useEffect(() => { setName(c.user?.displayName || c.user?.username || ''); }, [c.user?.id, c.user?.displayName, c.user?.username]);
     useEffect(() => {
         let active = true;
-        setBusy(false); setError('');
+        setBusy(false); setError(''); setRecoveryView('request');
         if (mode === 'devices' && window.rooms) void window.rooms.media.captureStatus().then(status => { if (active) setPermissions(status); }).catch(e => { if (active) setError(uiError(e)); });
         return () => { active = false; request.current++; };
     }, [mode]);
@@ -121,18 +136,11 @@ export function ReferenceOnboarding({ mode, onNavigate, onComplete, onOpenSettin
     const sameServer = normalizeServer(c.serverUrl || '') === normalizeServer(server);
     const configure = (tab: 'profile' | 'audio') => onOpenSettings?.(tab);
     const settingsReason = onOpenSettings ? undefined : 'Ayarlar bu görünümde henüz bağlanmadı.';
-    return <main className={`ref-onboarding mode-${mode}`}>
-
-        <div className="ref-auth-content">
-            <aside className="ref-auth-art" aria-label="ROOMS">
-                <div className="ref-auth-wordmark"><img src="./reference-brand/brand/logo-symbol-lilac.svg" alt=""/>ROOMS</div>
-                <div className="ref-auth-sculpture" aria-hidden="true"><div className="ref-auth-portal"/></div>
-            </aside>
-            <div className="ref-auth-panel">
-                {(mode === 'signin' || mode === 'register') ? <ConnectionPane referenceMode={mode} onAuthenticated={() => onNavigate('profile')} onAccessChange={onNavigate} onRecovery={() => onNavigate('recovery')}/> : <section className="ref-auth-form" aria-busy={busy}>
+    return <ReferenceAuthFrame mode={mode}>
+                {(mode === 'signin' || mode === 'register') ? <ConnectionPane referenceMode={mode} sessionExpired={sessionExpired} onAuthenticated={() => onNavigate('profile')} onAccessChange={onNavigate} onRecovery={() => onNavigate('recovery')}/> : <section className="ref-auth-form" aria-busy={busy}>
                     {(mode === 'profile' || mode === 'devices') && <div className="ref-auth-steps" aria-label={`Kurulum: ${mode === 'profile' ? '1' : '2'}. adım`}><i className="active"/><i className={mode === 'devices' ? 'active' : ''}/><i/></div>}
                     {mode === 'welcome' && <><h2>Giriş</h2><button className="button primary full" onClick={() => onNavigate('signin')}><ArrowRight size={16}/>Giriş yap</button><div className="ref-auth-footer"><button onClick={() => onNavigate('invite')}>Davet aç</button></div></>}
-                    {mode === 'recovery' && <PasswordRecoveryPane serverUrl={recoveryServer} onBack={()=>onNavigate('signin')}/>}
+                    {mode === 'recovery' && (recoveryView==='reset'?<PasswordResetPane key={recoveryScope+recoveryServer} serverUrl={recoveryServer} scopeKey={recoveryScope} bridge={resetAvailable?resetBridge:null} onBack={()=>onNavigate('signin')} onNewRequest={()=>setRecoveryView('request')}/>:<PasswordRecoveryPane serverUrl={recoveryServer} onBack={()=>onNavigate('signin')} onReset={()=>setRecoveryView('reset')}/>)}
                     {mode === 'invite' && <><h2>{expired ? 'Davetin süresi doldu' : 'Topluluk daveti'}</h2><p>{invite ? 'Topluluk davetini incele.' : 'Arkadaşından gelen davet kodunu aç.'}</p>
                         <form onSubmit={e => { e.preventDefault(); void inspect(); }}><fieldset disabled={busy}><label className="field-label">Davet kodu<input required autoComplete="off" maxLength={128} spellCheck={false} value={code} onChange={e => { setCode(e.target.value); setInvite(null); setError(''); }}/></label><details className="ref-auth-server"><summary>Sunucu adresi</summary><label className="field-label">Sunucu adresi<input required type="url" autoCapitalize="none" spellCheck={false} value={server} onChange={e => { setServer(e.target.value); setInvite(null); setError(''); }}/></label></details><button className="button secondary full" disabled={busy || !code.trim() || !server.trim()}>{busy ? 'Davet açılıyor…' : 'Davetimi aç'}<ChevronRight size={16}/></button></fieldset></form>
                         {invite && <div className="ref-auth-invite"><span className="ref-auth-community-icon"><Users size={25}/></span><h3>{invite.space?.name || invite.channel?.name || 'Topluluk'}</h3>{invite.channel?.name && <p>#{invite.channel.name}</p>}{expired ? <div className="ref-auth-notice">Arkadaşından yeni bir davet iste.</div> : <><div className="ref-auth-notice"><LockKeyhole size={15}/>Bu topluluğa katılmak için hesabınla giriş yap.</div>{c.user ? <><button className="button primary full" disabled={busy || !sameServer} onClick={() => void join()}>Daveti kabul et<ArrowRight size={16}/></button>{!sameServer && <p className="ref-auth-help">Hesabın farklı sunucuda. Giriş ekranından çıkış yapıp davetin sunucusunda giriş yap.</p>}</> : <button className="button primary full" onClick={() => onNavigate('signin')}>Giriş yap ve katıl<ArrowRight size={16}/></button>}<button className="ref-auth-back" onClick={() => onNavigate(c.user ? 'signin' : 'register')}>{c.user ? 'Hesap değiştir' : 'Davetle hesap oluştur'}</button></>}</div>}
@@ -142,7 +150,5 @@ export function ReferenceOnboarding({ mode, onNavigate, onComplete, onOpenSettin
                     {mode === 'devices' && <><h2>Cihazlar</h2><p>İzinleri yalnızca ilgili özelliği kullandığında isteyeceğiz.</p>{permissions?.microphone === 'denied' && <div className="ref-auth-notice warning">Mikrofon izni kapalı. Ses ve video ayarlarından sistem izinlerini açabilirsin.</div>}<div className="ref-auth-permission"><Mic size={22}/><div><strong>Mikrofon</strong><p>{permissions?.microphone === 'granted' ? 'İzin verildi' : permissions?.microphone === 'denied' ? 'İzin kapalı' : 'Sesli konuşmak için'}</p></div><button className="button secondary small" disabled={!onOpenSettings} title={settingsReason} onClick={() => configure('audio')}>Ayarlar</button></div><div className="ref-auth-permission"><Video size={22}/><div><strong>Kamera</strong><p>İlk görüntülü görüşmede seçebilirsin.</p></div><span>İsteğe bağlı</span></div><div className="ref-auth-permission"><Monitor size={22}/><div><strong>Ekran paylaşımı</strong><p>Paylaşımı başlatırken izin istenir.</p></div><span>Sonra</span></div><div className="ref-auth-device-card"><span>Giriş cihazı</span><strong>Ses ve video ayarlarından seç</strong><button className="button secondary full" disabled={!onOpenSettings} title={settingsReason} onClick={() => configure('audio')}><Mic size={15}/>Mikrofonu dene</button></div><button className="button primary full" disabled={!onComplete} title={onComplete ? undefined : 'Topluluk bağlantısı bu görünümde henüz bağlanmadı.'} onClick={onComplete}>Topluluğuma gir<ArrowRight size={16}/></button><p className="ref-auth-footer">Sistem izinleri macOS tarafından gösterilir.</p></>}
                     {error && <div className="ref-auth-notice error" ref={errorRef} tabIndex={-1} role="alert">{error}</div>}
                 </section>}
-            </div>
-        </div>
-    </main>;
+    </ReferenceAuthFrame>;
 }
