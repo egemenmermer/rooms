@@ -10,7 +10,9 @@ type Action={kind:'create'|'rename'|'delete';type:'text'|'voice';channel?:Social
 export function ChannelTools({children}:{children:ReactNode}) {
   const c=useCommunity(),navigate=useNavigate();
   const [menu,setMenu]=useState<{x:number;y:number;channel?:SocialChannel;type:'text'|'voice'}|null>(null);
+  const [refreshWarning,setRefreshWarning]=useState('');
   const [action,setAction]=useState<Action|null>(null),[busy]=useState(false);
+  useEffect(()=>setRefreshWarning(''),[c.user?.id,c.serverUrl,c.activeSpaceId]);
   const menuRef=useRef<HTMLDivElement>(null),origin=useRef<HTMLElement|null>(null);
   const dismiss=useCallback(()=>{setMenu(null);origin.current?.focus();},[]);
   const close=useCallback(()=>{if(!busy){setAction(null);origin.current?.focus();}},[busy]);
@@ -23,13 +25,18 @@ export function ChannelTools({children}:{children:ReactNode}) {
     if(deletedId&&useVoiceContext.getState().channelId===deletedId)await leaveVoice();
     if(!sameAccount())return;
     if(channel&&useVoiceContext.getState().channelId===channel.id)useVoiceContext.setState({roomName:channel.name});
-    const channels=await window.rooms!.social.channels(spaceId);
+    // The mutation already succeeded. A refresh failure must not invite duplicate creation.
+    const currentChannels=useCommunity.getState().channels;
+    if(useCommunity.getState().activeSpaceId===spaceId)useCommunity.setState({channels:channel?[...currentChannels.filter(item=>item.id!==channel.id),channel]:currentChannels.filter(item=>item.id!==deletedId)});
+    let channels:SocialChannel[];
+    try{channels=await window.rooms!.social.channels(spaceId);setRefreshWarning('');}
+    catch{if(sameAccount())setRefreshWarning(deletedId?'Kanal silindi. Liste yenilenemedi.':'Kanal kaydedildi. Liste yenilenemedi.');return;}
     if(!sameAccount()||useCommunity.getState().activeSpaceId!==spaceId)return;
     useCommunity.setState({channels});const active=useCommunity.getState().activeChannelId;
     if(action?.kind==='create'&&channel?.type===0)await useCommunity.getState().openChannel(channel.id);
     else if(active&&!channels.some(ch=>ch.id===active)){const next=channels.find(ch=>ch.type===0);if(next)await useCommunity.getState().openChannel(next.id);else useCommunity.setState({activeChannelId:null,messages:[]});}
   }
-  return <div className="channel-tools" onClick={e=>{const target=(e.target as HTMLElement).closest<HTMLElement>('[data-create-type]');if(target&&c.activeSpaceId){origin.current=target;setAction({kind:'create',type:target.dataset.createType==='voice'?'voice':'text'});}}} onContextMenu={show} onKeyDown={e=>{if(e.key==='ContextMenu'||e.key==='F10'&&e.shiftKey)show(e);}}>{children}
+  return <div className="channel-tools" onClick={e=>{const target=(e.target as HTMLElement).closest<HTMLElement>('[data-create-type]');if(target&&c.activeSpaceId){origin.current=target;setAction({kind:'create',type:target.dataset.createType==='voice'?'voice':'text'});}}} onContextMenu={show} onKeyDown={e=>{if(e.key==='ContextMenu'||e.key==='F10'&&e.shiftKey)show(e);}}>{children}{refreshWarning&&<div className="channel-operation-status" role="status">{refreshWarning}<button onClick={()=>{setRefreshWarning('');void c.openSpace(c.activeSpaceId!);}}>Yenile</button></div>}
   {menu&&createPortal(<div className="channel-context-menu" ref={menuRef} role="menu" aria-label="Kanal işlemleri" style={{left:menu.x,top:menu.y}}><button role="menuitem" onClick={()=>choose('create','text')}>Metin kanalı oluştur</button><button role="menuitem" onClick={()=>choose('create','voice')}>Ses odası oluştur</button>{menu.channel&&<><hr/>{menu.channel.type!==2&&<button role="menuitem" onClick={()=>{const id=menu.channel!.id;dismiss();navigate(`/settings?tab=desktop&channel=${encodeURIComponent(id)}`);}}>Bildirimler</button>}<button role="menuitem" onClick={()=>{const id=menu.channel!.id;dismiss();navigate(`/settings?tab=channel-permissions&channel=${encodeURIComponent(id)}`);}}>İzinler</button><button role="menuitem" onClick={()=>choose('rename')}>Adını değiştir</button><button className="destructive" role="menuitem" onClick={()=>choose('delete')}>Kanalı sil</button></>}</div>,document.body)}
   {action&&c.spaces.find(space=>space.id===c.activeSpaceId)&&<ChannelEditor mode={action.kind} space={c.spaces.find(space=>space.id===c.activeSpaceId)!} channel={action.channel} initialType={action.type} canManage={c.spaces.find(space=>space.id===c.activeSpaceId)?.ownerId===c.user?.id} onClose={close}
     onCreate={window.rooms?async(spaceId,name,type)=>{const channel=await window.rooms!.social.createChannel(spaceId,name,type);await refreshChannels(spaceId,channel);return channel;}:undefined}

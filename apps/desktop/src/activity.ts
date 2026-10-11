@@ -66,5 +66,6 @@ export function useActivityRoom(roomId: string | null) {
     });
     pending.current = task; await task;
   }, [roomId, accept, refresh]);
-  return { room, status, error, busy, send, refresh, serverOffsetMs };
+  const clearError=useCallback(()=>setError(null),[]);
+  return { room, status, error, busy, send, refresh, clearError, serverOffsetMs };
 }

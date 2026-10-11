@@ -60,6 +60,7 @@ function ReferenceGames({ activity, roomId, game, onCreate, create, variant, set
   const [history, setHistory] = useState(false), [raise, setRaise] = useState(false), [amount, setAmount] = useState(20), [end, setEnd] = useState(false), [rules, setRules] = useState(false), [buyIn, setBuyIn] = useState<number | null>(null), [now, setNow] = useState(Date.now());
   const fixture = import.meta.env.DEV && new URLSearchParams(location.search).has('fixture');
   const fixtureReason = 'Yerel görsel örnekte gerçek oyun işlemi kapalı';
+  useEffect(()=>{activity.clearError();},[create,activity.clearError]);
   const ready = activity.status === 'connected', view = game?.view ?? {}, playing = game?.status === 'playing', waiting = game?.status === 'waiting';
   const own = game?.seats.find(seat => seat.userId === c.user?.id), owner = game?.ownerId === c.user?.id;
   const access = !!own || view.watching === true;
