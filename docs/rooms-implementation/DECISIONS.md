@@ -51,3 +51,7 @@ The owner explicitly authorized GitHub source publication in coherent commits. P
 Recovery links are imported only through an explicit native clipboard action, validated against the configured HTTPS API origin, and represented in the renderer by a one-use expiring opaque handle. An unrelated web-app origin is not automatically trusted. S04/expired represents session expiry and returns to sign-in. External-player launch remains disabled pending a safe native broker.
 
 For new delegation, follow the latest directly supplied AGENTS instruction: GPT-6.1 Sol only. Historical Astra work was already delivered and remains historical evidence, not permission for a new assignment.
+
+## 2026-10-11 — Device-local channel notifications
+
+Channel mutes apply only to this installation and never change upstream Stoat preferences or read/unread state. Native IPC compares the requested server/account with the current native session, validates channel IDs and rejects development fixture mutations. Persisted keys hash the stable server/account/channel tuple; no message content, credential, raw account ID or channel ID is saved. Account and server changes therefore cannot inherit another owner's mute. Muted messages are discarded before the global notification rate limit is consumed. The existing opt-in, content-free body, sound, foreground suppression and expiring voice lease remain independent.
