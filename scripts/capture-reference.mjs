@@ -32,7 +32,7 @@ try {
   await page.locator('.app').waitFor();
   if(id==='S04'){
     if(variant==='reset'){await page.getByRole('button',{name:'Panodan kurtarma bağlantısını aktar',exact:true}).click();await page.getByLabel('Yeni şifre',{exact:true}).waitFor();}
-    if(variant==='sent'){await page.getByLabel('E-posta',{exact:true}).fill('demo@example.test');await page.getByRole('button',{name:'Kurtarma isteği gönder',exact:true}).click();await page.getByRole('heading',{name:'İstek kabul edildi',exact:true}).waitFor();}
+    if(variant==='sent'){await page.getByLabel('E-posta adresi',{exact:true}).fill('demo@example.test');await page.getByRole('button',{name:'Kurtarma isteği gönder',exact:true}).click();await page.getByRole('status').filter({hasText:'İstek kabul edildi.'}).waitFor();}
     if(variant==='expired')await page.getByRole('heading',{name:'Yeniden giriş yap',exact:true}).waitFor();
   }
   if(insetPlayer){
