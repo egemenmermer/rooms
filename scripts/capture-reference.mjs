@@ -48,7 +48,8 @@ try {
       else if(variant==='expired')await page.getByText('Yetkilendirme kodunun süresi doldu.',{exact:false}).waitFor();
       else {await page.locator('.ref-media-code').waitFor();if(variant==='cancelled'){await page.getByRole('button',{name:'Onay kontrolünü durdur',exact:true}).click();await page.getByText('Onay kontrolü durduruldu.',{exact:false}).waitFor();}}
     }
-    if(id==='S35'){await page.locator('.ref-media-browse').waitFor();if(variant==='no_guide'){await page.getByRole('button',{name:/Kıyı TV.*program rehberi/}).click();await page.getByText('Bu kanal için program bilgisi sunulmuyor.',{exact:false}).waitFor();}}
+    if(id==='S35'){await page.locator('.ref-media-browse').waitFor();if(variant==='no_guide')await page.getByText('Bu bağlantıda program rehberi yok.',{exact:true}).waitFor();else if(variant==='empty'){await page.getByLabel('Kanal ara',{exact:true}).fill('eşleşmeyen arama');await page.getByRole('heading',{name:'Kanal bulunamadı',exact:true}).waitFor();}else await page.locator('.ref-media-current-program').first().waitFor();}
+    if(id==='S33')await page.getByText('Kayıtlı konumlar yükleniyor…',{exact:true}).waitFor({state:'hidden'});
     if(id==='S38'){await page.locator('.ref-media-library,.ref-media-empty').waitFor();if(variant==='details'){await page.getByRole('button',{name:'Aç',exact:true}).first().click();await page.locator('.ref-media-detail').waitFor();}}
   }
   if(/^S(4[0-9]|5[0-2])$/.test(id))await page.locator('.rg-page').waitFor();
@@ -135,7 +136,7 @@ try {
     })),
   }));
   const revision = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-  const sourceFiles = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], {encoding:'utf8'}).trim().split('\n').filter(file => /^(apps|packages|scripts)\//.test(file) || /^(package.json|pnpm-lock.yaml|vite.config.ts)$/.test(file));
+  const sourceFiles = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], {encoding:'utf8'}).trim().split('\n').filter(file => /^(apps|packages|scripts)\//.test(file) || /^(package.json|pnpm-lock.yaml|vite.config.ts)$/.test(file)).sort();
   const sourceHashes = Object.fromEntries(await Promise.all(sourceFiles.map(async file => [file, createHash('sha256').update(await readFile(file)).digest('hex')])));
   const sourceManifestHash = createHash('sha256').update(JSON.stringify(sourceHashes)).digest('hex');
   await writeFile(path.join(directory, 'source-manifest.json'), JSON.stringify(sourceHashes, null, 2) + '\n');
