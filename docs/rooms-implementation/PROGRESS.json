@@ -11,7 +11,7 @@
     "variants": 322,
     "responsive": 19
   },
-  "updated_at": "2026-10-11T08:06:58.951084+00:00",
+  "updated_at": "2026-10-11T09:16:43.068775+00:00",
   "records": [
     {
       "id": "S01",
@@ -16568,14 +16568,17 @@
         "apps/desktop/src/DesktopWindowSettings.tsx",
         "apps/desktop/electron/main.ts"
       ],
-      "implementation_revision": "2026-10-11 native close/tray preference follow-up; awaiting actual OS and visual acceptance",
-      "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
+      "implementation_revision": "2026-10-11 isolated S67 fixture and original comparison follow-up; not visually accepted",
+      "reference_review_notes": "Root opened all four original S67 PNGs and actual application states on 2026-10-11. Main layout is close in colors/columns but toolbar, sidebar population, vertical rhythm, footer and right preview differ. Tray dialog represents only existing native Open/Quit commands; microphone/leave/pause commands remain absent. Mention-only channel policy remains missing. No visual acceptance.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
         "tests/notification-preferences.test.ts",
         "tests/channel-notifications.test.tsx",
         "tests/window-policy.test.ts",
-        "tests/desktop-window-settings.test.tsx"
+        "tests/desktop-window-settings.test.tsx",
+        "docs/rooms-implementation/evidence/2026-10-11/notifications/default-capture.json",
+        "docs/rooms-implementation/evidence/2026-10-11/notifications/interaction.json",
+        "docs/rooms-implementation/reports/S67_NOTIFICATION_REFERENCE_REPORT.md"
       ],
       "functional_checks": [
         "Native notification sound preference: five mocked Electron tests passed (silent default, opt-in independence, persistence, focus/rate suppression, failed write and sender/type rejection). Final pnpm build exit0.",
@@ -16585,7 +16588,7 @@
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Actual OS notification delivery/sound/permission, native tray/close behavior and real-call suppression/close confirmation remain unverified. Exact S67 fixture/visual acceptance remains incomplete. Message previews remain intentionally content-free. Channel muting is device-local and account/server-scoped. Close warnings cover voice only, not personal playback or all Activities."
+        "Actual OS notification delivery/sound/permission, native tray/close behavior and real-call suppression/close confirmation remain unverified. Mention-only channel policy and native tray microphone/leave/pause commands are missing. Toolbar/sidebar/footer/vertical rhythm and preview/dialog geometry differ from original S67. Message previews remain intentionally content-free. Voice-close warnings do not cover all Activities/personal playback."
       ],
       "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
       "updated_at": "2026-10-11T06:06:38.996551+00:00"
@@ -16626,14 +16629,17 @@
         "apps/desktop/src/DesktopWindowSettings.tsx",
         "apps/desktop/electron/main.ts"
       ],
-      "implementation_revision": "2026-10-11 native close/tray preference follow-up; awaiting actual OS and visual acceptance",
-      "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
+      "implementation_revision": "2026-10-11 isolated S67 fixture and original comparison follow-up; not visually accepted",
+      "reference_review_notes": "Root opened all four original S67 PNGs and actual application states on 2026-10-11. Main layout is close in colors/columns but toolbar, sidebar population, vertical rhythm, footer and right preview differ. Tray dialog represents only existing native Open/Quit commands; microphone/leave/pause commands remain absent. Mention-only channel policy remains missing. No visual acceptance.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
         "tests/notification-preferences.test.ts",
         "tests/channel-notifications.test.tsx",
         "tests/window-policy.test.ts",
-        "tests/desktop-window-settings.test.tsx"
+        "tests/desktop-window-settings.test.tsx",
+        "docs/rooms-implementation/evidence/2026-10-11/notifications/muted-capture.json",
+        "docs/rooms-implementation/evidence/2026-10-11/notifications/interaction.json",
+        "docs/rooms-implementation/reports/S67_NOTIFICATION_REFERENCE_REPORT.md"
       ],
       "functional_checks": [
         "Native notification sound preference: five mocked Electron tests passed (silent default, opt-in independence, persistence, focus/rate suppression, failed write and sender/type rejection). Final pnpm build exit0.",
@@ -16643,7 +16649,7 @@
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Actual OS notification delivery/sound/permission, native tray/close behavior and real-call suppression/close confirmation remain unverified. Exact S67 fixture/visual acceptance remains incomplete. Message previews remain intentionally content-free. Channel muting is device-local and account/server-scoped. Close warnings cover voice only, not personal playback or all Activities."
+        "Actual OS notification delivery/sound/permission, native tray/close behavior and real-call suppression/close confirmation remain unverified. Mention-only channel policy and native tray microphone/leave/pause commands are missing. Toolbar/sidebar/footer/vertical rhythm and preview/dialog geometry differ from original S67. Message previews remain intentionally content-free. Voice-close warnings do not cover all Activities/personal playback."
       ],
       "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
       "updated_at": "2026-10-11T06:06:38.996551+00:00"
@@ -16684,14 +16690,17 @@
         "apps/desktop/src/DesktopWindowSettings.tsx",
         "apps/desktop/electron/main.ts"
       ],
-      "implementation_revision": "2026-10-11 native close/tray preference follow-up; awaiting actual OS and visual acceptance",
-      "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
+      "implementation_revision": "2026-10-11 isolated S67 fixture and original comparison follow-up; not visually accepted",
+      "reference_review_notes": "Root opened all four original S67 PNGs and actual application states on 2026-10-11. Main layout is close in colors/columns but toolbar, sidebar population, vertical rhythm, footer and right preview differ. Tray dialog represents only existing native Open/Quit commands; microphone/leave/pause commands remain absent. Mention-only channel policy remains missing. No visual acceptance.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
         "tests/notification-preferences.test.ts",
         "tests/channel-notifications.test.tsx",
         "tests/window-policy.test.ts",
-        "tests/desktop-window-settings.test.tsx"
+        "tests/desktop-window-settings.test.tsx",
+        "docs/rooms-implementation/evidence/2026-10-11/notifications/system_permission-capture.json",
+        "docs/rooms-implementation/evidence/2026-10-11/notifications/interaction.json",
+        "docs/rooms-implementation/reports/S67_NOTIFICATION_REFERENCE_REPORT.md"
       ],
       "functional_checks": [
         "Native notification sound preference: five mocked Electron tests passed (silent default, opt-in independence, persistence, focus/rate suppression, failed write and sender/type rejection). Final pnpm build exit0.",
@@ -16701,7 +16710,7 @@
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Actual OS notification delivery/sound/permission, native tray/close behavior and real-call suppression/close confirmation remain unverified. Exact S67 fixture/visual acceptance remains incomplete. Message previews remain intentionally content-free. Channel muting is device-local and account/server-scoped. Close warnings cover voice only, not personal playback or all Activities."
+        "Actual OS notification delivery/sound/permission, native tray/close behavior and real-call suppression/close confirmation remain unverified. Mention-only channel policy and native tray microphone/leave/pause commands are missing. Toolbar/sidebar/footer/vertical rhythm and preview/dialog geometry differ from original S67. Message previews remain intentionally content-free. Voice-close warnings do not cover all Activities/personal playback."
       ],
       "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
       "updated_at": "2026-10-11T06:06:38.996551+00:00"
@@ -16742,14 +16751,17 @@
         "apps/desktop/src/DesktopWindowSettings.tsx",
         "apps/desktop/electron/main.ts"
       ],
-      "implementation_revision": "2026-10-11 native close/tray preference follow-up; awaiting actual OS and visual acceptance",
-      "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
+      "implementation_revision": "2026-10-11 isolated S67 fixture and original comparison follow-up; not visually accepted",
+      "reference_review_notes": "Root opened all four original S67 PNGs and actual application states on 2026-10-11. Main layout is close in colors/columns but toolbar, sidebar population, vertical rhythm, footer and right preview differ. Tray dialog represents only existing native Open/Quit commands; microphone/leave/pause commands remain absent. Mention-only channel policy remains missing. No visual acceptance.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
         "tests/notification-preferences.test.ts",
         "tests/channel-notifications.test.tsx",
         "tests/window-policy.test.ts",
-        "tests/desktop-window-settings.test.tsx"
+        "tests/desktop-window-settings.test.tsx",
+        "docs/rooms-implementation/evidence/2026-10-11/notifications/tray-capture.json",
+        "docs/rooms-implementation/evidence/2026-10-11/notifications/interaction.json",
+        "docs/rooms-implementation/reports/S67_NOTIFICATION_REFERENCE_REPORT.md"
       ],
       "functional_checks": [
         "Native notification sound preference: five mocked Electron tests passed (silent default, opt-in independence, persistence, focus/rate suppression, failed write and sender/type rejection). Final pnpm build exit0.",
@@ -16759,7 +16771,7 @@
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Actual OS notification delivery/sound/permission, native tray/close behavior and real-call suppression/close confirmation remain unverified. Exact S67 fixture/visual acceptance remains incomplete. Message previews remain intentionally content-free. Channel muting is device-local and account/server-scoped. Close warnings cover voice only, not personal playback or all Activities."
+        "Actual OS notification delivery/sound/permission, native tray/close behavior and real-call suppression/close confirmation remain unverified. Mention-only channel policy and native tray microphone/leave/pause commands are missing. Toolbar/sidebar/footer/vertical rhythm and preview/dialog geometry differ from original S67. Message previews remain intentionally content-free. Voice-close warnings do not cover all Activities/personal playback."
       ],
       "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
       "updated_at": "2026-10-11T06:06:38.996551+00:00"
