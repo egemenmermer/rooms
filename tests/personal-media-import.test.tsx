@@ -75,3 +75,33 @@ describe('private media route boundary',()=>{
   render(<MemoryRouter initialEntries={['/media?view=channels&connection=00000000-0000-4000-8000-000000000099']}><PersonalMedia notify={vi.fn()}/></MemoryRouter>);await screen.findByText('Bağlı kaynak bulunamadı');expect(bridge.channels).not.toHaveBeenCalled();
  });
 });
+
+describe('RD native receipt and status readback',()=>{
+ const grant={userCode:'OWN-READBACK',verificationUrl:'https://real-debrid.com/device',expiresAt:new Date(Date.now()+600000).toISOString(),interval:5};
+ const rd:ProviderConnection={id:'00000000-0000-4000-8000-000000000037',type:'real-debrid',name:'Own RD',status:'connected',channelCount:0};
+ afterEach(()=>vi.useRealTimers());
+ it('shows connected controls only after a confirmed native receipt and owned status readback',async()=>{
+  let connected=false;
+  const {bridge,notify}=mount({status:vi.fn(async()=>connected?[rd]:[]),rdStart:vi.fn(async()=>grant),rdPoll:vi.fn(async()=>{connected=true;return {state:'connected' as const};}),rdCancel:vi.fn(async()=>{})},'rd');
+  await waitFor(()=>expect(bridge.status).toHaveBeenCalledOnce());vi.useFakeTimers();
+  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Bağlantıyı başlat'})));
+  expect(screen.getByText('OWN-READBACK')).toBeTruthy();
+  await act(async()=>vi.advanceTimersByTimeAsync(5000));
+  expect(screen.getByRole('button',{name:'Kütüphanemi aç'})).toBeTruthy();expect(screen.getByRole('button',{name:'Bağlantıyı kaldır'})).toBeTruthy();expect(notify).toHaveBeenCalledWith('Kişisel Real-Debrid hesabın bağlandı.');
+ });
+ it('keeps a failed readback as an explicit error instead of claiming a usable connection',async()=>{
+  let receipt=false;
+  const {bridge,notify}=mount({status:vi.fn(async()=>{if(receipt)throw new Error('Status unavailable.');return[];}),rdStart:vi.fn(async()=>grant),rdPoll:vi.fn(async()=>{receipt=true;return{state:'connected' as const};}),rdCancel:vi.fn(async()=>{})},'rd');
+  await waitFor(()=>expect(bridge.status).toHaveBeenCalledOnce());vi.useFakeTimers();
+  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Bağlantıyı başlat'})));
+  await act(async()=>vi.advanceTimersByTimeAsync(5000));
+  expect(screen.getByRole('alert').textContent).toContain('Bağlantı sonucu okunamadı.');expect(screen.queryByRole('button',{name:'Kütüphanemi aç'})).toBeNull();expect(notify).not.toHaveBeenCalled();
+ });
+ it('connected removal opens confirmation and never disconnects before its action',async()=>{
+  let removed=false;
+  const {bridge}=mount({status:vi.fn(async()=>removed?[]:[rd]),rdCancel:vi.fn(async()=>{}),disconnect:vi.fn(async()=>{removed=true;})},'rd');
+  const remove=await screen.findByRole('button',{name:'Bağlantıyı kaldır'});fireEvent.click(remove);
+  const confirmation=await screen.findByRole('dialog',{name:'Own RD bağlantısını kaldır?'});expect(bridge.disconnect).not.toHaveBeenCalled();
+  fireEvent.click(within(confirmation).getByRole('button',{name:'Bağlantıyı kaldır'}));await waitFor(()=>expect(bridge.disconnect).toHaveBeenCalledWith(rd.id));await waitFor(()=>expect(screen.queryByRole('dialog')).toBeNull());
+ });
+});

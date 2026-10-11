@@ -57,9 +57,8 @@ export function installPersonalMediaFixture(screenValue: string, variantValue = 
     { id: 'dev-fixture-dunya', name: `Dünya · ${label}`, group: 'Belgesel', favorite: false },
     { id: 'dev-fixture-cizgi', name: `Çizgi · ${label}`, group: 'Çocuk', favorite: false },
   ];
-  if (screen === 'S35' && variant === 'empty') { channels = []; connections[0].channelCount = 0; }
   const library: PersonalLibraryItem[] = (screen === 'S38' && variant === 'empty' ? [] : ['Gecenin Kıyısında', 'Şehir Uyurken', 'Pazar Yolculuğu', 'Son Vapurlar']).map((name, i) => ({
-    id: `dev-fixture-library-${i}`, name: `${name} · ${label}`, size: (1400 + i * 200) * 1024 * 1024, mime: 'video/mp4',
+    id: `dev-fixture-library-${i}`, name: `${name} · ${label}`, size: (1400 + i * 200) * 1024 * 1024, mime: 'video/mp4', addedAt: '2026-10-08T18:00:00.000Z', resumeAt: i < 2 ? 1280 + i * 1500 : 0,
   }));
   const lookup = (id: string, type?: ProviderConnection['type']) => {
     assertActive();
@@ -94,8 +93,15 @@ export function installPersonalMediaFixture(screenValue: string, variantValue = 
       if (!channels.some(c => c.id === channelId)) throw new Error('DEV fixture: kanal bulunamadı.');
       return screen === 'S35' && variant === 'no_guide' ? [] : [{
         title: `Şehrin kıyısında · ${label}`, description: 'Yerel örnek program bilgisi.',
-        startsAt: '2026-10-08T19:00:00.000Z', endsAt: '2026-10-08T20:00:00.000Z',
+        startsAt: new Date(Date.now() - 1800000).toISOString(), endsAt: new Date(Date.now() + 1800000).toISOString(),
       }];
+    },
+    async guide(id, channelIds) {
+      lookup(id);
+      if (channelIds.length > 32 || channelIds.some(channelId => !channels.some(channel => channel.id === channelId))) throw new Error('DEV fixture: geçersiz rehber kanalları.');
+      if (screen === 'S35' && variant === 'no_guide') return { status: 'not-configured', programs: {} };
+      const programs = Object.fromEntries(await Promise.all(channelIds.map(async channelId => [channelId, await bridge.epg(id, channelId)])));
+      return { status: 'available', programs };
     },
     async favorite(id, channelId, value) {
       lookup(id);
@@ -109,7 +115,7 @@ export function installPersonalMediaFixture(screenValue: string, variantValue = 
     async rdStart() {
       assertActive(); cancelled = false;
       if (screen === 'S37' && variant === 'error') throw new Error('DEV fixture: yerel yetkilendirme örneği başarısız; sağlayıcıya bağlanılmadı.');
-      return { userCode: 'DEV-DEMO', verificationUrl: 'about:blank', expiresAt: variant === 'expired' ? '2000-01-01T00:00:00.000Z' : '2099-01-01T00:00:00.000Z', interval: 5 };
+      return { userCode: 'DEV-DEMO', verificationUrl: 'about:blank', expiresAt: variant === 'expired' ? '2000-01-01T00:00:00.000Z' : new Date(Date.now() + 600000).toISOString(), interval: 5 };
     },
     async rdPoll() { assertActive(); return { state: cancelled || variant === 'expired' ? 'expired' : 'pending' }; },
     async rdCancel() { assertActive(); cancelled = true; },
