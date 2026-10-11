@@ -52,7 +52,7 @@ export interface DesktopBridge {
     decideScreenRequest(channelId:string,leaseId:string,requestId:string,approve:boolean):Promise<{approved:boolean;awaitingRelease:boolean}>;
     leave(channelId:string):Promise<void>;
     captureSources():Promise<{id:string;name:string;thumbnail:string}[]>;
-    selectCaptureSource(id:string):Promise<void>;
+    selectCaptureSource(id:string,options?:{audio:boolean}):Promise<void>;
     clearCaptureSource():Promise<void>;
     captureStatus():Promise<{microphone:string;camera:string;screen:string;systemAudio:boolean}>;
   };
@@ -83,6 +83,7 @@ export interface SocialBridge {
   createChannel(spaceId:string,name:string,type:'text'|'voice'):Promise<import('@rooms/social').SocialChannel>;
   renameChannel(channelId:string,name:string):Promise<import('@rooms/social').SocialChannel>;
   deleteChannel(channelId:string):Promise<void>;
+  cachedMessages(channelId:string):Promise<import('@rooms/social').SocialMessage[]>;
   messages(channelId:string,before?:string):Promise<import('@rooms/social').SocialMessage[]>;
   send(channelId:string,content:string,attachmentIds?:string[]):Promise<import('@rooms/social').SocialMessage>;
   edit(channelId:string,messageId:string,content:string):Promise<import('@rooms/social').SocialMessage>;

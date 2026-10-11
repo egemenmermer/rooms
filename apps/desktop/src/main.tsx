@@ -2,12 +2,12 @@ import { tr } from './i18n';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import './styles.css';
 import './reference-tokens.css';
 import App from './App';
 import './reference-shell.css';
-const client = new QueryClient({ defaultOptions: { queries: { retry: 2, staleTime: 30000 } } });
+import { queryClient as client } from './query-client';
 class Boundary extends React.Component<{
     children: React.ReactNode;
 }, {
