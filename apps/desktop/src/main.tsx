@@ -51,6 +51,7 @@ async function bootstrap() {
         }else if(/^S3[3-9]$/.test(fixture)){
           await installReferenceFixture('S19','default');
           const personal=await import('./dev/personal-media-fixture');personal.installPersonalMediaFixture(fixture,params.get('variant')||'default');
+          if(fixture==='S36'||fixture==='S39'||fixture==='S38'&&params.get('variant')==='playing'){const player=await import('./dev/personal-playback-fixture');player.installInsetPlaybackFixture(fixture,params.get('variant')||'default');}
         }else if(/^S(59|60|61|62|63)$/.test(fixture)){
           await installReferenceFixture('S19','default');
         }else if(/^S(4[0-9]|5[0-4])$/.test(fixture)){
