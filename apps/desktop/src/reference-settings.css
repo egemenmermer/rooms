@@ -114,3 +114,23 @@
 .ref-font-size-control { display:flex;align-items:center;gap:12px;margin-top:24px;color:#9197a7;font-size:11px; }
 .ref-font-size-control input { flex:1;min-width:0;accent-color:#8b83ff; }
 .ref-chat-preview .ref-settings-inline p { font-size:var(--chat-font-size,15px);line-height:1.5; }
+
+.settings-navigation-toggle,.settings-narrow-connection,.settings-navigation-scrim { display:none; }
+@media(max-width:959px){
+ .settings-reference-surface { left:63px; }
+ .settings-modal.settings-reference-surface .reference-settings .settings-layout { grid-template-columns:minmax(0,1fr); }
+ .settings-reference-surface .settings-tabs { display:none; }
+ .settings-reference-surface .settings-tabs.drawer-open { display:flex;position:absolute;inset:0 auto 0 0;width:248px;z-index:5;box-shadow:12px 0 30px #0006; }
+ .settings-navigation-scrim { display:block;position:absolute;inset:0;z-index:4;border:0;background:#0007; }
+ .settings-navigation-toggle { display:grid;place-items:center;background:none;border:0;color:#b1b5c2;padding:6px; }
+ .settings-narrow-connection { display:block;position:fixed;bottom:0;left:0;right:0;z-index:3;height:64px;background:#181a20; }
+ .settings-narrow-connection .settings-nav-connection { height:100%;margin:0;display:flex;align-items:center;justify-content:space-between;padding:0 12px; }
+ .settings-narrow-connection .settings-connected-room { display:flex;align-items:center;gap:12px;padding:0; }
+ .settings-narrow-connection .settings-connected-room small { margin:0; }
+ .settings-narrow-connection .settings-connected-actions { display:none; }
+ .settings-narrow-connection footer { min-width:180px; }
+ .settings-reference-surface .ref-settings-main { padding-bottom:64px; }
+ .settings-reference-surface .ref-tab-appearance .ref-settings-grid:not(.ref-appearance-surfaces) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .ref-tab-appearance .ref-appearance-surfaces { grid-template-columns:minmax(0,1fr); }
+ .ref-tab-appearance .ref-appearance-surfaces>.ref-chat-preview { grid-row:1; }
+}

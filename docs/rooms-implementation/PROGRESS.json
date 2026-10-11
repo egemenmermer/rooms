@@ -11,7 +11,7 @@
     "variants": 322,
     "responsive": 19
   },
-  "updated_at": "2026-10-11T03:05:49.639794+00:00",
+  "updated_at": "2026-10-11T04:11:25.003865+00:00",
   "records": [
     {
       "id": "S01",
@@ -16358,20 +16358,23 @@
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json",
-        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json"
+        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json",
+        "docs/rooms-implementation/evidence/2026-10-11/appearance/S66-default.receipt.json",
+        "docs/rooms-implementation/evidence/2026-10-11/appearance/drawer.json"
       ],
       "functional_checks": [
         "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0.",
         "System accessibility: eight focused preference tests passed; local Chromium verified live system motion changes, opt-out, manual precedence and effective motion/transparency CSS."
       ],
       "visual_findings": [
-        "Settings surface changed after popup captures; new current capture required."
+        "Settings surface changed after popup captures; new current capture required.",
+        "Exact state capture now exists. Narrow layout uses an actual category drawer and persistent voice bar. Remaining differences include toolbar/rail artwork, preview content/geometry, slider styling and footer composition; no visual acceptance."
       ],
       "blockers": [
         "Exact named-state/responsive visual comparison and owner acceptance remain open. Native OS accessibility signals on physical macOS/Windows devices remain unverified. Unsupported browser transparency queries cannot report system reduction; manual reduction remains available."
       ],
-      "next_action": "Capture and compare exact S66 variants and responsive layouts; verify native accessibility signals on physical devices.",
-      "updated_at": "2026-10-11T03:05:49.639794+00:00"
+      "next_action": "Compare remaining exact original/application pairs and correct geometry; verify native accessibility signals and owner acceptance.",
+      "updated_at": "2026-10-11T04:11:25.003865+00:00"
     },
     {
       "id": "S66",
@@ -16407,20 +16410,23 @@
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json",
-        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json"
+        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json",
+        "docs/rooms-implementation/evidence/2026-10-11/appearance/S66-compact.receipt.json",
+        "docs/rooms-implementation/evidence/2026-10-11/appearance/drawer.json"
       ],
       "functional_checks": [
         "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0.",
         "System accessibility: eight focused preference tests passed; local Chromium verified live system motion changes, opt-out, manual precedence and effective motion/transparency CSS."
       ],
       "visual_findings": [
-        "Settings surface changed after popup captures; new current capture required."
+        "Settings surface changed after popup captures; new current capture required.",
+        "Exact state capture now exists. Narrow layout uses an actual category drawer and persistent voice bar. Remaining differences include toolbar/rail artwork, preview content/geometry, slider styling and footer composition; no visual acceptance."
       ],
       "blockers": [
         "Exact named-state/responsive visual comparison and owner acceptance remain open. Native OS accessibility signals on physical macOS/Windows devices remain unverified. Unsupported browser transparency queries cannot report system reduction; manual reduction remains available."
       ],
-      "next_action": "Capture and compare exact S66 variants and responsive layouts; verify native accessibility signals on physical devices.",
-      "updated_at": "2026-10-11T03:05:49.639794+00:00"
+      "next_action": "Compare remaining exact original/application pairs and correct geometry; verify native accessibility signals and owner acceptance.",
+      "updated_at": "2026-10-11T04:11:25.003865+00:00"
     },
     {
       "id": "S66",
@@ -16456,20 +16462,23 @@
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json",
-        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json"
+        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json",
+        "docs/rooms-implementation/evidence/2026-10-11/appearance/S66-focus.receipt.json",
+        "docs/rooms-implementation/evidence/2026-10-11/appearance/drawer.json"
       ],
       "functional_checks": [
         "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0.",
         "System accessibility: eight focused preference tests passed; local Chromium verified live system motion changes, opt-out, manual precedence and effective motion/transparency CSS."
       ],
       "visual_findings": [
-        "Settings surface changed after popup captures; new current capture required."
+        "Settings surface changed after popup captures; new current capture required.",
+        "Exact state capture now exists. Narrow layout uses an actual category drawer and persistent voice bar. Remaining differences include toolbar/rail artwork, preview content/geometry, slider styling and footer composition; no visual acceptance."
       ],
       "blockers": [
         "Exact named-state/responsive visual comparison and owner acceptance remain open. Native OS accessibility signals on physical macOS/Windows devices remain unverified. Unsupported browser transparency queries cannot report system reduction; manual reduction remains available."
       ],
-      "next_action": "Capture and compare exact S66 variants and responsive layouts; verify native accessibility signals on physical devices.",
-      "updated_at": "2026-10-11T03:05:49.639794+00:00"
+      "next_action": "Compare remaining exact original/application pairs and correct geometry; verify native accessibility signals and owner acceptance.",
+      "updated_at": "2026-10-11T04:11:25.003865+00:00"
     },
     {
       "id": "S66",
@@ -16505,20 +16514,23 @@
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json",
-        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json"
+        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json",
+        "docs/rooms-implementation/evidence/2026-10-11/appearance/S66-reduced.receipt.json",
+        "docs/rooms-implementation/evidence/2026-10-11/appearance/drawer.json"
       ],
       "functional_checks": [
         "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0.",
         "System accessibility: eight focused preference tests passed; local Chromium verified live system motion changes, opt-out, manual precedence and effective motion/transparency CSS."
       ],
       "visual_findings": [
-        "Settings surface changed after popup captures; new current capture required."
+        "Settings surface changed after popup captures; new current capture required.",
+        "Exact state capture now exists. Narrow layout uses an actual category drawer and persistent voice bar. Remaining differences include toolbar/rail artwork, preview content/geometry, slider styling and footer composition; no visual acceptance."
       ],
       "blockers": [
         "Exact named-state/responsive visual comparison and owner acceptance remain open. Native OS accessibility signals on physical macOS/Windows devices remain unverified. Unsupported browser transparency queries cannot report system reduction; manual reduction remains available."
       ],
-      "next_action": "Capture and compare exact S66 variants and responsive layouts; verify native accessibility signals on physical devices.",
-      "updated_at": "2026-10-11T03:05:49.639794+00:00"
+      "next_action": "Compare remaining exact original/application pairs and correct geometry; verify native accessibility signals and owner acceptance.",
+      "updated_at": "2026-10-11T04:11:25.003865+00:00"
     },
     {
       "id": "S67",
@@ -18594,20 +18606,23 @@
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json",
-        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json"
+        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json",
+        "docs/rooms-implementation/evidence/2026-10-11/appearance/S66-1280x800.receipt.json",
+        "docs/rooms-implementation/evidence/2026-10-11/appearance/drawer.json"
       ],
       "functional_checks": [
         "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0.",
         "System accessibility: eight focused preference tests passed; local Chromium verified live system motion changes, opt-out, manual precedence and effective motion/transparency CSS."
       ],
       "visual_findings": [
-        "Settings surface changed after popup captures; new current capture required."
+        "Settings surface changed after popup captures; new current capture required.",
+        "Exact state capture now exists. Narrow layout uses an actual category drawer and persistent voice bar. Remaining differences include toolbar/rail artwork, preview content/geometry, slider styling and footer composition; no visual acceptance."
       ],
       "blockers": [
         "Exact named-state/responsive visual comparison and owner acceptance remain open. Native OS accessibility signals on physical macOS/Windows devices remain unverified. Unsupported browser transparency queries cannot report system reduction; manual reduction remains available."
       ],
-      "next_action": "Capture and compare exact S66 variants and responsive layouts; verify native accessibility signals on physical devices.",
-      "updated_at": "2026-10-11T03:05:49.639794+00:00"
+      "next_action": "Compare remaining exact original/application pairs and correct geometry; verify native accessibility signals and owner acceptance.",
+      "updated_at": "2026-10-11T04:11:25.003865+00:00"
     },
     {
       "id": "S10",
@@ -18872,20 +18887,23 @@
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json",
-        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json"
+        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json",
+        "docs/rooms-implementation/evidence/2026-10-11/appearance/S66-900x700.receipt.json",
+        "docs/rooms-implementation/evidence/2026-10-11/appearance/drawer.json"
       ],
       "functional_checks": [
         "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0.",
         "System accessibility: eight focused preference tests passed; local Chromium verified live system motion changes, opt-out, manual precedence and effective motion/transparency CSS."
       ],
       "visual_findings": [
-        "Settings surface changed after popup captures; new current capture required."
+        "Settings surface changed after popup captures; new current capture required.",
+        "Exact state capture now exists. Narrow layout uses an actual category drawer and persistent voice bar. Remaining differences include toolbar/rail artwork, preview content/geometry, slider styling and footer composition; no visual acceptance."
       ],
       "blockers": [
         "Exact named-state/responsive visual comparison and owner acceptance remain open. Native OS accessibility signals on physical macOS/Windows devices remain unverified. Unsupported browser transparency queries cannot report system reduction; manual reduction remains available."
       ],
-      "next_action": "Capture and compare exact S66 variants and responsive layouts; verify native accessibility signals on physical devices.",
-      "updated_at": "2026-10-11T03:05:49.639794+00:00"
+      "next_action": "Compare remaining exact original/application pairs and correct geometry; verify native accessibility signals and owner acceptance.",
+      "updated_at": "2026-10-11T04:11:25.003865+00:00"
     },
     {
       "id": "S10",
@@ -19148,20 +19166,23 @@
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json",
-        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json"
+        "docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json",
+        "docs/rooms-implementation/evidence/2026-10-11/appearance/S66-1920x1080.receipt.json",
+        "docs/rooms-implementation/evidence/2026-10-11/appearance/drawer.json"
       ],
       "functional_checks": [
         "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0.",
         "System accessibility: eight focused preference tests passed; local Chromium verified live system motion changes, opt-out, manual precedence and effective motion/transparency CSS."
       ],
       "visual_findings": [
-        "Settings surface changed after popup captures; new current capture required."
+        "Settings surface changed after popup captures; new current capture required.",
+        "Exact state capture now exists. Narrow layout uses an actual category drawer and persistent voice bar. Remaining differences include toolbar/rail artwork, preview content/geometry, slider styling and footer composition; no visual acceptance."
       ],
       "blockers": [
         "Exact named-state/responsive visual comparison and owner acceptance remain open. Native OS accessibility signals on physical macOS/Windows devices remain unverified. Unsupported browser transparency queries cannot report system reduction; manual reduction remains available."
       ],
-      "next_action": "Capture and compare exact S66 variants and responsive layouts; verify native accessibility signals on physical devices.",
-      "updated_at": "2026-10-11T03:05:49.639794+00:00"
+      "next_action": "Compare remaining exact original/application pairs and correct geometry; verify native accessibility signals and owner acceptance.",
+      "updated_at": "2026-10-11T04:11:25.003865+00:00"
     },
     {
       "id": "S29",
