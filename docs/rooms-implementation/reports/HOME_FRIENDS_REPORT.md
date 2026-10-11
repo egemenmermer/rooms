@@ -1,0 +1,7 @@
+# S08–S09 implementation report
+
+Root opened all nine original PNGs (S08 default/empty/loading, S09 default/add/all/blocked/empty/requests) at readable size and inspected prototype social.js/styles.css. Implemented actual Home activity/voice metadata, selectable real rooms and games/board entries, true DM list, empty/loading states. Reference scene art is development-only. Production does not invent recent message bodies, remote presence, activity rosters, thumbnails or event schedules.
+
+FriendsPage provides online/all/requests/blocked URL tabs with actual normalized friend relationships; actual add/accept/reject/withdraw/remove/block/unblock requests, busy/error preservation, confirmation for destructive friend changes. Direct calls disabled with precise missing DM lifecycle reason. The list refreshes every30s while visible and guards late results from user changes. PersonalSidebar reflects actual DMs and active voice and real settings controls; notification-center entry remains disabled pending S16 implementation. /media connects the actual provider surface.
+
+Shared route integration and responsive state require capture/review. No VISUAL_VERIFIED or VERIFIED claim. S08 default active/scene data differs until its media fixture is composed explicitly. Friend request/blocked fixtures still require deterministic state coverage. Home activity heading uses actual content title instead of pretending someone is waiting. Shared member/sidebar colors and original icons are under active calibration.

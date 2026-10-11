@@ -1,0 +1,7 @@
+# S72 common system states
+
+All ten original S72 PNGs were opened individually by root at readable scale. The immutable package assistant.js/assistant.css supplies measurements and transitions. SystemState.tsx/reference-system.css use production components and original vector icons; the door illustration is a CSS primitive, not a reference screenshot. No fake native traffic lights or fixed production check timestamp are rendered.
+
+Production /status derives offline/reconnect/loading/unavailable/session-login/connected state from actual community and browser connection state. Retry refreshes actual authorized community data and does not resend queued messages. Cached-message return and sign-in navigation work through existing routes. Permission/unsupported/empty surfaces expose typed callbacks but still await exact permission/native-state entry wiring. Unsupported systems cannot be turned on through a disabled preference. StartupSplash is now mounted only while the native cached session initializes; no timer invents completion.
+
+DEV S72 opt-in state projection uses the same component. Every state is inventoried, but not every fixture has been captured or exercised. The existing offline capture/review predates the latest community-menu/StartupSplash changes and must be refreshed. Cached voice context, exact header actions, last-check metadata, and reference geometry findings remain in S72_VISUAL_REVIEW.md. There is no visual or service acceptance claim.

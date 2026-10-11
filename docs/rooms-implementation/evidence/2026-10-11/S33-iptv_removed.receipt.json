@@ -1,0 +1,50 @@
+{
+  "id": "S33",
+  "variant": "iptv_removed",
+  "reference_path": "/Users/egemenmermer/Downloads/ROOMS_Design_Package/04_screens/S33_personal_media_home__iptv_removed.png",
+  "reference_hash": "7de6a89f7bdc367c5eec0793f91e92c7c99300da6285df18f7943a9e30593c87",
+  "fixture": "S33/iptv_removed",
+  "integration_status": "LOCAL_FIXTURE",
+  "application_url": "http://127.0.0.1:5173/?fixture=S33&variant=iptv_removed#/media",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "device_scale_factor": 2
+  },
+  "revision": "e3d5ae1c441160bc6ec62f7c61de659cd95d6b02",
+  "working_tree_diff_sha256": "1df2b8bf9aa4f0b55da3caacc0a181cd141d706c3908925024b3c52a61e05fc1",
+  "source_manifest_sha256": "23d4bff4e98150f6d70ad5996cc24010674b56927092d6156665ea7fa98c5946",
+  "timestamp": "2026-10-11T00:41:07.805Z",
+  "metrics": {
+    "font": "Inter, -apple-system, \"system-ui\", \"Segoe UI\", sans-serif",
+    "loadedInter": true,
+    "fixture": "S33/iptv_removed",
+    "roomPlayerFullscreen": false,
+    "overflow": false,
+    "panels": {
+      "window-chrome": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 30
+      },
+      "space-rail": {
+        "x": 0,
+        "y": 30,
+        "width": 72,
+        "height": 870
+      },
+      "voice-channel-sidebar": {
+        "x": 72,
+        "y": 30,
+        "width": 248,
+        "height": 870
+      },
+      "friends-panel": null,
+      "room-members-panel": null,
+      "chat-heading": null
+    }
+  },
+  "runtime_errors": [],
+  "status": "CAPTURED_NOT_VISUALLY_ACCEPTED"
+}
