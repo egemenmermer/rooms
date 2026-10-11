@@ -63,3 +63,7 @@ Keep-open-on-close is explicit opt-in and requires an available native tray. Clo
 ## 2026-10-11 — live room override and sole implementation ownership
 
 The owner revoked all delegation, including Sol/high; root owns all implementation and review. The latest Discord room screenshots govern live voice/camera room composition. Keep original reference fixtures for historical package comparisons, with an explicit DEV-only flag for comparing the revised production composition. Do not strip unsupported game settings to accommodate the old deployed schema. Diagnose protocol incompatibility accurately and keep deployment and provider-registration prerequisites separate from UI delivery.
+
+## 2026-10-11 usability remediation approval
+
+Owner approved implementing the remediation plan and compatible ROOMS core service deployment with backup/rollback. Root only. Preserve host-private provider credentials and consent; together watching uses authorized screen/audio. Owner's reply defers Real-Debrid registration. Existing signed-release credential prerequisite remains pending; no password or token is requested in chat. USABILITY_REMEDIATION.md records exact work/evidence and open gates.
