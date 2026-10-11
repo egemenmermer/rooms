@@ -46,11 +46,11 @@
 .ref-personal-player:fullscreen{width:100%;height:100%;background:#000;padding:0}
 .ref-personal-player:fullscreen .ref-media-stage{height:100%}
 @media(max-width:900px){.personal-playback-runtime .live .ref-media-top{padding:18px;gap:12px}.personal-playback-runtime .live .ref-media-top h1{font-size:17px}.personal-live-controls{left:18px;right:18px;padding:12px}.personal-live-row{gap:9px}.personal-live-row small{display:none}.personal-playback-voice{right:18px;top:140px}.personal-playback-mini{bottom:84px;width:calc(100% - 40px);max-width:none}}
-@media(prefers-reduced-transparency:reduce){.personal-live-controls{background:#171a26;backdrop-filter:none}}
+@media(prefers-reduced-transparency:reduce){html:not([data-transparency]) .personal-live-controls{background:#171a26;backdrop-filter:none}}
 .personal-playback-runtime .live .ref-media-top,.personal-live-controls{transition:opacity 160ms ease}
 .personal-playback-runtime .live.idle .ref-media-top,.personal-playback-runtime .live.idle .personal-live-controls{opacity:0;pointer-events:none}
 .personal-playback-runtime .live.idle .ref-media-top:focus-within,.personal-playback-runtime .live.idle .personal-live-controls:focus-within{opacity:1;pointer-events:auto}
-@media(prefers-reduced-motion:reduce){.personal-playback-runtime .live .ref-media-top,.personal-live-controls{transition:none}}
+@media(prefers-reduced-motion:reduce){html:not([data-motion]) .personal-playback-runtime .live .ref-media-top,html:not([data-motion]) .personal-live-controls{transition:none}}
 
 /* Cinematic full-window playback. The only sample still is resolved by the development-only reference server. */
 .personal-playback-runtime .ref-personal-player{position:relative;height:100%;padding:0;overflow:hidden;background:#080a10;color:#f4f3fa}
@@ -89,8 +89,8 @@
 .ref-personal-player:fullscreen{width:100vw;height:100vh;padding:0;background:#080a10}
 .ref-personal-player:fullscreen .ref-media-stage{height:100vh}
 @media(max-width:900px){.personal-playback-runtime .ref-media-top{padding:18px 20px}.personal-playback-runtime .ref-media-title{gap:11px}.personal-playback-runtime .ref-media-title h1{font-size:17px}.personal-playback-runtime .ref-media-actions{gap:7px}.personal-playback-runtime .personal-live-controls{left:18px;right:18px;bottom:22px;padding:12px}.personal-playback-runtime .personal-live-row{gap:9px}.personal-playback-runtime .personal-live-row>input[type=range]:not(.personal-live-scrubber){width:72px}.personal-playback-runtime .personal-playback-voice{right:18px;top:112px}.personal-playback-runtime .personal-playback-avatars .voice-photo,.personal-playback-runtime .personal-playback-avatars .avatar{width:26px;height:26px}.personal-playback-runtime .personal-reference-caption{bottom:145px;font-size:18px}}
-@media(prefers-reduced-transparency:reduce){.personal-playback-runtime .personal-live-controls,.personal-playback-runtime .personal-playback-voice{background:#1a1b28;backdrop-filter:none}}
-@media(prefers-reduced-motion:reduce){.personal-playback-runtime .ref-media-top,.personal-playback-runtime .personal-live-controls{transition:none}}
+@media(prefers-reduced-transparency:reduce){html:not([data-transparency]) .personal-playback-runtime .personal-live-controls,html:not([data-transparency]) .personal-playback-runtime .personal-playback-voice{background:#1a1b28;backdrop-filter:none}}
+@media(prefers-reduced-motion:reduce){html:not([data-motion]) .personal-playback-runtime .ref-media-top,html:not([data-motion]) .personal-playback-runtime .personal-live-controls{transition:none}}
 
 /* A fullscreen personal player owns the whole app canvas, not just the page body. */
 html[data-room-player-fullscreen="true"] body,
@@ -144,3 +144,7 @@ html[data-room-player-fullscreen="true"] .personal-playback-runtime .ref-persona
 .ref-media-detail-metadata dd{margin:0;color:#c4cde0;text-align:right;overflow-wrap:anywhere}
 @media(max-width:1150px){.ref-media-resume-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.ref-media-resume-list{grid-template-columns:1fr}.ref-media-current-program>div{flex-wrap:wrap;gap:5px}.ref-media-channel{flex-wrap:wrap}}
+
+/* Effective app preference, including manual and followed system reductions. */
+html[data-transparency=reduce] .personal-live-controls{background:#171a26;backdrop-filter:none}
+html[data-transparency=reduce] .personal-playback-runtime .personal-live-controls,html[data-transparency=reduce] .personal-playback-runtime .personal-playback-voice{background:#1a1b28;backdrop-filter:none}

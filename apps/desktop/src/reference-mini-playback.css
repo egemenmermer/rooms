@@ -27,4 +27,4 @@
 .cinema-mini .cinema-mini-error{position:absolute;inset:43px 0 48px;z-index:9;margin:0;padding:15px;background:#111522ee}
 @media(max-width:900px){.cinema-persistent.cinema-mini{right:20px;bottom:84px}}
 [data-transparency=reduce] .mini-playback-header,[data-transparency=reduce] .mini-playback-footer{background:#151b29}
-@media(prefers-reduced-motion:reduce){.mini-playback-chrome .mini-playback-compact{transition:none}}
+@media(prefers-reduced-motion:reduce){html:not([data-motion]) .mini-playback-chrome .mini-playback-compact{transition:none}}

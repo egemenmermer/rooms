@@ -2,11 +2,11 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export interface Preferences {
-  noiseSuppression: boolean; pushToTalk: boolean; reduceMotion: boolean; reduceTransparency: boolean;
+  followSystemAccessibility: boolean; noiseSuppression: boolean; pushToTalk: boolean; reduceMotion: boolean; reduceTransparency: boolean;
   compact: boolean; showFriends: boolean; serverUrl: string; inputId: string;
   outputId: string; notifications: boolean; chatFontSize: number; accent: 'pearl' | 'sage';
 }
-const defaults: Preferences = { noiseSuppression: true, pushToTalk: false, reduceMotion: false, reduceTransparency: false, compact: false, showFriends: true, serverUrl: '', inputId: '', outputId: '', notifications: false, chatFontSize: 15, accent: 'pearl' };
+const defaults: Preferences = { followSystemAccessibility: true, noiseSuppression: true, pushToTalk: false, reduceMotion: false, reduceTransparency: false, compact: false, showFriends: true, serverUrl: '', inputId: '', outputId: '', notifications: false, chatFontSize: 15, accent: 'pearl' };
 interface RoomsState {
   preferences: Preferences;
   setPreference<K extends keyof Preferences>(key: K, value: Preferences[K]): void;

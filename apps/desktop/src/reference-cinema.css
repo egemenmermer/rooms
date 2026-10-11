@@ -132,7 +132,7 @@
 .reference-youtube-page .youtube-external{font-size:10px;color:#ada2df}
 @media(max-width:1100px){.reference-youtube-layout.with-queue{grid-template-columns:minmax(0,1fr) 210px}.reference-cinema-page,.reference-youtube-page.youtube-page,.reference-cinema-player.cinema-page{padding:20px}.reference-cinema-mode{padding:20px}.reference-cinema-queue-layout{grid-template-columns:minmax(0,1fr) 250px;gap:16px}}
 @media(max-width:850px){.reference-cinema-mode-grid,.reference-cinema-queue-layout,.reference-youtube-layout.with-queue{grid-template-columns:1fr}.reference-youtube-queue{border-left:0;border-top:1px solid #3b4353;padding:20px 0}.reference-cinema-heading{align-items:flex-start}.reference-cinema-heading h2{font-size:21px}.reference-cinema-start-roster-row{gap:12px;flex-wrap:wrap}.reference-cinema-start-roster-row>span{min-width:60%;flex:1}.reference-cinema-url-row{flex-wrap:wrap}.reference-cinema-url-row>label{min-width:180px}.reference-cinema-screen-stage,.reference-cinema-screen-video,.reference-cinema-empty{min-height:320px}.reference-cinema-personal-note{line-height:1.6}.reference-cinema-footer{gap:10px;flex-wrap:wrap}.reference-cinema-full-top{left:20px;right:20px}.reference-cinema-full-voice{right:20px}.reference-youtube-controls{flex-wrap:wrap}}
-@media(prefers-reduced-motion:reduce){.reference-cinema-spinner{animation:none}}
+@media(prefers-reduced-motion:reduce){html:not([data-motion]) .reference-cinema-spinner{animation:none}}
 /* One persistent player changes layout without reparenting or replacing its video. */
 .cinema-persistent.cinema-mini{position:fixed;right:28px;bottom:28px;width:min(370px,calc(100vw - 40px));padding:0;background:#171c28;border:1px solid #414857;border-radius:12px;z-index:90;overflow:hidden;box-shadow:0 16px 40px #0005}
 .cinema-mini .cinema-heading,.cinema-mini .cinema-bottom,.cinema-mini .reference-cinema-personal-note,.cinema-mini .stage-top,.cinema-mini .player-overlay,.cinema-mini .reference-cinema-full-top,.cinema-mini .reference-cinema-full-voice{display:none}
@@ -240,4 +240,4 @@
 .cinema-share-control-grow{flex:1}.cinema-share-player:not(.controls-visible) .cinema-share-player-controls{opacity:0;pointer-events:none}
 .cinema-share-player:fullscreen{width:100vw;height:100vh;aspect-ratio:auto;border:0;border-radius:0}.cinema-share-player:fullscreen .cinema-share-player-controls{left:10%;right:10%;bottom:28px;border:1px solid #3c414e;border-radius:14px;background:#1d2230ef}
 @media(max-width:850px){.cinema-share-player{aspect-ratio:2.04/1;min-height:285px}.cinema-share-stage-top{inset:12px 14px auto}.cinema-share-stage-top>span:first-child{font-size:10px}.cinema-share-player-controls{padding:14px}.cinema-source-check-footer{flex-wrap:wrap}.cinema-source-check-pill{white-space:normal}}
-@media(prefers-reduced-motion:reduce){.cinema-share-player-controls{transition:none}}
+@media(prefers-reduced-motion:reduce){html:not([data-motion]) .cinema-share-player-controls{transition:none}}
