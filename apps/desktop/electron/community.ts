@@ -1,3 +1,5 @@
+import { release } from 'node:os';
+import { ConversationVault } from './conversation-vault';
 import { PasswordRecoveryBroker } from './password-recovery';
 import { requestDmCall } from './dm-call-http';
 import { dmCallStartSchema, dmCallActionSchema, dmCallIdSchema, type DmCallSession } from '../../../packages/shared-contracts/src/dm-call';
@@ -22,7 +24,9 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   const subscribePresence=()=>{if(activePresenceSpace&&getWindow()?.isFocused())client?.subscribePresence(activePresenceSpace);};
   const presenceTimer=setInterval(subscribePresence,5*60000);presenceTimer.unref();
   app.on('browser-window-created',(_event,window)=>window.on('focus',()=>{if(window===getWindow())subscribePresence();}));
-  let selected:DesktopCapturerSource|null=null;let selectedAt=0;let choices:DesktopCapturerSource[]=[];let choicesAt=0;
+  const supportsSystemAudio=()=>process.platform==='win32'||process.platform==='darwin'&&(Number(release().split('.')[0])>23||Number(release().split('.')[0])===23&&Number(release().split('.')[1])>=2);
+  let selectedAudio=false;let selected:DesktopCapturerSource|null=null;let selectedAt=0;let choices:DesktopCapturerSource[]=[];let choicesAt=0;
+  const conversationVault=new ConversationVault(app.getPath('userData'),safeStorage);
   const vault=join(app.getPath('userData'),'stoat-session-v1.bin');
   const auth=z.object({serverUrl:z.string().max(2048),email:z.string().email().max(254),password:z.string().min(1).max(256)}).strict();
   const registration=auth.extend({username:z.string().min(2).max(32),inviteCode:z.string().regex(/^[a-zA-Z0-9_-]{2,128}$/),accountInviteCode:z.string().regex(/^[a-zA-Z0-9_-]{2,128}$/).optional()});
@@ -35,9 +39,11 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   const snapshot=():SocialSession=>({instanceUrl:client?.instanceUrl??null,user,status:client?.status??'not-configured',remembered,sessionEpoch});
   function bind(next:StoatClient,generation:number){if(client&&client!==next)void closeDmCall();unsubscribe?.();client=next;unsubscribe=client.subscribe(event=>{
     if(client!==next||generation!==sessionEpoch)return;
-    if(event.type==='AUTH_EXPIRED'){recoveryEpoch++;passwordReset.clear();}
+    if(event.type==='AUTH_EXPIRED'){conversationVault.clear();recoveryEpoch++;passwordReset.clear();}
     if(event.type==='READY')subscribePresence();
-    if(event.type==='CHANNEL_ACCESS_INVALIDATED'){const ids=(event.data as {channelIds:string[]}).channelIds;for(const [fileId,file]of uploadedAttachments)if(ids.includes(file.channelId))uploadedAttachments.delete(fileId);}
+    if(event.type==='CHANNEL_ACCESS_INVALIDATED'){const ids=(event.data as {channelIds:string[]}).channelIds;for(const channelId of ids)conversationVault.remove(channelId);for(const [fileId,file]of uploadedAttachments)if(ids.includes(file.channelId))uploadedAttachments.delete(fileId);}
+    if(event.type==='MESSAGE_CREATE'||event.type==='MESSAGE_UPDATE')conversationVault.change(event.data as import('@rooms/social').SocialMessage);
+    if(event.type==='MESSAGE_DELETE'){const d=event.data as {id:string;channel_id:string};conversationVault.deleteMessage(d.channel_id,d.id);}
     if(event.type==='MESSAGE_CREATE'){const message=event.data as {author?:{id?:unknown};channelId?:unknown},authorId=message.author?.id;if(user&&typeof authorId==='string'&&authorId!==user.id&&typeof message.channelId==='string'&&SOCIAL_ID_PATTERN.test(message.channelId))onIncomingMessage({serverUrl:next.instanceUrl,userId:user.id},message.channelId);}
     if(['READY','RESUMED','CONNECTION_STATUS','AUTH_EXPIRED','MESSAGE_CREATE','MESSAGE_UPDATE','PRESENCE_UPDATE','SOCIAL_REFRESH','MESSAGE_ACK','READ_STATE_SYNC','READ_STATE_UNAVAILABLE','TYPING_UPDATE','CHANNEL_ACCESS_INVALIDATED'].includes(event.type))emit(event);
     else if(event.type==='MESSAGE_DELETE'){const raw=event.data as Record<string,unknown>;emit({type:event.type,data:{id:String(raw.id),channel_id:String(raw.channel_id)}});}
@@ -51,7 +57,7 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   });
   handle('rooms:social-session',()=>snapshot());
   handle('rooms:social-read-states',()=>requireClient().readStates());
-  const replaceSession=async(next:StoatClient,nextUser:SocialUser,request:number)=>{if(request!==authRequestEpoch){await next.disconnect().catch(()=>{});throw new SocialInputError('A newer account change has replaced this sign-in.');}const previous=client;const generation=++sessionEpoch;unsubscribe?.();unsubscribe=null;client=null;user=null;activePresenceSpace=null;uploadedAttachments.clear();remembered=false;if(existsSync(vault))unlinkSync(vault);await closeDmCall();await previous?.disconnect();if(request!==authRequestEpoch){await next.disconnect().catch(()=>{});throw new SocialInputError('A newer account change has replaced this sign-in.');}bind(next,generation);user=nextUser;remember();await next.connect();if(request!==authRequestEpoch||client!==next)throw new SocialInputError('A newer account change has replaced this sign-in.');return snapshot();};
+  const replaceSession=async(next:StoatClient,nextUser:SocialUser,request:number)=>{if(request!==authRequestEpoch){await next.disconnect().catch(()=>{});throw new SocialInputError('A newer account change has replaced this sign-in.');}const previous=client;const generation=++sessionEpoch;unsubscribe?.();unsubscribe=null;client=null;user=null;activePresenceSpace=null;uploadedAttachments.clear();remembered=false;if(existsSync(vault))unlinkSync(vault);await closeDmCall();await previous?.disconnect();if(request!==authRequestEpoch){await next.disconnect().catch(()=>{});throw new SocialInputError('A newer account change has replaced this sign-in.');}bind(next,generation);user=nextUser;conversationVault.select(next.instanceUrl,nextUser.id);remember();await next.connect();if(request!==authRequestEpoch||client!==next)throw new SocialInputError('A newer account change has replaced this sign-in.');return snapshot();};
   handle('rooms:social-login',async input=>{recoveryEpoch++;passwordReset.clear();const request=++authRequestEpoch;const body=auth.parse(input);const next=new StoatClient(body.serverUrl);try{return await replaceSession(next,await next.login(body.email,body.password),request);}catch(error){if(client!==next)await next.disconnect().catch(()=>{});throw error;}});
   handle('rooms:social-register',async input=>{recoveryEpoch++;passwordReset.clear();const request=++authRequestEpoch;const body=registration.parse(input);const next=new StoatClient(body.serverUrl);try{return await replaceSession(next,await next.register(body),request);}catch(error){if(client!==next)await next.disconnect().catch(()=>{});throw error;}});
   handle('rooms:social-password-recovery-capabilities',serverUrl=>new StoatClient(recoveryServer.parse(serverUrl)).passwordRecoveryCapabilities());
@@ -81,7 +87,7 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   }
   app.on('before-quit',()=>{recoveryEpoch++;passwordReset.clear();});
   app.on('browser-window-created',(_event,window)=>window.on('closed',()=>{recoveryEpoch++;passwordReset.clear();}));
-  handle('rooms:social-logout',async()=>{recoveryEpoch++;passwordReset.clear();++authRequestEpoch;++sessionEpoch;const previous=client;unsubscribe?.();unsubscribe=null;client=null;user=null;uploadedAttachments.clear();activePresenceSpace=null;remembered=false;selected=null;choices=[];if(existsSync(vault))unlinkSync(vault);await closeDmCall();await previous?.logout();});
+  handle('rooms:social-logout',async()=>{conversationVault.clear();recoveryEpoch++;passwordReset.clear();++authRequestEpoch;++sessionEpoch;const previous=client;unsubscribe?.();unsubscribe=null;client=null;user=null;uploadedAttachments.clear();activePresenceSpace=null;remembered=false;selected=null;selectedAudio=false;choices=[];if(existsSync(vault))unlinkSync(vault);await closeDmCall();await previous?.logout();});
   handle('rooms:social-spaces',()=>requireClient().listSpaces());
   handle('rooms:social-create-space',name=>requireClient().createSpace(channelName.parse(name)));
   handle('rooms:social-rename-space',(spaceId,name)=>requireClient().renameSpace(id.parse(spaceId),channelName.parse(name)));
@@ -94,7 +100,8 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   const aclChange=z.object({channelId:id,subject:z.discriminatedUnion('kind',[z.object({kind:z.literal('default'),id:z.literal('default')}).strict(),z.object({kind:z.literal('role'),id}).strict()]),values:aclValues}).strict();
   handle('rooms:social-channel-permissions',async channelId=>{const current=requireClient(),owner=user!.id,result=await current.channelPermissions(id.parse(channelId));if(client!==current||user?.id!==owner)throw new SocialInputError('The account changed. Open channel permissions again.');return result;});
   handle('rooms:social-set-channel-permissions',async input=>{const current=requireClient(),owner=user!.id,result=await current.setChannelPermissions(aclChange.parse(input));if(client!==current||user?.id!==owner)throw new SocialInputError('The account changed. Open channel permissions again.');return result;});
-  handle('rooms:social-messages',(channelId,before)=>requireClient().listMessages(id.parse(channelId),before===undefined?undefined:id.parse(before)));
+  handle('rooms:social-cached-messages',channelId=>{requireClient();return conversationVault.get(id.parse(channelId));});
+  handle('rooms:social-messages',async(channelId,before)=>{const owner=requireClient(),epoch=sessionEpoch,parsed=id.parse(channelId);const original=conversationVault.get(parsed),cacheTicket=conversationVault.ticket(parsed);const messages=await owner.listMessages(parsed,before===undefined?undefined:id.parse(before));if(client===owner&&sessionEpoch===epoch&&before===undefined&&cacheTicket===conversationVault.ticket(parsed))conversationVault.reconcile(parsed,messages,original);return messages;});
   handle('rooms:social-send',async(channelId,text,attachments)=>{
     const channel=id.parse(channelId);const attachmentIds=attachments===undefined?[]:z.array(id).max(10).parse(attachments);const value=messageContent.parse(text);
     if(!value&&!attachmentIds.length)throw new SocialInputError('Write a message or select an attachment.');
@@ -185,25 +192,25 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   handle('rooms:media-screen-request-cancel',async input=>{const body=screenRequest.parse(input);return z.object({cancelled:z.literal(true)}).strict().parse(await broker('screen/request/cancel',body));});
   handle('rooms:media-screen-request-decide',async input=>{const body=screenRequest.extend({approve:z.boolean()}).strict().parse(input);return z.object({approved:z.boolean(),awaitingRelease:z.boolean()}).strict().parse(await broker('screen/request/decide',body));});
   handle('rooms:media-leave',channelId=>broker('leave',{channelId:id.parse(channelId)}));
-  handle('rooms:capture-status',()=>({microphone:process.platform==='darwin'?systemPreferences.getMediaAccessStatus('microphone'):'unknown',camera:process.platform==='darwin'?systemPreferences.getMediaAccessStatus('camera'):'unknown',screen:process.platform==='darwin'?systemPreferences.getMediaAccessStatus('screen'):'unknown',systemAudio:false}));
+  handle('rooms:capture-status',()=>({microphone:process.platform==='darwin'?systemPreferences.getMediaAccessStatus('microphone'):'unknown',camera:process.platform==='darwin'?systemPreferences.getMediaAccessStatus('camera'):'unknown',screen:process.platform==='darwin'?systemPreferences.getMediaAccessStatus('screen'):'unknown',systemAudio:supportsSystemAudio()}));
   handle('rooms:capture-sources',async()=>{
     choices=await desktopCapturer.getSources({types:['screen','window'],thumbnailSize:{width:320,height:180},fetchWindowIcons:false});choicesAt=Date.now();
     return choices.map(source=>({id:source.id,name:source.name,thumbnail:source.thumbnail.toDataURL()}));
   });
-  handle('rooms:capture-select',sourceId=>{if(typeof sourceId!=='string'||Date.now()-choicesAt>60000)throw new Error('Refresh available sources.');const source=choices.find(s=>s.id===sourceId);if(!source)throw new Error('The selected source is unavailable.');selected=source;selectedAt=Date.now();choices=[];});
-  handle('rooms:capture-clear',()=>{selected=null;choices=[];});
+  handle('rooms:capture-select',(sourceId,options)=>{const preference=z.object({audio:z.boolean()}).strict().parse(options??{audio:false});if(preference.audio&&!supportsSystemAudio())throw new SocialInputError('System audio capture is unavailable on this OS.');if(typeof sourceId!=='string'||Date.now()-choicesAt>60000)throw new Error('Refresh available sources.');const source=choices.find(s=>s.id===sourceId);if(!source)throw new Error('The selected source is unavailable.');selected=source;selectedAudio=preference.audio;selectedAt=Date.now();choices=[];});
+  handle('rooms:capture-clear',()=>{selected=null;selectedAudio=false;choices=[];});
   session.defaultSession.setDisplayMediaRequestHandler((request,callback)=>{
     // Fallback picker is explicit and one-shot; never default to the first screen.
     const allowed=request.frame===getWindow()?.webContents.mainFrame&&isTrusted(request.frame.url)&&selected&&Date.now()-selectedAt<15000;
-    const source=selected;selected=null;choices=[];if(!allowed||!source){callback(null);return;}callback({video:source});
+    const source=selected,audio=selectedAudio;selected=null;selectedAudio=false;choices=[];if(!allowed||!source){callback(null);return;}callback({video:source,...(audio&&supportsSystemAudio()?{audio:'loopback' as const}:{})});
   },{useSystemPicker:false});
   try{
     if(existsSync(vault)&&safeStorage.isEncryptionAvailable()){
       const stored=z.object({provider:z.literal('stoat'),version:z.literal(1),url:z.string(),token:z.string().min(1)}).parse(JSON.parse(safeStorage.decryptString(readFileSync(vault))));
-      const restored=new StoatClient(stored.url,stored.token);user=await restored.getCurrentUser();bind(restored,sessionEpoch);remembered=true;void restored.connect().catch(()=>{});
+      const restored=new StoatClient(stored.url,stored.token);user=await restored.getCurrentUser();conversationVault.select(restored.instanceUrl,user.id);bind(restored,sessionEpoch);remembered=true;void restored.connect().catch(()=>{});
     }
   }catch{user=null;remembered=false;/* A stale/offline vault never means connected. */}
-  app.on('before-quit',()=>{clearInterval(presenceTimer);void client?.disconnect();selected=null;choices=[];});
+  app.on('before-quit',()=>{clearInterval(presenceTimer);conversationVault.flush();void client?.disconnect();selected=null;selectedAudio=false;choices=[];});
   async function activityRequest(roomId:string,command?:unknown,afterRevision?:number):Promise<unknown>{
     const current=requireClient();const room=id.parse(roomId);
     if(command!==undefined&&Buffer.byteLength(JSON.stringify(command),'utf8')>65536)throw new Error('The activity command is too large.');

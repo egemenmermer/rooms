@@ -1,3 +1,5 @@
+import { queryClient } from './query-client';
+import { ConversationCache, reconcileMessages } from './conversation-cache';
 import { useChannelAccess, setChannelAccess } from './channel-access';
 import { uiError } from './i18n';
 import { create } from 'zustand';
@@ -13,7 +15,7 @@ export interface CommunityState {
   connect(input:{serverUrl:string;email:string;password:string}):Promise<void>;
   register(input:{serverUrl:string;email:string;password:string;username:string;inviteCode:string;accountInviteCode?:string}):Promise<void>;
   logout():Promise<void>;refresh():Promise<void>;
-  openSpace(id:string):Promise<void>;openChannel(id:string):Promise<void>;send(content:string,attachments?:SocialAttachment[]):Promise<void>;
+  openSpace(id:string):Promise<void>;openChannel(id:string,force?:boolean):Promise<void>;send(content:string,attachments?:SocialAttachment[]):Promise<void>;
   retryMessage(id:string):Promise<void>;editMessage(id:string,content:string):Promise<void>;deleteMessage(id:string):Promise<void>;loadOlder():Promise<void>;
   createInvite(channelId:string):Promise<SocialInvite>;acceptInvite(code:string):Promise<void>;createDM(recipientId:string):Promise<void>;
   markRead(channelId:string,messageId:string):Promise<void>;
@@ -23,12 +25,15 @@ const blank={status:'not-configured' as ConnectionStatus,user:null,serverUrl:'',
 const bridge=()=>{if(!window.rooms?.social)throw new Error('Özel sunucuna bağlanmak için masaüstü uygulamasını aç.');return window.rooms.social;};
 const safeError=uiError;
 let selectionEpoch=0;let sessionEpoch=0;let nativeSessionEpoch:number|null=null;let initialization:Promise<void>|null=null;
+const conversations=new ConversationCache();
+const channelRequests=new Map<string,Promise<SocialMessage[]>>();
+function clearConversations(){queryClient.clear();conversations.clear();channelRequests.clear();}
 const captureSession=()=>{const state=useCommunity.getState(),epoch=sessionEpoch;return{valid:()=>epoch===sessionEpoch&&useCommunity.getState().user?.id===state.user?.id&&useCommunity.getState().serverUrl===state.serverUrl};};
-async function applySession(session:SocialSession,request=sessionEpoch){if(request!==sessionEpoch)return;nativeSessionEpoch=session.sessionEpoch??null;if(!session.user){useCommunity.setState({...blank,status:session.status});return;}const {leaveVoice}=await import('./realtime');await leaveVoice().catch(()=>{});if(request!==sessionEpoch)return;selectionEpoch++;useChannelAccess.setState({checks:{}});useCommunity.setState({...blank,status:session.status,user:session.user,serverUrl:session.instanceUrl??'',remembered:session.remembered,error:null});await useCommunity.getState().refresh();}
+async function applySession(session:SocialSession,request=sessionEpoch){if(request!==sessionEpoch)return;nativeSessionEpoch=session.sessionEpoch??null;clearConversations();if(!session.user){useCommunity.setState({...blank,status:session.status});return;}const {leaveVoice}=await import('./realtime');await leaveVoice().catch(()=>{});if(request!==sessionEpoch)return;selectionEpoch++;useChannelAccess.setState({checks:{}});useCommunity.setState({...blank,status:session.status,user:session.user,serverUrl:session.instanceUrl??'',remembered:session.remembered,error:null});await useCommunity.getState().refresh();}
 export const useCommunity=create<CommunityState>((set,get)=>({...blank,
-  connect:async input=>{const request=++sessionEpoch;nativeSessionEpoch=null;selectionEpoch++;useChannelAccess.setState({checks:{}});set({...blank,status:'connecting',busy:true});try{const session=await bridge().login(input);if(request===sessionEpoch)await applySession(session,request);}catch(error){if(request===sessionEpoch){try{await applySession(await bridge().session(),request);}catch{}set(state=>({status:state.user?state.status:'error',error:safeError(error)}));}throw error;}finally{if(request===sessionEpoch)set({busy:false});}},
-  register:async input=>{const request=++sessionEpoch;nativeSessionEpoch=null;selectionEpoch++;useChannelAccess.setState({checks:{}});set({...blank,status:'connecting',busy:true});try{const session=await bridge().register(input);if(request===sessionEpoch)await applySession(session,request);}catch(error){if(request===sessionEpoch){try{await applySession(await bridge().session(),request);}catch{}set(state=>({status:state.user?state.status:'error',error:safeError(error)}));}throw error;}finally{if(request===sessionEpoch)set({busy:false});}},
-  logout:async()=>{const request=++sessionEpoch;nativeSessionEpoch=null;selectionEpoch++;useChannelAccess.setState({checks:{}});set({...blank,status:'connecting',busy:true});try{const {leaveVoice}=await import('./realtime');await leaveVoice();await bridge().logout();if(request===sessionEpoch)set({...blank});}catch(error){if(request===sessionEpoch)set({...blank,status:'error',error:safeError(error)});throw error;}},
+  connect:async input=>{const request=++sessionEpoch;nativeSessionEpoch=null;clearConversations();selectionEpoch++;useChannelAccess.setState({checks:{}});set({...blank,status:'connecting',busy:true});try{const session=await bridge().login(input);if(request===sessionEpoch)await applySession(session,request);}catch(error){if(request===sessionEpoch){try{await applySession(await bridge().session(),request);}catch{}set(state=>({status:state.user?state.status:'error',error:safeError(error)}));}throw error;}finally{if(request===sessionEpoch)set({busy:false});}},
+  register:async input=>{const request=++sessionEpoch;nativeSessionEpoch=null;clearConversations();selectionEpoch++;useChannelAccess.setState({checks:{}});set({...blank,status:'connecting',busy:true});try{const session=await bridge().register(input);if(request===sessionEpoch)await applySession(session,request);}catch(error){if(request===sessionEpoch){try{await applySession(await bridge().session(),request);}catch{}set(state=>({status:state.user?state.status:'error',error:safeError(error)}));}throw error;}finally{if(request===sessionEpoch)set({busy:false});}},
+  logout:async()=>{const request=++sessionEpoch;nativeSessionEpoch=null;clearConversations();selectionEpoch++;useChannelAccess.setState({checks:{}});set({...blank,status:'connecting',busy:true});try{const {leaveVoice}=await import('./realtime');await leaveVoice();await bridge().logout();if(request===sessionEpoch)set({...blank});}catch(error){if(request===sessionEpoch)set({...blank,status:'error',error:safeError(error)});throw error;}},
   refresh:async()=>{if(!get().user)return;const identity=get().user?.id,serverUrl=get().serverUrl,epoch=sessionEpoch;const sameSession=()=>sessionEpoch===epoch&&get().user?.id===identity&&get().serverUrl===serverUrl;try{const [spaces,dms,records]=await Promise.all([bridge().spaces(),bridge().dms(),bridge().readStates().catch(()=>[])]);if(!sameSession())return;set({spaces,dms,readStates:Object.fromEntries(records.map(r=>[r.channelId,r]))});const active=get().activeSpaceId;if(!active||!spaces.some(s=>s.id===active)){if(spaces[0])await get().openSpace(spaces[0].id);else set({channels:[],messages:[],activeSpaceId:null,activeChannelId:null});}else{
       const epoch=selectionEpoch,previous=get().channels,channels=await bridge().channels(active);
       if(!sameSession()||get().activeSpaceId!==active||selectionEpoch!==epoch)return;
@@ -39,7 +44,40 @@ export const useCommunity=create<CommunityState>((set,get)=>({...blank,
       const selected=get().activeChannelId;if(selected&&!channels.some(ch=>ch.id===selected)&&!get().dms.some(ch=>ch.id===selected)){const next=channels.find(ch=>ch.type===0);if(next)await get().openChannel(next.id);else set({activeChannelId:null,messages:[]});}
     }}catch(error){if(sameSession())set({error:safeError(error)});}},
   openSpace:async spaceId=>{const epoch=++selectionEpoch,session=captureSession();set({activeSpaceId:spaceId,activeChannelId:null,messages:[],channels:[],loadingMessages:true,error:null});const current=()=>epoch===selectionEpoch&&session.valid();try{const channels=await bridge().channels(spaceId);if(!current())return;set(state=>({channels,unread:{...state.unread,...Object.fromEntries(channels.filter(ch=>state.readStates[ch.id]&&ch.lastMessageId!==undefined).map(ch=>[ch.id,!!ch.lastMessageId&&state.readStates[ch.id].lastReadMessageId!==ch.lastMessageId]))}}));const text=channels.find(c=>c.type===0);if(text&&current())await get().openChannel(text.id);}catch(error){if(current())set({error:safeError(error)});}finally{if(current())set({loadingMessages:false});}},
-  openChannel:async channelId=>{const epoch=++selectionEpoch,session=captureSession();set(state=>({activeChannelId:channelId,messages:[],loadingMessages:true,error:null,hasOlder:true,unread:state.unread}));const current=()=>epoch===selectionEpoch&&session.valid()&&get().activeChannelId===channelId;try{if(useChannelAccess.getState().checks[channelId]){const access=await bridge().channelPermissions(channelId);if(!current())return;if(access.access!=='allowed'||!access.effective?.view){setChannelAccess(channelId,access.access==='missing'?'unavailable':'denied');return;}setChannelAccess(channelId,null);}const messages=await bridge().messages(channelId);if(!current())return;set({messages,hasOlder:messages.length===50});if(messages.at(-1)&&location.hash.startsWith('#/chat')&&document.hasFocus())void get().markRead(channelId,messages.at(-1)!.id);}catch(error){if(current())set({error:safeError(error)});}finally{if(current())set({loadingMessages:false});}},
+  openChannel:async(channelId,force=false)=>{
+    const previous=get();
+    if(previous.activeChannelId)conversations.put(previous.activeChannelId,{messages:previous.messages,hasOlder:previous.hasOlder,fetchedAt:conversations.get(previous.activeChannelId)?.fetchedAt??0});
+    const cached=useChannelAccess.getState().checks[channelId]?undefined:conversations.get(channelId);
+    const epoch=++selectionEpoch,session=captureSession();
+    set({activeChannelId:channelId,messages:cached?.messages??[],loadingMessages:!cached,error:null,hasOlder:cached?.hasOlder??true});
+    const current=()=>epoch===selectionEpoch&&session.valid()&&get().activeChannelId===channelId;
+    if(cached&&!force&&Date.now()-cached.fetchedAt<30000)return;
+    let before=get().messages;
+    try{
+      if(useChannelAccess.getState().checks[channelId]){
+        const access=await bridge().channelPermissions(channelId);if(!current())return;
+        if(access.access!=='allowed'||!access.effective?.view){conversations.remove(channelId);setChannelAccess(channelId,access.access==='missing'?'unavailable':'denied');return;}
+        setChannelAccess(channelId,null);
+      }
+      if(!cached&&bridge().cachedMessages){
+        const restored=await bridge().cachedMessages(channelId).catch(()=>[]);
+        if(!current())return;
+        if(restored.length){const messages=reconcileMessages(restored,[],get().messages);set({messages,loadingMessages:false});before=messages;}
+      }
+      const key=`${sessionEpoch}:${channelId}`;
+      let request=channelRequests.get(key);
+      if(!request){request=bridge().messages(channelId);channelRequests.set(key,request);void request.finally(()=>{if(channelRequests.get(key)===request)channelRequests.delete(key);}).catch(()=>{});}
+      const messages=await request;
+      if(!session.valid()||useChannelAccess.getState().checks[channelId])return;
+      const latest=current()?get().messages:(conversations.get(channelId)?.messages??before);
+      const merged=reconcileMessages(messages,before,latest),hasOlder=messages.length===50;
+      conversations.put(channelId,{messages:merged,hasOlder,fetchedAt:Date.now()});
+      if(!current())return;
+      set({messages:merged,hasOlder});
+      if(messages.at(-1)&&location.hash.startsWith('#/chat')&&document.hasFocus())void get().markRead(channelId,messages.at(-1)!.id);
+    }catch(error){if(current())set({error:safeError(error)});}
+    finally{if(current())set({loadingMessages:false});}
+  },
   send:async(text,attachments=[])=>{const channelId=get().activeChannelId;const user=get().user;const session=captureSession();if(channelId&&useChannelAccess.getState().checks[channelId])throw new Error('Kanal erişimi yeniden doğrulanmalı.');if(!channelId||!user||(!text.trim()&&!attachments.length))return;const epoch=selectionEpoch;const current=()=>epoch===selectionEpoch&&session.valid()&&get().activeChannelId===channelId;if(!current())throw new Error('Oturum değişti. Mesajı yeniden gönder.');const optimistic:CommunityMessage={id:`pending-${crypto.randomUUID()}`,channelId,author:user,content:text.trim().slice(0,4000),timestamp:new Date().toISOString(),editedTimestamp:null,delivery:'pending',attachments};set(state=>({messages:[...state.messages,optimistic]}));try{const sent=await bridge().send(channelId,optimistic.content,attachments.map(a=>a.id));if(current())set(state=>({messages:state.messages.filter(m=>m.id!==optimistic.id&&m.id!==sent.id).concat({...sent,delivery:'sent'}).sort((a,b)=>Date.parse(a.timestamp)-Date.parse(b.timestamp))}));}catch(error){if(current())set(state=>({messages:state.messages.map(m=>m.id===optimistic.id?{...m,delivery:'failed'}:m),error:safeError(error)}));throw error;}},
   retryMessage:async id=>{const message=get().messages.find(m=>m.id===id&&m.delivery==='failed');if(!message)return;set(state=>({messages:state.messages.filter(m=>m.id!==id)}));await get().send(message.content,message.attachments);},
   editMessage:async(id,text)=>{const channelId=get().activeChannelId,session=captureSession(),epoch=selectionEpoch;if(!channelId)return;const current=()=>epoch===selectionEpoch&&session.valid()&&get().activeChannelId===channelId;try{const updated=await bridge().edit(channelId,id,text);if(current())set(state=>({messages:state.messages.map(m=>m.id===id?updated:m)}));}catch(error){if(current())set({error:safeError(error)});throw error;}},
@@ -51,12 +89,17 @@ export const useCommunity=create<CommunityState>((set,get)=>({...blank,
   markRead:async(channelId,messageId)=>{try{await bridge().ackRead(channelId,messageId);/* Native READ_STATE_SYNC is authoritative, including messages arriving while awaiting ACK. */}catch{/* A failed acknowledgement never clears the unread indicator. */}},
   setPresence:status=>bridge().presence(status),clearError:()=>set({error:null}),
 }));
+useCommunity.subscribe((state,previous)=>{
+  if(state.user&&state.activeChannelId&&state.activeChannelId===previous.activeChannelId&&state.messages!==previous.messages&&!useChannelAccess.getState().checks[state.activeChannelId]){
+    conversations.put(state.activeChannelId,{messages:state.messages,hasOlder:state.hasOlder,fetchedAt:conversations.get(state.activeChannelId)?.fetchedAt??0});
+  }
+});
 function onEvent(event:GatewayEvent){
   if(typeof event.sessionEpoch==='number'&&event.sessionEpoch!==nativeSessionEpoch)return;
   const state=useCommunity.getState();
   if(event.type==='CHANNEL_ACCESS_INVALIDATED'){
     const data=event.data as import('@rooms/social').SocialChannelAccessInvalidation;const affected=new Set(data.channelIds);
-    for(const id of affected)setChannelAccess(id,'checking');
+    for(const id of affected){conversations.remove(id);setChannelAccess(id,'checking');}
     if(state.activeChannelId&&affected.has(state.activeChannelId))selectionEpoch++;
     useCommunity.setState(s=>({channels:s.channels.filter(ch=>!affected.has(ch.id)),dms:s.dms.filter(ch=>!affected.has(ch.id)),messages:s.activeChannelId&&affected.has(s.activeChannelId)?[]:s.messages,typing:Object.fromEntries(Object.entries(s.typing).filter(([id])=>!affected.has(id))),readStates:Object.fromEntries(Object.entries(s.readStates).filter(([id])=>!affected.has(id))),unread:Object.fromEntries(Object.entries(s.unread).filter(([id])=>!affected.has(id)))}));
     window.dispatchEvent(new CustomEvent('rooms:channel-access-invalidated',{detail:{channelIds:[...affected]}}));
@@ -71,17 +114,18 @@ function onEvent(event:GatewayEvent){
   }
   else if(event.type==='PROFILE_UPDATE'){useCommunity.setState({user:event.data as SocialUser});}
   else if(event.type==='CONNECTION_STATUS')useCommunity.setState({status:event.data as ConnectionStatus,...(event.data!=='connected'?{typing:{}}:{})});
-  else if(event.type==='AUTH_EXPIRED'){nativeSessionEpoch=null;sessionEpoch++;selectionEpoch++;useChannelAccess.setState({checks:{}});void import('./realtime').then(({leaveVoice})=>leaveVoice()).catch(()=>{});useCommunity.setState({...blank,status:'error',error:'Oturumunun süresi doldu. Çıkış yapıp yeniden giriş yap.'});}
+  else if(event.type==='AUTH_EXPIRED'){nativeSessionEpoch=null;clearConversations();sessionEpoch++;selectionEpoch++;useChannelAccess.setState({checks:{}});void import('./realtime').then(({leaveVoice})=>leaveVoice()).catch(()=>{});useCommunity.setState({...blank,status:'error',error:'Oturumunun süresi doldu. Çıkış yapıp yeniden giriş yap.'});}
   else if(event.type==='MESSAGE_CREATE'||event.type==='MESSAGE_UPDATE'){
     const message=event.data as SocialMessage;
     if(useChannelAccess.getState().checks[message.channelId])return;
     if(event.type==='MESSAGE_CREATE')useCommunity.setState(s=>{const users={...s.typing[message.channelId]};delete users[message.author.id];return{typing:{...s.typing,[message.channelId]:users}};});
     if(event.type==='MESSAGE_CREATE')useCommunity.setState(s=>({channels:s.channels.map(ch=>ch.id===message.channelId?{...ch,lastMessageId:message.id}:ch),dms:s.dms.map(ch=>ch.id===message.channelId?{...ch,lastMessageId:message.id}:ch),unread:{...s.unread,[message.channelId]:message.author.id!==s.user?.id}}));
+    const cached=conversations.get(message.channelId);if(cached)conversations.put(message.channelId,{...cached,messages:[...cached.messages.filter(m=>m.id!==message.id),message].sort((a,b)=>Date.parse(a.timestamp)-Date.parse(b.timestamp))});
     if(message.channelId===state.activeChannelId){useCommunity.setState(s=>({messages:[...s.messages.filter(m=>m.id!==message.id),message].sort((a,b)=>Date.parse(a.timestamp)-Date.parse(b.timestamp)).slice(-1000)}));}
     if(event.type==='MESSAGE_CREATE'&&message.channelId===state.activeChannelId&&location.hash.startsWith('#/chat')&&document.hasFocus())void state.markRead(message.channelId,message.id);
-  }else if(event.type==='MESSAGE_DELETE'){const d=event.data as {id:string;channel_id:string};if(d.channel_id===state.activeChannelId)useCommunity.setState(s=>({messages:s.messages.filter(m=>m.id!==d.id)}));}
+  }else if(event.type==='MESSAGE_DELETE'){const d=event.data as {id:string;channel_id:string};const cached=conversations.get(d.channel_id);if(cached)conversations.put(d.channel_id,{...cached,messages:cached.messages.filter(m=>m.id!==d.id)});if(d.channel_id===state.activeChannelId)useCommunity.setState(s=>({messages:s.messages.filter(m=>m.id!==d.id)}));}
   else if(event.type==='PRESENCE_UPDATE'){const d=event.data as {userId?:string;status?:string};if(d.userId&&d.status)useCommunity.setState(s=>({presence:{...s.presence,[d.userId!]:d.status!}}));}
-  else if(event.type==='SOCIAL_REFRESH'||event.type==='RESUMED'){window.dispatchEvent(new Event('rooms:community-management-invalidated'));void state.refresh();if(state.activeChannelId)void state.openChannel(state.activeChannelId);}
+  else if(event.type==='SOCIAL_REFRESH'||event.type==='RESUMED'){window.dispatchEvent(new Event('rooms:community-management-invalidated'));void state.refresh();if(event.type==='RESUMED'&&state.activeChannelId)void state.openChannel(state.activeChannelId,true);}
 }
 /** Concurrent mounts share session restoration, including React StrictMode remounts. */
 export function initializeCommunity():Promise<void>{
