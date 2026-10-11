@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { ConnectionState, RoomEvent, type Room } from 'livekit-client';
+import { ConnectionState, RoomEvent, Track, type Room } from 'livekit-client';
 import { LiveKitMediaProvider } from '../packages/media-providers/src/index';
 
 function fixture() {
@@ -77,4 +77,36 @@ describe('LiveKit adapter lifecycle', () => {
     expect(local.setMicrophoneEnabled).not.toHaveBeenCalled(); emit(RoomEvent.ConnectionStateChanged, ConnectionState.Connected); expect(provider.status).toBe('connected');
     await provider.disconnect();
   });
+});
+
+describe('explicit screen quality and system audio',()=>{
+ it('defaults to 1080p60 without capturing audio',async()=>{
+  const {provider,local}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
+  await provider.publishScreen();
+  expect(local.setScreenShareEnabled).toHaveBeenCalledWith(true,expect.objectContaining({audio:false,resolution:{width:1920,height:1080,frameRate:60}}),expect.objectContaining({videoCodec:'h264',screenShareEncoding:{maxBitrate:10000000,maxFramerate:60}}));
+  await provider.disconnect();
+ });
+ it('captures explicitly requested stereo system audio without microphone processing',async()=>{
+  const {provider,local}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
+  local.getTrackPublication.mockImplementation(source=>source===Track.Source.ScreenShareAudio?{track:{stop:vi.fn()}}:undefined);
+  await provider.publishScreen({quality:'4k30',audio:true});
+  expect(local.setScreenShareEnabled).toHaveBeenCalledWith(true,expect.objectContaining({audio:expect.objectContaining({channelCount:2,echoCancellation:false,noiseSuppression:false,autoGainControl:false}),resolution:{width:3840,height:2160,frameRate:30}}),expect.objectContaining({forceStereo:true}));
+  await provider.disconnect();
+ });
+ it('stops sharing if requested system audio was not acquired',async()=>{
+  const {provider,local}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
+  await expect(provider.publishScreen({audio:true})).rejects.toThrow();
+  expect(local.setScreenShareEnabled).toHaveBeenLastCalledWith(false);expect(provider.snapshot().sharing).toBe(false);await provider.disconnect();
+ });
+});
+
+it('reports observed encoder dimensions and codec instead of the requested profile',async()=>{
+ vi.useFakeTimers();
+ const {provider,local}=fixture();
+ try{await provider.connectRoom('room','token','ws://localhost:7880');
+ const report=new Map([['video',{id:'video',type:'outbound-rtp',frameWidth:1280,frameHeight:720,framesPerSecond:28,codecId:'codec'}],['codec',{id:'codec',type:'codec',mimeType:'video/H264'}]]);
+ local.trackPublications.set('screen',{trackSid:'screen',source:Track.Source.ScreenShare,kind:'video',track:{getRTCStatsReport:vi.fn(async()=>report)}});
+ await vi.advanceTimersByTimeAsync(5000);
+ expect(provider.diagnostics().video).toEqual({width:1280,height:720,framesPerSecond:28,codec:'video/H264',direction:'sent'});
+ }finally{await provider.disconnect();vi.useRealTimers();}
 });
