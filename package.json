@@ -85,7 +85,8 @@
       "hardenedRuntime": false,
       "extendInfo": {
         "NSMicrophoneUsageDescription": "ROOMS uses your microphone only when you start a microphone test or join a voice room.",
-        "NSCameraUsageDescription": "ROOMS uses your camera only when you enable video."
+        "NSCameraUsageDescription": "ROOMS uses your camera only when you enable video.",
+        "NSAudioCaptureUsageDescription": "ROOMS captures system audio only when you explicitly enable sound for a selected screen share."
       },
       "icon": "apps/desktop/public/icon.icns",
       "identity": "-",
