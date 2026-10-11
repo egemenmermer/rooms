@@ -9,6 +9,7 @@ export interface Preferences {
 const defaults: Preferences = { followSystemAccessibility: true, noiseSuppression: true, pushToTalk: false, reduceMotion: false, reduceTransparency: false, compact: false, showFriends: true, serverUrl: '', inputId: '', outputId: '', notifications: false, chatFontSize: 15, accent: 'pearl' };
 interface RoomsState {
   preferences: Preferences;
+  setPreferences(value:Preferences):void;
   setPreference<K extends keyof Preferences>(key: K, value: Preferences[K]): void;
 }
 export function normalizeChatFontSize(value: unknown): number {
@@ -29,6 +30,7 @@ function preferencesFrom(value: unknown): Preferences {
 }
 export const useRooms = create<RoomsState>()(persist(set => ({
   preferences: { ...defaults },
+  setPreferences: value => set({preferences:preferencesFrom({preferences:value})}),
   setPreference: (key, value) => set(state => ({ preferences: { ...state.preferences, [key]: key === 'chatFontSize' ? normalizeChatFontSize(value) : value } })),
 }), {
   name: 'rooms-local-v1', version: 1,

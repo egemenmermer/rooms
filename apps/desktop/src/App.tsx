@@ -136,7 +136,7 @@ export default function App() {
     const settingsPage = location.pathname === '/settings';
     const returnFromSettings = useRef('/home');
     useEffect(() => { if (!settingsPage) returnFromSettings.current = location.pathname + location.search; }, [settingsPage, location.pathname, location.search]);
-    const closeSettings = useCallback(() => navigate(returnFromSettings.current, { replace: true }), [navigate]);
+    const closeSettings = useCallback(() => {const allowed=window.dispatchEvent(new Event('rooms:settings-close-request',{cancelable:true}));if(allowed)navigate(returnFromSettings.current,{replace:true});return allowed;},[navigate]);
     const visiblePath = settingsPage ? returnFromSettings.current.split('?')[0]! : location.pathname;
     const cinema = visiblePath === '/cinema';
     const voiceView = visiblePath === '/voice';
@@ -167,6 +167,7 @@ export default function App() {
         const handler = (e: KeyboardEvent) => {
             const target = e.target as HTMLElement;
             const editing = target.closest('input,textarea,[contenteditable="true"]');
+            if(settingsPage&&(e.metaKey||e.ctrlKey)&&(e.key.toLowerCase()==='k'||/^[1-5]$/.test(e.key))){e.preventDefault();return;}
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
                 e.preventDefault();
                 setOverlay(current => current === 'command' ? null : 'command');
@@ -206,7 +207,7 @@ export default function App() {
     if (setupMode) return <div className="app onboarding-mode">
       <div className="window-chrome"><span className="window-wordmark"><img src="./reference-brand/brand/logo-symbol-white.svg" alt=""/>ROOMS</span></div>
       {RecoveryFixtureEntry && localFixture.startsWith('S04/') ? <Suspense fallback={null}><RecoveryFixtureEntry variant={localFixture.split('/')[1] || 'default'}/></Suspense> : <ReferenceOnboarding key={`${setupMode}-${settingsPage}`} mode={setupMode} onNavigate={mode => navigate(`/setup/${mode}${location.search}`)} onComplete={() => navigate('/home')} onOpenSettings={tab => navigate(`/settings?tab=${tab}`)}/>}
-      {settingsPage && <Modal title="Ayarlar" hideHeading onClose={closeSettings} className="settings-modal"><Suspense fallback={<div className="loading-view">Yükleniyor…</div>}><Settings notify={notify} onClose={closeSettings} onInvite={()=>{closeSettings();open('invite');}}/></Suspense></Modal>}
+      {settingsPage && <Modal title="Ayarlar" hideHeading onClose={closeSettings} className="settings-modal"><Suspense fallback={<div className="loading-view">Yükleniyor…</div>}><Settings notify={notify} onClose={closeSettings} onInvite={()=>{if(closeSettings())open('invite');}}/></Suspense></Modal>}
       {nativeInvite && <InviteLanding invite={nativeInvite} onClose={closeInvite} notify={notify}/>}
       {toast && <div role="status" className="toast">{toast}</div>}
     </div>;
@@ -226,7 +227,7 @@ export default function App() {
       </div>{realtime.channelId && <RealVoiceDock openLauncher={() => open('launcher')} notify={notify}/>} </div>
     </div>
     <ScreenHandoffRuntime />
-    {settingsPage && <section className="settings-modal settings-reference-surface" aria-label="Ayarlar"><Suspense fallback={<div className="loading-view">Yükleniyor…</div>}><Settings notify={notify} onClose={closeSettings} onInvite={()=>{closeSettings();open('invite');}}/></Suspense></section>}
+    {settingsPage && <section className="settings-modal settings-reference-surface" aria-label="Ayarlar"><Suspense fallback={<div className="loading-view">Yükleniyor…</div>}><Settings notify={notify} onClose={closeSettings} onInvite={()=>{if(closeSettings())open('invite');}}/></Suspense></section>}
     {nativeInvite && <InviteLanding invite={nativeInvite} onClose={closeInvite} notify={notify}/>}
     {(overlay==='create-space'||overlay==='edit-space')&&<CommunityEditor mode={overlay==='edit-space'?'edit':'create'} space={community.spaces.find(s=>s.id===activeSpace)} canEdit={community.spaces.find(s=>s.id===activeSpace)?.ownerId===community.user?.id} onClose={close} onSave={window.rooms&&community.user?async name=>{const result=overlay==='edit-space'?await window.rooms!.social.renameSpace(activeSpace!,name):await window.rooms!.social.createSpace(name);await community.refresh();return result;}:undefined} onSaved={space=>{void community.openSpace(space.id);}}/>}
     <SocialReferenceOverlay onClose={()=>{close();navigate('/chat');}}/>
