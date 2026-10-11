@@ -1,6 +1,6 @@
 # Third-party notices and source references
 
-ROOMS has an original UI and original bundled demo artwork/video. Apple/Discord screenshots in docs/reference are external private-study references and are not distributed as product assets. macOS uses installed system fonts; no proprietary Apple font is bundled.
+ROOMS uses the owner-approved original ROOMS Design Package brand/vector assets. Development reference fixtures and artwork are excluded from the production bundle. Apple/Discord screenshots in docs/reference remain external private-study references and are not distributed as product assets. The bundled Inter font is licensed under SIL Open Font License 1.1; its complete notice is included at reference-brand/fonts/OFL-Inter.txt. No proprietary Apple font is bundled.
 
 Dependencies retain their own licenses. Consult the corresponding installed LICENSE files and lockfile for exact versions. The build generates dist/THIRD_PARTY_NOTICES.txt from installed production dependency metadata and LICENSE/NOTICE files; this is bundled in app.asar. Deployment images and official CLIs retain their upstream notices separately.
 
@@ -20,3 +20,5 @@ Unmodified self-hosted Stoat and its official self-hosted configuration are sepa
 The legacy Spacebar integration remains source/evidence for rollback and is not the active new backend: https://github.com/spacebarchat/server (AGPL-3.0).
 
 The remote worker installs unmodified official Codex and Claude Code CLIs. Their usage/authentication terms are independent of ROOMS; each initiating person uses their own eligible provider account. Do not distribute cached auth material. The official YouTube IFrame player keeps its branding/controls and loads from its permitted origin; no scraped media or redistributed streams are bundled.
+
+- Inter / SIL Open Font License 1.1: https://github.com/rsms/inter. Full license is bundled with the font and generated notices.

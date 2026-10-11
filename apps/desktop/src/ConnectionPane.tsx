@@ -1,7 +1,7 @@
 import { tr, uiError } from './i18n';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, Globe, LoaderCircle, LockKeyhole, LogOut, Users } from 'lucide-react';
+import { ArrowRight, Check, Eye, EyeOff, Globe, LoaderCircle, LockKeyhole, LogOut, Users } from 'lucide-react';
 import { Avatar } from '@rooms/design';
 import { useCommunity } from './community';
 import { useRooms } from './store';
@@ -9,10 +9,10 @@ import './onboarding.css';
 const productionServer = 'https://community.example.invalid';
 const localServer = 'http://127.0.0.1:3021';
 const normalizedServer = (value: string) => value.trim().replace(/\/+$/, '');
-export function ConnectionPane() {
+export function ConnectionPane({ referenceMode, onAuthenticated, onAccessChange, onRecovery }: { referenceMode?: 'signin' | 'register'; onAuthenticated?(): void; onAccessChange?(mode: 'signin' | 'register'): void; onRecovery?(): void } = {}) {
     const c = useCommunity();
     const [params, setParams] = useSearchParams();
-    const [registration, setRegistration] = useState(false);
+    const [registration, setRegistration] = useState(referenceMode === 'register');
     const [server, setServer] = useState(() => useRooms.getState().preferences.serverUrl || productionServer);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -22,6 +22,7 @@ export function ConnectionPane() {
     const [localError, setLocalError] = useState('');
     const [working, setWorking] = useState(false);
     const [joined, setJoined] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const errorRef = useRef<HTMLDivElement>(null);
     const code = params.get('invite'), address = params.get('server'), access = params.get('access');
     const busy = c.busy || working;
@@ -35,9 +36,10 @@ export function ConnectionPane() {
         }
     }, [code, address]);
     useEffect(() => {
-        if (access)
+        if (referenceMode) setRegistration(referenceMode === 'register');
+        else if (access)
             setRegistration(access === 'register');
-    }, [access]);
+    }, [access, referenceMode]);
     useEffect(() => {
         if (error)
             errorRef.current?.focus();
@@ -78,10 +80,12 @@ export function ConnectionPane() {
             const serverUrl = normalizedServer(server);
             if (registration) {
                 await c.register({ serverUrl, email: email.trim(), password, username: username.trim(), inviteCode: invite.trim(), ...(accountInvite.trim() ? { accountInviteCode: accountInvite.trim() } : {}) });
+                if (!useCommunity.getState().user) throw new Error('Sunucu bir hesap oturumu döndürmedi. Yeniden giriş yap.');
                 completeInvite();
             }
             else {
                 await c.connect({ serverUrl, email: email.trim(), password });
+                if (!useCommunity.getState().user) throw new Error('Sunucu bir hesap oturumu döndürmedi. Yeniden giriş yap.');
                 setPassword('');
                 if (invite.trim()) {
                     await c.acceptInvite(invite.trim());
@@ -89,6 +93,7 @@ export function ConnectionPane() {
                 }
             }
             setPassword('');
+            if (useCommunity.getState().user) onAuthenticated?.();
         }
         catch (err) {
             setLocalError(uiError(err));
@@ -98,6 +103,23 @@ export function ConnectionPane() {
         }
     };
     const changeAccess = (next: boolean) => { setRegistration(next); clearError(); };
+    if (referenceMode) return <section className="ref-auth-form" aria-busy={busy} aria-labelledby="reference-account-title">
+        <span className="ref-auth-eyebrow">ARKADAŞLARININ OLDUĞU YER</span>
+        <h2 id="reference-account-title">{registration ? 'Sana da yer var.' : 'Yeniden hoş geldin.'}</h2>
+        <p>{registration ? 'Davetinle bir hesap oluştur.' : 'Arkadaşların seni bekliyor.'}</p>
+        {c.user ? <><div className="ref-auth-notice"><Avatar name={c.user.displayName || c.user.username}/><span>{c.user.displayName || c.user.username}</span></div><button className="button primary full" disabled={busy || !onAuthenticated} onClick={() => onAuthenticated?.()}>Devam et<ArrowRight size={16}/></button><button className="button secondary full" disabled={busy} onClick={() => { clearError(); setWorking(true); void c.logout().catch(err => setLocalError(uiError(err))).finally(() => setWorking(false)); }}>Çıkış yap</button></> : <form onSubmit={e => void submit(e)}>
+        <fieldset disabled={busy}>
+            {registration && <><label className="field-label">Topluluk davet kodu<input required autoComplete="off" spellCheck={false} maxLength={128} value={invite} onChange={e => setInvite(e.target.value)} placeholder="Davet kodun"/></label><label className="field-label">Kullanıcı adı<input required autoComplete="nickname" maxLength={32} minLength={2} value={username} onChange={e => setUsername(e.target.value)} placeholder="Kullanıcı adın"/></label></>}
+            <label className="field-label">E-posta adresi<input required type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} value={email} onChange={e => setEmail(e.target.value)} placeholder="sen@ornek.com"/></label>
+            <label className="field-label">Şifre<span className="ref-auth-password"><input required type={showPassword ? 'text' : 'password'} autoComplete={registration ? 'new-password' : 'current-password'} minLength={registration ? 8 : 1} value={password} onChange={e => setPassword(e.target.value)} placeholder={registration ? 'En az 8 karakter' : 'Şifren'}/><button type="button" aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}</button></span></label>
+            {!registration && <div className="ref-auth-options"><label title="Bu sürümde oturum, sistemin güvenli deposunda saklanır."><input type="checkbox" checked disabled/>Beni hatırla</label><button type="button" onClick={onRecovery} disabled={!onRecovery}>Şifreni mi unuttun?</button></div>}
+            <details className="ref-auth-server"><summary>Sunucu ve davet seçenekleri</summary><label className="field-label">Sunucu adresi<input required type="url" autoCapitalize="none" spellCheck={false} value={server} onChange={e => setServer(e.target.value)}/></label>{registration ? <label className="field-label">Kayıt davet kodu (sunucu istiyorsa)<input autoComplete="off" maxLength={128} spellCheck={false} value={accountInvite} onChange={e => setAccountInvite(e.target.value)}/></label> : <label className="field-label">Topluluk davet kodu (isteğe bağlı)<input autoComplete="off" maxLength={128} spellCheck={false} value={invite} onChange={e => setInvite(e.target.value)}/></label>}</details>
+            <button className="button primary full" type="submit" disabled={busy || !email.trim() || !password || !server.trim() || (registration && (!invite.trim() || !username.trim()))}>{busy ? <><LoaderCircle size={16} className="spin"/>{registration ? 'Hesap oluşturuluyor…' : 'Giriş yapılıyor…'}</> : <>{registration ? 'Hesap oluştur ve katıl' : invite ? 'Giriş yap ve katıl' : 'Giriş yap'}<ArrowRight size={16}/></>}</button>
+        </fieldset>
+        </form>}
+        {error && <div className="ref-auth-notice error" ref={errorRef} tabIndex={-1} role="alert">{error}</div>}
+        {!c.user && <div className="ref-auth-footer">{registration ? 'Zaten bir hesabın var mı?' : 'Hesabın yok mu?'} <button disabled={busy || !onAccessChange} onClick={() => onAccessChange?.(registration ? 'signin' : 'register')}>{registration ? 'Giriş yap' : 'Davetle hesap oluştur'}</button></div>}
+    </section>;
     return <section className="connection-card social-connection rooms-onboarding" aria-labelledby="community-heading" aria-busy={busy}>
         <div className="onboarding-heading">
             <span className="onboarding-emblem"><Users size={23}/></span>
