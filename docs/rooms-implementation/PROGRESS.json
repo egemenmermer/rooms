@@ -11,7 +11,7 @@
     "variants": 322,
     "responsive": 19
   },
-  "updated_at": "2026-10-11T07:09:16.724314+00:00",
+  "updated_at": "2026-10-11T08:06:58.951084+00:00",
   "records": [
     {
       "id": "S01",
@@ -16563,14 +16563,19 @@
         "apps/desktop/src/ChannelNotifications.tsx",
         "apps/desktop/src/ChannelTools.tsx",
         "apps/desktop/electron/notifications.ts",
-        "apps/desktop/electron/community.ts"
+        "apps/desktop/electron/community.ts",
+        "apps/desktop/electron/window-policy.ts",
+        "apps/desktop/src/DesktopWindowSettings.tsx",
+        "apps/desktop/electron/main.ts"
       ],
-      "implementation_revision": "2026-10-11 channel notification preference follow-up; awaiting actual OS and visual acceptance",
+      "implementation_revision": "2026-10-11 native close/tray preference follow-up; awaiting actual OS and visual acceptance",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
         "tests/notification-preferences.test.ts",
-        "tests/channel-notifications.test.tsx"
+        "tests/channel-notifications.test.tsx",
+        "tests/window-policy.test.ts",
+        "tests/desktop-window-settings.test.tsx"
       ],
       "functional_checks": [
         "Native notification sound preference: five mocked Electron tests passed (silent default, opt-in independence, persistence, focus/rate suppression, failed write and sender/type rejection). Final pnpm build exit0.",
@@ -16580,7 +16585,7 @@
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Actual OS notification delivery/sound/permission and real-call suppression remain unverified. Configurable close/tray behavior and exact S67 fixture/visual acceptance remain incomplete. Message previews remain intentionally content-free. Channel muting is device-local, account/server-scoped; actual gateway/OS acceptance remains separate."
+        "Actual OS notification delivery/sound/permission, native tray/close behavior and real-call suppression/close confirmation remain unverified. Exact S67 fixture/visual acceptance remains incomplete. Message previews remain intentionally content-free. Channel muting is device-local and account/server-scoped. Close warnings cover voice only, not personal playback or all Activities."
       ],
       "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
       "updated_at": "2026-10-11T06:06:38.996551+00:00"
@@ -16616,14 +16621,19 @@
         "apps/desktop/src/ChannelNotifications.tsx",
         "apps/desktop/src/ChannelTools.tsx",
         "apps/desktop/electron/notifications.ts",
-        "apps/desktop/electron/community.ts"
+        "apps/desktop/electron/community.ts",
+        "apps/desktop/electron/window-policy.ts",
+        "apps/desktop/src/DesktopWindowSettings.tsx",
+        "apps/desktop/electron/main.ts"
       ],
-      "implementation_revision": "2026-10-11 channel notification preference follow-up; awaiting actual OS and visual acceptance",
+      "implementation_revision": "2026-10-11 native close/tray preference follow-up; awaiting actual OS and visual acceptance",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
         "tests/notification-preferences.test.ts",
-        "tests/channel-notifications.test.tsx"
+        "tests/channel-notifications.test.tsx",
+        "tests/window-policy.test.ts",
+        "tests/desktop-window-settings.test.tsx"
       ],
       "functional_checks": [
         "Native notification sound preference: five mocked Electron tests passed (silent default, opt-in independence, persistence, focus/rate suppression, failed write and sender/type rejection). Final pnpm build exit0.",
@@ -16633,7 +16643,7 @@
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Actual OS notification delivery/sound/permission and real-call suppression remain unverified. Configurable close/tray behavior and exact S67 fixture/visual acceptance remain incomplete. Message previews remain intentionally content-free. Channel muting is device-local, account/server-scoped; actual gateway/OS acceptance remains separate."
+        "Actual OS notification delivery/sound/permission, native tray/close behavior and real-call suppression/close confirmation remain unverified. Exact S67 fixture/visual acceptance remains incomplete. Message previews remain intentionally content-free. Channel muting is device-local and account/server-scoped. Close warnings cover voice only, not personal playback or all Activities."
       ],
       "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
       "updated_at": "2026-10-11T06:06:38.996551+00:00"
@@ -16669,14 +16679,19 @@
         "apps/desktop/src/ChannelNotifications.tsx",
         "apps/desktop/src/ChannelTools.tsx",
         "apps/desktop/electron/notifications.ts",
-        "apps/desktop/electron/community.ts"
+        "apps/desktop/electron/community.ts",
+        "apps/desktop/electron/window-policy.ts",
+        "apps/desktop/src/DesktopWindowSettings.tsx",
+        "apps/desktop/electron/main.ts"
       ],
-      "implementation_revision": "2026-10-11 channel notification preference follow-up; awaiting actual OS and visual acceptance",
+      "implementation_revision": "2026-10-11 native close/tray preference follow-up; awaiting actual OS and visual acceptance",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
         "tests/notification-preferences.test.ts",
-        "tests/channel-notifications.test.tsx"
+        "tests/channel-notifications.test.tsx",
+        "tests/window-policy.test.ts",
+        "tests/desktop-window-settings.test.tsx"
       ],
       "functional_checks": [
         "Native notification sound preference: five mocked Electron tests passed (silent default, opt-in independence, persistence, focus/rate suppression, failed write and sender/type rejection). Final pnpm build exit0.",
@@ -16686,7 +16701,7 @@
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Actual OS notification delivery/sound/permission and real-call suppression remain unverified. Configurable close/tray behavior and exact S67 fixture/visual acceptance remain incomplete. Message previews remain intentionally content-free. Channel muting is device-local, account/server-scoped; actual gateway/OS acceptance remains separate."
+        "Actual OS notification delivery/sound/permission, native tray/close behavior and real-call suppression/close confirmation remain unverified. Exact S67 fixture/visual acceptance remains incomplete. Message previews remain intentionally content-free. Channel muting is device-local and account/server-scoped. Close warnings cover voice only, not personal playback or all Activities."
       ],
       "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
       "updated_at": "2026-10-11T06:06:38.996551+00:00"
@@ -16722,14 +16737,19 @@
         "apps/desktop/src/ChannelNotifications.tsx",
         "apps/desktop/src/ChannelTools.tsx",
         "apps/desktop/electron/notifications.ts",
-        "apps/desktop/electron/community.ts"
+        "apps/desktop/electron/community.ts",
+        "apps/desktop/electron/window-policy.ts",
+        "apps/desktop/src/DesktopWindowSettings.tsx",
+        "apps/desktop/electron/main.ts"
       ],
-      "implementation_revision": "2026-10-11 channel notification preference follow-up; awaiting actual OS and visual acceptance",
+      "implementation_revision": "2026-10-11 native close/tray preference follow-up; awaiting actual OS and visual acceptance",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
         "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
         "tests/notification-preferences.test.ts",
-        "tests/channel-notifications.test.tsx"
+        "tests/channel-notifications.test.tsx",
+        "tests/window-policy.test.ts",
+        "tests/desktop-window-settings.test.tsx"
       ],
       "functional_checks": [
         "Native notification sound preference: five mocked Electron tests passed (silent default, opt-in independence, persistence, focus/rate suppression, failed write and sender/type rejection). Final pnpm build exit0.",
@@ -16739,7 +16759,7 @@
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Actual OS notification delivery/sound/permission and real-call suppression remain unverified. Configurable close/tray behavior and exact S67 fixture/visual acceptance remain incomplete. Message previews remain intentionally content-free. Channel muting is device-local, account/server-scoped; actual gateway/OS acceptance remains separate."
+        "Actual OS notification delivery/sound/permission, native tray/close behavior and real-call suppression/close confirmation remain unverified. Exact S67 fixture/visual acceptance remains incomplete. Message previews remain intentionally content-free. Channel muting is device-local and account/server-scoped. Close warnings cover voice only, not personal playback or all Activities."
       ],
       "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
       "updated_at": "2026-10-11T06:06:38.996551+00:00"
