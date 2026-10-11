@@ -11,7 +11,7 @@
     "variants": 322,
     "responsive": 19
   },
-  "updated_at": "2026-10-11T01:22:04.222747+00:00",
+  "updated_at": "2026-10-11T02:04:34.886488+00:00",
   "records": [
     {
       "id": "S01",
@@ -16356,17 +16356,20 @@
       "implementation_revision": "bcb4a98 + uncommitted reference implementation",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
-        "docs/rooms-implementation/reports/SETTINGS_REPORT.md"
+        "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json"
       ],
-      "functional_checks": [],
+      "functional_checks": [
+        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0."
+      ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Dark/reduce motion/transparency/compact/friends panel real preferences; System and Light disabled with planned reason. Reference purple tokens differ from current pearl/sage."
+        "System accessibility preference synchronization remains unimplemented and disabled. Exact named-state/responsive visual review and owner acceptance remain open."
       ],
-      "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
-      "updated_at": "2026-10-10T12:36:12.407589+00:00"
+      "next_action": "Implement system accessibility preference synchronization; capture and compare all S66 variants/responsive originals. Font-size control now works; no visual acceptance claimed.",
+      "updated_at": "2026-10-11T02:04:34.886488+00:00"
     },
     {
       "id": "S66",
@@ -16400,17 +16403,20 @@
       "implementation_revision": "bcb4a98 + uncommitted reference implementation",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
-        "docs/rooms-implementation/reports/SETTINGS_REPORT.md"
+        "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json"
       ],
-      "functional_checks": [],
+      "functional_checks": [
+        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0."
+      ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Dark/reduce motion/transparency/compact/friends panel real preferences; System and Light disabled with planned reason. Reference purple tokens differ from current pearl/sage."
+        "System accessibility preference synchronization remains unimplemented and disabled. Exact named-state/responsive visual review and owner acceptance remain open."
       ],
-      "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
-      "updated_at": "2026-10-10T12:36:12.407589+00:00"
+      "next_action": "Implement system accessibility preference synchronization; capture and compare all S66 variants/responsive originals. Font-size control now works; no visual acceptance claimed.",
+      "updated_at": "2026-10-11T02:04:34.886488+00:00"
     },
     {
       "id": "S66",
@@ -16444,17 +16450,20 @@
       "implementation_revision": "bcb4a98 + uncommitted reference implementation",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
-        "docs/rooms-implementation/reports/SETTINGS_REPORT.md"
+        "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json"
       ],
-      "functional_checks": [],
+      "functional_checks": [
+        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0."
+      ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Dark/reduce motion/transparency/compact/friends panel real preferences; System and Light disabled with planned reason. Reference purple tokens differ from current pearl/sage."
+        "System accessibility preference synchronization remains unimplemented and disabled. Exact named-state/responsive visual review and owner acceptance remain open."
       ],
-      "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
-      "updated_at": "2026-10-10T12:36:12.407589+00:00"
+      "next_action": "Implement system accessibility preference synchronization; capture and compare all S66 variants/responsive originals. Font-size control now works; no visual acceptance claimed.",
+      "updated_at": "2026-10-11T02:04:34.886488+00:00"
     },
     {
       "id": "S66",
@@ -16488,17 +16497,20 @@
       "implementation_revision": "bcb4a98 + uncommitted reference implementation",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
-        "docs/rooms-implementation/reports/SETTINGS_REPORT.md"
+        "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json"
       ],
-      "functional_checks": [],
+      "functional_checks": [
+        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0."
+      ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Dark/reduce motion/transparency/compact/friends panel real preferences; System and Light disabled with planned reason. Reference purple tokens differ from current pearl/sage."
+        "System accessibility preference synchronization remains unimplemented and disabled. Exact named-state/responsive visual review and owner acceptance remain open."
       ],
-      "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
-      "updated_at": "2026-10-10T12:36:12.407589+00:00"
+      "next_action": "Implement system accessibility preference synchronization; capture and compare all S66 variants/responsive originals. Font-size control now works; no visual acceptance claimed.",
+      "updated_at": "2026-10-11T02:04:34.886488+00:00"
     },
     {
       "id": "S67",
@@ -18572,17 +18584,20 @@
       "implementation_revision": "bcb4a98 + uncommitted reference implementation",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
-        "docs/rooms-implementation/reports/SETTINGS_REPORT.md"
+        "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json"
       ],
-      "functional_checks": [],
+      "functional_checks": [
+        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0."
+      ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Dark/reduce motion/transparency/compact/friends panel real preferences; System and Light disabled with planned reason. Reference purple tokens differ from current pearl/sage."
+        "System accessibility preference synchronization remains unimplemented and disabled. Exact named-state/responsive visual review and owner acceptance remain open."
       ],
-      "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
-      "updated_at": "2026-10-10T12:36:12.407589+00:00"
+      "next_action": "Implement system accessibility preference synchronization; capture and compare all S66 variants/responsive originals. Font-size control now works; no visual acceptance claimed.",
+      "updated_at": "2026-10-11T02:04:34.886488+00:00"
     },
     {
       "id": "S10",
@@ -18845,17 +18860,20 @@
       "implementation_revision": "bcb4a98 + uncommitted reference implementation",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
-        "docs/rooms-implementation/reports/SETTINGS_REPORT.md"
+        "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json"
       ],
-      "functional_checks": [],
+      "functional_checks": [
+        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0."
+      ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Dark/reduce motion/transparency/compact/friends panel real preferences; System and Light disabled with planned reason. Reference purple tokens differ from current pearl/sage."
+        "System accessibility preference synchronization remains unimplemented and disabled. Exact named-state/responsive visual review and owner acceptance remain open."
       ],
-      "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
-      "updated_at": "2026-10-10T12:36:12.407589+00:00"
+      "next_action": "Implement system accessibility preference synchronization; capture and compare all S66 variants/responsive originals. Font-size control now works; no visual acceptance claimed.",
+      "updated_at": "2026-10-11T02:04:34.886488+00:00"
     },
     {
       "id": "S10",
@@ -19116,17 +19134,20 @@
       "implementation_revision": "bcb4a98 + uncommitted reference implementation",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
-        "docs/rooms-implementation/reports/SETTINGS_REPORT.md"
+        "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json"
       ],
-      "functional_checks": [],
+      "functional_checks": [
+        "Chat font size: four persistence/bounds/migration tests passed; actual Chromium UI changed size to18px, retained it in compact mode and after reload. pnpm build exit0."
+      ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Dark/reduce motion/transparency/compact/friends panel real preferences; System and Light disabled with planned reason. Reference purple tokens differ from current pearl/sage."
+        "System accessibility preference synchronization remains unimplemented and disabled. Exact named-state/responsive visual review and owner acceptance remain open."
       ],
-      "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
-      "updated_at": "2026-10-10T12:36:12.407589+00:00"
+      "next_action": "Implement system accessibility preference synchronization; capture and compare all S66 variants/responsive originals. Font-size control now works; no visual acceptance claimed.",
+      "updated_at": "2026-10-11T02:04:34.886488+00:00"
     },
     {
       "id": "S29",

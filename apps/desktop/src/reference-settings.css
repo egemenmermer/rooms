@@ -110,3 +110,7 @@
 .settings-modal.settings-reference-surface .reference-settings .settings-tabs { overflow:hidden;min-height:0;padding-bottom:0; }
 .ref-settings-nav-scroll { flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:2px 3px 8px;margin:0 -3px; }
 .settings-reference-surface .settings-nav-connection { margin-top:0; }
+
+.ref-font-size-control { display:flex;align-items:center;gap:12px;margin-top:24px;color:#9197a7;font-size:11px; }
+.ref-font-size-control input { flex:1;min-width:0;accent-color:#8b83ff; }
+.ref-chat-preview .ref-settings-inline p { font-size:var(--chat-font-size,15px);line-height:1.5; }
