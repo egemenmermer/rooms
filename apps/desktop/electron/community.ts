@@ -1,6 +1,7 @@
+import { PasswordRecoveryBroker } from './password-recovery';
 import { requestDmCall } from './dm-call-http';
 import { dmCallStartSchema, dmCallActionSchema, dmCallIdSchema, type DmCallSession } from '../../../packages/shared-contracts/src/dm-call';
-import { app, dialog, desktopCapturer, ipcMain, safeStorage, session, systemPreferences, type BrowserWindow, type IpcMainInvokeEvent, type DesktopCapturerSource } from 'electron';
+import { app, clipboard, dialog, desktopCapturer, ipcMain, safeStorage, session, systemPreferences, type BrowserWindow, type IpcMainInvokeEvent, type DesktopCapturerSource } from 'electron';
 import { readFileSync, writeFileSync, existsSync, unlinkSync, statSync, openSync, readSync, closeSync, fstatSync } from 'node:fs';
 import { join, basename, extname } from 'node:path';
 import { z } from 'zod';
@@ -15,7 +16,7 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   let dmNativeEpoch=0;
   let pendingDmCall:{client:StoatClient;id:string}|null=null;
   const closeDmCall=async()=>{++dmNativeEpoch;const previous=pendingDmCall;pendingDmCall=null;if(previous)await requestDmCall(previous.client,'respond',{callId:previous.id,action:'end'}).catch(()=>{});};
-  let client:StoatClient|null=null;let user:SocialUser|null=null;let remembered=false;let unsubscribe:(()=>void)|null=null;let authRequestEpoch=0;let sessionEpoch=0;
+  let client:StoatClient|null=null;let user:SocialUser|null=null;let remembered=false;let unsubscribe:(()=>void)|null=null;let authRequestEpoch=0;let sessionEpoch=0;let recoveryEpoch=0;
   const uploadedAttachments=new Map<string,{channelId:string;name:string;size:number;mime:string}>();
   let activePresenceSpace:string|null=null;
   const subscribePresence=()=>{if(activePresenceSpace&&getWindow()?.isFocused())client?.subscribePresence(activePresenceSpace);};
@@ -34,6 +35,7 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   const snapshot=():SocialSession=>({instanceUrl:client?.instanceUrl??null,user,status:client?.status??'not-configured',remembered,sessionEpoch});
   function bind(next:StoatClient,generation:number){if(client&&client!==next)void closeDmCall();unsubscribe?.();client=next;unsubscribe=client.subscribe(event=>{
     if(client!==next||generation!==sessionEpoch)return;
+    if(event.type==='AUTH_EXPIRED'){recoveryEpoch++;passwordReset.clear();}
     if(event.type==='READY')subscribePresence();
     if(event.type==='CHANNEL_ACCESS_INVALIDATED'){const ids=(event.data as {channelIds:string[]}).channelIds;for(const [fileId,file]of uploadedAttachments)if(ids.includes(file.channelId))uploadedAttachments.delete(fileId);}
     if(event.type==='MESSAGE_CREATE'){const authorId=(event.data as {author?:{id?:unknown}}).author?.id;if(user&&typeof authorId==='string'&&authorId!==user.id)onIncomingMessage();}
@@ -50,8 +52,8 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   handle('rooms:social-session',()=>snapshot());
   handle('rooms:social-read-states',()=>requireClient().readStates());
   const replaceSession=async(next:StoatClient,nextUser:SocialUser,request:number)=>{if(request!==authRequestEpoch){await next.disconnect().catch(()=>{});throw new SocialInputError('A newer account change has replaced this sign-in.');}const previous=client;const generation=++sessionEpoch;unsubscribe?.();unsubscribe=null;client=null;user=null;activePresenceSpace=null;uploadedAttachments.clear();remembered=false;if(existsSync(vault))unlinkSync(vault);await closeDmCall();await previous?.disconnect();if(request!==authRequestEpoch){await next.disconnect().catch(()=>{});throw new SocialInputError('A newer account change has replaced this sign-in.');}bind(next,generation);user=nextUser;remember();await next.connect();if(request!==authRequestEpoch||client!==next)throw new SocialInputError('A newer account change has replaced this sign-in.');return snapshot();};
-  handle('rooms:social-login',async input=>{const request=++authRequestEpoch;const body=auth.parse(input);const next=new StoatClient(body.serverUrl);try{return await replaceSession(next,await next.login(body.email,body.password),request);}catch(error){if(client!==next)await next.disconnect().catch(()=>{});throw error;}});
-  handle('rooms:social-register',async input=>{const request=++authRequestEpoch;const body=registration.parse(input);const next=new StoatClient(body.serverUrl);try{return await replaceSession(next,await next.register(body),request);}catch(error){if(client!==next)await next.disconnect().catch(()=>{});throw error;}});
+  handle('rooms:social-login',async input=>{recoveryEpoch++;passwordReset.clear();const request=++authRequestEpoch;const body=auth.parse(input);const next=new StoatClient(body.serverUrl);try{return await replaceSession(next,await next.login(body.email,body.password),request);}catch(error){if(client!==next)await next.disconnect().catch(()=>{});throw error;}});
+  handle('rooms:social-register',async input=>{recoveryEpoch++;passwordReset.clear();const request=++authRequestEpoch;const body=registration.parse(input);const next=new StoatClient(body.serverUrl);try{return await replaceSession(next,await next.register(body),request);}catch(error){if(client!==next)await next.disconnect().catch(()=>{});throw error;}});
   handle('rooms:social-password-recovery-capabilities',serverUrl=>new StoatClient(recoveryServer.parse(serverUrl)).passwordRecoveryCapabilities());
   handle('rooms:social-password-recovery-request',async input=>{
     const body=recoveryInput.parse(input);
@@ -65,7 +67,21 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
       return await recovery.requestPasswordRecovery({email:body.email});
     }finally{recoveryPending=false;}
   });
-  handle('rooms:social-logout',async()=>{++authRequestEpoch;++sessionEpoch;const previous=client;unsubscribe?.();unsubscribe=null;client=null;user=null;uploadedAttachments.clear();activePresenceSpace=null;remembered=false;selected=null;choices=[];if(existsSync(vault))unlinkSync(vault);await closeDmCall();await previous?.logout();});
+  const passwordReset = new PasswordRecoveryBroker({readClipboard:()=>clipboard.readText(),sessionEpoch:()=>recoveryEpoch+sessionEpoch});
+  for (const operation of ['import','confirm','cancel'] as const) {
+    ipcMain.handle(`rooms:social-password-recovery-${operation}`, async (event,input) => {
+      assertSender(event);
+      if(fixtureWindow())throw new Error('Native account access is disabled in development fixtures.');
+      try {
+        if(operation==='import')return await passwordReset.importLink(input,event.sender.id);
+        if(operation==='cancel')return passwordReset.cancel(input,event.sender.id);
+        return await passwordReset.confirm(input,event.sender.id);
+      } catch { throw new Error(operation==='import'?'Seçili sunucunun kurtarma bağlantısını kopyalayıp yeniden dene.':'Parola kurtarma işlemi tamamlanamadı. Bağlantıyı yeniden seç.'); }
+    });
+  }
+  app.on('before-quit',()=>{recoveryEpoch++;passwordReset.clear();});
+  app.on('browser-window-created',(_event,window)=>window.on('closed',()=>{recoveryEpoch++;passwordReset.clear();}));
+  handle('rooms:social-logout',async()=>{recoveryEpoch++;passwordReset.clear();++authRequestEpoch;++sessionEpoch;const previous=client;unsubscribe?.();unsubscribe=null;client=null;user=null;uploadedAttachments.clear();activePresenceSpace=null;remembered=false;selected=null;choices=[];if(existsSync(vault))unlinkSync(vault);await closeDmCall();await previous?.logout();});
   handle('rooms:social-spaces',()=>requireClient().listSpaces());
   handle('rooms:social-create-space',name=>requireClient().createSpace(channelName.parse(name)));
   handle('rooms:social-rename-space',(spaceId,name)=>requireClient().renameSpace(id.parse(spaceId),channelName.parse(name)));
@@ -197,5 +213,5 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
     const token=current.getToken()!;
     return getActivitySnapshot(`${new URL(current.instanceUrl).origin}/rooms-activities/v1/rooms/${encodeURIComponent(room)}/activity${query}`,room,token,fetch,()=>{if(client!==current||current.getToken()!==token)throw new StoatError(401,'SESSION_CHANGED');});
   }
-  return {snapshot,activityRequest,close:async()=>{await closeDmCall();clearInterval(presenceTimer);await client?.disconnect();selected=null;choices=[];}};
+  return {snapshot,activityRequest,close:async()=>{recoveryEpoch++;passwordReset.clear();await closeDmCall();clearInterval(presenceTimer);await client?.disconnect();selected=null;choices=[];}};
 }

@@ -68,6 +68,9 @@ export interface SocialBridge {
   register(input:{serverUrl:string;email:string;password:string;username:string;inviteCode:string;accountInviteCode?:string}):Promise<SocialSession>;
   passwordRecoveryCapabilities(serverUrl:string):Promise<SocialPasswordRecoveryCapabilities>;
   requestPasswordRecovery(input:{serverUrl:string;email:string}):Promise<{accepted:true}>;
+    importPasswordRecoveryLink(input:{serverUrl:string}):Promise<{handle:string;expiresAt:number;serverOrigin:string}>;
+    confirmPasswordRecovery(input:{serverUrl:string;handle:string;password:string}):Promise<{state:'completed'|'invalid-token'|'selection-expired'|'rejected'|'uncertain'|'scope-changed'}>;
+    cancelPasswordRecovery(input:{handle:string}):Promise<void>;
   logout():Promise<void>;
   spaces():Promise<import('@rooms/social').SocialSpace[]>;
   createSpace(name:string):Promise<import('@rooms/social').SocialSpace>;
