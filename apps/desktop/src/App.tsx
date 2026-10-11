@@ -30,6 +30,7 @@ import { ActivityLauncher } from './Activities';
 import { ScreenHandoffRuntime } from './screen-handoff';
 const PersonalPlaybackRuntime = lazy(() => import('./PersonalMedia').then(module => ({default:module.PersonalPlaybackRuntime})));
 const PersonalMedia = lazy(() => import('./PersonalMedia').then(module => ({default:module.PersonalMedia})));
+const RecoveryFixtureEntry = import.meta.env.DEV ? lazy(() => import('./dev/S04RecoveryEntry')) : null;
 const PersonalMediaFixtureEntry = import.meta.env.DEV ? lazy(() => import('./dev/PersonalMediaEntry')) : null;
 const Cinema = lazy(() => import('./Cinema'));
 const Settings = lazy(() => import('./Settings'));
@@ -193,7 +194,7 @@ export default function App() {
     if(!startupReady)return <div className="app onboarding-mode"><div className="window-chrome"><span className="window-wordmark"><img src="./reference-brand/brand/logo-symbol-white.svg" alt=""/>ROOMS</span></div><StartupSplash/></div>;
     if (setupMode) return <div className="app onboarding-mode">
       <div className="window-chrome"><span className="window-wordmark"><img src="./reference-brand/brand/logo-symbol-white.svg" alt=""/>ROOMS</span></div>
-      <ReferenceOnboarding key={`${setupMode}-${settingsPage}`} mode={setupMode} onNavigate={mode => navigate(`/setup/${mode}${location.search}`)} onComplete={() => navigate('/home')} onOpenSettings={tab => navigate(`/settings?tab=${tab}`)}/>
+      {RecoveryFixtureEntry && localFixture.startsWith('S04/') ? <Suspense fallback={null}><RecoveryFixtureEntry variant={localFixture.split('/')[1] || 'default'}/></Suspense> : <ReferenceOnboarding key={`${setupMode}-${settingsPage}`} mode={setupMode} onNavigate={mode => navigate(`/setup/${mode}${location.search}`)} onComplete={() => navigate('/home')} onOpenSettings={tab => navigate(`/settings?tab=${tab}`)}/>}
       {settingsPage && <Modal title="Ayarlar" hideHeading onClose={closeSettings} className="settings-modal"><Suspense fallback={<div className="loading-view">Yükleniyor…</div>}><Settings notify={notify} onClose={closeSettings} onInvite={()=>{closeSettings();open('invite');}}/></Suspense></Modal>}
       {nativeInvite && <InviteLanding invite={nativeInvite} onClose={closeInvite} notify={notify}/>}
       {toast && <div role="status" className="toast">{toast}</div>}
