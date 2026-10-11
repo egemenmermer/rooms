@@ -39,3 +39,7 @@ Personal route entries contain only named views/dialogs and owned opaque UUIDs. 
 ## 2026-10-11 — Continuation and commits
 
 The saved hourly heartbeat prompt was corrected through automation_update to permit only GPT-6.1 Sol additional agents; obsolete Luna/Astra assignments were removed. Scoped implementers and read-only reviewers used this allowed model only. The reference redesign stays local on codex/reference-package; meaningful current-date native/service and renderer commits were created without publishing or modifying the earlier delivered release. Exact captures precede removal of two whitespace-only lines in unrelated onboarding/game-fixture files; retain their original source manifests and timestamp rather than relabeling evidence as a new capture.
+
+## 2026-10-11 — Astra high reauthorized
+
+The owner's new direct instruction permits Astra with high reasoning again. Eligible additional models are GPT-6.1 Sol and GPT-6 Astra/high; Luna remains unapproved. The previous Sol-only decision and saved continuation prompts are historical where they conflict. Root remains sole tracker/shared-file owner and final integration/acceptance owner. Preserve the maximum of two independent implementers and one read-only reviewer, and assign disjoint files.

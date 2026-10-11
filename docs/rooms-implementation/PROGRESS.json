@@ -11,7 +11,7 @@
     "variants": 322,
     "responsive": 19
   },
-  "updated_at": "2026-10-11T00:43:21.615598+00:00",
+  "updated_at": "2026-10-11T01:00:05.528595+00:00",
   "records": [
     {
       "id": "S01",
@@ -5878,7 +5878,10 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/PersonalMediaMetadata.tsx",
+        "apps/desktop/electron/provider-contracts.ts",
+        "apps/desktop/electron/preload.ts"
       ],
       "dependencies": [
         "reference-tokens",
@@ -5888,13 +5891,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -5903,21 +5906,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S33-default.receipt.json",
-        ".local/design-review/evidence/S33-default/application.png"
+        ".local/design-review/evidence/S33-default/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S33-default.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Safe resume/library metadata and home resume layout are still absent; no invented artwork, duration or historical playback.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Real artwork and total duration are unavailable; positive saved positions use neutral cards without invented percentages. Source/action geometry and exact owner/provider acceptance remain open.",
+        "DEV-only metadata uses explicit local-demo markers. Dates/resume/current programme are genuine in production; no provider playback or synchronization is certified.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Safe resume/library metadata and home resume layout are still absent; no invented artwork, duration or historical playback."
+        "Real artwork and total duration are unavailable; positive saved positions use neutral cards without invented percentages. Source/action geometry and exact owner/provider acceptance remain open."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S33",
@@ -5935,7 +5941,10 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/PersonalMediaMetadata.tsx",
+        "apps/desktop/electron/provider-contracts.ts",
+        "apps/desktop/electron/preload.ts"
       ],
       "dependencies": [
         "reference-tokens",
@@ -5945,13 +5954,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -5960,21 +5969,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S33-empty.receipt.json",
-        ".local/design-review/evidence/S33-empty/application.png"
+        ".local/design-review/evidence/S33-empty/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S33-empty.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Safe resume/library metadata and home resume layout are still absent; no invented artwork, duration or historical playback.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Real artwork and total duration are unavailable; positive saved positions use neutral cards without invented percentages. Source/action geometry and exact owner/provider acceptance remain open.",
+        "DEV-only metadata uses explicit local-demo markers. Dates/resume/current programme are genuine in production; no provider playback or synchronization is certified.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Safe resume/library metadata and home resume layout are still absent; no invented artwork, duration or historical playback."
+        "Real artwork and total duration are unavailable; positive saved positions use neutral cards without invented percentages. Source/action geometry and exact owner/provider acceptance remain open."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S33",
@@ -5992,7 +6004,10 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/PersonalMediaMetadata.tsx",
+        "apps/desktop/electron/provider-contracts.ts",
+        "apps/desktop/electron/preload.ts"
       ],
       "dependencies": [
         "reference-tokens",
@@ -6002,13 +6017,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6017,21 +6032,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S33-iptv_removed.receipt.json",
-        ".local/design-review/evidence/S33-iptv_removed/application.png"
+        ".local/design-review/evidence/S33-iptv_removed/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S33-iptv_removed.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Safe resume/library metadata and home resume layout are still absent; no invented artwork, duration or historical playback.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Real artwork and total duration are unavailable; positive saved positions use neutral cards without invented percentages. Source/action geometry and exact owner/provider acceptance remain open.",
+        "DEV-only metadata uses explicit local-demo markers. Dates/resume/current programme are genuine in production; no provider playback or synchronization is certified.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Safe resume/library metadata and home resume layout are still absent; no invented artwork, duration or historical playback."
+        "Real artwork and total duration are unavailable; positive saved positions use neutral cards without invented percentages. Source/action geometry and exact owner/provider acceptance remain open."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S33",
@@ -6049,7 +6067,10 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/PersonalMediaMetadata.tsx",
+        "apps/desktop/electron/provider-contracts.ts",
+        "apps/desktop/electron/preload.ts"
       ],
       "dependencies": [
         "reference-tokens",
@@ -6059,13 +6080,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6074,21 +6095,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S33-offline.receipt.json",
-        ".local/design-review/evidence/S33-offline/application.png"
+        ".local/design-review/evidence/S33-offline/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S33-offline.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Safe resume/library metadata and home resume layout are still absent; no invented artwork, duration or historical playback.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Real artwork and total duration are unavailable; positive saved positions use neutral cards without invented percentages. Source/action geometry and exact owner/provider acceptance remain open.",
+        "DEV-only metadata uses explicit local-demo markers. Dates/resume/current programme are genuine in production; no provider playback or synchronization is certified.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Safe resume/library metadata and home resume layout are still absent; no invented artwork, duration or historical playback."
+        "Real artwork and total duration are unavailable; positive saved positions use neutral cards without invented percentages. Source/action geometry and exact owner/provider acceptance remain open."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S34",
@@ -6116,13 +6140,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6131,21 +6155,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S34-default.receipt.json",
-        ".local/design-review/evidence/S34-default/application.png"
+        ".local/design-review/evidence/S34-default/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
         "Exact reference geometry and independently observed validation phases require work; real native chooser/OS encryption/provider update acceptance remains unverified.",
         "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash.",
+        "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
         "Exact reference geometry and independently observed validation phases require work; real native chooser/OS encryption/provider update acceptance remains unverified."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S34",
@@ -6173,13 +6200,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6188,21 +6215,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S34-checking.receipt.json",
-        ".local/design-review/evidence/S34-checking/application.png"
+        ".local/design-review/evidence/S34-checking/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
         "Exact reference geometry and independently observed validation phases require work; real native chooser/OS encryption/provider update acceptance remains unverified.",
         "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash.",
+        "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
         "Exact reference geometry and independently observed validation phases require work; real native chooser/OS encryption/provider update acceptance remains unverified."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S34",
@@ -6230,13 +6260,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6245,21 +6275,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S34-edit.receipt.json",
-        ".local/design-review/evidence/S34-edit/application.png"
+        ".local/design-review/evidence/S34-edit/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
         "Exact reference geometry and independently observed validation phases require work; real native chooser/OS encryption/provider update acceptance remains unverified.",
         "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash.",
+        "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
         "Exact reference geometry and independently observed validation phases require work; real native chooser/OS encryption/provider update acceptance remains unverified."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S34",
@@ -6287,13 +6320,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6302,21 +6335,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S34-error.receipt.json",
-        ".local/design-review/evidence/S34-error/application.png"
+        ".local/design-review/evidence/S34-error/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
         "Exact reference geometry and independently observed validation phases require work; real native chooser/OS encryption/provider update acceptance remains unverified.",
         "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash.",
+        "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
         "Exact reference geometry and independently observed validation phases require work; real native chooser/OS encryption/provider update acceptance remains unverified."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S34",
@@ -6344,13 +6380,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6359,21 +6395,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S34-remove.receipt.json",
-        ".local/design-review/evidence/S34-remove/application.png"
+        ".local/design-review/evidence/S34-remove/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
         "Exact reference geometry and independently observed validation phases require work; real native chooser/OS encryption/provider update acceptance remains unverified.",
         "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash.",
+        "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
         "Exact reference geometry and independently observed validation phases require work; real native chooser/OS encryption/provider update acceptance remains unverified."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S34",
@@ -6401,13 +6440,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6416,21 +6455,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S34-xtream.receipt.json",
-        ".local/design-review/evidence/S34-xtream/application.png"
+        ".local/design-review/evidence/S34-xtream/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
         "Exact reference geometry and independently observed validation phases require work; real native chooser/OS encryption/provider update acceptance remains unverified.",
         "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash.",
+        "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
         "Exact reference geometry and independently observed validation phases require work; real native chooser/OS encryption/provider update acceptance remains unverified."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S35",
@@ -6448,7 +6490,10 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/PersonalMediaMetadata.tsx",
+        "apps/desktop/electron/provider-contracts.ts",
+        "apps/desktop/electron/preload.ts"
       ],
       "dependencies": [
         "reference-tokens",
@@ -6458,13 +6503,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6473,21 +6518,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S35-default.receipt.json",
-        ".local/design-review/evidence/S35-default/application.png"
+        ".local/design-review/evidence/S35-default/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S35-default.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Inline current-program/time/progress, bounded/coalesced XMLTV projection, Xtream category names/guide and filtered-empty fixture need implementation/recheck.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Inline guide is bounded to the first32 owned rows; other rows retain manual EPG. Recently watched channels are not yet recorded. Actual authorized XMLTV and full original/layout acceptance remain open.",
+        "DEV-only metadata uses explicit local-demo markers. Dates/resume/current programme are genuine in production; no provider playback or synchronization is certified.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Inline current-program/time/progress, bounded/coalesced XMLTV projection, Xtream category names/guide and filtered-empty fixture need implementation/recheck."
+        "Inline guide is bounded to the first32 owned rows; other rows retain manual EPG. Recently watched channels are not yet recorded. Actual authorized XMLTV and full original/layout acceptance remain open."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S35",
@@ -6505,7 +6553,10 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/PersonalMediaMetadata.tsx",
+        "apps/desktop/electron/provider-contracts.ts",
+        "apps/desktop/electron/preload.ts"
       ],
       "dependencies": [
         "reference-tokens",
@@ -6515,13 +6566,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6530,22 +6581,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S35-empty.receipt.json",
-        ".local/design-review/evidence/S35-empty/application.png"
+        ".local/design-review/evidence/S35-empty/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S35-empty.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Inline current-program/time/progress, bounded/coalesced XMLTV projection, Xtream category names/guide and filtered-empty fixture need implementation/recheck.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Current empty fixture is a successful zero-channel response rather than reference search-no-match; preserve source count when calibrating.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Inline guide is bounded to the first32 owned rows; other rows retain manual EPG. Recently watched channels are not yet recorded. Actual authorized XMLTV and full original/layout acceptance remain open.",
+        "DEV-only metadata uses explicit local-demo markers. Dates/resume/current programme are genuine in production; no provider playback or synchronization is certified.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Inline current-program/time/progress, bounded/coalesced XMLTV projection, Xtream category names/guide and filtered-empty fixture need implementation/recheck."
+        "Inline guide is bounded to the first32 owned rows; other rows retain manual EPG. Recently watched channels are not yet recorded. Actual authorized XMLTV and full original/layout acceptance remain open."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S35",
@@ -6563,7 +6616,10 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/PersonalMediaMetadata.tsx",
+        "apps/desktop/electron/provider-contracts.ts",
+        "apps/desktop/electron/preload.ts"
       ],
       "dependencies": [
         "reference-tokens",
@@ -6573,13 +6629,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -6588,21 +6644,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S35-no_guide.receipt.json",
-        ".local/design-review/evidence/S35-no_guide/application.png"
+        ".local/design-review/evidence/S35-no_guide/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S35-no_guide.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Inline current-program/time/progress, bounded/coalesced XMLTV projection, Xtream category names/guide and filtered-empty fixture need implementation/recheck.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Inline guide is bounded to the first32 owned rows; other rows retain manual EPG. Recently watched channels are not yet recorded. Actual authorized XMLTV and full original/layout acceptance remain open.",
+        "DEV-only metadata uses explicit local-demo markers. Dates/resume/current programme are genuine in production; no provider playback or synchronization is certified.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Inline current-program/time/progress, bounded/coalesced XMLTV projection, Xtream category names/guide and filtered-empty fixture need implementation/recheck."
+        "Inline guide is bounded to the first32 owned rows; other rows retain manual EPG. Recently watched channels are not yet recorded. Actual authorized XMLTV and full original/layout acceptance remain open."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S36",
@@ -6630,33 +6689,36 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md",
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
-        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md"
+        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
         "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified."
+        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
+        "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
         "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S36",
@@ -6684,33 +6746,36 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md",
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
-        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md"
+        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
         "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified."
+        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
+        "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
         "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S36",
@@ -6738,33 +6803,36 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md",
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
-        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md"
+        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
         "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified."
+        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
+        "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
         "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S36",
@@ -6792,33 +6860,36 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md",
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
-        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md"
+        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
         "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified."
+        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
+        "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
         "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S36",
@@ -6846,33 +6917,36 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md",
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
-        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md"
+        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
         "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified."
+        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
+        "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
         "Inset browse-player mode, typed expiry/format errors, actual guide and observed DVR presentation are not integrated; exact capture is refused."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S37",
@@ -6890,7 +6964,9 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/ReferenceRDConnection.tsx",
+        "apps/desktop/src/reference-rd-connection.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -6898,16 +6974,16 @@
       ],
       "status": "NEEDS_RECHECK",
       "integration_status": "REAL",
-      "requested_model": "gpt-6.1-sol/medium",
-      "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "requested_model": "gpt-6-astra/high (S37 bounded presentation only)",
+      "actual_model_if_known": "gpt-6-astra/high (tool-selected S37 presentation); root integration model unknown",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
-      "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+      "reference_review_notes": "Astra/high and root individually opened all six original S37 PNGs; root opened all six integrated app states. Native cancellation and status readback are root-owned.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md",
@@ -6915,21 +6991,25 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S37-default.receipt.json",
-        ".local/design-review/evidence/S37-default/application.png"
+        ".local/design-review/evidence/S37-default/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/reports/S37_RD_PANEL_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S37-default.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Native cancellation is integrated. Reference stepper/state hierarchy, explicit terminal auth error and connected removal action remain; actual registered RD client/account prerequisite is separate.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Registered ROOMS RD client ID and actual owner-account authorization/cancellation/removal acceptance remain external gates. Safe copy and DEV-disabled provider link intentionally differ from the prototype.",
+        "Modal state hierarchy, terminal intro removal, stepper and removal confirmation implemented. Prototype simulated approval/disclaimer is omitted; absolute provider expiry and precise cancellation replace invented duration/revocation.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Native cancellation is integrated. Reference stepper/state hierarchy, explicit terminal auth error and connected removal action remain; actual registered RD client/account prerequisite is separate."
+        "Registered ROOMS RD client ID and actual owner-account authorization/cancellation/removal acceptance remain external gates. Safe copy and DEV-disabled provider link intentionally differ from the prototype."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S37",
@@ -6947,7 +7027,9 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/ReferenceRDConnection.tsx",
+        "apps/desktop/src/reference-rd-connection.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -6955,16 +7037,16 @@
       ],
       "status": "NEEDS_RECHECK",
       "integration_status": "REAL",
-      "requested_model": "gpt-6.1-sol/medium",
-      "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "requested_model": "gpt-6-astra/high (S37 bounded presentation only)",
+      "actual_model_if_known": "gpt-6-astra/high (tool-selected S37 presentation); root integration model unknown",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
-      "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+      "reference_review_notes": "Astra/high and root individually opened all six original S37 PNGs; root opened all six integrated app states. Native cancellation and status readback are root-owned.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md",
@@ -6972,21 +7054,25 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S37-cancelled.receipt.json",
-        ".local/design-review/evidence/S37-cancelled/application.png"
+        ".local/design-review/evidence/S37-cancelled/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/reports/S37_RD_PANEL_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S37-cancelled.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Native cancellation is integrated. Reference stepper/state hierarchy, explicit terminal auth error and connected removal action remain; actual registered RD client/account prerequisite is separate.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Registered ROOMS RD client ID and actual owner-account authorization/cancellation/removal acceptance remain external gates. Safe copy and DEV-disabled provider link intentionally differ from the prototype.",
+        "Modal state hierarchy, terminal intro removal, stepper and removal confirmation implemented. Prototype simulated approval/disclaimer is omitted; absolute provider expiry and precise cancellation replace invented duration/revocation.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Native cancellation is integrated. Reference stepper/state hierarchy, explicit terminal auth error and connected removal action remain; actual registered RD client/account prerequisite is separate."
+        "Registered ROOMS RD client ID and actual owner-account authorization/cancellation/removal acceptance remain external gates. Safe copy and DEV-disabled provider link intentionally differ from the prototype."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S37",
@@ -7004,7 +7090,9 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/ReferenceRDConnection.tsx",
+        "apps/desktop/src/reference-rd-connection.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -7012,16 +7100,16 @@
       ],
       "status": "NEEDS_RECHECK",
       "integration_status": "REAL",
-      "requested_model": "gpt-6.1-sol/medium",
-      "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "requested_model": "gpt-6-astra/high (S37 bounded presentation only)",
+      "actual_model_if_known": "gpt-6-astra/high (tool-selected S37 presentation); root integration model unknown",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
-      "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+      "reference_review_notes": "Astra/high and root individually opened all six original S37 PNGs; root opened all six integrated app states. Native cancellation and status readback are root-owned.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md",
@@ -7029,21 +7117,25 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S37-connected.receipt.json",
-        ".local/design-review/evidence/S37-connected/application.png"
+        ".local/design-review/evidence/S37-connected/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/reports/S37_RD_PANEL_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S37-connected.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Native cancellation is integrated. Reference stepper/state hierarchy, explicit terminal auth error and connected removal action remain; actual registered RD client/account prerequisite is separate.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Registered ROOMS RD client ID and actual owner-account authorization/cancellation/removal acceptance remain external gates. Safe copy and DEV-disabled provider link intentionally differ from the prototype.",
+        "Modal state hierarchy, terminal intro removal, stepper and removal confirmation implemented. Prototype simulated approval/disclaimer is omitted; absolute provider expiry and precise cancellation replace invented duration/revocation.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Native cancellation is integrated. Reference stepper/state hierarchy, explicit terminal auth error and connected removal action remain; actual registered RD client/account prerequisite is separate."
+        "Registered ROOMS RD client ID and actual owner-account authorization/cancellation/removal acceptance remain external gates. Safe copy and DEV-disabled provider link intentionally differ from the prototype."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S37",
@@ -7061,7 +7153,9 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/ReferenceRDConnection.tsx",
+        "apps/desktop/src/reference-rd-connection.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -7069,16 +7163,16 @@
       ],
       "status": "NEEDS_RECHECK",
       "integration_status": "REAL",
-      "requested_model": "gpt-6.1-sol/medium",
-      "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "requested_model": "gpt-6-astra/high (S37 bounded presentation only)",
+      "actual_model_if_known": "gpt-6-astra/high (tool-selected S37 presentation); root integration model unknown",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
-      "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+      "reference_review_notes": "Astra/high and root individually opened all six original S37 PNGs; root opened all six integrated app states. Native cancellation and status readback are root-owned.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md",
@@ -7086,21 +7180,25 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S37-error.receipt.json",
-        ".local/design-review/evidence/S37-error/application.png"
+        ".local/design-review/evidence/S37-error/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/reports/S37_RD_PANEL_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S37-error.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Native cancellation is integrated. Reference stepper/state hierarchy, explicit terminal auth error and connected removal action remain; actual registered RD client/account prerequisite is separate.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Registered ROOMS RD client ID and actual owner-account authorization/cancellation/removal acceptance remain external gates. Safe copy and DEV-disabled provider link intentionally differ from the prototype.",
+        "Modal state hierarchy, terminal intro removal, stepper and removal confirmation implemented. Prototype simulated approval/disclaimer is omitted; absolute provider expiry and precise cancellation replace invented duration/revocation.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Native cancellation is integrated. Reference stepper/state hierarchy, explicit terminal auth error and connected removal action remain; actual registered RD client/account prerequisite is separate."
+        "Registered ROOMS RD client ID and actual owner-account authorization/cancellation/removal acceptance remain external gates. Safe copy and DEV-disabled provider link intentionally differ from the prototype."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S37",
@@ -7118,7 +7216,9 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/ReferenceRDConnection.tsx",
+        "apps/desktop/src/reference-rd-connection.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -7126,16 +7226,16 @@
       ],
       "status": "NEEDS_RECHECK",
       "integration_status": "REAL",
-      "requested_model": "gpt-6.1-sol/medium",
-      "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "requested_model": "gpt-6-astra/high (S37 bounded presentation only)",
+      "actual_model_if_known": "gpt-6-astra/high (tool-selected S37 presentation); root integration model unknown",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
-      "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+      "reference_review_notes": "Astra/high and root individually opened all six original S37 PNGs; root opened all six integrated app states. Native cancellation and status readback are root-owned.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md",
@@ -7143,21 +7243,25 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S37-expired.receipt.json",
-        ".local/design-review/evidence/S37-expired/application.png"
+        ".local/design-review/evidence/S37-expired/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/reports/S37_RD_PANEL_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S37-expired.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Native cancellation is integrated. Reference stepper/state hierarchy, explicit terminal auth error and connected removal action remain; actual registered RD client/account prerequisite is separate.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Registered ROOMS RD client ID and actual owner-account authorization/cancellation/removal acceptance remain external gates. Safe copy and DEV-disabled provider link intentionally differ from the prototype.",
+        "Modal state hierarchy, terminal intro removal, stepper and removal confirmation implemented. Prototype simulated approval/disclaimer is omitted; absolute provider expiry and precise cancellation replace invented duration/revocation.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Native cancellation is integrated. Reference stepper/state hierarchy, explicit terminal auth error and connected removal action remain; actual registered RD client/account prerequisite is separate."
+        "Registered ROOMS RD client ID and actual owner-account authorization/cancellation/removal acceptance remain external gates. Safe copy and DEV-disabled provider link intentionally differ from the prototype."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S37",
@@ -7175,7 +7279,9 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/ReferenceRDConnection.tsx",
+        "apps/desktop/src/reference-rd-connection.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -7183,16 +7289,16 @@
       ],
       "status": "NEEDS_RECHECK",
       "integration_status": "REAL",
-      "requested_model": "gpt-6.1-sol/medium",
-      "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "requested_model": "gpt-6-astra/high (S37 bounded presentation only)",
+      "actual_model_if_known": "gpt-6-astra/high (tool-selected S37 presentation); root integration model unknown",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
-      "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+      "reference_review_notes": "Astra/high and root individually opened all six original S37 PNGs; root opened all six integrated app states. Native cancellation and status readback are root-owned.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md",
@@ -7200,21 +7306,25 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S37-waiting.receipt.json",
-        ".local/design-review/evidence/S37-waiting/application.png"
+        ".local/design-review/evidence/S37-waiting/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/reports/S37_RD_PANEL_REPORT.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S37-waiting.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Native cancellation is integrated. Reference stepper/state hierarchy, explicit terminal auth error and connected removal action remain; actual registered RD client/account prerequisite is separate.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Registered ROOMS RD client ID and actual owner-account authorization/cancellation/removal acceptance remain external gates. Safe copy and DEV-disabled provider link intentionally differ from the prototype.",
+        "Modal state hierarchy, terminal intro removal, stepper and removal confirmation implemented. Prototype simulated approval/disclaimer is omitted; absolute provider expiry and precise cancellation replace invented duration/revocation.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Native cancellation is integrated. Reference stepper/state hierarchy, explicit terminal auth error and connected removal action remain; actual registered RD client/account prerequisite is separate."
+        "Registered ROOMS RD client ID and actual owner-account authorization/cancellation/removal acceptance remain external gates. Safe copy and DEV-disabled provider link intentionally differ from the prototype."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S38",
@@ -7232,7 +7342,10 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/PersonalMediaMetadata.tsx",
+        "apps/desktop/electron/provider-contracts.ts",
+        "apps/desktop/electron/preload.ts"
       ],
       "dependencies": [
         "reference-tokens",
@@ -7242,13 +7355,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -7257,21 +7370,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S38-default.receipt.json",
-        ".local/design-review/evidence/S38-default/application.png"
+        ".local/design-review/evidence/S38-default/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S38-default.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Actual provider date/resume metadata and library/detail columns remain incomplete. Playing variant awaits exact persistent-player fixture/presentation and capture.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Original artwork, quality, duration and real track metadata are unavailable. S38/playing exact persistent inset projection is unfinished; no generic capture substitutes for it.",
+        "DEV-only metadata uses explicit local-demo markers. Dates/resume/current programme are genuine in production; no provider playback or synchronization is certified.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Actual provider date/resume metadata and library/detail columns remain incomplete. Playing variant awaits exact persistent-player fixture/presentation and capture."
+        "Original artwork, quality, duration and real track metadata are unavailable. S38/playing exact persistent inset projection is unfinished; no generic capture substitutes for it."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S38",
@@ -7289,7 +7405,10 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/PersonalMediaMetadata.tsx",
+        "apps/desktop/electron/provider-contracts.ts",
+        "apps/desktop/electron/preload.ts"
       ],
       "dependencies": [
         "reference-tokens",
@@ -7299,13 +7418,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -7314,21 +7433,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S38-details.receipt.json",
-        ".local/design-review/evidence/S38-details/application.png"
+        ".local/design-review/evidence/S38-details/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S38-details.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Actual provider date/resume metadata and library/detail columns remain incomplete. Playing variant awaits exact persistent-player fixture/presentation and capture.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Original artwork, quality, duration and real track metadata are unavailable. S38/playing exact persistent inset projection is unfinished; no generic capture substitutes for it.",
+        "DEV-only metadata uses explicit local-demo markers. Dates/resume/current programme are genuine in production; no provider playback or synchronization is certified.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Actual provider date/resume metadata and library/detail columns remain incomplete. Playing variant awaits exact persistent-player fixture/presentation and capture."
+        "Original artwork, quality, duration and real track metadata are unavailable. S38/playing exact persistent inset projection is unfinished; no generic capture substitutes for it."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S38",
@@ -7346,7 +7468,10 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/PersonalMediaMetadata.tsx",
+        "apps/desktop/electron/provider-contracts.ts",
+        "apps/desktop/electron/preload.ts"
       ],
       "dependencies": [
         "reference-tokens",
@@ -7356,13 +7481,13 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
@@ -7371,21 +7496,24 @@
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
         "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
         "docs/rooms-implementation/evidence/2026-10-11/S38-empty.receipt.json",
-        ".local/design-review/evidence/S38-empty/application.png"
+        ".local/design-review/evidence/S38-empty/application.png",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md",
+        "docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S38-empty.receipt.json"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Actual provider date/resume metadata and library/detail columns remain incomplete. Playing variant awaits exact persistent-player fixture/presentation and capture.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
-        "Exact fixture receipt reports zero runtime errors, loaded Inter and no horizontal document overflow. Capture is timestamp-bound and not visual acceptance; later whitespace-only cleanup in two unrelated files changes the whole-source hash."
+        "Original artwork, quality, duration and real track metadata are unavailable. S38/playing exact persistent inset projection is unfinished; no generic capture substitutes for it.",
+        "DEV-only metadata uses explicit local-demo markers. Dates/resume/current programme are genuine in production; no provider playback or synchronization is certified.",
+        "Fresh exact receipt for committed8b03fdd: zero runtime errors, Inter loaded, no horizontal document overflow. Root viewed this state; NEEDS_RECHECK remains for full fidelity/provider/manual acceptance."
       ],
       "blockers": [
-        "Actual provider date/resume metadata and library/detail columns remain incomplete. Playing variant awaits exact persistent-player fixture/presentation and capture."
+        "Original artwork, quality, duration and real track metadata are unavailable. S38/playing exact persistent inset projection is unfinished; no generic capture substitutes for it."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S38",
@@ -7403,7 +7531,10 @@
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css",
         "apps/desktop/src/personal-provider-runtime.ts",
-        "apps/desktop/electron/providers.ts"
+        "apps/desktop/electron/providers.ts",
+        "apps/desktop/src/PersonalMediaMetadata.tsx",
+        "apps/desktop/electron/provider-contracts.ts",
+        "apps/desktop/electron/preload.ts"
       ],
       "dependencies": [
         "reference-tokens",
@@ -7413,33 +7544,36 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md",
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
-        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md"
+        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
-        "Actual provider date/resume metadata and library/detail columns remain incomplete. Playing variant awaits exact persistent-player fixture/presentation and capture.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified."
+        "Original artwork, quality, duration and real track metadata are unavailable. S38/playing exact persistent inset projection is unfinished; no generic capture substitutes for it.",
+        "DEV-only metadata uses explicit local-demo markers. Dates/resume/current programme are genuine in production; no provider playback or synchronization is certified.",
+        "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
-        "Actual provider date/resume metadata and library/detail columns remain incomplete. Playing variant awaits exact persistent-player fixture/presentation and capture."
+        "Original artwork, quality, duration and real track metadata are unavailable. S38/playing exact persistent inset projection is unfinished; no generic capture substitutes for it."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S39",
@@ -7467,33 +7601,36 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md",
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
-        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md"
+        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
         "Precise unsupported/external modal entry and safe authorized external broker remain; exact capture is refused.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified."
+        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
+        "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
         "Precise unsupported/external modal entry and safe authorized external broker remain; exact capture is refused."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S39",
@@ -7521,33 +7658,36 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md",
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
-        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md"
+        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
         "Precise unsupported/external modal entry and safe authorized external broker remain; exact capture is refused.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified."
+        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
+        "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
         "Precise unsupported/external modal entry and safe authorized external broker remain; exact capture is refused."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S39",
@@ -7575,33 +7715,36 @@
       "integration_status": "REAL",
       "requested_model": "gpt-6.1-sol/medium",
       "actual_model_if_known": "gpt-6.1-sol/medium (tool-selected)",
-      "owner": "settings_reference",
+      "owner": "root",
       "changed_files": [
         "apps/desktop/src/Providers.tsx",
         "apps/desktop/src/PersonalMedia.tsx",
         "apps/desktop/src/reference-media.css"
       ],
-      "implementation_revision": "680fdc51cdce519da5bcc83155c1268f490bfdaf",
+      "implementation_revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
       "reference_review_notes": "Read-only GPT-6.1 Sol opened all 31 original S33–39 PNGs; root opened main originals and selected actual captures. See PERSONAL_MEDIA_INTEGRATION_2026_10_11.md.",
       "evidence_paths": [
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md",
         "docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md",
         "docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md",
-        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md"
+        "docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md",
+        "docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md"
       ],
       "functional_checks": [
-        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance."
+        "Final local full suite 61 files / 454 passed. Native mutation/file boundary 33/33; focused integrated provider/UI/fixture/player checks 68/68 before final StrictMode regression; route UI final 15/15. Integrated build exit 0; no actual provider/device acceptance.",
+        "2026-10-11 local full regression64 files/503 passed; final integrated build exit0. A compiler found two unsupported DOM query-option properties in new tests; removed only those properties and focused route/import/readback18/18 passed again. Native/UI checks are mocked; no actual provider, native device or two-client acceptance."
       ],
       "visual_findings": [
         "Precise unsupported/external modal entry and safe authorized external broker remain; exact capture is refused.",
-        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified."
+        "Fixtures are development-only metadata. No provider playback, authorization or synchronization is certified.",
+        "Prior capture remains timestamp-bound history for older source; no new exact screenshot for this entry in the metadata/S37 group."
       ],
       "blockers": [
         "Precise unsupported/external modal entry and safe authorized external broker remain; exact capture is refused."
       ],
-      "next_action": "Implement the recorded reference gaps and original/state-specific comparisons. Keep NEEDS_RECHECK; do not substitute generic captures.",
-      "updated_at": "2026-10-11T00:43:21.615598+00:00"
+      "next_action": "Continue remaining inset player/source/error integration and exact original/layout comparisons. Preserve NEEDS_RECHECK and external/manual gates.",
+      "updated_at": "2026-10-11T01:00:05.528595+00:00"
     },
     {
       "id": "S40",
