@@ -1,3 +1,4 @@
+import { queryClient } from './query-client';
 import './reference-community-management.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, Link2, LockKeyhole, LogOut, MoreHorizontal, Plus, RefreshCw, Search, ShieldCheck, Users } from 'lucide-react';
@@ -32,7 +33,7 @@ export interface CommunityManagementSurfaceProps {
 /** Scope keys synchronously remove the previous account/space roster, before effects run. */
 export default function CommunityManagementSurface(props: CommunityManagementSurfaceProps) {
   const { user, activeSpaceId, serverUrl, status } = useCommunity();
-  return <ManagementScope key={`${user?.id ?? ''}:${activeSpaceId ?? ''}:${serverUrl}:${status}`}
+  return <ManagementScope key={`${user?.id ?? ''}:${activeSpaceId ?? ''}:${serverUrl}`}
     {...props} userId={user?.id ?? null} spaceId={activeSpaceId} connected={status === 'connected'}/>;
 }
 function ManagementScope({ bridge: suppliedBridge, fixture, userId, spaceId, connected, onBack, onChannelPermissions, onCreateInvite }: CommunityManagementSurfaceProps & {
@@ -55,11 +56,11 @@ function ManagementScope({ bridge: suppliedBridge, fixture, userId, spaceId, con
   };
   const accept = (value: SocialCommunityManagement, epoch: number) => {
     if (!currentScope() || epoch !== generation.current || value.spaceId !== spaceId) return false;
-    setSnapshot(value); return true;
+    queryClient.setQueryData(['community-management',scope],value);setSnapshot(value); return true;
   };
   const reload = useCallback(async () => {
     const epoch = ++generation.current;
-    setSnapshot(null); setDialog(null); setMenu(null); setRoleIds([]); setError(''); setLoading(true);
+    setDialog(null); setMenu(null); setRoleIds([]); setError(''); setLoading(!snapshot);
     // Explicit development projections never query a native account, even if no fixture was supplied.
     if (fixtureMode) {
       if (fixture?.snapshot.spaceId === spaceId && import.meta.env.DEV) {
@@ -71,7 +72,16 @@ function ManagementScope({ bridge: suppliedBridge, fixture, userId, spaceId, con
     }
     if (!connected || !userId || !spaceId) { setLoading(false); return; }
     if (!bridgeRef.current?.communityManagement) { setError('Topluluk yönetimi için masaüstü bağlantısı gerekli.'); setLoading(false); return; }
-    try { accept(await bridgeRef.current.communityManagement(spaceId), epoch); }
+    try {
+      const key=['community-management',scope];
+      const cached=queryClient.getQueryData<SocialCommunityManagement>(key);
+      if(cached&&currentScope()){setSnapshot(cached);setLoading(false);}
+      const value=await queryClient.fetchQuery({queryKey:key,staleTime:30000,queryFn:()=>new Promise<SocialCommunityManagement>((resolve,reject)=>{
+        const timer=setTimeout(()=>reject(new Error('Üyeler getirilemedi. Yeniden dene.')),15000);
+        bridgeRef.current!.communityManagement(spaceId).then(resolve,reject).finally(()=>clearTimeout(timer));
+      })});
+      accept(value,epoch);
+    }
     catch (failure) { if (currentScope() && epoch === generation.current) setError(uiError(failure)); }
     finally { if (alive.current && epoch === generation.current) setLoading(false); }
   }, [scope, fixtureMode, fixture, connected]);
@@ -81,10 +91,11 @@ function ManagementScope({ bridge: suppliedBridge, fixture, userId, spaceId, con
   }, [reload]);
   useEffect(() => {
     if (fixtureMode) return;
-    const invalidate = () => { generation.current++; setSnapshot(null); setDialog(null); setMenu(null); setRoleIds([]); void reload(); };
+    const revoke = () => { queryClient.removeQueries({queryKey:['community-management',scope]});generation.current++;setSnapshot(null); setDialog(null); setMenu(null); setRoleIds([]); void reload(); };
+    const invalidate = () => { void queryClient.invalidateQueries({queryKey:['community-management',scope]}).then(()=>reload()); };
     const unsubscribe = suppliedBridge?.subscribeInvalidation?.(invalidate);
-    window.addEventListener('rooms:channel-access-invalidated', invalidate);
-    return () => { unsubscribe?.(); window.removeEventListener('rooms:channel-access-invalidated', invalidate); };
+    window.addEventListener('rooms:channel-access-invalidated', revoke);
+    return () => { unsubscribe?.(); window.removeEventListener('rooms:channel-access-invalidated', revoke); };
   }, [suppliedBridge, reload, fixtureMode]);
   useEffect(() => {
     if (!menu) return;
