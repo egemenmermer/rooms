@@ -32,7 +32,7 @@ export interface DesktopBridge {
   diagnosticsPreview(): Promise<string>;
   thirdPartyNotices(): Promise<string>;
   exportDiagnostics(): Promise<boolean>;
-  notifications:{status():Promise<{enabled:boolean;sound:boolean;supported:boolean}>;setOptIn(value:boolean):Promise<{enabled:boolean;sound:boolean;supported:boolean}>;setSound(value:boolean):Promise<{enabled:boolean;sound:boolean;supported:boolean}>};
+  notifications:{status():Promise<{enabled:boolean;sound:boolean;pauseDuringVoice:boolean;supported:boolean}>;setOptIn(value:boolean):Promise<{enabled:boolean;sound:boolean;pauseDuringVoice:boolean;supported:boolean}>;setSound(value:boolean):Promise<{enabled:boolean;sound:boolean;pauseDuringVoice:boolean;supported:boolean}>;setPauseDuringVoice(value:boolean):Promise<{enabled:boolean;sound:boolean;pauseDuringVoice:boolean;supported:boolean}>;setVoiceActive(value:boolean):Promise<void>};
   social: SocialBridge;
   dmCalls: import('./dm-call').DmCallBridge;
   updates:{status():Promise<import('../../../apps/desktop/electron/updates').UpdateStatus>;setOptIn(value:boolean):Promise<import('../../../apps/desktop/electron/updates').UpdateStatus>;check():Promise<import('../../../apps/desktop/electron/updates').UpdateStatus>;download():Promise<import('../../../apps/desktop/electron/updates').UpdateStatus>;cancel():Promise<import('../../../apps/desktop/electron/updates').UpdateStatus>;install():Promise<void>};
