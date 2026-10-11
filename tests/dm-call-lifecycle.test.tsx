@@ -5,7 +5,7 @@ import { create } from 'zustand';
 import { act,cleanup,render,screen,fireEvent } from '@testing-library/react';
 import { MemoryRouter,Link } from 'react-router-dom';
 import { useCommunity } from '../apps/desktop/src/community';
-import { useDmCall,startDmCall,acceptDmCall,refreshDmCall,endDmCall,resetDmCalls } from '../apps/desktop/src/dm-call';
+import { useDmCall,startDmCall,acceptDmCall,refreshDmCall,endDmCall,resetDmCalls,dmCallUnavailable,dmCallFailure } from '../apps/desktop/src/dm-call';
 import DmCallRuntime from '../apps/desktop/src/DmCallRuntime';
 import type { DmCallSession } from '../packages/shared-contracts/src/dm-call';
 const mock=vi.hoisted(()=>({connect:vi.fn(async()=>{}),disconnect:vi.fn(async()=>{}),mic:vi.fn(async()=>{}),camera:vi.fn(async()=>{}),snapshot:{roomId:null as string|null,status:'connected',muted:true,camera:false,participants:[],tracks:[],audioBlocked:false}}));
@@ -21,8 +21,18 @@ beforeEach(async()=>{
  useCommunity.setState({user:caller,serverUrl:'https://local.example',dms:[{id:'999999',spaceId:null,type:1,name:'DM',topic:null,recipients:[caller,callee]}]});
  useDmCall.setState({call:null,busy:false,error:null,connected:false});poll.mockResolvedValue({call:null});start.mockResolvedValue(ringing);respond.mockResolvedValue({...ringing,state:'accepted',acceptedAt:2000});grant.mockResolvedValue({roomName:`rooms-dm-call-${ringing.id}`,token:'local-test-token',serverUrl:'ws://127.0.0.1:9999',expiresAt:'2026-01-01T00:00:00Z'});
 });
-afterEach(async()=>{cleanup();await resetDmCalls();});
+afterEach(async()=>{cleanup();await resetDmCalls();vi.useRealTimers();});
 describe('private call renderer lifetime and device consent',()=>{
+ it('backs off idle signaling failures without global notices or disrupting voice; recovers automatically',async()=>{
+  vi.useFakeTimers();poll.mockRejectedValueOnce(new Error("Error invoking remote method 'rooms:dm-call-poll': Error: Bu sunucuda özel arama servisi etkin değil."));
+  await refreshDmCall();expect(useDmCall.getState().error).toBeNull();expect(dmCallUnavailable()).toBe('Bu sunucuda özel arama servisi etkin değil.');
+  await refreshDmCall();expect(poll).toHaveBeenCalledOnce();expect(mock.disconnect).not.toHaveBeenCalled();
+  vi.advanceTimersByTime(6000);await refreshDmCall();expect(poll).toHaveBeenCalledTimes(2);expect(useDmCall.getState().signalingError).toBeNull();expect(dmCallUnavailable()).toBeNull();
+ });
+ it('sanitizes Electron wrappers and clears capability failure when switching accounts',async()=>{
+  expect(dmCallFailure(new Error("Error invoking remote method 'rooms:dm-call-start': Error: Arama sona erdi."))).toBe('Arama sona erdi.');
+  poll.mockRejectedValueOnce(new Error('Servis kullanılamıyor.'));await refreshDmCall();useCommunity.setState({user:callee});await refreshDmCall();expect(poll).toHaveBeenCalledTimes(2);expect(useDmCall.getState().signalingError).toBeNull();
+ });
  it('does not connect incoming invitations and publishes only microphone on explicit voice accept',async()=>{useCommunity.setState({user:callee});poll.mockResolvedValue({call:ringing});await refreshDmCall();expect(mock.connect).not.toHaveBeenCalled();expect(mock.mic).not.toHaveBeenCalled();expect(mock.camera).not.toHaveBeenCalled();await acceptDmCall(false);expect(mock.connect).toHaveBeenCalledOnce();expect(mock.mic).toHaveBeenCalledOnce();expect(mock.camera).not.toHaveBeenCalled();});
  it('outgoing video consent is honored only after acceptance; camera failure preserves connected voice',async()=>{mock.camera.mockRejectedValueOnce(new Error('no device'));await startDmCall('999999','video');expect(mock.connect).not.toHaveBeenCalled();poll.mockResolvedValue({call:{...ringing,state:'accepted',acceptedAt:2000}});await refreshDmCall();expect(mock.connect).toHaveBeenCalledOnce();expect(mock.camera).toHaveBeenCalledWith(true);expect(useDmCall.getState().connected).toBe(true);expect(useDmCall.getState().error).toContain('Sesli görüşme devam');});
  it('rejects a late accepted grant after explicit end without starting a device',async()=>{await startDmCall('999999','audio');let resolve!:(value:unknown)=>void;grant.mockImplementationOnce(()=>new Promise(done=>{resolve=done;}));poll.mockResolvedValue({call:{...ringing,state:'accepted'}});const pending=refreshDmCall();await vi.waitFor(()=>expect(grant).toHaveBeenCalledOnce());const end=endDmCall();resolve({roomName:'call',token:'test',serverUrl:'ws://127.0.0.1:9999'});await pending;await end;expect(mock.connect).not.toHaveBeenCalled();expect(mock.mic).not.toHaveBeenCalled();expect(useDmCall.getState().call).toBeNull();});

@@ -4,25 +4,29 @@ import { useCommunity } from './community';
 import { mediaProvider } from './runtime-sources';
 import { useVoiceContext } from './realtime';
 import { useRooms } from './store';
+import { uiError } from './i18n';
 
-interface DmCallState {call:DmCallSession|null;busy:boolean;error:string|null;connected:boolean}
-export const useDmCall=create<DmCallState>(()=>({call:null,busy:false,error:null,connected:false}));
+interface DmCallState {call:DmCallSession|null;busy:boolean;error:string|null;connected:boolean;signalingError:string|null}
+export const useDmCall=create<DmCallState>(()=>({call:null,busy:false,error:null,connected:false,signalingError:null}));
 const fixture=()=>import.meta.env.DEV&&new URLSearchParams(location.search).has('fixture');
 const bridge=()=>{if(fixture())throw new Error('Örnek görünümde gerçek arama başlatılamaz.');if(!window.rooms?.dmCalls)throw new Error('Özel arama için masaüstü uygulamasını aç.');return window.rooms.dmCalls;};
 let identity='',epoch=0,consent:{callId:string;camera:boolean}|null=null;
 let connecting:Promise<void>|null=null;
 let stopped=new Set<string>();
+let pollFailures=0,nextPollAt=0;
 const account=()=>{const state=useCommunity.getState();return state.user?`${state.serverUrl}:${state.user.id}`:'';};
 const active=(call:DmCallSession|null)=>!!call&&call.state!=='ended';
 export function dmCallUnavailable(){
   if(fixture())return 'Örnek görünümde gerçek arama başlatılamaz.';
   if(!useCommunity.getState().user)return 'Önce giriş yap.';
+  if(useDmCall.getState().signalingError)return useDmCall.getState().signalingError;
   if(useDmCall.getState().busy||connecting)return 'Arama işlemi sürüyor.';
   if(active(useDmCall.getState().call))return 'Önce mevcut özel görüşmeyi bitir.';
   if(useVoiceContext.getState().busy||useVoiceContext.getState().channelId||mediaProvider().snapshot().roomId)return 'Önce bağlı olduğun ses odasından ayrıl.';
   return null;
 }
-const failure=(error:unknown)=>error instanceof Error&&error.message&&!/token|jwt|https?:|wss?:/i.test(error.message)?error.message:'Arama bağlantısı kurulamadı. Yeniden dene.';
+export const dmCallFailure=(error:unknown)=>{const message=uiError(error);return /token|jwt|https?:|wss?:/i.test(message)?'Arama bağlantısı kurulamadı. Yeniden dene.':message;};
+const failure=dmCallFailure;
 export async function startDmCall(dmId:string,mode:'audio'|'video'){
   const reason=dmCallUnavailable();if(reason)throw new Error(reason);
   identity=account();const generation=++epoch;useDmCall.setState({busy:true,error:null});
@@ -82,14 +86,20 @@ export async function refreshDmCall(){
   if(fixture())return;
   if(account()!==identity){await resetDmCalls();identity=account();}
   if(!identity||!window.rooms?.dmCalls)return;
+  if(Date.now()<nextPollAt)return;
   const generation=epoch,currentAccount=identity;
   try{
     const {call}=await bridge().poll();if(generation!==epoch||currentAccount!==account())return;
+    pollFailures=0;nextPollAt=0;useDmCall.setState({signalingError:null});
     if(call?.state==='ended'||!call){const previous=useDmCall.getState().call;if(previous&&(!call||previous.id===call.id)){const message=call?.reason==='rejected'?'Arama reddedildi.':call?.reason==='missed'?'Arama yanıtlanmadı.':call?.reason==='access-lost'?'Özel görüşme erişimi sona erdi.':call?.reason==='disconnected'?'Karşı tarafın arama bağlantısı kesildi.':'Görüşme sona erdi.';await endDmCall();useDmCall.setState({error:message});}return;}
     if(stopped.has(call.id))return;
     const previous=useDmCall.getState().call;if(previous&&previous.id!==call.id)await endDmCall();
     useDmCall.setState({call});await connectAccepted();
-  }catch(error){if(generation===epoch)useDmCall.setState({error:failure(error)});}
+  }catch(error){if(generation===epoch&&currentAccount===account()){
+    // An idle background capability failure is not a user action or a failed voice-room connection.
+    pollFailures++;nextPollAt=Date.now()+Math.min(60000,3000*2**Math.min(pollFailures,5));
+    useDmCall.setState({signalingError:failure(error)});
+  }}
 }
-export async function resetDmCalls(){const previous=identity;identity='';await endDmCall();stopped=new Set();if(previous!==account())useDmCall.setState({error:null});}
+export async function resetDmCalls(){const previous=identity;identity='';pollFailures=0;nextPollAt=0;useDmCall.setState({signalingError:null});await endDmCall();stopped=new Set();if(previous!==account())useDmCall.setState({error:null});}
 export function dismissDmCallError(){useDmCall.setState({error:null});}
