@@ -80,6 +80,8 @@ export function installPersonalMediaFixture(screenValue: string, variantValue = 
     return copy(current);
   };
   const bridge: ProviderBridge = {
+    async recentChannels(id) { lookup(id); return []; },
+    async acknowledgePlayback() { throw new Error(unavailable); },
     async status() { assertActive(); return copy(connections); },
     connectPlaylist: input => connect('playlist', input.name),
     connectXtream: input => connect('xtream', input.name),
