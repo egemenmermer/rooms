@@ -18,7 +18,9 @@ export interface ActivitySession {
 }
 export interface ChannelNotificationScope {serverUrl:string;userId:string}
 export interface ChannelNotificationInput extends ChannelNotificationScope {channelId:string;muted?:boolean}
+export interface DesktopWindowPreferences {keepOpenOnClose:boolean;warnOnVoiceClose:boolean;trayAvailable:boolean}
 export interface DesktopBridge {
+  desktopWindow:{status():Promise<DesktopWindowPreferences>;setPreference(key:'keepOpenOnClose'|'warnOnVoiceClose',value:boolean):Promise<DesktopWindowPreferences>};
   pendingInvite():Promise<{serverUrl:string;code:string}|null>;
   onInvite(listener:(invite:{serverUrl:string;code:string})=>void):()=>void;
   platform: 'darwin' | 'win32' | 'linux';

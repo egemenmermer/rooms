@@ -7,6 +7,7 @@ import { readCaptionFile } from './caption-file';
 import { Readable } from 'node:stream';
 import { setupCommunity } from './community';
 import {setupNotifications} from './notifications';
+import {setupWindowPolicy} from './window-policy';
 import {setupUpdates} from './updates';
 import {setupProviders} from './providers';
 import {parseInviteLink,type InviteLink} from './native-links';
@@ -16,6 +17,9 @@ import { whiteboardPng } from './whiteboard-raster';
 import type { ActivityResponse } from '@rooms/activity-protocol';
 if(process.env.ROOMS_PROFILE&&/^[a-zA-Z0-9-]{1,40}$/.test(process.env.ROOMS_PROFILE))app.setPath('userData',join(app.getPath('appData'),'ROOMS',process.env.ROOMS_PROFILE));
 let win: BrowserWindow | null = null;
+let quitting=false;
+let windowPolicy:ReturnType<typeof setupWindowPolicy>|null=null;
+app.on('before-quit',()=>{quitting=true;});
 let pendingInvite:InviteLink|null=null;
 function receiveLink(raw:string){const invite=parseInviteLink(raw);if(!invite)return;pendingInvite=invite;if(win){win.show();win.focus();win.webContents.send('rooms:invite-link',invite);}}
 app.on('open-url',(event,url)=>{event.preventDefault();receiveLink(url);});
@@ -45,6 +49,7 @@ function createWindow() {
   win.webContents.on('will-navigate', (event, url) => { if (!isTrusted(url)) event.preventDefault(); });
   win.webContents.on('will-attach-webview', event => event.preventDefault());
   win.once('ready-to-show', () => win?.show());
+  windowPolicy?.attach(win);
   win.on('close', () => { if (win && !win.isFullScreen()) { const { width, height, x, y } = win.getNormalBounds(); writeFileSync(join(app.getPath('userData'), 'window.json'), JSON.stringify({ width, height, x, y })); } });
   win.on('closed', () => { win = null; selectedMedia.clear(); });
   if (devUrl) void win.loadURL(devUrl); else void win.loadFile(join(__dirname, '../dist/index.html'));
@@ -52,6 +57,7 @@ function createWindow() {
 app.whenReady().then(async() => {
   if(!primaryInstance)return;
   const notifications=setupNotifications(()=>win,assertSender,()=>{const scope=community.snapshot();return scope.user&&scope.instanceUrl?{serverUrl:scope.instanceUrl,userId:scope.user.id}:null;});
+  windowPolicy=setupWindowPolicy(assertSender,()=>!!tray&&!tray.isDestroyed(),notifications.voiceActive,()=>quitting);
   const community=await setupCommunity(()=>win,assertSender,isTrusted,notifications.message);
   const providers=setupProviders(assertSender,()=>{const scope=community.snapshot();return `${scope.sessionEpoch??0}:${scope.instanceUrl??''}:${scope.user?.id??''}`;},()=>{const scope=community.snapshot();return scope.user&&scope.instanceUrl?JSON.stringify([scope.instanceUrl,scope.user.id]):null;});
   setupUpdates(assertSender);
@@ -138,7 +144,7 @@ app.whenReady().then(async() => {
   createWindow();
   if(process.platform==='darwin')app.dock?.setIcon(join(__dirname,'../dist/icon.png'));
   const icon = nativeImage.createFromPath(join(__dirname, '../dist/tray.png')); icon.setTemplateImage(true);
-  if (!icon.isEmpty()) { tray = new Tray(icon); tray.setToolTip('ROOMS — Your private place'); tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Open ROOMS', click: () => { if (win) win.show(); else createWindow(); } }, { type: 'separator' }, { role: 'quit' }])); }
+  if (!icon.isEmpty()) { tray = new Tray(icon); tray.setToolTip('ROOMS'); tray.setContextMenu(Menu.buildFromTemplate([{ label: 'ROOMS’u aç', click: () => { if (win) win.show(); else createWindow(); } }, { type: 'separator' }, { role: 'quit' }])); }
   app.on('activate', () => { if (!win) createWindow(); else win.show(); });
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
