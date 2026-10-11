@@ -1,3 +1,4 @@
+import { usePersonalPlayback } from './personal-playback';
 import { tr } from './i18n';
 import { VoiceSidebar } from './VoiceSidebar';
 import { DirectMessageSurface, SocialSearchDialog, SharedFilesSurface, UserProfileDialog } from './SocialSurfaces';
@@ -134,7 +135,8 @@ export default function App() {
     const statusView = visiblePath === '/status';
     const fileView = visiblePath === '/files';
     const mediaView = visiblePath === '/media';
-    const mediaHeader = new URLSearchParams(location.search).get('view')==='channels'||localFixture.startsWith('S35/')?'Canlı kanallar':new URLSearchParams(location.search).get('view')==='library'||localFixture.startsWith('S38/')?'Kütüphane':'Kişisel medyam';
+    const personalSession = usePersonalPlayback(state=>state.session);
+    const mediaHeader = new URLSearchParams(location.search).get('player')==='1' && personalSession ? personalSession.media.live ? personalSession.media.name : 'Kişisel oynatıcı' : new URLSearchParams(location.search).get('view')==='channels'||localFixture.startsWith('S35/')?'Canlı kanallar':new URLSearchParams(location.search).get('view')==='library'||localFixture.startsWith('S38/')?'Kütüphane':'Kişisel medyam';
     const notificationView = visiblePath === '/notifications';
     const dmView = ['/chat','/dm'].includes(visiblePath) && community.dms.some(dm=>dm.id===community.activeChannelId);
     const communityView = !dmView && !!community.user && (voiceView || ['/chat','/status','/files','/games','/together','/agent','/youtube','/media'].includes(visiblePath));
