@@ -52,6 +52,9 @@ async function bootstrap() {
           await installReferenceFixture('S19','default');
           const personal=await import('./dev/personal-media-fixture');personal.installPersonalMediaFixture(fixture,params.get('variant')||'default');
           if(fixture==='S36'||fixture==='S39'||fixture==='S38'&&params.get('variant')==='playing'){const player=await import('./dev/personal-playback-fixture');player.installInsetPlaybackFixture(fixture,params.get('variant')||'default');}
+        }else if(fixture==='S66'){
+          await installReferenceFixture('S19','default');
+          const appearance=await import('./dev/appearance-fixture');appearance.installAppearanceFixture(params.get('variant')||'default');
         }else if(/^S(59|60|61|62|63)$/.test(fixture)){
           await installReferenceFixture('S19','default');
         }else if(/^S(4[0-9]|5[0-4])$/.test(fixture)){
@@ -64,7 +67,7 @@ async function bootstrap() {
         if(/^S5[678]$/.test(fixture)||fixture==='S68'||fixture==='S70'||fixture==='S71')installMediaFixture('S10','default');
         if (fixture === 'S29') installMediaFixture('S19','default');
         if (fixture === 'S30' && ['personal','live'].includes(params.get('variant') || 'default')) installMediaFixture('S19','default');
-        if (/^S(59|60|61|62|63)$/.test(fixture)) installMediaFixture('S10','default');
+        if (fixture==='S66'||/^S(59|60|61|62|63)$/.test(fixture)) installMediaFixture('S10','default');
         if (/^S3[3-9]$/.test(fixture)) installMediaFixture('S10','default');
         if (['S10','S19','S20','S21','S22','S23'].includes(fixture)) installMediaFixture(fixture, params.get('variant') || 'default');
         document.documentElement.dataset.referenceFixture = `${fixture}/${params.get('variant') || 'default'}`;
