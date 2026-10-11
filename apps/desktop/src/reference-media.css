@@ -124,3 +124,23 @@ html[data-room-player-fullscreen="true"] .personal-playback-runtime .ref-persona
 .personal-playback-runtime.s30-mini-hidden{left:-10000px;right:auto;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden}
 .personal-playback-runtime.s30-mini-hidden .s30-mini-player{width:1px;height:1px}
 @media(max-width:900px){.personal-playback-runtime.background.s30-mini-active{right:20px;bottom:84px}}
+
+/* Only genuine guide times supply progress; VOD duration/artwork is never inferred. */
+.ref-media-current-program{margin-top:7px;min-width:0}
+.ref-media-channel .ref-media-current-program>small{margin:0;color:#b5bfd0;line-height:1.5}
+.ref-media-current-program>div{display:flex;align-items:center;gap:12px;margin-top:9px}
+.ref-media-current-program progress{appearance:none;width:min(170px,45%);height:3px;border:0;border-radius:3px;overflow:hidden;background:#424658;accent-color:#a498f4}
+.ref-media-current-program progress::-webkit-progress-bar{background:#424658}
+.ref-media-current-program progress::-webkit-progress-value{background:#a498f4;border-radius:3px}
+.ref-media-current-program time{font:10px Inter,sans-serif;color:#8f9bb0;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ref-media-resume-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.ref-media-resume-card{min-width:0;padding:0;border:1px solid #414756;border-radius:10px;background:#272b35;color:#e0e6f1;text-align:left;overflow:hidden;cursor:pointer}
+.ref-media-resume-card:hover{border-color:#897fbc;background:#2d303d}
+.ref-media-resume-art{height:120px;display:flex;align-items:center;justify-content:center;gap:14px;background:#20232c;color:#9f97bd;border-bottom:1px solid #414756}
+.ref-media-resume-card strong,.ref-media-resume-card small{display:block;margin:14px 15px;overflow-wrap:anywhere;font-size:12px;line-height:1.5}
+.ref-media-resume-card small{margin-top:-7px;font-size:10px;color:#99a5ba}
+.ref-media-resume-empty{margin:22px 0 30px;color:#909db3;font-size:12px}
+.ref-media-detail-metadata{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px 15px;padding:19px 0;border-top:1px solid #343a47;font-size:11px;color:#99a5ba}
+.ref-media-detail-metadata dd{margin:0;color:#c4cde0;text-align:right;overflow-wrap:anywhere}
+@media(max-width:1150px){.ref-media-resume-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.ref-media-resume-list{grid-template-columns:1fr}.ref-media-current-program>div{flex-wrap:wrap;gap:5px}.ref-media-channel{flex-wrap:wrap}}
