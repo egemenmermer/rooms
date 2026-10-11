@@ -16,6 +16,8 @@ export interface ActivitySession {
   id: string; roomId: string; activityId: string; hostUserId: string; controllerUserId: string | null;
   revision: number; state: ActivityState; startedAt: string; payload: ActivityPayload;
 }
+export interface ChannelNotificationScope {serverUrl:string;userId:string}
+export interface ChannelNotificationInput extends ChannelNotificationScope {channelId:string;muted?:boolean}
 export interface DesktopBridge {
   pendingInvite():Promise<{serverUrl:string;code:string}|null>;
   onInvite(listener:(invite:{serverUrl:string;code:string})=>void):()=>void;
@@ -32,7 +34,7 @@ export interface DesktopBridge {
   diagnosticsPreview(): Promise<string>;
   thirdPartyNotices(): Promise<string>;
   exportDiagnostics(): Promise<boolean>;
-  notifications:{status():Promise<{enabled:boolean;sound:boolean;pauseDuringVoice:boolean;supported:boolean}>;setOptIn(value:boolean):Promise<{enabled:boolean;sound:boolean;pauseDuringVoice:boolean;supported:boolean}>;setSound(value:boolean):Promise<{enabled:boolean;sound:boolean;pauseDuringVoice:boolean;supported:boolean}>;setPauseDuringVoice(value:boolean):Promise<{enabled:boolean;sound:boolean;pauseDuringVoice:boolean;supported:boolean}>;setVoiceActive(value:boolean):Promise<void>};
+  notifications:{channelStatus(input:ChannelNotificationInput):Promise<{muted:boolean}>;setChannelMuted(input:ChannelNotificationInput & {muted:boolean}):Promise<{muted:boolean}>;status():Promise<{enabled:boolean;sound:boolean;pauseDuringVoice:boolean;supported:boolean}>;setOptIn(value:boolean):Promise<{enabled:boolean;sound:boolean;pauseDuringVoice:boolean;supported:boolean}>;setSound(value:boolean):Promise<{enabled:boolean;sound:boolean;pauseDuringVoice:boolean;supported:boolean}>;setPauseDuringVoice(value:boolean):Promise<{enabled:boolean;sound:boolean;pauseDuringVoice:boolean;supported:boolean}>;setVoiceActive(value:boolean):Promise<void>};
   social: SocialBridge;
   dmCalls: import('./dm-call').DmCallBridge;
   updates:{status():Promise<import('../../../apps/desktop/electron/updates').UpdateStatus>;setOptIn(value:boolean):Promise<import('../../../apps/desktop/electron/updates').UpdateStatus>;check():Promise<import('../../../apps/desktop/electron/updates').UpdateStatus>;download():Promise<import('../../../apps/desktop/electron/updates').UpdateStatus>;cancel():Promise<import('../../../apps/desktop/electron/updates').UpdateStatus>;install():Promise<void>};

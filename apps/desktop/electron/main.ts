@@ -51,7 +51,7 @@ function createWindow() {
 }
 app.whenReady().then(async() => {
   if(!primaryInstance)return;
-  const notifications=setupNotifications(()=>win,assertSender);
+  const notifications=setupNotifications(()=>win,assertSender,()=>{const scope=community.snapshot();return scope.user&&scope.instanceUrl?{serverUrl:scope.instanceUrl,userId:scope.user.id}:null;});
   const community=await setupCommunity(()=>win,assertSender,isTrusted,notifications.message);
   const providers=setupProviders(assertSender,()=>{const scope=community.snapshot();return `${scope.sessionEpoch??0}:${scope.instanceUrl??''}:${scope.user?.id??''}`;},()=>{const scope=community.snapshot();return scope.user&&scope.instanceUrl?JSON.stringify([scope.instanceUrl,scope.user.id]):null;});
   setupUpdates(assertSender);
