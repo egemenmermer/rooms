@@ -1,8 +1,8 @@
 import { tr } from './i18n';
 import { useEffect } from 'react';
-import { liveKitMediaProvider } from '@rooms/media';
 import { useRooms } from './store';
 import { useRealtime } from './realtime';
+import { mediaProvider } from './runtime-sources';
 /** A held key owns only the microphone it enabled. Key release and focus loss always remute it. */
 export function PushToTalk({ notify }: {
     notify(message: string): void;
@@ -12,22 +12,23 @@ export function PushToTalk({ notify }: {
     useEffect(() => {
         if (!enabled || !channelId || status !== 'connected')
             return;
+        const provider = mediaProvider();
         let held = false;
         let disposed = false;
         const fail = (error: unknown) => notify(error instanceof Error ? error.message : tr("Push-to-talk could not access the microphone."));
         const release = () => { if (!held)
-            return; held = false; void liveKitMediaProvider.mute(true).catch(fail); };
-        void liveKitMediaProvider.mute(true).catch(fail);
+            return; held = false; void provider.mute(true).catch(fail); };
+        void provider.mute(true).catch(fail);
         const down = (event: KeyboardEvent) => {
-            if (event.code !== 'Space' || !event.ctrlKey || !event.shiftKey || event.repeat || held || liveKitMediaProvider.snapshot().deafened)
+            if (event.code !== 'Space' || !event.ctrlKey || !event.shiftKey || event.repeat || held || provider.snapshot().deafened)
                 return;
             if ((event.target as HTMLElement).closest('input,textarea,select,[contenteditable="true"]') || document.querySelector('[role="dialog"]') && !(event.target as HTMLElement).closest('[data-soundboard]'))
                 return;
             event.preventDefault();
             event.stopImmediatePropagation();
             held = true;
-            void liveKitMediaProvider.mute(false).then(() => { if (!held || disposed)
-                return liveKitMediaProvider.mute(true); }).catch(fail);
+            void provider.mute(false).then(() => { if (!held || disposed)
+                return provider.mute(true); }).catch(fail);
         };
         const up = (event: KeyboardEvent) => { if (event.code === 'Space' || event.code === 'ControlLeft' || event.code === 'ControlRight' || event.code === 'ShiftLeft' || event.code === 'ShiftRight')
             release(); };

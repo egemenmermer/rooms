@@ -1,9 +1,11 @@
+import { useCommunity } from './community';
 import { uiError } from './i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { activityBridge,developmentActivityState } from './runtime-sources';
 import type { ActivityCommand, ActivityResponse, RoomSnapshot } from '../../../packages/activity-protocol/src/index';
 
 type ActivityStatus = 'idle' | 'loading' | 'connected' | 'error';
-const nativeActivity = () => { if (!window.rooms?.activity) throw new Error('Ortak etkinlikler masaüstü uygulaması ve yapılandırılmış sunucu gerektirir.'); return window.rooms.activity; };
+const nativeActivity = activityBridge;
 const errorText = (error: unknown) => uiError(error);
 /** Native IPC owns authentication. Renderer only receives bounded public room state. */
 export function useActivityRoom(roomId: string | null) {
@@ -22,12 +24,16 @@ export function useActivityRoom(roomId: string | null) {
   }, []);
   const refresh = useCallback(async () => {
     if (!roomId) return; const epoch = generation.current;
+    const fixture=developmentActivityState(roomId);
+    if(fixture){current.current=fixture.room;setRoom(fixture.room);setServerOffsetMs(fixture.serverTimeMs-Date.now());setStatus(fixture.status);setError(fixture.error);return;}
     try { accept(await nativeActivity().snapshot(roomId, current.current?.revision ?? 0), epoch); }
     catch (failure) { if (generation.current === epoch) { setError(errorText(failure)); setStatus('error'); } }
   }, [roomId, accept]);
   useEffect(() => {
     const epoch = ++generation.current; current.current = null; setRoom(null); setError(null); setBusy(false);
     if (!roomId) { setStatus('idle'); return; }
+    const fixture=developmentActivityState(roomId);
+    if(fixture){current.current=fixture.room;setRoom(fixture.room);setServerOffsetMs(fixture.serverTimeMs-Date.now());setStatus(fixture.status);setError(fixture.error);return()=>{if(generation.current===epoch)generation.current++;};}
     setStatus('loading'); let stopped = false; let timer: ReturnType<typeof setTimeout> | undefined;
     const observe = async () => {
       try { const result = await nativeActivity().snapshot(roomId, current.current?.revision ?? 0); if (!stopped) accept(result, epoch); }
@@ -47,7 +53,7 @@ export function useActivityRoom(roomId: string | null) {
         let state = current.current;
         if (!state) { const result = await nativeActivity().snapshot(roomId); accept(result, epoch); state = result.room; }
         // Joining is explicit and authoritative, not a decorative local participant.
-        const selfId = window.rooms ? (await window.rooms.social.session()).user?.id : null;
+        const selfId = useCommunity.getState().user?.id ?? null;
         if (command.type !== 'join' && command.type !== 'leave' && !state.participants.some(p => p.userId === selfId)) {
           const joined = await nativeActivity().command(roomId, { protocolVersion: 1, commandId: crypto.randomUUID(), expectedRevision: state.revision, command: { type: 'join' } });
           accept(joined, epoch); state = joined.room;

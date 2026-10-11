@@ -1,0 +1,14 @@
+import { useState } from 'react';
+import { IconButton } from '@rooms/design';
+import { useRealtime, setParticipantVolume } from './realtime';
+import { ReferenceIcon } from './ReferenceIcon';
+import { VoiceAvatar } from './VoiceAvatar';
+
+/** The room inspector reads the persistent transport; volumes are local playback only. */
+export function VoiceContext({onClose, openLauncher, invite}:{onClose():void;openLauncher():void;invite():void}) {
+  const media=useRealtime();
+  const [selected,setSelected]=useState<string|null>(null);
+  const participant=media.participants.find(p=>p.id===selected&&!p.local) ?? media.participants.find(p=>p.speaking&&!p.local) ?? media.participants.find(p=>!p.local);
+  const connected=media.status==='connected';
+  return <aside className="voice-context-panel"><header><span>{media.roomName||'SES ODASI'}</span><IconButton label="Oda panelini kapat" onClick={onClose}><ReferenceIcon name="close" size={18}/></IconButton></header><div className="voice-context-body"><div className="voice-context-title"><strong>Odadakiler {media.participants.length}</strong><IconButton label="Arkadaş davet et" onClick={invite}><ReferenceIcon name="plus" size={18}/></IconButton></div>{media.participants.map(p=><button key={p.id} className="voice-context-member" onClick={()=>setSelected(p.id)} aria-pressed={participant?.id===p.id}><span className="voice-context-avatar"><VoiceAvatar id={p.id} name={p.name}/>{connected&&<i/>}</span><span><strong>{p.name}{p.local?' (sen)':''}</strong>{p.muted?<small>Mikrofon kapalı</small>:connected&&p.speaking?<small>Konuşuyor</small>:null}</span><ReferenceIcon name={p.muted?'mic-off':'mic'} size={14}/></button>)}{participant&&<section className="voice-context-volume"><h3>Kişi sesi</h3><div><VoiceAvatar id={participant.id} name={participant.name}/><span>{participant.name}</span><span>%{Math.round(participant.volume*100)}</span></div><input aria-label={`${participant.name} kişisel ses seviyesi`} type="range" min="0" max="1" step="0.01" value={participant.volume} disabled={!connected} onChange={e=>setParticipantVolume(participant.id,Number(e.target.value))}/><p>Yalnızca senin duyduğun ses değişir.</p></section>}<section className="voice-context-activity"><ReferenceIcon name="film" size={20}/><h3>Bu akşam ne yapıyoruz?</h3><p>Film, YouTube ya da bir oyun. Sesli sohbet kaldığı yerden sürer.</p><button className="button secondary" onClick={openLauncher}>Etkinliklere göz at</button></section></div></aside>;
+}
