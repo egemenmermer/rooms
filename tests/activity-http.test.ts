@@ -46,3 +46,9 @@ describe('native Activity snapshot boundaries',()=>{
   await expect(getActivitySnapshot('https://example.test/activity','room','owned-test-token',vi.fn().mockResolvedValue(json({error:'ROOM_ACCESS_DENIED'},403)))).rejects.toMatchObject({status:403,code:'ROOM_ACCESS_DENIED'});
  });
 });
+
+it('preserves the public incompatibility code through Electron message serialization without retry',async()=>{
+ const fetcher=vi.fn().mockResolvedValue(json({error:'INVALID_COMMAND'},400));
+ await expect(postActivityCommand('https://example.test/activity','room','owned-test-token',envelope(),fetcher)).rejects.toMatchObject({code:'INVALID_COMMAND',message:'INVALID_COMMAND'});
+ expect(fetcher).toHaveBeenCalledOnce();
+});
