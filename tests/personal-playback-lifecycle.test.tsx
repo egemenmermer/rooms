@@ -48,4 +48,33 @@ describe('persistent personal live player', () => {
     expect(container.querySelector('video')).toBeNull();
     expect(pause).toHaveBeenCalledOnce();
   });
+  it('renders real now/next programme metadata without replacing the video', async () => {
+    window.rooms!.providers.epg = vi.fn(async () => [
+      {title:'Current programme',description:'Actual guide description',startsAt:new Date(Date.now()-60000).toISOString(),endsAt:new Date(Date.now()+60000).toISOString()},
+      {title:'Next programme',description:'',startsAt:new Date(Date.now()+60000).toISOString(),endsAt:new Date(Date.now()+120000).toISOString()},
+    ]);
+    startPersonalPlayback({...source,channelId:'owned-channel'},'connection-one','owner','https://social.example.test');
+    const {container}=mount(), video=container.querySelector('video');
+    await screen.findByText('Next programme');
+    expect(window.rooms!.providers.epg).toHaveBeenCalledWith('connection-one','owned-channel');
+    expect(container.querySelector('video')).toBe(video);
+    expect(container.querySelector('.personal-playback-runtime')?.classList.contains('inset')).toBe(true);
+  });
+  it('classifies a native unsupported media error and keeps options accessible', () => {
+    const {container}=mount(),video=container.querySelector('video')!;
+    Object.defineProperty(video,'error',{value:{code:4}});
+    fireEvent.error(video);
+    expect(screen.getByRole('heading',{name:'Bu medya biçimi oynatılamıyor'})).toBeTruthy();
+    fireEvent.click(screen.getByRole('button',{name:'Oynatma seçenekleri'}));
+    expect(screen.getByRole('dialog')).toBeTruthy();
+  });
+
+  it('records history only after actual playing and only once per capability', async () => {
+    window.rooms!.providers.acknowledgePlayback=vi.fn(async()=>{});
+    const {container}=mount(),video=container.querySelector('video')!;
+    expect(window.rooms!.providers.acknowledgePlayback).not.toHaveBeenCalled();
+    await act(async()=>{fireEvent.playing(video);fireEvent.playing(video);});
+    expect(window.rooms!.providers.acknowledgePlayback).toHaveBeenCalledExactlyOnceWith(source.url);
+  });
+
 });
