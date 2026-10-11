@@ -11,7 +11,7 @@
     "variants": 322,
     "responsive": 19
   },
-  "updated_at": "2026-10-11T04:11:25.003865+00:00",
+  "updated_at": "2026-10-11T05:09:35.936109+00:00",
   "records": [
     {
       "id": "S01",
@@ -16564,17 +16564,20 @@
       "implementation_revision": "bcb4a98 + uncommitted reference implementation",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
-        "docs/rooms-implementation/reports/SETTINGS_REPORT.md"
+        "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
+        "tests/notification-preferences.test.ts"
       ],
-      "functional_checks": [],
+      "functional_checks": [
+        "Native notification sound preference: five mocked Electron tests passed (silent default, opt-in independence, persistence, focus/rate suppression, failed write and sender/type rejection). Final pnpm build exit0."
+      ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Native notifications opt-in/login-item/background preferences; OS-specific capability checks must survive UI changes."
+        "Actual OS notification delivery/sound and permissions remain unverified. Voice/channel notification filtering, configurable close/tray behavior and exact S67 fixtures/visual acceptance remain incomplete. Message previews remain intentionally content-free."
       ],
       "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
-      "updated_at": "2026-10-10T12:36:12.407589+00:00"
+      "updated_at": "2026-10-11T05:09:35.936109+00:00"
     },
     {
       "id": "S67",
@@ -16608,17 +16611,20 @@
       "implementation_revision": "bcb4a98 + uncommitted reference implementation",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
-        "docs/rooms-implementation/reports/SETTINGS_REPORT.md"
+        "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
+        "tests/notification-preferences.test.ts"
       ],
-      "functional_checks": [],
+      "functional_checks": [
+        "Native notification sound preference: five mocked Electron tests passed (silent default, opt-in independence, persistence, focus/rate suppression, failed write and sender/type rejection). Final pnpm build exit0."
+      ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Native notifications opt-in/login-item/background preferences; OS-specific capability checks must survive UI changes."
+        "Actual OS notification delivery/sound and permissions remain unverified. Voice/channel notification filtering, configurable close/tray behavior and exact S67 fixtures/visual acceptance remain incomplete. Message previews remain intentionally content-free."
       ],
       "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
-      "updated_at": "2026-10-10T12:36:12.407589+00:00"
+      "updated_at": "2026-10-11T05:09:35.936109+00:00"
     },
     {
       "id": "S67",
@@ -16652,17 +16658,20 @@
       "implementation_revision": "bcb4a98 + uncommitted reference implementation",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
-        "docs/rooms-implementation/reports/SETTINGS_REPORT.md"
+        "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
+        "tests/notification-preferences.test.ts"
       ],
-      "functional_checks": [],
+      "functional_checks": [
+        "Native notification sound preference: five mocked Electron tests passed (silent default, opt-in independence, persistence, focus/rate suppression, failed write and sender/type rejection). Final pnpm build exit0."
+      ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Native notifications opt-in/login-item/background preferences; OS-specific capability checks must survive UI changes."
+        "Actual OS notification delivery/sound and permissions remain unverified. Voice/channel notification filtering, configurable close/tray behavior and exact S67 fixtures/visual acceptance remain incomplete. Message previews remain intentionally content-free."
       ],
       "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
-      "updated_at": "2026-10-10T12:36:12.407589+00:00"
+      "updated_at": "2026-10-11T05:09:35.936109+00:00"
     },
     {
       "id": "S67",
@@ -16696,17 +16705,20 @@
       "implementation_revision": "bcb4a98 + uncommitted reference implementation",
       "reference_review_notes": "Original PNG reviewed by assigned implementer; see SETTINGS_REPORT.md",
       "evidence_paths": [
-        "docs/rooms-implementation/reports/SETTINGS_REPORT.md"
+        "docs/rooms-implementation/reports/SETTINGS_REPORT.md",
+        "tests/notification-preferences.test.ts"
       ],
-      "functional_checks": [],
+      "functional_checks": [
+        "Native notification sound preference: five mocked Electron tests passed (silent default, opt-in independence, persistence, focus/rate suppression, failed write and sender/type rejection). Final pnpm build exit0."
+      ],
       "visual_findings": [
         "Settings surface changed after popup captures; new current capture required."
       ],
       "blockers": [
-        "Native notifications opt-in/login-item/background preferences; OS-specific capability checks must survive UI changes."
+        "Actual OS notification delivery/sound and permissions remain unverified. Voice/channel notification filtering, configurable close/tray behavior and exact S67 fixtures/visual acceptance remain incomplete. Message previews remain intentionally content-free."
       ],
       "next_action": "Capture this exact state; inspect original and actual screenshot, correct differences, verify functional transitions.",
-      "updated_at": "2026-10-10T12:36:12.407589+00:00"
+      "updated_at": "2026-10-11T05:09:35.936109+00:00"
     },
     {
       "id": "S68",
