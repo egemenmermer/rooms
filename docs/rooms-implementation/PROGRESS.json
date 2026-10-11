@@ -11,7 +11,7 @@
     "variants": 322,
     "responsive": 19
   },
-  "updated_at": "2026-10-11T10:02:35.853116+00:00",
+  "updated_at": "2026-10-11T10:13:19.260479+00:00",
   "records": [
     {
       "id": "S01",
@@ -19312,5 +19312,6 @@
       "updated_at": "2026-10-11T00:06:45Z"
     }
   ],
-  "latest_owner_override": "2026-10-11: Root implements all work without agents. Owner Discord screenshots replace live S19/S20 room appearance. Local corrections are not owner acceptance; see reports/DISCORD_ROOM_CORRECTION_REPORT.md."
+  "latest_owner_override": "2026-10-11: Root implements all work without agents. Owner Discord screenshots replace live S19/S20 room appearance. Local corrections are not owner acceptance; see reports/DISCORD_ROOM_CORRECTION_REPORT.md.",
+  "latest_local_followup": "Confirmed deletion clears the active conversation before channel-list refresh; local mock regression only. CHECKPOINT continuation2026-10-11 10:12 UTC."
 }
