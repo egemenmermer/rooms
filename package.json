@@ -15,7 +15,7 @@
     "test": "vitest run --config vitest.config.ts",
     "test:desktop": "playwright test",
     "start": "electron .",
-    "package:mac": "pnpm build && electron-builder --mac dmg zip --arm64",
+    "package:mac": "pnpm build && electron-builder --mac dmg zip --arm64 && node scripts/verify-mac-signature.mjs",
     "package:win": "pnpm build && electron-builder --win nsis --x64",
     "services:build": "node scripts/build-services.mjs",
     "services:native": "node scripts/services-native.mjs",
@@ -82,13 +82,13 @@
         "zip"
       ],
       "minimumSystemVersion": "14.0",
-      "hardenedRuntime": true,
+      "hardenedRuntime": false,
       "extendInfo": {
         "NSMicrophoneUsageDescription": "ROOMS uses your microphone only when you start a microphone test or join a voice room.",
         "NSCameraUsageDescription": "ROOMS uses your camera only when you enable video."
       },
       "icon": "apps/desktop/public/icon.icns",
-      "identity": null,
+      "identity": "-",
       "entitlements": "infra/release/entitlements.mac.plist",
       "entitlementsInherit": "infra/release/entitlements.mac.plist"
     },
