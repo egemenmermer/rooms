@@ -28,6 +28,9 @@ const bridge: DesktopBridge = {
     register:input=>ipcRenderer.invoke('rooms:social-register',input),
     passwordRecoveryCapabilities:serverUrl=>ipcRenderer.invoke('rooms:social-password-recovery-capabilities',serverUrl),
     requestPasswordRecovery:input=>ipcRenderer.invoke('rooms:social-password-recovery-request',input),
+    importPasswordRecoveryLink:input=>ipcRenderer.invoke('rooms:social-password-recovery-import',input),
+    confirmPasswordRecovery:input=>ipcRenderer.invoke('rooms:social-password-recovery-confirm',input),
+    cancelPasswordRecovery:input=>ipcRenderer.invoke('rooms:social-password-recovery-cancel',input),
     logout:()=>ipcRenderer.invoke('rooms:social-logout'),
     spaces:()=>ipcRenderer.invoke('rooms:social-spaces'),
     createSpace:name=>ipcRenderer.invoke('rooms:social-create-space',name),
@@ -63,6 +66,8 @@ const bridge: DesktopBridge = {
   updates:{status:()=>ipcRenderer.invoke('rooms:update-status'),setOptIn:value=>ipcRenderer.invoke('rooms:update-opt-in',value),check:()=>ipcRenderer.invoke('rooms:update-check'),download:()=>ipcRenderer.invoke('rooms:update-download'),cancel:()=>ipcRenderer.invoke('rooms:update-cancel'),install:()=>ipcRenderer.invoke('rooms:update-install')},
   notifications:{status:()=>ipcRenderer.invoke('rooms:notification-status'),setOptIn:value=>ipcRenderer.invoke('rooms:notification-opt-in',value)},
   providers: {
+    recentChannels:id=>ipcRenderer.invoke('rooms:provider-recent-channels',id),
+    acknowledgePlayback:url=>ipcRenderer.invoke('rooms:provider-acknowledge-playback',url),
     updatePlaylist:input=>ipcRenderer.invoke('rooms:provider-playlist-update',input),updateXtream:input=>ipcRenderer.invoke('rooms:provider-xtream-update',input),rdCancel:()=>ipcRenderer.invoke('rooms:provider-rd-cancel'),
     pickPlaylist:()=>ipcRenderer.invoke('rooms:provider-pick-playlist'),playlistFile:input=>ipcRenderer.invoke('rooms:provider-playlist-file',input),
     saveResume:(url,position)=>ipcRenderer.invoke('rooms:provider-resume',url,position),

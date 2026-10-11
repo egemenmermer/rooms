@@ -1,5 +1,6 @@
 export interface ProviderConnection { id:string;type:'playlist'|'xtream'|'real-debrid';name:string;status:'connected'|'auth-expired'|'error';channelCount:number }
 export interface PersonalChannel {id:string;name:string;group:string;favorite:boolean}
+export interface PersonalRecentChannel {channelId:string;watchedAt:string}
 export interface PersonalLibraryItem {id:string;name:string;size:number;mime:string;addedAt?:string;resumeAt?:number}
 export interface PersonalProgram {title:string;description:string;startsAt:string;endsAt:string}
 export interface PersonalGuide {status:'available'|'unavailable'|'not-configured';programs:Record<string,PersonalProgram[]>}
@@ -15,6 +16,8 @@ export interface ProviderBridge {
  connectXtream(input:{name:string;serverUrl:string;username:string;password:string}):Promise<ProviderConnection>;
  epg(connectionId:string,channelId:string):Promise<{title:string;description:string;startsAt:string;endsAt:string}[]>;
  channels(connectionId:string):Promise<PersonalChannel[]>;
+ recentChannels(connectionId:string):Promise<PersonalRecentChannel[]>;
+ acknowledgePlayback(url:string):Promise<void>;
  guide(connectionId:string,channelIds:string[]):Promise<PersonalGuide>;
  favorite(connectionId:string,channelId:string,value:boolean):Promise<void>;
  play(connectionId:string,channelId:string):Promise<{url:string;name:string;live:boolean;startAt?:number}>;
