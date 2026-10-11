@@ -47,6 +47,14 @@ export default function App() {
     const { preferences: p, setPreference } = useRooms();
     const community = useCommunity();
     const realtime = useRealtime();
+    useEffect(()=>{
+        if(import.meta.env.DEV&&new URLSearchParams(window.location.search).has('fixture'))return;
+        const bridge=window.rooms?.notifications;if(!bridge?.setVoiceActive)return;
+        const active=realtime.status==='connected'||realtime.status==='reconnecting';
+        const send=()=>void bridge.setVoiceActive(active).catch(()=>{});send();
+        const timer=active?setInterval(send,10000):undefined;
+        return()=>{if(timer)clearInterval(timer);void bridge.setVoiceActive(false).catch(()=>{});};
+    },[realtime.status]);
     const spaces = community.spaces.map(s => ({ id: s.id, name: s.name, initials: s.name.slice(0, 1), tone: 'blue', description: "ROOMS" }));
     const activeSpace = community.activeSpaceId;
     const [communityIcons,setCommunityIcons]=useState<Record<string,string>>({});
