@@ -223,4 +223,4 @@
   .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-controls { background: #11141d; }
 }
 
-.personal-playback-runtime.inset .personal-programme-grid small time { display:inline; }
+.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-programme-grid small time { display:inline; }
