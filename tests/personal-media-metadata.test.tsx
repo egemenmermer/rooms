@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { PersonalMedia } from '../apps/desktop/src/PersonalMedia';
 import { CurrentProgram, addedDate, resumeLabel } from '../apps/desktop/src/PersonalMediaMetadata';
 import { useCommunity } from '../apps/desktop/src/community';
@@ -24,6 +24,30 @@ function mount(connections: ProviderConnection[], overrides: Partial<ProviderBri
     return { bridge, ...result };
 }
 describe('real private guide and library projection', () => {
+    it('keeps browse controls accessible for an old player URL without a session', async () => {
+        window.rooms = { providers: { status: vi.fn(async () => []) } } as unknown as NonNullable<Window['rooms']>;
+        const { container } = render(<MemoryRouter initialEntries={['/media?player=1']}><PersonalMedia notify={vi.fn()}/></MemoryRouter>);
+        await screen.findByRole('heading', { name: 'Kişisel medya' });
+        expect(container.querySelector('section')?.hasAttribute('inert')).toBe(false);
+        expect(container.querySelector('section')?.getAttribute('aria-hidden')).toBe('false');
+    });
+    it.each(['channels', 'library'] as const)('restores the same selected connection after player navigation to %s', async view => {
+        const connection = view === 'channels' ? playlist : rd;
+        window.rooms = { providers: { status: vi.fn(async () => [connection]), channels: vi.fn(async () => channels), rdLibrary: vi.fn(async () => [item]) } } as unknown as NonNullable<Window['rooms']>;
+        const browse = `/media?view=${view}&connection=${connection.id}`;
+        function Navigation() {
+            const navigate = useNavigate();
+            return <><button onClick={() => navigate('/media?player=1')}>Open player route</button><button onClick={() => navigate(browse)}>Return to browse</button><PersonalMedia notify={vi.fn()}/></>;
+        }
+        render(<MemoryRouter initialEntries={[browse]}><Navigation/></MemoryRouter>);
+        const content = view === 'channels' ? 'Own channel 0' : 'Own title';
+        await screen.findByText(content);
+        fireEvent.click(screen.getByRole('button', { name: 'Open player route' }));
+        await screen.findByRole('heading', { name: 'Kişisel medya' });
+        fireEvent.click(screen.getByRole('button', { name: 'Return to browse' }));
+        await screen.findByText(content);
+        expect(screen.queryByRole('heading', { name: 'Kişisel medya' })).toBeNull();
+    });
     it('requests at most 32 owned channel IDs and displays only actual current programme progress', async () => {
         const { bridge } = mount([playlist], {}, 'channels');
         await screen.findByText('Actual programme');
