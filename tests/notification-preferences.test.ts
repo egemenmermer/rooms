@@ -1,4 +1,4 @@
-import {beforeEach,describe,expect,it,vi} from 'vitest';
+import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 const mock=vi.hoisted(()=>({handlers:new Map<string,Function>(),saved:'{}',fail:false,shown:[] as Record<string,unknown>[],focused:false}));
 vi.mock('electron',()=>({app:{getPath:()=>'/fixture'},ipcMain:{handle:(name:string,handler:Function)=>mock.handlers.set(name,handler)},Notification:class{static isSupported(){return true;}constructor(options:Record<string,unknown>){mock.shown.push(options);}on(){}show(){}}}));
 vi.mock('node:fs',()=>({readFileSync:()=>mock.saved,writeFileSync:(_path:string,value:string)=>{if(mock.fail)throw new Error('disk failure');mock.saved=value;},renameSync:vi.fn(),rmSync:vi.fn()}));
@@ -8,14 +8,28 @@ const event={} as IpcMainInvokeEvent;
 const invoke=(name:string,value?:unknown)=>mock.handlers.get('rooms:notification-'+name)!(event,value);
 function setup(){return setupNotifications(()=>({isFocused:()=>mock.focused}) as BrowserWindow,e=>{if(e!==event)throw new Error('untrusted');});}
 beforeEach(()=>{mock.handlers.clear();mock.saved='{}';mock.fail=false;mock.shown=[];mock.focused=false;});
+afterEach(()=>vi.useRealTimers());
 describe('native notification preferences',()=>{
+ it('pauses notifications during a refreshed voice lease and expires crash-stale state',()=>{
+  vi.useFakeTimers();vi.setSystemTime(new Date('2026-10-11T06:00:00Z'));const service=setup();
+  invoke('opt-in',true);invoke('pause-voice',true);invoke('voice-active',true);service.message();expect(mock.shown).toHaveLength(0);
+  vi.advanceTimersByTime(20000);invoke('voice-active',true);vi.advanceTimersByTime(20000);service.message();expect(mock.shown).toHaveLength(0);
+  vi.advanceTimersByTime(10001);service.message();expect(mock.shown).toHaveLength(1);
+ });
+ it('releases suppression on disconnect without persisting transient voice state',()=>{
+  const service=setup();invoke('opt-in',true);invoke('pause-voice',true);invoke('voice-active',true);invoke('voice-active',false);service.message();expect(mock.shown).toHaveLength(1);
+  expect(JSON.parse(mock.saved)).toEqual({enabled:true,sound:false,pauseDuringVoice:true});
+ });
+ it('ignores voice state unless the owner enabled suppression',()=>{
+  const service=setup();invoke('opt-in',true);invoke('voice-active',true);service.message();expect(mock.shown).toHaveLength(1);
+ });
  it('starts opt-out and silent and preserves content-free notification text',()=>{
   const service=setup();service.message();expect(mock.shown).toHaveLength(0);
   invoke('opt-in',true);service.message();expect(mock.shown).toEqual([{title:'ROOMS',body:'Topluluğunda yeni bir mesaj var.',silent:true}]);
  });
  it('enables system sound only by explicit preference and restores it',()=>{
   setup();invoke('sound',true);invoke('opt-in',true);const service=setup();service.message();
-  expect(invoke('status')).toEqual({enabled:true,sound:true,supported:true});expect(mock.shown[0].silent).toBe(false);
+  expect(invoke('status')).toEqual({enabled:true,sound:true,pauseDuringVoice:false,supported:true});expect(mock.shown[0].silent).toBe(false);
  });
  it('does not opt in when changing sound and keeps focus/rate suppression',()=>{
   const service=setup();invoke('sound',true);service.message();expect(mock.shown).toHaveLength(0);
