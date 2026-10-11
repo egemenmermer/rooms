@@ -15,3 +15,7 @@ Preserve Stoat, LiveKit, native secret storage, media permissions, activity auth
 ## Source publication authorization — 2026-10-11
 
 The owner explicitly requested all work be pushed to `egemenmermer/rooms` in coherent commits. Source publication on `codex/reference-package` is authorized; preserve the earlier installed/released version. This does not require production deployment, merging main, or replacing a release. The latest supplied AGENTS instruction permits only GPT-6.1 Sol for any new additional-agent assignment; root continues implementation directly.
+
+## Latest ownership and live-room correction — 2026-10-11
+
+The owner revoked all delegation, including Sol/high; root performs every implementation and review task. This supersedes historical model permissions above. The owner supplied actual Discord room screenshots and explicitly requested the live voice/camera room match that familiar layout; these screenshots supersede conflicting S19/S20 production presentation. Other immutable package scope remains tracked. The local installed Mac update is authorized; production deployments remain a separate gate.

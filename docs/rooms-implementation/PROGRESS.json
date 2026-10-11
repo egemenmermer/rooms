@@ -11,7 +11,7 @@
     "variants": 322,
     "responsive": 19
   },
-  "updated_at": "2026-10-11T09:16:43.068775+00:00",
+  "updated_at": "2026-10-11T10:02:35.853116+00:00",
   "records": [
     {
       "id": "S01",
@@ -2951,7 +2951,8 @@
       "component_paths": [
         "apps/desktop/src/RealSocial.tsx",
         "apps/desktop/src/Activities.tsx",
-        "apps/desktop/src/reference-voice.css"
+        "apps/desktop/src/reference-voice.css",
+        "apps/desktop/src/discord-room.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -2995,7 +2996,8 @@
       "component_paths": [
         "apps/desktop/src/RealSocial.tsx",
         "apps/desktop/src/Activities.tsx",
-        "apps/desktop/src/reference-voice.css"
+        "apps/desktop/src/reference-voice.css",
+        "apps/desktop/src/discord-room.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -3041,7 +3043,8 @@
         "apps/desktop/src/Activities.tsx",
         "apps/desktop/src/reference-voice.css",
         "apps/desktop/src/DmCallRuntime.tsx",
-        "apps/desktop/src/dm-call.ts"
+        "apps/desktop/src/dm-call.ts",
+        "apps/desktop/src/discord-room.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -3088,7 +3091,8 @@
       "component_paths": [
         "apps/desktop/src/RealSocial.tsx",
         "apps/desktop/src/Activities.tsx",
-        "apps/desktop/src/reference-voice.css"
+        "apps/desktop/src/reference-voice.css",
+        "apps/desktop/src/discord-room.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -3132,7 +3136,8 @@
       "component_paths": [
         "apps/desktop/src/RealSocial.tsx",
         "apps/desktop/src/Activities.tsx",
-        "apps/desktop/src/reference-voice.css"
+        "apps/desktop/src/reference-voice.css",
+        "apps/desktop/src/discord-room.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -3176,7 +3181,8 @@
       "component_paths": [
         "apps/desktop/src/RealSocial.tsx",
         "apps/desktop/src/Activities.tsx",
-        "apps/desktop/src/reference-voice.css"
+        "apps/desktop/src/reference-voice.css",
+        "apps/desktop/src/discord-room.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -3220,7 +3226,8 @@
       "component_paths": [
         "apps/desktop/src/RealSocial.tsx",
         "apps/desktop/src/Activities.tsx",
-        "apps/desktop/src/reference-voice.css"
+        "apps/desktop/src/reference-voice.css",
+        "apps/desktop/src/discord-room.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -3264,7 +3271,8 @@
       "component_paths": [
         "apps/desktop/src/RealSocial.tsx",
         "apps/desktop/src/Activities.tsx",
-        "apps/desktop/src/reference-voice.css"
+        "apps/desktop/src/reference-voice.css",
+        "apps/desktop/src/discord-room.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -3310,7 +3318,8 @@
         "apps/desktop/src/Activities.tsx",
         "apps/desktop/src/reference-voice.css",
         "apps/desktop/src/DmCallRuntime.tsx",
-        "apps/desktop/src/dm-call.ts"
+        "apps/desktop/src/dm-call.ts",
+        "apps/desktop/src/discord-room.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -3357,7 +3366,8 @@
       "component_paths": [
         "apps/desktop/src/RealSocial.tsx",
         "apps/desktop/src/Activities.tsx",
-        "apps/desktop/src/reference-voice.css"
+        "apps/desktop/src/reference-voice.css",
+        "apps/desktop/src/discord-room.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -3401,7 +3411,8 @@
       "component_paths": [
         "apps/desktop/src/RealSocial.tsx",
         "apps/desktop/src/Activities.tsx",
-        "apps/desktop/src/reference-voice.css"
+        "apps/desktop/src/reference-voice.css",
+        "apps/desktop/src/discord-room.css"
       ],
       "dependencies": [
         "reference-tokens",
@@ -19300,5 +19311,6 @@
       "next_action": "Capture exact state and verify integrated behavior and visual differences.",
       "updated_at": "2026-10-11T00:06:45Z"
     }
-  ]
+  ],
+  "latest_owner_override": "2026-10-11: Root implements all work without agents. Owner Discord screenshots replace live S19/S20 room appearance. Local corrections are not owner acceptance; see reports/DISCORD_ROOM_CORRECTION_REPORT.md."
 }

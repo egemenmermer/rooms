@@ -26,4 +26,4 @@
 
 ## Current reference implementation task
 - For the owner's 2026-10-10 design-package task, read `docs/rooms-implementation/BRIEF.md`, `CHECKPOINT.md`, `PROGRESS.json` and `DECISIONS.md` before continuing. The new user request explicitly reauthorizes scoped model delegation and QA; preserve all other instructions and production-data boundaries.
-- Model preference updated by the owner (2026-10-11): additional agents may use `gpt-6.1-sol`, or `gpt-6-astra` with high reasoning for difficult design/integration work. Astra/high is explicitly reauthorized; Luna and other models remain unapproved. Root remains responsible for all shared files and `PROGRESS.json`. Maximum two independent implementers and one read-only reviewer, with one owner per shared file.
+- Latest owner instruction (2026-10-11): root implements all work. Do not spawn or resume subagents, including Sol/high or Astra. This supersedes all previous model delegation permissions. Local QA remains authorized for the reference task.

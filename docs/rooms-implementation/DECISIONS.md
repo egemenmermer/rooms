@@ -59,3 +59,7 @@ Channel mutes apply only to this installation and never change upstream Stoat pr
 ## 2026-10-11 — Window close and tray policy
 
 Keep-open-on-close is explicit opt-in and requires an available native tray. Closing then hides the existing window and preserves the renderer/media owner. Missing tray falls back to ordinary close; the user cannot enable an unreachable background window. Voice-close confirmation defaults on and consults the existing expiring native voice lease. The warning is labelled for voice only: it does not certify personal playback or all Activity lifecycle warnings. Explicit application Quit bypasses window-close policy. The confirmation defaults to cancel, is single-flight, and rechecks current keep-open policy before applying an asynchronous response. Preference writes are atomic and fail without publishing a new value. DEV fixtures cannot mutate native window preferences.
+
+## 2026-10-11 — live room override and sole implementation ownership
+
+The owner revoked all delegation, including Sol/high; root owns all implementation and review. The latest Discord room screenshots govern live voice/camera room composition. Keep original reference fixtures for historical package comparisons, with an explicit DEV-only flag for comparing the revised production composition. Do not strip unsupported game settings to accommodate the old deployed schema. Diagnose protocol incompatibility accurately and keep deployment and provider-registration prerequisites separate from UI delivery.
