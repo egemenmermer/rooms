@@ -2,6 +2,8 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, protocol, sessi
 import { readFileSync, writeFileSync, statSync, createReadStream } from 'node:fs';
 import { join, basename } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { localMediaId } from './media-capabilities';
+import { readCaptionFile } from './caption-file';
 import { Readable } from 'node:stream';
 import { setupCommunity } from './community';
 import {setupNotifications} from './notifications';
@@ -10,6 +12,7 @@ import {setupProviders} from './providers';
 import {parseInviteLink,type InviteLink} from './native-links';
 import {setupAgent} from './agent';
 import { whiteboardSvg } from './whiteboard-export';
+import { whiteboardPng } from './whiteboard-raster';
 import type { ActivityResponse } from '@rooms/activity-protocol';
 if(process.env.ROOMS_PROFILE&&/^[a-zA-Z0-9-]{1,40}$/.test(process.env.ROOMS_PROFILE))app.setPath('userData',join(app.getPath('appData'),'ROOMS',process.env.ROOMS_PROFILE));
 let win: BrowserWindow | null = null;
@@ -32,10 +35,10 @@ function assertSender(event: Electron.IpcMainInvokeEvent) {
 }
 function createWindow() {
   let bounds: { width: number; height: number; x?: number; y?: number } = { width: 1440, height: 900 };
-  try { const saved = JSON.parse(readFileSync(join(app.getPath('userData'), 'window.json'), 'utf8')); if (Number.isFinite(saved.width) && Number.isFinite(saved.height)) {const display=screen.getDisplayMatching({x:Number.isFinite(saved.x)?saved.x:0,y:Number.isFinite(saved.y)?saved.y:0,width:saved.width,height:saved.height}).workArea;bounds={width:Math.min(display.width,Math.max(900,saved.width)),height:Math.min(display.height,Math.max(640,saved.height))};if(Number.isFinite(saved.x)&&Number.isFinite(saved.y)){bounds.x=Math.max(display.x,Math.min(saved.x,display.x+display.width-bounds.width));bounds.y=Math.max(display.y,Math.min(saved.y,display.y+display.height-bounds.height));}}; } catch { /* First launch. */ }
-  win = new BrowserWindow({ ...bounds, minWidth: 900, minHeight: 640, backgroundColor: '#0b0d11', show: false,
-    title: 'ROOMS', titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 20, y: 20 },
-    ...(process.platform === 'win32' ? { titleBarOverlay: { color: '#0b0d11', symbolColor: '#f4f6f8', height: 50 } } : {}),
+  try { const saved = JSON.parse(readFileSync(join(app.getPath('userData'), 'window.json'), 'utf8')); if (Number.isFinite(saved.width) && Number.isFinite(saved.height)) {const display=screen.getDisplayMatching({x:Number.isFinite(saved.x)?saved.x:0,y:Number.isFinite(saved.y)?saved.y:0,width:saved.width,height:saved.height}).workArea;bounds={width:Math.min(display.width,Math.max(900,saved.width)),height:Math.min(display.height,Math.max(700,saved.height))};if(Number.isFinite(saved.x)&&Number.isFinite(saved.y)){bounds.x=Math.max(display.x,Math.min(saved.x,display.x+display.width-bounds.width));bounds.y=Math.max(display.y,Math.min(saved.y,display.y+display.height-bounds.height));}}; } catch { /* First launch. */ }
+  win = new BrowserWindow({ ...bounds, minWidth: 900, minHeight: 700, backgroundColor: '#141518', show: false,
+    title: 'ROOMS', titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 15, y: 8 },
+    ...(process.platform === 'win32' ? { titleBarOverlay: { color: '#141518', symbolColor: '#F2F3F7', height: 30 } } : {}),
     webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true },
   });
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -50,7 +53,7 @@ app.whenReady().then(async() => {
   if(!primaryInstance)return;
   const notifications=setupNotifications(()=>win,assertSender);
   const community=await setupCommunity(()=>win,assertSender,isTrusted,notifications.message);
-  const providers=setupProviders(assertSender);
+  const providers=setupProviders(assertSender,()=>{const scope=community.snapshot();return `${scope.sessionEpoch??0}:${scope.instanceUrl??''}:${scope.user?.id??''}`;},()=>{const scope=community.snapshot();return scope.user&&scope.instanceUrl?JSON.stringify([scope.instanceUrl,scope.user.id]):null;});
   setupUpdates(assertSender);
   setupAgent(()=>win,assertSender,()=>community.snapshot().user?.id??null);
   ipcMain.handle('rooms:activity-snapshot',(event,roomId,afterRevision)=>{assertSender(event);return community.activityRequest(roomId,undefined,afterRevision);});
@@ -88,25 +91,45 @@ app.whenReady().then(async() => {
     selectedMedia.clear(); const id = randomUUID(); selectedMedia.set(id, result.filePaths[0]);
     return { url: `rooms-media://${id}/video`, name: basename(result.filePaths[0]) };
   });
+  ipcMain.handle('rooms:release-media', (event, url) => { assertSender(event); selectedMedia.delete(localMediaId(url)); });
+  ipcMain.handle('rooms:choose-caption', async (event, mediaUrl) => {
+    assertSender(event);
+    const id = localMediaId(mediaUrl);
+    const sourcePath = selectedMedia.get(id);
+    if (!sourcePath || !win) throw new Error('Choose your own local video first.');
+    const result = await dialog.showOpenDialog(win, { title: 'Choose your own subtitles', properties: ['openFile'], filters: [{ name: 'WebVTT subtitles', extensions: ['vtt'] }] });
+    if (result.canceled || !result.filePaths[0]) return null;
+    if (selectedMedia.get(id) !== sourcePath) throw new Error('The selected video changed. Choose subtitles again.');
+    return { content: readCaptionFile(result.filePaths[0]), name: basename(result.filePaths[0]) };
+  });
   ipcMain.handle('rooms:external-media',async(event,url)=>{assertSender(event);if(typeof url!=='string')throw new Error('Invalid media selection.');const parsed=new URL(url);if(parsed.protocol!=='rooms-media:')throw new Error('Choose your own local media first.');const path=selectedMedia.get(parsed.hostname);if(!path)throw new Error('The selected media access expired. Choose the file again.');return (await shell.openPath(path))==='';});
+  const diagnosticsPreview=()=>JSON.stringify({app:'ROOMS',version:app.getVersion(),platform:process.platform,arch:process.arch,electron:process.versions.electron,social:community.snapshot().status,mode:community.snapshot().user?'authenticated':'signed-out',timestamp:new Date().toISOString()},null,2);
+  ipcMain.handle('rooms:application-info',event=>{assertSender(event);return {version:app.getVersion(),platform:process.platform,arch:process.arch,electron:process.versions.electron};});
+  ipcMain.handle('rooms:diagnostics-preview',event=>{assertSender(event);return diagnosticsPreview();});
+  ipcMain.handle('rooms:third-party-notices',event=>{assertSender(event);const file=join(__dirname,'../dist/THIRD_PARTY_NOTICES.txt');if(statSync(file).size>2_000_000)throw new Error('The bundled notices are too large.');return readFileSync(file,'utf8');});
   ipcMain.handle('rooms:export-diagnostics', async event => {
     assertSender(event); if (!win) return false;
     const result = await dialog.showSaveDialog(win, { title: 'Export sanitized diagnostics', defaultPath: 'rooms-diagnostics.json', filters: [{ name: 'JSON', extensions: ['json'] }] });
     if (result.canceled || !result.filePath) return false;
-    writeFileSync(result.filePath, JSON.stringify({ app: 'ROOMS', version: app.getVersion(), platform: process.platform, arch: process.arch, electron: process.versions.electron, social: community.snapshot().status, mode: community.snapshot().user?'authenticated':'signed-out', timestamp: new Date().toISOString() }, null, 2)); return true;
+    writeFileSync(result.filePath, diagnosticsPreview()); return true;
   });
-  ipcMain.handle('rooms:export-board', async (event, roomId) => {
+  ipcMain.handle('rooms:export-board', async (event, roomId, requestedFormat) => {
     assertSender(event); if (!win) return false;
+    if(devUrl&&new URL(event.senderFrame!.url).searchParams.has('fixture'))throw new Error('File export is disabled in development fixtures.');
+    const format=requestedFormat===undefined?'svg':requestedFormat;
+    if(format!=='svg'&&format!=='png')throw new Error('Unsupported artwork format.');
     // Membership and session are checked by the existing native Activity adapter.
     const state = await community.activityRequest(roomId) as ActivityResponse;
     const artwork = whiteboardSvg(state.room.whiteboard);
     const identity = community.snapshot().user?.id;
-    const result = await dialog.showSaveDialog(win, { title: 'Save shared whiteboard', defaultPath: 'rooms-whiteboard.svg', filters: [{ name: 'SVG image', extensions: ['svg'] }] });
+    const serverUrl=community.snapshot().instanceUrl;
+    const image=format==='png'?await whiteboardPng(artwork):null;
+    const result = await dialog.showSaveDialog(win, { title: 'Save shared whiteboard', defaultPath: `rooms-whiteboard.${format}`, filters: [{ name: format==='png'?'PNG image':'SVG image', extensions: [format] }] });
     if (result.canceled || !result.filePath) return false;
-    if (!identity || community.snapshot().user?.id !== identity) throw new Error('The community session changed.');
+    if (!identity || community.snapshot().user?.id !== identity||community.snapshot().instanceUrl!==serverUrl) throw new Error('The community session changed.');
     await community.activityRequest(roomId);
-    if (community.snapshot().user?.id !== identity) throw new Error('The community session changed.');
-    writeFileSync(result.filePath, artwork, { encoding: 'utf8', mode: 0o600 }); return true;
+    if (community.snapshot().user?.id !== identity||community.snapshot().instanceUrl!==serverUrl) throw new Error('The community session changed.');
+    if(image)writeFileSync(result.filePath,image,{mode:0o600});else writeFileSync(result.filePath, artwork, { encoding: 'utf8', mode: 0o600 }); return true;
   });
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: 'ROOMS', submenu: [{ role: 'about' }, { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' }, { role: 'quit' }] },
