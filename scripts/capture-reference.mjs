@@ -7,7 +7,7 @@ import path from 'node:path';
 // Capture the existing app's development fixture, never the reference prototype.
 const [id = 'S10', variant = 'default', widthText = '1440', heightText = '900', route = '/chat'] = process.argv.slice(2);
 const width = Number(widthText), height = Number(heightText);
-const referenceRoutes = { S04: '/setup/recovery', S12: '/dm', S13: '/chat', S14: '/files', S15: '/chat', S16: '/notifications', S17: '/chat', S18: '/chat', S19: '/voice', S20: '/voice', S21: '/voice', S22: '/voice?view=share', S23: '/voice', S24: '/cinema?view=start', S25: '/cinema?view=personal', S26: '/cinema?view=personal', S27: '/cinema?view=screen', S28: '/cinema?view=queue', S29: '/media?player=1', S59: '/settings?tab=agent', S60: '/settings?tab=connections', S61: '/settings?tab=room-memory', S62: '/settings?tab=schedules', S63: '/settings?tab=automation' };
+const referenceRoutes = { S04: '/setup/recovery', S66: '/settings?tab=appearance', S12: '/dm', S13: '/chat', S14: '/files', S15: '/chat', S16: '/notifications', S17: '/chat', S18: '/chat', S19: '/voice', S20: '/voice', S21: '/voice', S22: '/voice?view=share', S23: '/voice', S24: '/cinema?view=start', S25: '/cinema?view=personal', S26: '/cinema?view=personal', S27: '/cinema?view=screen', S28: '/cinema?view=queue', S29: '/media?player=1', S59: '/settings?tab=agent', S60: '/settings?tab=connections', S61: '/settings?tab=room-memory', S62: '/settings?tab=schedules', S63: '/settings?tab=automation' };
 const insetPlayer = id === 'S36' || id === 'S39' || id === 'S38' && variant === 'playing';
 const targetRoute = insetPlayer ? '/media?player=1' : ['S33','S34','S35','S37','S38'].includes(id) ? '/media' : id === 'S30' && ['default','compact'].includes(variant) ? '/cinema?view=personal' : id === 'S30' ? '/chat' : referenceRoutes[id] ?? route;
 if (!/^S\d{2}$/.test(id) || !/^[a-zA-Z0-9_-]+$/.test(variant) || !Number.isInteger(width) || !Number.isInteger(height)) throw new Error('Invalid capture parameters');
@@ -22,7 +22,7 @@ try {
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  const fixtureId = ['S01','S02','S03','S04','S05','S06','S07','S08','S09','S10','S19','S20','S21','S22','S23','S29','S30','S56','S57','S58','S59','S60','S61','S62','S63','S68','S70','S71','S72'].includes(id)||/^S1[2-8]$/.test(id)||/^S2[4-8]$/.test(id)||/^S(4[0-9]|5[0-4])$/.test(id) ? id : null;
+  const fixtureId = ['S01','S02','S03','S04','S05','S06','S07','S08','S09','S10','S19','S20','S21','S22','S23','S29','S30','S56','S57','S58','S59','S60','S61','S62','S63','S66','S68','S70','S71','S72'].includes(id)||/^S1[2-8]$/.test(id)||/^S2[4-8]$/.test(id)||/^S(4[0-9]|5[0-4])$/.test(id) ? id : null;
   const personalFixture=['S33','S34','S35','S37'].includes(id)||id==='S38'&&variant!=='playing';
   const exactFixtureId=personalFixture||insetPlayer?id:fixtureId;
   if(!exactFixtureId)throw new Error(`Exact ${id}/${variant} fixture is not integrated; capture refused.`);
@@ -30,6 +30,12 @@ try {
   const url = `http://127.0.0.1:5173/?fixture=${exactFixtureId}&variant=${fixtureVariant}#${targetRoute}`;
   await page.goto(url);
   await page.locator('.app').waitFor();
+  if(id==='S66'){
+    await page.getByRole('slider',{name:'Sohbet metni boyutu',exact:true}).waitFor();
+    if(variant==='compact')await page.getByRole('button',{name:'Kompakt',exact:true}).click();
+    if(variant==='reduced'){await page.getByRole('switch',{name:'Hareketi azalt',exact:true}).click();await page.getByRole('switch',{name:'Şeffaflığı azalt',exact:true}).click();}
+    if(variant==='focus')await page.getByRole('button',{name:'Odaklı düğme',exact:true}).focus();
+  }
   if(id==='S04'){
     if(variant==='reset'){await page.getByRole('button',{name:'Panodan kurtarma bağlantısını aktar',exact:true}).click();await page.getByLabel('Yeni şifre',{exact:true}).waitFor();}
     if(variant==='sent'){await page.getByLabel('E-posta adresi',{exact:true}).fill('demo@example.test');await page.getByRole('button',{name:'Kurtarma isteği gönder',exact:true}).click();await page.getByRole('status').filter({hasText:'İstek kabul edildi.'}).waitFor();}
