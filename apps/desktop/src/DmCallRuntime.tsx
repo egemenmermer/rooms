@@ -3,13 +3,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Headphones, MessageSquare, Mic, MicOff, Phone, PhoneOff, Video, VideoOff, X } from 'lucide-react';
 import { useCommunity } from './community';
 import { useRealtime, useVoiceContext, toggleMic, toggleCamera, toggleDeafen, startRoomAudio, attachMediaTrack } from './realtime';
-import { acceptDmCall, joinAcceptedDmCall, dismissDmCallError, endDmCall, refreshDmCall, resetDmCalls, useDmCall } from './dm-call';
+import { acceptDmCall, joinAcceptedDmCall, dismissDmCallError, endDmCall, refreshDmCall, resetDmCalls, dmCallFailure, useDmCall } from './dm-call';
 import { VoiceAvatar } from './VoiceAvatar';
 import './reference-dm-call.css';
 function CallVideo({trackId}:{trackId:string}){const ref=useRef<HTMLVideoElement>(null);useEffect(()=>{if(!ref.current)return;try{return attachMediaTrack(trackId,ref.current);}catch{/* Track removal is reflected by the next provider state. */}},[trackId]);return <video ref={ref} autoPlay playsInline muted/>;}
 /** Mount once outside Routes. Invitations never join media or open a device without local consent. */
 export default function DmCallRuntime(){
-  const {call,busy,error,connected}=useDmCall(),community=useCommunity(),media=useRealtime(),voice=useVoiceContext();
+  const {call,busy,error:actionError,signalingError,connected}=useDmCall(),community=useCommunity(),media=useRealtime(),voice=useVoiceContext();
+  const error=actionError||(call?signalingError:null);
   const navigate=useNavigate(),location=useLocation(),[now,setNow]=useState(Date.now());
   const polling=useRef(false),knownDms=useRef(new Set<string>());
   const account=community.user?`${community.serverUrl}:${community.user.id}`:'';
@@ -30,7 +31,7 @@ export default function DmCallRuntime(){
   const incoming=call.calleeId===community.user?.id,peerId=incoming?call.callerId:call.calleeId,peerName=incoming?call.callerName:call.calleeName;
   const full=location.pathname==='/dm-call',ringing=call.state==='ringing';
   const status=ringing?(incoming?'Gelen özel arama':'Yanıt bekleniyor…'):media.status==='reconnecting'?'Yeniden bağlanıyor…':connected&&media.status==='connected'?'Bağlı':'Bağlanıyor…';
-  const run=(operation:()=>Promise<unknown>)=>{void operation().catch(error=>useDmCall.setState({error:error instanceof Error?error.message:'İşlem tamamlanamadı.'}));};
+  const run=(operation:()=>Promise<unknown>)=>{void operation().catch(error=>useDmCall.setState({error:dmCallFailure(error)}));};
   const messages=async()=>{await community.openChannel(call.dmId);navigate('/chat');};
   const finish=async(action:'end'|'reject'='end')=>{const dmId=call.dmId;await endDmCall(action);if(full){if(useCommunity.getState().dms.some(dm=>dm.id===dmId))await useCommunity.getState().openChannel(dmId);navigate('/chat');}};
   const accept=async(camera=false)=>{await acceptDmCall(camera);navigate('/dm-call');};

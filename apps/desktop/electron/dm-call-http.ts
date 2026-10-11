@@ -6,6 +6,7 @@ const messages:Record<string,string>={DM_CALL_BUSY:'Bu kişi başka bir aramada.
 /** Native-only authenticated signaling. Public call state never includes account credentials. */
 export async function requestDmCall(client:StoatClient,path:'poll'|'start'|'respond'|'grant',body:unknown){
   const response=await fetch(`${new URL(client.instanceUrl).origin}/rooms-access/v1/calls/${path}`,{method:'POST',headers:{'content-type':'application/json',authorization:`Bearer ${client.getToken()}`},body:JSON.stringify(body),signal:AbortSignal.timeout(15000),redirect:'error'});
+  if(response.status===404||response.status===501)throw new Error('Bu sunucuda özel arama servisi etkin değil.');
   const raw=await response.text();if(raw.length>32768)throw new Error('Arama sunucusu geçersiz yanıt verdi.');
   let data:unknown;try{data=JSON.parse(raw);}catch{throw new Error('Arama sunucusuna ulaşılamıyor. Yeniden dene.');}
   if(!response.ok){const code=z.object({error:z.string()}).passthrough().safeParse(data);throw new Error(code.success?messages[code.data.error]??'Arama sunucusuna ulaşılamıyor. Yeniden dene.':'Arama isteği reddedildi.');}
