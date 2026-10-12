@@ -52,3 +52,9 @@ Any source/native addon/service/environment/schema change after this SHA invalid
 ## Private production continuation — 2026-10-12
 
 See PHASE_ONE_RESULTS.md for current actual commands, failures and corrected outcomes. Full verify:ci exit 0 (96 files / 666 tests); current signed-out desktop smoke exit 0; production audit zero; full audit one moderate dev residual, high-severity gate passes. Supply-chain age checks remain active; only two transitive versions were aligned to 8.70.0. Production data/Hoppers/installed app/retained archives untouched. Main PR #3 updater evidence reconciled without replaying owner profile operations.
+
+## Hosted and phase-two local verification — 2026-10-12
+
+- Hosted baseline 191bd37: [GitHub run 38312614543](https://github.com/egemenmermer/rooms/actions/runs/38312614543) PASS, both Ubuntu baseline and macOS native-smoke completed successfully. Actual clean frozen install/lint/type/tests/build/services/audit and native signed-out smoke executed. The first workflow push was rejected for missing scope; owner-approved gh device refresh added workflow permission normally, then source pushed. No alternate credential/security bypass.
+- Phase-two current source: focused five files /29 tests PASS; full 98 files /672 tests PASS, lint/type/build/four services PASS. New asynchronous microphone and chat defects reproduced before repair; exact limitations in PHASE_TWO_DEFECTS.md. No real accounts or production mutation.
+- Recep installed preview.4 direct local decoding succeeds now; prior failure retained. New native DEMO fixture validates poster on rejection, clickable retry, 509 decoded frames and loop wrap to2.24s, then removal on close. Fixture labels remain visible; audio and two-Mac acceptance are not implied.

@@ -38,3 +38,9 @@ Main 0bd1a7e contains PRs #2–#4; this branch is intentionally not blindly merg
 ## Private production continuation — 2026-10-12
 
 Phase-one local baseline PASS; see PHASE_ONE_RESULTS.md. Hosted CI execution still pending. Next: microphone selection/device recovery, packaged Recep playback, chat navigation/refresh and stale responses. Physical REL-001, authenticated REL-006/007, data REL-008/003, RC/operations REL-009/010/011/013 and soak REL-012 stay open.
+
+## Phase-one hosted completion and phase-two repairs
+
+191bd37 hosted GitHub run38312614543 PASS: Ubuntu baseline and macOS native smoke. OAuth workflow scope was granted by the owner through the normal Brave device flow after initial push rejection. CI is now executed, not merely configured. REL-009 still needs RC provenance/packaging.
+
+Phase-two software repairs pass29 focused tests and full672 tests (98 files), lint/type/build/services. Delayed microphone completion/error after leave is fenced; obsolete room capture stopped. Reaction history refresh preserves gateway changes and cannot overwrite another account/channel. Recep playback failure retains poster and explicit retry; actual isolated native DEMO loop/retry passed. Existing preview.4 decodes in an isolated local probe; intermittent owner failure remains unaccepted. Two physical Macs, provider playback/source renewal and authenticated social/permission journeys remain open. Next independent work: versioned durable Activity reading and isolated data compatibility, followed by RC/operating gates in approved order.

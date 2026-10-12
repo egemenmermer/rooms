@@ -129,3 +129,7 @@ See POST_LAUNCH.md for dependencies/acceptance; do not convert these to V1 commi
 ## Private production continuation — 2026-10-12
 
 REL-004 local test failure resolved (96 files / 666 tests pass); REL-005 current isolated signed-out desktop smoke passes. These do not certify authenticated or physical journeys. REL-015 critical Tinypool and moderate Vitest entries removed by the targeted toolchain update; one moderate packaging residual remains documented in DEPENDENCY_TRIAGE.md. REL-009 local lint/type/test/build/services baseline passes; hosted CI and RC provenance remain pending. REL-010 old preview.3 → preview.4 install-on-quit/next-launch was verified in main PR #3; fresh install, next candidate and interruption/recovery still open. Private scope retains DJ/current features under V1_SCOPE owner override. Historical public audit counts are not recomputed here.
+
+## Hosted baseline / phase-two software update — 2026-10-12
+
+REL-009 hosted Ubuntu and macOS jobs PASS at191bd37/run38312614543; provenance/signing/next-RC gates remain open. REL-001 local delayed microphone completion/error guards pass; physical owner/friend audibility still OPEN. REL-006 reaction-refresh account fencing and gateway merge regressions pass; normal-user/outsider real journeys still OPEN. REL-014 visual decode failure now retains poster/retry, native DEMO loop/recovery verified; packaged next-RC owner acceptance still OPEN. Phase-two full local suite672 tests and signed-out smoke pass. Public REL-002/003 and all413 references retain their independent open status.
