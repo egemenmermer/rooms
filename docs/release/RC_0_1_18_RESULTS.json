@@ -63,7 +63,7 @@
     "productionModified": false,
     "plaintextRemovedOnExit": true
   },
-  "installedVersionPreserved": "0.1.17-preview.4",
+  "installedVersionPreserved": "0.1.17-preview.4 at candidate verification; subsequently replaced with owner-authorized RC installation, prior bundle retained",
   "updateFeedPublished": false,
   "productionServicesDeployed": false,
   "physicalTwoMacAcceptance": "OPEN",
@@ -72,5 +72,20 @@
   "privateDataRequestRehearsal": "OPEN",
   "nextCandidateSignedUpdateRecovery": "OPEN",
   "operatorAlertDelivery": "OPEN",
-  "sixIdentityTwoHourSession": "OPEN"
+  "sixIdentityTwoHourSession": "OPEN",
+  "ownerMacInstallation": {
+    "date": "2026-10-13 Europe/Amsterdam",
+    "version": "0.1.18-rc.1",
+    "buildNumber": "1791842324",
+    "path": "/Applications/ROOMS.app",
+    "rollbackPath": "/Applications/.ROOMS-before-0.1.18-rc.1-preview.4.app",
+    "signatureAndGatekeeper": "PASS",
+    "staple": "PASS",
+    "appAsarSha256": "ebc87d44c585177ed74d09b76b5acdc5c3120318733237eeb076c5bac7324093",
+    "visibleAboutVersion": "PASS",
+    "existingSessionHomeLoaded": true,
+    "profileDirectoriesModifiedByInstaller": false,
+    "method": "staged local bundle replacement; not Sparkle upgrade acceptance",
+    "scope": "existing signed-in home and native About only; no media, messages, membership or settings mutations"
+  }
 }
