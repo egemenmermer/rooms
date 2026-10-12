@@ -18,7 +18,6 @@ export function ConnectionPane({ referenceMode, sessionExpired = false, onAuthen
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
     const [invite, setInvite] = useState('');
-    const [accountInvite, setAccountInvite] = useState('');
     const [localError, setLocalError] = useState('');
     const [working, setWorking] = useState(false);
     const [joined, setJoined] = useState(false);
@@ -47,7 +46,6 @@ export function ConnectionPane({ referenceMode, sessionExpired = false, onAuthen
     const clearError = () => { setLocalError(''); c.clearError(); };
     const completeInvite = () => {
         setInvite('');
-        setAccountInvite('');
         setJoined(true);
         const next = new URLSearchParams(params);
         next.delete('invite');
@@ -79,7 +77,7 @@ export function ConnectionPane({ referenceMode, sessionExpired = false, onAuthen
         try {
             const serverUrl = normalizedServer(server);
             if (registration) {
-                await c.register({ serverUrl, email: email.trim(), password, username: username.trim(), inviteCode: invite.trim(), ...(accountInvite.trim() ? { accountInviteCode: accountInvite.trim() } : {}) });
+                await c.register({ serverUrl, email: email.trim(), password, username: username.trim(), inviteCode: invite.trim() });
                 if (!useCommunity.getState().user) throw new Error('Sunucu bir hesap oturumu döndürmedi. Yeniden giriş yap.');
                 completeInvite();
             }
@@ -112,7 +110,7 @@ export function ConnectionPane({ referenceMode, sessionExpired = false, onAuthen
             <label className="field-label">E-posta adresi<input required type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} value={email} onChange={e => setEmail(e.target.value)} placeholder="sen@ornek.com"/></label>
             <label className="field-label">Şifre<span className="ref-auth-password"><input required type={showPassword ? 'text' : 'password'} autoComplete={registration ? 'new-password' : 'current-password'} minLength={registration ? 8 : 1} value={password} onChange={e => setPassword(e.target.value)} placeholder={registration ? 'En az 8 karakter' : 'Şifren'}/><button type="button" aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}</button></span></label>
             {!registration && <div className="ref-auth-options"><label title="Bu sürümde oturum, sistemin güvenli deposunda saklanır."><input type="checkbox" checked disabled/>Beni hatırla</label><button type="button" onClick={onRecovery} disabled={!onRecovery}>Şifreni mi unuttun?</button></div>}
-            <details className="ref-auth-server"><summary>Sunucu ve davet seçenekleri</summary><label className="field-label">Sunucu adresi<input required type="url" autoCapitalize="none" spellCheck={false} value={server} onChange={e => setServer(e.target.value)}/></label>{registration ? <label className="field-label">Kayıt davet kodu (sunucu istiyorsa)<input autoComplete="off" maxLength={128} spellCheck={false} value={accountInvite} onChange={e => setAccountInvite(e.target.value)}/></label> : <label className="field-label">Topluluk davet kodu (isteğe bağlı)<input autoComplete="off" maxLength={128} spellCheck={false} value={invite} onChange={e => setInvite(e.target.value)}/></label>}</details>
+            <details className="ref-auth-server"><summary>Sunucu ve davet seçenekleri</summary><label className="field-label">Sunucu adresi<input required type="url" autoCapitalize="none" spellCheck={false} value={server} onChange={e => setServer(e.target.value)}/></label>{!registration && <label className="field-label">Topluluk davet kodu (isteğe bağlı)<input autoComplete="off" maxLength={128} spellCheck={false} value={invite} onChange={e => setInvite(e.target.value)}/></label>}</details>
             <button className="button primary full" type="submit" disabled={busy || !email.trim() || !password || !server.trim() || (registration && (!invite.trim() || !username.trim()))}>{busy ? <><LoaderCircle size={16} className="spin"/>{registration ? 'Hesap oluşturuluyor…' : 'Giriş yapılıyor…'}</> : <>{registration ? 'Hesap oluştur ve katıl' : invite ? 'Giriş yap ve katıl' : sessionExpired ? 'Giriş yap ve devam et' : 'Giriş yap'}<ArrowRight size={16}/></>}</button>
         </fieldset>
         </form>}
