@@ -81,6 +81,7 @@ const bridge: DesktopBridge = {
     configure:input=>ipcRenderer.invoke('rooms:agent-configure',input),status:()=>ipcRenderer.invoke('rooms:agent-status'),tasks:room=>ipcRenderer.invoke('rooms:agent-tasks',room),submit:input=>ipcRenderer.invoke('rooms:agent-submit',input),remind:input=>ipcRenderer.invoke('rooms:agent-remind',input),cancel:id=>ipcRenderer.invoke('rooms:agent-cancel',id),approve:id=>ipcRenderer.invoke('rooms:agent-approve',id),resolveOperation:(id,input)=>ipcRenderer.invoke('rooms:agent-resolve-operation',id,input),connections:()=>ipcRenderer.invoke('rooms:agent-connections'),connectModel:input=>ipcRenderer.invoke('rooms:agent-connect-model',input),disconnectModel:id=>ipcRenderer.invoke('rooms:agent-disconnect-model',id),yolo:value=>ipcRenderer.invoke('rooms:agent-yolo',value),memory:room=>ipcRenderer.invoke('rooms:agent-memory',room),saveMemory:input=>ipcRenderer.invoke('rooms:agent-save-memory',input),deleteMemory:id=>ipcRenderer.invoke('rooms:agent-delete-memory',id),downloadArtifact:(task,id)=>ipcRenderer.invoke('rooms:agent-artifact',task,id),
   },
   media: {
+    directory:channelIds=>ipcRenderer.invoke('rooms:media-directory',channelIds),
     grant:id=>ipcRenderer.invoke('rooms:media-grant',id),
     presenter:(id,action)=>ipcRenderer.invoke('rooms:media-presenter',id,action),
     screenState:id=>ipcRenderer.invoke('rooms:media-screen-state',id),
