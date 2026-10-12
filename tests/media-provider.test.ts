@@ -133,3 +133,18 @@ it('reports observed encoder dimensions and codec instead of the requested profi
   emit(RoomEvent.TrackSubscribed,{kind:'audio',attach:()=>element},{trackSid:'replacement'},bob);
   expect(bob.setVolume).toHaveBeenLastCalledWith(0);await provider.disconnect();
  });
+
+it('does not publish a delayed microphone into a room that was left',async()=>{
+ const {provider,local}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
+ let finish!:()=>void;
+ local.setMicrophoneEnabled.mockImplementationOnce(()=>new Promise<void>(resolve=>{finish=()=>{local.isMicrophoneEnabled=true;resolve();};}));
+ const pending=provider.mute(false);await provider.disconnect();finish();await pending;
+ expect(local.isMicrophoneEnabled).toBe(false);expect(provider.snapshot()).toMatchObject({status:'not-configured',muted:true,error:null});
+});
+it('does not show a late permission error after leaving voice',async()=>{
+ const {provider,local}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
+ let fail!:(error:unknown)=>void;
+ local.setMicrophoneEnabled.mockImplementationOnce(()=>new Promise<void>((_,reject)=>{fail=reject;}));
+ const pending=provider.mute(false).catch(()=>{});await provider.disconnect();fail(new DOMException('Denied','NotAllowedError'));await pending;
+ expect(provider.snapshot()).toMatchObject({status:'not-configured',muted:true,error:null});
+});
