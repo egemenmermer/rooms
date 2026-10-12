@@ -1,3 +1,4 @@
+import {ParticipantAudioMenu} from './ParticipantAudioMenu';
 import {MusicDJ, MusicDJEntry} from './MusicDJ';
 import { applyAppearancePreferences } from './appearance-preferences';
 import { usePersonalPlayback } from './personal-playback';
@@ -229,7 +230,7 @@ export default function App() {
       {community.user && !statusView && contextVisible && !dmView && !settings && !cinema && !['/friends','/notifications'].includes(visiblePath) && (voiceView ? <VoiceContext onClose={closeContext} openLauncher={() => open('launcher')} invite={() => open('invite')}/> : ['/home','/chat','/files'].includes(visiblePath) && !community.dms.some(dm => dm.id === community.activeChannelId) ? <RoomMembers notify={notify} onClose={closeContext}/> : <FriendsPanel notify={notify} onClose={closeContext}/>)}
       </div>{realtime.channelId && <RealVoiceDock openLauncher={() => open('launcher')} notify={notify}/>} </div>
     </div>
-    <MusicDJ/>
+    <MusicDJ/><ParticipantAudioMenu/>
     <ScreenHandoffRuntime />
     {settingsPage && <section className="settings-modal settings-reference-surface" aria-label="Ayarlar"><Suspense fallback={<div className="loading-view">Yükleniyor…</div>}><Settings notify={notify} onClose={closeSettings} onInvite={()=>{if(closeSettings())open('invite');}}/></Suspense></section>}
     {nativeInvite && <InviteLanding invite={nativeInvite} onClose={closeInvite} notify={notify}/>}

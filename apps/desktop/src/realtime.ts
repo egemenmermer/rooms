@@ -21,7 +21,7 @@ export async function joinVoice(channelId:string,roomName:string){
 }
 export async function leaveVoice(preserveBusy=false){const context=useVoiceContext.getState();await mediaProvider().disconnect();if(context.channelId&&window.rooms)await bridge().leave(context.channelId).catch(()=>{});useVoiceContext.setState({channelId:null,roomName:null,error:null,busy:preserveBusy});}
 async function run(operation:()=>Promise<void>){useVoiceContext.setState({error:null});try{await operation();}catch(error){useVoiceContext.setState({error:errorText(error)});throw error;}}
-export async function toggleMic(){await run(()=>mediaProvider().mute(!mediaProvider().snapshot().muted));}
+export async function toggleMic(){await run(async()=>{await mediaProvider().mute(!mediaProvider().snapshot().muted);if(mediaProvider().snapshot().inputDeviceFallback)useRooms.getState().setPreference('inputId','');});}
 export async function toggleDeafen(){await run(()=>mediaProvider().deafen(!mediaProvider().snapshot().deafened));}
 export async function toggleCamera(){await run(()=>mediaProvider().publishCamera(!mediaProvider().snapshot().camera));}
 export async function startScreen(sourceId?:string,options:import('@rooms/media').ScreenShareOptions={}){const channelId=useVoiceContext.getState().channelId;if(!channelId)throw new Error('Join a voice room before sharing.');await run(async()=>{await bridge().presenter(channelId,'acquire');try{if(sourceId)await bridge().selectCaptureSource(sourceId,{audio:options.audio??false});await mediaProvider().publishScreen(options);}catch(error){await bridge().clearCaptureSource();await bridge().presenter(channelId,'release').catch(()=>{});throw error;}});}
