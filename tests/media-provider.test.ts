@@ -48,7 +48,7 @@ describe('LiveKit adapter lifecycle', () => {
     const { provider, local } = fixture(); await provider.connectRoom('room', 'ephemeral', 'ws://localhost:7880');
     local.setScreenShareEnabled.mockRejectedValueOnce(new DOMException('Denied', 'NotAllowedError'));
     await expect(provider.publishScreen()).rejects.toThrow();
-    expect(provider.snapshot()).toMatchObject({ sharing: false }); expect(provider.snapshot().error).toContain('permission denied');
+    expect(provider.snapshot()).toMatchObject({ sharing: false }); expect(provider.snapshot().error).toContain('izni kapalı');
     await provider.disconnect();
   });
   it('connection failure never reports connected or exposes token/error URL', async () => {
@@ -68,7 +68,7 @@ describe('LiveKit adapter lifecycle', () => {
     const stop = vi.fn(); local.getTrackPublication.mockReturnValue({ track: { stop } });
     local.setScreenShareEnabled.mockRejectedValueOnce(new Error('Network unavailable'));
     emit(RoomEvent.ConnectionStateChanged, ConnectionState.Reconnecting);
-    await expect(provider.stopScreen()).rejects.toThrow('Media operation'); expect(stop).toHaveBeenCalled(); expect(provider.snapshot().sharing).toBe(false);
+    await expect(provider.stopScreen()).rejects.toThrow('Ses işlemi'); expect(stop).toHaveBeenCalled(); expect(provider.snapshot().sharing).toBe(false);
     await provider.disconnect();
   });
   it('tracks reconnect state without reacquiring microphone or screen', async () => {
@@ -110,3 +110,26 @@ it('reports observed encoder dimensions and codec instead of the requested profi
  expect(provider.diagnostics().video).toEqual({width:1280,height:720,framesPerSecond:28,codec:'video/H264',direction:'sent'});
  }finally{await provider.disconnect();vi.useRealTimers();}
 });
+
+ it('recovers a missing selected microphone on explicit unmute and clears the stale error',async()=>{
+  const {provider,local,room}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
+  local.setMicrophoneEnabled.mockRejectedValueOnce(new DOMException('Old device ID','OverconstrainedError'));
+  await provider.mute(false);
+  expect(room.switchActiveDevice).toHaveBeenCalledWith('audioinput','default');
+  expect(local.setMicrophoneEnabled).toHaveBeenLastCalledWith(true,expect.objectContaining({deviceId:'default'}));
+  expect(provider.snapshot()).toMatchObject({muted:false,error:null,inputDeviceFallback:true});await provider.disconnect();
+ });
+ it('does not retry capture after a permission denial',async()=>{
+  const {provider,local,room}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
+  local.setMicrophoneEnabled.mockRejectedValueOnce(new DOMException('Denied','NotAllowedError'));
+  await expect(provider.mute(false)).rejects.toThrow('izni kapalı');
+  expect(local.setMicrophoneEnabled).toHaveBeenCalledTimes(1);expect(room.switchActiveDevice).not.toHaveBeenCalled();await provider.disconnect();
+ });
+ it('local volume is applied again when a muted participant publishes a replacement track',async()=>{
+  const {provider,room,emit}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
+  const bob={identity:'bob',setVolume:vi.fn(),trackPublications:new Map()};room.remoteParticipants.set('bob',bob);
+  provider.setParticipantVolume('bob',0);
+  const element=document.createElement('audio');element.play=vi.fn(async()=>{});element.pause=vi.fn();
+  emit(RoomEvent.TrackSubscribed,{kind:'audio',attach:()=>element},{trackSid:'replacement'},bob);
+  expect(bob.setVolume).toHaveBeenLastCalledWith(0);await provider.disconnect();
+ });

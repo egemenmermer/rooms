@@ -1,11 +1,11 @@
 import {useNavigate} from 'react-router-dom';
 import {useEffect,useRef,useState} from 'react';
-import {Music2,X,Plus,Play,Pause,SkipBack,SkipForward,Trash2,Square} from 'lucide-react';
+import {Music2,X,Plus,Play,Pause,SkipBack,SkipForward,Trash2,Square,Volume2,VolumeX} from 'lucide-react';
 import {create} from 'zustand';
 import {useQuery} from '@tanstack/react-query';
 import {queryClient} from './query-client';
 import {useCommunity} from './community';
-import {useRealtime} from './realtime';
+import {useRealtime,setParticipantVolume} from './realtime';
 import {useActivityRoom} from './activity';
 import {uiError} from './i18n';
 import type {MusicCommand} from '../../../packages/shared-contracts/src/music';
@@ -28,6 +28,7 @@ function DJPanel({channelId,onClose}:{channelId:string|null;onClose():void}){
  const fixture=import.meta.env.DEV&&new URLSearchParams(location.search).has('fixture');
  const query=useQuery({queryKey:key,enabled:!!channelId&&!fixture&&!!window.rooms?.music,staleTime:3000,refetchInterval:5000,retry:1,queryFn:async()=>{const server=community.serverUrl,user=community.user?.id;const value=await window.rooms!.music.snapshot(channelId!);if(useCommunity.getState().serverUrl!==server||useCommunity.getState().user?.id!==user)throw new Error('Oturum değişti.');return value;}},queryClient);
  const snapshot=query.data,active=snapshot?.queue.find(item=>item.id===snapshot.currentId),index=snapshot?.queue.findIndex(item=>item.id===snapshot.currentId)??-1;
+ const bot=voice.participants.find(p=>p.id===snapshot?.identity);
  const available=!!channelId&&voice.status==='connected'&&!fixture&&!!window.rooms?.music;
  const run=async(command:MusicCommand)=>{if(busy||!available)return;setBusy(true);setError('');try{
   // Retire only the obsolete DJ-authored YouTube session on an explicit MP3 add action.
@@ -42,6 +43,7 @@ function DJPanel({channelId,onClose}:{channelId:string|null;onClose():void}){
  <div className="dj-content"><form className="dj-add" onSubmit={e=>{e.preventDefault();void run({type:'add',url:input.trim()});}}><input aria-label="YouTube veya ses bağlantısı" placeholder="YouTube bağlantısı" maxLength={2048} value={input} onChange={e=>setInput(e.target.value)} disabled={!available||busy} required/><button type="submit" aria-label="Kuyruğa ekle" disabled={!available||busy||!validLink()}>{busy?'…':<Plus size={18}/>}</button></form>
  <div className="dj-track"><strong>{active?.title??(query.isLoading?'Yükleniyor…':'Kuyruk boş')}</strong>{active&&<small>{clock(snapshot?.positionSec??0)} / {clock(active.durationSec)}</small>}</div>
  <div className="dj-transport"><button aria-label="Önceki parça" disabled={!available||busy||index<0} onClick={()=>void run({type:'previous'})}><SkipBack size={21}/></button><button className="dj-play" aria-label={snapshot?.status==='playing'?'Duraklat':'Oynat'} disabled={!available||busy||!active} onClick={()=>void run({type:snapshot?.status==='playing'?'pause':'play'})}>{snapshot?.status==='playing'?<Pause size={24}/>:<Play size={24}/>}</button><button aria-label="Sonraki parça" disabled={!available||busy||index<0||index===(snapshot?.queue.length??0)-1} onClick={()=>void run({type:'next'})}><SkipForward size={21}/></button><button aria-label="Botu odadan çıkar" disabled={!available||busy||!snapshot||snapshot.status==='disconnected'} onClick={()=>void run({type:'stop'})}><Square size={17}/></button></div>
+ <div className="dj-volume"><button aria-label={bot?.volume===0?'Botun sesini aç':'Botun sesini kapat'} disabled={!bot} onClick={()=>bot&&setParticipantVolume(bot.id,bot.volume===0?1:0)}>{bot?.volume===0?<VolumeX size={17}/>:<Volume2 size={17}/>}</button><input type="range" aria-label="Botun ses seviyesi" min={0} max={1} step={.01} value={bot?.volume??1} disabled={!bot} onChange={e=>bot&&setParticipantVolume(bot.id,Number(e.target.value))}/><small>{Math.round((bot?.volume??1)*100)}%</small></div>
  <ol className="dj-queue">{snapshot?.queue.map((item,i)=><li key={item.id} className={item.id===active?.id?'current':''}><span>{i+1}</span><strong>{item.title}</strong><small>{clock(item.durationSec)}</small><button aria-label={`${item.title} sıradan kaldır`} disabled={!available||busy||item.id===active?.id} onClick={()=>void run({type:'remove',id:item.id})}><Trash2 size={14}/></button></li>)}</ol>
  {!channelId&&<p className="dj-error" role="status">Önce ses odasına katıl.</p>}{fixture&&<p className="dj-error" role="status">Yerel görünüm örneği; bot bağlantısı yok.</p>}{(error||query.error||snapshot?.error)&&<p className="dj-error" role="alert">{error||(query.error?uiError(query.error):snapshot?.error?'Parça alınamadı. Başka bir bağlantı dene.':null)}</p>}
  </div></section>;
