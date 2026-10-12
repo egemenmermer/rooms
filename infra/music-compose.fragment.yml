@@ -1,0 +1,6 @@
+# Merge into the private deployment Compose config; credentials stay in its env file.
+services:
+  music:
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    # LiveKit runs on the host; without this mapping transport cannot connect.
