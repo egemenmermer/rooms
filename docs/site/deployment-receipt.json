@@ -1,0 +1,12 @@
+{
+  "release": "docs-20261012T202216Z",
+  "url": "https://62.238.119.134/docs/",
+  "implementationRevision": "06f5477",
+  "pages": 9,
+  "filesVerified": 20,
+  "caddyValidation": "PASS",
+  "caddyGracefulReload": "PASS",
+  "productRouteHealth": "PASS",
+  "configBackup": "/opt/rooms/docs-deployments/docs-20261012T202216Z/Caddyfile.before",
+  "productContainersRestarted": false
+}
