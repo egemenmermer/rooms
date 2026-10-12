@@ -3,7 +3,7 @@ import Fastify, { type FastifyRequest } from 'fastify';
 import { RegistrationGate, issueRegistrationInvite } from './registration';
 import { MongoClient } from 'mongodb';
 import {StoatAuthorizationReader} from './stoat-authorization';
-import { randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import rateLimit from '@fastify/rate-limit';
 import { AccessToken, RoomServiceClient, TrackSource, WebhookReceiver } from 'livekit-server-sdk';
 import { z } from 'zod';
@@ -149,6 +149,33 @@ export async function createAccessServer(config:AccessConfig){
   });
   // Reject legacy Discord-shaped auth endpoints; clients must use Stoat's official account/session flow.
   server.post('/api/v9/auth/register',async(_request,reply)=>reply.code(400).send({error:'STOAT_AUTH_REQUIRED'}));
+  // Observation is authorized independently of joining/publishing media.
+  server.post('/v1/media/directory',{config:{rateLimit:{max:30,timeWindow:'1 minute',keyGenerator:(request:FastifyRequest)=>'voice-directory:'+createHash('sha256').update(request.headers.authorization??request.ip).digest('hex')}}},async request=>{
+    const {channelIds}=z.object({channelIds:z.array(opaqueId).min(1).max(32)}).strict().parse(request.body);
+    const token=tokenOf(request.headers.authorization);
+    const client=new StoatClient(config.stoatUrl??'http://127.0.0.1:3022',token,socialOptions);
+    const user=await client.getCurrentUser();
+    const permitted:string[]=[];
+    for(const channelId of new Set(channelIds)){
+      try{
+        const context=reader?await reader.read(channelId,user.id):null;
+        const channel=context?.channel??await client.getChannel(channelId);
+        if(channel.channel_type!=='TextChannel'||!channel.voice||typeof channel.server!=='string')continue;
+        const [rawServer,rawMember]=context?[context.server,context.member]:await Promise.all([client.getServer(channel.server),client.getMember(channel.server,user.id)]);
+        const permissions=stoatChannelPermissions(rawServer as StoatServer,channel as StoatChannel,rawMember as StoatMember,user.id);
+        if((permissions&Permissions.VIEW_CHANNEL)!==0n)permitted.push(channelId);
+      }catch(error){if(!(error instanceof StoatError)||![403,404].includes(error.status))throw error;}
+    }
+    if(!permitted.length)return {rooms:[]};
+    const liveRooms=await roomService.listRooms(permitted.map(roomName));
+    const liveNames=new Set(liveRooms.map(room=>room.name));
+    const rooms=await Promise.all(permitted.map(async channelId=>{
+      let participants:Awaited<ReturnType<typeof roomService.listParticipants>>=[];
+      if(liveNames.has(roomName(channelId)))try{participants=await roomService.listParticipants(roomName(channelId));}catch(error){if((error as {code?:string}).code!=='not_found')throw error;}
+      return {channelId,participants:participants.slice(0,100).map(p=>({id:p.identity,name:(p.name||p.identity).slice(0,128),muted:!p.tracks.some(t=>t.source===TrackSource.MICROPHONE&&!t.muted)}))};
+    }));
+    return {rooms};
+  });
   server.post('/v1/media/grant',async request=>{
     const {channelId}=channelBody.parse(request.body);const token=tokenOf(request.headers.authorization);const {user,permissions}=await authorize(token,channelId);
     const access=new AccessToken(config.apiKey,config.apiSecret,{identity:user.id,name:user.displayName,ttl:300});

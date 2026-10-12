@@ -44,6 +44,7 @@ export interface DesktopBridge {
   agent: import('@rooms/agent-contracts').AgentBridge;
   activity: { exportBoard(roomId:string,format?:'svg'|'png'):Promise<boolean>; youtubePlayer(videoId:string):Promise<{url:string;nonce:string}>; snapshot(roomId:string,afterRevision?:number):Promise<import('@rooms/activity-protocol').ActivityResponse>; command(roomId:string,envelope:import('@rooms/activity-protocol').ActivityCommandEnvelope):Promise<import('@rooms/activity-protocol').ActivityResponse> };
   media: {
+    directory?(channelIds:string[]):Promise<{rooms:{channelId:string;participants:{id:string;name:string;muted:boolean}[]}[]}>;
     grant(channelId:string):Promise<{serverUrl:string;roomName:string;token:string;expiresAt:string}>;
     presenter(channelId:string,action:'acquire'|'release'):Promise<{granted:true;leaseId:string}|{released:true}>;
     screenState(channelId:string):Promise<ScreenPresenterState>;

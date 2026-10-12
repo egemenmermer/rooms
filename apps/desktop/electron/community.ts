@@ -185,6 +185,7 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   handle('rooms:dm-call-start',input=>callRequest('start',dmCallStartSchema.parse(input)));
   handle('rooms:dm-call-respond',input=>callRequest('respond',dmCallActionSchema.parse(input)));
   handle('rooms:dm-call-grant',input=>callRequest('grant',dmCallIdSchema.parse(input)));
+  handle('rooms:media-directory',async channelIds=>{const ids=z.array(id).min(1).max(32).parse(channelIds);const result=await broker('directory',{channelIds:ids});return z.object({rooms:z.array(z.object({channelId:id,participants:z.array(z.object({id:id,name:z.string().max(128),muted:z.boolean()}).strict()).max(100)}).strict()).max(32)}).strict().parse(result);});
   handle('rooms:media-grant',channelId=>broker('grant',{channelId:id.parse(channelId)}));
   handle('rooms:media-presenter',(channelId,action)=>broker(`screen/${z.enum(['acquire','release']).parse(action)}`,{channelId:id.parse(channelId)}));
   handle('rooms:media-screen-state',async channelId=>screenPresenterState.parse(await broker('screen/state',{channelId:id.parse(channelId)})));
