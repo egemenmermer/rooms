@@ -147,3 +147,5 @@ REL-009 now has actual exact-source hosted CI and local version/provenance manif
 ## REL-007 owner recovery screenshot — 2026-10-13
 
 Observed public production `/api` has features.email=false. Email recovery cannot be accepted until operator-configured SMTP and ordinary-account delivery are verified. Client recovery origin fallback/selected-sign-in handoff fixed with24focused local tests, lint/typecheck/build passing. Source follow-up only; installed RC not repackaged. No owner password change, recovery email, session revoke or production configuration mutation performed.
+
+REL-007 SMTP completion authorization received. Read-only server inspection confirms no SMTP section and no usable SMTP/provider environment credentials; local relevant env files also have none. Existing app/API hosts match production and invite-only remains enabled. Awaiting owner-designated sender/provider; no live config/restart/account mutation performed. Concrete apply/rollback/delivery procedure: SMTP_RECOVERY_SETUP.md.
