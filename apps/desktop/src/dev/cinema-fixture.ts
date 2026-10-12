@@ -77,7 +77,7 @@ export function createCinemaFixtureActivity(initial: RoomSnapshot): DesktopBridg
       room.timeline = { ...room.timeline, playing: command.playing, positionSec: command.positionSec, rate: command.rate, effectiveServerTimeMs: Date.now() };
     } else throw new Error(`Unsupported Cinema fixture command: ${command.type}`);
     room.revision++; return response();
-  }, exportBoard: async () => { throw new Error('No board in this local Cinema fixture.'); }, youtubePlayer: async () => { throw new Error('No YouTube or provider playback in this local fixture.'); } };
+  }, exportBoard: async () => { throw new Error('No board in this local Cinema fixture.'); }, youtubePlaylist:async()=>{throw new Error('Playlist import is unavailable in the visual fixture.');},youtubePlayer: async () => { throw new Error('No YouTube or provider playback in this local fixture.'); } };
 }
 
 /** DEV-only video projection: static vector scene + explicit synthetic metadata, no media transport claim. */

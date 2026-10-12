@@ -237,7 +237,7 @@ export function installGamesFixture(id:string,value='default',options:GamesFixtu
   snapshot:async roomId=>{checkRoom(roomId);return response();},
   command:async(roomId,envelope)=>{checkRoom(roomId);throw new Error(`DEMO · ${envelope.command.type} is disabled in this visual fixture; no native operation was attempted.`);},
   exportBoard:async()=>{throw new Error('DEMO · File export is disabled; no native dialog or file write was attempted.');},
-  youtubePlayer:async()=>{throw new Error('DEMO · No player service exists in this visual fixture.');},
+  youtubePlaylist:async()=>{throw new Error('Playlist import is unavailable in the visual fixture.');},youtubePlayer:async()=>{throw new Error('DEMO · No player service exists in this visual fixture.');},
  };
  const restoreRuntime=installDevelopmentRuntime({mediaProvider:mediaProvider(),mediaBridge:mediaBridge(),activityBridge:activity,activityState:{room:projection.room,status:metadata.status,error:metadata.error,serverTimeMs:projection.serverTimeMs}});
  return ()=>{if(!active)return;active=false;restoreRuntime();restoreMedia();if(previousTag===undefined)delete document.documentElement.dataset.gameFixture;else document.documentElement.dataset.gameFixture=previousTag;};
