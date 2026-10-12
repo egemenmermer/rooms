@@ -12,7 +12,7 @@ const errorText=uiError;
 export function useRealtime():MediaSnapshot&{channelId:string|null;roomName:string|null;busy:boolean}{const snapshot=useSyncExternalStore(listener=>mediaProvider().subscribeState(listener),()=>mediaProvider().snapshot(),()=>mediaProvider().snapshot());const context=useVoiceContext();return {...snapshot,...context,status:context.busy?'connecting':snapshot.status,error:context.error??(snapshot.error?uiError(snapshot.error):null)};}
 let transitionEpoch=0,sequence:Promise<unknown>=Promise.resolve(),activeChannel:string|null=null;
 let pendingTarget:string|null=null,pendingPromise:Promise<void>|null=null;
-let desiredMuted=true;
+let desiredMuted=true,microphoneScope='';
 const sessionScope=()=>`${useCommunity.getState().serverUrl}:${useCommunity.getState().user?.id??''}`;
 function serialize(work:()=>Promise<void>){const next=sequence.catch(()=>{}).then(work);sequence=next.catch(()=>{});return next;}
 async function disconnectActive(){const id=activeChannel;activeChannel=null;await mediaProvider().disconnect();if(id&&window.rooms)await bridge().leave(id).catch(()=>{});}
@@ -22,7 +22,7 @@ export function joinVoice(channelId:string,roomName:string):Promise<void>{
  if(context.busy&&pendingTarget===channelId&&pendingPromise)return pendingPromise;
  if(!context.busy&&context.channelId===channelId&&snapshot.status==='connected')return Promise.resolve();
  if(snapshot.status==='connected'&&!context.busy){activeChannel??=context.channelId;desiredMuted=snapshot.muted;}
- const epoch=++transitionEpoch,scope=sessionScope();pendingTarget=channelId;
+ const epoch=++transitionEpoch,scope=sessionScope();if(microphoneScope!==scope){desiredMuted=true;microphoneScope=scope;}pendingTarget=channelId;
  const current=()=>epoch===transitionEpoch&&scope===sessionScope();
  useVoiceContext.setState({channelId,roomName,busy:true,error:null});
  const next=serialize(async()=>{
