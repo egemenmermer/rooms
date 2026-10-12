@@ -29,8 +29,8 @@ describe('authoritative Activity service over actual HTTP clients', () => {
       expect((await read('outsider')).status).toBe(403);
       expect((await send('alice', 0, { type: 'join' })).body.room.revision).toBe(1);
       expect((await send('bob', 1, { type: 'join' })).body.room.revision).toBe(2);
-      await send('alice', 2, { type: 'start', activity: 'cinema', title: 'Authorized local movie' });
-      await send('bob', 3, { type: 'queue.add', itemId: 'work-1', media: { kind: 'independent-source', referenceId: 'public-demo-v1', title: 'Demo work' } });
+      await send('alice', 2, { type: 'start', activity: 'youtube', title: 'Official embed room' });
+      await send('bob', 3, { type: 'queue.add', itemId: 'work-1', media: { kind: 'youtube', videoId: 'abcdefghijk', title: 'Demo work' } });
       await send('alice', 4, { type: 'queue.select', itemId: 'work-1' });
       let delivered = false;
       const watch = read('bob', '?afterRevision=5&waitMs=1000').then(result => { delivered = true; return result; });

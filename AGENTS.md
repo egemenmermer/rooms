@@ -23,3 +23,7 @@
 - Do not restore demo mode or synthetic social/media content.
 - The owner now performs all testing. Do not run automated tests, type checks, QA harnesses, acceptance scenarios or remote disruption/load tests unless explicitly reauthorized. Building and opening the application to deliver changes is allowed; do not call that acceptance or claim it passed tests.
 - Existing verification evidence is historical. New changes remain awaiting the owner's manual acceptance.
+
+## Current reference implementation task
+- For the owner's 2026-10-10 design-package task, read `docs/rooms-implementation/BRIEF.md`, `CHECKPOINT.md`, `PROGRESS.json` and `DECISIONS.md` before continuing. The new user request explicitly reauthorizes scoped model delegation and QA; preserve all other instructions and production-data boundaries.
+- Latest owner instruction (2026-10-11): root implements all work. Do not spawn or resume subagents, including Sol/high or Astra. This supersedes all previous model delegation permissions. Local QA remains authorized for the reference task.

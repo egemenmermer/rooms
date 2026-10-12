@@ -23,7 +23,10 @@ export async function postActivityCommand(url:string,roomId:string,token:string,
    envelope={...envelope,expectedRevision:snapshot.room.revision};continue;
   }
   const code=typeof value?.error==='string'&&/^[A-Z_]{1,64}$/.test(value.error)?value.error:'ACTIVITY_ACCESS_DENIED';
-  throw new StoatError(response.status,code);
+  const failure=new StoatError(response.status,code);
+  // Electron serializes messages rather than custom Error properties. Preserve only bounded public codes.
+  if(typeof value?.error==='string'&&/^[A-Z_]{1,64}$/.test(value.error))failure.message=code;
+  throw failure;
  }
  throw new StoatError(409,'REVISION_CONFLICT');
 }

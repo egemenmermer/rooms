@@ -1,25 +1,35 @@
-import { tr } from './i18n';
-import { useCallback, useState } from 'react';
+import {openRoomActivity} from './MusicDJ';
+import './reference-voice.css';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Check, Film, Gamepad2, Layers3, ListPlus, MonitorUp, Pencil, Plus, Search, Tv, Vote, Play } from 'lucide-react';
-import { activityRegistry } from '@rooms/activities';
-import { EmptyState, Modal } from '@rooms/design';
+import { Modal } from '@rooms/design';
+import { ReferenceIcon } from './ReferenceIcon';
 import { useCommunity } from './community';
-const icons: Record<string, typeof Film> = { cinema: Film, youtube: Play, screen: MonitorUp, iptv: Tv, poll: Vote, quiz: Gamepad2, tier: Layers3, whiteboard: Pencil };
-export function ActivityLauncher({ onClose }: {
-    onClose(): void;
-}) {
-    const community = useCommunity(), navigate = useNavigate();
-    const [filter, setFilter] = useState('all'), [query, setQuery] = useState('');
-    const catalog = [
-        { id: 'cinema', label: 'Sinema', category: 'watch', icon: Film, description: tr("Kendi dosyanı bu cihazda oynat. Birlikte izlemek için YouTube veya ekran paylaşımı kullan."), path: '/cinema', tag: 'Kendi dosyanı seç' },
-        { id: 'youtube', label: 'Birlikte YouTube', category: 'watch', icon: Play, description: tr("Resm\u00EE oynat\u0131c\u0131, herkesin kendi ekran\u0131nda."), path: '/youtube', tag: 'Ortak oda gerekir' },
-        { id: 'screen', label: tr("Ekran payla\u015F\u0131m\u0131"), category: 'share', icon: MonitorUp, description: tr("Se\u00E7ti\u011Fin pencereyi ses odanla payla\u015F."), path: '/voice', tag: tr("Ger\u00E7ek ses odas\u0131 gerekir") },
-        { id: 'iptv', label: tr("Ki\u015Fisel medya"), category: 'watch', icon: Tv, description: tr("Kendi IPTV, Xtream ve Real-Debrid ba\u011Flant\u0131lar\u0131n."), path: '/settings?tab=connections', tag: tr("Ki\u015Fisel kaynak ekle") },
-        { id: 'poll', label: 'Ortak anket', category: 'together', icon: Vote, description: "", path: '/together?tab=polls', tag: 'Ortak oda gerekir' },
-        { id: 'whiteboard', label: 'Beyaz tahta', category: 'together', icon: Pencil, description: "", path: '/together?tab=board', tag: 'Ortak oda gerekir' },
-        { id: 'games', label: tr("Oyun masas\u0131"), category: 'play', icon: Gamepad2, description: 'Hold’em, Blackjack, Batak ve 101. Sanal puanlarla.', path: '/games', tag: tr("Masay\u0131 ke\u015Ffet") },
-        { id: 'agent', label: tr("Oda yard\u0131mc\u0131s\u0131"), category: 'together', icon: Layers3, description: tr("Kendi modelinle g\u00F6revler, sonu\u00E7lar ve oda haf\u0131zas\u0131."), path: '/agent', tag: tr("Ayr\u0131 sunucu gerekir") },
+import { useRealtime, stopScreen } from './realtime';
+import { useActivityRoom } from './activity';
+import { uiError } from './i18n';
+
+export function ActivityLauncher({ onClose }: { onClose(): void }) {
+    const community=useCommunity(),voice=useRealtime(),navigate=useNavigate();
+    const roomId=voice.channelId??community.activeChannelId;
+    const activity=useActivityRoom(roomId);
+    const [error,setError]=useState('');
+    const primary=activity.room?.primary;
+    const self=activity.room?.participants.find(p=>p.userId===community.user?.id);
+    const forbidden=self?.canControl===false;
+    const routeFor=(kind:string)=>kind==='cinema'?'/cinema':kind==='youtube'?'/youtube':kind==='screen'?'/voice?view=share':'/games';
+    const open=(path:string)=>{openRoomActivity(path,navigate);onClose();};
+    const position=Math.max(0,Math.floor(activity.room?.timeline.positionSec??0));
+    const positionLabel=`${Math.floor(position/60)}:${String(position%60).padStart(2,'0')}`;
+    const roomCount=activity.room?.participants.length;
+    const catalog=[
+        {label:'Cinema',icon:'film',description:'Kendi dosyanı seç veya ekran paylaş.',path:'/cinema'},
+        {label:'DJ Recep',icon:'play',description:'YouTube ve playlist kuyruğu.',path:'/youtube'},
+        {label:'Oyun masası',icon:'cards',description:'Hold’em, Blackjack, Batak ve 101 Okey.',path:'/games'},
     ];
-    return <Modal title={"Etkinlikler"} onClose={onClose} className="launcher-modal"><div className="launcher-search"><Search size={17}/><input autoFocus aria-label="Etkinlik ara" placeholder={"Ba\u015Fl\u0131k"} value={query} onChange={e => setQuery(e.target.value)}/></div><div className="segmented" aria-label="Etkinlik kategorileri">{[{ id: 'all', label: tr("T\u00FCm\u00FC") }, { id: 'watch', label: tr("\u0130zle") }, { id: 'share', label: tr("Payla\u015F") }, { id: 'play', label: 'Oyna' }, { id: 'together', label: 'Birlikte' }].map(c => <button key={c.id} aria-pressed={filter === c.id} className={filter === c.id ? 'selected' : ''} onClick={() => setFilter(c.id)}>{c.label}</button>)}</div><div className="activity-grid">{catalog.filter(a => (filter === 'all' || a.category === filter) && (a.label + a.description).toLocaleLowerCase('tr').includes(query.toLocaleLowerCase('tr'))).map(a => <button className="activity-tile ready" key={a.id} onClick={() => { navigate(a.path); onClose(); }}><span className={`activity-icon ${a.id}`}><a.icon size={25}/></span><strong>{a.label}</strong><span className="availability local">{a.tag}<ArrowRight size={13}/></span></button>)}</div></Modal>;
+    return <Modal title={forbidden?'Etkinlik başlatılamıyor':primary?(primary.activity==='cinema'?'Salonda Cinema devam ediyor':'Devam eden etkinlik'):'Beraber ne yapalım?'} onClose={onClose} className={`launcher-modal reference-launcher-modal ${primary?'has-active-activity':''} ${forbidden?'is-forbidden':''}`}>
+      {forbidden?<><div className="reference-media-notice" role="alert"><ReferenceIcon name="lock" size={18}/><span>Bu odada etkinlik başlatma yetkin yok. Devam eden etkinliğe katılabilir veya bir oda yöneticisinden yardım isteyebilirsin.</span></div><p className="modal-description">Sesli sohbetin ve erişebildiğin kanallar çalışmaya devam eder.</p>{primary&&<div className="button-row"><button className="button primary" onClick={()=>open('/voice')}>Salona dön</button></div>}</>:primary?<><div className="reference-active-activity"><span className="reference-activity-mark"><ReferenceIcon name={primary.activity==='youtube'?'play':primary.activity==='cinema'?'film':primary.activity==='screen'?'monitor':'cards'} size={23}/></span><div><strong>{primary.title}</strong><small>{primary.activity==='cinema'?`Cinema · ${roomCount??0} kişi odada · ${positionLabel}`:primary.activity==='youtube'?'YouTube Together':primary.activity==='screen'?'Ekran paylaşımı':'Oyun masası'}</small></div><span className="reference-live-pill">Etkin</span></div><div className="reference-media-notice"><ReferenceIcon name="alert-triangle" size={18}/><span>Yeni bir ana etkinlik için mevcut etkinliği herkes adına bitir. Sesli sohbet ve yan etkinlikler devam eder.</span></div><p className="modal-description">İstersen mevcut etkinliğe dön. Etkinliği kapatmak için tüm katılımcılara gösterilen açık aksiyonu kullan.</p><div className="button-row"><button className="button secondary" onClick={()=>open(routeFor(primary.activity))}>{primary.activity==='cinema'&&<ReferenceIcon name="film" size={16}/>}{primary.activity==='cinema'?'Cinema’ya dön':'Etkinliğe dön'}</button><button className="button danger" disabled={activity.busy} onClick={()=>{setError('');void (async()=>{if(primary.activity==='screen'&&voice.sharing)await stopScreen();await activity.send({type:'end'});})().catch(e=>setError(uiError(e)));}}><ReferenceIcon name="plus" size={16}/>{activity.busy?'Bitiriliyor…':'Bitir ve etkinlik seç'}</button></div></>:<><p className="modal-description">{voice.roomName??'Oda'}{roomCount!==undefined?` · ${roomCount} kişi hazır`:''}. Bir ana etkinlik seç; sohbet açık kalsın.</p><div className="reference-activity-grid">{catalog.map(card=><button className="reference-activity-card" key={card.path} onClick={()=>open(card.path)}><ReferenceIcon name={card.icon} size={25}/><strong>{card.label}</strong><small>{card.description}</small></button>)}</div><div className="reference-launcher-divider"/><h3 className="reference-launcher-label">Sohbetin yanında</h3><div className="reference-side-activities"><button className="button secondary" onClick={()=>open('/together?tab=polls')}><ReferenceIcon name="poll" size={16}/>Anket aç</button><button className="button secondary" onClick={()=>open('/together?tab=board')}><ReferenceIcon name="whiteboard" size={16}/>Whiteboard</button><button className="button ghost" onClick={()=>open('/agent')}><ReferenceIcon name="bot" size={16}/>Asistana yaz</button></div></>}
+      {error&&<div className="reference-media-notice" role="alert">{error}</div>}
+      {!primary&&<div className="button-row reference-launcher-footer"><button className="button secondary" onClick={onClose}>Kapat</button></div>}
+    </Modal>;
 }
