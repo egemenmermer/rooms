@@ -16,6 +16,7 @@ export interface CommunityState {
   register(input:{serverUrl:string;email:string;password:string;username:string;inviteCode:string;accountInviteCode?:string}):Promise<void>;
   logout():Promise<void>;refresh():Promise<void>;
   openSpace(id:string):Promise<void>;openChannel(id:string,force?:boolean):Promise<void>;send(content:string,attachments?:SocialAttachment[]):Promise<void>;
+  reactMessage(id:string,emoji:string):Promise<void>;
   retryMessage(id:string):Promise<void>;editMessage(id:string,content:string):Promise<void>;deleteMessage(id:string):Promise<void>;loadOlder():Promise<void>;
   createInvite(channelId:string):Promise<SocialInvite>;acceptInvite(code:string):Promise<void>;createDM(recipientId:string):Promise<void>;
   markRead(channelId:string,messageId:string):Promise<void>;
@@ -79,6 +80,15 @@ export const useCommunity=create<CommunityState>((set,get)=>({...blank,
     finally{if(current())set({loadingMessages:false});}
   },
   send:async(text,attachments=[])=>{const channelId=get().activeChannelId;const user=get().user;const session=captureSession();if(channelId&&useChannelAccess.getState().checks[channelId])throw new Error('Kanal erişimi yeniden doğrulanmalı.');if(!channelId||!user||(!text.trim()&&!attachments.length))return;const epoch=selectionEpoch;const current=()=>epoch===selectionEpoch&&session.valid()&&get().activeChannelId===channelId;if(!current())throw new Error('Oturum değişti. Mesajı yeniden gönder.');const optimistic:CommunityMessage={id:`pending-${crypto.randomUUID()}`,channelId,author:user,content:text.trim().slice(0,4000),timestamp:new Date().toISOString(),editedTimestamp:null,delivery:'pending',attachments};set(state=>({messages:[...state.messages,optimistic]}));try{const sent=await bridge().send(channelId,optimistic.content,attachments.map(a=>a.id));if(current())set(state=>({messages:state.messages.filter(m=>m.id!==optimistic.id&&m.id!==sent.id).concat({...sent,delivery:'sent'}).sort((a,b)=>Date.parse(a.timestamp)-Date.parse(b.timestamp))}));}catch(error){if(current())set(state=>({messages:state.messages.map(m=>m.id===optimistic.id?{...m,delivery:'failed'}:m),error:safeError(error)}));throw error;}},
+  reactMessage:async(id,emoji)=>{
+    const channelId=get().activeChannelId,message=get().messages.find(item=>item.id===id),session=captureSession(),epoch=selectionEpoch;
+    const current=()=>epoch===selectionEpoch&&session.valid()&&get().activeChannelId===channelId;
+    if(!channelId||!message||useChannelAccess.getState().checks[channelId])return;
+    try{
+      await bridge().react(channelId,id,emoji,message.reactions?.[emoji]?.includes(get().user?.id??'')??false);
+      if(current())await get().openChannel(channelId,true);
+    }catch(error){if(current())throw error;}
+  },
   retryMessage:async id=>{const message=get().messages.find(m=>m.id===id&&m.delivery==='failed');if(!message)return;set(state=>({messages:state.messages.filter(m=>m.id!==id)}));await get().send(message.content,message.attachments);},
   editMessage:async(id,text)=>{const channelId=get().activeChannelId,session=captureSession(),epoch=selectionEpoch;if(!channelId)return;const current=()=>epoch===selectionEpoch&&session.valid()&&get().activeChannelId===channelId;try{const updated=await bridge().edit(channelId,id,text);if(current())set(state=>({messages:state.messages.map(m=>m.id===id?updated:m)}));}catch(error){if(current())set({error:safeError(error)});throw error;}},
   deleteMessage:async id=>{const channelId=get().activeChannelId,session=captureSession(),epoch=selectionEpoch;if(!channelId)return;const current=()=>epoch===selectionEpoch&&session.valid()&&get().activeChannelId===channelId;try{await bridge().delete(channelId,id);if(current())set(state=>({messages:state.messages.filter(m=>m.id!==id)}));}catch(error){if(current())set({error:safeError(error)});throw error;}},
