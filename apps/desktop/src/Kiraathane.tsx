@@ -23,7 +23,7 @@ export function Kiraathane({ game, ready, error, blocked, busy, onCreate, onOpen
     <div className="coffeehouse-tools"><span>{!ready ? 'Masa durumu bekleniyor' : game ? 'Odanın masası açık' : 'Bir masa seç'}{blocked && ready && !game ? ` · ${blocked}` : ''}</span><button onClick={onHistory}><History size={16}/>Geçmiş</button></div>
     {error && <div className="coffeehouse-error" role="alert">{error}<button onClick={onRetry} disabled={busy}>Yeniden dene</button></div>}
     <div className="coffeehouse-scroll"><div className="coffeehouse-scene">
-      <img className="coffeehouse-interior" src="/kiraathane/interior.jpg" alt="Ahşap masaları, çay ocağı ve sobası olan kıraathane"/>
+      <img className="coffeehouse-interior" src="./kiraathane/interior.jpg" alt="Ahşap masaları, çay ocağı ve sobası olan kıraathane"/>
       {tables.map((table, index) => {
         const active = !!table.kind && game?.kind === table.kind;
         const reason = table.unavailable ?? (table.kind ? !ready ? 'Masa bağlantısı bekleniyor' : active ? '' : blocked || (game ? 'Önce açık masayı bitirin' : '') : '');

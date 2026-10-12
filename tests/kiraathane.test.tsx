@@ -7,6 +7,7 @@ afterEach(cleanup);
 const callbacks = () => ({ onCreate: vi.fn(), onOpen: vi.fn(), onChat: vi.fn(), onHistory: vi.fn(), onRetry: vi.fn() });
 it('unknown connection never invents occupancy and never opens a new game', () => {
   const f = callbacks(); render(<Kiraathane {...f} game={null} ready={false} error={null} blocked="" busy={false}/>);
+  expect(screen.getByRole('img').getAttribute('src')).toBe('./kiraathane/interior.jpg');
   const button = screen.getByRole('button', { name: /Masa 2/ }); expect((button as HTMLButtonElement).disabled).toBe(true);
   expect(screen.queryByText('0/4')).toBeNull(); fireEvent.click(button); expect(f.onCreate).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: /Masa 1 / })); expect(f.onChat).toHaveBeenCalled();
