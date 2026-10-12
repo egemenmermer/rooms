@@ -146,22 +146,31 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     const options = { ...(deviceId ? { deviceId } : {}), echoCancellation: true, noiseSuppression: this.noiseSuppression };
     try { await room.localParticipant.setMicrophoneEnabled(true, options); }
     catch (error) {
+      if (this.room !== room) return;
       const failure = error as { name?: string; constraint?: string };
       // A disconnected or origin-rotated device ID must not make explicit unmute unusable.
       // Permission failures never retry; only a missing device uses the system default.
       if (failure?.name !== 'NotFoundError' && !(failure?.name === 'OverconstrainedError' && (!failure.constraint || failure.constraint === 'deviceId'))) throw error;
       if (this.room !== room || this.state.deafened) throw error;
-      await room.switchActiveDevice('audioinput', 'default');
+      if (!await room.switchActiveDevice('audioinput', 'default')) throw error;
+      if (this.room !== room || this.state.deafened) return;
       await room.localParticipant.setMicrophoneEnabled(true, { ...options, deviceId: 'default' });
-      this.patch({ inputDeviceFallback: true });
+      if (this.room === room) this.patch({ inputDeviceFallback: true });
+    }
+    // Permission/capture may finish after leave or deafen. Stop only that room's publication.
+    if (this.room !== room || this.state.deafened) {
+      room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track?.stop();
+      await room.localParticipant.setMicrophoneEnabled(false).catch(() => {});
+      return;
     }
     this.patch({ error: null }); this.sync();
   }
-  async publishMic(deviceId?: string) { if (this.state.deafened) throw new Error('Undeafen before enabling your microphone.'); try { await this.enableMicrophone(deviceId); } catch (error) { this.fail(error); throw new Error(this.state.error!); } }
+  async publishMic(deviceId?: string) { const room=this.room; if (this.state.deafened) throw new Error('Undeafen before enabling your microphone.'); try { await this.enableMicrophone(deviceId); } catch (error) { if(this.room!==room)return; this.fail(error); throw new Error(this.state.error!); } }
   async mute(value: boolean) {
+    const room=this.room;
     if (!value && this.state.deafened) throw new Error('Undeafen before enabling your microphone.');
     try { if(value){this.stopSoundboard();await this.requireRoom().localParticipant.setMicrophoneEnabled(false);this.patch({error:null});this.sync();}else await this.enableMicrophone(); }
-    catch(error){this.fail(error);throw new Error(this.state.error!);}
+    catch(error){if(this.room!==room)return;this.fail(error);throw new Error(this.state.error!);}
   }
   async publishCamera(enabled: boolean, deviceId?: string) { try { await this.requireRoom().localParticipant.setCameraEnabled(enabled, { deviceId, resolution: { width: 1280, height: 720, frameRate: 30 } }); this.sync(); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
   async publishScreen(options:ScreenShareOptions={}) {
