@@ -19,3 +19,8 @@ Owner must identify an authorized SMTP sender/provider. No stored usable sender 
 5. Owner imports received link and enters/submits new password themselves. Verify subsequent sign-in and desired session revocation with owner participation. No agent may set or print their password.
 
 Client origin handoff fix is committed at c10a5cb and locally tested; installed RC.1 remains unchanged. New packaging/installation and live delivery/reset acceptance are still pending. Existing immutable notarized RC and rollback bundles remain available.
+
+
+## Owner steering — 2026-10-13
+
+Owner deferred SMTP setup (“tamam kalsın”). Do not continue sender provisioning or deployment without renewed instruction. The separate owner password-change request remains open; no new password was set and no credentials were copied into Trello or chat.

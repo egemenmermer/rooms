@@ -1,6 +1,6 @@
 # Private release remaining acceptance
 
-Root-only implementation. Preserve existing accounts, production data, Hoppers and release/retained. Local automation and mock fixtures cannot close the gates below. Current source candidate is0.1.18-rc.1; installed preview.4 remains separate. No private distribution/freeze until the accepted artifact and core gates are recorded.
+Root-only implementation. Preserve existing accounts, production data, Hoppers and release/retained. Local automation and mock fixtures cannot close the gates below. Notarized candidate0.1.18-rc.1/build1791842324 is installed on the owner Mac. Subsequent recovery-origin fix c10a5cb is locally verified but not yet packaged/installed. No private distribution/freeze until the accepted artifact and core gates are recorded.
 
 ## Ordinary-account staging (REL-006/007)
 
@@ -31,3 +31,8 @@ Manifest ties source SHA/build, local service digests, package sizes/hashes, sto
 ## Final freeze (REL-012)
 
 After physical media acceptance, use six real identities for a measured two-hour controlled session. Record CPU/memory/cold launch/warm navigation/API failures, lost acknowledged data and listener/resource cleanup. Test900×700/large-window keyboard/Save/Discard/loading/error/offline. Publish only conservative measured budgets. Freeze one immutable accepted artifact and distribute that exact checksum; later code/service/schema changes reopen affected gates. Public rights/privacy/413-reference gates remain independent from this private acceptance.
+
+
+## Tracker reconciliation — 2026-10-13
+
+Owner requested Trello update. Read-back confirms rooms board https://trello.com/b/TkcxeAjw/rooms: four explicitly local completion cards marked done, eight acceptance/delivery/account tasks open and one SMTP task deferred. Board had no open lists/cards before this update. No Hoppers changes. SMTP completion was cancelled by owner (“tamam kalsın”); no live config/restart or recovery mail sent. Owner password-change request remains unfulfilled; no password/account mutation occurred, and the owner-only sign-in file was queued for opening. Direct password-change UI is absent. Core private acceptance gates above remain open, including delivered recovery if restored to scope; SMTP deferral is not acceptance.
