@@ -380,7 +380,7 @@ export function installMediaFixture(id: string, value: string): () => void {
       return response();
     },
     exportBoard: async () => { throw new Error('Whiteboard export is not available in this fixture.'); },
-    youtubePlayer: async () => { throw new Error('YouTube playback is not simulated; no player service is called.'); },
+    youtubePlaylist:async()=>{throw new Error('Playlist import is unavailable in the visual fixture.');},youtubePlayer: async () => { throw new Error('YouTube playback is not simulated; no player service is called.'); },
   };
   const mediaBridge: DesktopBridge['media'] = {
     grant: async channelId => {

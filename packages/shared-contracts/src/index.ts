@@ -42,7 +42,7 @@ export interface DesktopBridge {
   updates:{status():Promise<import('../../../apps/desktop/electron/updates').UpdateStatus>;setOptIn(value:boolean):Promise<import('../../../apps/desktop/electron/updates').UpdateStatus>;check():Promise<import('../../../apps/desktop/electron/updates').UpdateStatus>;download():Promise<import('../../../apps/desktop/electron/updates').UpdateStatus>;cancel():Promise<import('../../../apps/desktop/electron/updates').UpdateStatus>;install():Promise<void>};
   providers: import('../../../apps/desktop/electron/provider-contracts').ProviderBridge;
   agent: import('@rooms/agent-contracts').AgentBridge;
-  activity: { exportBoard(roomId:string,format?:'svg'|'png'):Promise<boolean>; youtubePlayer(videoId:string):Promise<{url:string;nonce:string}>; snapshot(roomId:string,afterRevision?:number):Promise<import('@rooms/activity-protocol').ActivityResponse>; command(roomId:string,envelope:import('@rooms/activity-protocol').ActivityCommandEnvelope):Promise<import('@rooms/activity-protocol').ActivityResponse> };
+  activity: { exportBoard(roomId:string,format?:'svg'|'png'):Promise<boolean>; youtubePlaylist(playlistId:string):Promise<{url:string;nonce:string}>; youtubePlayer(videoId:string):Promise<{url:string;nonce:string}>; snapshot(roomId:string,afterRevision?:number):Promise<import('@rooms/activity-protocol').ActivityResponse>; command(roomId:string,envelope:import('@rooms/activity-protocol').ActivityCommandEnvelope):Promise<import('@rooms/activity-protocol').ActivityResponse> };
   media: {
     directory?(channelIds:string[]):Promise<{rooms:{channelId:string;participants:{id:string;name:string;muted:boolean}[]}[]}>;
     grant(channelId:string):Promise<{serverUrl:string;roomName:string;token:string;expiresAt:string}>;
