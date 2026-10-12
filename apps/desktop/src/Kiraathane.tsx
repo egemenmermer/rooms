@@ -28,11 +28,11 @@ export function Kiraathane({ game, ready, error, blocked, busy, onCreate, onOpen
         const active = !!table.kind && game?.kind === table.kind;
         const reason = table.unavailable ?? (table.kind ? !ready ? 'Masa bağlantısı bekleniyor' : active ? '' : blocked || (game ? 'Önce açık masayı bitirin' : '') : '');
         return <button key={table.label} className={`coffeehouse-table ${active ? 'active' : ''}`} style={{ left: `${table.x}%`, top: `${table.y}%` }} disabled={!!reason || busy && !!table.kind} title={reason || undefined} aria-description={reason || undefined} onClick={() => table.kind ? active ? onOpen() : onCreate(table.kind) : onChat()}>
-          {active ? <span className="coffeehouse-count"><Users size={13}/>{game.seats.length}/{tableCapacity(game)}</span> : table.kind ? <span className="coffeehouse-count"><Plus size={13}/>{!ready ? 'Bekleniyor' : reason ? 'Kullanılamıyor' : 'Masa oluştur'}</span> : <span className="coffeehouse-count"><MessageCircle size={13}/>{table.unavailable ? 'Desteklenmiyor' : 'Sohbete dön'}</span>}
+          {active ? <span className="coffeehouse-count"><Users size={13}/>{game.seats.length}/{tableCapacity(game)}</span> : table.kind ? <span className="coffeehouse-count"><Plus size={13}/>{!ready ? 'Bekleniyor' : reason ? 'Kapalı' : 'Masa oluştur'}</span> : <span className="coffeehouse-count"><MessageCircle size={13}/>{table.unavailable ? 'Kapalı' : 'Sohbete dön'}</span>}
           <strong>Masa {index + 1}</strong><small>{table.label}{active ? game.status === 'waiting' ? ' · Oyuncu bekliyor' : game.status === 'finished' ? ' · El tamamlandı' : ' · Oynanıyor' : ''}</small>
         </button>;
       })}
     </div></div>
-    <p className="coffeehouse-note">Bu odada aynı anda bir oyun masası açılabilir.</p>
+    <p className="coffeehouse-note">Oda başına tek oyun masası.</p>
   </section>;
 }
