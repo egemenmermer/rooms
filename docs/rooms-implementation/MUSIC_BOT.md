@@ -10,7 +10,7 @@ Queues contain at most100 references, with downloads deferred until the selected
 
 The owner explicitly requested YouTube links and playlists instead of manual MP3 uploads. A fixed-provider yt-dlp adapter is implemented, with canonical URL validation, bounded playlist enumeration, lazy audio extraction and concise provider errors. This is a third-party source adapter, not the official IFrame API. It does not contain a hidden YouTube player, bypass authentication/DRM, extract personal browser sessions or distribute provider credentials.
 
-The actual Hetzner probe for the supplied video failed with normal YouTube sign-in/bot verification. Consequently YouTube audio is NOT verified working. The owner offered to prepare a separate bot account. Account authentication remains pending; no cookies or password have been collected, and no account-authentication configuration has been deployed. Earlier official shared-player evidence does not certify this adapter. Spotify room audio is not implemented.
+The actual Hetzner probe for the supplied video failed with normal YouTube sign-in/bot verification. Consequently YouTube audio is NOT verified working. The owner offered to prepare a separate bot account. Account authentication remains pending; no cookies or password have been collected, and a fixed server-only cookie-file adapter is prepared but no account session has been transferred or configured. An explicit owner-approved dedicated bot session is required; personal browser cookie extraction is not performed. Earlier official shared-player evidence does not certify this adapter. Spotify room audio is not implemented.
 
 ## Actual evidence
 
