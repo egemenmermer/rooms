@@ -1,24 +1,23 @@
-# Room music bot — owner request 2026-10-12
+# Room music bot — current implementation, 2026-10-12
 
-The owner clarified Muzox-style behavior: a real separate voice participant controlled by play, pause, resume, stop, skip and queue. Existing YouTube Together is not acceptance of this bot requirement. Muzox is a Discord bot, not a ROOMS/LiveKit integration. Root owns implementation.
+Root implemented the owner-approved separate LiveKit voice participant. The opaque dark/purple draggable DJ popup is a controller only: link input, previous, play/pause, next, disconnect and queue removal. The silent extracted Recep animation loops independently. There is no music iframe or local music player. Closing the popup does not stop server playback. Ordinary launch preserves the current conversation; legacy DJ routes return to the preceding page.
 
-Required: one bounded server audio publisher/queue per authorized voice channel, authenticated commands with fresh channel permissions, explicit bot identity authorization in the media webhook, idle disconnect and revocation cleanup, real connected participant and queue/volume controls. Never invent an online bot when no media publisher is connected.
+Native authenticated IPC calls the access gateway. Fresh channel permissions and actual voice-room membership are required for control. A bounded internal worker publishes stereo 48kHz audio through LiveKit; its token cannot subscribe or publish data. Signed webhook authorization checks the actual music lease. Permission revocation, empty rooms and paused idle sessions clean up audio, grants and temporary files. Source URLs, credentials and file paths never appear in snapshots.
 
-Audio sources: owner-provided files or explicitly permitted streams. Bound uploads/decoding/queue resources, deny arbitrary network targets/private-network SSRF, URL credentials and unsafe redirects. Provider adapters stay replaceable; no shared provider credentials. Spotify official playback cannot be a room rebroadcast source. YouTube official API forbids isolated audio; existing official shared video players remain supported. No hidden players, scraped audio or DRM bypass.
+Queues contain at most100 references, with downloads deferred until the selected track. Direct public HTTPS MP3 sources use pinned public-address fetching and checked redirects. Local decoding is restricted to file/pipe and MP3; tracks are bounded to30 minutes/40MiB. Cached inactive files are evicted above160MiB, with a200MiB hard cap. Two room sessions are permitted. The dedicated container has bounded memory, CPU, processes and temporary storage, no public port and a read-only filesystem.
 
-Status: bot not implemented/deployed; preview.2 contains chat/voice observation corrections only. Local transport/worker checks and actual audible multi-Mac acceptance remain separate. Continue this explicit remaining feature without reducing the reference inventory.
+## YouTube prerequisite
 
-Sources inspected:
-- https://muzoxbot.xyz/
-- https://developer.spotify.com/policy
-- https://developers.google.com/youtube/terms/developer-policies
+The owner explicitly requested YouTube links and playlists instead of manual MP3 uploads. A fixed-provider yt-dlp adapter is implemented, with canonical URL validation, bounded playlist enumeration, lazy audio extraction and concise provider errors. This is a third-party source adapter, not the official IFrame API. It does not contain a hidden YouTube player, bypass authentication/DRM, extract personal browser sessions or distribute provider credentials.
 
-## Compact DJ panel — 2026-10-12
+The actual Hetzner probe for the supplied video failed with normal YouTube sign-in/bot verification. Consequently YouTube audio is NOT verified working. The owner offered to prepare a separate bot account. Account authentication remains pending; no cookies or password have been collected, and no account-authentication configuration has been deployed. Earlier official shared-player evidence does not certify this adapter. Spotify room audio is not implemented.
 
-Owner requested the extracted Recep loop over compact playback/queue controls, then explicitly rejected glass and pink. Implemented a draggable, bounded opaque ROOMS dark/purple panel, persistent across ordinary navigation. Silent alpha animation loops independently of music. A visible official YouTube player is kept at least 200px high; closing the panel destroys local playback, not another member's audio. Shared Activity queue supports video URLs, public playlist URLs, previous/next, pause/resume, seek, remove, and host-local shuffle/repeat. Personal volume affects only this installation. Queue limit remains100; imports report partial failure. Unsupported providers are rejected explicitly; Spotify audio publishing is not claimed.
+## Actual evidence
 
-Playlist IDs come only from the official IFrame API's cuePlaylist/getPlaylist, in a visible preview, with source/origin/nonce-checked messages and bounded timeout/results. Native IPC validates identifiers, and the HTTPS wrapper stays backwards compatible with existing video URLs. Owner separately authorized activities-only deployment; encrypted backup rooms-20261012T123634Z.tar.age and previous activities bundle retained. New bundle SHA25649e05edc9389c291aec4cfc0840b89667354fcabfa8fbda1dd43444187c86349, health passed, public playlist wrapper HTML returned. No Hoppers/access/provider account changes.
+Focused local suite:10 tests across worker, gateway, popup, source canonicalization and URL parser passed. This includes lazy playlist downloading, cache reuse, private snapshot shape, source cleanup, controller membership, publish-only grants and forged/revoked lease rejection.
 
-Six local tests passed (URL scope, route compatibility/schema, video command sequence and trusted playlist import). Browser DEV-only visual checks confirmed actual alpha loop running/muted, draggable panel, no backdrop filter and bounded950x700 layout with zero page errors; resize initially exposed a placement bug which was corrected and rerun. Screenshots are private evidence under .local/dj. A direct external-provider playlist browser attempt timed out; do not claim live playlist playback or two-Mac synchronization acceptance. Existing separate voice-publisher bot requirement remains unimplemented.
+Actual isolated local WebRTC test used one publisher and two Node RTC subscribers: each received334 frames,289 with nonzero samples. This proves local transport only; it does not certify two physical Macs or production audible playback. The owned local SFU was stopped afterward.
 
-Official API reference: https://developers.google.com/youtube/iframe_api_reference .
+DEV-only visual checks: no page errors, draggable bounded popup at950x700, opaque styling, actual muted/playing loop and no music iframe. Latest popup measured340x501px. Production data was not seeded.
+
+Owner authorized installation of the dedicated music worker and access authorization update after encrypted backup with rollback. Deployment receipts remain private under .local/remediation. Hoppers and personal account data were preserved. Final delivery/version evidence is recorded in CHECKPOINT.md. Apple notarization and actual two-Mac acceptance remain separate open gates.
