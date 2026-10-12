@@ -133,3 +133,7 @@ REL-004 local test failure resolved (96 files / 666 tests pass); REL-005 current
 ## Hosted baseline / phase-two software update — 2026-10-12
 
 REL-009 hosted Ubuntu and macOS jobs PASS at191bd37/run38312614543; provenance/signing/next-RC gates remain open. REL-001 local delayed microphone completion/error guards pass; physical owner/friend audibility still OPEN. REL-006 reaction-refresh account fencing and gateway merge regressions pass; normal-user/outsider real journeys still OPEN. REL-014 visual decode failure now retains poster/retry, native DEMO loop/recovery verified; packaged next-RC owner acceptance still OPEN. Phase-two full local suite672 tests and signed-out smoke pass. Public REL-002/003 and all413 references retain their independent open status.
+
+## REL-008 local compatibility follow-up
+
+Version1 structural read/write boundary and supported unversioned shape are locally verified; unknown versions cannot be silently reset. Synthetic poll/board/receipts and retained game table/history formats preserved. Real disposable PostgreSQL dump/restore gives identical state hashes. This does not close REL-008: actual historical production payloads, current encrypted full backup/objects/ledger restore and measured production RPO/RTO remain required. REL-006/007/003 also remain OPEN without disposable ordinary-account/mail/data-request evidence.
