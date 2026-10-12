@@ -21,3 +21,8 @@ it('imports YouTube playlist references but downloads only the current audio fil
  await worker.command('youtube-room',lease,{type:'add',url:'https://www.youtube.com/playlist?list=PLabcdefgh123'});expect(downloads).toBe(1);expect(worker.snapshot('youtube-room').queue).toHaveLength(2);expect(JSON.stringify(worker.snapshot('youtube-room'))).not.toContain('youtube.com');
  await worker.command('youtube-room',lease,{type:'next'});expect(downloads).toBe(2);await worker.command('youtube-room',lease,{type:'previous'});expect(downloads).toBe(2);
 });
+it('starts a long YouTube set through the streaming publisher without a full-file download',async()=>{
+ const {publisher,lease}=await setup();const stream=vi.fn(async()=>{});const download=vi.fn(async()=>{throw new Error('Full-set download must not occur');});
+ const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube:stream}),lease:async()=>lease,youtubeReferences:async()=>[{source:'https://www.youtube.com/watch?v=6MAzUT1YhWE',title:'Live set',durationSec:6128}],youtubeFile:download});workers.push(worker);
+ const snapshot=await worker.command('stream-room',lease,{type:'add',url:'https://www.youtube.com/watch?v=6MAzUT1YhWE'});expect(snapshot.status).toBe('playing');expect(snapshot.queue[0]?.durationSec).toBe(6128);expect(stream).toHaveBeenCalledTimes(1);expect(download).not.toHaveBeenCalled();
+});
