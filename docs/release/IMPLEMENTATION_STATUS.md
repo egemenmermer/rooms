@@ -48,3 +48,8 @@ Phase-two software repairs pass29 focused tests and full672 tests (98 files), li
 ## Phase-three independent local data work
 
 Durable Activity version1 codec implemented with pure supported-v0 reading, explicit version/nested-structure checks, extension/game/history preservation and fail-without-reset behavior. Eight focused compatibility checks and full99 files /680 tests pass; build/services pass. Disposable actual PostgreSQL persistence, unknown-version row preservation and custom dump → separate database restore pass with identical state hash. Production archived snapshots/current backup/uploads/Mongo/ledger, ordinary QA accounts/outsider, real reset-mail/session revocation and private export/deletion remain OPEN; no disposable authenticated desktop fixture is configured. See PHASE_THREE_DATA.md. Local phase-four pipeline preparation can proceed without closing those gates.
+
+
+## Continuation result — 2026-10-13
+
+Local continuation completed through the independent data/RC preparation:101files/685tests and exact-source hosted CI PASS. Local notarized0.1.18-rc.1/build1791842324/sourceab03fe0 archives prepared and separate signed-out launch verified. Actual latest encrypted-backup Activity subset27rooms/60archives/1,255receipts restored/read/projected without mutation. Full Mongo/objects/ledger restore, ordinary QA/mail/data requests, two physical Macs, next-candidate update/recovery, alert delivery and six-identity2h acceptance remain OPEN. No installed/feed/production/Hoppers change. See RC_0_1_18_RESULTS.json and PRIVATE_ACCEPTANCE.md. Next required evidence is a named disposable QA community/mailbox and owner/friend physical participation; existing accounts are not substitutes.

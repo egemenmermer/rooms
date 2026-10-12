@@ -21,3 +21,14 @@ Activity events log only fixed category/operation/version/source/time, throttled
 Final local verify:ci PASS:101 files /685 tests, lint/typecheck/build/four services. Current signed-out Electron smoke PASS. Release/ops focused5 tests PASS; full production audit remains zero, one moderate dev packaging residual previously documented. Dirty-source release gate is also exercised and refuses before signing; source-SHA changes during packaging fail before publication/manifest acceptance. Final syntax/lint recheck covers the SHA-freeze guard.
 
 A local signed candidate is being prepared only after committing this verified source, with publication explicitly disabled. Do not infer artifact/notarization success until the pipeline actually completes. PRIVATE_ACCEPTANCE.md remains the gate ledger; physical media, ordinary-account/mail, current production restore/export/deletion, alert delivery and measured six-identity session remain unaccepted.
+
+
+## Actual candidate result — 2026-10-13
+
+Signed candidate0.1.18-rc.1 /build1791842324 from sourceab03fe0 completed successfully. First Documents-output attempt failed at Sparkle Downloader signing with resource-fork/Finder metadata; failure retained and only its failed generated mac-arm64 tree removed. Retry used the pipeline's non-cloud /tmp output; strict signature then passed. Apple submission80bd3fd0-5d73-493a-a056-1f6129fbb9a0 Accepted, app/DMG staple/validate and Gatekeeper passed. Explicit notarytool pipeline enforces acceptance even though electron-builder's internal notarization is disabled for Keychain-profile handling.
+
+Local manifest and final ZIP/DMG copied to release/candidates/0.1.18-rc.1 with exact hash parity. ZIP separately extracted under /tmp: strict nested signature, staple and version passed. Actual candidate executable launched with a random disposable profile, rendered welcome/About0.1.18-rc.1, exposed no renderer require, emitted no pageerrors and decoded the local640×798visual (21frames,1.003s). Profile removed after normal close. This is signed-out same-host launch, not fresh friend install or accepted authenticated/physical DJ playback.
+
+Hosted CI on exact sourceab03fe0, run38313641233: Ubuntu and macOS native smoke PASS. GitHub warns pinned actions target deprecated Node20 and are automatically run with Node24; jobs passed, future action-runtime pin refresh is a documented maintenance follow-up. Intermediate branch runs were cancelled by the workflow's intended concurrency policy, not accepted as passing.
+
+Installed /Applications/ROOMS.app stays preview.4; no update-feed/public release, production service deployment, retained-archive replacement or Hoppers change. Candidate remains unaccepted for physical media/current auth/data rights/full restore/update recovery/alerts/soak. It is not the final frozen distribution. RC_0_1_18_RESULTS.json binds exact hashes/results and explicit open gates.

@@ -62,3 +62,8 @@ See PHASE_ONE_RESULTS.md for current actual commands, failures and corrected out
 ## Activity structural compatibility — 2026-10-12
 
 Eight focused compatibility tests PASS; full99 files /680 tests and lint/type/build/services PASS. Real disposable PG16 fixture-authorized HTTP poll/idempotency persists through service/pool restart; future-version row rejected without alteration; pg_dump → separate empty database restore retains identical state SHA256 and valid poll/receipts. Cluster stopped/deleted. This is synthetic QA state, not the current production backup. Initial temporary CJS wrapper rejected top-level await and was corrected before running database operations. PHASE_THREE_DATA.md preserves the scope and open archived-game/Mongo/object/ledger/auth/reset/export/deletion gates.
+
+
+## Continuation result — 2026-10-13
+
+Actual sourceab03fe0 CI run38313641233 PASS (Ubuntu +macOS native smoke). Final local101files/685tests and lint/type/build/services/signed-out smoke PASS. Signed RC0.1.18-rc.1/build1791842324: Apple Accepted/staple/Gatekeeper/strict signature, copied hashes and extracted ZIP verification PASS; isolated signed-out native launch/About/local visual PASS. First Documents signing failure and SCP timeout preserved with corrected local environment/bounded transfer. Actual latest encrypted backup Activity-only restore/projection PASS; private plaintext removed. Exact sanitized results and open gates in RC_0_1_18_RESULTS.json. No public/feed/production/installed-app/retained/Hoppers mutation.

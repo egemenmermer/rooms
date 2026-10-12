@@ -137,3 +137,8 @@ REL-009 hosted Ubuntu and macOS jobs PASS at191bd37/run38312614543; provenance/s
 ## REL-008 local compatibility follow-up
 
 Version1 structural read/write boundary and supported unversioned shape are locally verified; unknown versions cannot be silently reset. Synthetic poll/board/receipts and retained game table/history formats preserved. Real disposable PostgreSQL dump/restore gives identical state hashes. This does not close REL-008: actual historical production payloads, current encrypted full backup/objects/ledger restore and measured production RPO/RTO remain required. REL-006/007/003 also remain OPEN without disposable ordinary-account/mail/data-request evidence.
+
+
+## Continuation result — 2026-10-13
+
+REL-009 now has actual exact-source hosted CI and local version/provenance manifest; final immutable acceptance/distribution still OPEN. REL-008 current-backup Activity read/restore/projection subset PASS; full Mongo/object/ledger recovery and remaining archived formats still OPEN. REL-010 local notarized RC archives/extract/signature/isolated signed-out launch PASS; friend fresh install and actual preview.4→RC update/recovery still OPEN. REL-011 sanitized Activity categories and DB probe locally tested; real alert pipeline/drills remain OPEN. Physical REL-001, normal-user/outsider REL-006, delivered reset REL-007, private data operations REL-003 and measured REL-012 remain OPEN. Public rights/privacy/413-state gates unchanged.
