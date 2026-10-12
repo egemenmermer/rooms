@@ -1,3 +1,4 @@
+import {useNavigate} from 'react-router-dom';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {Music2,X,Plus,Play,Pause,SkipBack,SkipForward,Repeat,Shuffle,Volume2,Trash2,ChevronDown,ChevronUp} from 'lucide-react';
 import {create} from 'zustand';
@@ -11,7 +12,8 @@ import type {ActivityCommand} from '@rooms/activity-protocol';
 import './music-dj.css';
 const useDJ=create<{open:boolean;show():void;hide():void}>(set=>({open:false,show:()=>set({open:true}),hide:()=>set({open:false})}));
 export const openMusicDJ=()=>useDJ.getState().show();
-export function MusicDJEntry(){useEffect(openMusicDJ,[]);return <div className="dj-entry"><Music2 size={28}/><h2>DJ Recep</h2><button className="button primary" onClick={openMusicDJ}>DJ panelini aç</button></div>;}
+export function openRoomActivity(path:string,navigate:(path:string)=>void){if(path==='/youtube')openMusicDJ();else navigate(path);}
+export function MusicDJEntry({returnTo='/home'}:{returnTo?:string}){const navigate=useNavigate();useEffect(()=>{openMusicDJ();navigate(returnTo,{replace:true});},[navigate,returnTo]);return null;}
 type Player={url:string;nonce:string};
 const clock=(v:number)=>`${Math.floor(v/60)}:${String(Math.floor(v%60)).padStart(2,'0')}`;
 /** One visible official player above shared queue controls. Account/room changes destroy its scope. */

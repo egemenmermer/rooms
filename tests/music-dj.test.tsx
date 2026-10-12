@@ -2,7 +2,8 @@
 import {afterEach,beforeEach,expect,it,vi} from 'vitest';
 import type {ActivityCommand} from '@rooms/activity-protocol';
 import {cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
-import {MusicDJ,openMusicDJ} from '../apps/desktop/src/MusicDJ';
+import {MemoryRouter,Routes,Route} from 'react-router-dom';
+import {MusicDJ,MusicDJEntry,openMusicDJ,openRoomActivity} from '../apps/desktop/src/MusicDJ';
 import {useCommunity} from '../apps/desktop/src/community';
 const mocks=vi.hoisted(()=>({send:vi.fn(async(_command:ActivityCommand)=>{}),playlist:vi.fn(async()=>({url:'https://rooms.test/player/youtube?playlistId=PLabcdefgh123',nonce:'trusted-nonce'})),room:{roomId:'room',revision:1,participants:[],primary:null,timeline:{itemId:null,playing:false,positionSec:0,epoch:1,effectiveServerTimeMs:0,rate:1},queue:[]}}));
 vi.mock('../apps/desktop/src/realtime',()=>({useRealtime:()=>({channelId:'room',roomName:'Friends'})}));
@@ -22,4 +23,10 @@ it('imports only a playlist response from its actual source, origin and nonce',a
  fireEvent(window,new MessageEvent('message',{origin:'https://rooms.test',source:frame.contentWindow,data:{type:'rooms-youtube',nonce:'trusted-nonce',event:'playlist',data:{ids:['PgHzDZJwGW8','M7lc1UVf-VE']}}}));
  await waitFor(()=>expect(mocks.send).toHaveBeenCalledTimes(5));expect(mocks.send.mock.calls.filter(call=>(call as unknown as [{type:string}])[0].type==='queue.add')).toHaveLength(2);
  await waitFor(()=>expect(screen.queryByTitle('YouTube playlist önizlemesi')).toBeNull());
+});
+
+it('opens DJ from activity actions without changing the underlying route',()=>{const navigate=vi.fn();openRoomActivity('/youtube',navigate);expect(navigate).not.toHaveBeenCalled();openRoomActivity('/cinema',navigate);expect(navigate).toHaveBeenCalledWith('/cinema');});
+it('legacy DJ route opens only the popup and restores the previous conversation',async()=>{
+ render(<MemoryRouter initialEntries={['/youtube']}><Routes><Route path="/youtube" element={<MusicDJEntry returnTo="/chat"/>}/><Route path="/chat" element={<p>Current conversation</p>}/></Routes><MusicDJ/></MemoryRouter>);
+ await screen.findByText('Current conversation');expect(screen.getByRole('dialog',{name:'DJ Recep'})).toBeTruthy();expect(screen.queryByText('DJ panelini aç')).toBeNull();
 });
