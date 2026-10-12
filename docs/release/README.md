@@ -20,3 +20,7 @@ Snapshot: reference implementation `06f5477`. These are dated audit findings, no
 Audit UI evidence: [signed-out onboarding](evidence/audit-onboarding.png), [signed-out Agent entry](evidence/audit-agent-signedout.png). Neither proves authenticated integration or physical transport.
 
 For the project explanation start at [the project handbook](../project/README.md). Private audit files are intentionally excluded from the public documentation generator.
+
+## Sparkle follow-up
+
+[Native old-to-new update acceptance](SPARKLE_UPDATE_ACCEPTANCE.md) verifies preview.3 → preview.4 installation on normal quit and next launch. Sparkle integration is tracked separately from the initial audit and broader fresh-install/interruption gates.

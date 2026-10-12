@@ -59,3 +59,7 @@ node scripts/verify-activity-desktop.mjs
 The last command opens two actual Electron clients and uses the actual Activity service with explicitly marked **social authorization QA fixtures**. It verifies game interaction, poll voting, whiteboard sharing and shared local-demo playback; it does not verify production Stoat login. `pnpm stoat:verify` requires live Stoat and its private fixtures. Legacy Spacebar scripts/evidence remain historical and do not establish Stoat acceptance.
 
 [Approved remaining phases](docs/REMAINING_PHASES_PLAN.md), [design](docs/DESIGN_SYSTEM.md), [visual QA](docs/VISUAL_QA.md), [Activity protocol](docs/ACTIVITY_PROTOCOL.md), [game rules](docs/GAME_RULES.md), and [third-party notices](docs/THIRD_PARTY_NOTICES.md) describe scope and boundaries.
+
+## Mac in-app updates
+
+Signed Sparkle-enabled releases can check updates in Settings → Güncelleme ve hakkında. With automatic updates enabled, downloaded updates install on normal app quit and are used at the next open. Cmd-Q quits; closing to tray may keep the application running. Releases without Sparkle need one manual signed installation. See [Sparkle delivery](docs/rooms-implementation/SPARKLE_DELIVERY.md) and [actual old-to-new acceptance](docs/release/SPARKLE_UPDATE_ACCEPTANCE.md).
