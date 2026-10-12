@@ -54,7 +54,7 @@ export function InviteLanding({ invite, onClose, notify }: {
         finally { setBusy(false); }
     };
 
-    return <Modal title="Birlikte daha güzel." onClose={onClose} className="rooms-invitation">
+    return <Modal title="Topluluk daveti" onClose={onClose} className="rooms-invitation">
         <div className="invitation-art" aria-hidden="true"><Users size={29}/></div>
         {loading ? <p className="modal-description invitation-loading" role="status"><LoaderCircle size={16} className="spin"/>Davet kontrol ediliyor…</p> : <div className="invitation-copy">
             <h3>{preview?.space?.name ?? (error ? 'Davet açılamadı.' : 'Özel topluluk daveti')}</h3>
