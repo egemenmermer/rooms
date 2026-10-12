@@ -24,7 +24,7 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
     const roomCount=activity.room?.participants.length;
     const catalog=[
         {label:'Cinema',icon:'film',description:'Kendi dosyanı seç veya ekran paylaş.',path:'/cinema'},
-        {label:'DJ Recep',icon:'play',description:'YouTube ve playlist kuyruğu.',path:'/youtube'},
+        {label:'DJ Recep',icon:'play',description:'Ses odasına müzik botu çağır.',path:'/youtube'},
         {label:'Oyun masası',icon:'cards',description:'Hold’em, Blackjack, Batak ve 101 Okey.',path:'/games'},
     ];
     return <Modal title={forbidden?'Etkinlik başlatılamıyor':primary?(primary.activity==='cinema'?'Salonda Cinema devam ediyor':'Devam eden etkinlik'):'Beraber ne yapalım?'} onClose={onClose} className={`launcher-modal reference-launcher-modal ${primary?'has-active-activity':''} ${forbidden?'is-forbidden':''}`}>
