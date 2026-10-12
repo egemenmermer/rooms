@@ -1,0 +1,14 @@
+{
+  "result": "PASS_INSTALL_AND_NEXT_LAUNCH",
+  "fromVersion": "0.1.17-preview.3",
+  "toVersion": "0.1.17-preview.4",
+  "toBuild": "1791819276",
+  "feed": "https://62.238.119.134/rooms-updates/appcast.xml",
+  "installation": "Native Sparkle install on normal application quit",
+  "relaunch": "Normal next launch, automatic relaunch not observed",
+  "profileMarkerPreserved": true,
+  "rendererLocalStorageMarkerPreserved": true,
+  "reopenedProcessPresent": true,
+  "reopenedUsesIsolatedProfile": true,
+  "ownerAppAndSessionFingerprintsUnchanged": true
+}
