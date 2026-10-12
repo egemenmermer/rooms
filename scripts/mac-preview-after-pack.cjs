@@ -12,7 +12,7 @@ module.exports = async context => {
     if(!existsSync(framework)||!existsSync('dist-native/rooms-sparkle.node'))throw new Error('Prepare Sparkle before packaging');
     const copied=spawnSync('/bin/cp',['-R',framework,join(app,'Contents/Frameworks/Sparkle.framework')],{stdio:'inherit'});
     if(copied.status!==0)throw new Error('Sparkle framework copy failed');
-    const native=join(app,'Contents/Resources/native');mkdirSync(native,{recursive:true});copyFileSync('dist-native/rooms-sparkle.node',join(native,'rooms-sparkle.node'));
+    const native=join(app,'Contents/Resources/native');mkdirSync(native,{recursive:true});copyFileSync('dist-native/rooms-sparkle.node',join(native,'rooms-sparkle.node'));copyFileSync('.local/sparkle/LICENSE',join(native,'Sparkle-LICENSE.txt'));
   }
   const result = spawnSync('/usr/bin/xattr', ['-cr', app], { stdio: 'inherit' });
   if (result.error) throw result.error;
