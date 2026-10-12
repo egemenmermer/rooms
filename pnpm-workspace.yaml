@@ -6,6 +6,9 @@ allowBuilds:
   electron: true
   electron-winstaller: false
   esbuild: true
+overrides:
+  '@typescript-eslint/tsconfig-utils': 8.70.0
+  '@typescript-eslint/types': 8.70.0
 minimumReleaseAgeExclude:
   - '@playwright/test@1.64.0'
   - electron@44.7.0
