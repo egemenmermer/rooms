@@ -58,3 +58,8 @@ Local continuation completed through the independent data/RC preparation:101file
 ## Owner-approved minimal UI — 2026-10-13
 
 Conversation-first shell and local room-event sounds implemented;105files/705tests, lint/typecheck/build and exact-source hosted CI PASS. Separate notarizedRC.2/build1791845627 from30ffd42 prepared/extracted/launched with disposable profile, with no account/data mutation. InstalledRC.1 preserved, feed and services unchanged. See MINIMAL_ROOM_UI.md and RC_0_1_18_2_RESULTS.json. Owner visual/sound and physical two-Mac acceptance remain OPEN. SMTP deferred; password not changed.
+
+
+## Owner Kıraathane/speaking refinement — 2026-10-13
+
+Supplied interior image, transparent HTML labels and existing-game entry implemented; current table uses authoritative seats, unsupported chess/backgammon disabled and one-primary-game constraint preserved. Existing microphone tracks provide visual metering without new capture/playback/publication. Local107files/711tests, focused24checks and exact-source CI38322060530 PASS. Separate Apple-notarizedRC.3/build1791847538/source7b69962 packaged, copied/extracted and launched on a disposable profile; actual packaged image loads under file://. InstalledRC.1, RC.2, profiles and retained archives preserved; no feed/services/accounts/Hoppers changes. Physical speech timing, owner visual acceptance and real friend matches remain OPEN. See KIRAATHANE_SPEAKING_UI.md and RC_0_1_18_3_RESULTS.json.

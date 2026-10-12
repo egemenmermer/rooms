@@ -9,7 +9,7 @@
 Use existing published/subscribed microphone tracks for timely local visual metering, without additional capture or audio playback. Preserve server speech fallback when metering is unavailable. Preserve mute, room/account lifecycle and all game commands. No service rollout, account changes, SMTP work or existing installation replacement.
 
 ## Verification
-Implementation and scoped local verification pending. Physical two-Mac timing and audio acceptance remain open.
+Local implementation, source CI and signed candidate verification are complete; see the final result below. Physical two-Mac timing/audio, owner visual acceptance and real friend matches remain open.
 
 ## Implemented and checked locally
 - Shared Web Audio analyser reads existing local/subscribed microphone tracks every 40ms; RMS thresholds/hysteresis and 180ms release prevent rapid flicker. Only boolean transitions notify the UI. No new getUserMedia, speaker output, recording or publication. Muted, ended and non-connected tracks are excluded; track replacement/removal closes nodes/context. Suspended/unavailable Web Audio falls back to LiveKit speech state. Server diagnostics interval is unchanged.
@@ -23,3 +23,12 @@ RC.3 will be independently signed/notarized with publication disabled. Existing 
 Pre-notarization release review identified an absolute JSX image path that works under the development web origin but resolves incorrectly under packaged `file://`. Owned first packaging tree stopped; staging/log retained, not accepted as a release. Corrected to document-relative asset path, with a regression assertion and signed native asset-load check planned. Speech analyser teardown now also occurs immediately at disconnect before asynchronous mixer teardown.
 
 Owner refinement: keep the image dominant with subtle, transparent, readable text. Removed opaque cards/borders/shadows; labels use ~19% dark tint, 1px background blur, warm light text with restrained text shadow, compact translucent status pills and clear keyboard focus. Tools float over the scene instead of adding another opaque toolbar. Disabled labels are concise; full reasons remain in title/accessible description. Second owned pre-notarization package stopped to incorporate this refinement; no accepted artifact overwritten. Final native wide/narrow and Enter-to-open/return checks PASS, no pageerrors; synthetic detection99.3ms on this run. Owner visual acceptance remains open.
+
+
+## Final RC.3 result
+
+Source7b699622d2401c14ed0d5b5b4741646fa0f2b8d1; exact-source hosted run38322060530 PASS (Ubuntu baseline including full suite/audits, macOS native shell smoke). Earlier source runs were superseded/cancelled by workflow concurrency, not counted. Version0.1.18-rc.3/build1791847538; Apple submissionf5de16dd-72e5-4a90-9498-d2edaa365769 Accepted. Final pipeline exit0; strict nested signature, app/DMG ticket staple/validation and Gatekeeper PASS. Earlier two owned pre-notarization staging attempts were stopped for source review/owner refinement; neither accepted as final.
+
+ZIP and DMG copied to release/candidates/0.1.18-rc.3 with manifest hash parity. Copied ZIP separately extracted under an owned temporary directory: strict signature, ticket and version/build PASS; extraction removed. Signed app launched on a random disposable profile: correct version/About, renderer Node unavailable, actual packaged JPEG loads via file:// at1280×720, zero pageerrors. Profile removed after normal close. Build asset bytes exactly match the owner attachment; JSX uses a relative path.
+
+See RC_0_1_18_3_RESULTS.json for checksums and scoped native evidence. /Applications/ROOMS.app still0.1.18-rc.1, previous app and RC.2/retained archives preserved. No automatic update feed publication, production service rollout, account/password/SMTP/Hoppers mutation. Trello request and installation cards updated/read back; owner and two-Mac acceptance remain OPEN. Supported games preserve existing engines; chess/backgammon and multiple simultaneous tables are not implemented.

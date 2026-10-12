@@ -1,6 +1,6 @@
 # Private release remaining acceptance
 
-Root-only implementation. Preserve existing accounts, production data, Hoppers and release/retained. Local automation and mock fixtures cannot close the gates below. Notarized candidate0.1.18-rc.1/build1791842324 is installed on the owner Mac. Separate notarized0.1.18-rc.2/build1791845627 includes recovery-origin and owner-approved minimal UI changes, with local checks recorded in RC_0_1_18_2_RESULTS.json; it is not installed or physically accepted. No private distribution/freeze until the accepted artifact and core gates are recorded.
+Root-only implementation. Preserve existing accounts, production data, Hoppers and release/retained. Local automation and mock fixtures cannot close the gates below. Notarized candidate0.1.18-rc.1/build1791842324 is installed on the owner Mac. Separate notarized0.1.18-rc.2/build1791845627 includes recovery-origin and owner-approved minimal UI changes, with local checks recorded in RC_0_1_18_2_RESULTS.json; it is not installed or physically accepted. Separate notarizedRC.3/build1791847538 adds Kıraathane and speaking metering, with scoped local evidence in RC_0_1_18_3_RESULTS.json; it is also not installed or physically accepted. No private distribution/freeze until the accepted artifact and core gates are recorded.
 
 ## Ordinary-account staging (REL-006/007)
 
@@ -11,6 +11,8 @@ Record invite expiry/one-use/partial signup, two-way message edit/delete/upload 
 ## Physical owner/friend media (REL-001)
 
 Record exact bundle version/build/checksum, macOS/device selection and separate identities/networks. A→B and B→A must be heard by the recipient. Exercise mute/deafen/PTT (including typing and key release), unplug/default fallback, denied mic/camera/screen permissions, navigation30min, restrictive-network/TURN/reconnect, camera, chosen window/screen and explicitly enabled system audio. Leave/logout/revocation stops actual received tracks. Verify DJ queue/pause/resume, source refusal/session renewal and listener-local gain without claiming provider availability from mocked commands. Record the Recep loop from the actual candidate popup and recovery if decoding fails.
+
+For RC.3, measure speech-ring onset/clear against actual local and received microphone audio, including muted/deafened/reconnect/room changes. Exercise real supported game creation/seating/play/return with friend identities; native DEMO button navigation is insufficient. Chess/backgammon and simultaneous multi-table support are not implemented.
 
 Do not close this section without both physical participants. Signaling/connected labels, SFU membership and native DEMO animation checks are different evidence.
 
