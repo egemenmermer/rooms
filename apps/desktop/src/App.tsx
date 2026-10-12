@@ -218,7 +218,7 @@ export default function App() {
         return () => window.removeEventListener('keydown', handler);
     }, [navigate, close, overlay, nativeInvite, settingsPage, closeSettings, realtime.channelId, notify, channelNavOpen, contextDrawerOpen]);
     useEffect(() => applyAppearancePreferences(p), [p]);
-    const titles: Record<string, string> = { '/home': "Ana sayfa", '/friends': 'Arkadaşlar', '/messages':'Mesajlar', '/media': 'Medyam', '/spaces': tr("Your spaces"), '/chat': channel.startsWith('dm-') ? channel.slice(3) : `# ${channel}`, '/voice': tr("The lounge"), '/cinema': tr("Cinema"), '/settings': tr("Settings"), '/notifications': 'Bildirimler', '/polls': tr("Quick polls"), '/agent': 'Agent', '/together': 'Birlikte', '/games': tr("Oyun masas\u0131"), '/youtube': 'Birlikte YouTube' };
+    const titles: Record<string, string> = { '/home': "Ana sayfa", '/friends': 'Arkadaşlar', '/messages':'Mesajlar', '/media': 'Medyam', '/spaces': tr("Your spaces"), '/chat': channel.startsWith('dm-') ? channel.slice(3) : `# ${channel}`, '/voice': tr("The lounge"), '/cinema': tr("Cinema"), '/settings': tr("Settings"), '/notifications': 'Bildirimler', '/polls': tr("Quick polls"), '/agent': 'Agent', '/together': 'Birlikte', '/games': 'Kıraathane', '/youtube': 'Birlikte YouTube' };
     const setupName = visiblePath.startsWith('/setup/') ? visiblePath.slice(7) : null;
     const setupModes: ReferenceOnboardingMode[] = ['welcome', 'signin', 'register', 'recovery', 'invite', 'profile', 'devices'];
     const setupMode = setupModes.find(mode => mode === setupName);
