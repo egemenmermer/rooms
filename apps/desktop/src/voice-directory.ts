@@ -25,5 +25,5 @@ export function useVoiceDirectory(channelIds:string[]) {
     };
     void read();return()=>{active=false;clearTimeout(timer);window.removeEventListener('rooms:channel-access-invalidated',invalidate);};
   },[scope,userId,ids]);
-  return snapshot.scope===scope?snapshot:{scope,rooms:[] as Directory,error:false};
+  return snapshot.scope===scope?{...snapshot,loading:false}:{scope,rooms:[] as Directory,error:false,loading:true};
 }

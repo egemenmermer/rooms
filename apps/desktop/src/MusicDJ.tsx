@@ -15,10 +15,10 @@ const useDJ=create<{open:boolean;show():void;hide():void}>(set=>({open:false,sho
 export const openMusicDJ=()=>useDJ.getState().show();
 export function openRoomActivity(path:string,navigate:(path:string)=>void){if(path==='/youtube')openMusicDJ();else navigate(path);}
 export function MusicDJEntry({returnTo='/home'}:{returnTo?:string}){const navigate=useNavigate();useEffect(()=>{openMusicDJ();navigate(returnTo,{replace:true});},[navigate,returnTo]);return null;}
-export function MusicDJ(){
+export function MusicDJ({showTrigger=true}:{showTrigger?:boolean}){
  const community=useCommunity(),voice=useRealtime(),dj=useDJ();
  if(!community.user)return null;
- return <>{!dj.open&&<button className="dj-launch" onClick={dj.show} title="DJ Recep"><Music2 size={20}/><span>DJ</span></button>}{dj.open&&<DJPanel key={`${community.serverUrl}:${community.user.id}:${voice.channelId??'none'}`} channelId={voice.channelId} onClose={dj.hide}/>}</>;
+ return <>{showTrigger&&!dj.open&&<button className="dj-launch" onClick={dj.show} title="DJ Recep"><Music2 size={20}/><span>DJ</span></button>}{dj.open&&<DJPanel key={`${community.serverUrl}:${community.user.id}:${voice.channelId??'none'}`} channelId={voice.channelId} onClose={dj.hide}/>}</>;
 }
 const clock=(v:number)=>`${Math.floor(v/60)}:${String(Math.floor(v%60)).padStart(2,'0')}`;
 function DJPanel({channelId,onClose}:{channelId:string|null;onClose():void}){
