@@ -19,3 +19,5 @@ Implementation and scoped local verification pending. Physical two-Mac timing an
 - Native synthetic oscillator fed an existing MediaStream track into the actual analyser, without microphone capture/output/publication. Detected after 95.6ms including context startup and cleared on silence. This is synthetic local evidence, not physical speech or two-client latency acceptance.
 
 RC.3 will be independently signed/notarized with publication disabled. Existing /Applications/ROOMS.app RC.1, profiles, RC.2 and retained archives remain preserved. Final package result pending. Trello: https://trello.com/c/TiGoJ2aG (owner/two-Mac acceptance remains open).
+
+Pre-notarization release review identified an absolute JSX image path that works under the development web origin but resolves incorrectly under packaged `file://`. Owned first packaging tree stopped; staging/log retained, not accepted as a release. Corrected to document-relative asset path, with a regression assertion and signed native asset-load check planned. Speech analyser teardown now also occurs immediately at disconnect before asynchronous mixer teardown.

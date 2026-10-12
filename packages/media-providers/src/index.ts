@@ -221,7 +221,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   }
   private cleanupPlayback() { this.speakingMeter.stop(); if (this.timer) clearInterval(this.timer); this.timer = undefined; this.attachments.forEach(detach => detach()); this.audio.forEach(e => { e.pause(); e.srcObject = null; e.remove(); }); this.audio.clear(); this.priorStats = null; }
   async disconnect() {
-    ++this.epoch;const room=this.room;this.room=null;this.grant=null;
+    ++this.epoch;const room=this.room;this.room=null;this.grant=null;this.speakingMeter.stop();
     this.stopSoundboard();await this.soundboardWork;
     await this.mixer?.destroy();this.mixer=null;this.mixerTrack=null;
     await this.soundContext?.close();this.soundContext=null;
