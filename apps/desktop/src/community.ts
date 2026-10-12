@@ -125,7 +125,7 @@ function onEvent(event:GatewayEvent){
     if(event.type==='MESSAGE_CREATE'&&message.channelId===state.activeChannelId&&location.hash.startsWith('#/chat')&&document.hasFocus())void state.markRead(message.channelId,message.id);
   }else if(event.type==='MESSAGE_DELETE'){const d=event.data as {id:string;channel_id:string};const cached=conversations.get(d.channel_id);if(cached)conversations.put(d.channel_id,{...cached,messages:cached.messages.filter(m=>m.id!==d.id)});if(d.channel_id===state.activeChannelId)useCommunity.setState(s=>({messages:s.messages.filter(m=>m.id!==d.id)}));}
   else if(event.type==='PRESENCE_UPDATE'){const d=event.data as {userId?:string;status?:string};if(d.userId&&d.status)useCommunity.setState(s=>({presence:{...s.presence,[d.userId!]:d.status!}}));}
-  else if(event.type==='SOCIAL_REFRESH'||event.type==='RESUMED'){window.dispatchEvent(new Event('rooms:community-management-invalidated'));void state.refresh();if(event.type==='RESUMED'&&state.activeChannelId)void state.openChannel(state.activeChannelId,true);}
+  else if(event.type==='SOCIAL_REFRESH'||event.type==='RESUMED'){window.dispatchEvent(new Event('rooms:friends-changed'));window.dispatchEvent(new Event('rooms:community-management-invalidated'));void state.refresh();if(event.type==='RESUMED'&&state.activeChannelId)void state.openChannel(state.activeChannelId,true);}
 }
 /** Concurrent mounts share session restoration, including React StrictMode remounts. */
 export function initializeCommunity():Promise<void>{
