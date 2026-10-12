@@ -67,11 +67,8 @@ export function CommunityChat({ notify, membersVisible, onToggleMembers, onSearc
     };
     const react = async (message: CommunityMessage, emoji = '1f44d') => {
         if (!c.activeChannelId || !window.rooms) return;
-        const channelId = c.activeChannelId;
         try {
-            await window.rooms.social.react(channelId, message.id, emoji, message.reactions?.[emoji]?.includes(c.user?.id ?? '') ?? false);
-            const updated = await window.rooms.social.messages(channelId);
-            if (channelId === useCommunity.getState().activeChannelId) useCommunity.setState({ messages: updated });
+            await c.reactMessage(message.id, emoji);
         } catch (error) { notify(uiError(error)); }
     };
     const navigate = useNavigate();
