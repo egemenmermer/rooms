@@ -10,3 +10,5 @@
 @media(max-width:950px){.music-dj{right:12px;width:340px}.dj-launch{right:14px}}@media(max-height:760px){.dj-character{height:240px}.dj-queue{max-height:100px}}
 
 .dj-volume{display:flex;align-items:center;gap:10px;padding:0 3px 14px}.dj-volume button{width:28px;height:28px}.dj-volume input{flex:1;min-width:0;accent-color:var(--accent,#9384ff)}.dj-volume small{width:35px;text-align:right;color:var(--text-secondary);font-size:11px}
+
+.dj-character{position:relative}.dj-character>img{width:100%;height:100%;object-fit:contain}.dj-visual-error{pointer-events:auto;background:#22252ded;border-radius:8px;padding:5px;position:absolute;bottom:18px;left:8px;right:8px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:11px;color:var(--text-secondary,#abb3c0)}.dj-visual-error button{border:1px solid #45454b;background:#232328;color:#f4f6f8;border-radius:6px;padding:4px 7px}.dj-visual-error button:focus-visible{outline:2px solid #b8cdff;outline-offset:2px}
