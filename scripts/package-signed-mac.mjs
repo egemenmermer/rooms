@@ -39,3 +39,5 @@ if(!zip)throw new Error('Release ZIP missing');
 const archive=spawnSync('ditto',['-c','-k','--sequesterRsrc','--keepParent',join(output,'mac-arm64/ROOMS.app'),join(output,zip)],{stdio:'inherit'});if(archive.status!==0)throw new Error('Stapled app archive failed');
 const feedDir=join(output,'sparkle-feed');const {mkdirSync,copyFileSync}=await import('node:fs');mkdirSync(feedDir,{recursive:true});copyFileSync(join(output,zip),join(feedDir,zip));
 const cast=spawnSync('.local/sparkle/bin/generate_appcast',['--account','ROOMS-Sparkle','--download-url-prefix',process.env.ROOMS_UPDATE_FEED,feedDir],{stdio:'inherit'});if(cast.status!==0)throw new Error('Signed appcast generation failed');
+
+if(process.env.ROOMS_PUBLISH_UPDATES==='1'){const publish=spawnSync('node',['scripts/publish-sparkle.mjs'],{stdio:'inherit',env:{...process.env,ROOMS_RELEASE_OUTPUT:output}});if(publish.status!==0)throw new Error('Signed release built, but update publication failed');}
