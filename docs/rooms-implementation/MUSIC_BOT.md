@@ -20,7 +20,7 @@ Actual isolated local WebRTC test used one publisher and two Node RTC subscriber
 
 DEV-only visual checks: no page errors, draggable bounded popup at950x700, opaque styling, actual muted/playing loop and no music iframe. Latest popup measured340x501px. Production data was not seeded.
 
-Owner authorized installation of the dedicated music worker and access authorization update after encrypted backup with rollback. Deployment receipts remain private under .local/remediation. Hoppers and personal account data were preserved. Final delivery/version evidence is recorded in CHECKPOINT.md. Apple notarization and actual two-Mac acceptance remain separate open gates.
+Owner authorized installation of the dedicated music worker and access authorization update after encrypted backup with rollback. Deployment receipts remain private under .local/remediation. Hoppers and personal account data were preserved. Final delivery/version evidence is recorded in CHECKPOINT.md. Apple notarization was completed for the preview deliveries; actual two-Mac audible acceptance remains open.
 
 ## Streaming long sets and radio URL normalization — 2026-10-12
 
@@ -29,3 +29,12 @@ Production YouTube playback now streams the selected fixed-provider non-DRM WebM
 Direct-file fallback cache is bounded to384MiB, with inactive cache eviction before a large source operation. Only one add/source operation is admitted at once. The dedicated container budget is1280MiB memory/768MiB temporary storage; these are caps, not reserved allocations. User's known102-minute set fits. The Mac/native snapshot duration and timeout contract was updated with this change.
 
 Actual source probe45632 succeeded on the deployed authenticated worker. Focused suite48792 passed10 tests; follow-up streaming worker suite17971 passed4 tests including avoiding full-file fetch for the6128-second set. Previous two-listener local transport evidence remains historical; real production participant presence was observed separately after the DNS correction. Apple-approved delivery/installer/hosted feed evidence is in SPARKLE_DELIVERY.md and CHECKPOINT.md. Session expiry/rotation may require an owner-approved refresh; credentials are never shipped to friends.
+
+
+## Source reuse and listener controls — 2026-10-12
+
+The full metadata for an explicitly queued single video is retained only in worker memory for15 minutes, at most8 entries/1MiB each. The stream producer uses a0600 private metadata file to avoid a second extraction request before startup; signed source URLs/headers never reach snapshots or renderer controls. Playlist entries remain lazy. Latest metadata-only worker deploy20261012T151630Z passed health, music SHA256bd9c7fb819423a288f3bc3b402cf32102ab1dad7dfba6d8a2b31fcd579a18e30. Actual installed preview.3 showed the Fred again.. track playing, elapsed time advancing to1:58 and DJ Recep speaking in Lounge. This is actual producer/presence evidence, not physical speaker-output acceptance. YouTube can still reject requests or expire sessions.
+
+The DJ popup now controls the listener's bot volume with a0–100% slider and mute. Right click or Shift+F10 on a joined remote participant in room tiles/sidebar/inspector opens local mute and volume controls. No server mute permission, remote microphone change or global bot gain is involved. Muting persists across track replacement within the connection; connection teardown clears listener state. Departed participants close the menu. Bot profiles no longer offer an invalid social DM action.
+
+The owner-reported microphone failure coincided with Settings showing “selected microphone unavailable”. Explicit unmute now retries a missing/overconstrained device against the system default; permission denial is never retried or bypassed. Successful recovery clears the obsolete error and stored selection. Device/capture error categories use actionable Turkish text without SDK URLs or credentials. Root verification:16 media-provider tests and2 participant-menu tests passed; final signed build/typecheck follows. Native microphone acceptance remains pending until the new installed version is exercised.
