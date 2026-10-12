@@ -1,3 +1,4 @@
+import {activityOperationalReporter,activityBuildInfo,type ActivityOperationalEvent} from './operational-events';
 import Fastify, { type FastifyRequest } from 'fastify';
 import rateLimit from '@fastify/rate-limit';
 import { z } from 'zod';
@@ -9,6 +10,7 @@ import { StoatError } from '@rooms/stoat';
 
 export interface ActivityServerOptions {
   repository: ActivityRepository;
+  onOperationalEvent?:(event:ActivityOperationalEvent)=>void;
   /** Check current upstream membership and permissions on every request. Never cache bearer tokens here. */
   authorize?: (bearer: string, roomId: string) => Promise<ActivityIdentity>;
   clock?: () => number;
@@ -17,6 +19,7 @@ export interface ActivityServerOptions {
   rateLimits?: { ingressPerMinute: number; identityPerMinute: number };
 }
 export async function createActivityServer(options: ActivityServerOptions) {
+  const operationalError=activityOperationalReporter(options.onOperationalEvent);
   const app = Fastify({ logger: false, bodyLimit: 65536 });
   const limits = z.object({ ingressPerMinute: z.number().int().min(1).max(10000), identityPerMinute: z.number().int().min(1).max(10000) }).strict().parse(options.rateLimits ?? { ingressPerMinute: 600, identityPerMinute: 120 });
   // Keep an anonymous ingress cap even when all clients share the reverse proxy.
@@ -58,11 +61,15 @@ export async function createActivityServer(options: ActivityServerOptions) {
     }
     if (error instanceof z.ZodError) return reply.code(400).send({ error: 'INVALID_COMMAND' });
     if ((error as { statusCode?: number }).statusCode === 429) return reply.code(429).send({ error: 'RATE_LIMITED' });
+    operationalError(error,'request');
     // Upstream failures fail closed; do not leak token-bearing request details.
     return reply.code(503).send({ error: 'ACTIVITY_SERVICE_UNAVAILABLE' });
   });
   const roomParam = z.object({ roomId: opaqueId });
-  app.get('/health', async () => ({ service: 'rooms-activities', protocolVersion: 1, authorizationConfigured: !!options.authorize }));
+  app.get('/health', async (_request,reply) => {
+    try{await options.repository.probe?.();return {service:'rooms-activities',protocolVersion:1,authorizationConfigured:!!options.authorize,persistence:options.repository.probe?'available':'not-probed',ready:!!options.authorize&&!!options.repository.probe,...activityBuildInfo};}
+    catch(error){operationalError(error,'health');return reply.code(503).send({service:'rooms-activities',ready:false,persistence:'unavailable',...activityBuildInfo});}
+  });
   app.post('/v1/rooms/:roomId/activity/commands', async request => {
     const { roomId } = roomParam.parse(request.params);
     const identity = await authorizeAndLimit(request, roomId);
@@ -106,7 +113,7 @@ export async function createActivityServer(options: ActivityServerOptions) {
     try { for (const stored of await options.repository.list()) await serialize(stored.snapshot.roomId, async () => {
       const room = await options.repository.load(stored.snapshot.roomId);
       if (room && pruneDisconnected(room, now())) { await options.repository.save(room); notify(room.snapshot.roomId); }
-    }); } catch { /* The next sweep retries. Never expose stale leases as an auth substitute. */ }
+    }); } catch(error) { operationalError(error,'sweep'); /* The next sweep retries without accepting stale leases. */ }
     finally { sweeping = false; }
   }, options.sweepIntervalMs ?? 1000); sweep.unref();
   app.addHook('onClose', async () => { clearInterval(sweep); for (const id of listeners.keys()) notify(id); });
