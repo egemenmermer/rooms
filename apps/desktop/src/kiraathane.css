@@ -1,0 +1,18 @@
+.coffeehouse{display:flex;flex-direction:column;min-height:0;height:100%;background:#17120f;}
+.coffeehouse-tools{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:10px 18px;background:#18191f;color:#c0beca;flex-shrink:0;}
+.coffeehouse-tools button,.coffeehouse-error button{display:flex;align-items:center;gap:7px;border:0;background:#292733;border-radius:7px;padding:8px 12px;color:#e8e5ef;}
+.coffeehouse-scroll{flex:1;min-height:0;overflow:auto;display:grid;align-items:center;justify-items:center;container-type:size;}
+.coffeehouse-scene{position:relative;width:min(100%,177.777cqh);min-width:760px;aspect-ratio:16/9;}
+.coffeehouse-interior{display:block;width:100%;height:100%;object-fit:contain;}
+.coffeehouse-table{position:absolute;transform:translate(-50%,-10%);width:clamp(115px,12.5vw,172px);min-height:70px;display:flex;flex-direction:column;gap:4px;text-align:left;padding:9px 12px;background:#19171de8;border:1px solid #ffffff25;border-radius:8px;color:#eeebf1;box-shadow:0 5px 14px #0005;}
+.coffeehouse-table:hover:not(:disabled),.coffeehouse-table:focus-visible{outline:2px solid #aa97fa;outline-offset:3px;background:#30283aef;}
+.coffeehouse-table.active{border-color:#9d88df;}
+.coffeehouse-table:disabled{cursor:default;color:#d6cdd0;opacity:.88;}
+.coffeehouse-table strong{font-size:14px;}
+.coffeehouse-table small{font-size:13px;color:#c0b8c8;}
+.coffeehouse-count{display:flex;align-items:center;gap:5px;font-size:13px;color:#e7dfff;}
+.coffeehouse-table .coffeehouse-reason{font-size:12px;color:#bfb3b3;}
+.coffeehouse-note{margin:0;padding:8px 18px;font-size:13px;color:#bdb6b4;flex-shrink:0;}
+.coffeehouse-error{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 18px;background:#49272c;color:#ffd9df;}
+@media(max-width:1000px){.coffeehouse-scene{min-width:760px;}.coffeehouse-table{width:130px;}.coffeehouse-tools{padding:9px 12px;}}
+.coffeehouse-return{display:block;margin:10px 24px 0;padding:7px 10px;border:0;background:transparent;color:#c8baff;font-size:13px;}

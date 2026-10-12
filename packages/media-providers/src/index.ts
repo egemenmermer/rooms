@@ -1,3 +1,4 @@
+import { SpeakingMeter } from './speaking-meter';
 import { SoundboardMixer } from './soundboard';
 import { ConnectionState, Room, RoomEvent, Track, LocalAudioTrack, type Participant } from 'livekit-client';
 import type { ConnectionStatus } from '@rooms/contracts';
@@ -51,6 +52,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   private volumes = new Map<string, number>();
   private attachments = new Set<() => void>();
   private timer: ReturnType<typeof setInterval> | undefined;
+  private speakingMeter = new SpeakingMeter(() => this.sync());
   private state: MediaSnapshot = { status: 'not-configured', roomId: null, error: null, muted: true, deafened: false, camera: false, sharing: false, audioBlocked: false, participants: [], tracks: [], diagnostics: emptyDiagnostics() };
   private soundboardSerial=0;
   private soundboardWork:Promise<void>=Promise.resolve();
@@ -97,9 +99,15 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     const room = this.room; if (!room) return;
     if(!room.localParticipant.isMicrophoneEnabled)this.stopSoundboard();
     const people: Participant[] = [room.localParticipant, ...room.remoteParticipants.values()];
+    const microphones = new Map<string, MediaStreamTrack>();
+    if (this.status === 'connected') for (const person of people) {
+      const track = person.getTrackPublication?.(Track.Source.Microphone)?.track?.mediaStreamTrack;
+      if (person.isMicrophoneEnabled && track?.readyState === 'live' && !person.identity.startsWith('rooms-music-')) microphones.set(person.identity, track);
+    }
+    this.speakingMeter.reconcile(microphones);
     this.patch({
       muted: !room.localParticipant.isMicrophoneEnabled, camera: room.localParticipant.isCameraEnabled, sharing: room.localParticipant.isScreenShareEnabled,
-      participants: people.filter(p => p.identity).map(p => ({ id: p.identity, name: p.name || p.identity, local: p === room.localParticipant, muted: !p.isMicrophoneEnabled, speaking: p.isSpeaking, camera: p.isCameraEnabled, screen: p.isScreenShareEnabled, volume: this.volumes.get(p.identity) ?? 1, quality: p.connectionQuality })),
+      participants: people.filter(p => p.identity).map(p => ({ id: p.identity, name: p.name || p.identity, local: p === room.localParticipant, muted: !p.isMicrophoneEnabled, speaking: this.status === 'connected' && p.isMicrophoneEnabled && (this.speakingMeter.speaking(p.identity) ?? p.isSpeaking), camera: p.isCameraEnabled, screen: p.isScreenShareEnabled, volume: this.volumes.get(p.identity) ?? 1, quality: p.connectionQuality })),
       tracks: people.flatMap(p => [...p.trackPublications.values()].filter(pub => !!pub.track).map(pub => ({ id: pub.trackSid, participantId: p.identity, source: pub.source, kind: pub.kind, local: p === room.localParticipant, muted: pub.isMuted }))),
     });
   }
@@ -211,7 +219,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     const time = performance.now(); const prior = this.priorStats; this.priorStats = { time, bytes };
     this.patch({ diagnostics: { bitrate: prior && bytes >= prior.bytes ? (bytes - prior.bytes) * 8000 / (time - prior.time) : null, packetLoss: received + lost ? lost / (received + lost) : null, rtt,video } });
   }
-  private cleanupPlayback() { if (this.timer) clearInterval(this.timer); this.timer = undefined; this.attachments.forEach(detach => detach()); this.audio.forEach(e => { e.pause(); e.srcObject = null; e.remove(); }); this.audio.clear(); this.priorStats = null; }
+  private cleanupPlayback() { this.speakingMeter.stop(); if (this.timer) clearInterval(this.timer); this.timer = undefined; this.attachments.forEach(detach => detach()); this.audio.forEach(e => { e.pause(); e.srcObject = null; e.remove(); }); this.audio.clear(); this.priorStats = null; }
   async disconnect() {
     ++this.epoch;const room=this.room;this.room=null;this.grant=null;
     this.stopSoundboard();await this.soundboardWork;
