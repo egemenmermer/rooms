@@ -34,6 +34,21 @@ describe('S04 integrated onboarding and exact DEV entry (local mocked components
     expect(document.body.textContent).not.toContain('private-query-secret'); expect(document.body.textContent).not.toContain('attacker');
     fireEvent.click(screen.getByRole('button', { name: 'Giriş ekranına dön' })); expect(onNavigate).toHaveBeenCalledWith('signin');
   });
+  it('direct recovery uses the production default when saved address is empty', async () => {
+    const social = runtime(); useRooms.getState().setPreference('serverUrl', '');
+    render(<MemoryRouter><ReferenceOnboarding mode="recovery" onNavigate={vi.fn()}/></MemoryRouter>);
+    await waitFor(() => expect(social.passwordRecoveryCapabilities).toHaveBeenCalledWith('https://community.example.invalid'));
+    expect(social.requestPasswordRecovery).not.toHaveBeenCalled();
+  });
+  it('forgot-password hands off the displayed custom server without sending credentials', () => {
+    const social = runtime(), onNavigate = vi.fn();
+    render(<MemoryRouter><ReferenceOnboarding mode="signin" onNavigate={onNavigate}/></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText('Sunucu adresi'), { target: { value: 'https://chosen.example/' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Şifreni mi unuttun?' }));
+    expect(useRooms.getState().preferences.serverUrl).toBe('https://chosen.example');
+    expect(onNavigate).toHaveBeenCalledWith('recovery');
+    expect(social.requestPasswordRecovery).not.toHaveBeenCalled();
+  });
   it('uses actual AUTH_EXPIRED reason for S04 session-expired sign-in and preserves real submit', async () => {
     runtime(); const onNavigate = vi.fn(), connect = vi.fn().mockImplementation(async () => { useCommunity.setState({ user: { id: 'signed-in-user', username: 'Owner', displayName: 'Owner', avatar: null }, status: 'connected', error: null }); });
     useCommunity.setState({ status: 'error', user: null, error: 'Oturumunun süresi doldu. Çıkış yapıp yeniden giriş yap.', connect });
