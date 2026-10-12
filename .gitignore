@@ -19,3 +19,6 @@ infra/local/
 .local/
 upstream/
 dist-services/
+
+# Generated native updater build
+dist-native/
