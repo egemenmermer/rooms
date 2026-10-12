@@ -426,7 +426,10 @@ export class StoatClient {
     }
     if(p.type==='ChannelUpdate'){
       const old=this.channels.get(p.id);if(old)this.channels.set(p.id,{...old,...p.data});
-      this.invalidateChannelAccess([p.id],'permissions-changed',true);
+      // Message pointers and presentation fields do not change channel authority.
+      const changed=[...Object.keys(p.data??{}),...(Array.isArray(p.clear)?p.clear:[])];
+      const presentation=new Set(['last_message_id','name','description','icon','Icon','Description']);
+      if(changed.some(key=>!presentation.has(key)))this.invalidateChannelAccess([p.id],'permissions-changed',true);
     }
     if(p.type==='ServerMemberJoin')++this.managementEpoch;
     if(['ServerUpdate','ServerRoleUpdate','ServerRoleDelete','ServerMemberUpdate','ServerMemberLeave','ServerDelete'].includes(p.type)){
@@ -449,7 +452,7 @@ export class StoatClient {
     if(p.type==='ServerUpdate'){const old=this.servers.get(p.id);if(old)this.servers.set(p.id,{...old,...p.data});}
     if(p.type==='ChannelCreate')this.channels.set(p._id,p);
     if(p.type==='ChannelDelete')this.channels.delete(p.id);
-    if(p.type==='ChannelAck'&&p.user===this.currentUser?.id){this.emit('MESSAGE_ACK',{channelId:p.id,messageId:p.message_id,userId:p.user});await this.syncReadStates();}
+    if(p.type==='ChannelAck'&&p.user===this.currentUser?.id){this.emit('MESSAGE_ACK',{channelId:p.id,messageId:p.message_id,userId:p.user});await this.syncReadStates();return;}
     if(p.type?.startsWith('Server')||p.type?.startsWith('Channel')||p.type==='UserRelationship')this.emit('SOCIAL_REFRESH',null);
   }
   private scheduleReconnect(){if(this.stopped||this.retry)return;this.setStatus('reconnecting');this.retry=setTimeout(()=>{this.retry=null;void this.openSocket().catch(()=>this.scheduleReconnect());},Math.min(30000,1000*2**Math.min(this.attempt++,5)));}
