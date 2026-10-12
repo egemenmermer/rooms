@@ -1,9 +1,10 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { ActivityEvent, RoomSnapshot } from '../../../packages/activity-protocol/src/index';
+import {decodeStoredRoom} from './storage-codec';
 import type { GameTable } from './games';
 
-export interface StoredRoom { snapshot: RoomSnapshot; events: ActivityEvent[]; receipts: { actorId: string; commandId: string; fingerprint: string; revision: number }[]; game?: GameTable | null; gameArchives?: { kind: GameTable['kind']; history: GameTable['history']; statistics: GameTable['statistics'] }[] }
+export interface StoredRoom { schemaVersion?:1; snapshot: RoomSnapshot; events: ActivityEvent[]; receipts: { actorId: string; commandId: string; fingerprint: string; revision: number }[]; game?: GameTable | null; gameArchives?: { kind: GameTable['kind']; history: GameTable['history']; statistics: GameTable['statistics'] }[] }
 export interface ActivityRepository {
   load(roomId: string): Promise<StoredRoom | null>;
   save(room: StoredRoom): Promise<void>;
@@ -26,8 +27,9 @@ export class FileActivityRepository implements ActivityRepository {
     try {
       const value: unknown = JSON.parse(await readFile(join(directory, 'activities.json'), 'utf8'));
       if (!Array.isArray(value)) throw new Error('Invalid Activity repository');
-      for (const room of value as StoredRoom[]) {
-        if (!room.snapshot || typeof room.snapshot.roomId !== 'string' || !Array.isArray(room.events) || !Array.isArray(room.receipts)) throw new Error('Invalid Activity repository');
+      for (const item of value) {
+        const room=decodeStoredRoom(item);
+        if(repository.rooms.has(room.snapshot.roomId))throw new Error('Duplicate Activity room');
         repository.rooms.set(room.snapshot.roomId, room);
       }
     } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
@@ -38,7 +40,8 @@ export class FileActivityRepository implements ActivityRepository {
   async save(room: StoredRoom) {
     // Publish to memory only after the durable atomic replacement succeeds.
     const work = this.writes.catch(() => {}).then(async () => {
-      const next = new Map(this.rooms); next.set(room.snapshot.roomId, structuredClone(room));
+      const validated=decodeStoredRoom(room);
+      const next = new Map(this.rooms); next.set(validated.snapshot.roomId, validated);
       const temporary = join(this.directory, 'activities.json.tmp');
       await writeFile(temporary, JSON.stringify([...next.values()]), { mode: 0o600 });
       await rename(temporary, join(this.directory, 'activities.json')); this.rooms = next;
