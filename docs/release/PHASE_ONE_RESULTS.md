@@ -21,4 +21,4 @@ Build warnings about mixed dynamic/static imports and oversized chunks remain; n
 
 ## CI
 
-Workflow has credential-free Ubuntu baseline (lint/type/test/build/services and full/production high-severity audit) and macOS native signed-out smoke. Checkout credentials are not persisted, repository permissions are read-only. Hosted execution is pending the source push; workflow existence is not CI acceptance. Signing and production credentials are excluded.
+Workflow has credential-free Ubuntu baseline (lint/type/test/build/services and full/production high-severity audit) and macOS native signed-out smoke. Checkout credentials are not persisted, repository permissions are read-only. First source push was rejected because the existing GitHub OAuth grant lacked workflow scope. The verified baseline was split and pushed as 1e7b524. Owner then authorized the normal GitHub device flow in Brave; gh auth refresh confirmed workflow scope without alternate credentials or bypass. Hosted execution follows the workflow push; workflow existence is not CI acceptance. Signing and production credentials are excluded.
