@@ -78,11 +78,11 @@ export async function createActivityServer(options: ActivityServerOptions) {
   app.get('/v1/rooms/:roomId/activity', async request => {
     const { roomId } = roomParam.parse(request.params);
     const query = z.object({ afterRevision: z.coerce.number().int().min(0).default(0), waitMs: z.coerce.number().int().min(0).max(25000).default(0) }).strict().parse(request.query);
-    const identity = await authorizeAndLimit(request, roomId);
+    let identity = await authorizeAndLimit(request, roomId);
     const read = () => serialize(roomId, async () => {
       const room = await options.repository.load(roomId) ?? emptyRoom(roomId, now());
       const participant = room.snapshot.participants.find(p => p.userId === identity.userId);
-      if (participant) { participant.lastSeenAt = now(); participant.canControl = identity.canControl; if (room.game) heartbeatGame(room.game, identity.userId); await options.repository.save(room); }
+      if (participant) { participant.lastSeenAt = now(); participant.canControl = identity.canControl; participant.canCreate=identity.canCreate; if (room.game) heartbeatGame(room.game, identity.userId); await options.repository.save(room); }
       return room;
     });
     let room: StoredRoom;
@@ -94,7 +94,7 @@ export async function createActivityServer(options: ActivityServerOptions) {
     const aborted = () => release(); request.raw.once('aborted', aborted);
     try {
       room = await read();
-      if (query.waitMs && room.snapshot.revision === query.afterRevision) { await wake; await identityOf(request.headers.authorization, roomId); room = await read(); }
+      if (query.waitMs && room.snapshot.revision === query.afterRevision) { await wake; identity=await identityOf(request.headers.authorization, roomId); room = await read(); }
       return response(room, query.afterRevision, now(), identity.userId);
     } finally {
       clearTimeout(timer); request.raw.off('aborted', aborted); bucket.delete(release); if (!bucket.size) listeners.delete(roomId);
