@@ -28,7 +28,8 @@
     "stoat:setup": "node scripts/stoat-setup.mjs",
     "stoat:verify": "node scripts/stoat-integration.mjs",
     "package:mac:signed": "node scripts/package-signed-mac.mjs",
-    "verify:activities": "node scripts/verify-activity-desktop.mjs"
+    "verify:activities": "node scripts/verify-activity-desktop.mjs",
+    "release:mac": "ROOMS_PUBLISH_UPDATES=1 node scripts/package-signed-mac.mjs"
   },
   "dependencies": {
     "@fastify/rate-limit": "11.2.0",
