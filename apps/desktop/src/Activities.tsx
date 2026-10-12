@@ -1,3 +1,4 @@
+import {openRoomActivity} from './MusicDJ';
 import './reference-voice.css';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -17,7 +18,7 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
     const self=activity.room?.participants.find(p=>p.userId===community.user?.id);
     const forbidden=self?.canControl===false;
     const routeFor=(kind:string)=>kind==='cinema'?'/cinema':kind==='youtube'?'/youtube':kind==='screen'?'/voice?view=share':'/games';
-    const open=(path:string)=>{navigate(path);onClose();};
+    const open=(path:string)=>{openRoomActivity(path,navigate);onClose();};
     const position=Math.max(0,Math.floor(activity.room?.timeline.positionSec??0));
     const positionLabel=`${Math.floor(position/60)}:${String(position%60).padStart(2,'0')}`;
     const roomCount=activity.room?.participants.length;
