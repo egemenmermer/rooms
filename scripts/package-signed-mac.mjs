@@ -1,6 +1,14 @@
-import {writeFileSync} from 'node:fs';
+import {writeFileSync,readFileSync} from 'node:fs';
+import {checkReleaseSpace} from './release-preflight.mjs';
+import {writeReleaseManifest,assertCommittedReleaseSource} from './release-manifest.mjs';
 import {spawnSync} from 'node:child_process';
 if(process.platform!=='darwin'||process.arch!=='arm64')throw new Error('Signed release packaging requires the Apple Silicon macOS host.');
+const sourceVersion=JSON.parse(readFileSync('package.json','utf8')).version;
+if(process.env.ROOMS_RELEASE_VERSION&&process.env.ROOMS_RELEASE_VERSION!==sourceVersion)throw new Error('Release version must match package.json in committed source.');
+const output=process.env.ROOMS_RELEASE_OUTPUT??`/tmp/rooms-signed-${sourceVersion}`;
+checkReleaseSpace({output});
+const sourceSha=assertCommittedReleaseSource();
+const buildNumber=Math.floor(Date.now()/1000);
 const identity=process.env.ROOMS_SIGNING_IDENTITY??'Developer ID Application: Çagatay Yucelen (U95637XJ6C)';
 if(!identity?.startsWith('Developer ID Application: '))throw new Error('Set ROOMS_SIGNING_IDENTITY to your own Developer ID Application identity. No automatic keychain identity selection.');
 const profile=process.env.ROOMS_NOTARY_KEYCHAIN_PROFILE||process.env.APPLE_KEYCHAIN_PROFILE||'ROOMS-notary';
@@ -14,13 +22,16 @@ const sparkle=spawnSync('node',['scripts/prepare-sparkle.mjs'],{stdio:'inherit',
 const build=spawnSync('pnpm',['build'],{stdio:'inherit',env:process.env});if(build.status!==0)process.exit(build.status??1);
 if(!process.env.ROOMS_UPDATE_FEED)process.env.ROOMS_UPDATE_FEED='https://62.238.119.134/rooms-updates/';
 if(process.env.ROOMS_UPDATE_FEED){if(!process.env.APPLE_TEAM_ID)throw new Error('An explicit team ID is required for update configuration.');const url=new URL(process.env.ROOMS_UPDATE_FEED);if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash)throw new Error('Use a public HTTPS update feed without credentials.');writeFileSync('dist/update-config.json',JSON.stringify({feed:url.href,teamId:process.env.APPLE_TEAM_ID}));}
-const output=process.env.ROOMS_RELEASE_OUTPUT??`/tmp/rooms-signed-${process.env.ROOMS_RELEASE_VERSION??'release'}`;
+
 const args=['exec','electron-builder','--mac','dmg','zip','--arm64',`--config.mac.identity=${identity.slice('Developer ID Application: '.length)}`,'--config.mac.notarize=false','--config.mac.hardenedRuntime=true','--config.mac.extendInfo.SUPublicEDKey=K6W7OQfKBZ3Hzm6Eu1GS5LRsax6cU174AF9IAMwM2cs=',`--config.mac.extendInfo.SUFeedURL=${process.env.ROOMS_UPDATE_FEED}appcast.xml`,'--config.mac.extendInfo.SUEnableAutomaticChecks=true','--config.mac.extendInfo.SUAutomaticallyUpdate=true','--config.mac.extendInfo.SUVerifyUpdateBeforeExtraction=true'];
 if(process.env.ROOMS_UPDATE_FEED)args.push('--config.publish.provider=generic',`--config.publish.url=${process.env.ROOMS_UPDATE_FEED}`);
 if(process.env.ROOMS_RELEASE_VERSION)args.push(`--config.extraMetadata.version=${process.env.ROOMS_RELEASE_VERSION}`);
 args.push(`--config.directories.output=${output}`);
-args.push(`--config.buildVersion=${Math.floor(Date.now()/1000)}`);
+args.push(`--config.buildVersion=${buildNumber}`);
 const result=spawnSync('pnpm',args,{stdio:'inherit',env:process.env});if(result.status!==0)process.exit(result.status??1);
+
+const signature=spawnSync('codesign',['--verify','--deep','--strict','--verbose=2',`${output}/mac-arm64/ROOMS.app`],{stdio:'inherit'});if(signature.status!==0)throw new Error('Strict candidate signature verification failed');
+const services=spawnSync('pnpm',['services:build'],{stdio:'inherit',env:process.env});if(services.status!==0)process.exit(services.status??1);
 
 // Notarytool is explicit because electron-builder does not consume Keychain profiles.
 const {readdirSync}=await import('node:fs');
@@ -39,5 +50,7 @@ if(!zip)throw new Error('Release ZIP missing');
 const archive=spawnSync('ditto',['-c','-k','--sequesterRsrc','--keepParent',join(output,'mac-arm64/ROOMS.app'),join(output,zip)],{stdio:'inherit'});if(archive.status!==0)throw new Error('Stapled app archive failed');
 const feedDir=join(output,'sparkle-feed');const {mkdirSync,copyFileSync}=await import('node:fs');mkdirSync(feedDir,{recursive:true});copyFileSync(join(output,zip),join(feedDir,zip));
 const cast=spawnSync('.local/sparkle/bin/generate_appcast',['--account','ROOMS-Sparkle','--download-url-prefix',process.env.ROOMS_UPDATE_FEED,feedDir],{stdio:'inherit'});if(cast.status!==0)throw new Error('Signed appcast generation failed');
+
+writeReleaseManifest(output,buildNumber,sourceSha);
 
 if(process.env.ROOMS_PUBLISH_UPDATES==='1'){const publish=spawnSync('node',['scripts/publish-sparkle.mjs'],{stdio:'inherit',env:{...process.env,ROOMS_RELEASE_OUTPUT:output}});if(publish.status!==0)throw new Error('Signed release built, but update publication failed');}
