@@ -1,5 +1,11 @@
 # ROOMS
 
+## Project documentation
+
+Read the [project handbook](docs/project/README.md) for architecture, runtime/data flows, services, security, operations and release engineering. The handbook documents audited reference implementation `06f5477`; a documentation merge does not merge its outstanding product-code changes. The [initial release audit](docs/release/AUDIT_REPORT.md) includes readiness, scope, blockers, QA and the phased V1 roadmap. Historical sections below retain their original acceptance limits.
+
+[Hosted handbook](https://62.238.119.134/docs/) · [Documentation build/deployment](docs/site/README.md)
+
 A Turkish, macOS-first private desktop clubhouse built with Electron, React and TypeScript. The current social foundation is **unmodified upstream Stoat**, behind a native typed adapter. LiveKit is replaceable; voice survives navigation and Activity changes. Local fixtures are visibly labeled **Yerel demo** or **QA fixture**.
 
 ## Open the application

@@ -1,0 +1,14 @@
+# Insert inside the existing HTTPS site before its catch-all.
+handle /docs {
+ redir /docs/ 308
+}
+handle_path /docs/* {
+ root * /data/rooms-docs
+ header {
+  Cache-Control "public, max-age=60"
+  X-Content-Type-Options "nosniff"
+  Referrer-Policy "no-referrer"
+  Content-Security-Policy "default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+ }
+ file_server
+}
