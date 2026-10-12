@@ -33,3 +33,8 @@ Current audit uses disposable profiles; no actual production account/channel sta
 - Current/historical credential-signature scan: no matches; limited scope.
 - Fresh pnpm install, complete Docker/Mongo setup, new package generation, all provider/agent/Windows workflows: NOT RUN. Existing dependencies used; Docker socket missing and disk constrained.
 No failure was repaired. Pending checks are explicit, not silently skipped.
+
+
+## Private production continuation — 2026-10-12
+
+Local baseline now passes: full 666-test suite, lint/type/build/four service bundles and isolated signed-out Electron smoke. DJ remains retained in the private scope; its local listener gain/mute regression passes, provider/audible/animation acceptance remains open. Actual preview.3 → preview.4 native Sparkle update and next launch passed in main PR #3; immediate relaunch, next RC and recovery remain open. No authenticated, two-Mac or 413-reference acceptance is inferred.

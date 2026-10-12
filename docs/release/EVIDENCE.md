@@ -47,3 +47,8 @@ Screenshots: audit-onboarding.png and audit-agent-signedout.png in the delivered
 ## Recheck trigger
 Any source/native addon/service/environment/schema change after this SHA invalidates affected evidence. Repeat targeted checks and RC gates; preserve failures before fixes. Scores/counts are updated only when issue acceptance evidence closes them.
 
+
+
+## Private production continuation — 2026-10-12
+
+See PHASE_ONE_RESULTS.md for current actual commands, failures and corrected outcomes. Full verify:ci exit 0 (96 files / 666 tests); current signed-out desktop smoke exit 0; production audit zero; full audit one moderate dev residual, high-severity gate passes. Supply-chain age checks remain active; only two transitive versions were aligned to 8.70.0. Production data/Hoppers/installed app/retained archives untouched. Main PR #3 updater evidence reconciled without replaying owner profile operations.

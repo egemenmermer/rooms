@@ -1,0 +1,40 @@
+# Private release implementation — 2026-10-12
+
+Owner approved the private-friends plan. Preserve DJ/current features and the full reference inventory; do not implement the public scope cuts automatically. The public audit remains NO-GO and its public-only gates are not silently closed. Root alone implements; source branch codex/reference-package.
+
+Two physical Macs will be tested by the owner and friend later. REL-001 stays OPEN. Independent software/test/operating work continues while that gate is pending. No production disruption, main merge or public V1 publication is implied.
+
+## Baseline reconciliation
+
+- Source/local and remote branch:06f5477. Installed0.1.17-preview.4, build1791819276.
+- Read-only production health/feed:HTTP200; installed version appears in appcast.
+- Local/deployed access SHA256c986093062f308456ee8f327c6876505f1e6c95b5f0e8fd67b1743de6594d9a0 and activities49e05edc9389c291aec4cfc0840b89667354fcabfa8fbda1dd43444187c86349 match. Health/hash equality is not authenticated acceptance.
+- Fresh REL-004 reproduction48413:2/2 DJ tests fail at MusicDJ.tsx:31; realtime test mock omits participants. Production snapshot includes participants. No production crash inferred.
+- REL-005 remains OPEN: desktop acceptance waits for removed .hero and obsolete sign-in/voice labels.
+- pnpm lint/CI absent; package source version0.1.14 differs from installed override.
+
+## Task protocol
+
+Record failure/version/steps/evidence before repair. Record actual validation after repair and preserve prior failures. Local verification and physical acceptance are separate statuses. Update RELEASE_BLOCKERS, QA_MATRIX/EVIDENCE and this ledger after meaningful groups. Commit coherent changes and push the reference branch. Never promote the413 reference records from coarse release checks.
+
+## Execution order
+
+1. REL-004/005/015/009: meaningful DJ regression, current isolated desktop smoke, lint/CI, toolchain risk disposition.
+2. REL-001/006/014: microphone/capture/animation/chat defects; real two-Mac acceptance remains owner-dependent.
+3. REL-006/007/008/003: latest normal-user/outsider/recovery, versioned durable data, isolated current restore and private user data operations.
+4. REL-009/010/011/013:0.1.18-rc.1 provenance, low-disk preflight, signed install/update/recovery, sanitized operator signals/docs.
+5. REL-012: six real identities/current2h session, measured UX/performance, immutable private artifact acceptance.
+
+## Current work
+
+REL-004 local repair verified: complete typed realtime fixture and local bot gain/mute regression. Current Vitest 4.1.11 suite passes 96 files / 666 tests. Lint and typecheck pass. Frozen install passes after targeted age-compliant transitive pins; see DEPENDENCY_TRIAGE.md. Build/services completed successfully. Desktop smoke and hosted CI results follow below. Physical acceptance remains open. Production services/accounts, installed app and retained releases remain unchanged during baseline work.
+
+
+## Reconciled updater and retention evidence
+
+Main 0bd1a7e contains PRs #2–#4; this branch is intentionally not blindly merged/reset. Main's SPARKLE_UPDATE_ACCEPTANCE.md / RESULTS.json certify signed preview.3 → preview.4 native install-on-quit and next normal launch with profile sentinels preserved. Immediate relaunch was not observed. REL-010 remains open for fresh friend install, next RC, signed-in separate-device acceptance and interruption/low-disk recovery. Missing generated outputs were deliberate cleanup and have now been rebuilt. release/retained holds current preview.4 and rollback preview.3 signed archives; both are preserved.
+
+
+## Private production continuation — 2026-10-12
+
+Phase-one local baseline PASS; see PHASE_ONE_RESULTS.md. Hosted CI execution still pending. Next: microphone selection/device recovery, packaged Recep playback, chat navigation/refresh and stale responses. Physical REL-001, authenticated REL-006/007, data REL-008/003, RC/operations REL-009/010/011/013 and soak REL-012 stay open.

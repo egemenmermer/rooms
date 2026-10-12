@@ -124,3 +124,8 @@ P3 REL-022: personal providers/Real-Debrid registration, codec/EPG/provider fail
 P3 REL-023: Windows/Intel, private calls, official together-player release and extended board archives; XXL.
 P4 REL-024: clustering, billing, public room discovery/marketplace, cosmetic animation expansion; backlog, unestimated.
 See POST_LAUNCH.md for dependencies/acceptance; do not convert these to V1 commitments.
+
+
+## Private production continuation — 2026-10-12
+
+REL-004 local test failure resolved (96 files / 666 tests pass); REL-005 current isolated signed-out desktop smoke passes. These do not certify authenticated or physical journeys. REL-015 critical Tinypool and moderate Vitest entries removed by the targeted toolchain update; one moderate packaging residual remains documented in DEPENDENCY_TRIAGE.md. REL-009 local lint/type/test/build/services baseline passes; hosted CI and RC provenance remain pending. REL-010 old preview.3 → preview.4 install-on-quit/next-launch was verified in main PR #3; fresh install, next candidate and interruption/recovery still open. Private scope retains DJ/current features under V1_SCOPE owner override. Historical public audit counts are not recomputed here.

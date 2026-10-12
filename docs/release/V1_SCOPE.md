@@ -34,3 +34,8 @@ Real-Debrid registration was already deferred by owner. Do not undo that decisio
 ## EXPERIMENTAL
 Exact reference variants, DEV fixtures, external agent browser/egress, provider source extractors and unsupported capture combinations. Keep separate from user-facing release claims.
 Initial capacity target is one core community room with six real identities/clients, single Activity writer; measured acceptance must precede any published guarantee. No horizontal clustering, monetization or public marketplace in V1.
+
+
+## Owner decision — 2026-10-12
+
+The owner selected the private-friends release, preserving DJ and current features. The proposed public cuts above are not approved for this implementation. Public provider/rights/privacy gates remain open separately; private use is not a legal-clearance claim. Core reliability precedes secondary feature expansion and full reference polish. See IMPLEMENTATION_STATUS.md.
