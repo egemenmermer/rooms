@@ -6,6 +6,7 @@ import type { GameTable } from './games';
 
 export interface StoredRoom { schemaVersion?:1; snapshot: RoomSnapshot; events: ActivityEvent[]; receipts: { actorId: string; commandId: string; fingerprint: string; revision: number }[]; game?: GameTable | null; gameArchives?: { kind: GameTable['kind']; history: GameTable['history']; statistics: GameTable['statistics'] }[] }
 export interface ActivityRepository {
+  probe?():Promise<void>;
   load(roomId: string): Promise<StoredRoom | null>;
   save(room: StoredRoom): Promise<void>;
   list(): Promise<StoredRoom[]>;
