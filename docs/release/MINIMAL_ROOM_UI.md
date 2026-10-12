@@ -17,3 +17,5 @@ Full local tests PASS105files/704tests, including voice transitions, scoped rest
 Candidate version0.1.18-rc.2 will be independently signed/notarized; existing /ApplicationsRC.1, profiles, retained archives, production services, SMTP/password and Hoppers remain unchanged. No feed publication. Physical audibility/transport and six-user soak remain OPEN. Signing result is pending until pipeline receipt.
 
 Source review during initial packaging found microphone mute intention was not account-scoped. Owned pre-notarization packaging process tree stopped; log/staging preserved. Added scope reset and regression: a new account starts muted while same-account room switches preserve intent. New committed source will use a fresh staging output; no accepted artifact overwritten.
+
+Final navigation review corrected the unified member action: DM opens peer profile; room inspector also works on activity destinations. Anonymous DJ trigger disabled with sign-in reason. Owned second pipeline stopped before notarization, with generated signed staging retained; fresh output binds the corrected source. No signing/security checks are weakened.
