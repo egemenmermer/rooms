@@ -1,0 +1,54 @@
+{
+  "capturedAt": "2026-10-11T01:25:04.352Z",
+  "environment": "local Chromium DEV fixture",
+  "results": [
+    {
+      "width": 1440,
+      "height": 900,
+      "footer": {
+        "x": 72,
+        "y": 741,
+        "width": 247,
+        "height": 159
+      },
+      "lastCategory": {
+        "x": 81,
+        "y": 680,
+        "width": 229,
+        "height": 36
+      }
+    },
+    {
+      "width": 1024,
+      "height": 700,
+      "footer": {
+        "x": 72,
+        "y": 541,
+        "width": 215,
+        "height": 159
+      },
+      "lastCategory": {
+        "x": 81,
+        "y": 480,
+        "width": 197,
+        "height": 36
+      }
+    },
+    {
+      "width": 800,
+      "height": 600,
+      "footer": {
+        "x": 72,
+        "y": 441,
+        "width": 179,
+        "height": 159
+      },
+      "lastCategory": {
+        "x": 81,
+        "y": 380,
+        "width": 161,
+        "height": 36
+      }
+    }
+  ]
+}

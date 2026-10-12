@@ -1,0 +1,50 @@
+{
+  "id": "S36",
+  "variant": "expired",
+  "reference_path": "/Users/egemenmermer/Downloads/ROOMS_Design_Package/04_screens/S36_iptv_live_player__expired.png",
+  "reference_hash": "cfd62238d3fe735c85e88e8df32b5046adc27e1e4e155af475febb543cdf8cea",
+  "fixture": "S36/expired",
+  "integration_status": "LOCAL_FIXTURE",
+  "application_url": "http://127.0.0.1:5173/?fixture=S36&variant=expired#/media?player=1",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "device_scale_factor": 2
+  },
+  "revision": "0ba32189bf3a0fb64d3e6b030392f0d9b7be6a45",
+  "working_tree_diff_sha256": "3a5a957141b3f0985223a9e59aee086fd11da2d6b62567f66abe9c9999472c39",
+  "source_manifest_sha256": "56695d6dbd5e2824ea47f21924664d8321d47944b728bf1ca6fce7f730394cef",
+  "timestamp": "2026-10-11T01:20:53.915Z",
+  "metrics": {
+    "font": "Inter, -apple-system, \"system-ui\", \"Segoe UI\", sans-serif",
+    "loadedInter": true,
+    "fixture": "S36/expired",
+    "roomPlayerFullscreen": false,
+    "overflow": false,
+    "panels": {
+      "window-chrome": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 30
+      },
+      "space-rail": {
+        "x": 0,
+        "y": 30,
+        "width": 72,
+        "height": 870
+      },
+      "voice-channel-sidebar": {
+        "x": 72,
+        "y": 30,
+        "width": 248,
+        "height": 870
+      },
+      "friends-panel": null,
+      "room-members-panel": null,
+      "chat-heading": null
+    }
+  },
+  "runtime_errors": [],
+  "status": "CAPTURED_NOT_VISUALLY_ACCEPTED"
+}

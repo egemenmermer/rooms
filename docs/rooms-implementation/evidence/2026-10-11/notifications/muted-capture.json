@@ -1,0 +1,55 @@
+{
+  "id": "S67",
+  "variant": "muted",
+  "reference_path": "/Users/egemenmermer/Downloads/ROOMS_Design_Package/04_screens/S67_notification_desktop_preferences__muted.png",
+  "reference_hash": "05442c79917f4c9b39ca59a9697a15714f89b5a8f2f79f1670575c40d6244ffc",
+  "fixture": "S67/muted",
+  "integration_status": "LOCAL_FIXTURE",
+  "application_url": "http://127.0.0.1:5173/?fixture=S67&variant=muted#/settings?tab=desktop",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "device_scale_factor": 2
+  },
+  "revision": "54ecfa321c5c83193bcfc113a79b4d7364144f42",
+  "working_tree_diff_sha256": "d2300c635d5e6519300970c73be6f8977f84ee1afd431e9c042f22def1ddb3ba",
+  "source_manifest_sha256": "c4ebcb31e24bb62b5b9ad5bebe5a7ecf82a84eeef2a80f352c66fbce0fedce57",
+  "timestamp": "2026-10-11T09:15:13.855Z",
+  "metrics": {
+    "font": "Inter, -apple-system, \"system-ui\", \"Segoe UI\", sans-serif",
+    "loadedInter": true,
+    "fixture": "S67/muted",
+    "roomPlayerFullscreen": false,
+    "overflow": false,
+    "panels": {
+      "window-chrome": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 30
+      },
+      "space-rail": {
+        "x": 0,
+        "y": 30,
+        "width": 72,
+        "height": 870
+      },
+      "voice-channel-sidebar": {
+        "x": 72,
+        "y": 30,
+        "width": 248,
+        "height": 870
+      },
+      "friends-panel": null,
+      "room-members-panel": {
+        "x": 1162,
+        "y": 89,
+        "width": 278,
+        "height": 811
+      },
+      "chat-heading": null
+    }
+  },
+  "runtime_errors": [],
+  "status": "CAPTURED_NOT_VISUALLY_ACCEPTED"
+}

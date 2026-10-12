@@ -7,13 +7,22 @@ export interface MediaParticipant {
   camera: boolean; screen: boolean; volume: number; quality: string;
 }
 export interface MediaTrack { id: string; participantId: string; source: string; kind: string; local: boolean; muted: boolean }
-export interface MediaDiagnostics { bitrate: number | null; packetLoss: number | null; rtt: number | null }
+export interface MediaDiagnostics { bitrate: number | null; packetLoss: number | null; rtt: number | null; video?:{width:number;height:number;framesPerSecond:number|null;codec:string|null;direction:'sent'|'received'} }
 export interface MediaSnapshot {
   status: ConnectionStatus; roomId: string | null; error: string | null; muted: boolean;
   deafened: boolean; camera: boolean; sharing: boolean; audioBlocked: boolean;
   participants: MediaParticipant[]; tracks: MediaTrack[]; diagnostics: MediaDiagnostics;
 }
 export interface MediaGrant { roomId: string; url: string; token: string }
+export type ScreenShareQuality='720p30'|'1080p30'|'1080p60'|'1440p60'|'4k30';
+export interface ScreenShareOptions {quality?:ScreenShareQuality;audio?:boolean;content?:'motion'|'detail'}
+export const screenProfiles={
+ '720p30':{width:1280,height:720,frameRate:30,bitrate:3_000_000},
+ '1080p30':{width:1920,height:1080,frameRate:30,bitrate:6_000_000},
+ '1080p60':{width:1920,height:1080,frameRate:60,bitrate:10_000_000},
+ '1440p60':{width:2560,height:1440,frameRate:60,bitrate:16_000_000},
+ '4k30':{width:3840,height:2160,frameRate:30,bitrate:24_000_000},
+} as const;
 export interface RealtimeMediaProvider {
   readonly status: ConnectionStatus;
   connectRoom(roomId: string, shortLivedMembershipToken: string, serverUrl: string): Promise<void>;
@@ -22,7 +31,7 @@ export interface RealtimeMediaProvider {
   playSoundboard(buffer:AudioBuffer,volume:number):Promise<void>;
   stopSoundboard():void;
   publishCamera(enabled: boolean, deviceId?: string): Promise<void>;
-  publishScreen(): Promise<void>; stopScreen(): Promise<void>;
+  publishScreen(options?:ScreenShareOptions): Promise<void>; stopScreen(): Promise<void>;
   subscribe(participantId: string): Promise<MediaStream>;
   attachTrack(trackId: string, element: HTMLMediaElement): () => void;
   deviceSelection(inputId: string, outputId: string): Promise<void>;
@@ -134,11 +143,14 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   }
   async publishMic(deviceId?: string) { if (this.state.deafened) throw new Error('Undeafen before enabling your microphone.'); try { await this.requireRoom().localParticipant.setMicrophoneEnabled(true, { deviceId, echoCancellation: true, noiseSuppression: this.noiseSuppression }); this.patch({ error: null }); this.sync(); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
   async mute(value: boolean) { if(value)this.stopSoundboard(); if (!value && this.state.deafened) throw new Error('Undeafen before enabling your microphone.'); try { await this.requireRoom().localParticipant.setMicrophoneEnabled(!value,{echoCancellation:true,noiseSuppression:this.noiseSuppression}); this.sync(); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
-  async publishCamera(enabled: boolean, deviceId?: string) { try { await this.requireRoom().localParticipant.setCameraEnabled(enabled, { deviceId, resolution: { width: 640, height: 360, frameRate: 24 } }); this.sync(); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
-  async publishScreen() {
+  async publishCamera(enabled: boolean, deviceId?: string) { try { await this.requireRoom().localParticipant.setCameraEnabled(enabled, { deviceId, resolution: { width: 1280, height: 720, frameRate: 30 } }); this.sync(); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
+  async publishScreen(options:ScreenShareOptions={}) {
     const room = this.requireRoom();
     if ([...room.remoteParticipants.values()].some(p => p.isScreenShareEnabled)) throw new Error('Another participant is presenting. Ask them to stop before presenting.');
-    try { await room.localParticipant.setScreenShareEnabled(true, { audio: false, resolution: { width: 1280, height: 720, frameRate: 30 } }, { screenShareEncoding: { maxBitrate: 2_500_000, maxFramerate: 30 } }); const capture = room.localParticipant.getTrackPublication(Track.Source.ScreenShare)?.track; capture?.mediaStreamTrack.addEventListener('ended', () => { if (this.room === room) void room.localParticipant.setScreenShareEnabled(false).then(() => this.sync()).catch(error => this.fail(error)); }, { once: true }); this.sync(); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); }
+    const profile=screenProfiles[options.quality??'1080p60'];
+    try { await room.localParticipant.setScreenShareEnabled(true, { audio: options.audio?{channelCount:2,noiseSuppression:false,autoGainControl:false,echoCancellation:false,restrictOwnAudio:true}:false, resolution: { width: profile.width, height: profile.height, frameRate: profile.frameRate } }, { videoCodec:'h264',screenShareEncoding: { maxBitrate: profile.bitrate, maxFramerate: profile.frameRate },audioPreset:{maxBitrate:128000},forceStereo:true });
+      if(options.audio&&!room.localParticipant.getTrackPublication(Track.Source.ScreenShareAudio)?.track){await this.stopScreen();throw new Error('System audio capture is unavailable.');}
+      const screenTrack=room.localParticipant.getTrackPublication(Track.Source.ScreenShare)?.track;if(screenTrack)screenTrack.mediaStreamTrack.contentHint=options.content==='detail'?'detail':'motion'; const capture = room.localParticipant.getTrackPublication(Track.Source.ScreenShare)?.track; capture?.mediaStreamTrack.addEventListener('ended', () => { if (this.room === room) void room.localParticipant.setScreenShareEnabled(false).then(() => this.sync()).catch(error => this.fail(error)); }, { once: true }); this.sync(); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); }
   }
   async stopScreen() { const room = this.room; if (!room) return; room.localParticipant.getTrackPublication(Track.Source.ScreenShare)?.track?.stop(); room.localParticipant.getTrackPublication(Track.Source.ScreenShareAudio)?.track?.stop(); this.patch({ sharing: false }); try { await room.localParticipant.setScreenShareEnabled(false); this.sync(); } catch (error) { this.fail(error); this.patch({ sharing: false }); throw new Error(this.state.error ?? 'Screen publication could not be removed. Capture has stopped.'); } }
   async deafen(value: boolean) {
@@ -150,7 +162,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   }
   setParticipantVolume(id: string, volume: number) { if (!Number.isFinite(volume) || volume < 0 || volume > 1) throw new Error('Volume must be between 0 and 1.'); this.volumes.set(id, volume); this.room?.remoteParticipants.get(id)?.setVolume(volume); this.sync(); }
   async startAudio() { try { await this.requireRoom().startAudio(); this.patch({ audioBlocked: false }); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
-  async deviceSelection(inputId: string, outputId: string) { try { const room = this.requireRoom(); if (inputId && !await room.switchActiveDevice('audioinput', inputId)) throw new Error('Input unavailable.'); if (outputId && !await room.switchActiveDevice('audiooutput', outputId)) throw new Error('Output unavailable.'); this.sync(); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
+  async deviceSelection(inputId: string, outputId: string) { try { const room = this.requireRoom(); if (!await room.switchActiveDevice('audioinput', inputId||'default')) throw new Error('Input unavailable.'); if (!await room.switchActiveDevice('audiooutput', outputId||'default')) throw new Error('Output unavailable.'); this.sync(); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
   participantState() { return this.state.participants; }
   diagnostics() { return this.state.diagnostics; }
   async subscribe(id: string) { const p = this.requireRoom().getParticipantByIdentity(id); if (!p) throw new Error('Participant is not in this room.'); return new MediaStream([...p.trackPublications.values()].flatMap(pub => pub.track ? [pub.track.mediaStreamTrack] : [])); }
@@ -163,12 +175,12 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   }
   private async measure() {
     const room = this.room; if (!room || this.status !== 'connected') return;
-    let bytes = 0, lost = 0, received = 0, rtt: number | null = null; const seen = new Set<string>();
+    let bytes = 0, lost = 0, received = 0, rtt: number | null = null;let video:MediaDiagnostics['video']; const seen = new Set<string>();
     const tracks = [room.localParticipant, ...room.remoteParticipants.values()].flatMap(p => [...p.trackPublications.values()].flatMap(pub => pub.track ? [pub.track] : []));
-    await Promise.allSettled(tracks.map(async track => { const report = await track.getRTCStatsReport(); report?.forEach(stat => { if (seen.has(stat.id)) return; seen.add(stat.id); if (stat.type === 'inbound-rtp') { bytes += stat.bytesReceived ?? 0; received += stat.packetsReceived ?? 0; lost += Math.max(0, stat.packetsLost ?? 0); } if (stat.type === 'candidate-pair' && stat.state === 'succeeded' && stat.nominated && typeof stat.currentRoundTripTime === 'number') rtt = stat.currentRoundTripTime * 1000; }); }));
+    await Promise.allSettled(tracks.map(async track => { const report = await track.getRTCStatsReport(); report?.forEach(stat => { if (seen.has(stat.id)) return; seen.add(stat.id); if ((stat.type==='inbound-rtp'||stat.type==='outbound-rtp')&&stat.frameWidth>0&&stat.frameHeight>0&&(!video||stat.frameWidth*stat.frameHeight>video.width*video.height)){const codec=report?.get(stat.codecId);video={width:stat.frameWidth,height:stat.frameHeight,framesPerSecond:typeof stat.framesPerSecond==='number'?stat.framesPerSecond:null,codec:codec?.mimeType??null,direction:stat.type==='outbound-rtp'?'sent':'received'};} if (stat.type === 'inbound-rtp') { bytes += stat.bytesReceived ?? 0; received += stat.packetsReceived ?? 0; lost += Math.max(0, stat.packetsLost ?? 0); } if (stat.type === 'candidate-pair' && stat.state === 'succeeded' && stat.nominated && typeof stat.currentRoundTripTime === 'number') rtt = stat.currentRoundTripTime * 1000; }); }));
     if (this.room !== room) return;
     const time = performance.now(); const prior = this.priorStats; this.priorStats = { time, bytes };
-    this.patch({ diagnostics: { bitrate: prior && bytes >= prior.bytes ? (bytes - prior.bytes) * 8000 / (time - prior.time) : null, packetLoss: received + lost ? lost / (received + lost) : null, rtt } });
+    this.patch({ diagnostics: { bitrate: prior && bytes >= prior.bytes ? (bytes - prior.bytes) * 8000 / (time - prior.time) : null, packetLoss: received + lost ? lost / (received + lost) : null, rtt,video } });
   }
   private cleanupPlayback() { if (this.timer) clearInterval(this.timer); this.timer = undefined; this.attachments.forEach(detach => detach()); this.audio.forEach(e => { e.pause(); e.srcObject = null; e.remove(); }); this.audio.clear(); this.priorStats = null; }
   async disconnect() {

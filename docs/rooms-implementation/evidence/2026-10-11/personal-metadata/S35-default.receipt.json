@@ -1,0 +1,50 @@
+{
+  "id": "S35",
+  "variant": "default",
+  "reference_path": "/Users/egemenmermer/Downloads/ROOMS_Design_Package/04_screens/S35_iptv_browse.png",
+  "reference_hash": "373fa6e05c21517c07f4718ed3f3ada6e8f3af3bb3fcdc7fdf8153a773551625",
+  "fixture": "S35/default",
+  "integration_status": "LOCAL_FIXTURE",
+  "application_url": "http://127.0.0.1:5173/?fixture=S35&variant=default#/media",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "device_scale_factor": 2
+  },
+  "revision": "8b03fdd7d1976d84ca483f3b40fe1619cb0177dc",
+  "working_tree_diff_sha256": "23548de57dad53b3b328cadd7302fb777e52ce7bc4c730a194ad8754c4c8dbb7",
+  "source_manifest_sha256": "65dd61d007b73e5b698f4502d0dc1d23fd4a3b6d8cc3f8e3cd85a70857f335c6",
+  "timestamp": "2026-10-11T00:58:24.046Z",
+  "metrics": {
+    "font": "Inter, -apple-system, \"system-ui\", \"Segoe UI\", sans-serif",
+    "loadedInter": true,
+    "fixture": "S35/default",
+    "roomPlayerFullscreen": false,
+    "overflow": false,
+    "panels": {
+      "window-chrome": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 30
+      },
+      "space-rail": {
+        "x": 0,
+        "y": 30,
+        "width": 72,
+        "height": 870
+      },
+      "voice-channel-sidebar": {
+        "x": 72,
+        "y": 30,
+        "width": 248,
+        "height": 870
+      },
+      "friends-panel": null,
+      "room-members-panel": null,
+      "chat-heading": null
+    }
+  },
+  "runtime_errors": [],
+  "status": "CAPTURED_NOT_VISUALLY_ACCEPTED"
+}

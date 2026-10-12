@@ -1,0 +1,40 @@
+{
+  "id": "S04",
+  "variant": "sent",
+  "reference_path": "/Users/egemenmermer/Downloads/ROOMS_Design_Package/04_screens/S04_account_recovery__sent.png",
+  "reference_hash": "80b4bbd752887e7e6a8b46c83452820e3dd4588ca5319c947a2e5335d82b97e8",
+  "fixture": "S04/sent",
+  "integration_status": "LOCAL_FIXTURE",
+  "application_url": "http://127.0.0.1:5173/?fixture=S04&variant=sent#/setup/recovery",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "device_scale_factor": 2
+  },
+  "revision": "0ba32189bf3a0fb64d3e6b030392f0d9b7be6a45",
+  "working_tree_diff_sha256": "deff031822cb19458f8109074ade80ffe06527dce3182848123132062892418a",
+  "source_manifest_sha256": "b8f49b6fed041d0ac516c4a91ade148883d8a673dc68518e072dea9b73d3588b",
+  "timestamp": "2026-10-11T01:21:15.996Z",
+  "metrics": {
+    "font": "Inter, -apple-system, \"system-ui\", \"Segoe UI\", sans-serif",
+    "loadedInter": true,
+    "fixture": "S04/sent",
+    "roomPlayerFullscreen": false,
+    "overflow": false,
+    "panels": {
+      "window-chrome": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 30
+      },
+      "space-rail": null,
+      "voice-channel-sidebar": null,
+      "friends-panel": null,
+      "room-members-panel": null,
+      "chat-heading": null
+    }
+  },
+  "runtime_errors": [],
+  "status": "CAPTURED_NOT_VISUALLY_ACCEPTED"
+}

@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { create } from 'zustand';
 import { Modal } from '@rooms/design';
-import { Music2, Plus, Play, Square, Trash2 } from 'lucide-react';
+import { PartyPopper, Plus, Play, Square, Trash2 } from 'lucide-react';
 import { useCommunity } from './community';
 import { useRealtime, playSoundboard, stopSoundboard } from './realtime';
 import { uiError } from './i18n';
@@ -29,7 +29,7 @@ export function SoundboardButton(){
     useClips.setState(state=>({clips:[...state.clips,{id:crypto.randomUUID(),name:file.name.replace(/\.[^.]+$/,'').slice(0,40),buffer}]}));
   }catch(e){setError(e instanceof Error?e.message:'Ses dosyası okunamadı.');}finally{await context?.close();setBusy(false);}}
   const reason=r.status!=='connected'?'Ses odasına katıl.':r.deafened?'Sağırlaştırmayı kapat.':r.muted?'Mikrofonu aç.':'';
-  return <><button className="icon-button" aria-label="Soundboard" title="Soundboard" onClick={()=>setOpen(true)}><Music2 size={18}/></button>{open&&<Modal title="Soundboard" onClose={close}><div data-soundboard>
+  return <><button className="icon-button" aria-label="Soundboard" title="Soundboard" onClick={()=>setOpen(true)}><PartyPopper size={18}/></button>{open&&<Modal title="Soundboard" onClose={close}><div data-soundboard>
     <input ref={picker} type="file" accept="audio/*" hidden onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file)void add(file);}}/>
     <div className="button-row"><button className="button secondary" disabled={busy||clips.length>=8} onClick={()=>picker.current?.click()}><Plus size={16}/>{busy?'Ekleniyor…':'Ses ekle'}</button><button className="button secondary" onClick={stopSoundboard}><Square size={14}/>Durdur</button></div>
     <p className="muted">{reason||'Ses açık mikrofonundan odaya gönderilir.'}</p>

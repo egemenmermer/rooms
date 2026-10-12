@@ -1,6 +1,8 @@
-import { compareScores, evaluateHoldem, shuffledDeck, sidePots, type Card } from './cards';
+import { compareScores, evaluateHoldemDetailed, type EvaluatedHoldemHand, shuffledDeck, sidePots, type Card } from './cards';
 export interface HoldemSeat { userId: string; chips: number; cards: Card[]; folded: boolean; streetBet: number; contribution: number; actedAt: number | null }
-export interface HoldemHand { revision: number; button: number; turn: number | null; stage: 'preflop' | 'flop' | 'turn' | 'river' | 'ended'; deck: Card[]; board: Card[]; seats: HoldemSeat[]; maximumBet: number; minimumRaise: number; bigBlind: number; payouts: Record<string, number>; winners: string[] }
+export interface HoldemPotResult { kind: 'main' | 'side'; amount: number; eligible: string[]; winners: string[]; awards: Record<string,number>; split: boolean }
+export interface HoldemSettlement { reason: 'uncontested' | 'showdown'; pots: HoldemPotResult[]; hands: Record<string,EvaluatedHoldemHand> }
+export interface HoldemHand { revision: number; button: number; turn: number | null; stage: 'preflop' | 'flop' | 'turn' | 'river' | 'ended'; deck: Card[]; board: Card[]; seats: HoldemSeat[]; maximumBet: number; minimumRaise: number; bigBlind: number; payouts: Record<string, number>; winners: string[]; settlement?: HoldemSettlement }
 export type HoldemAction = { type: 'fold' | 'check' | 'call' } | { type: 'raise'; to: number };
 const next = (state: HoldemHand, seat: number, predicate: (seat: HoldemSeat) => boolean) => {
   for (let offset = 1; offset <= state.seats.length; offset++) { const index = (seat + offset) % state.seats.length; if (predicate(state.seats[index])) return index; }
@@ -13,19 +15,25 @@ function award(state: HoldemHand, winners: string[], amount: number) {
   const ordered = state.seats.map((_, index) => (state.button + index + 1) % state.seats.length).filter(index => winners.includes(state.seats[index].userId));
   if (!ordered.length) throw new Error('POT_WITHOUT_ELIGIBLE_WINNER');
   const share = Math.floor(amount / ordered.length), remainder = amount % ordered.length;
-  ordered.forEach((index, order) => { const value = share + (order < remainder ? 1 : 0), seat = state.seats[index]; seat.chips += value; state.payouts[seat.userId] = (state.payouts[seat.userId] ?? 0) + value; });
+  const awards: Record<string,number> = {};
+  ordered.forEach((index, order) => { const value = share + (order < remainder ? 1 : 0), seat = state.seats[index]; seat.chips += value; awards[seat.userId] = value; state.payouts[seat.userId] = (state.payouts[seat.userId] ?? 0) + value; });
+  return awards;
 }
 function showdown(state: HoldemHand) {
   const remaining = state.seats.filter(s => !s.folded);
-  if (remaining.length === 1) award(state, [remaining[0].userId], state.seats.reduce((sum, s) => sum + s.contribution, 0));
-  else {
-    const scores = new Map(remaining.map(s => [s.userId, evaluateHoldem([...s.cards, ...state.board])]));
-    for (const pot of sidePots(state.seats.map(s => ({ userId: s.userId, amount: s.contribution, folded: s.folded })))) {
+  const settlement: HoldemSettlement = { reason: remaining.length === 1 ? 'uncontested' : 'showdown', pots: [], hands: {} };
+  if (remaining.length === 1) {
+    const amount = state.seats.reduce((sum, s) => sum + s.contribution, 0), winners = [remaining[0].userId];
+    settlement.pots.push({ kind: 'main', amount, eligible: winners, winners, awards: award(state, winners, amount), split: false });
+  } else {
+    for (const seat of remaining) settlement.hands[seat.userId] = evaluateHoldemDetailed([...seat.cards, ...state.board]);
+    for (const [index,pot] of sidePots(state.seats.map(s => ({ userId: s.userId, amount: s.contribution, folded: s.folded }))).entries()) {
       let best: number[] = [], winners: string[] = [];
-      for (const userId of pot.eligible) { const score = scores.get(userId)!; const comparison = best.length ? compareScores(score, best) : 1; if (comparison > 0) { best = score; winners = [userId]; } else if (comparison === 0) winners.push(userId); }
-      award(state, winners, pot.amount);
+      for (const userId of pot.eligible) { const score = settlement.hands[userId].score; const comparison = best.length ? compareScores(score, best) : 1; if (comparison > 0) { best = score; winners = [userId]; } else if (comparison === 0) winners.push(userId); }
+      settlement.pots.push({ kind: index === 0 ? 'main' : 'side', ...pot, winners, awards: award(state, winners, pot.amount), split: winners.length > 1 });
     }
   }
+  state.settlement = settlement;
   state.winners = Object.keys(state.payouts).filter(userId => state.payouts[userId] > 0); state.stage = 'ended'; state.turn = null;
 }
 function progress(state: HoldemHand, previousTurn: number) {
@@ -79,6 +87,8 @@ export function holdemAction(value: HoldemHand, userId: string, expectedRevision
 }
 export function holdemView(state: HoldemHand, userId: string) {
   const reveal = state.stage === 'ended' && state.seats.filter(s => !s.folded).length > 1;
-  return { revision: state.revision, button: state.button, turn: state.turn, stage: state.stage, board: state.board, maximumBet: state.maximumBet, minimumRaise: state.minimumRaise, payouts: state.payouts, winners: state.winners,
+  const own = state.seats.find(seat => seat.userId === userId);
+  const ownHand = own && own.cards.length + state.board.length >= 5 ? evaluateHoldemDetailed([...own.cards, ...state.board]) : null;
+  return { ownHand, showdown: reveal ? state.settlement?.hands ?? null : null, settlementReason: state.settlement?.reason ?? null, pots: state.settlement?.pots ?? sidePots(state.seats.map(seat => ({userId:seat.userId,amount:seat.contribution,folded:seat.folded}))).map((pot,index)=>({kind:index===0?'main' as const:'side' as const,...pot,winners:[],awards:{},split:false})), revision: state.revision, button: state.button, turn: state.turn, stage: state.stage, board: state.board, maximumBet: state.maximumBet, minimumRaise: state.minimumRaise, payouts: state.payouts, winners: state.winners,
     seats: state.seats.map(({ cards, actedAt: _actedAt, ...seat }) => ({ ...seat, cards: seat.userId === userId || reveal && !seat.folded ? cards : [], hiddenCardCount: seat.userId === userId || reveal && !seat.folded ? 0 : cards.length })) };
 }

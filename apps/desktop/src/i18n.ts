@@ -653,6 +653,13 @@ export const locale = 'tr-TR';
 export function tr(key: string): string { return trMessages[key] ?? activityMessages[key] ?? key; }
 
 const errorMessages: Record<string, string> = {
+  INVALID_COMMAND: 'Sunucudaki etkinlik servisi bu işlemi desteklemiyor. Servisin güncellenmesi gerekiyor.',
+  AUTH_REQUIRED: 'Önce giriş yap.',
+  SESSION_EXPIRED: 'Oturumun sona erdi. Yeniden giriş yap.',
+  ROOM_ACCESS_DENIED: 'Bu odada işlem yapma iznin yok.',
+  ROOM_UNAVAILABLE: 'Bu oda artık kullanılamıyor.',
+  RATE_LIMITED: 'Çok fazla işlem yapıldı. Biraz bekleyip yeniden dene.',
+  ACTIVITY_SERVICE_UNAVAILABLE: 'Etkinlik servisine ulaşılamıyor. Yeniden dene.',
   'The activity service is unavailable. It will reconnect automatically.': 'Etkinlik hizmetine ulaşılamıyor. Bağlantı otomatik olarak yeniden denenecek.',
   'Invitation provisioning is not configured on this server. Ask your administrator.': 'Bu sunucuda hesap davetleri henüz hazır değil. Sunucu yöneticine danış.',
   'Only the space owner can create account invitations.': 'Hesap davetini yalnızca topluluk sahibi oluşturabilir.',
@@ -717,5 +724,6 @@ const errorMessages: Record<string, string> = {
 export function uiError(error: unknown): string {
   const message=(error instanceof Error?error.message:String(error??'')).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '');
   for(const [code,description] of Object.entries(errorMessages)) if(message.includes(code)) return description;
+  if(/^[A-Z_]{1,64}$/.test(message))return 'İşlem tamamlanamadı. Yeniden dene.';
   return tr(message || 'İşlem tamamlanamadı. Bağlantını kontrol edip yeniden dene.');
 }

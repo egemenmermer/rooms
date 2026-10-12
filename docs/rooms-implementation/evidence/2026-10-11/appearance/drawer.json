@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-11T04:09:59.761Z",
+  "environment": "local Chromium DEV fixture",
+  "drawer": "open/escape/focus/selection passed",
+  "footer": {
+    "x": 0,
+    "y": 636,
+    "width": 900,
+    "height": 64
+  }
+}
