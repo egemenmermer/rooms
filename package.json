@@ -1,6 +1,6 @@
 {
   "name": "rooms",
-  "version": "0.1.14",
+  "version": "0.1.18-rc.1",
   "private": true,
   "description": "A private desktop clubhouse",
   "author": "ROOMS",
@@ -15,7 +15,7 @@
     "test": "vitest run --config vitest.config.ts",
     "test:desktop": "playwright test",
     "start": "electron .",
-    "package:mac": "pnpm build && electron-builder --mac dmg zip --arm64 && node scripts/verify-mac-signature.mjs",
+    "package:mac": "node scripts/release-preflight.mjs && pnpm build && electron-builder --mac dmg zip --arm64 && node scripts/verify-mac-signature.mjs",
     "package:win": "pnpm build && electron-builder --win nsis --x64",
     "services:build": "node scripts/build-services.mjs",
     "services:native": "node scripts/services-native.mjs",
