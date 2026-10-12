@@ -196,3 +196,8 @@ Next independent work: native 101 opening/pairs/joker/processing and complete ha
 ## 2026-10-10 — current private friends handoff
 
 Owner-authorized v0.1.14 DMG/ZIP/checksums and separate Agent deployment kit are published. RELEASE_0.1.14_DELIVERY.json records actual asset publication metadata and exact source; it is not application acceptance. A new ordinary friend account was provisioned through the official upstream API, joined to ROOMS and its provisioning session revoked; credentials are only in ignored mode-0600 private files. No QA account was reused. Separate Agent systemd/kit preparation is complete, but dedicated host/model/bot/provider/signing inputs remain missing. No tests/type checks/acceptance ran; the owner and friend perform the new manual checks.
+
+
+## 2026-10-12 — RNNoise prototype on preview.2
+
+The owner requested local RNNoise microphone processing and keyboard/vacuum tests. Corrected the initial stale default-main checkout to v0.1.16-preview.2 (2574d49); current reference UI/Save-Discard and media quality profiles are preserved. Prototype0.1.16-rnnoise.1 is local only. See RNNOISE_PROTOTYPE.md for implementation, exact fixtures, scoped checks, local Mac delivery and manual gates. Four actual local file-processing cases and processor toggle/restart/cleanup passed; renderer errors were absent. The comparison uses audio-clock duration after a short-output defect was caught. Packaged file-origin Wasm/AudioWorklet CSP smoke passed. No physical microphone capture, remote deployment, two-Mac call or owner acceptance is claimed. The installed /Applications/ROOMS.app remains0.1.16-preview.2.
