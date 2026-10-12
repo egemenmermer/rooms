@@ -22,7 +22,9 @@ p=Path('/opt/rooms/config/compose.yml');shutil.copy2(p,p.with_name('compose.yml.
 c=yaml.safe_load(p.read_text());music=c['services']['music'];music.setdefault('environment',{})['ROOMS_YOUTUBE_COOKIE_FILE']='/run/rooms/youtube-cookies.txt';mount='./private-music/youtube-cookies.txt:/run/rooms/youtube-cookies.txt:ro';volumes=music.setdefault('volumes',[])
 if mount not in volumes:volumes.append(mount)
 p.write_text(yaml.safe_dump(c,sort_keys=False));p.chmod(0o600)
-subprocess.run(['docker','compose','-p','rooms-core','-f',str(p),'up','-d','--no-deps','music'],check=True)
+# A file bind mount keeps the old inode after atomic credential replacement.
+# Recreate only music so the refreshed credential actually becomes visible.
+subprocess.run(['docker','compose','-p','rooms-core','-f',str(p),'up','-d','--no-deps','--force-recreate','music'],check=True)
 ''',check=True)
 finally:os.unlink(path)
 print('Dedicated YouTube session installed privately. Actual provider playback still requires verification.')
