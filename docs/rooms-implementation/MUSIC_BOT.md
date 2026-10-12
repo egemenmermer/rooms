@@ -12,3 +12,13 @@ Sources inspected:
 - https://muzoxbot.xyz/
 - https://developer.spotify.com/policy
 - https://developers.google.com/youtube/terms/developer-policies
+
+## Compact DJ panel — 2026-10-12
+
+Owner requested the extracted Recep loop over compact playback/queue controls, then explicitly rejected glass and pink. Implemented a draggable, bounded opaque ROOMS dark/purple panel, persistent across ordinary navigation. Silent alpha animation loops independently of music. A visible official YouTube player is kept at least 200px high; closing the panel destroys local playback, not another member's audio. Shared Activity queue supports video URLs, public playlist URLs, previous/next, pause/resume, seek, remove, and host-local shuffle/repeat. Personal volume affects only this installation. Queue limit remains100; imports report partial failure. Unsupported providers are rejected explicitly; Spotify audio publishing is not claimed.
+
+Playlist IDs come only from the official IFrame API's cuePlaylist/getPlaylist, in a visible preview, with source/origin/nonce-checked messages and bounded timeout/results. Native IPC validates identifiers, and the HTTPS wrapper stays backwards compatible with existing video URLs. Owner separately authorized activities-only deployment; encrypted backup rooms-20261012T123634Z.tar.age and previous activities bundle retained. New bundle SHA25649e05edc9389c291aec4cfc0840b89667354fcabfa8fbda1dd43444187c86349, health passed, public playlist wrapper HTML returned. No Hoppers/access/provider account changes.
+
+Six local tests passed (URL scope, route compatibility/schema, video command sequence and trusted playlist import). Browser DEV-only visual checks confirmed actual alpha loop running/muted, draggable panel, no backdrop filter and bounded950x700 layout with zero page errors; resize initially exposed a placement bug which was corrected and rerun. Screenshots are private evidence under .local/dj. A direct external-provider playlist browser attempt timed out; do not claim live playlist playback or two-Mac synchronization acceptance. Existing separate voice-publisher bot requirement remains unimplemented.
+
+Official API reference: https://developers.google.com/youtube/iframe_api_reference .
