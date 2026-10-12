@@ -53,3 +53,8 @@ Durable Activity version1 codec implemented with pure supported-v0 reading, expl
 ## Continuation result — 2026-10-13
 
 Local continuation completed through the independent data/RC preparation:101files/685tests and exact-source hosted CI PASS. Local notarized0.1.18-rc.1/build1791842324/sourceab03fe0 archives prepared and separate signed-out launch verified. Actual latest encrypted-backup Activity subset27rooms/60archives/1,255receipts restored/read/projected without mutation. Full Mongo/objects/ledger restore, ordinary QA/mail/data requests, two physical Macs, next-candidate update/recovery, alert delivery and six-identity2h acceptance remain OPEN. No installed/feed/production/Hoppers change. See RC_0_1_18_RESULTS.json and PRIVATE_ACCEPTANCE.md. Next required evidence is a named disposable QA community/mailbox and owner/friend physical participation; existing accounts are not substitutes.
+
+
+## Owner-approved minimal UI — 2026-10-13
+
+Conversation-first shell and local room-event sounds implemented;105files/705tests, lint/typecheck/build and exact-source hosted CI PASS. Separate notarizedRC.2/build1791845627 from30ffd42 prepared/extracted/launched with disposable profile, with no account/data mutation. InstalledRC.1 preserved, feed and services unchanged. See MINIMAL_ROOM_UI.md and RC_0_1_18_2_RESULTS.json. Owner visual/sound and physical two-Mac acceptance remain OPEN. SMTP deferred; password not changed.

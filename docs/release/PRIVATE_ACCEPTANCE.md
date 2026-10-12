@@ -1,6 +1,6 @@
 # Private release remaining acceptance
 
-Root-only implementation. Preserve existing accounts, production data, Hoppers and release/retained. Local automation and mock fixtures cannot close the gates below. Notarized candidate0.1.18-rc.1/build1791842324 is installed on the owner Mac. Subsequent recovery-origin fix c10a5cb is locally verified but not yet packaged/installed. No private distribution/freeze until the accepted artifact and core gates are recorded.
+Root-only implementation. Preserve existing accounts, production data, Hoppers and release/retained. Local automation and mock fixtures cannot close the gates below. Notarized candidate0.1.18-rc.1/build1791842324 is installed on the owner Mac. Separate notarized0.1.18-rc.2/build1791845627 includes recovery-origin and owner-approved minimal UI changes, with local checks recorded in RC_0_1_18_2_RESULTS.json; it is not installed or physically accepted. No private distribution/freeze until the accepted artifact and core gates are recorded.
 
 ## Ordinary-account staging (REL-006/007)
 

@@ -19,3 +19,13 @@ Candidate version0.1.18-rc.2 will be independently signed/notarized; existing /A
 Source review during initial packaging found microphone mute intention was not account-scoped. Owned pre-notarization packaging process tree stopped; log/staging preserved. Added scope reset and regression: a new account starts muted while same-account room switches preserve intent. New committed source will use a fresh staging output; no accepted artifact overwritten.
 
 Final navigation review corrected the unified member action: DM opens peer profile; room inspector also works on activity destinations. Anonymous DJ trigger disabled with sign-in reason. Owned second pipeline stopped before notarization, with generated signed staging retained; fresh output binds the corrected source. No signing/security checks are weakened.
+
+## Final candidate result — 2026-10-13
+
+Final source30ffd4216026e43f8846debc6ced4d60d6ff1dbb: full105files/705tests PASS, lint/typecheck PASS; exact-source hosted CI38319224595 Ubuntu baseline/macOS native-smoke PASS. Two earlier packaging runs were intentionally stopped before notarization to include review fixes; logs/staging retained, neither accepted as final. Reviewed pipeline completed exit0 with publication disabled.
+
+RC.2/build1791845627 Apple notarizationa146c82e-8f11-4860-8555-69a32aceca07 Accepted; strict signatures, app/DMG staple and Gatekeeper PASS. ZIP/DMG copied into release/candidates/0.1.18-rc.2 with exact manifest hash parity. Copied ZIP separately extracted under private temp: nested signature/staple/version PASS; extraction removed. Signed candidate launched with random disposable profile: version/About correct, renderer Node unavailable, zero pageerrors. Direct cold Forgot-password now reads the default public origin and accurately shows SMTP disabled; no recovery request sent. QA profile removed after normal close.
+
+Native DEMO visual journey additionally verifies the selected voice room uses its own composer/channel, activity member inspector and DM peer profile. Actual dimensions1440×774/900×700; no horizontal overflow. Screenshots remain DEV evidence, not real-account/media acceptance. Some legacy fixture-only cinema artwork is unavailable; no production artwork assertion. See RC_0_1_18_2_RESULTS.json.
+
+Owner-installedRC.1 remains unchanged. Prior app rollback and release/retained unchanged; no feed/production service/SMTP/password/Hoppers mutation. RC.2 is a separately prepared local candidate, not final private freeze/distribution or physical transport acceptance. Trello https://trello.com/c/9O9jcyNc tracks local implementation/package completion separately from owner/friend gates.
