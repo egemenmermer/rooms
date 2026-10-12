@@ -142,3 +142,8 @@ Version1 structural read/write boundary and supported unversioned shape are loca
 ## Continuation result — 2026-10-13
 
 REL-009 now has actual exact-source hosted CI and local version/provenance manifest; final immutable acceptance/distribution still OPEN. REL-008 current-backup Activity read/restore/projection subset PASS; full Mongo/object/ledger recovery and remaining archived formats still OPEN. REL-010 local notarized RC archives/extract/signature/isolated signed-out launch PASS; friend fresh install and actual preview.4→RC update/recovery still OPEN. REL-011 sanitized Activity categories and DB probe locally tested; real alert pipeline/drills remain OPEN. Physical REL-001, normal-user/outsider REL-006, delivered reset REL-007, private data operations REL-003 and measured REL-012 remain OPEN. Public rights/privacy/413-state gates unchanged.
+
+
+## REL-007 owner recovery screenshot — 2026-10-13
+
+Observed public production `/api` has features.email=false. Email recovery cannot be accepted until operator-configured SMTP and ordinary-account delivery are verified. Client recovery origin fallback/selected-sign-in handoff fixed with24focused local tests, lint/typecheck/build passing. Source follow-up only; installed RC not repackaged. No owner password change, recovery email, session revoke or production configuration mutation performed.
