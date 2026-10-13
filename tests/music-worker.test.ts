@@ -63,3 +63,10 @@ it('does not overwrite an immediate source failure with a playing result',async(
  const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube:async(_source,_position,_ended,onError)=>{onError(Error('MUSIC_DECODE_FAILED'));}}),lease:async()=>lease,youtubeReferences:async source=>[{source,title:'Request',durationSec:30}]});workers.push(worker);
  const value=await worker.command('startup-failure-room',lease,{type:'add',url:'https://www.youtube.com/watch?v=PgHzDZJwGW8'});expect(value.status).toBe('error');expect(value.error).toBe('MUSIC_DECODE_FAILED');
 });
+
+it('resumes a stream with unknown provider duration at its actual paused position',async()=>{
+ const {publisher,lease}=await setup();const playYouTube=vi.fn(async()=>{});
+ const worker=new MusicWorker({publisher:()=>({...publisher,position:()=>12.5,playYouTube}),lease:async()=>lease,youtubeReferences:async source=>[{source,title:'Unknown duration',durationSec:0}]});workers.push(worker);
+ await worker.command('unknown-length',lease,{type:'add',url:'https://www.youtube.com/watch?v=vKHu4uPOJVg'});await worker.command('unknown-length',lease,{type:'pause'});await worker.command('unknown-length',lease,{type:'play'});
+ expect(playYouTube).toHaveBeenLastCalledWith('https://www.youtube.com/watch?v=vKHu4uPOJVg',12.5,expect.any(Function),expect.any(Function));
+});

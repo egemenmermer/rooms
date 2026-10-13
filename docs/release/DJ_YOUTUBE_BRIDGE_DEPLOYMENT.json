@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-13",
+  "status": "PASS_OWNER_SELECTED_SINGLE_AND_PLAYLIST_ROOM_AUDIO",
+  "musicImage": "rooms-music:20261013-oauth",
+  "imageId": "sha256:7c51157adb0d5d88dba815a14d78399faae3fe1113c4a6a6225978f85ca2a8bf",
+  "musicBundleSha256": "1e91ed0c7f459038273a86df58a10dd4e373b15462a6a003d7332df486abe09b",
+  "bridgeJarSha256": "10e77d0860f035e250061cccc558634690ed9e36f6ac3145306bed4318009006",
+  "lavaplayerNativeSha256": "7429b83f0c861d6e76d158426bdc9012ce00514ecee4274fefde2120c25b71a2",
+  "livekitStereoNativeSha256": "333c965e0e92414f64fa22960d162b6a43843db5cc777d961b3f4b83e13b4c3e",
+  "privateParserImage": "ghcr.io/kikkia/yt-cipher@sha256:4c5ec381ff57336cfc24822d2b526a5ad7cd0171f61065a1bbc87bb736842449",
+  "publicParserPort": false,
+  "primaryAccountCookieMountRemoved": true,
+  "newPrimaryOAuthGrantUsed": false,
+  "dedicatedAccountToken": "Server-only0600; never recorded here",
+  "rollback": "/opt/rooms/backups/music-before-oauth-20261013.tar.age",
+  "oldCompose": "/opt/rooms/config/compose.yml.before-oauth-20261013",
+  "preflight": {
+    "network": "none",
+    "readOnly": true,
+    "health": 200
+  },
+  "productionHealth": 200,
+  "otherExistingServiceContainers": "Identifiers unchanged",
+  "checks": {
+    "mavenBuild": "PASS",
+    "isolatedLinuxTests": "19 tests /3files PASS",
+    "scopedMusicTypecheck": "PASS",
+    "scopedMusicAndTestLint": "PASS",
+    "rootMacTypecheckAndLint": "Stalled; owned processes stopped, no success claim",
+    "rootMacVitest": "Worker startup timeout; preserved failure, isolatedLinux replacement checks passed",
+    "firstLinuxTestHarness": "Vite peer mismatch then AppleDouble files; corrected harness and clean pass",
+    "sourceToSfu": "PASS_EXACT_SOURCE_PLAYLIST_NEXT_PAUSE_RESUME_STOP_TO_SFU"
+  },
+  "desktopInstallerPublished": false,
+  "releaseHold": true
+}

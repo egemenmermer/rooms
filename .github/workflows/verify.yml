@@ -25,6 +25,8 @@ jobs:
           node-version: 22.22.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Compile dedicated server YouTube bridge
+        run: JAVA_HOME="$JAVA_HOME_17_X64" mvn --batch-mode -q -f apps/services/music/youtube-bridge/pom.xml package
       - run: pnpm verify:ci
       - run: pnpm audit --prod --audit-level=high
       - run: pnpm audit --audit-level=high

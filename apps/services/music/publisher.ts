@@ -18,8 +18,9 @@ export class LiveMusicPublisher implements MusicPublisher{
  }
  async playYouTube(url:string,position:number,onEnded:()=>void,onError:(error?:Error)=>void){
  this.pause();this.offset=position;this.frames=0;this.playing=true;const generation=this.generation;
- const input=await openYouTubeAudio(url);if(generation!==this.generation){await input.close();return;}this.streamClose=input.close;
- const child=spawn('ffmpeg',['-v','error','-nostdin','-protocol_whitelist','file,pipe','-format_whitelist','matroska,webm','-ss',String(position),'-i','pipe:0','-map','0:a:0','-vn','-ac','2','-ar','48000','-f','s16le','pipe:1'],{stdio:['pipe','pipe','ignore']});this.decoder=child;child.stdin.on('error',()=>{});input.stream.pipe(child.stdin);
+ const input=await openYouTubeAudio(url,position);if(generation!==this.generation){await input.close();return;}this.streamClose=input.close;
+ const inputFormat=input.format==='s16le'?['-f','s16le','-ar','48000','-ac','2']:['-format_whitelist','matroska,webm','-ss',String(position)];
+ const child=spawn('ffmpeg',['-v','error','-nostdin','-protocol_whitelist','file,pipe',...inputFormat,'-i','pipe:0','-map','0:a:0','-vn','-ac','2','-ar','48000','-f','s16le','pipe:1'],{stdio:['pipe','pipe','ignore']});this.decoder=child;child.stdin.on('error',()=>{});input.stream.pipe(child.stdin);
  const done=new Promise<number|null>((resolve,reject)=>{child.once('error',reject);child.once('close',resolve);});void done.catch(()=>{});let sourceError:Error|undefined;void input.done.catch(error=>{sourceError=error instanceof Error?error:new Error('MUSIC_SOURCE_FAILED');child.kill('SIGKILL');});
  let started=false;let resolveReady!:()=>void,rejectReady!:(error:Error)=>void;const ready=new Promise<void>((resolve,reject)=>{resolveReady=resolve;rejectReady=reject;});
  const startup=setTimeout(()=>{if(!started){this.pause();rejectReady(new Error('MUSIC_SOURCE_TIMEOUT'));}},60000);
