@@ -20,6 +20,7 @@ const referenceAssets = {
   },
 };
 export default defineConfig({
+  worker: { format: 'es' },
   root: 'apps/desktop', base: './', plugins: [react(), referenceAssets],
   resolve: { alias: {
     '@rooms/contracts': path.resolve('packages/shared-contracts/src/index.ts'),
