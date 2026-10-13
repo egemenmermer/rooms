@@ -1,0 +1,13 @@
+# Noise suppression integration — 2026-10-13
+
+Owner explicitly authorized merging the noise branch and publishing a new private RC after verification. This supersedes the earlier release hold for this verified candidate; physical acceptance is still open.
+
+Merged `feat/noise-suppression-v2` at d13b1b39f3716e1a9716776d84da245b4a5cd7b3 (and RNNoise ancestor f150e99) into the current reference branch. Conflicts retained current immediate room departure/latest-target fencing, speaking meter, missing-device fallback, scoped listener levels, room sounds and parallel shares. Added Strong/Standard mode propagation to room and DM calls. Capture is filtered before publication; runtime/init errors do not fall back to raw audio. Disconnect stops capture/playback immediately and fences pending processors before asynchronous cleanup.
+
+Initial integration suite found six obsolete SDK capture mocks. Updated the mocked capture/publication boundary while retaining the behavioral assertions; added attach-before-publication and failed-model-never-publishes assertions. 117 files / 774 tests PASS; types, lint, renderer/Electron build, services and actual isolated desktop shell PASS. Frozen dependency installation policy PASS. Production audit has no known vulnerability; one moderate optional development-only sprintf-js advisory has no published patch and is below the high-severity gate.
+
+Actual Electron WASM/worklet graph: Strong and Standard initialize, output track survives mode toggles, restart/disposal/cancellation and processor-error callback PASS. Production Settings file comparison produces finite non-silent raw6.00s/filtered6.06s recordings, delete/cancel PASS, zero renderer errors. First selector attempt timed out during navigation after graph checks passed; unchanged-product retry passed. Both receipts remain in ignored QA logs. Screenshot inspected. All fixtures are explicitly DEMO; no real account, microphone, speaker, room or other device was used.
+
+The inherited branch measurements improve the cups/cutlery speech separation example by8.57dB, with approximate algorithm delay63.88ms in Strong versus20.67ms Standard. They are not microphone/whole-call latency measurements or Krisp equivalence. Real Turkish speech, soft speech, device changes and long-call/two-Mac acceptance remain OPEN. See NOISE_INTEGRATION_RESULTS.json and docs/NOISE_SUPPRESSION_V2.md.
+
+The isolated /tmp checkout has independent installed dependencies; original project files, accounts, Hoppers and retained archives are preserved. Only obsolete generated /tmp build copies were removed for the existing6GiB packaging gate. A mounted read-only DMG extraction was left untouched when cleanup refused it.
