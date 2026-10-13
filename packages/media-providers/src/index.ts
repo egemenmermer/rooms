@@ -39,6 +39,7 @@ export interface RealtimeMediaProvider {
   participantState(): MediaParticipant[]; diagnostics(): MediaDiagnostics;
   snapshot(): MediaSnapshot; subscribeState(listener: () => void): () => void;
   mute(value: boolean): Promise<void>; deafen(value: boolean): Promise<void>;
+  setListenerScope?(scope:string):void;
   setParticipantVolume(participantId: string, volume: number): void;
   startAudio(): Promise<void>; disconnect(): Promise<void>; reconnect(): Promise<void>;
 }
@@ -52,6 +53,12 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   private listeners = new Set<() => void>();
   private audio = new Map<string, HTMLMediaElement>();
   private volumes = new Map<string, number>();
+  private listenerScope="";
+  setListenerScope(scope:string){
+    if(scope===this.listenerScope)return;this.listenerScope=scope;this.volumes.clear();
+    try{const value=JSON.parse(localStorage.getItem(`rooms-listener-levels-v1:${scope}`)??"{}");if(scope&&value&&typeof value==="object"&&!Array.isArray(value))for(const [id,level]of Object.entries(value).slice(0,512))if(id.length<=256&&typeof level==="number"&&Number.isFinite(level)&&level>=0&&level<=1)this.volumes.set(id,level);}catch{/* Missing or damaged settings do not prevent joining. */}
+    for(const [id,person]of this.room?.remoteParticipants??[])person.setVolume(listenerGain(id,this.volumes.get(id)??1));if(this.room)this.sync();
+  }
   private attachments = new Set<() => void>();
   private timer: ReturnType<typeof setInterval> | undefined;
   private speakingMeter = new SpeakingMeter(() => this.sync());
@@ -187,7 +194,6 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   async publishCamera(enabled: boolean, deviceId?: string) { try { await this.requireRoom().localParticipant.setCameraEnabled(enabled, { deviceId, resolution: { width: 1280, height: 720, frameRate: 30 } }); this.sync(); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
   async publishScreen(options:ScreenShareOptions={}) {
     const room = this.requireRoom();
-    if ([...room.remoteParticipants.values()].some(p => p.isScreenShareEnabled)) throw new Error('Another participant is presenting. Ask them to stop before presenting.');
     const profile=screenProfiles[options.quality??'1080p60'];
     try { await room.localParticipant.setScreenShareEnabled(true, { audio: options.audio?{channelCount:2,noiseSuppression:false,autoGainControl:false,echoCancellation:false,restrictOwnAudio:true}:false, resolution: { width: profile.width, height: profile.height, frameRate: profile.frameRate } }, { videoCodec:'h264',screenShareEncoding: { maxBitrate: profile.bitrate, maxFramerate: profile.frameRate },audioPreset:{maxBitrate:128000},forceStereo:true });
       if(options.audio&&!room.localParticipant.getTrackPublication(Track.Source.ScreenShareAudio)?.track){await this.stopScreen();throw new Error('System audio capture is unavailable.');}
@@ -201,7 +207,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     if (value) {this.stopSoundboard();await room.localParticipant.setMicrophoneEnabled(false);}
     this.sync();
   }
-  setParticipantVolume(id: string, volume: number) { if (!Number.isFinite(volume) || volume < 0 || volume > 1) throw new Error('Volume must be between 0 and 1.'); this.volumes.set(id, volume); this.room?.remoteParticipants.get(id)?.setVolume(listenerGain(id,volume)); this.sync(); }
+  setParticipantVolume(id: string, volume: number) { if (!Number.isFinite(volume) || volume < 0 || volume > 1) throw new Error('Volume must be between 0 and 1.'); this.volumes.set(id, volume); if(this.listenerScope)try{localStorage.setItem(`rooms-listener-levels-v1:${this.listenerScope}`,JSON.stringify(Object.fromEntries([...this.volumes].slice(-512))));}catch{/* Playback remains usable when local storage is unavailable. */} this.room?.remoteParticipants.get(id)?.setVolume(listenerGain(id,volume)); this.sync(); }
   async startAudio() { try { await this.requireRoom().startAudio(); this.patch({ audioBlocked: false }); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
   async deviceSelection(inputId: string, outputId: string) { try { const room = this.requireRoom(); if (!await room.switchActiveDevice('audioinput', inputId||'default')) throw new Error('Input unavailable.'); if (!await room.switchActiveDevice('audiooutput', outputId||'default')) throw new Error('Output unavailable.'); this.patch({error:null,inputDeviceFallback:false}); this.sync(); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
   participantState() { return this.state.participants; }
@@ -230,7 +236,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     this.stopSoundboard();
     // Stop capture and playback synchronously; network/mixer cleanup must not hold them open.
     for(const publication of room?.localParticipant.trackPublications.values()??[])publication.track?.stop();
-    this.cleanupPlayback();this.volumes.clear();
+    this.cleanupPlayback();
     this.patch({status:'not-configured',roomId:null,error:null,muted:true,deafened:false,camera:false,sharing:false,audioBlocked:false,inputDeviceFallback:false,participants:[],tracks:[],diagnostics:emptyDiagnostics()});
     const transport=room?room.disconnect(true).finally(()=>room.removeAllListeners()):Promise.resolve();
     const cleanup=(async()=>{

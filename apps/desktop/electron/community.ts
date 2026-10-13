@@ -1,3 +1,4 @@
+import {soundboardCatalogSchema,soundboardClipSchema} from '../../../packages/shared-contracts/src/soundboard';
 import {musicCommandSchema,musicSnapshotSchema} from '../../../packages/shared-contracts/src/music';
 import { release } from 'node:os';
 import { enumerateCaptureSources, CaptureSourcesError } from './capture-sources';
@@ -169,6 +170,20 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
     }
     return value;
   }
+  async function soundboardRequest(channelId:unknown,method:'GET'|'POST'|'DELETE',clipId?:unknown,input?:unknown){
+    const current=requireClient(),token=current.getToken()!,channel=id.parse(channelId),clip=clipId===undefined?'':`/${z.string().uuid().parse(clipId)}`;
+    const body=input===undefined?undefined:z.object({name:z.string().trim().min(1).max(40),audio:z.string().max(2_666_672).regex(/^[A-Za-z0-9+/]*={0,2}$/)}).strict().parse(input);
+    const response=await fetch(`${new URL(current.instanceUrl).origin}/rooms-access/v1/soundboard/${encodeURIComponent(channel)}${clip}`,{method,headers:{Authorization:token,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,redirect:'error',signal:AbortSignal.timeout(15000)});
+    const valid=()=>current===client&&current.getToken()===token;
+    if(!valid())throw new SocialInputError('Oturum değişti.');
+    if(!response.ok){const error=(await response.json().catch(()=>null))?.error;const messages:Record<string,string>={SOUNDBOARD_NOT_CONFIGURED:'Sunucunun topluluk sesleri henüz yapılandırılmadı.',SOUNDBOARD_UPLOAD_DENIED:'Bu odada ses ekleme iznin yok.',SOUNDBOARD_DELETE_DENIED:'Yalnızca kendi sesini kaldırabilirsin.',SOUNDBOARD_FULL:'Toplulukta en fazla 32 ses saklanabilir.',SOUNDBOARD_NOT_FOUND:'Bu ses kaldırılmış.',SOUNDBOARD_INVALID_AUDIO:'En fazla 8 saniyelik mono veya stereo ses seç.'};throw new SocialInputError(messages[error]??'Topluluk sesleri alınamadı. Yeniden dene.');}
+    if(method==='GET'&&clip){const reader=response.body?.getReader();if(!reader)throw new SocialInputError('Ses dosyası alınamadı.');const chunks:Buffer[]=[];let size=0;try{while(true){const value=await reader.read();if(value.done)break;size+=value.value.byteLength;if(size>2_000_000)throw new SocialInputError('Ses dosyası çok büyük.');chunks.push(Buffer.from(value.value));}}finally{await reader.cancel().catch(()=>{});}if(!valid())throw new SocialInputError('Oturum değişti.');return Buffer.concat(chunks).toString('base64');}
+    const value=await response.json();if(!valid())throw new SocialInputError('Oturum değişti.');return method==='GET'?soundboardCatalogSchema.parse(value):method==='POST'?soundboardClipSchema.parse(value):z.object({deleted:z.literal(true)}).strict().parse(value);
+  }
+  handle('rooms:soundboard-list',channel=>soundboardRequest(channel,'GET'));
+  handle('rooms:soundboard-upload',(channel,input)=>soundboardRequest(channel,'POST',undefined,input));
+  handle('rooms:soundboard-read',(channel,clip)=>soundboardRequest(channel,'GET',clip));
+  handle('rooms:soundboard-remove',async(channel,clip)=>{await soundboardRequest(channel,'DELETE',clip);});
   async function musicRequest(channelId:string,command?:unknown){
     const current=requireClient(),room=id.parse(channelId),token=current.getToken()!;const body=command===undefined?undefined:musicCommandSchema.parse(command);
     const response=await fetch(`${new URL(current.instanceUrl).origin}/rooms-access/v1/music/${encodeURIComponent(room)}`,{method:body?'POST':'GET',headers:{Authorization:token,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,redirect:'error',signal:AbortSignal.timeout(body?160000:15000)});
@@ -196,9 +211,9 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   handle('rooms:dm-call-start',input=>callRequest('start',dmCallStartSchema.parse(input)));
   handle('rooms:dm-call-respond',input=>callRequest('respond',dmCallActionSchema.parse(input)));
   handle('rooms:dm-call-grant',input=>callRequest('grant',dmCallIdSchema.parse(input)));
-  handle('rooms:media-directory',async channelIds=>{const ids=z.array(id).min(1).max(32).parse(channelIds);const result=await broker('directory',{channelIds:ids});return z.object({rooms:z.array(z.object({channelId:id,participants:z.array(z.object({id:id,name:z.string().max(128),muted:z.boolean()}).strict()).max(100)}).strict()).max(32)}).strict().parse(result);});
+  handle('rooms:media-directory',async channelIds=>{const ids=z.array(id).min(1).max(32).parse(channelIds);const result=await broker('directory',{channelIds:ids});return z.object({rooms:z.array(z.object({channelId:id,participants:z.array(z.object({id:id,name:z.string().max(128),muted:z.boolean(),screen:z.boolean().optional()}).strict()).max(100)}).strict()).max(32)}).strict().parse(result);});
   handle('rooms:media-grant',channelId=>broker('grant',{channelId:id.parse(channelId)}));
-  handle('rooms:media-presenter',(channelId,action)=>broker(`screen/${z.enum(['acquire','release']).parse(action)}`,{channelId:id.parse(channelId)}));
+  handle('rooms:media-presenter',(channelId,action)=>broker(`screens/${z.enum(['acquire','release']).parse(action)}`,{channelId:id.parse(channelId)}));
   handle('rooms:media-screen-state',async channelId=>screenPresenterState.parse(await broker('screen/state',{channelId:id.parse(channelId)})));
   handle('rooms:media-screen-request',async input=>{const body=screenRequest.parse(input);return z.object({request:screenRequestEntry}).strict().parse(await broker('screen/request',body));});
   handle('rooms:media-screen-request-cancel',async input=>{const body=screenRequest.parse(input);return z.object({cancelled:z.literal(true)}).strict().parse(await broker('screen/request/cancel',body));});

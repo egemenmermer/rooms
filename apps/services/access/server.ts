@@ -1,3 +1,4 @@
+import {registerSoundboard} from './soundboard';
 import {registerMusicGateway} from './music-gateway';
 import { registerDmCalls } from './dm-calls';
 import Fastify, { type FastifyRequest } from 'fastify';
@@ -12,7 +13,7 @@ import { StoatClient, StoatError } from '@rooms/stoat';
 import { SOCIAL_ID_PATTERN } from '@rooms/social';
 import { stoatChannelPermissions, StoatPermissions as Permissions, type StoatServer, type StoatChannel, type StoatMember } from './stoat-permissions';
 
-export interface AccessConfig {musicUrl?:string;musicSecret?:string; stoatUrl?:string; /** Legacy configuration accepted only for validation tests; never contacts Spacebar. */ spacebarUrl?:string; livekitUrl:string; publicLivekitUrl:string; apiKey:string; apiSecret:string;registrationInvitesFile?:string;accountInviteMongoUrl?:string;socialReadMongoUrl?:string }
+export interface AccessConfig {soundboardDirectory?:string;musicUrl?:string;musicSecret?:string; stoatUrl?:string; /** Legacy configuration accepted only for validation tests; never contacts Spacebar. */ spacebarUrl?:string; livekitUrl:string; publicLivekitUrl:string; apiKey:string; apiSecret:string;registrationInvitesFile?:string;accountInviteMongoUrl?:string;socialReadMongoUrl?:string }
 const opaqueId=z.string().regex(SOCIAL_ID_PATTERN); const channelBody=z.object({channelId:opaqueId}).strict();
 const credentialBody=z.object({email:z.string().email().max(254),password:z.string().min(1).max(256)}).strict();
 const registrationBody=credentialBody.extend({username:z.string().min(2).max(32).regex(/^[\p{L}\d_.-]+$/u),inviteCode:z.string().regex(/^[a-zA-Z0-9_-]{2,128}$/)});
@@ -29,6 +30,7 @@ export async function createAccessServer(config:AccessConfig){
   const webhookReceiver=new WebhookReceiver(config.apiKey,config.apiSecret);
   const roomService=new RoomServiceClient(config.livekitUrl,config.apiKey,config.apiSecret);
   const grants=new Map<string,{userId:string;channelId:string;token:string;lastSeen:number}>();
+  const parallelScreens=new Map<string,{channelId:string;userId:string;leaseId:string;createdAt:number}>();
   const screenLeases=new Map<string,{userId:string;createdAt:number;leaseId:string}>();
   // Ephemeral consent is bound to a real media lease, never an Activity host.
   type PresenterRequest={requestId:string;userId:string;leaseId:string;createdAt:number;expiresAt:number};
@@ -43,6 +45,7 @@ export async function createAccessServer(config:AccessConfig){
     if(reservation&&(reservation.expiresAt<=now||(!reservation.released&&reservation.leaseId!==lease?.leaseId)))screenReservations.delete(channelId);
   };
   const invalidateScreenUser=(channelId:string,userId:string)=>{
+    parallelScreens.delete(`${channelId}:${userId}`);
     const lease=screenLeases.get(channelId);
     if(lease?.userId===userId){screenLeases.delete(channelId);screenRequests.delete(channelId);screenReservations.delete(channelId);}
     const requests=(screenRequests.get(channelId)??[]).filter(r=>r.userId!==userId);
@@ -69,8 +72,9 @@ export async function createAccessServer(config:AccessConfig){
     const [rawServer,rawMember]=context?[context.server,context.member]:await Promise.all([client.getServer(channel.server),client.getMember(channel.server,user.id)]);
     const permissions=stoatChannelPermissions(rawServer as StoatServer,channel as StoatChannel,rawMember as StoatMember,user.id);
     if((permissions&Permissions.VIEW_CHANNEL)===0n||(permissions&Permissions.CONNECT)===0n)throw new StoatError(403,'ROOM_ACCESS_DENIED');
-    return {user,permissions};
+    return {user,permissions,communityId:channel.server,canManage:rawServer.owner===user.id};
   };
+  registerSoundboard(server,{directory:config.soundboardDirectory,authorize:async(token,channelId)=>{const value=await authorize(token,channelId);return {communityId:value.communityId,userId:value.user.id,canUpload:(value.permissions&Permissions.SPEAK)!==0n,canManage:value.canManage};}});
   const music=registerMusicGateway(server,{url:config.musicUrl,secret:config.musicSecret,apiKey:config.apiKey,apiSecret:config.apiSecret,livekitUrl:config.livekitUrl.replace(/^http/,'ws'),roomService,authorize:async(token,channelId)=>{const result=await authorize(token,channelId);return{userId:result.user.id,canControl:(result.permissions&Permissions.SPEAK)!==0n&&(result.permissions&Permissions.LISTEN)!==0n};}});
   const screenMember=async(token:string,channelId:string)=>{
     let result;try{result=await authorize(token,channelId);}catch(error){const grant=[...grants.values()].find(g=>g.channelId===channelId&&g.token===token);if(grant)invalidateScreenUser(channelId,grant.userId);throw error;}
@@ -176,7 +180,7 @@ export async function createAccessServer(config:AccessConfig){
     const rooms=await Promise.all(permitted.map(async channelId=>{
       let participants:Awaited<ReturnType<typeof roomService.listParticipants>>=[];
       if(liveNames.has(roomName(channelId)))try{participants=await roomService.listParticipants(roomName(channelId));}catch(error){if((error as {code?:string}).code!=='not_found')throw error;}
-      return {channelId,participants:participants.slice(0,100).map(p=>({id:p.identity,name:(p.name||p.identity).slice(0,128),muted:!p.tracks.some(t=>t.source===TrackSource.MICROPHONE&&!t.muted)}))};
+      return {channelId,participants:participants.slice(0,100).map(p=>({id:p.identity,name:(p.name||p.identity).slice(0,128),muted:!p.tracks.some(t=>t.source===TrackSource.MICROPHONE&&!t.muted),...(p.tracks.some(t=>t.source===TrackSource.SCREEN_SHARE&&!t.muted)?{screen:true}:{})}))};
     }));
     return {rooms};
   });
@@ -186,6 +190,26 @@ export async function createAccessServer(config:AccessConfig){
     access.addGrant({roomJoin:true,room:roomName(channelId),canSubscribe:(permissions&Permissions.LISTEN)!==0n,canPublish:sources(permissions).length>0,canPublishSources:sources(permissions),canPublishData:false,canUpdateOwnMetadata:false});
     grants.set(`${channelId}:${user.id}`,{userId:user.id,channelId,token,lastSeen:Date.now()});
     return {serverUrl:config.publicLivekitUrl,roomName:roomName(channelId),token:await access.toJwt(),expiresAt:new Date(Date.now()+300000).toISOString()};
+  });
+  // Each connected member gets a separate screen grant; no other publisher is revoked.
+  server.post('/v1/media/screens/acquire',async request=>{
+    const {channelId}=channelBody.parse(request.body),token=tokenOf(request.headers.authorization);
+    const {user,permissions}=await screenMember(token,channelId),key=`${channelId}:${user.id}`;
+    const previous=parallelScreens.get(key);
+    if(!previous&&(parallelScreens.size>=1000||[...parallelScreens.values()].filter(p=>p.channelId===channelId).length>=20))throw new StoatError(409,'SCREEN_LEASE_LIMIT');
+    const lease=previous??{channelId,userId:user.id,leaseId:randomUUID(),createdAt:Date.now()};parallelScreens.set(key,lease);
+    try{
+      const current=await screenMember(token,channelId);if(current.user.id!==user.id||parallelScreens.get(key)!==lease)throw new StoatError(409,'SCREEN_LEASE_STALE');
+      await roomService.updateParticipant(roomName(channelId),user.id,{permission:{canPublish:true,canSubscribe:(current.permissions&Permissions.LISTEN)!==0n,canPublishData:false,canPublishSources:sources(current.permissions,true)}});
+      if(parallelScreens.get(key)!==lease){await roomService.updateParticipant(roomName(channelId),user.id,{permission:{canPublishSources:sources(permissions)}});throw new StoatError(409,'SCREEN_LEASE_STALE');}
+      return {granted:true,leaseId:lease.leaseId};
+    }catch(error){if(!previous&&parallelScreens.get(key)===lease){try{await roomService.updateParticipant(roomName(channelId),user.id,{permission:{canPublishSources:sources(permissions)}});parallelScreens.delete(key);}catch{/* Membership sweep retries uncertain revocation. */}}throw error;}
+  });
+  server.post('/v1/media/screens/release',async request=>{
+    const {channelId}=channelBody.parse(request.body),token=tokenOf(request.headers.authorization);
+    const {user,permissions}=await authorize(token,channelId);
+    await roomService.updateParticipant(roomName(channelId),user.id,{permission:{canPublish:sources(permissions).length>0,canSubscribe:(permissions&Permissions.LISTEN)!==0n,canPublishData:false,canPublishSources:sources(permissions)}});
+    invalidateScreenUser(channelId,user.id);return {released:true};
   });
   server.post('/v1/media/screen/state',async request=>{
     const {channelId}=channelBody.parse(request.body);await screenMember(tokenOf(request.headers.authorization),channelId);pruneScreen(channelId);
@@ -282,10 +306,11 @@ export async function createAccessServer(config:AccessConfig){
         if(!participant&&Date.now()-grant.lastSeen>30000){grants.delete(key);invalidateScreenUser(grant.channelId,grant.userId);}
         if((permissions&Permissions.VIDEO)===0n)invalidateScreenUser(grant.channelId,grant.userId);
         pruneScreen(grant.channelId);const lease=screenLeases.get(grant.channelId);
-        if(participant)await roomService.updateParticipant(roomName(grant.channelId),grant.userId,{permission:{canSubscribe:(permissions&Permissions.LISTEN)!==0n,canPublish:sources(permissions).length>0,canPublishSources:sources(permissions,lease?.userId===grant.userId&&(permissions&Permissions.VIDEO)!==0n)}});
+        const parallel=parallelScreens.get(key);if(parallel&&Date.now()-parallel.createdAt>15000&&!participant?.tracks.some(t=>t.source===TrackSource.SCREEN_SHARE||t.source===TrackSource.SCREEN_SHARE_AUDIO)){if(participant)await roomService.updateParticipant(roomName(grant.channelId),grant.userId,{permission:{canPublishSources:sources(permissions)}});if(parallelScreens.get(key)===parallel)parallelScreens.delete(key);}
+        if(participant)await roomService.updateParticipant(roomName(grant.channelId),grant.userId,{permission:{canSubscribe:(permissions&Permissions.LISTEN)!==0n,canPublish:sources(permissions).length>0,canPublishSources:sources(permissions,(lease?.userId===grant.userId||parallelScreens.has(key))&&(permissions&Permissions.VIDEO)!==0n)}});
         if(lease?.userId===grant.userId&&Date.now()-lease.createdAt>15000&&!participant?.tracks.some(t=>t.source===TrackSource.SCREEN_SHARE||t.source===TrackSource.SCREEN_SHARE_AUDIO)){if(participant){const {permissions}=await authorize(grant.token,grant.channelId);await roomService.updateParticipant(roomName(grant.channelId),grant.userId,{permission:{canPublishSources:sources(permissions)}});}if(screenLeases.get(grant.channelId)===lease)invalidateScreenUser(grant.channelId,grant.userId);}
       }catch(error){if(error instanceof StoatError&&(error.status===401||error.status===403||error.status===404)){await roomService.removeParticipant(roomName(grant.channelId),grant.userId).catch(()=>{});grants.delete(key);invalidateScreenUser(grant.channelId,grant.userId);}}
     }}finally{sweeping=false;}
-  },10000);sweep.unref();server.addHook('onClose',async()=>{clearInterval(sweep);grants.clear();screenLeases.clear();screenRequests.clear();screenReservations.clear();});
+  },10000);sweep.unref();server.addHook('onClose',async()=>{clearInterval(sweep);grants.clear();parallelScreens.clear();screenLeases.clear();screenRequests.clear();screenReservations.clear();});
   return server;
 }
