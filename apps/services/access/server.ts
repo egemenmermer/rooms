@@ -18,7 +18,8 @@ const credentialBody=z.object({email:z.string().email().max(254),password:z.stri
 const registrationBody=credentialBody.extend({username:z.string().min(2).max(32).regex(/^[\p{L}\d_.-]+$/u),inviteCode:z.string().regex(/^[a-zA-Z0-9_-]{2,128}$/)});
 export async function createAccessServer(config:AccessConfig){
   const server=Fastify({logger:false,bodyLimit:16384});
-  await server.register(rateLimit,{max:60,timeWindow:'1 minute'});
+  // Media polling and room changes share this ingress budget, including proxied peers.
+  await server.register(rateLimit,{max:600,timeWindow:'1 minute'});
   const rawBodies=new WeakMap<FastifyRequest,string>();
   server.removeContentTypeParser('application/json');
   server.addContentTypeParser(['application/json','application/webhook+json'],{parseAs:'string'},(request,body,done)=>{
@@ -132,12 +133,12 @@ export async function createAccessServer(config:AccessConfig){
     const issued=await issueRegistrationInvite(registration.path,accountCode,upstream.code);
     return {...upstream,code:issued.code,expiresAt:issued.expiresAt};
   });
-  server.get('/v1/auth/invites/:code' ,async request=>{
+  server.get('/v1/auth/invites/:code' ,{config:{rateLimit:{max:60,timeWindow:'1 minute'}}},async request=>{
     const code=z.object({code:z.string().regex(/^[A-Za-z0-9_-]{2,128}$/)}).parse(request.params).code;
     const ticket=await registration.inspect(code);const client=new StoatClient(config.stoatUrl??'http://127.0.0.1:3022',undefined,socialOptions);
     const invite=await client.inspectUpstreamInvite(ticket.communityInviteCode);return {...invite,code,expiresAt:ticket.expiresAt};
   });
-  server.post('/v1/auth/invites/:code/join',async request=>{
+  server.post('/v1/auth/invites/:code/join',{config:{rateLimit:{max:60,timeWindow:'1 minute'}}},async request=>{
     const code=z.object({code:z.string().regex(/^[A-Za-z0-9_-]{2,128}$/)}).parse(request.params).code;
     const client=new StoatClient(config.stoatUrl??'http://127.0.0.1:3022',tokenOf(request.headers.authorization),socialOptions);await client.getCurrentUser();
     return registration.consume(code,async invitation=>{const joined=await client.acceptInvite(invitation.communityInviteCode);return {...joined,code};});
