@@ -9,3 +9,5 @@ it('accepts official video links and prioritizes explicit playlists',()=>{
 it('rejects lookalike providers, credentials, non-HTTPS and arbitrary links',()=>{
  for(const url of ['https://youtube.com.evil.test/watch?v=PgHzDZJwGW8','https://owner:secret@youtube.com/watch?v=PgHzDZJwGW8','http://youtu.be/PgHzDZJwGW8','https://127.0.0.1/test','https://open.spotify.com/track/123','https://youtube.com/watch?v=bad'])expect(parseDJLink(url)).toBeNull();
 });
+
+it('queues the linked video rather than a generated radio Mix',()=>{expect(parseDJLink('https://www.youtube.com/watch?v=6MAzUT1YhWE&list=RD6MAzUT1YhWE&start_radio=1')).toEqual({kind:'video',id:'6MAzUT1YhWE'});});

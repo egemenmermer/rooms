@@ -1,8 +1,16 @@
 # ROOMS
 
+## Download the private-friend release
+
+[Download ROOMS 0.1.18-rc.5 for Mac](https://community.example.invalid/rooms-updates/ROOMS-0.1.18-rc.5-arm64.dmg) — macOS 14+ on Apple Silicon (M-series). GitHub sign-in is not required to download.
+
+Open the DMG, drag ROOMS into Applications and open it. Use your existing account or an account invitation from the community owner. The private service remains invite-only. This release is Developer ID signed and Apple notarized; real two-Mac voice/share/DJ acceptance remains open. Windows and Intel packages are not included.
+
+The immutable binary and its manifest are retained in [RC5](https://github.com/egemenmermer/rooms/releases/tag/v0.1.18-rc.5). SHA256: `19f314346f809fc772fdf5e053757dea3362e013620ba89dc14ab2295b786e00`.
+
 ## Project documentation
 
-Read the [project handbook](docs/project/README.md) for architecture, runtime/data flows, services, security, operations and release engineering. The handbook documents audited reference implementation `06f5477`; a documentation merge does not merge its outstanding product-code changes. The [initial release audit](docs/release/AUDIT_REPORT.md) includes readiness, scope, blockers, QA and the phased V1 roadmap. Historical sections below retain their original acceptance limits.
+Read the [project handbook](docs/project/README.md) for architecture, runtime/data flows, services, security, operations and release engineering. The handbook documents audited reference implementation `06f5477`; the current private-friend release and integration evidence are in [the release records](docs/release/MAIN_INTEGRATION.md). The [initial release audit](docs/release/AUDIT_REPORT.md) includes readiness, scope, blockers, QA and the phased V1 roadmap. Historical sections below retain their original acceptance limits.
 
 [Hosted handbook](https://community.example.invalid/docs/) · [Documentation build/deployment](docs/site/README.md)
 
@@ -30,7 +38,7 @@ pnpm start
 
 Home, Spaces, Chat, friends/profile, Voice, Cinema, YouTube Together, shared polls/whiteboard, game tables, personal media settings and Agent screens have working navigation and stateful controls. Shared Activities use an authoritative service. Games include Holdem, Blackjack, four Batak variants and 101. Cinema plays the bundled original demo or an explicitly selected personal file. Personal M3U/HLS, Xtream, XMLTV and Real-Debrid device authorization run behind native encrypted storage; credentials and media URLs are not distributed to other members.
 
-Implementation is different from live-provider acceptance. Stoat infrastructure, real paid-provider accounts, the separate Linux agent host, signed updates and physical two-computer media still require verification. See [current implementation evidence](docs/IMPLEMENTATION_PROGRESS.md) and [feature matrix](docs/FEATURE_MATRIX.md).
+Implementation is different from live-provider acceptance. Stoat infrastructure, real paid-provider accounts, the separate Linux agent host, physical two-computer media and remaining real-provider journeys still require acceptance. Signed/notarized RC5 delivery, owner installation and preserved-profile launch have separate evidence in [the current release records](docs/release/RC_0_1_18_5_RESULTS.json). See [current implementation evidence](docs/IMPLEMENTATION_PROGRESS.md) and [feature matrix](docs/FEATURE_MATRIX.md).
 
 ## Run services
 
