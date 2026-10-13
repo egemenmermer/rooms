@@ -60,10 +60,13 @@
     }
   },
   "installation": {
-    "status": "STAGED_NOT_INSTALLED",
-    "currentlyInstalled": "0.1.18-rc.3",
-    "stage": "/Applications/.ROOMS-install-rc5-3jq7crjn",
-    "reason": "Native UI concurrency guard blocked normal quit; owner close requested, no bypass"
+    "status": "INSTALLED_VERIFIED",
+    "currentlyInstalled": "0.1.18-rc.5",
+    "buildNumber": "1791883043",
+    "rollbackApp": "/Applications/.ROOMS-before-0.1.18-rc.5-rc.3.app",
+    "signatureTicketGatekeeper": "PASS",
+    "nativeLaunch": "PASS; existing account retained, no automatic audio join",
+    "record": "RC_0_1_18_5_INSTALLATION.json"
   },
   "physicalTwoMac": "OPEN",
   "accountsDataHoppers": "UNTOUCHED"

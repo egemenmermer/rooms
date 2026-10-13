@@ -1,0 +1,10 @@
+{
+  "version": "0.1.18-rc.5",
+  "buildNumber": "1791883043",
+  "installedApp": "/Applications/ROOMS.app",
+  "rollbackApp": "/Applications/.ROOMS-before-0.1.18-rc.5-rc.3.app",
+  "signatureTicketGatekeeper": "PASS",
+  "profileFiles": "UNTOUCHED",
+  "launch": "PASS: native CUA opened installed file:// app; existing egemen profile and Lounge/test rooms observed; restored Lounge voice view without automatic audio join",
+  "physicalTwoMac": "OPEN"
+}
