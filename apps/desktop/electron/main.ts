@@ -1,3 +1,4 @@
+import { isolatedProfilePath } from './profile';
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, protocol, session, Tray, screen, shell } from 'electron';
 import { readFileSync, writeFileSync, statSync, createReadStream } from 'node:fs';
 import { join, basename } from 'node:path';
@@ -15,7 +16,8 @@ import {setupAgent} from './agent';
 import { whiteboardSvg } from './whiteboard-export';
 import { whiteboardPng } from './whiteboard-raster';
 import type { ActivityResponse } from '@rooms/activity-protocol';
-if(process.env.ROOMS_PROFILE&&/^[a-zA-Z0-9-]{1,40}$/.test(process.env.ROOMS_PROFILE))app.setPath('userData',join(app.getPath('appData'),'ROOMS',process.env.ROOMS_PROFILE));
+const isolatedProfile=isolatedProfilePath(app.getPath('appData'),process.env.ROOMS_PROFILE);
+if(isolatedProfile)app.setPath('userData',isolatedProfile);
 let win: BrowserWindow | null = null;
 let quitting=false;
 let windowPolicy:ReturnType<typeof setupWindowPolicy>|null=null;

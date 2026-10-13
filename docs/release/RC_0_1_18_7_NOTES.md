@@ -23,3 +23,7 @@ Merged source:117files/774tests PASS, lint/types/build/services PASS, isolated n
 The private RC is not a public V1 acceptance certificate. Real two-Mac voice/noise/device/parallel-screen/system-audio and all-game acceptance, sustained session/load, update recovery and public rights/privacy/data operations remain OPEN. SMTP/password/server-account changes are excluded. Windows and Intel builds are not delivered or claimed verified.
 
 Publication/signing/notarization/CI/artifact hashes will be recorded in RC_0_1_18_7_RESULTS.json. No install or logout is requested as part of this release.
+
+## QA profile recovery and launch protection
+
+The first packaging harness supplied an overlong QA profile name; the previous launcher fell back to default storage, and the harness removed that directory. The agent recovered the current encrypted session, conversation cache, renderer preferences and native settings from the still-running owner process. An isolated native child reopened the saved existing session successfully and persisted the recovered preferences. No logout/password/server-account/voice action. Browser cache and old temporary test profiles were not restored byte-for-byte; the owner profile was not untouched. See RC7_QA_PROFILE_RECOVERY.json. Malformed profile names now fail before application setup and guarded harness cleanup only accepts its exact disposable child. Final118files/784tests PASS. The initial accepted DMG candidate is held; a fresh corrected source candidate is required and must be stapled before launch.
