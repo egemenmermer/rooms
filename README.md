@@ -2,11 +2,13 @@
 
 ## Download the private-friend release
 
-[Download ROOMS 0.1.18-rc.5 for Mac](https://community.example.invalid/rooms-updates/ROOMS-0.1.18-rc.5-arm64.dmg) — macOS 14+ on Apple Silicon (M-series). GitHub sign-in is not required to download.
+[Download ROOMS 0.1.18-rc.7 for Mac](https://community.example.invalid/rooms-updates/ROOMS-0.1.18-rc.7-arm64.dmg) — macOS 14+ on Apple Silicon (M-series). GitHub sign-in is not required to download.
 
 Open the DMG, drag ROOMS into Applications and open it. Use your existing account or an account invitation from the community owner. The private service remains invite-only. This release is Developer ID signed and Apple notarized; real two-Mac voice/share/DJ acceptance remains open. Windows and Intel packages are not included.
 
-The immutable binary and its manifest are retained in [RC5](https://github.com/egemenmermer/rooms/releases/tag/v0.1.18-rc.5). SHA256: `19f314346f809fc772fdf5e053757dea3362e013620ba89dc14ab2295b786e00`.
+The immutable binary and its manifest are retained in [RC7](https://github.com/egemenmermer/rooms/releases/tag/v0.1.18-rc.7). SHA256: `efb3c1eb6341f0b9d2f4c4fed6356c6fa23db86f8c2aa2a3e5854a8d0d01f520`.
+
+Current candidate: [changes and acceptance limits](docs/release/RC_0_1_18_7_NOTES.md), [publication evidence](docs/release/RC_0_1_18_7_RESULTS.json). Includes local Strong/Standard microphone suppression, fitting parallel shares, durable community sounds and verified owner-playlist DJ playback.
 
 ## Project documentation
 
