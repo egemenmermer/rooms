@@ -33,3 +33,5 @@ The major gap is coherent current acceptance and operating the public product re
 
 
 2026-10-13 DJ source update: exact owner single and ten-track playlist now pass current Linux source/worker/SFU/pause/resume/next/stop. Owner confirms both playlist tracks audible in real Lounge. Music-only dedicated-account upstream bridge/private parser deployed; health200 and encrypted rollback retained. See DJ_YOUTUBE_BRIDGE_FIX.md and receipts. No desktop publication; release HOLD and remaining physical/UI/game/share acceptance stay open.
+
+2026-10-13 owner authorized a fresh private RC.7 publication after confirming exact playlist first/next room audio, and requested integration of feat/noise-suppression-v2. Earlier blanket hold is superseded for the verified private candidate; unverified physical/publicV1 gates stay open. See RC_0_1_18_7_NOTES.md and NOISE_INTEGRATION.md.
