@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-13",
+  "status": "OPEN_PROVIDER_PLAYABILITY_REJECTION",
+  "videoId": "vKHu4uPOJVg",
+  "engine": "youtube-source 1.18.2 / lavaplayer 2.2.7",
+  "client": "TV_OAUTH_ONLY",
+  "dedicatedAccountConsent": "Owner confirmed separate account",
+  "oauthAuthorized": true,
+  "audioFrames": 0,
+  "rms": 0,
+  "roomPublished": false,
+  "failureStage": "Client.getPlayabilityStatus",
+  "exceptionTypes": [
+    "AllClientsFailedException",
+    "ClientException",
+    "FriendlyException"
+  ],
+  "specificProviderReason": "Unclassified; no raw provider response or credentials logged",
+  "boundedAttempts": 3,
+  "attemptReason": "Initial source probe, then two diagnostic-only refinements; same source/account/client with no fallback",
+  "primaryAccountNewGrantConsumed": false,
+  "productionConfigChanged": false,
+  "desktopReleaseCreated": false,
+  "acceptance": "FAILED: no source PCM, no room audibility claim"
+}
