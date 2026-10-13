@@ -1,0 +1,12 @@
+{
+  "version": "0.1.18-rc.3",
+  "buildNumber": "1791847538",
+  "archiveSha256": "fc40910a0d05dfb9a13d2e2c1d0cacd57a586350ea2b3a45d697fa3192ec07fd",
+  "installedApp": "/Applications/ROOMS.app",
+  "rollbackApp": "/Applications/.ROOMS-before-0.1.18-rc.3-rc.1.app",
+  "signatureTicketGatekeeper": "PASS",
+  "profilesTouched": false,
+  "nativeUI": "Existing owner account remained signed in; installed app visibly opened (game/chat navigation observed). No installer-driven login/logout, voice/mic/game/message actions. Owner changed UI during observation; inspection stopped.",
+  "uiObservation": "Lounge heading with General composer placeholder observed; actual message destination not verified and no message sent. Follow-up required; not physical acceptance.",
+  "at": "2026-10-13T08:37:21.881861+00:00"
+}
