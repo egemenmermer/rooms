@@ -1,0 +1,11 @@
+# Private DJ source bridge
+
+Build with Java17+ and Maven: `mvn -f apps/services/music/youtube-bridge/pom.xml package`. The shaded target JAR is a server artifact, never bundled into the desktop renderer or distributed with Google credentials. The pinned upstream youtube-source snapshot is `b33460b38ad13b5cd07da75e46444397cf0ea2df-SNAPSHOT`; Lavaplayer2.2.7. The baseline CI compiles this component without account authorization or playback.
+
+Copy the resulting JAR as `youtube-bridge.jar`, extract its `natives/linux-x86-64/libconnector.so` as `libconnector.so`, and build `infra/music/Dockerfile.youtube-bridge` with the compiled current Node music bundle. The Linux native path is baked and explicitly passed to Java so temporary storage can remain noexec. Existing verified LiveKit stereo native stays unchanged. Verify artifact hashes against the release receipt before service updates. Dependency notices in the shaded JAR must be retained; a desktop release still requires its normal dependency/license review.
+
+Select with `ROOMS_YOUTUBE_ENGINE=lavalink`. Mount the explicitly owner-approved dedicated-account refresh token at `/private/refresh-token`, readonly0600, UID10001, <=16KiB. There is no automatic login/cookie extraction. No token in environment/argv/renderer/shared snapshots. Only the fixed private parser endpoint `http://music-cipher:8001/` is used; it exposes no public/host port and never receives the Google token. The provider's video ID, duration, non-live state and lack of stream license information are checked before PCM. Scope checks fail closed, including unauthorized/provider-denied content; no DRM decryption is supplied.
+
+`java -Dlava.native.connector.path=/service/libconnector.so -jar /service/youtube-bridge.jar VIDEO_ID metadata` emits only title/duration. PCM mode uses VIDEO_ID and an offset0..7200 seconds; stdout is48kHz stereo signed16bit little-endian PCM and stderr only fixed errors/structural diagnostics. All playback uses the existing worker generation, room lease and source process cancellation. Owner-selected playlists continue to use bounded flat provider metadata; only the playing item opens an audio stream.
+
+Deployment/rollback and real source/room evidence: `docs/release/DJ_YOUTUBE_BRIDGE_FIX.md`, `DJ_YOUTUBE_BRIDGE_DEPLOYMENT.json`, `DJ_OAUTH_PLAYLIST_ROOM_RESULTS.json`. Release HOLD remains.

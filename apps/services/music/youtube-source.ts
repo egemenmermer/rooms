@@ -1,4 +1,5 @@
 import {spawn} from 'node:child_process';
+import {usesYouTubeBridge,bridgeVideoReference,openBridgeAudio} from './youtube-bridge';
 import {mkdtemp,readFile,readdir,stat,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
@@ -16,6 +17,7 @@ export const youtubeFailure=(stderr:string)=>/sign in|not a bot|cookies|HTTP Err
 export function canonicalYouTube(raw:string){const link=youtubeSource(raw);if(!link)throw new Error('MUSIC_SOURCE_FAILED');return link.kind==='video'?`https://www.youtube.com/watch?v=${link.id}`:`https://www.youtube.com/playlist?list=${link.id}`;}
 /** Fixed YouTube extractor; optional owner-approved server-only bot session, never personal browser extraction. */
 export function youtubeSessionArgs():string[]{
+ if(usesYouTubeBridge())return[];
  const path=process.env.ROOMS_YOUTUBE_COOKIE_FILE;if(!path)return[];
  if(path!=='/run/rooms/youtube-cookies.txt'||!existsSync(path))throw new Error('MUSIC_YOUTUBE_ACCESS_REQUIRED');
  const info=statSync(path);if(!info.isFile()||info.size>1024*1024||(info.mode&0o077)!==0)throw new Error('MUSIC_YOUTUBE_ACCESS_REQUIRED');
@@ -32,7 +34,7 @@ async function run(args:string[],timeoutMs:number,directory?:string):Promise<str
  child.stdout.on('data',value=>{output+=value.toString();if(output.length>1024*1024)finish(new Error('MUSIC_SOURCE_TOO_LARGE'));});child.stderr.on('data',value=>{if(errors.length<16000)errors+=value.toString();});
  child.on('error',()=>finish(new Error('MUSIC_YOUTUBE_UNAVAILABLE')));child.on('close',code=>{if(code!==0)finish(new Error(youtubeFailure(errors)));else finish();});
  });}finally{if(cookieDirectory)await rm(cookieDirectory,{recursive:true,force:true});}}
-export async function youtubeReferences(raw:string):Promise<MusicReference[]>{const link=youtubeSource(raw);if(!link)throw new Error('MUSIC_SOURCE_FAILED');const output=await run([...(link.kind==='playlist'?['--flat-playlist']:['--no-playlist']),'--skip-download','--dump-single-json','--playlist-end','100',canonicalYouTube(raw)],25000);let value:any;try{value=JSON.parse(output);}catch{throw new Error('MUSIC_YOUTUBE_UNAVAILABLE');}
+export async function youtubeReferences(raw:string):Promise<MusicReference[]>{const link=youtubeSource(raw);if(!link)throw new Error('MUSIC_SOURCE_FAILED');if(usesYouTubeBridge()&&link.kind==='video')return[await bridgeVideoReference(raw)];const output=await run([...(link.kind==='playlist'?['--flat-playlist']:['--no-playlist']),'--skip-download','--dump-single-json','--playlist-end','100',canonicalYouTube(raw)],25000);let value:any;try{value=JSON.parse(output);}catch{throw new Error('MUSIC_YOUTUBE_UNAVAILABLE');}
  if(link.kind==='video'&&value.id===link.id)remember(link.id,output);
  const entries=link.kind==='playlist'?value.entries:[value];if(!Array.isArray(entries)||!entries.length)throw new Error('MUSIC_YOUTUBE_UNAVAILABLE');
  const result:MusicReference[]=[];for(const entry of entries){if(!entry||typeof entry.id!=='string'||!/^[a-zA-Z0-9_-]{11}$/.test(entry.id)||entry.is_live||entry.has_drm||Number(entry.duration)>7200)continue;result.push({source:`https://www.youtube.com/watch?v=${entry.id}`,title:typeof entry.title==='string'?entry.title.replace(/[\x00-\x1f]/g,'').slice(0,160):'YouTube',durationSec:Number.isFinite(entry.duration)&&entry.duration>0?entry.duration:0});}
@@ -45,7 +47,8 @@ export async function fetchYouTubeMusic(raw:string):Promise<MusicFile>{const dir
  }catch(error){await rm(directory,{recursive:true,force:true});throw error;}}
 
 /** Stream only the selected provider audio; no renderer player or full-set transcoding. */
-export async function openYouTubeAudio(raw:string){
+export async function openYouTubeAudio(raw:string,position=0){
+ if(usesYouTubeBridge())return openBridgeAudio(raw,position);
  const session=youtubeSessionArgs();let privateDirectory:string|undefined;
  if(session.length){privateDirectory=await mkdtemp(join(tmpdir(),'rooms-youtube-session-'));const {copyFile,chmod}=await import('node:fs/promises');const copy=join(privateDirectory,'cookies.txt');await copyFile(session[1]!,copy);await chmod(copy,0o600);session[1]=copy;}
  const link=youtubeSource(raw);const cached=link?.kind==='video'?videoMetadata.get(link.id):undefined;let metadataPath:string|undefined;
@@ -59,7 +62,7 @@ export async function openYouTubeAudio(raw:string){
  const done=new Promise<void>((resolve,reject)=>{child.once('error',()=>reject(new Error('MUSIC_YOUTUBE_UNAVAILABLE')));child.once('close',code=>{if(code===0)resolve();else reject(new Error(youtubeFailure(errors)));});});
  const cleanup=async()=>{clearTimeout(timer);if(privateDirectory)await rm(privateDirectory,{recursive:true,force:true});};
  void done.then(cleanup,cleanup);
- return{stream:child.stdout,done,close:async()=>{child.kill('SIGKILL');await done.catch(()=>{});await cleanup();}};
+ return{stream:child.stdout,done,format:'webm' as const,close:async()=>{child.kill('SIGKILL');await done.catch(()=>{});await cleanup();}};
 }
 
 export async function matchingYouTubeReference(song:SongMetadata):Promise<MusicReference>{
