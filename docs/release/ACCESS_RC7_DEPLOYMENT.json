@@ -1,0 +1,12 @@
+{
+  "sourceSha": "c6f67136c4b1f3a6170f33675c838333c009c25c",
+  "accessSha256": "331b8585cc64d15456d1116114b30b2d046325e4e4738a71300bf27d7c60dff7",
+  "priorAccessSha256": "117222f89ad6d2421847ca101bc1a97ec8b19180b623b03f290076fc75d3c5e8",
+  "backup": "/opt/rooms/backups/access-before-rc7-20261013.tar.age",
+  "preflight": "PASS_NETWORK_NONE_READONLY_NONROOT",
+  "health": "PASS",
+  "unrelatedContainers": "UNCHANGED",
+  "accountDataHoppers": "UNTOUCHED",
+  "scope": "Access bundle only; existing writable state mount reused, no account operations",
+  "physicalTwoMac": "OPEN"
+}

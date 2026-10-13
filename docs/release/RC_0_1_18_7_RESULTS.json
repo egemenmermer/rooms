@@ -1,0 +1,104 @@
+{
+  "version": "0.1.18-rc.7",
+  "buildNumber": "1791907402",
+  "sourceSha": "b38f8e91b600bd4319e1ddc885b2831542790859",
+  "mainMergeCommit": "0fe822d9036d6bc32eb7c14d53a006a62ab642e9",
+  "noiseBranch": "d13b1b39f3716e1a9716776d84da245b4a5cd7b3",
+  "noiseAndSourceAncestorsOnMain": true,
+  "localVerification": {
+    "files": 118,
+    "tests": 784,
+    "lint": "PASS",
+    "types": "PASS",
+    "buildServices": "PASS",
+    "desktopShell": "PASS",
+    "noiseNative": "PASS",
+    "earlierNoiseTests": 774
+  },
+  "hostedCI": {
+    "runs": [
+      38427340004,
+      38427331364
+    ],
+    "ubuntu": "PASS",
+    "macOSNative": "PASS",
+    "GitGuardian": "PASS"
+  },
+  "apple": {
+    "status": "Accepted",
+    "id": "ca6152ab-050a-4713-ad9f-aca6877cde2d"
+  },
+  "strictSignatureStapleGatekeeper": "PASS",
+  "signedIsolatedLaunch": {
+    "result": "PASS_SIGNED_PACKAGED_MODELS_AND_ISOLATED_LAUNCH",
+    "protocol": "file:",
+    "modes": [
+      "strong",
+      "standard"
+    ],
+    "rendererNode": "undefined",
+    "platform": "darwin",
+    "info": {
+      "version": "0.1.18-rc.7",
+      "platform": "darwin",
+      "architecture": "arm64"
+    },
+    "errors": [],
+    "scope": "Random signed-out profile; real bundled WASM/worklet load under file:// and packaged CSP. No microphone/speaker/account/room or physical two-Mac acceptance."
+  },
+  "artifacts": [
+    {
+      "name": "ROOMS-0.1.18-rc.7-arm64-mac.zip",
+      "sha256": "95f5b5901382e4ef12ef598596b405a848ae6192209e876c3d8c07499b05bc21",
+      "bytes": 162776960
+    },
+    {
+      "name": "ROOMS-0.1.18-rc.7-arm64.dmg",
+      "sha256": "efb3c1eb6341f0b9d2f4c4fed6356c6fa23db86f8c2aa2a3e5854a8d0d01f520",
+      "bytes": 161751028
+    }
+  ],
+  "publication": {
+    "github": "https://github.com/egemenmermer/rooms/releases/tag/v0.1.18-rc.7",
+    "githubDigests": "PASS",
+    "https": {
+      "result": "PASS_PUBLIC_HTTPS_HASH_PARITY",
+      "artifacts": [
+        {
+          "name": "ROOMS-0.1.18-rc.7-arm64-mac.zip",
+          "sha256": "95f5b5901382e4ef12ef598596b405a848ae6192209e876c3d8c07499b05bc21",
+          "bytes": 162776960,
+          "https": true
+        },
+        {
+          "name": "ROOMS-0.1.18-rc.7-arm64.dmg",
+          "sha256": "efb3c1eb6341f0b9d2f4c4fed6356c6fa23db86f8c2aa2a3e5854a8d0d01f520",
+          "bytes": 161751028,
+          "https": true
+        }
+      ],
+      "previousFeedEntriesPreserved": 4,
+      "latestVersion": "0.1.18-rc.7"
+    },
+    "ed25519": true
+  },
+  "accessDeployment": {
+    "sourceSha": "c6f67136c4b1f3a6170f33675c838333c009c25c",
+    "accessSha256": "331b8585cc64d15456d1116114b30b2d046325e4e4738a71300bf27d7c60dff7",
+    "priorAccessSha256": "117222f89ad6d2421847ca101bc1a97ec8b19180b623b03f290076fc75d3c5e8",
+    "backup": "/opt/rooms/backups/access-before-rc7-20261013.tar.age",
+    "preflight": "PASS_NETWORK_NONE_READONLY_NONROOT",
+    "health": "PASS",
+    "unrelatedContainers": "UNCHANGED",
+    "accountDataHoppers": "UNTOUCHED",
+    "scope": "Access bundle only; existing writable state mount reused, no account operations",
+    "physicalTwoMac": "OPEN"
+  },
+  "ownerDJAcceptance": "Exact playlist first Bensiz Yapama and next Ye\u015filimi Ver audible in real Lounge; owner confirms both play",
+  "installation": "NOT_PERFORMED; owner app remains RC5",
+  "physicalTwoMac": "OPEN",
+  "noiseRealMicrophoneAcceptance": "OPEN",
+  "allGameAcceptance": "OPEN",
+  "profileRecovery": "See RC7_QA_PROFILE_RECOVERY.json; existing encrypted session/preferences restored and isolated reopen verified. Original owner process remains running; normal restart approval pending. No untouched-profile claim.",
+  "rollback": "Old retained archives, installed RC5/RC3 rollback, held RC6 preserved; fresh RC7 retained alongside them."
+}
