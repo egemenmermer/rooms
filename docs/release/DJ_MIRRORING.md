@@ -84,3 +84,11 @@ Owner clarified the failure occurs clicking the coffeehouse game table, before g
 
 
 Tabletop hit-region correction PASS: three actual Electron clients enter from the pictured Blackjack tabletop, then complete the real local-service round. Repeated at900×700; all seven table surfaces map to their own button, screenshot inspected. Caption backgrounds and original image unchanged. 3coffeehouse regressions and renderer/Electron build PASS. Existing one-table-per-room limit and unsupported Tavla/Satranç remain; these are not newly enabled. Friend physical retest remains OPEN; no install/release. Receipts GAME_TABLE_ENTRY_BEFORE/RESULTS/900_RESULTS.json preserve prior failure and narrow result.
+
+
+## Low listener volume report — 2026-10-13
+
+Owner reports closing failure, then explicitly confirms closing recovered without a source change. Do not mark an invented close repair. Owner still reports bot volume1% too loud (screenshot9%). Existing listener settings pass percentage directly as linear amplitude to the SDK, giving only -40dB at1%. Implement a bot-only squared gain curve:1% ->0.0001(-80dB),9% ->0.0081,100% ->1;0 remains exact silence. Keep displayed settings, both DJ/menu controls, normal human gain, room publication and other listeners unchanged. Reapply the same mapping on new/replaced bot tracks. Preserve previous listener setting on mute/unmute instead of jumping to100%. Physical loudness acceptance remains open.
+
+
+Quiet listener correction PASS:3files/29regressions,lint,typecheck. Native Chromium with actual SDK RemoteParticipant/RemoteAudioTrack and actual audio element applies setting1% ->gain0.0001,9% ->0.0081,0 ->0,100% ->1 while displayed settings are unchanged. The source is a synthetic silent MediaStream and room events are simulated; this establishes real SDK output control, not SFU/physical listening acceptance. DJ mute restores9% rather than jumping to100%; panel close sends no music command. Bot-only mapping is reapplied on replacement subscription, normal human1% remains0.01. InstalledRC.5 unchanged, no new release. Receipt DJ_QUIET_LISTENER_RESULTS.json.

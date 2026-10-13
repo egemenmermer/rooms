@@ -48,3 +48,11 @@ it('does not let a late pre-command snapshot hide the newly resolved queue item'
  fireEvent.change(screen.getByLabelText('YouTube, Spotify, SoundCloud veya ses bağlantısı'),{target:{value:'https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT'}});fireEvent.click(screen.getByRole('button',{name:'Kuyruğa ekle'}));
  await screen.findAllByText('Matched song · YouTube');finish(empty);await waitFor(()=>expect(screen.queryByText('Kuyruk boş')).toBeNull());
 });
+
+
+it('restores the prior quiet listener setting after muting and closes independently of bot errors',async()=>{
+ const command=vi.fn();window.rooms={music:{snapshot:async()=>empty,command}} as unknown as DesktopBridge;
+ media.voice={...media.voice,participants:[{id:empty.identity,name:'DJ Recep',local:false,muted:false,speaking:true,camera:false,screen:false,volume:.09,quality:'excellent'}]};const view=render(<MusicDJ/>);await waitFor(()=>expect(screen.queryByText('Yükleniyor…')).toBeNull());
+ fireEvent.click(screen.getByRole('button',{name:'Botun sesini kapat'}));expect(media.volume).toHaveBeenLastCalledWith(empty.identity,0);media.voice={...media.voice,participants:media.voice.participants.map(p=>({...p,volume:0}))};view.rerender(<MusicDJ/>);
+ fireEvent.click(screen.getByRole('button',{name:'Botun sesini aç'}));expect(media.volume).toHaveBeenLastCalledWith(empty.identity,.09);fireEvent.click(screen.getByRole('button',{name:'DJ panelini kapat'}));expect(screen.queryByRole('dialog',{name:'DJ Recep'})).toBeNull();expect(command).not.toHaveBeenCalled();
+});
