@@ -6,7 +6,7 @@ export interface MusicPublisher {connect(url:string,token:string):Promise<void>;
 export class LiveMusicPublisher implements MusicPublisher{
  private streamClose:(()=>Promise<void>)|null=null;private room=new Room();private source=new AudioSource(48000,2,200);private track=LocalAudioTrack.createAudioTrack('DJ Recep',this.source);private decoder:ReturnType<typeof spawn>|null=null;private generation=0;private offset=0;private frames=0;private playing=false;
  async connect(url:string,token:string){await this.room.connect(url,token,{autoSubscribe:false,dynacast:false});const options=new TrackPublishOptions({audioEncoding:{maxBitrate:510000n},dtx:false,red:false});options.source=TrackSource.SOURCE_MICROPHONE;await this.room.localParticipant!.publishTrack(this.track,options);}
- position(){return Math.max(0,this.offset+this.frames/48000-(this.playing?this.source.queuedDuration:0));}
+ position(){return Math.max(0,this.offset+this.frames/48000-(this.playing?this.source.queuedDuration/1000:0));}
  pause(){this.offset=this.position();this.frames=0;this.playing=false;this.generation++;this.decoder?.kill('SIGKILL');this.decoder=null;void this.streamClose?.();this.streamClose=null;this.source.clearQueue();}
  async play(path:string,position:number,onEnded:()=>void,onError:()=>void){
  this.pause();this.offset=position;this.frames=0;this.playing=true;const generation=this.generation;

@@ -103,3 +103,10 @@ Current defects and gates:
 - [ ] Friend coffeehouse/version diagnosis and two physical Mac acceptance remain OPEN; not replaced by local checks.
 
 Validation for unpublished corrections: scoped 8files/32tests PASS, lint PASS, typecheck/renderer/Electron build PASS, service bundles PASS. Source probes actual audio FAILED as stated; no successful audio claim. Details docs/release/DJ_MIRRORING.md; Trello open DJ and screen-share issue cards updated. Production music image remains rooms-music:20261013T102727Z, source dd0b9ded, from deployment before hold. No further production restart/data/account/Hoppers changes.
+
+
+## 2026-10-13 RC.5 friend defects and release hold continuation
+
+Owner permission renewal repaired his native screen publication; owner confirms friends receive it. Friends also use RC.5 and Kıraathane exists, but their capture still fails with the generic operation/server/permission message. Their OS cause and repair remain OPEN. No new installed client.
+
+Actual three-client Blackjack UI journey passed against isolated real service; rejected-command busy wait corrected and scoped checks recorded in DJ_MIRRORING.md. All-game/friend acceptance remains OPEN. DJ source decode restored by explicitly authorized YouTube-only session renewal; local true stereo/pause/resume/stop transport passed after experimental pinned native patch and queued-duration units fix. Linux native integration and actual room audibility remain OPEN. RC.6 held; no main merge or further release.

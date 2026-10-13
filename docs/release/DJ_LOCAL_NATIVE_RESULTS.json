@@ -1,0 +1,18 @@
+{
+  "scope": "Actual Node DJ decoder, current MusicWorker/LiveMusicPublisher and local SFU receiver; generated 440Hz left/880Hz right MP3; no speakers/owner room/provider access",
+  "source": "generated stereo MP3",
+  "encoderCeiling": 510000,
+  "received": {
+    "frameCount": 152,
+    "channels": 2,
+    "sampleRate": 48000,
+    "left440": 2047.8721583406311,
+    "left880": 0.057312391106393155,
+    "right440": 0.1059619583523461,
+    "right880": 2048.632998740678
+  },
+  "pausePosition": 1.4829999999999999,
+  "resumedFrames": 32,
+  "stop": "PASS",
+  "result": "PASS_REAL_DJ_DECODE_STEREO_TRANSPORT_PAUSE_RESUME_STOP"
+}
