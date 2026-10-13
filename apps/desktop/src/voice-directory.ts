@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import type { DesktopBridge } from '@rooms/contracts';
+import { useRealtime } from './realtime';
 import { useCommunity } from './community';
 type Directory = Awaited<ReturnType<NonNullable<DesktopBridge['media']['directory']>>>['rooms'];
 /** Read-only SFU presence: never creates a grant, subscribes to audio or joins a room. */
 export function useVoiceDirectory(channelIds:string[]) {
+  const realtime=useRealtime();
   const userId=useCommunity(s=>s.user?.id),server=useCommunity(s=>s.serverUrl);
   const ids=[...new Set(channelIds)].sort().slice(0,32).join(',');
   const scope=`${server}:${userId}:${ids}`;
@@ -25,5 +27,5 @@ export function useVoiceDirectory(channelIds:string[]) {
     };
     void read();return()=>{active=false;clearTimeout(timer);window.removeEventListener('rooms:channel-access-invalidated',invalidate);};
   },[scope,userId,ids]);
-  return snapshot.scope===scope?{...snapshot,loading:false}:{scope,rooms:[] as Directory,error:false,loading:true};
+  return snapshot.scope===scope?{...snapshot,rooms:snapshot.rooms.map(room=>({...room,participants:room.participants.filter(person=>person.id!==userId||(room.channelId===realtime.channelId&&['connected','reconnecting'].includes(realtime.status)))})),loading:false}:{scope,rooms:[] as Directory,error:false,loading:true};
 }
