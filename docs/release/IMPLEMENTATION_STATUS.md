@@ -110,3 +110,8 @@ Validation for unpublished corrections: scoped 8files/32tests PASS, lint PASS, t
 Owner permission renewal repaired his native screen publication; owner confirms friends receive it. Friends also use RC.5 and Kıraathane exists, but their capture still fails with the generic operation/server/permission message. Their OS cause and repair remain OPEN. No new installed client.
 
 Actual three-client Blackjack UI journey passed against isolated real service; rejected-command busy wait corrected and scoped checks recorded in DJ_MIRRORING.md. All-game/friend acceptance remains OPEN. DJ source decode restored by explicitly authorized YouTube-only session renewal; local true stereo/pause/resume/stop transport passed after experimental pinned native patch and queued-duration units fix. Linux native integration and actual room audibility remain OPEN. RC.6 held; no main merge or further release.
+
+
+## Owner-authorized rate budget incident repair
+
+General access budget60 ->600/minute deployed independently of desktop release hold. Registration5 and invitation60 limits retained;6files/25focused checks,lint/type and isolated exact runtimePASS. Initial externally linked build failed and rolled back; canonical bundled service build passed. Encrypted backup/access-only update/trusted public HTTPS600/healthPASS. Owner confirms friend can now join Lounge. Receipt ACCESS_BUDGET_RESULTS.json. Full media/game/DJ acceptance and client release remain open.

@@ -1,0 +1,34 @@
+{
+  "timestamp": "20261013T115553Z",
+  "bundles": {
+    "access": "117222f89ad6d2421847ca101bc1a97ec8b19180b623b03f290076fc75d3c5e8"
+  },
+  "previousBundle": "c986093062f308456ee8f327c6876505f1e6c95b5f0e8fd67b1743de6594d9a0",
+  "generalRequestsPerMinute": 600,
+  "registrationPerMinute": 5,
+  "invitePerMinute": 60,
+  "previousAccessStartedAt": "2026-10-13T11:54:50.863811117Z",
+  "scope": "Only access bundle and normal access restart; no client release",
+  "result": "PASS_ACCESS_BUDGET_DEPLOYMENT_AND_OWNER_REPORTED_FRIEND_JOIN",
+  "publicHttps": {
+    "status": 200,
+    "limit": 600,
+    "ready": true
+  },
+  "unrelatedContainerStartedTimesUnchanged": true,
+  "backup": "/opt/rooms/backups/rooms-20261013T115608Z.tar.age",
+  "friendJoin": "Owner confirms friend joined Lounge after retry",
+  "firstAttempt": {
+    "result": "FAILED_EXTERNAL_DEPENDENCY_BUNDLE",
+    "missingModule": "livekit-server-sdk",
+    "automaticRollback": "Restored old SHA and healthy runtime; no guard bypass"
+  },
+  "isolatedRuntime": {
+    "bundle": "117222f89ad6d2421847ca101bc1a97ec8b19180b623b03f290076fc75d3c5e8",
+    "runtime": {
+      "result": "PASS_EXACT_PRODUCTION_IMAGE_ISOLATED_RUNTIME",
+      "limit": 600,
+      "ready": true
+    }
+  }
+}
