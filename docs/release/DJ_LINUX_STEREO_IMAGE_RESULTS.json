@@ -1,0 +1,12 @@
+{
+  "scope": "Actual Linux current publisher/ffmpeg/generated440Hz-left880Hz-rightMP3/isolatedSFU/Node2channelreceiver; no provider access/human subscriptions/speakers/recordings",
+  "native": "experimental-stereo",
+  "received": {
+    "frames": 151,
+    "left440": 2047.7878345039699,
+    "left880": 0.003339299065147084,
+    "right440": 0.09912393616910685,
+    "right880": 2048.4016172204
+  },
+  "result": "PASS_LINUX_TRUE_STEREO_TRANSPORT"
+}

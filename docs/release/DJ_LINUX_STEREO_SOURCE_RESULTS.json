@@ -1,0 +1,18 @@
+{
+  "scope": "Actual current Linux DJ publisher, approved YouTube source, isolated QA SFU room and audio-only receiver; no human subscriptions/speakers/recordings",
+  "play": {
+    "frames": 977,
+    "maxRms": 8712.267255619132,
+    "position": 7.093999999999999,
+    "ended": false,
+    "failed": false
+  },
+  "pause": 7.093999999999999,
+  "pauseStable": true,
+  "resume": {
+    "frames": 437,
+    "position": 8.138,
+    "rms": 4295.895893417732
+  },
+  "result": "PASS_LINUX_SOURCE_TO_SFU_AUDIO_RECEIPT_POSITION_PAUSE_RESUME"
+}

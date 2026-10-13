@@ -1,0 +1,21 @@
+{
+  "workflowRun": 38403230313,
+  "sourceCommit": "887193c2f3615aafeebfa44091ead0d8a86af05d",
+  "upstreamRevision": "63128d01d955d9d8967544f46cff64a361232bf6",
+  "rustImageDigest": "sha256:408fe88047cef61a2087653b0c5255fa51c0f2d6d94ddedd7a2562a9b91a46f6",
+  "baseMusicImage": "sha256:8b5522aaf596881da2cd85c0ca88a41ae4d2040c69d75fc136a1543ec2db347a",
+  "musicBundleSha256": "a846a8f1896ead8fecaa86e0ee77f8905ab119b936b0063a18e480db4de4ad75",
+  "nativeSha256": "333c965e0e92414f64fa22960d162b6a43843db5cc777d961b3f4b83e13b4c3e",
+  "nativeBytes": 25339120,
+  "patchSha256": "a986148adbf356ac396233a5a35df0c0ac1dafcf0dc9d62d9a059779d4cb3bb4",
+  "consumer": {
+    "rtcNode": "1.1.0",
+    "ffiBindings": "0.12.73"
+  },
+  "notices": [
+    "LICENSE.livekit-rust",
+    "LICENSE.libyuv",
+    "LICENSE.webrtc.md"
+  ],
+  "scope": "Linux amd64, actual isolated SFU channel separation; no provider authorization or physical Mac acceptance claim"
+}
