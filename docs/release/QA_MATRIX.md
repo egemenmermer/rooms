@@ -33,3 +33,17 @@ Current audit uses disposable profiles; no actual production account/channel sta
 - Current/historical credential-signature scan: no matches; limited scope.
 - Fresh pnpm install, complete Docker/Mongo setup, new package generation, all provider/agent/Windows workflows: NOT RUN. Existing dependencies used; Docker socket missing and disk constrained.
 No failure was repaired. Pending checks are explicit, not silently skipped.
+
+
+## Private production continuation — 2026-10-12
+
+Local baseline now passes: full 666-test suite, lint/type/build/four service bundles and isolated signed-out Electron smoke. DJ remains retained in the private scope; its local listener gain/mute regression passes, provider/audible/animation acceptance remains open. Actual preview.3 → preview.4 native Sparkle update and next launch passed in main PR #3; immediate relaunch, next RC and recovery remain open. No authenticated, two-Mac or 413-reference acceptance is inferred.
+
+## Current private source follow-up
+
+Hosted Ubuntu/native Mac smoke PASS at191bd37. Phase-two full672-test and signed-out desktop baseline PASS. New local checks cover delayed mic completion/permission error after leave, reaction refresh across account change and simultaneous gateway message, warm conversation visibility, and Recep poster/retry/native DEMO loop. Existing installed preview.4 visual decodes locally, but the owner's intermittent failure and next packaged candidate remain unaccepted. Two physical Macs and actual provider/ordinary-account/reset/restore/soak journeys remain open.
+
+
+## Continuation result — 2026-10-13
+
+RC0.1.18-rc.1 has notarized archive/isolated signed-out launch evidence and101files/685tests + exact-source hosted CI. Current backup Activity subset preserves27rooms/60game archives/1,255receipts and projects without changes. These are separate from full Mongo/object/ledger recovery, actual normal-user/outsider/reset-mail, private data requests, physical two-Mac media, next-candidate signed update/recovery, alert drills and six-identity soak; those stay OPEN. Recep local decode/retry passed; actual signed-in candidate popup and physical DJ/microphone remain owner acceptance.

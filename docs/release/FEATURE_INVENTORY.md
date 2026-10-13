@@ -57,3 +57,4 @@ A feature's status does not imply its whole journey is verified. F/B/D = fronten
 ## Important inventory interpretation
 A disabled unavailable control is honest incomplete UI, not automatically a security bug. A backend module is not proof its current UI is reachable. A unit test passing an injected bridge is not live authorization, audible media or provider acceptance.
 Only retained scope gets public-release acceptance work. Do not spend launch time completing every partial row.
+

@@ -1,0 +1,73 @@
+{
+  "version": "0.1.18-rc.5",
+  "buildNumber": "1791883043",
+  "sourceSha": "a9911cb259bc0a5ccff2948103100ca2b0e1d29e",
+  "localVerification": {
+    "fullFiles": 109,
+    "fullTests": 720,
+    "focusedTests": 30,
+    "lint": "PASS",
+    "typecheck": "PASS",
+    "buildServices": "PASS",
+    "nativeDemo": "PASS; confirmed actual900x700 viewport and dock bounds after fullscreen exit, plus wide view; no owner/real transport acceptance"
+  },
+  "hostedCI": {
+    "run": 38375215353,
+    "ubuntu": "PASS",
+    "macOSNative": "PASS"
+  },
+  "apple": {
+    "status": "Accepted",
+    "id": "f18724bb-7345-408f-9749-0e5f8799734f"
+  },
+  "strictSignatureTicketGatekeeper": "PASS",
+  "artifacts": [
+    {
+      "name": "ROOMS-0.1.18-rc.5-arm64-mac.zip",
+      "sha256": "6617a37e47a6dabb80d241a52aa60368ebc0e18ed5ae0d98d213f575fa286ebb",
+      "bytes": 161817650
+    },
+    {
+      "name": "ROOMS-0.1.18-rc.5-arm64.dmg",
+      "sha256": "19f314346f809fc772fdf5e053757dea3362e013620ba89dc14ab2295b786e00",
+      "bytes": 160837501
+    }
+  ],
+  "signedIsolatedLaunch": {
+    "result": "PASS_SIGNED_ISOLATED_LAUNCH",
+    "info": {
+      "version": "0.1.18-rc.5",
+      "platform": "darwin",
+      "arch": "arm64"
+    },
+    "asset": {
+      "width": 1280,
+      "height": 720,
+      "protocol": "file:"
+    },
+    "rendererNode": "undefined",
+    "pageErrors": [],
+    "scope": "signed-out random profile; packaged image loaded under file://; no owner credentials or real media acceptance"
+  },
+  "publication": {
+    "github": "https://github.com/egemenmermer/rooms/releases/tag/v0.1.18-rc.5",
+    "githubDigests": "PASS",
+    "sparkle": "PASS: published, prior entries preserved, trusted HTTPS archive SHA256 and Ed25519 verified",
+    "download": {
+      "sha256": "6617a37e47a6dabb80d241a52aa60368ebc0e18ed5ae0d98d213f575fa286ebb",
+      "bytes": 161817650,
+      "ed25519": true
+    }
+  },
+  "installation": {
+    "status": "INSTALLED_VERIFIED",
+    "currentlyInstalled": "0.1.18-rc.5",
+    "buildNumber": "1791883043",
+    "rollbackApp": "/Applications/.ROOMS-before-0.1.18-rc.5-rc.3.app",
+    "signatureTicketGatekeeper": "PASS",
+    "nativeLaunch": "PASS; existing account retained, no automatic audio join",
+    "record": "RC_0_1_18_5_INSTALLATION.json"
+  },
+  "physicalTwoMac": "OPEN",
+  "accountsDataHoppers": "UNTOUCHED"
+}

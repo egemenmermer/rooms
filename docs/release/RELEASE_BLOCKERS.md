@@ -124,3 +124,28 @@ P3 REL-022: personal providers/Real-Debrid registration, codec/EPG/provider fail
 P3 REL-023: Windows/Intel, private calls, official together-player release and extended board archives; XXL.
 P4 REL-024: clustering, billing, public room discovery/marketplace, cosmetic animation expansion; backlog, unestimated.
 See POST_LAUNCH.md for dependencies/acceptance; do not convert these to V1 commitments.
+
+
+## Private production continuation — 2026-10-12
+
+REL-004 local test failure resolved (96 files / 666 tests pass); REL-005 current isolated signed-out desktop smoke passes. These do not certify authenticated or physical journeys. REL-015 critical Tinypool and moderate Vitest entries removed by the targeted toolchain update; one moderate packaging residual remains documented in DEPENDENCY_TRIAGE.md. REL-009 local lint/type/test/build/services baseline passes; hosted CI and RC provenance remain pending. REL-010 old preview.3 → preview.4 install-on-quit/next-launch was verified in main PR #3; fresh install, next candidate and interruption/recovery still open. Private scope retains DJ/current features under V1_SCOPE owner override. Historical public audit counts are not recomputed here.
+
+## Hosted baseline / phase-two software update — 2026-10-12
+
+REL-009 hosted Ubuntu and macOS jobs PASS at191bd37/run38312614543; provenance/signing/next-RC gates remain open. REL-001 local delayed microphone completion/error guards pass; physical owner/friend audibility still OPEN. REL-006 reaction-refresh account fencing and gateway merge regressions pass; normal-user/outsider real journeys still OPEN. REL-014 visual decode failure now retains poster/retry, native DEMO loop/recovery verified; packaged next-RC owner acceptance still OPEN. Phase-two full local suite672 tests and signed-out smoke pass. Public REL-002/003 and all413 references retain their independent open status.
+
+## REL-008 local compatibility follow-up
+
+Version1 structural read/write boundary and supported unversioned shape are locally verified; unknown versions cannot be silently reset. Synthetic poll/board/receipts and retained game table/history formats preserved. Real disposable PostgreSQL dump/restore gives identical state hashes. This does not close REL-008: actual historical production payloads, current encrypted full backup/objects/ledger restore and measured production RPO/RTO remain required. REL-006/007/003 also remain OPEN without disposable ordinary-account/mail/data-request evidence.
+
+
+## Continuation result — 2026-10-13
+
+REL-009 now has actual exact-source hosted CI and local version/provenance manifest; final immutable acceptance/distribution still OPEN. REL-008 current-backup Activity read/restore/projection subset PASS; full Mongo/object/ledger recovery and remaining archived formats still OPEN. REL-010 local notarized RC archives/extract/signature/isolated signed-out launch PASS; friend fresh install and actual preview.4→RC update/recovery still OPEN. REL-011 sanitized Activity categories and DB probe locally tested; real alert pipeline/drills remain OPEN. Physical REL-001, normal-user/outsider REL-006, delivered reset REL-007, private data operations REL-003 and measured REL-012 remain OPEN. Public rights/privacy/413-state gates unchanged.
+
+
+## REL-007 owner recovery screenshot — 2026-10-13
+
+Observed public production `/api` has features.email=false. Email recovery cannot be accepted until operator-configured SMTP and ordinary-account delivery are verified. Client recovery origin fallback/selected-sign-in handoff fixed with24focused local tests, lint/typecheck/build passing. Source follow-up only; installed RC not repackaged. No owner password change, recovery email, session revoke or production configuration mutation performed.
+
+REL-007 SMTP completion authorization received. Read-only server inspection confirms no SMTP section and no usable SMTP/provider environment credentials; local relevant env files also have none. Existing app/API hosts match production and invite-only remains enabled. Awaiting owner-designated sender/provider; no live config/restart/account mutation performed. Concrete apply/rollback/delivery procedure: SMTP_RECOVERY_SETUP.md.

@@ -1,0 +1,15 @@
+{
+  "version": "0.1.18-rc.3",
+  "buildNumber": "1791847538",
+  "sourceSha": "7b699622d2401c14ed0d5b5b4741646fa0f2b8d1",
+  "githubRelease": "https://github.com/egemenmermer/rooms/releases/tag/v0.1.18-rc.3",
+  "githubArtifactDigests": "PASS",
+  "sparkleFeed": "https://62.238.119.134/rooms-updates/appcast.xml",
+  "publicArchive": "https://62.238.119.134/rooms-updates/ROOMS-0.1.18-rc.3-arm64-mac.zip",
+  "downloadSha256": "fc40910a0d05dfb9a13d2e2c1d0cacd57a586350ea2b3a45d697fa3192ec07fd",
+  "publicDownloadAndEd25519": "PASS",
+  "previousFeedEntriesPreserved": true,
+  "ownerInstallationPerformed": false,
+  "physicalTwoMac": "OPEN",
+  "publishedAt": "2026-10-12T23:37:28Z"
+}

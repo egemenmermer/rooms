@@ -3,6 +3,8 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { DesktopBridge } from '@rooms/contracts';
 import { useCommunity } from '../apps/desktop/src/community';
+const voice=vi.hoisted(()=>({channelId:'new',status:'connected'}));
+vi.mock('../apps/desktop/src/realtime',()=>({useRealtime:()=>voice}));
 import { useVoiceDirectory } from '../apps/desktop/src/voice-directory';
 afterEach(()=>{cleanup();delete window.rooms;});
 it('observes another room without requesting media access and rejects an old-account response',async()=>{
@@ -22,4 +24,14 @@ it('purges a revoked room immediately and fences the pending directory response'
  act(()=>window.dispatchEvent(new CustomEvent('rooms:channel-access-invalidated',{detail:{channelIds:['room']}})));
  await act(async()=>complete({rooms:[{channelId:'room',participants:[{id:'friend',name:'Private',muted:false}]}]}));
  expect(hook.result.current.rooms).toEqual([]);
+});
+
+it('removes stale own presence from the previous room while preserving friends',async()=>{
+ window.rooms={media:{directory:async()=>({rooms:[{channelId:'old',participants:[{id:'owner',name:'Owner',muted:true},{id:'friend',name:'Friend',muted:false}]},{channelId:'new',participants:[{id:'owner',name:'Owner',muted:true}]}]})}} as unknown as DesktopBridge;
+ useCommunity.setState({serverUrl:'https://example.test',user:{id:'owner',username:'Owner',displayName:'Owner',avatar:null}});
+ voice.channelId='new';voice.status='connected';const hook=renderHook(()=>useVoiceDirectory(['old','new']));
+ await waitFor(()=>expect(hook.result.current.loading).toBe(false));
+ expect(hook.result.current.rooms[0].participants.map(p=>p.id)).toEqual(['friend']);
+ expect(hook.result.current.rooms[1].participants.map(p=>p.id)).toEqual(['owner']);
+ voice.status='connecting';hook.rerender();expect(hook.result.current.rooms[1].participants).toEqual([]);
 });

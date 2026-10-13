@@ -1,0 +1,91 @@
+{
+  "verifiedAt": "2026-10-13 Europe/Amsterdam",
+  "sourceSha": "ab03fe0ff57143c3877533ce55911be2cffe6286",
+  "version": "0.1.18-rc.1",
+  "buildNumber": "1791842324",
+  "localVerify": {
+    "files": 101,
+    "tests": 685,
+    "lint": "PASS",
+    "typecheck": "PASS",
+    "rendererNativeServicesBuild": "PASS",
+    "signedOutDesktopSmoke": "PASS"
+  },
+  "hostedCI": {
+    "run": 38313641233,
+    "url": "https://github.com/egemenmermer/rooms/actions/runs/38313641233",
+    "ubuntu": "PASS",
+    "macosNativeSmoke": "PASS"
+  },
+  "appleNotarization": {
+    "status": "Accepted",
+    "id": "80bd3fd0-5d73-493a-a056-1f6129fbb9a0"
+  },
+  "strictSignature": "PASS",
+  "stapleGatekeeper": "PASS",
+  "copiedArchiveHashAndExtractedAppSignature": "PASS",
+  "isolatedSignedOutCandidateLaunch": "PASS",
+  "candidateLocalVisualDecode": {
+    "width": 640,
+    "height": 798,
+    "frames": 21,
+    "timeSec": 1.00291,
+    "error": null
+  },
+  "artifacts": [
+    {
+      "name": "ROOMS-0.1.18-rc.1-arm64-mac.zip",
+      "sha256": "86ca1407b7cba49baa6e24c1742e163649332f7b09fee8f3de04732fbc872731",
+      "bytes": 161527314
+    },
+    {
+      "name": "ROOMS-0.1.18-rc.1-arm64.dmg",
+      "sha256": "98e96d9a22a8cef4b0c7d19c356db6e9eec219233fdd6334a24d0618a5be8878",
+      "bytes": 160497444
+    }
+  ],
+  "artifactDirectory": "release/candidates/0.1.18-rc.1",
+  "currentBackupActivitySubset": {
+    "result": "PASS_CURRENT_BACKUP_ACTIVITY_SUBSET",
+    "rows": 27,
+    "polls": 6,
+    "board": 29,
+    "archives": 60,
+    "receipts": 1255,
+    "invalid": [],
+    "readLeftDatabaseUnchanged": true,
+    "currentEngineProjectionRead": true,
+    "scope": "latest existing encrypted backup restored to isolated PostgreSQL17; no Mongo/object/ledger/auth/product recovery acceptance",
+    "backupName": "rooms-20261012T153713Z.tar.age",
+    "backupHashVerified": true,
+    "subsetElapsedSeconds": 1.76,
+    "observedArchiveAgeHours": 6.48,
+    "productionModified": false,
+    "plaintextRemovedOnExit": true
+  },
+  "installedVersionPreserved": "0.1.17-preview.4 at candidate verification; subsequently replaced with owner-authorized RC installation, prior bundle retained",
+  "updateFeedPublished": false,
+  "productionServicesDeployed": false,
+  "physicalTwoMacAcceptance": "OPEN",
+  "ordinaryAccountMailAcceptance": "OPEN",
+  "fullMongoObjectsLedgerRestore": "OPEN",
+  "privateDataRequestRehearsal": "OPEN",
+  "nextCandidateSignedUpdateRecovery": "OPEN",
+  "operatorAlertDelivery": "OPEN",
+  "sixIdentityTwoHourSession": "OPEN",
+  "ownerMacInstallation": {
+    "date": "2026-10-13 Europe/Amsterdam",
+    "version": "0.1.18-rc.1",
+    "buildNumber": "1791842324",
+    "path": "/Applications/ROOMS.app",
+    "rollbackPath": "/Applications/.ROOMS-before-0.1.18-rc.1-preview.4.app",
+    "signatureAndGatekeeper": "PASS",
+    "staple": "PASS",
+    "appAsarSha256": "ebc87d44c585177ed74d09b76b5acdc5c3120318733237eeb076c5bac7324093",
+    "visibleAboutVersion": "PASS",
+    "existingSessionHomeLoaded": true,
+    "profileDirectoriesModifiedByInstaller": false,
+    "method": "staged local bundle replacement; not Sparkle upgrade acceptance",
+    "scope": "existing signed-in home and native About only; no media, messages, membership or settings mutations"
+  }
+}

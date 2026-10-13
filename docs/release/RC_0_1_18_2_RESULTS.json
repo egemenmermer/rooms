@@ -1,0 +1,81 @@
+{
+  "verifiedAt": "2026-10-13 Europe/Amsterdam",
+  "sourceSha": "30ffd4216026e43f8846debc6ced4d60d6ff1dbb",
+  "version": "0.1.18-rc.2",
+  "buildNumber": "1791845627",
+  "local": {
+    "testFiles": 105,
+    "tests": 705,
+    "lint": "PASS",
+    "typecheck": "PASS",
+    "buildAndServices": "PASS",
+    "signedOutDesktopSmoke": "PASS"
+  },
+  "hostedCI": {
+    "url": "https://github.com/egemenmermer/rooms/actions/runs/38319224595",
+    "ubuntu": "PASS",
+    "macos": "PASS"
+  },
+  "appleNotarization": {
+    "status": "Accepted",
+    "id": "a146c82e-8f11-4860-8555-69a32aceca07"
+  },
+  "signatureStapleGatekeeper": "PASS",
+  "copiedArtifactHashParity": "PASS",
+  "signedCandidate": {
+    "result": "PASS_SIGNED_ISOLATED_LAUNCH",
+    "info": {
+      "version": "0.1.18-rc.2",
+      "platform": "darwin",
+      "arch": "arm64"
+    },
+    "rendererNode": "undefined",
+    "publicRecoveryConfigurationRead": true,
+    "recoveryEmailDisabledHonestly": true,
+    "recoveryRequestSent": false,
+    "pageErrors": [],
+    "scope": "signed-out separate random profile; no owner credentials/account/mic/service mutations"
+  },
+  "nativeDemoVisual": {
+    "scope": "Native Electron DEV DEMO S19/S12; no physical media or real account acceptance",
+    "wide": [
+      1440,
+      774
+    ],
+    "narrow": [
+      900,
+      700
+    ],
+    "railRemoved": true,
+    "dockRemoved": true,
+    "djOpenClose": true,
+    "activityOpenClose": true,
+    "drawerEscape": true,
+    "voiceRoomOwnConversation": true,
+    "activityMembers": true,
+    "dmPeerProfile": true,
+    "noHorizontalOverflow": true,
+    "pageErrors": []
+  },
+  "artifactDirectory": "release/candidates/0.1.18-rc.2",
+  "artifacts": [
+    {
+      "name": "ROOMS-0.1.18-rc.2-arm64-mac.zip",
+      "sha256": "f1d5071cb92d52a60d4c58a100d9e75b64f0283d48753f560c3e3f5943441aaa",
+      "bytes": 161528373
+    },
+    {
+      "name": "ROOMS-0.1.18-rc.2-arm64.dmg",
+      "sha256": "fab520be89080996338e920c3a77d988ed0f90f8ac71fb62ec9f2eef5811fa3f",
+      "bytes": 160506597
+    }
+  ],
+  "installedVersionPreserved": "0.1.18-rc.1",
+  "retainedArchivesPreserved": true,
+  "updateFeedPublished": false,
+  "productionServicesDeployed": false,
+  "smtpAndPasswordChanged": false,
+  "physicalTwoMacAcceptance": "OPEN",
+  "ownerVisualAndSoundAcceptance": "OPEN",
+  "extractedZipSignatureStapleVersion": "PASS"
+}

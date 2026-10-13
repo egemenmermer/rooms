@@ -1,0 +1,120 @@
+{
+  "sourceSha": "7b699622d2401c14ed0d5b5b4741646fa0f2b8d1",
+  "version": "0.1.18-rc.3",
+  "buildNumber": "1791847538",
+  "artifacts": [
+    {
+      "name": "ROOMS-0.1.18-rc.3-arm64-mac.zip",
+      "sha256": "fc40910a0d05dfb9a13d2e2c1d0cacd57a586350ea2b3a45d697fa3192ec07fd",
+      "bytes": 161815209
+    },
+    {
+      "name": "ROOMS-0.1.18-rc.3-arm64.dmg",
+      "sha256": "583c3579daf776b805c7f20853961b9faaa2ef3ca3398d22a3fe3aef58c9f915",
+      "bytes": 160827390
+    }
+  ],
+  "notarization": {
+    "status": "Accepted",
+    "id": "f5de16dd-72e5-4a90-9498-d2edaa365769"
+  },
+  "localChecks": {
+    "fullSuite": {
+      "files": 107,
+      "tests": 711,
+      "result": "PASS"
+    },
+    "focusedSuite": {
+      "files": 3,
+      "tests": 24,
+      "result": "PASS"
+    },
+    "lint": "PASS",
+    "typecheck": "PASS",
+    "productionBuild": "PASS",
+    "servicesBuild": "PASS",
+    "copiedArtifactHashParity": "PASS",
+    "extractedZipSignatureTicketVersion": "PASS"
+  },
+  "hostedCI": {
+    "run": 38322060530,
+    "url": "https://github.com/egemenmermer/rooms/actions/runs/38322060530",
+    "sourceSha": "7b699622d2401c14ed0d5b5b4741646fa0f2b8d1",
+    "result": "PASS Ubuntu baseline + macOS native smoke"
+  },
+  "nativeVisualQA": {
+    "scope": "Isolated Electron DEV DEMO fixtures. No real occupancy or transport acceptance.",
+    "imageLoaded": true,
+    "narrow": [
+      900,
+      700
+    ],
+    "wide": true,
+    "existingGameCreation": true,
+    "existingTableOpenAndReturn": true,
+    "activeActivityNavigation": true,
+    "noPageOverflow": true,
+    "keyboardTableOpenReturn": true,
+    "pageErrors": [],
+    "audio": {
+      "scope": "Synthetic local oscillator on an existing MediaStream track. No microphone capture, sound output or network publication.",
+      "detected": true,
+      "latencyMs": 99.80000000447035,
+      "silenceCleared": true
+    }
+  },
+  "signedLaunch": {
+    "result": "PASS_SIGNED_ISOLATED_LAUNCH",
+    "info": {
+      "version": "0.1.18-rc.3",
+      "platform": "darwin",
+      "arch": "arm64"
+    },
+    "asset": {
+      "width": 1280,
+      "height": 720,
+      "protocol": "file:"
+    },
+    "rendererNode": "undefined",
+    "pageErrors": [],
+    "scope": "signed-out random profile; packaged image loaded under file://; no owner credentials or real media acceptance"
+  },
+  "limitations": {
+    "games": "Only existing Holdem, Blackjack, Batak, 101 engines; chess/backgammon disabled; one primary table per room",
+    "physicalTwoMac": "OPEN",
+    "ownerVisualAcceptance": "OPEN",
+    "realFriendGameMatch": "OPEN",
+    "installedOwnerVersion": "0.1.18-rc.3; prior RC.1 preserved",
+    "updatesPublished": true,
+    "productionServicesChanged": false,
+    "accountsDataHoppersChanged": false
+  },
+  "trello": "https://trello.com/c/TiGoJ2aG",
+  "publication": {
+    "version": "0.1.18-rc.3",
+    "buildNumber": "1791847538",
+    "sourceSha": "7b699622d2401c14ed0d5b5b4741646fa0f2b8d1",
+    "githubRelease": "https://github.com/egemenmermer/rooms/releases/tag/v0.1.18-rc.3",
+    "githubArtifactDigests": "PASS",
+    "sparkleFeed": "https://62.238.119.134/rooms-updates/appcast.xml",
+    "publicArchive": "https://62.238.119.134/rooms-updates/ROOMS-0.1.18-rc.3-arm64-mac.zip",
+    "downloadSha256": "fc40910a0d05dfb9a13d2e2c1d0cacd57a586350ea2b3a45d697fa3192ec07fd",
+    "publicDownloadAndEd25519": "PASS",
+    "previousFeedEntriesPreserved": true,
+    "ownerInstallationPerformed": false,
+    "physicalTwoMac": "OPEN",
+    "publishedAt": "2026-10-12T23:37:28Z"
+  },
+  "installation": {
+    "version": "0.1.18-rc.3",
+    "buildNumber": "1791847538",
+    "archiveSha256": "fc40910a0d05dfb9a13d2e2c1d0cacd57a586350ea2b3a45d697fa3192ec07fd",
+    "installedApp": "/Applications/ROOMS.app",
+    "rollbackApp": "/Applications/.ROOMS-before-0.1.18-rc.3-rc.1.app",
+    "signatureTicketGatekeeper": "PASS",
+    "profilesTouched": false,
+    "nativeUI": "Existing owner account remained signed in; installed app visibly opened (game/chat navigation observed). No installer-driven login/logout, voice/mic/game/message actions. Owner changed UI during observation; inspection stopped.",
+    "uiObservation": "Lounge heading with General composer placeholder observed; actual message destination not verified and no message sent. Follow-up required; not physical acceptance.",
+    "at": "2026-10-13T08:37:21.881861+00:00"
+  }
+}

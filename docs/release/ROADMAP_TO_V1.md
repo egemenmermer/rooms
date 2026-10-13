@@ -37,3 +37,8 @@ Expected output: timestamped A→B/B→A audible results, mute/deafen/PTT/naviga
 9. Six-user/current media soak, supported UX and RC freeze.
 10. Final gate review, then separately authorized publication.
 Task order reflects discoveries; phases show dependencies. Privacy/operator preparation may run alongside media acceptance. No coding follows this audit automatically.
+
+
+## Approved private implementation override — 2026-10-12
+
+Owner approved implementation of the private-friends plan, with all existing features retained. Two-Mac acceptance will happen later; REL-001 remains open while reproducible software/test/release work proceeds. Begin REL-004/005/015/009 now, then follow the implementation ledger. This supersedes the public scope-cut assumption and audit-only stop point, not the missing acceptance evidence or production safety boundaries.

@@ -76,7 +76,7 @@ export function ReferenceAuthFrame({mode,children}:{mode:ReferenceOnboardingMode
 /** Reference geometry with real native account operations; no prototype scenario state. */
 export function ReferenceOnboarding({ mode, onNavigate, onComplete, onOpenSettings }: ReferenceOnboardingProps) {
     const c = useCommunity();
-    const recoveryServer = useRooms(state=>state.preferences.serverUrl);
+    const recoveryServer = useRooms(state=>state.preferences.serverUrl.trim() || 'https://62.238.119.134');
     const [recoveryView,setRecoveryView]=useState<'request'|'reset'>('request');
     const resetBridge=window.rooms?.social;
     const resetAvailable=!!resetBridge&&[resetBridge.importPasswordRecoveryLink,resetBridge.confirmPasswordRecovery,resetBridge.cancelPasswordRecovery].every(method=>typeof method==='function');

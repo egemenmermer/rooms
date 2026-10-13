@@ -1,3 +1,4 @@
+import { Kiraathane } from './Kiraathane';
 import './reference-games.css';
 import { validate101Meld, validate101Opening, validate101Pairs, type OkeyTile } from '../../../packages/games/src/okey101';
 import { legalBatakCards } from '../../../packages/games/src/batak';
@@ -40,14 +41,15 @@ function PlayingCard({ card, selected, winning, onClick, disabled }: {
 }) { return <button type="button" disabled={disabled || !onClick} className={`playing-card ${!card ? 'back' : ''} ${card && ['hearts', 'diamonds'].includes(card.suit) ? 'red' : ''} ${selected ? 'selected' : ''} ${winning ? 'winning' : ''}`} aria-pressed={onClick?!!selected:undefined} aria-label={card ? `${card.rank} ${suits[card.suit] ?? card.suit}` : tr("Kapal\u0131 kart")} onClick={onClick}>{card ? <><span>{({ 11: 'J', 12: 'Q', 13: 'K', 14: 'A' } as Record<number, string>)[card.rank] ?? card.rank}<i>{suits[card.suit]}</i></span><b>{suits[card.suit]}</b></> : <span className="card-back-mark">{tr("r.")}</span>}</button>; }
 export default function Games() {
   const roomId = useCurrentRoom(), activity = useActivityRoom(roomId);
-  const [params]=useSearchParams(), fixtureMetadata=useGameFixtureMetadata();
+  const [params]=useSearchParams(), navigate=useNavigate(), community=useCommunity(), fixtureMetadata=useGameFixtureMetadata();
   const [create, setCreate] = useState<GameKind | null>(null), [variant, setVariant] = useState<'ihaleli' | 'esli' | 'koz-maca' | 'gommeli'>('ihaleli'), [folding, setFolding] = useState(false), [teams, setTeams] = useState(false);
   const game = activity.room?.primary?.activity === activity.room?.game?.kind ? activity.room?.game ?? null : null;
   useEffect(() => setCreate(null), [roomId, activity.room?.primary?.startedAt]);
   useEffect(()=>{if(fixtureMetadata){setCreate(fixtureMetadata.ui.create);setVariant(fixtureMetadata.ui.variant);setFolding(fixtureMetadata.ui.folding);setTeams(fixtureMetadata.ui.teams);}},[fixtureMetadata]);
   if(params.get('tab')==='history') return <ReferenceGameHistory activity={activity} game={game}/>;
-  if (game && game.status !== 'waiting' && game.kind !== 'holdem') return <ReferenceOtherGame key={`${roomId}:${activity.room?.primary?.startedAt}`} activity={activity} game={game}/>;
-  return <ReferenceGames activity={activity} roomId={roomId} game={game ?? null} onCreate={setCreate} create={create} variant={variant} setVariant={setVariant} folding={folding} setFolding={setFolding} teams={teams} setTeams={setTeams}/>;
+  if(params.get('tab')!=='table' && !create) return <Kiraathane game={game} ready={activity.status==='connected'} error={activity.error} busy={activity.busy} blocked={activity.room?.participants.find(p=>p.userId===community.user?.id)?.canCreate===false?'Masa açma yetkin yok':activity.room?.primary&&!game?'Önce açık etkinliği bitirin':''} onCreate={setCreate} onOpen={()=>navigate('/games?tab=table')} onChat={()=>navigate('/voice')} onHistory={()=>navigate('/games?tab=history')} onRetry={()=>void activity.refresh()}/>;
+  if (game && game.status !== 'waiting'  && game.kind !== 'holdem') return <><button className="coffeehouse-return" onClick={()=>navigate('/games')}>← Kıraathaneye dön</button><ReferenceOtherGame key={`${roomId}:${activity.room?.primary?.startedAt}`} activity={activity} game={game}/></>;
+  return <><button className="coffeehouse-return" onClick={()=>{setCreate(null);navigate('/games');}}>← Kıraathaneye dön</button><ReferenceGames activity={activity} roomId={roomId} game={game ?? null} onCreate={setCreate} create={create} variant={variant} setVariant={setVariant} folding={folding} setFolding={setFolding} teams={teams} setTeams={setTeams}/></>;
 }
 function ReferenceGames({ activity, roomId, game, onCreate, create, variant, setVariant, folding, setFolding, teams, setTeams }: {
   activity: ReturnType<typeof useActivityRoom>; roomId: string | null; game: GamePublicState | null;

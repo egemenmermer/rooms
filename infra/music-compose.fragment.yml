@@ -1,0 +1,10 @@
+# Merge into the private deployment Compose config; credentials stay in its env file.
+services:
+  music:
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    # LiveKit runs on the host; without this mapping transport cannot connect.
+    mem_limit: 1280m
+    tmpfs:
+      - /tmp:size=805306368,mode=1777
+    # 2h sets: <=180MiB each; one source operation at a time,384MiB global cache.
