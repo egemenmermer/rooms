@@ -10,8 +10,8 @@ export function RoomConversation({notify,openLauncher,toggleMembers,membersVisib
  const access=useChannelAccess(s=>c.activeChannelId?s.checks[c.activeChannelId]:undefined);
  const selected=c.channels.find(ch=>ch.id===c.activeChannelId);
  const view=new URLSearchParams(location.search).get('view');
- if(location.pathname==='/voice'&&(view==='share'||view==='video'))return <CommunityVoice openLauncher={openLauncher} notify={notify}/>;
  if(access){if(access==='denied')return <ChannelAccessState kind="denied" voiceConnected={r.status==='connected'} voiceRoomName={r.roomName??undefined} onReturn={()=>navigate('/home')}/>;return <div className="quiet-inline-state" role="status">{access==='checking'?'Erişim kontrol ediliyor…':'Sohbet alınamadı.'}<button onClick={()=>{if(c.activeChannelId)void c.openChannel(c.activeChannelId);}}>Yeniden dene</button></div>;}
+ if(location.pathname==='/voice'&&view!=='chat')return <CommunityVoice openLauncher={openLauncher} notify={notify}/>;
  const inRoom=!r.busy&&r.status==='connected'&&selected?.type===2&&selected.id===r.channelId;
  const screens=inRoom&&r.tracks.some(t=>t.source==='screen_share'&&!t.muted);
  const cameras=inRoom&&r.tracks.some(t=>t.source==='camera'&&!t.muted);
