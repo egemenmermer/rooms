@@ -43,3 +43,12 @@ it('does not turn an in-flight empty history into a loaded empty cache',async()=
  finish([message('loaded')]);await Promise.all([first,second]);
  expect(useCommunity.getState().messages[0].id).toBe('loaded');
 });
+it('keeps a populated active conversation visible when its hot cache was not initialized',async()=>{
+ let finish!:(items:ReturnType<typeof message>[])=>void;
+ window.rooms={social:{messages:()=>new Promise(resolve=>{finish=resolve;})}} as unknown as DesktopBridge;
+ const {useCommunity}=await import('../apps/desktop/src/community');
+ useCommunity.setState({user:author,serverUrl:'https://example.test',activeChannelId:'channel',messages:[message('kept')],loadingMessages:false});
+ const request=useCommunity.getState().openChannel('channel',true);
+ expect(useCommunity.getState().messages.map(m=>m.id)).toEqual(['kept']);expect(useCommunity.getState().loadingMessages).toBe(false);
+ finish([message('kept')]);await request;
+});

@@ -1,0 +1,18 @@
+.coffeehouse{position:relative;display:flex;flex-direction:column;min-height:0;height:100%;background:#17120f;}
+.coffeehouse-tools{position:absolute;z-index:2;top:12px;left:18px;right:18px;display:flex;align-items:center;gap:12px;justify-content:space-between;color:#eee5dc;text-shadow:0 1px 4px #000;pointer-events:none;}
+.coffeehouse-tools button,.coffeehouse-error button{pointer-events:auto;display:flex;align-items:center;gap:7px;border:0;background:#17131c66;border-radius:7px;padding:8px 12px;color:#f0eaf3;backdrop-filter:blur(3px);}
+.coffeehouse-scroll{flex:1;min-height:0;overflow:auto;display:grid;align-items:center;justify-items:center;container-type:size;}
+.coffeehouse-scene{position:relative;width:min(100%,177.777cqh);min-width:760px;aspect-ratio:16/9;}
+.coffeehouse-interior{display:block;width:100%;height:100%;object-fit:contain;}
+.coffeehouse-table{position:absolute;transform:translate(-50%,-10%);width:clamp(115px,12.5vw,172px);display:flex;flex-direction:column;gap:4px;text-align:left;padding:7px 10px;background:#15111930;border:1px solid transparent;border-radius:7px;color:#fff4e9;text-shadow:0 1px 3px #000,0 0 8px #000b;box-shadow:none;backdrop-filter:blur(1px);}
+.coffeehouse-table:hover:not(:disabled){background:#17111c68;}
+.coffeehouse-table:focus-visible{outline:2px solid #c8b2ff;outline-offset:3px;background:#17111c68;}
+.coffeehouse-table.active .coffeehouse-count{box-shadow:inset 0 0 0 1px #c2aaff80;}
+.coffeehouse-table:disabled{cursor:default;opacity:.82;}
+.coffeehouse-table strong{font-size:14px;font-weight:600;}
+.coffeehouse-table small{font-size:13px;color:#f1e4d9;}
+.coffeehouse-count{display:inline-flex;align-items:center;gap:5px;width:fit-content;padding:3px 6px;border-radius:20px;background:#100d165c;font-size:13px;color:#f3eaff;}
+.coffeehouse-note{margin:0;padding:7px 18px;font-size:13px;color:#bdb6b4;flex-shrink:0;}
+.coffeehouse-error{position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 18px;background:#49272c;color:#ffd9df;}
+@media(max-width:1000px){.coffeehouse-scene{min-width:760px;}.coffeehouse-table{width:130px;}.coffeehouse-tools{left:12px;right:12px;}}
+.coffeehouse-return{display:block;margin:10px 24px 0;padding:7px 10px;border:0;background:transparent;color:#c8baff;font-size:13px;}

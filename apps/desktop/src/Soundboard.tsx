@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { create } from 'zustand';
 import { Modal } from '@rooms/design';
 import { PartyPopper, Plus, Play, Square, Trash2 } from 'lucide-react';
@@ -16,10 +16,11 @@ syncSession();
 useCommunity.subscribe(syncSession);
 
 /** Files remain in memory on this device; no upload or bundled fixtures. */
-export function SoundboardButton(){
+export function SoundboardButton({showTrigger=true}:{showTrigger?:boolean}){
   const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const {clips,volume}=useClips(),r=useRealtime(),picker=useRef<HTMLInputElement>(null);
   const close=useCallback(()=>setOpen(false),[]);
+  useEffect(()=>{const show=()=>setOpen(true);window.addEventListener('rooms:open-soundboard',show);return()=>window.removeEventListener('rooms:open-soundboard',show);},[]);
   async function add(file:File){const generation=sessionGeneration;setBusy(true);setError('');let context:AudioContext|null=null;try{
     if(file.size>2_000_000||!file.size)throw new Error('En fazla 2 MB bir ses dosyası seç.');
     context=new AudioContext({sampleRate:48000});const buffer=await context.decodeAudioData(await file.arrayBuffer());
@@ -29,7 +30,7 @@ export function SoundboardButton(){
     useClips.setState(state=>({clips:[...state.clips,{id:crypto.randomUUID(),name:file.name.replace(/\.[^.]+$/,'').slice(0,40),buffer}]}));
   }catch(e){setError(e instanceof Error?e.message:'Ses dosyası okunamadı.');}finally{await context?.close();setBusy(false);}}
   const reason=r.status!=='connected'?'Ses odasına katıl.':r.deafened?'Sağırlaştırmayı kapat.':r.muted?'Mikrofonu aç.':'';
-  return <><button className="icon-button" aria-label="Soundboard" title="Soundboard" onClick={()=>setOpen(true)}><PartyPopper size={18}/></button>{open&&<Modal title="Soundboard" onClose={close}><div data-soundboard>
+  return <>{showTrigger&&<button className="icon-button" aria-label="Soundboard" title="Soundboard" onClick={()=>setOpen(true)}><PartyPopper size={18}/></button>}{open&&<Modal title="Soundboard" onClose={close}><div data-soundboard>
     <input ref={picker} type="file" accept="audio/*" hidden onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file)void add(file);}}/>
     <div className="button-row"><button className="button secondary" disabled={busy||clips.length>=8} onClick={()=>picker.current?.click()}><Plus size={16}/>{busy?'Ekleniyor…':'Ses ekle'}</button><button className="button secondary" onClick={stopSoundboard}><Square size={14}/>Durdur</button></div>
     <p className="muted">{reason||'Ses açık mikrofonundan odaya gönderilir.'}</p>

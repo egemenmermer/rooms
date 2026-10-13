@@ -187,7 +187,6 @@ export default function CinemaPlayback({ notify }: { notify(message: string): vo
       element.removeAttribute('src'); element.load();
     };
     // Volume and speed are independent settings, not source reload triggers.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [media]);
   useEffect(() => {
     if (!active) { setSettings(false); setVisible(true); }

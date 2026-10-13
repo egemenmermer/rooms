@@ -80,3 +80,5 @@ async function bootstrap() {
 
 }
 void bootstrap();
+
+import './minimal-room.css';

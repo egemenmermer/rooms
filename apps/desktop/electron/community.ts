@@ -1,3 +1,4 @@
+import {musicCommandSchema,musicSnapshotSchema} from '../../../packages/shared-contracts/src/music';
 import { release } from 'node:os';
 import { ConversationVault } from './conversation-vault';
 import { PasswordRecoveryBroker } from './password-recovery';
@@ -167,6 +168,15 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
     }
     return value;
   }
+  async function musicRequest(channelId:string,command?:unknown){
+    const current=requireClient(),room=id.parse(channelId),token=current.getToken()!;const body=command===undefined?undefined:musicCommandSchema.parse(command);
+    const response=await fetch(`${new URL(current.instanceUrl).origin}/rooms-access/v1/music/${encodeURIComponent(room)}`,{method:body?'POST':'GET',headers:{Authorization:token,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,redirect:'error',signal:AbortSignal.timeout(body?160000:15000)});
+    const value=await response.json().catch(()=>null);if(current!==client||current.getToken()!==token)throw new SocialInputError('Oturum değişti.');
+    if(!response.ok){const messages:Record<string,string>={MUSIC_YOUTUBE_ACCESS_REQUIRED:'YouTube sunucudan bu parçanın erişimini engelledi. Başka bir bağlantı dene.',MUSIC_YOUTUBE_UNAVAILABLE:'YouTube parçası şu anda alınamıyor. Yeniden dene.',MUSIC_SOURCE_TIMEOUT:'Parça yüklenmesi zaman aşımına uğradı. Yeniden dene.',MUSIC_NOT_CONFIGURED:'Müzik botu sunucuda yapılandırılmadı.',MUSIC_SOURCE_FAILED:'Geçerli bir YouTube veya ses bağlantısı gir.',MUSIC_JOIN_FIRST:'Önce ses odasına katıl.',MUSIC_PERMISSION_DENIED:'Bu odada müzik kontrol yetkin yok.',MUSIC_QUEUE_FULL:'Kuyruk dolu. En fazla 100 parça eklenebilir.',MUSIC_CACHE_LIMIT:'Müzik dosyaları toplam boyut sınırını aştı.',MUSIC_TRANSPORT_UNAVAILABLE:'Müzik botu ses odasına bağlanamadı.',MUSIC_CURRENT_ITEM:'Çalan parçayı kaldırmadan önce başka parçaya geç.'};throw new SocialInputError(messages[value?.error]??'Müzik botuna ulaşılamıyor. Yeniden dene.');}
+    return musicSnapshotSchema.parse(value);
+  }
+  handle('rooms:music-snapshot',channelId=>musicRequest(id.parse(channelId)));
+  handle('rooms:music-command',(channelId,command)=>musicRequest(id.parse(channelId),command));
   const screenRequest=z.object({channelId:id,leaseId:z.string().uuid(),requestId:z.string().uuid()}).strict();
   const screenRequestEntry=z.object({requestId:z.string().uuid(),userId:id,leaseId:z.string().uuid(),createdAt:z.number().int().nonnegative(),expiresAt:z.number().int().positive()}).strict();
   const screenPresenterState=z.object({

@@ -328,6 +328,7 @@ export async function installReferenceFixture(id: string, value: string): Promis
       useCommunity.setState(state => ({ messages: [...state.messages, localMessage] }));
       if (screenId === 'S10' && selectedVariant === 'offline') throw new Error('Demo fixture is simulating a reconnect; this message remains local and was not sent.');
     },
+    reactMessage: async () => rejectExternalAction(),
     retryMessage: async messageId => {
       const current = useCommunity.getState();
       const message = current.messages.find(item => item.id === messageId && item.delivery === 'failed');
