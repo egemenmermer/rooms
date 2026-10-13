@@ -44,3 +44,22 @@ it('retains an access rejection received after playback starts',async()=>{
  await worker.command('denied-room',lease,{type:'add',url:'https://www.youtube.com/watch?v=PgHzDZJwGW8'});
  fail(new Error('MUSIC_YOUTUBE_ACCESS_REQUIRED'));expect(worker.snapshot('denied-room').status).toBe('error');expect(worker.snapshot('denied-room').error).toBe('MUSIC_YOUTUBE_ACCESS_REQUIRED');
 });
+it('starts the newly requested source after the current source failed instead of retrying the failed item',async()=>{
+ const {publisher,lease}=await setup();const rejected='https://www.youtube.com/watch?v=PgHzDZJwGW8',next='https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+ const playYouTube=vi.fn(async(source:string)=>{if(source===rejected)throw Error('MUSIC_YOUTUBE_ACCESS_REQUIRED');});
+ const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube}),lease:async()=>lease,youtubeReferences:async source=>[{source,title:source===rejected?'Unavailable request':'New request',durationSec:30}]});workers.push(worker);
+ await expect(worker.command('recover-room',lease,{type:'add',url:rejected})).rejects.toThrow('MUSIC_YOUTUBE_ACCESS_REQUIRED');
+ const value=await worker.command('recover-room',lease,{type:'add',url:next});expect(value.status).toBe('playing');expect(value.queue.find(t=>t.id===value.currentId)?.title).toBe('New request');expect(playYouTube).toHaveBeenLastCalledWith(next,0,expect.any(Function),expect.any(Function));expect(value.queue).toHaveLength(2);
+});
+it('ignores a retired decoder failure after selecting another track or pausing',async()=>{
+ const {publisher,lease}=await setup(),failures:Array<(error?:Error)=>void>=[];
+ const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube:async(_source,_position,_ended,onError)=>{failures.push(onError);}}),lease:async()=>lease,youtubeReferences:async source=>[{source,title:'Request',durationSec:30}]});workers.push(worker);
+ await worker.command('race-room',lease,{type:'add',url:'https://www.youtube.com/watch?v=PgHzDZJwGW8'});await worker.command('race-room',lease,{type:'add',url:'https://www.youtube.com/watch?v=dQw4w9WgXcQ'});await worker.command('race-room',lease,{type:'next'});
+ failures[0]!(Error('MUSIC_YOUTUBE_ACCESS_REQUIRED'));expect(worker.snapshot('race-room').status).toBe('playing');expect(worker.snapshot('race-room').error).toBeNull();
+ await worker.command('race-room',lease,{type:'pause'});failures[1]!(Error('MUSIC_DECODE_FAILED'));expect(worker.snapshot('race-room').status).toBe('paused');expect(worker.snapshot('race-room').error).toBeNull();
+});
+it('does not overwrite an immediate source failure with a playing result',async()=>{
+ const {publisher,lease}=await setup();
+ const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube:async(_source,_position,_ended,onError)=>{onError(Error('MUSIC_DECODE_FAILED'));}}),lease:async()=>lease,youtubeReferences:async source=>[{source,title:'Request',durationSec:30}]});workers.push(worker);
+ const value=await worker.command('startup-failure-room',lease,{type:'add',url:'https://www.youtube.com/watch?v=PgHzDZJwGW8'});expect(value.status).toBe('error');expect(value.error).toBe('MUSIC_DECODE_FAILED');
+});
