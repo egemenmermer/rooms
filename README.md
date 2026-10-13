@@ -1,5 +1,11 @@
 # ROOMS
 
+## Project documentation
+
+Read the [project handbook](docs/project/README.md) for architecture, runtime/data flows, services, security, operations and release engineering. The handbook documents audited reference implementation `06f5477`; a documentation merge does not merge its outstanding product-code changes. The [initial release audit](docs/release/AUDIT_REPORT.md) includes readiness, scope, blockers, QA and the phased V1 roadmap. Historical sections below retain their original acceptance limits.
+
+[Hosted handbook](https://community.example.invalid/docs/) · [Documentation build/deployment](docs/site/README.md)
+
 A Turkish, macOS-first private desktop clubhouse built with Electron, React and TypeScript. The current social foundation is **unmodified upstream Stoat**, behind a native typed adapter. LiveKit is replaceable; voice survives navigation and Activity changes. Local fixtures are visibly labeled **Yerel demo** or **QA fixture**.
 
 ## Open the application
@@ -53,3 +59,7 @@ node scripts/verify-activity-desktop.mjs
 The last command opens two actual Electron clients and uses the actual Activity service with explicitly marked **social authorization QA fixtures**. It verifies game interaction, poll voting, whiteboard sharing and shared local-demo playback; it does not verify production Stoat login. `pnpm stoat:verify` requires live Stoat and its private fixtures. Legacy Spacebar scripts/evidence remain historical and do not establish Stoat acceptance.
 
 [Approved remaining phases](docs/REMAINING_PHASES_PLAN.md), [design](docs/DESIGN_SYSTEM.md), [visual QA](docs/VISUAL_QA.md), [Activity protocol](docs/ACTIVITY_PROTOCOL.md), [game rules](docs/GAME_RULES.md), and [third-party notices](docs/THIRD_PARTY_NOTICES.md) describe scope and boundaries.
+
+## Mac in-app updates
+
+Signed Sparkle-enabled releases can check updates in Settings → Güncelleme ve hakkında. With automatic updates enabled, downloaded updates install on normal app quit and are used at the next open. Cmd-Q quits; closing to tray may keep the application running. Releases without Sparkle need one manual signed installation. See [Sparkle delivery](docs/rooms-implementation/SPARKLE_DELIVERY.md) and [actual old-to-new acceptance](docs/release/SPARKLE_UPDATE_ACCEPTANCE.md).
