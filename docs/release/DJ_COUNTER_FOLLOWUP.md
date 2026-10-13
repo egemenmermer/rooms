@@ -24,3 +24,12 @@ HostedCI forsourcec0391f8: both38399678125 and38399686090 baseline/native-smokeS
 ## Linux stereo deployment and acceptance limits — 2026-10-13
 
 Pinned native build38403230313 and exact-source Verify38403230106/38403241196 succeeded (117files/771tests, native smoke and GitGuardian). The compatible derived image rooms-music:20261013-stereo passed native load, true separate-channel SFU receipt and approved-source pause/resume. Encrypted scoped rollback was retained; only music was recreated, health200 and bundle/native parity verified. Owner then confirmed actual room music (“calisti”). This closes the Linux native stereo integration gate and confirms this specific room source; source-provider availability and full physical two-Mac acceptance remain OPEN. See DJ_LINUX_STEREO_DEPLOYMENT.json and related receipts. No desktop package, install, feed publication or main merge.
+
+
+## Owner-selected video remains blocked — 2026-10-13
+
+After the owner's specific “calisti” confirmation, the owner reports that his own selection still fails, while the agent's selection plays. Installed RC.5 shows empty queue and “YouTube sunucudan bu parçanın erişimini engelledi. Başka bir bağlantı dene.” The exact link is vKHu4uPOJVg with RDvKHu4uPOJVg and optional start_radio. Existing parser selects this video and drops radio parameters; it is not a playlist interpretation defect.
+
+Recorded before any proposed repair: one bounded request in the current stereo music container returns exit1, botCheck=true/login=true, cookieExpired=false and no age/region/private/removed/403/429 flags. Same-session known control dQw4w9WgXcQ returns metadata exit0. No secrets or raw provider diagnostics logged. This confirms source-dependent provider rejection, not proof that all links work or an owner/agent privilege difference. No source substitution, security bypass or speculative restart performed.
+
+The provider block is unresolved. Current source already replaces the installed misleading “try another link” instruction with a server YouTube-access error in both command and snapshot paths; that wording is not installed and cannot restore provider access. DJ remains OPEN; prior room audio confirmation is limited to the accepted source. Release hold remains in effect. Receipt: DJ_OWNER_SOURCE_REJECTION.json.

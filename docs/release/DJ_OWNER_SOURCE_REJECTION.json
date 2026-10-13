@@ -1,0 +1,41 @@
+{
+  "source": "vKHu4uPOJVg",
+  "code": 1,
+  "flags": {
+    "botCheck": true,
+    "cookieExpired": false,
+    "login": true,
+    "premium": false,
+    "age": false,
+    "region": false,
+    "private": false,
+    "removed": false,
+    "http403": false,
+    "http429": false
+  },
+  "rawProviderOutput": "NOT_LOGGED",
+  "date": "2026-10-13",
+  "originalUrl": "https://www.youtube.com/watch?v=vKHu4uPOJVg&list=RDvKHu4uPOJVg&start_radio=1",
+  "canonicalVideo": "vKHu4uPOJVg",
+  "parser": "RD list with valid v selects that video; no playlist import",
+  "control": {
+    "source": "dQw4w9WgXcQ",
+    "code": 0,
+    "title": "Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster)",
+    "flags": {
+      "botCheck": false,
+      "cookieExpired": false,
+      "login": false,
+      "premium": false,
+      "age": false,
+      "region": false,
+      "private": false,
+      "removed": false,
+      "http403": false,
+      "http429": false
+    },
+    "rawProviderOutput": "NOT_LOGGED"
+  },
+  "status": "OPEN_YOUTUBE_BOT_VERIFICATION_REQUIRED",
+  "scope": "Two bounded metadata requests on current music image using the existing private server session; exact owner video rejected, known control accepted. Control metadata is not a fresh audio acceptance. No challenge/client/IP/proxy/credential workaround."
+}
