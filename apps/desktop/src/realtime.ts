@@ -9,13 +9,13 @@ import { useRooms } from './store';
 export const useVoiceContext=create<{channelId:string|null;roomName:string|null;error:string|null;busy:boolean}>(()=>({channelId:null,roomName:null,error:null,busy:false}));
 const bridge=mediaBridge;
 const errorText=uiError;
-export function useRealtime():MediaSnapshot&{channelId:string|null;roomName:string|null;busy:boolean}{const snapshot=useSyncExternalStore(listener=>mediaProvider().subscribeState(listener),()=>mediaProvider().snapshot(),()=>mediaProvider().snapshot());const context=useVoiceContext();return {...snapshot,...context,status:context.busy?'connecting':snapshot.status,error:context.error??(snapshot.error?uiError(snapshot.error):null)};}
+export function useRealtime():MediaSnapshot&{channelId:string|null;roomName:string|null;busy:boolean}{const snapshot=useSyncExternalStore(listener=>mediaProvider().subscribeState(listener),()=>mediaProvider().snapshot(),()=>mediaProvider().snapshot());const context=useVoiceContext();return {...snapshot,...(context.busy?{participants:[],tracks:[],muted:true,camera:false,sharing:false}:{}),...context,status:context.busy?'connecting':snapshot.status,error:context.error??(snapshot.error?uiError(snapshot.error):null)};}
 let transitionEpoch=0,sequence:Promise<unknown>=Promise.resolve(),activeChannel:string|null=null;
 let pendingTarget:string|null=null,pendingPromise:Promise<void>|null=null;
 let desiredMuted=true,microphoneScope='';
 const sessionScope=()=>`${useCommunity.getState().serverUrl}:${useCommunity.getState().user?.id??''}`;
 function serialize(work:()=>Promise<void>){const next=sequence.catch(()=>{}).then(work);sequence=next.catch(()=>{});return next;}
-async function disconnectActive(){const id=activeChannel;activeChannel=null;await mediaProvider().disconnect();if(id&&window.rooms)await bridge().leave(id).catch(()=>{});}
+function disconnectActive(){const id=activeChannel;activeChannel=null;const media=mediaProvider().disconnect();const presence=id&&window.rooms?bridge().leave(id).catch(()=>{}):Promise.resolve();return Promise.all([media,presence]).then(()=>{});}
 export function joinVoice(channelId:string,roomName:string):Promise<void>{
  const dm=useDmCall.getState();if(dm.busy||dm.call?.state==='ringing'||dm.call?.state==='accepted')return Promise.reject(new Error('Önce özel görüşmeyi bitir.'));
  const context=useVoiceContext.getState(),snapshot=mediaProvider().snapshot();
@@ -25,13 +25,13 @@ export function joinVoice(channelId:string,roomName:string):Promise<void>{
  const epoch=++transitionEpoch,scope=sessionScope();if(microphoneScope!==scope){desiredMuted=true;microphoneScope=scope;}pendingTarget=channelId;
  const current=()=>epoch===transitionEpoch&&scope===sessionScope();
  useVoiceContext.setState({channelId,roomName,busy:true,error:null});
+ // Revoke old capture/playback now, even while a prior grant/connect is pending.
+ const departure=disconnectActive();void departure.catch(()=>{});
  const next=serialize(async()=>{
-  if(!current())return;
   try{
-   // Validate target membership before dropping the previous connection.
+   await departure;if(!current())return;
    const grant=await bridge().grant(channelId);
    if(!current()){if(window.rooms)await bridge().leave(channelId).catch(()=>{});return;}
-   await disconnectActive();if(!current())return;
    const dm=useDmCall.getState();if(dm.busy||dm.call?.state==='ringing'||dm.call?.state==='accepted')throw new Error('Önce özel görüşmeyi bitir.');
    activeChannel=channelId;
    await mediaProvider().connectRoom(grant.roomName,grant.token,grant.serverUrl);
@@ -50,7 +50,8 @@ export function leaveVoice(preserveBusy=false):Promise<void>{
  const context=useVoiceContext.getState();if(!activeChannel&&mediaProvider().snapshot().status==='connected')activeChannel=context.channelId;
  const epoch=++transitionEpoch;pendingTarget=null;pendingPromise=null;
  useVoiceContext.setState({channelId:null,roomName:null,error:null,busy:preserveBusy});
- return serialize(async()=>{await disconnectActive();if(epoch===transitionEpoch)useVoiceContext.setState({busy:false});});
+ const departure=disconnectActive();void departure.catch(()=>{});
+ return serialize(async()=>{await departure;if(epoch===transitionEpoch)useVoiceContext.setState({busy:false});});
 }
 async function run(operation:()=>Promise<void>){useVoiceContext.setState({error:null});try{await operation();}catch(error){useVoiceContext.setState({error:errorText(error)});throw error;}}
 export async function toggleMic(){await run(async()=>{const muted=!mediaProvider().snapshot().muted;await mediaProvider().mute(muted);desiredMuted=muted;if(mediaProvider().snapshot().inputDeviceFallback)useRooms.getState().setPreference('inputId','');});}
