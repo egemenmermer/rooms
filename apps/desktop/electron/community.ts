@@ -1,5 +1,7 @@
+import {soundboardCatalogSchema,soundboardClipSchema} from '../../../packages/shared-contracts/src/soundboard';
 import {musicCommandSchema,musicSnapshotSchema} from '../../../packages/shared-contracts/src/music';
 import { release } from 'node:os';
+import { enumerateCaptureSources, CaptureSourcesError } from './capture-sources';
 import { ConversationVault } from './conversation-vault';
 import { PasswordRecoveryBroker } from './password-recovery';
 import { requestDmCall } from './dm-call-http';
@@ -54,7 +56,7 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   const remember=()=>{remembered=false;if(!client?.getToken()||!safeStorage.isEncryptionAvailable()){if(existsSync(vault))unlinkSync(vault);return;}writeFileSync(vault,safeStorage.encryptString(JSON.stringify({provider:'stoat',version:1,url:client.instanceUrl,token:client.getToken()})),{mode:0o600});remembered=true;};
   const requireClient=()=>{if(!client||!user)throw new StoatError(401,'SIGN_IN_REQUIRED');return client;};
   const handle=(name:string,handler:(...args:unknown[])=>unknown)=>ipcMain.handle(name,async(event,...args)=>{
-    assertSender(event);try{if(fixtureWindow())throw new SocialInputError('Native account access is disabled in development fixtures.');const scoped=!['rooms:social-session','rooms:social-login','rooms:social-register','rooms:social-logout','rooms:social-password-recovery-capabilities','rooms:social-password-recovery-request'].includes(name);const owner=client,ownerId=user?.id;const result=await handler(...args);if(scoped&&(client!==owner||user?.id!==ownerId))throw new SocialInputError('The account changed. Retry this action in the current account.');return result;}catch(error){if(error instanceof StoatError||error instanceof SocialInputError)throw new Error(error.message);if(error instanceof z.ZodError)throw new Error('Check the supplied fields and retry.');throw new Error('This operation could not complete. Check your server, permissions, and connection.');}
+    assertSender(event);try{if(fixtureWindow())throw new SocialInputError('Native account access is disabled in development fixtures.');const scoped=!['rooms:social-session','rooms:social-login','rooms:social-register','rooms:social-logout','rooms:social-password-recovery-capabilities','rooms:social-password-recovery-request'].includes(name);const owner=client,ownerId=user?.id;const result=await handler(...args);if(scoped&&(client!==owner||user?.id!==ownerId))throw new SocialInputError('The account changed. Retry this action in the current account.');return result;}catch(error){if(error instanceof StoatError||error instanceof SocialInputError||error instanceof CaptureSourcesError)throw new Error(error.message);if(error instanceof z.ZodError)throw new Error('Check the supplied fields and retry.');throw new Error('This operation could not complete. Check your server, permissions, and connection.');}
   });
   handle('rooms:social-session',()=>snapshot());
   handle('rooms:social-read-states',()=>requireClient().readStates());
@@ -168,11 +170,25 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
     }
     return value;
   }
+  async function soundboardRequest(channelId:unknown,method:'GET'|'POST'|'DELETE',clipId?:unknown,input?:unknown){
+    const current=requireClient(),token=current.getToken()!,channel=id.parse(channelId),clip=clipId===undefined?'':`/${z.string().uuid().parse(clipId)}`;
+    const body=input===undefined?undefined:z.object({name:z.string().trim().min(1).max(40),audio:z.string().max(2_666_672).regex(/^[A-Za-z0-9+/]*={0,2}$/)}).strict().parse(input);
+    const response=await fetch(`${new URL(current.instanceUrl).origin}/rooms-access/v1/soundboard/${encodeURIComponent(channel)}${clip}`,{method,headers:{Authorization:token,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,redirect:'error',signal:AbortSignal.timeout(15000)});
+    const valid=()=>current===client&&current.getToken()===token;
+    if(!valid())throw new SocialInputError('Oturum değişti.');
+    if(!response.ok){const error=(await response.json().catch(()=>null))?.error;const messages:Record<string,string>={SOUNDBOARD_NOT_CONFIGURED:'Sunucunun topluluk sesleri henüz yapılandırılmadı.',SOUNDBOARD_UPLOAD_DENIED:'Bu odada ses ekleme iznin yok.',SOUNDBOARD_DELETE_DENIED:'Yalnızca kendi sesini kaldırabilirsin.',SOUNDBOARD_FULL:'Toplulukta en fazla 32 ses saklanabilir.',SOUNDBOARD_NOT_FOUND:'Bu ses kaldırılmış.',SOUNDBOARD_INVALID_AUDIO:'En fazla 8 saniyelik mono veya stereo ses seç.'};throw new SocialInputError(messages[error]??'Topluluk sesleri alınamadı. Yeniden dene.');}
+    if(method==='GET'&&clip){const reader=response.body?.getReader();if(!reader)throw new SocialInputError('Ses dosyası alınamadı.');const chunks:Buffer[]=[];let size=0;try{while(true){const value=await reader.read();if(value.done)break;size+=value.value.byteLength;if(size>2_000_000)throw new SocialInputError('Ses dosyası çok büyük.');chunks.push(Buffer.from(value.value));}}finally{await reader.cancel().catch(()=>{});}if(!valid())throw new SocialInputError('Oturum değişti.');return Buffer.concat(chunks).toString('base64');}
+    const value=await response.json();if(!valid())throw new SocialInputError('Oturum değişti.');return method==='GET'?soundboardCatalogSchema.parse(value):method==='POST'?soundboardClipSchema.parse(value):z.object({deleted:z.literal(true)}).strict().parse(value);
+  }
+  handle('rooms:soundboard-list',channel=>soundboardRequest(channel,'GET'));
+  handle('rooms:soundboard-upload',(channel,input)=>soundboardRequest(channel,'POST',undefined,input));
+  handle('rooms:soundboard-read',(channel,clip)=>soundboardRequest(channel,'GET',clip));
+  handle('rooms:soundboard-remove',async(channel,clip)=>{await soundboardRequest(channel,'DELETE',clip);});
   async function musicRequest(channelId:string,command?:unknown){
     const current=requireClient(),room=id.parse(channelId),token=current.getToken()!;const body=command===undefined?undefined:musicCommandSchema.parse(command);
     const response=await fetch(`${new URL(current.instanceUrl).origin}/rooms-access/v1/music/${encodeURIComponent(room)}`,{method:body?'POST':'GET',headers:{Authorization:token,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,redirect:'error',signal:AbortSignal.timeout(body?160000:15000)});
     const value=await response.json().catch(()=>null);if(current!==client||current.getToken()!==token)throw new SocialInputError('Oturum değişti.');
-    if(!response.ok){const messages:Record<string,string>={MUSIC_YOUTUBE_ACCESS_REQUIRED:'YouTube sunucudan bu parçanın erişimini engelledi. Başka bir bağlantı dene.',MUSIC_YOUTUBE_UNAVAILABLE:'YouTube parçası şu anda alınamıyor. Yeniden dene.',MUSIC_SOURCE_TIMEOUT:'Parça yüklenmesi zaman aşımına uğradı. Yeniden dene.',MUSIC_NOT_CONFIGURED:'Müzik botu sunucuda yapılandırılmadı.',MUSIC_SOURCE_FAILED:'Geçerli bir YouTube veya ses bağlantısı gir.',MUSIC_JOIN_FIRST:'Önce ses odasına katıl.',MUSIC_PERMISSION_DENIED:'Bu odada müzik kontrol yetkin yok.',MUSIC_QUEUE_FULL:'Kuyruk dolu. En fazla 100 parça eklenebilir.',MUSIC_CACHE_LIMIT:'Müzik dosyaları toplam boyut sınırını aştı.',MUSIC_TRANSPORT_UNAVAILABLE:'Müzik botu ses odasına bağlanamadı.',MUSIC_CURRENT_ITEM:'Çalan parçayı kaldırmadan önce başka parçaya geç.'};throw new SocialInputError(messages[value?.error]??'Müzik botuna ulaşılamıyor. Yeniden dene.');}
+    if(!response.ok){const messages:Record<string,string>={MUSIC_YOUTUBE_ACCESS_REQUIRED:'Sunucunun YouTube ses erişimi doğrulanamadı. DJ şu anda bu kaynaktan çalamıyor.',MUSIC_YOUTUBE_UNAVAILABLE:'YouTube parçası şu anda alınamıyor. Yeniden dene.',MUSIC_SOURCE_TIMEOUT:'Parça yüklenmesi zaman aşımına uğradı. Yeniden dene.',MUSIC_NOT_CONFIGURED:'Müzik botu sunucuda yapılandırılmadı.',MUSIC_SOURCE_FAILED:'Geçerli bir YouTube, Spotify, SoundCloud veya ses bağlantısı gir.',MUSIC_MIRROR_METADATA_UNAVAILABLE:'Şarkı bilgisi alınamadı. Herkese açık tek şarkı bağlantısını yeniden dene.',MUSIC_MIRROR_SINGLE_TRACK_ONLY:'Spotify ve SoundCloud için tek şarkı bağlantısı gir. Albüm ve listeler henüz desteklenmiyor.',MUSIC_MIRROR_NOT_FOUND:'YouTube’da güvenilir bir eşleşme bulunamadı. Şarkının YouTube bağlantısını gir.',MUSIC_JOIN_FIRST:'Önce ses odasına katıl.',MUSIC_PERMISSION_DENIED:'Bu odada müzik kontrol yetkin yok.',MUSIC_QUEUE_FULL:'Kuyruk dolu. En fazla 100 parça eklenebilir.',MUSIC_CACHE_LIMIT:'Müzik dosyaları toplam boyut sınırını aştı.',MUSIC_TRANSPORT_UNAVAILABLE:'Müzik botu ses odasına bağlanamadı.',MUSIC_CURRENT_ITEM:'Çalan parçayı kaldırmadan önce başka parçaya geç.'};throw new SocialInputError(messages[value?.error]??'Müzik botuna ulaşılamıyor. Yeniden dene.');}
     return musicSnapshotSchema.parse(value);
   }
   handle('rooms:music-snapshot',channelId=>musicRequest(id.parse(channelId)));
@@ -195,9 +211,9 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   handle('rooms:dm-call-start',input=>callRequest('start',dmCallStartSchema.parse(input)));
   handle('rooms:dm-call-respond',input=>callRequest('respond',dmCallActionSchema.parse(input)));
   handle('rooms:dm-call-grant',input=>callRequest('grant',dmCallIdSchema.parse(input)));
-  handle('rooms:media-directory',async channelIds=>{const ids=z.array(id).min(1).max(32).parse(channelIds);const result=await broker('directory',{channelIds:ids});return z.object({rooms:z.array(z.object({channelId:id,participants:z.array(z.object({id:id,name:z.string().max(128),muted:z.boolean()}).strict()).max(100)}).strict()).max(32)}).strict().parse(result);});
+  handle('rooms:media-directory',async channelIds=>{const ids=z.array(id).min(1).max(32).parse(channelIds);const result=await broker('directory',{channelIds:ids});return z.object({rooms:z.array(z.object({channelId:id,participants:z.array(z.object({id:id,name:z.string().max(128),muted:z.boolean(),screen:z.boolean().optional()}).strict()).max(100)}).strict()).max(32)}).strict().parse(result);});
   handle('rooms:media-grant',channelId=>broker('grant',{channelId:id.parse(channelId)}));
-  handle('rooms:media-presenter',(channelId,action)=>broker(`screen/${z.enum(['acquire','release']).parse(action)}`,{channelId:id.parse(channelId)}));
+  handle('rooms:media-presenter',(channelId,action)=>broker(`screens/${z.enum(['acquire','release']).parse(action)}`,{channelId:id.parse(channelId)}));
   handle('rooms:media-screen-state',async channelId=>screenPresenterState.parse(await broker('screen/state',{channelId:id.parse(channelId)})));
   handle('rooms:media-screen-request',async input=>{const body=screenRequest.parse(input);return z.object({request:screenRequestEntry}).strict().parse(await broker('screen/request',body));});
   handle('rooms:media-screen-request-cancel',async input=>{const body=screenRequest.parse(input);return z.object({cancelled:z.literal(true)}).strict().parse(await broker('screen/request/cancel',body));});
@@ -205,8 +221,9 @@ export async function setupCommunity(getWindow:()=>BrowserWindow|null,assertSend
   handle('rooms:media-leave',channelId=>broker('leave',{channelId:id.parse(channelId)}));
   handle('rooms:capture-status',()=>({microphone:process.platform==='darwin'?systemPreferences.getMediaAccessStatus('microphone'):'unknown',camera:process.platform==='darwin'?systemPreferences.getMediaAccessStatus('camera'):'unknown',screen:process.platform==='darwin'?systemPreferences.getMediaAccessStatus('screen'):'unknown',systemAudio:supportsSystemAudio()}));
   handle('rooms:capture-sources',async()=>{
-    choices=await desktopCapturer.getSources({types:['screen','window'],thumbnailSize:{width:320,height:180},fetchWindowIcons:false});choicesAt=Date.now();
-    return choices.map(source=>({id:source.id,name:source.name,thumbnail:source.thumbnail.toDataURL()}));
+    choices=[];choicesAt=0;
+    choices=await enumerateCaptureSources(options=>desktopCapturer.getSources(options),()=>process.platform==='darwin'?systemPreferences.getMediaAccessStatus('screen'):'unknown');choicesAt=Date.now();
+    return choices.map(source=>({id:source.id,name:source.name,thumbnail:source.thumbnail.isEmpty()?'':source.thumbnail.toDataURL()}));
   });
   handle('rooms:capture-select',(sourceId,options)=>{const preference=z.object({audio:z.boolean()}).strict().parse(options??{audio:false});if(preference.audio&&!supportsSystemAudio())throw new SocialInputError('System audio capture is unavailable on this OS.');if(typeof sourceId!=='string'||Date.now()-choicesAt>60000)throw new Error('Refresh available sources.');const source=choices.find(s=>s.id===sourceId);if(!source)throw new Error('The selected source is unavailable.');selected=source;selectedAudio=preference.audio;selectedAt=Date.now();choices=[];});
   handle('rooms:capture-clear',()=>{selected=null;selectedAudio=false;choices=[];});
