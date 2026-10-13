@@ -1,0 +1,62 @@
+{
+  "version": "0.1.18-rc.6",
+  "sourceSha": "dd0b9ded0ae2bf5fadfb6ad3afa44c1563db34af",
+  "build": 1791887314,
+  "releaseState": "HELD_DRAFT_NOT_AVAILABLE_IN_UPDATER",
+  "ownerHoldDate": "2026-10-13",
+  "notarization": {
+    "status": "Accepted",
+    "id": "bfefaae6-3785-4f75-a112-f69be2fea5f1"
+  },
+  "artifacts": {
+    "zip": {
+      "sha256": "3e54d2ff86d92d685c9cb0b0557e241ccd6d44235aaba4fcf501ae4cc7955bfb",
+      "bytes": 161818068
+    },
+    "dmg": {
+      "sha256": "f90300bafdf79179d5d1de2ceef892e5557b056953ad785d7eb0052d7ad1f33b",
+      "bytes": 160844982
+    }
+  },
+  "installedOwnerVersion": "0.1.18-rc.5",
+  "sourceValidation": {
+    "tests": 740,
+    "files": 111,
+    "localChecks": "PASS",
+    "hostedRuns": [
+      38383362773,
+      38383487047
+    ],
+    "hostedChecks": "PASS",
+    "nativeSignedIsolatedLaunch": "PASS"
+  },
+  "musicService": {
+    "image": "rooms-music:20261013T102727Z",
+    "previousImage": "rooms-music:20261012T151630Z",
+    "composeRollback": "/opt/rooms/config/compose.yml.before-mirroring-20261013T102727Z",
+    "musicSha256": "9772a9871799000957e1772ff2c44fb942f54cee88be9e69a7169f5d536fa0aa",
+    "health": "PASS",
+    "unrelatedContainerIds": "UNCHANGED",
+    "readOnlyRootfs": "PRESERVED",
+    "preflightAudioDecoder": "INACTIVE",
+    "durableAccountsDataHoppers": "UNTOUCHED",
+    "ephemeralQueueRestart": "music worker recreated",
+    "sourceSha": "dd0b9ded0ae2bf5fadfb6ad3afa44c1563db34af",
+    "backup": "PASS; private backup log retained; restore acceptance separate"
+  },
+  "metadataAndMatching": "PASS",
+  "actualAudioDecode": "FAILED_MUSIC_YOUTUBE_ACCESS_REQUIRED",
+  "twoPhysicalMacAcceptance": "OPEN",
+  "screenSharingOwnerReport": "OPEN",
+  "unpublishedCorrections": {
+    "sourceSha": "a9e9803",
+    "scopedTestFiles": 8,
+    "scopedTests": 32,
+    "lintTypeBuildServices": "PASS",
+    "installedAcceptance": "OPEN",
+    "musicEncoderCeiling": 510000,
+    "stereoSampleRate": 48000,
+    "notMeasuredReceiverQuality": true
+  },
+  "preservation": "Exact bytes retained locally and in GitHub draft; public downloads moved outside web root; old retained archives/accounts/data/Hoppers untouched"
+}
