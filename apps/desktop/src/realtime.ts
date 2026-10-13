@@ -2,7 +2,7 @@ import { useDmCall } from './dm-call';
 import { uiError } from './i18n';
 import { create } from 'zustand';
 import { useSyncExternalStore } from 'react';
-import { type MediaSnapshot } from '@rooms/media';
+import { type NoiseSuppressionMode, type MediaSnapshot } from '@rooms/media';
 import { mediaProvider, mediaBridge } from './runtime-sources';
 import { useRooms } from './store';
 export const useVoiceContext=create<{channelId:string|null;roomName:string|null;error:string|null;busy:boolean}>(()=>({channelId:null,roomName:null,error:null,busy:false}));
@@ -15,7 +15,7 @@ export async function joinVoice(channelId:string,roomName:string){
   try { await leaveVoice(true); } catch(error) { useVoiceContext.setState({busy:false,error:errorText(error)});throw error; }
   const afterLeave=useDmCall.getState();if(afterLeave.busy||afterLeave.call?.state==='ringing'||afterLeave.call?.state==='accepted'){useVoiceContext.setState({busy:false});throw new Error('Önce özel görüşmeyi bitir.');}
   useVoiceContext.setState({busy:true,error:null,channelId,roomName});
-  try{const grant=await bridge().grant(channelId);await mediaProvider().connectRoom(grant.roomName,grant.token,grant.serverUrl);await mediaProvider().setNoiseSuppression(useRooms.getState().preferences.noiseSuppression);await mediaProvider().deviceSelection(useRooms.getState().preferences.inputId,useRooms.getState().preferences.outputId);}
+  try{const grant=await bridge().grant(channelId);await mediaProvider().connectRoom(grant.roomName,grant.token,grant.serverUrl);await mediaProvider().setNoiseSuppression(useRooms.getState().preferences.noiseSuppression,useRooms.getState().preferences.noiseSuppressionMode);await mediaProvider().deviceSelection(useRooms.getState().preferences.inputId,useRooms.getState().preferences.outputId);}
   catch(error){useVoiceContext.setState({error:errorText(error)});throw error;}
   finally{useVoiceContext.setState({busy:false});}
 }
@@ -30,6 +30,6 @@ export const setParticipantVolume=(id:string,volume:number)=>mediaProvider().set
 export const startRoomAudio=()=>run(()=>mediaProvider().startAudio());
 export const attachMediaTrack=(id:string,element:HTMLMediaElement)=>mediaProvider().attachTrack(id,element);
 
-export const setNoiseSuppression=(value:boolean)=>run(()=>mediaProvider().setNoiseSuppression(value));
+export const setNoiseSuppression=(value:boolean,mode?:NoiseSuppressionMode)=>run(()=>mediaProvider().setNoiseSuppression(value,mode));
 export const playSoundboard=(buffer:AudioBuffer,volume:number)=>run(()=>mediaProvider().playSoundboard(buffer,volume));
 export const stopSoundboard=()=>mediaProvider().stopSoundboard();

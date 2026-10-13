@@ -61,7 +61,7 @@ async function connectAccepted(){
     await mediaProvider().connectRoom(grant.roomName,grant.token,grant.serverUrl);
     if(!valid()){await mediaProvider().disconnect();return;}
     useDmCall.setState({connected:true});
-    await mediaProvider().setNoiseSuppression(useRooms.getState().preferences.noiseSuppression);
+    await mediaProvider().setNoiseSuppression(useRooms.getState().preferences.noiseSuppression,useRooms.getState().preferences.noiseSuppressionMode);
     if(!valid())return;
     await mediaProvider().deviceSelection(useRooms.getState().preferences.inputId,useRooms.getState().preferences.outputId);
     if(!valid())return;
