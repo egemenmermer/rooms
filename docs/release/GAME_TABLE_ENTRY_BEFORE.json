@@ -1,0 +1,6 @@
+{
+  "scope": "Actual three isolated Electron Games UIs with actual local authoritative service; DEMO identities; no owner game/production records",
+  "commands": [],
+  "result": "FAIL",
+  "error": "locator.waitFor: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('heading', { name: 'Blackjack', exact: true }) to be visible\u001b[22m\n"
+}

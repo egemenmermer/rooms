@@ -5,6 +5,8 @@
 .coffeehouse-scene{position:relative;width:min(100%,177.777cqh);min-width:760px;aspect-ratio:16/9;}
 .coffeehouse-interior{display:block;width:100%;height:100%;object-fit:contain;}
 .coffeehouse-table{position:absolute;transform:translate(-50%,-10%);width:clamp(115px,12.5vw,172px);display:flex;flex-direction:column;gap:4px;text-align:left;padding:7px 10px;background:#15111930;border:1px solid transparent;border-radius:7px;color:#fff4e9;text-shadow:0 1px 3px #000,0 0 8px #000b;box-shadow:none;backdrop-filter:blur(1px);}
+/* The pictured tabletop and its caption share one accessible button. */
+.coffeehouse-table::before{content:"";position:absolute;left:-6px;right:-6px;bottom:0;height:calc(100% + clamp(90px,10vw,145px));border-radius:14px;}
 .coffeehouse-table:hover:not(:disabled){background:#17111c68;}
 .coffeehouse-table:focus-visible{outline:2px solid #c8b2ff;outline-offset:3px;background:#17111c68;}
 .coffeehouse-table.active .coffeehouse-count{box-shadow:inset 0 0 0 1px #c2aaff80;}

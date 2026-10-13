@@ -78,3 +78,9 @@ The exact-source native stereo patch plus queue-duration unit fix passed real lo
 
 
 Scoped correction validation:9files/51tests PASS, ESLint PASS, TypeScript PASS, renderer/Electron build PASS, service bundles PASS. A mistaken `build:services` command was rejected because no such script exists; corrected existing `services:build` completed normally. No product build failure or checks bypass. React review covered stable effect scope, cleanup/no-overlap, account/access callback fences, existing styles, single status/error and keyboard-operable retry controls. Experimental native patch is not deployed and release hold remains.
+
+
+Owner clarified the failure occurs clicking the coffeehouse game table, before game actions. Actual three-client UI reproduction clicks the pictured Blackjack tabletop (24.5% x /71.5% y), rather than its caption: all fail to navigate to the table. Existing button covers only the small caption below the image; the illustrated tabletop is inert. Record this FAIL before extending the same accessible button's transparent hit region over the pictured table. Do not relax disabled/unsupported/permission reasons or invent occupancy.
+
+
+Tabletop hit-region correction PASS: three actual Electron clients enter from the pictured Blackjack tabletop, then complete the real local-service round. Repeated at900×700; all seven table surfaces map to their own button, screenshot inspected. Caption backgrounds and original image unchanged. 3coffeehouse regressions and renderer/Electron build PASS. Existing one-table-per-room limit and unsupported Tavla/Satranç remain; these are not newly enabled. Friend physical retest remains OPEN; no install/release. Receipts GAME_TABLE_ENTRY_BEFORE/RESULTS/900_RESULTS.json preserve prior failure and narrow result.
