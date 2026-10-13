@@ -1,0 +1,33 @@
+{
+  "scope": "Full native current application, explicit DEV DEMO visual fixture; not live media proof",
+  "sizes": [
+    {
+      "viewport": [
+        1440,
+        900
+      ],
+      "scroll": 0,
+      "stage": {
+        "top": 142.172607421875,
+        "bottom": 782.172607421875,
+        "height": 640
+      },
+      "dockTop": 828
+    },
+    {
+      "viewport": [
+        900,
+        700
+      ],
+      "scroll": 0,
+      "stage": {
+        "top": 140,
+        "bottom": 596,
+        "height": 456
+      },
+      "dockTop": 628
+    }
+  ],
+  "fullscreen": true,
+  "result": "PASS_FULL_APP_FITTING_SHARE_VIEW_WIDE_900_FULLSCREEN"
+}

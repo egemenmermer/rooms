@@ -15,6 +15,8 @@ let pendingTarget:string|null=null,pendingPromise:Promise<void>|null=null;
 let desiredMuted=true,microphoneScope='';
 const sessionScope=()=>`${useCommunity.getState().serverUrl}:${useCommunity.getState().user?.id??''}`;
 function serialize(work:()=>Promise<void>){const next=sequence.catch(()=>{}).then(work);sequence=next.catch(()=>{});return next;}
+const updateListenerScope=()=>{const state=useCommunity.getState();mediaProvider().setListenerScope?.(state.user?JSON.stringify([state.serverUrl,state.user.id]):'');};
+updateListenerScope();useCommunity.subscribe((state,previous)=>{if(state.user?.id!==previous.user?.id||state.serverUrl!==previous.serverUrl)updateListenerScope();});
 function disconnectActive(){const id=activeChannel;activeChannel=null;const media=mediaProvider().disconnect();const presence=id&&window.rooms?bridge().leave(id).catch(()=>{}):Promise.resolve();return Promise.all([media,presence]).then(()=>{});}
 export function joinVoice(channelId:string,roomName:string):Promise<void>{
  const dm=useDmCall.getState();if(dm.busy||dm.call?.state==='ringing'||dm.call?.state==='accepted')return Promise.reject(new Error('Önce özel görüşmeyi bitir.'));

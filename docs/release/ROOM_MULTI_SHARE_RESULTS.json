@@ -1,0 +1,34 @@
+{
+  "scope": "Three isolated signed RC5 shells with current media/gallery source injected; two real native captures of generated windows, actual local SFU; no owner content/accounts/production room; fullscreen/widget viewport QA, not full app/physical Mac acceptance",
+  "shares": [
+    {
+      "source": "screen_share",
+      "local": false,
+      "participantId": "DEMO-B"
+    },
+    {
+      "source": "screen_share",
+      "local": false,
+      "participantId": "DEMO-A"
+    }
+  ],
+  "ownPreview": true,
+  "fit": {
+    "width": 900,
+    "height": 700,
+    "stage": {
+      "top": 12,
+      "bottom": 606.5,
+      "height": 594.5
+    },
+    "scrollHeight": 676,
+    "clientHeight": 676
+  },
+  "fullscreen": {
+    "target": "room-screen-focus",
+    "width": 1920,
+    "windowWidth": 1920
+  },
+  "remainingPublisher": "DEMO-B",
+  "result": "PASS_TWO_NATIVE_SHARES_RECEIPT_SELF_PREVIEW_SELECTION_FULLSCREEN_INDEPENDENT_STOP"
+}

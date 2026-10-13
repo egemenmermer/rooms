@@ -1,0 +1,9 @@
+{
+  "scope": "Two current Soundboard UIs, actual local authorized HTTP storage and local SFU receiver; synthetic silent mic, generated tone, no real accounts/microphone/speakers/production service",
+  "received": {
+    "frames": 581,
+    "maxRms": 7277.267234769519
+  },
+  "stop": true,
+  "result": "PASS_SHARED_UPLOAD_TWO_UI_LIST_READ_DECODE_MIC_MIX_SFU_RECEIPT_STOP"
+}
