@@ -104,3 +104,13 @@ describe('screen handoff access lease',()=>{
  });
 
 });
+
+
+it('grants two connected members independent concurrent shares and releases only the caller',async()=>{
+ const results=await Promise.all([post('screens/acquire','host'),post('screens/acquire','next')]);expect(results.map(r=>r.statusCode)).toEqual([200,200]);expect(results[0].json().leaseId).not.toBe(results[1].json().leaseId);
+ expect((media.publish.get('host') as any).permission.canPublishSources).toContain(TrackSource.SCREEN_SHARE);expect((media.publish.get('next') as any).permission.canPublishSources).toContain(TrackSource.SCREEN_SHARE);
+ expect((await post('screens/release','host')).statusCode).toBe(200);expect((media.publish.get('host') as any).permission.canPublishSources).not.toContain(TrackSource.SCREEN_SHARE);expect((media.publish.get('next') as any).permission.canPublishSources).toContain(TrackSource.SCREEN_SHARE);
+});
+it('parallel sharing still requires current membership, a connected grant and VIDEO permission',async()=>{
+ expect((await post('screens/acquire','outsider')).statusCode).toBe(403);media.revoked.add('next');expect((await post('screens/acquire','next')).statusCode).toBe(403);expect((await post('screens/acquire','host')).statusCode).toBe(200);expect((media.publish.get('host') as any).permission.canPublishSources).toContain(TrackSource.SCREEN_SHARE);
+});

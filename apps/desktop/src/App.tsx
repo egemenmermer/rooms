@@ -38,7 +38,6 @@ import { CommunityChat, CommunitySpaces, CommunityVoice, CommunityInvite, RealVo
 import { Home } from './Home';
 import { ConnectionPane } from './ConnectionPane';
 import { ActivityLauncher } from './Activities';
-import { ScreenHandoffRuntime } from './screen-handoff';
 const PersonalPlaybackRuntime = lazy(() => import('./PersonalMedia').then(module => ({default:module.PersonalPlaybackRuntime})));
 const PersonalMedia = lazy(() => import('./PersonalMedia').then(module => ({default:module.PersonalMedia})));
 const RecoveryFixtureEntry = import.meta.env.DEV ? lazy(() => import('./dev/S04RecoveryEntry')) : null;
@@ -244,7 +243,7 @@ export default function App() {
       </div> </div>
     </div>
     <RealVoiceDock showControls={voiceView&&!settingsPage} openLauncher={()=>open('launcher')} notify={notify}/><MusicDJ showTrigger={false}/><RoomEventSounds/><ParticipantAudioMenu/>
-    <ScreenHandoffRuntime />
+
     {settingsPage && <section className="settings-modal settings-reference-surface" aria-label="Ayarlar"><Suspense fallback={<div className="loading-view">Yükleniyor…</div>}><Settings notify={notify} onClose={closeSettings} onInvite={()=>{if(closeSettings())open('invite');}}/></Suspense></section>}
     {nativeInvite && <InviteLanding invite={nativeInvite} onClose={closeInvite} notify={notify}/>}
     {(overlay==='create-space'||overlay==='edit-space')&&<CommunityEditor mode={overlay==='edit-space'?'edit':'create'} space={community.spaces.find(s=>s.id===activeSpace)} canEdit={community.spaces.find(s=>s.id===activeSpace)?.ownerId===community.user?.id} onClose={close} onSave={window.rooms&&community.user?async name=>{const result=overlay==='edit-space'?await window.rooms!.social.renameSpace(activeSpace!,name):await window.rooms!.social.createSpace(name);await community.refresh();return result;}:undefined} onSaved={space=>{void community.openSpace(space.id);}}/>}

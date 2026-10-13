@@ -26,3 +26,47 @@ it('starts a long YouTube set through the streaming publisher without a full-fil
  const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube:stream}),lease:async()=>lease,youtubeReferences:async()=>[{source:'https://www.youtube.com/watch?v=6MAzUT1YhWE',title:'Live set',durationSec:6128}],youtubeFile:download});workers.push(worker);
  const snapshot=await worker.command('stream-room',lease,{type:'add',url:'https://www.youtube.com/watch?v=6MAzUT1YhWE'});expect(snapshot.status).toBe('playing');expect(snapshot.queue[0]?.durationSec).toBe(6128);expect(stream).toHaveBeenCalledTimes(1);expect(download).not.toHaveBeenCalled();
 });
+it('resolves song links once, publishes the matched YouTube source and labels the actual source',async()=>{
+ const {publisher,lease}=await setup();const playYouTube=vi.fn(async()=>{}),metadata=vi.fn(async()=>({provider:'spotify' as const,title:'Song',artists:['Artist'],durationSec:30})),match=vi.fn(async()=>({source:'https://www.youtube.com/watch?v=PgHzDZJwGW8',title:'Artist - Song',durationSec:30,requestedProvider:'spotify' as const}));
+ const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube}),lease:async()=>lease,songMetadata:metadata,matchingYouTubeReference:match});workers.push(worker);
+ const result=await worker.command('mirror-room',lease,{type:'add',url:'https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT'});
+ expect(metadata).toHaveBeenCalledTimes(1);expect(match).toHaveBeenCalledTimes(1);expect(playYouTube).toHaveBeenCalledWith('https://www.youtube.com/watch?v=PgHzDZJwGW8',0,expect.any(Function),expect.any(Function));
+ expect(result.queue[0]?.title).toBe('Artist - Song · YouTube');expect(JSON.stringify(result)).not.toMatch(/spotify.com|youtube.com|test-token/);
+ await worker.command('mirror-room',lease,{type:'pause'});await worker.command('mirror-room',lease,{type:'play'});expect(metadata).toHaveBeenCalledTimes(1);
+});
+it('does not mutate a queue or publish a song on an uncertain match',async()=>{
+ const {publisher,lease}=await setup();const playYouTube=vi.fn(),worker=new MusicWorker({publisher:()=>({...publisher,playYouTube}),lease:async()=>lease,songMetadata:async()=>({provider:'soundcloud',title:'Song',artists:['Artist']}),matchingYouTubeReference:async()=>{throw new Error('MUSIC_MIRROR_NOT_FOUND');}});workers.push(worker);
+ await expect(worker.command('mirror-room',lease,{type:'add',url:'https://soundcloud.com/artist/song'})).rejects.toThrow('MUSIC_MIRROR_NOT_FOUND');expect(worker.snapshot('mirror-room').queue).toEqual([]);expect(playYouTube).not.toHaveBeenCalled();
+});
+it('retains an access rejection received after playback starts',async()=>{
+ const {publisher,lease}=await setup();let fail!:(error?:Error)=>void;
+ const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube:async(_source,_position,_ended,onError)=>{fail=onError;}}),lease:async()=>lease,youtubeReferences:async()=>[{source:'https://www.youtube.com/watch?v=PgHzDZJwGW8',title:'Source',durationSec:30}]});workers.push(worker);
+ await worker.command('denied-room',lease,{type:'add',url:'https://www.youtube.com/watch?v=PgHzDZJwGW8'});
+ fail(new Error('MUSIC_YOUTUBE_ACCESS_REQUIRED'));expect(worker.snapshot('denied-room').status).toBe('error');expect(worker.snapshot('denied-room').error).toBe('MUSIC_YOUTUBE_ACCESS_REQUIRED');
+});
+it('starts the newly requested source after the current source failed instead of retrying the failed item',async()=>{
+ const {publisher,lease}=await setup();const rejected='https://www.youtube.com/watch?v=PgHzDZJwGW8',next='https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+ const playYouTube=vi.fn(async(source:string)=>{if(source===rejected)throw Error('MUSIC_YOUTUBE_ACCESS_REQUIRED');});
+ const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube}),lease:async()=>lease,youtubeReferences:async source=>[{source,title:source===rejected?'Unavailable request':'New request',durationSec:30}]});workers.push(worker);
+ await expect(worker.command('recover-room',lease,{type:'add',url:rejected})).rejects.toThrow('MUSIC_YOUTUBE_ACCESS_REQUIRED');
+ const value=await worker.command('recover-room',lease,{type:'add',url:next});expect(value.status).toBe('playing');expect(value.queue.find(t=>t.id===value.currentId)?.title).toBe('New request');expect(playYouTube).toHaveBeenLastCalledWith(next,0,expect.any(Function),expect.any(Function));expect(value.queue).toHaveLength(2);
+});
+it('ignores a retired decoder failure after selecting another track or pausing',async()=>{
+ const {publisher,lease}=await setup(),failures:Array<(error?:Error)=>void>=[];
+ const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube:async(_source,_position,_ended,onError)=>{failures.push(onError);}}),lease:async()=>lease,youtubeReferences:async source=>[{source,title:'Request',durationSec:30}]});workers.push(worker);
+ await worker.command('race-room',lease,{type:'add',url:'https://www.youtube.com/watch?v=PgHzDZJwGW8'});await worker.command('race-room',lease,{type:'add',url:'https://www.youtube.com/watch?v=dQw4w9WgXcQ'});await worker.command('race-room',lease,{type:'next'});
+ failures[0]!(Error('MUSIC_YOUTUBE_ACCESS_REQUIRED'));expect(worker.snapshot('race-room').status).toBe('playing');expect(worker.snapshot('race-room').error).toBeNull();
+ await worker.command('race-room',lease,{type:'pause'});failures[1]!(Error('MUSIC_DECODE_FAILED'));expect(worker.snapshot('race-room').status).toBe('paused');expect(worker.snapshot('race-room').error).toBeNull();
+});
+it('does not overwrite an immediate source failure with a playing result',async()=>{
+ const {publisher,lease}=await setup();
+ const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube:async(_source,_position,_ended,onError)=>{onError(Error('MUSIC_DECODE_FAILED'));}}),lease:async()=>lease,youtubeReferences:async source=>[{source,title:'Request',durationSec:30}]});workers.push(worker);
+ const value=await worker.command('startup-failure-room',lease,{type:'add',url:'https://www.youtube.com/watch?v=PgHzDZJwGW8'});expect(value.status).toBe('error');expect(value.error).toBe('MUSIC_DECODE_FAILED');
+});
+
+it('resumes a stream with unknown provider duration at its actual paused position',async()=>{
+ const {publisher,lease}=await setup();const playYouTube=vi.fn(async()=>{});
+ const worker=new MusicWorker({publisher:()=>({...publisher,position:()=>12.5,playYouTube}),lease:async()=>lease,youtubeReferences:async source=>[{source,title:'Unknown duration',durationSec:0}]});workers.push(worker);
+ await worker.command('unknown-length',lease,{type:'add',url:'https://www.youtube.com/watch?v=vKHu4uPOJVg'});await worker.command('unknown-length',lease,{type:'pause'});await worker.command('unknown-length',lease,{type:'play'});
+ expect(playYouTube).toHaveBeenLastCalledWith('https://www.youtube.com/watch?v=vKHu4uPOJVg',12.5,expect.any(Function),expect.any(Function));
+});

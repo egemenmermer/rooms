@@ -1,0 +1,8 @@
+# Derived from verified stereo runtime. Google credentials are mounted at runtime only.
+FROM sha256:2461a3d8001815eefc62e47af2cc845c517f7fda1d864c454f20839347ba7a96
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends openjdk-17-jre-headless && rm -rf /var/lib/apt/lists/*
+RUN npm install --omit=dev fastify@5.12.5 zod@4.6.5
+COPY youtube-bridge.jar libconnector.so music.cjs /service/
+USER music
+ENV ROOMS_YOUTUBE_ENGINE=lavalink
