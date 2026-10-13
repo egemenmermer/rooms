@@ -115,3 +115,9 @@ Actual three-client Blackjack UI journey passed against isolated real service; r
 ## Owner-authorized rate budget incident repair
 
 General access budget60 ->600/minute deployed independently of desktop release hold. Registration5 and invitation60 limits retained;6files/25focused checks,lint/type and isolated exact runtimePASS. Initial externally linked build failed and rolled back; canonical bundled service build passed. Encrypted backup/access-only update/trusted public HTTPS600/healthPASS. Owner confirms friend can now join Lounge. Receipt ACCESS_BUDGET_RESULTS.json. Full media/game/DJ acceptance and client release remain open.
+
+## Room media follow-up and DJ counter — 2026-10-13
+
+Account/server scoped listener persistence; fitting focused/fullscreen share gallery, parallel/self previews and sidebar screen signals; independent authenticated screen grants; shared authorized durable community soundboard implemented. Current local116files/759tests and native scoped persistence/two-share/full-app-layout/shared-audio transport receiptsPASS; later37focusedstorage/mediachecks and React reviewPASS. Feature access-service update and client installation/publication remain pending; installedRC.5/heldRC.6 preserved.
+
+Renewed DJ report reproduced as audible room music with fixed0:00 position, owner confirms actual audibility. Existing queuedDuration ms→seconds correction deployed music-only as rooms-music:20261013-counter after scoped encrypted rollback backup/read-only isolatedstartup/16musicchecks. Owner confirms music and progressing timer. UI five-second jumps then corrected source-only via bounded monotonic clock with9tests/nativeclockPASS. Provider source-denial probe remainsOPEN; no authentication workaround. See ROOM_MEDIA_FOLLOWUP.md and DJ_COUNTER_FOLLOWUP.md. No release,feed,mainmerge/accountchange.
