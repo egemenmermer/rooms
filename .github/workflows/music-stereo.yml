@@ -55,9 +55,8 @@ jobs:
           cp target/release/librtc_node_ffi_bindings.so ../artifact/rtc-node.rooms-stereo.node
           cp LICENSE ../artifact/LICENSE.livekit-rust
           cp yuv-sys/libyuv/LICENSE ../artifact/LICENSE.libyuv
-          WEBRTC_LICENSE=$(find target -path '*/webrtc*/LICENSE.md' -print -quit)
-          test -n "$WEBRTC_LICENSE"
-          cp "$WEBRTC_LICENSE" ../artifact/LICENSE.webrtc.md
+          test -s livekit-ffi/WEBRTC_LICENSE.md
+          cp livekit-ffi/WEBRTC_LICENSE.md ../artifact/LICENSE.webrtc.md
           cp Cargo.lock ../artifact/Cargo.lock
           git submodule status > ../artifact/submodules.txt
           rustc --version > ../artifact/toolchain.txt

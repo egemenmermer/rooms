@@ -22,10 +22,10 @@ export class MusicWorker{
  const selected=s;let checking=false;s.heartbeat=setInterval(()=>{if(checking)return;checking=true;void (async()=>{try{await this.options.lease(channelId,selected.leaseId);if(selected.pausedAt&&this.now()-selected.pausedAt>180000)await this.destroy(selected);}catch{await this.destroy(selected);}finally{checking=false;}})();},10000);s.heartbeat.unref();}
  return s;
  }
- private async play(s:Session,position=0){const item=s.queue[s.index];if(!item)return;const generation=s.generation;s.publisher.pause();s.status='connecting';s.error=null;
+ private async play(s:Session,position=0){const item=s.queue[s.index];if(!item)return;const generation=++s.generation;s.publisher.pause();s.status='connecting';s.error=null;
  try{if(youtubeSource(item.source)&&s.publisher.playYouTube){
- await s.publisher.playYouTube(item.source,Math.max(0,position),()=>{if(this.sessions.get(s.channelId)!==s||generation!==s.generation)return;void this.serial(s,async()=>{if(s.queue[s.index]?.id!==item.id)return;if(s.index+1<s.queue.length){s.index++;await this.play(s);}else{s.status='paused';s.pausedAt=this.now();}}).catch(()=>{});},error=>{if(this.sessions.get(s.channelId)===s){s.status='error';s.error=error&&/^MUSIC_[A-Z_]+$/.test(error.message)?error.message:'MUSIC_DECODE_FAILED';}});
- if(this.sessions.get(s.channelId)===s&&generation===s.generation){s.status='playing';s.pausedAt=null;}return;
+ await s.publisher.playYouTube(item.source,Math.max(0,position),()=>{if(this.sessions.get(s.channelId)!==s||generation!==s.generation)return;void this.serial(s,async()=>{if(s.queue[s.index]?.id!==item.id)return;if(s.index+1<s.queue.length){s.index++;await this.play(s);}else{s.status='paused';s.pausedAt=this.now();}}).catch(()=>{});},error=>{if(this.sessions.get(s.channelId)===s&&generation===s.generation){s.status='error';s.error=error&&/^MUSIC_[A-Z_]+$/.test(error.message)?error.message:'MUSIC_DECODE_FAILED';}});
+ if(this.sessions.get(s.channelId)===s&&generation===s.generation&&s.status==='connecting'){s.status='playing';s.pausedAt=null;}return;
  }
  if(!item.file){
  // Release inactive cached files before a long set download; keep other rooms' playing files.
@@ -34,8 +34,8 @@ export class MusicWorker{
  if(this.sessions.get(s.channelId)!==s||generation!==s.generation){await rm(file.directory,{recursive:true,force:true});return;}
  for(const candidate of this.sessions.values())for(const old of candidate.queue){if(old.file&&old!==item&&old!==candidate.queue[candidate.index]&&this.bytes+file.bytes>320*1024*1024){this.bytes-=old.file.bytes;await rm(old.file.directory,{recursive:true,force:true});delete old.file;}}
  if(this.bytes+file.bytes>384*1024*1024){await rm(file.directory,{recursive:true,force:true});throw new Error('MUSIC_CACHE_LIMIT');}this.bytes+=file.bytes;item.file=file;item.title=file.title;item.durationSec=file.durationSec;}
- s.status='playing';s.pausedAt=null;await s.publisher.play(item.file.path,Math.max(0,Math.min(position,Math.max(0,item.durationSec-0.01))),()=>{if(this.sessions.get(s.channelId)!==s||generation!==s.generation)return;void this.serial(s,async()=>{if(s.queue[s.index]?.id!==item.id)return;if(s.index+1<s.queue.length){s.index++;await this.play(s);}else{s.status='paused';s.pausedAt=this.now();}}).catch(()=>{});},()=>{if(this.sessions.get(s.channelId)===s){s.status='error';s.error='MUSIC_DECODE_FAILED';}});
- }catch(error){if(this.sessions.get(s.channelId)===s){s.status='error';s.error=error instanceof Error&&/^MUSIC_[A-Z_]+$/.test(error.message)?error.message:'MUSIC_SOURCE_FAILED';}throw error;}
+ s.status='playing';s.pausedAt=null;await s.publisher.play(item.file.path,Math.max(0,Math.min(position,Math.max(0,item.durationSec-0.01))),()=>{if(this.sessions.get(s.channelId)!==s||generation!==s.generation)return;void this.serial(s,async()=>{if(s.queue[s.index]?.id!==item.id)return;if(s.index+1<s.queue.length){s.index++;await this.play(s);}else{s.status='paused';s.pausedAt=this.now();}}).catch(()=>{});},()=>{if(this.sessions.get(s.channelId)===s&&generation===s.generation){s.status='error';s.error='MUSIC_DECODE_FAILED';}});
+ }catch(error){if(this.sessions.get(s.channelId)===s&&generation===s.generation){s.status='error';s.error=error instanceof Error&&/^MUSIC_[A-Z_]+$/.test(error.message)?error.message:'MUSIC_SOURCE_FAILED';}throw error;}
  }
  private async serial<T>(s:Session,work:()=>Promise<T>):Promise<T>{const pending=s.serial.catch(()=>{}).then(work);s.serial=pending;return pending;}
  async command(channelId:string,lease:MusicLease,command:MusicCommand):Promise<MusicSnapshot>{
@@ -45,11 +45,11 @@ export class MusicWorker{
  switch(command.type){
  case 'add':{if(s.queue.length>=100||this.pending>=1)throw new Error('MUSIC_QUEUE_FULL');this.pending++;try{
  let references:MusicReference[];if(youtubeSource(command.url))references=await (this.options.youtubeReferences??youtubeReferences)(command.url);else if(parseSongLink(command.url)){const song=await (this.options.songMetadata??songMetadata)(command.url);references=[await (this.options.matchingYouTubeReference??matchingYouTubeReference)(song)];}else{const url=new URL(command.url);if(url.protocol!=='https:'||url.username||url.password)throw new Error('MUSIC_SOURCE_FAILED');references=[{source:command.url,title:'Music',durationSec:0}];}
- if(s.queue.length+references.length>100)throw new Error('MUSIC_QUEUE_FULL');if(this.sessions.get(channelId)!==s)throw new Error('MUSIC_LEASE_EXPIRED');s.queue.push(...references.map(ref=>({...ref,id:randomUUID()})));if(s.index===-1){s.index=0;await this.play(s);}else if(s.status==='error')await this.play(s);
+ if(s.queue.length+references.length>100)throw new Error('MUSIC_QUEUE_FULL');if(this.sessions.get(channelId)!==s)throw new Error('MUSIC_LEASE_EXPIRED');s.queue.push(...references.map(ref=>({...ref,id:randomUUID()})));if(s.index===-1){s.index=0;await this.play(s);}else if(s.status==='error'){s.index++;await this.play(s);}
  }finally{this.pending--;}break;}
  case 'play':if(s.index===-1&&s.queue.length)s.index=0;if(s.queue[s.index])await this.play(s,Math.min(s.publisher.position(),s.queue[s.index]!.durationSec-0.01));break;
- case 'pause':s.publisher.pause();s.status='paused';s.pausedAt=this.now();break;
- case 'next':if(s.index+1<s.queue.length){s.index++;await this.play(s);}else{s.publisher.pause();s.status='paused';s.pausedAt=this.now();}break;
+ case 'pause':s.generation++;s.publisher.pause();s.status='paused';s.pausedAt=this.now();break;
+ case 'next':if(s.index+1<s.queue.length){s.index++;await this.play(s);}else{s.generation++;s.publisher.pause();s.status='paused';s.pausedAt=this.now();}break;
  case 'previous':if(s.index>0)s.index--;await this.play(s);break;
  case 'remove':{const index=s.queue.findIndex(q=>q.id===command.id);if(index===s.index)throw new Error('MUSIC_CURRENT_ITEM');if(index>=0){const [file]=s.queue.splice(index,1);if(index<s.index)s.index--;if(file!.file){this.bytes-=file!.file.bytes;await rm(file!.file.directory,{recursive:true,force:true});}}break;}
  }
