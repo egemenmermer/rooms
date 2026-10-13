@@ -1,4 +1,4 @@
-import { createRnnoiseNode } from './rnnoise';
+import { createNoiseSuppressionNode, type NoiseSuppressionMode } from './noise-suppression';
 
 export interface NoiseComparison {
   raw: Blob;
@@ -11,6 +11,7 @@ export interface NoiseComparison {
 /** Record both branches concurrently from one input; never connect to speakers. */
 export async function compareNoise(options: {
   deviceId?: string;
+  mode?: NoiseSuppressionMode;
   file?: File;
   signal: AbortSignal;
   onRecording(): void;
@@ -18,7 +19,9 @@ export async function compareNoise(options: {
   const context = new AudioContext({ sampleRate: 48_000 });
   let stream: MediaStream | undefined;
   let source: AudioNode | undefined;
-  let denoiser: Awaited<ReturnType<typeof createRnnoiseNode>> | undefined;
+  let denoiser: Awaited<ReturnType<typeof createNoiseSuppressionNode>> | undefined;
+  let processingFailure:Error|undefined;
+  let failRecording:(()=>void)|undefined;
   let interval: ReturnType<typeof setInterval> | undefined;
   const destinations: MediaStreamAudioDestinationNode[] = [];
   const recorders: MediaRecorder[] = [];
@@ -33,10 +36,10 @@ export async function compareNoise(options: {
     if (context.state !== 'closed') void context.close();
   };
   options.signal.addEventListener('abort', release, { once: true });
-  const check = () => { if (options.signal.aborted) throw new DOMException('Cancelled', 'AbortError'); };
+  const check = () => { if(processingFailure)throw processingFailure;if (options.signal.aborted) throw new DOMException('Cancelled', 'AbortError'); };
   try {
     check();
-    denoiser = await createRnnoiseNode(context);
+    denoiser = await createNoiseSuppressionNode(context,options.mode??'strong',{signal:options.signal,error:()=>{processingFailure=new Error('Gürültü filtresi durdu. Kayıt iptal edildi.');failRecording?.();release();}});
     check();
     let duration = 15;
     let bufferSource: AudioBufferSourceNode | undefined;
@@ -104,7 +107,8 @@ export async function compareNoise(options: {
     }, 40);
     options.onRecording();
     await new Promise<void>((resolve, reject) => {
-      const cleanup = () => { clearInterval(clock); clearTimeout(watchdog); options.signal.removeEventListener('abort', abort); };
+      const cleanup = () => { clearInterval(clock); clearTimeout(watchdog); options.signal.removeEventListener('abort', abort); failRecording=undefined; };
+      failRecording=()=>{cleanup();reject(processingFailure);};
       const abort = () => { cleanup(); reject(new DOMException('Cancelled', 'AbortError')); };
       // Wall-clock timers can outpace the audio renderer during startup or device changes.
       const clock = setInterval(() => {
