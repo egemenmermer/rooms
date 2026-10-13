@@ -159,3 +159,13 @@ it('stops local capture and clears old presence before network disconnect comple
  const attach=vi.fn();emit(RoomEvent.TrackSubscribed,{kind:'audio',attach},{trackSid:'late'},{identity:'bob'});
  expect(attach).not.toHaveBeenCalled();finish();await leaving;
 });
+
+
+it('bot listener gain reaches very quiet levels, remains local, and survives replacement tracks',async()=>{
+ const {provider,room,emit}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
+ const bot={identity:'rooms-music-room',setVolume:vi.fn(),trackPublications:new Map()},human={identity:'bob',setVolume:vi.fn(),trackPublications:new Map()};room.remoteParticipants.set(bot.identity,bot);room.remoteParticipants.set(human.identity,human);
+ provider.setParticipantVolume(bot.identity,.01);expect(bot.setVolume).toHaveBeenLastCalledWith(.0001);expect(provider.snapshot().participants.find(p=>p.id===bot.identity)?.volume).toBe(.01);
+ provider.setParticipantVolume(human.identity,.01);expect(human.setVolume).toHaveBeenLastCalledWith(.01);
+ const element=document.createElement('audio');element.play=vi.fn(async()=>{});element.pause=vi.fn();emit(RoomEvent.TrackSubscribed,{kind:'audio',attach:()=>element},{trackSid:'new-bot-track'},bot);expect(bot.setVolume).toHaveBeenLastCalledWith(.0001);
+ provider.setParticipantVolume(bot.identity,0);expect(bot.setVolume).toHaveBeenLastCalledWith(0);provider.setParticipantVolume(bot.identity,1);expect(bot.setVolume).toHaveBeenLastCalledWith(1);await provider.disconnect();
+});
