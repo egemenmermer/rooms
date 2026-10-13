@@ -317,6 +317,23 @@ function PersonalPlayer({ media, connectionId, inset, onClose, onBack, onChat, v
             return;
         }
         let hls: Hls | null = null;
+        let networkRecoveries=0,mediaRecoveries=0,recovering=false,disposed=false,hasPlayed=false;
+        let retryTimer:ReturnType<typeof setTimeout>|undefined,recoveryDeadline:ReturnType<typeof setTimeout>|undefined;
+        const clearRecovery=()=>{recovering=false;clearTimeout(retryTimer);clearTimeout(recoveryDeadline);};
+        const fail=(kind:PersonalPlaybackFailure)=>{clearRecovery();if(disposed)return;setLoading(false);setFailure(kind);setError(playbackFailureCopy[kind].message);};
+        const recovered=()=>{hasPlayed=true;clearRecovery();setFailure(null);setError('');};
+        const recover=(kind:'network'|'unsupported')=>{
+            if(!hls||!media.live||!hasPlayed||(video.paused&&video.error?.code!==3))return false;
+            if(recovering)return true;
+            if(kind==='network'&&networkRecoveries>=2||kind==='unsupported'&&(mediaRecoveries>=1||video.error?.code!==3))return false;
+            recovering=true;setLoading(true);setFailure(null);setError('');
+            recoveryDeadline=setTimeout(()=>fail(kind),10000);
+            if(kind==='unsupported'){mediaRecoveries++;hls.recoverMediaError();}
+            else{networkRecoveries++;hls.stopLoad();retryTimer=setTimeout(()=>{if(!disposed)hls?.startLoad();},networkRecoveries*1500);}
+            return true;
+        };
+        const nativeError=()=>{if(video.error?.code===3&&hls&&!recover('unsupported'))fail('unsupported');};
+        video.addEventListener('playing',recovered);video.addEventListener('error',nativeError);
         const readTracks = () => {
             if (hls) {
                 setAudio(hls.audioTracks.map((track, id) => ({ id, label: track.name || track.lang || `Ses ${id + 1}` })));
@@ -336,14 +353,15 @@ function PersonalPlayer({ media, connectionId, inset, onClose, onBack, onChat, v
                 if (data.type === Hls.ErrorTypes.NETWORK_ERROR && data.details === Hls.ErrorDetails.MANIFEST_PARSING_ERROR) {
                     hls?.destroy(); hls = null; hlsRef.current = null; video.src = media.url;
                 } else {
-                    setLoading(false);
-                    const kind = playbackFailure(data.response?.code, data.type === Hls.ErrorTypes.MEDIA_ERROR ? 3 : undefined);
-                    setFailure(kind); setError(playbackFailureCopy[kind].message);
+                    const status=data.response?.code;
+                    if(data.type===Hls.ErrorTypes.MEDIA_ERROR&&recover('unsupported'))return;
+                    if(data.type===Hls.ErrorTypes.NETWORK_ERROR&&(status===undefined||status===0||status===408||status===429||status>=500)&&recover('network'))return;
+                    fail(playbackFailure(status,data.type===Hls.ErrorTypes.MEDIA_ERROR?3:undefined));
                 }
             });
             hls.loadSource(media.url); hls.attachMedia(video);
         } else video.src = media.url;
-        return () => { video.removeEventListener('loadedmetadata', readTracks); video.textTracks.removeEventListener('addtrack', readTracks); hls?.destroy(); hlsRef.current = null; video.pause(); video.removeAttribute('src'); video.load(); };
+        return () => { disposed=true;clearRecovery();video.removeEventListener('playing',recovered);video.removeEventListener('error',nativeError);video.removeEventListener('loadedmetadata', readTracks); video.textTracks.removeEventListener('addtrack', readTracks); hls?.destroy(); hlsRef.current = null; video.pause(); video.removeAttribute('src'); video.load(); };
     }, [media.url, attempt, referenceFixture]);
     const applyTracks = () => {
         const hls = hlsRef.current;
@@ -390,7 +408,7 @@ function PersonalPlayer({ media, connectionId, inset, onClose, onBack, onChat, v
         {inset && !media.live && <div className="personal-inset-privacy"><LockKeyhole size={15}/>Kişisel alanın · yalnızca sen görebilirsin</div>}
         <div className="ref-media-top"><div className="ref-media-title">{!inset && <button className="ref-media-back" aria-label="Geri" onClick={onBack}><ArrowLeft size={20}/></button>}<div><h1>{currentProgramme?.title || media.name}</h1><p>{media.live ? `${inset ? media.name + ' · ' : ''}Kişisel canlı yayın` : 'Kişisel oynatma · yalnızca sen'}</p></div></div><div className="ref-media-actions">{!inset && <button className="button secondary" onClick={onChat}><MessageCircle size={15}/>Sohbet</button>}<button className="button secondary" onClick={onBack}>{media.live ? <Tv size={15}/> : <Film size={15}/>} {media.live ? 'Kanallara dön' : 'Kütüphaneme dön'}</button>{inset && <button className="ref-media-ghost" onClick={()=>setOptions(true)}><Settings2 size={18}/>Ses ve altyazı</button>}<IconButton label="Kişisel oynatmayı durdur" onClick={onClose}><X size={18}/></IconButton></div></div>
         {inset && media.live && liveLag > 5 && <div className="personal-inset-notice" role="status"><Clock3 size={17}/><span>Canlı yayından {Math.floor(liveLag)} saniye geridesin.</span><button className="button secondary" onClick={returnLive} disabled={!canSeek}>Canlıya dön</button></div>}
-        <div className="personal-inset-stage"><div className="ref-media-stage"><video ref={ref} autoPlay controls={false} poster={referenceFixture ? '/__reference/01_brand/cinema-still.svg' : undefined} playsInline onLoadedMetadata={() => { const video = ref.current; if (video && !media.live && media.startAt && Number.isFinite(video.duration) && media.startAt < video.duration - 2) video.currentTime = media.startAt; updateTime(); }} onTimeUpdate={updateTime} onProgress={updateTime} onDurationChange={updateTime} onPause={() => { setPlaying(false); savePosition(true); }} onEnded={() => { completed.current = true; savePosition(true); }} onPlay={() => { completed.current = false; setPlaying(true); }} onWaiting={() => setLoading(true)} onPlaying={() => { setLoading(false); if (!referenceFixture && media.live && providers?.acknowledgePlayback && acknowledged.current !== media.url) { const url=media.url;acknowledged.current=url;void providers.acknowledgePlayback(url).then(()=>usePersonalPlayback.setState(state=>({historyRevision:state.historyRevision+1}))).catch(e=>{if(acknowledged.current===url)acknowledged.current=null;notify(uiError(e));}); } }} onLoadedData={() => setLoading(false)} onCanPlay={() => setLoading(false)} onError={() => { if (referenceFixture) return; setLoading(false); const kind = playbackFailure(undefined, ref.current?.error?.code); setFailure(kind); setError(playbackFailureCopy[kind].message); }} aria-label="Kişisel medya oynatıcısı"/>
+        <div className="personal-inset-stage"><div className="ref-media-stage"><video ref={ref} autoPlay controls={false} poster={referenceFixture ? '/__reference/01_brand/cinema-still.svg' : undefined} playsInline onLoadedMetadata={() => { const video = ref.current; if (video && !media.live && media.startAt && Number.isFinite(video.duration) && media.startAt < video.duration - 2) video.currentTime = media.startAt; updateTime(); }} onTimeUpdate={updateTime} onProgress={updateTime} onDurationChange={updateTime} onPause={() => { setPlaying(false); savePosition(true); }} onEnded={() => { completed.current = true; savePosition(true); }} onPlay={() => { completed.current = false; setPlaying(true); }} onWaiting={() => setLoading(true)} onPlaying={() => { setLoading(false); if (!referenceFixture && media.live && providers?.acknowledgePlayback && acknowledged.current !== media.url) { const url=media.url;acknowledged.current=url;void providers.acknowledgePlayback(url).then(()=>usePersonalPlayback.setState(state=>({historyRevision:state.historyRevision+1}))).catch(e=>{if(acknowledged.current===url)acknowledged.current=null;notify(uiError(e));}); } }} onLoadedData={() => setLoading(false)} onCanPlay={() => setLoading(false)} onError={() => { if (referenceFixture || (hlsRef.current && ref.current?.error?.code===3)) return; setLoading(false); const kind = playbackFailure(undefined, ref.current?.error?.code); setFailure(kind); setError(playbackFailureCopy[kind].message); }} aria-label="Kişisel medya oynatıcısı"/>
         {loading && !error && <div className="ref-media-stage-state" role="status"><LoaderCircle size={40} className="spin"/><h2>{media.live ? 'Yayın hazırlanıyor' : 'Kaynak hazırlanıyor'}</h2><p>Kişisel kaynağından görüntü bekleniyor.</p><button className="button secondary" onClick={() => setAttempt(value=>value+1)}><RefreshCw size={15}/>Yeniden dene</button></div>}
         {error && <div className="ref-media-stage-state" role="alert">{failure==='expired'||failure==='unauthorized'?<LockKeyhole size={38}/>:<Film size={38}/>}<h2>{failure ? playbackFailureCopy[failure].title : 'Kaynak şu anda açılamıyor'}</h2><p>{error}</p><div className="ref-media-actions"><button className="button primary" onClick={failure === 'expired' || failure === 'unauthorized' ? onBack : () => setAttempt(value => value + 1)}><RefreshCw size={15}/>{failure === 'expired' || failure === 'unauthorized' ? 'Kaynağa dön' : 'Yeniden dene'}</button><button className="button secondary" onClick={() => setOptions(true)}>Oynatma seçenekleri</button></div></div>}
         </div>
