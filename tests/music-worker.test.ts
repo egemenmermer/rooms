@@ -26,3 +26,15 @@ it('starts a long YouTube set through the streaming publisher without a full-fil
  const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube:stream}),lease:async()=>lease,youtubeReferences:async()=>[{source:'https://www.youtube.com/watch?v=6MAzUT1YhWE',title:'Live set',durationSec:6128}],youtubeFile:download});workers.push(worker);
  const snapshot=await worker.command('stream-room',lease,{type:'add',url:'https://www.youtube.com/watch?v=6MAzUT1YhWE'});expect(snapshot.status).toBe('playing');expect(snapshot.queue[0]?.durationSec).toBe(6128);expect(stream).toHaveBeenCalledTimes(1);expect(download).not.toHaveBeenCalled();
 });
+it('resolves song links once, publishes the matched YouTube source and labels the actual source',async()=>{
+ const {publisher,lease}=await setup();const playYouTube=vi.fn(async()=>{}),metadata=vi.fn(async()=>({provider:'spotify' as const,title:'Song',artists:['Artist'],durationSec:30})),match=vi.fn(async()=>({source:'https://www.youtube.com/watch?v=PgHzDZJwGW8',title:'Artist - Song',durationSec:30,requestedProvider:'spotify' as const}));
+ const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube}),lease:async()=>lease,songMetadata:metadata,matchingYouTubeReference:match});workers.push(worker);
+ const result=await worker.command('mirror-room',lease,{type:'add',url:'https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT'});
+ expect(metadata).toHaveBeenCalledTimes(1);expect(match).toHaveBeenCalledTimes(1);expect(playYouTube).toHaveBeenCalledWith('https://www.youtube.com/watch?v=PgHzDZJwGW8',0,expect.any(Function),expect.any(Function));
+ expect(result.queue[0]?.title).toBe('Artist - Song · YouTube');expect(JSON.stringify(result)).not.toMatch(/spotify.com|youtube.com|test-token/);
+ await worker.command('mirror-room',lease,{type:'pause'});await worker.command('mirror-room',lease,{type:'play'});expect(metadata).toHaveBeenCalledTimes(1);
+});
+it('does not mutate a queue or publish a song on an uncertain match',async()=>{
+ const {publisher,lease}=await setup();const playYouTube=vi.fn(),worker=new MusicWorker({publisher:()=>({...publisher,playYouTube}),lease:async()=>lease,songMetadata:async()=>({provider:'soundcloud',title:'Song',artists:['Artist']}),matchingYouTubeReference:async()=>{throw new Error('MUSIC_MIRROR_NOT_FOUND');}});workers.push(worker);
+ await expect(worker.command('mirror-room',lease,{type:'add',url:'https://soundcloud.com/artist/song'})).rejects.toThrow('MUSIC_MIRROR_NOT_FOUND');expect(worker.snapshot('mirror-room').queue).toEqual([]);expect(playYouTube).not.toHaveBeenCalled();
+});

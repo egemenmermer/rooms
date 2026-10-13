@@ -4,10 +4,12 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {existsSync,statSync} from 'node:fs';
 import {parseDJLink} from '../../../packages/shared-contracts/src/music-links';
+import {matchingSong,type YouTubeCandidate} from './song-match';
+import type {SongMetadata} from './song-metadata';
 import type {MusicFile} from './audio-file';
 const videoMetadata=new Map<string,{json:string;expires:number}>();
 const remember=(id:string,json:string)=>{if(json.length>1024*1024)return;videoMetadata.set(id,{json,expires:Date.now()+15*60*1000});while(videoMetadata.size>8)videoMetadata.delete(videoMetadata.keys().next().value!);};
-export interface MusicReference{source:string;title:string;durationSec:number}
+export interface MusicReference{source:string;title:string;durationSec:number;requestedProvider?:'spotify'|'soundcloud'}
 export const youtubeSource=(raw:string)=>parseDJLink(raw);
 export function canonicalYouTube(raw:string){const link=youtubeSource(raw);if(!link)throw new Error('MUSIC_SOURCE_FAILED');return link.kind==='video'?`https://www.youtube.com/watch?v=${link.id}`:`https://www.youtube.com/playlist?list=${link.id}`;}
 /** Fixed YouTube extractor; optional owner-approved server-only bot session, never personal browser extraction. */
@@ -56,4 +58,12 @@ export async function openYouTubeAudio(raw:string){
  const cleanup=async()=>{clearTimeout(timer);if(privateDirectory)await rm(privateDirectory,{recursive:true,force:true});};
  void done.then(cleanup,cleanup);
  return{stream:child.stdout,done,close:async()=>{child.kill('SIGKILL');await done.catch(()=>{});await cleanup();}};
+}
+
+export async function matchingYouTubeReference(song:SongMetadata):Promise<MusicReference>{
+ const query=`${song.artists.join(' ')} ${song.title}`.replace(/[\x00-\x1f]/g,' ').slice(0,400);
+ const output=await run(['--flat-playlist','--skip-download','--dump-single-json',`ytsearch5:${query}`],45000);
+ let entries:YouTubeCandidate[];try{const value=JSON.parse(output);entries=Array.isArray(value.entries)?value.entries:[];}catch{throw new Error('MUSIC_MIRROR_NOT_FOUND');}
+ const match=matchingSong(song,entries);if(!match)throw new Error('MUSIC_MIRROR_NOT_FOUND');
+ return{source:`https://www.youtube.com/watch?v=${match.id}`,title:match.title.replace(/[\x00-\x1f]/g,'').slice(0,140),durationSec:match.duration,requestedProvider:song.provider};
 }
