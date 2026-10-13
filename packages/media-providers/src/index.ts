@@ -61,6 +61,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   private mixerTrack:LocalAudioTrack|null=null;
   private soundContext:AudioContext|null=null;
   private epoch = 0;
+  private disconnecting:Promise<void>|null=null;
   async setNoiseSuppression(value:boolean){
     const track=this.room?.localParticipant.getTrackPublication(Track.Source.Microphone)?.track;
     if(track instanceof LocalAudioTrack)await track.applyConstraints({noiseSuppression:value,echoCancellation:true});
@@ -129,6 +130,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     });
     room.on(RoomEvent.Disconnected, () => { if (this.room === room) { this.stopSoundboard(); this.cleanupPlayback(); this.patch({ status: 'error', muted: true, sharing: false, camera: false, tracks: [], participants: [], error: 'Voice disconnected. Rejoin to obtain a fresh membership grant.' }); } });
     room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+      if(this.room!==room)return;
       if (track.kind === Track.Kind.Audio && typeof document !== 'undefined') {
         const element = track.attach(); element.hidden = true; document.body.append(element); this.audio.set(publication.trackSid, element);
         element.muted = this.state.deafened; participant.setVolume(this.volumes.get(participant.identity) ?? 1);
@@ -136,9 +138,9 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       }
       sync();
     });
-    room.on(RoomEvent.TrackUnsubscribed, (track, publication) => { const element = this.audio.get(publication.trackSid); if (element) { track.detach(element); element.remove(); } this.audio.delete(publication.trackSid); sync(); });
-    room.on(RoomEvent.AudioPlaybackStatusChanged, () => this.patch({ audioBlocked: !room.canPlaybackAudio }));
-    room.on(RoomEvent.MediaDevicesError, error => this.fail(error));
+    room.on(RoomEvent.TrackUnsubscribed, (track, publication) => { if(this.room!==room)return;const element = this.audio.get(publication.trackSid); if (element) { track.detach(element); element.remove(); } this.audio.delete(publication.trackSid); sync(); });
+    room.on(RoomEvent.AudioPlaybackStatusChanged, () => {if(this.room===room)this.patch({ audioBlocked: !room.canPlaybackAudio });});
+    room.on(RoomEvent.MediaDevicesError, error => {if(this.room===room)this.fail(error);});
     try {
       await room.connect(parsed.href, token, { autoSubscribe: true });
       if (epoch !== this.epoch) { await room.disconnect(true); return; }
@@ -220,13 +222,25 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     this.patch({ diagnostics: { bitrate: prior && bytes >= prior.bytes ? (bytes - prior.bytes) * 8000 / (time - prior.time) : null, packetLoss: received + lost ? lost / (received + lost) : null, rtt,video } });
   }
   private cleanupPlayback() { this.speakingMeter.stop(); if (this.timer) clearInterval(this.timer); this.timer = undefined; this.attachments.forEach(detach => detach()); this.audio.forEach(e => { e.pause(); e.srcObject = null; e.remove(); }); this.audio.clear(); this.priorStats = null; }
-  async disconnect() {
-    ++this.epoch;const room=this.room;this.room=null;this.grant=null;this.speakingMeter.stop();
-    this.stopSoundboard();await this.soundboardWork;
-    await this.mixer?.destroy();this.mixer=null;this.mixerTrack=null;
-    await this.soundContext?.close();this.soundContext=null;
-    this.cleanupPlayback();this.volumes.clear();if(room){await room.disconnect(true);room.removeAllListeners();}
+  disconnect():Promise<void> {
+    if(this.disconnecting)return this.disconnecting;
+    ++this.epoch;const room=this.room;this.room=null;this.grant=null;
+    this.stopSoundboard();
+    // Stop capture and playback synchronously; network/mixer cleanup must not hold them open.
+    for(const publication of room?.localParticipant.trackPublications.values()??[])publication.track?.stop();
+    this.cleanupPlayback();this.volumes.clear();
     this.patch({status:'not-configured',roomId:null,error:null,muted:true,deafened:false,camera:false,sharing:false,audioBlocked:false,inputDeviceFallback:false,participants:[],tracks:[],diagnostics:emptyDiagnostics()});
+    const transport=room?room.disconnect(true).finally(()=>room.removeAllListeners()):Promise.resolve();
+    const cleanup=(async()=>{
+      await this.soundboardWork;
+      await this.mixer?.destroy();this.mixer=null;this.mixerTrack=null;
+      await this.soundContext?.close();this.soundContext=null;
+    })();
+    this.disconnecting=Promise.allSettled([transport,cleanup]).then(results=>{
+      const failure=results.find(result=>result.status==='rejected');
+      if(failure?.status==='rejected')throw failure.reason;
+    }).finally(()=>{this.disconnecting=null;});
+    return this.disconnecting;
   }
   async reconnect() { throw new Error('Obtain a fresh membership grant, then call connectRoom. Automatic transient reconnect is managed by LiveKit.'); }
 }

@@ -38,3 +38,17 @@ it('does not reuse an unmuted microphone across account changes',async()=>{
  useCommunity.setState({user:{id:'different-owner',username:'Different',displayName:'Different',avatar:null}});
  await joinVoice('two','Two');expect(f.mute).not.toHaveBeenCalledWith(false);
 });
+
+it('disconnects and leaves the old room before waiting for a new target grant',async()=>{
+ await joinVoice('one','One');const delayed=deferred<typeof grant>();f.grant.mockReturnValueOnce(delayed.promise);
+ const next=joinVoice('two','Two');expect(f.status).toBe('not-configured');expect(f.leave).toHaveBeenCalledWith('one');
+ await vi.waitFor(()=>expect(f.grant).toHaveBeenLastCalledWith('two'));
+ expect(useVoiceContext.getState()).toMatchObject({channelId:'two',busy:true});
+ delayed.resolve(grant);await next;expect(f.status).toBe('connected');
+});
+it('starts disconnect immediately when leaving an unresolved connection',async()=>{
+ const delayed=deferred<void>();f.connect.mockImplementationOnce(async()=>{await delayed.promise;f.status='connected';});
+ const joining=joinVoice('one','One');await vi.waitFor(()=>expect(f.connect).toHaveBeenCalled());f.disconnect.mockClear();
+ const leaving=leaveVoice();expect(f.disconnect).toHaveBeenCalledTimes(1);expect(f.leave).toHaveBeenCalledWith('one');
+ delayed.resolve();await Promise.all([joining,leaving]);expect(f.status).toBe('not-configured');
+});

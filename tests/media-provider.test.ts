@@ -105,7 +105,7 @@ it('reports observed encoder dimensions and codec instead of the requested profi
  const {provider,local}=fixture();
  try{await provider.connectRoom('room','token','ws://localhost:7880');
  const report=new Map([['video',{id:'video',type:'outbound-rtp',frameWidth:1280,frameHeight:720,framesPerSecond:28,codecId:'codec'}],['codec',{id:'codec',type:'codec',mimeType:'video/H264'}]]);
- local.trackPublications.set('screen',{trackSid:'screen',source:Track.Source.ScreenShare,kind:'video',track:{getRTCStatsReport:vi.fn(async()=>report)}});
+ local.trackPublications.set('screen',{trackSid:'screen',source:Track.Source.ScreenShare,kind:'video',track:{stop:vi.fn(),getRTCStatsReport:vi.fn(async()=>report)}});
  await vi.advanceTimersByTimeAsync(5000);
  expect(provider.diagnostics().video).toEqual({width:1280,height:720,framesPerSecond:28,codec:'video/H264',direction:'sent'});
  }finally{await provider.disconnect();vi.useRealTimers();}
@@ -147,4 +147,15 @@ it('does not show a late permission error after leaving voice',async()=>{
  local.setMicrophoneEnabled.mockImplementationOnce(()=>new Promise<void>((_,reject)=>{fail=reject;}));
  const pending=provider.mute(false).catch(()=>{});await provider.disconnect();fail(new DOMException('Denied','NotAllowedError'));await pending;
  expect(provider.snapshot()).toMatchObject({status:'not-configured',muted:true,error:null});
+});
+
+it('stops local capture and clears old presence before network disconnect completes',async()=>{
+ const {provider,room,local,emit}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
+ const stop=vi.fn();local.trackPublications.set('mic',{track:{stop}});
+ let finish!:()=>void;room.disconnect.mockImplementationOnce(()=>new Promise<void>(resolve=>{finish=resolve;}));
+ const leaving=provider.disconnect();expect(stop).toHaveBeenCalledTimes(1);
+ expect(provider.snapshot()).toMatchObject({status:'not-configured',roomId:null,participants:[],tracks:[],muted:true});
+ expect(provider.disconnect()).toBe(leaving);
+ const attach=vi.fn();emit(RoomEvent.TrackSubscribed,{kind:'audio',attach},{trackSid:'late'},{identity:'bob'});
+ expect(attach).not.toHaveBeenCalled();finish();await leaving;
 });
