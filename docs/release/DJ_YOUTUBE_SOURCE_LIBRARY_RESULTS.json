@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-13",
+  "source": "vKHu4uPOJVg",
+  "youtubeSource": "1.18.2",
+  "lavaplayer": "2.2.7",
+  "client": "WEB_ONLY",
+  "metadata": false,
+  "frames": 0,
+  "rms": 0,
+  "providerReason": "This video requires login.",
+  "result": "OPEN_PROVIDER_LOGIN_REQUIRED",
+  "container": "eclipse-temurin@sha256:8993f1aed8b25fcea7a7047a7949c1866fa558fc6830d938c22c4f13b26be9d7",
+  "credentialsUsed": false,
+  "productionChanged": false,
+  "scope": "Direct library diagnostic, same server. Not a test of all upstream default clients. No new account grant, challenge solver, alternate-client/IP fallback, room publication or desktop release."
+}
