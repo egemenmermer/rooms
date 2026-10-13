@@ -56,3 +56,7 @@ it('restores the prior quiet listener setting after muting and closes independen
  fireEvent.click(screen.getByRole('button',{name:'Botun sesini kapat'}));expect(media.volume).toHaveBeenLastCalledWith(empty.identity,0);media.voice={...media.voice,participants:media.voice.participants.map(p=>({...p,volume:0}))};view.rerender(<MusicDJ/>);
  fireEvent.click(screen.getByRole('button',{name:'Botun sesini aç'}));expect(media.volume).toHaveBeenLastCalledWith(empty.identity,.09);fireEvent.click(screen.getByRole('button',{name:'DJ panelini kapat'}));expect(screen.queryByRole('dialog',{name:'DJ Recep'})).toBeNull();expect(command).not.toHaveBeenCalled();
 });
+it('shows an actionable provider access error from a room snapshot',async()=>{
+ window.rooms={music:{snapshot:async()=>({...empty,status:'error',error:'MUSIC_YOUTUBE_ACCESS_REQUIRED'})}} as unknown as DesktopBridge;
+ render(<MusicDJ/>);expect(await screen.findByRole('alert')).toHaveProperty('textContent','Sunucunun YouTube ses erişimi doğrulanamadı. DJ bu kaynaktan çalamıyor.');
+});

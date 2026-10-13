@@ -11,6 +11,8 @@ const videoMetadata=new Map<string,{json:string;expires:number}>();
 const remember=(id:string,json:string)=>{if(json.length>1024*1024)return;videoMetadata.set(id,{json,expires:Date.now()+15*60*1000});while(videoMetadata.size>8)videoMetadata.delete(videoMetadata.keys().next().value!);};
 export interface MusicReference{source:string;title:string;durationSec:number;requestedProvider?:'spotify'|'soundcloud'}
 export const youtubeSource=(raw:string)=>parseDJLink(raw);
+/** Keep provider diagnostics private while retaining actionable authentication failures. */
+export const youtubeFailure=(stderr:string)=>/sign in|not a bot|cookies|HTTP Error 403|HTTP Error 429/i.test(stderr)?'MUSIC_YOUTUBE_ACCESS_REQUIRED':'MUSIC_YOUTUBE_UNAVAILABLE';
 export function canonicalYouTube(raw:string){const link=youtubeSource(raw);if(!link)throw new Error('MUSIC_SOURCE_FAILED');return link.kind==='video'?`https://www.youtube.com/watch?v=${link.id}`:`https://www.youtube.com/playlist?list=${link.id}`;}
 /** Fixed YouTube extractor; optional owner-approved server-only bot session, never personal browser extraction. */
 export function youtubeSessionArgs():string[]{
@@ -28,7 +30,7 @@ async function run(args:string[],timeoutMs:number,directory?:string):Promise<str
  const timeout=setTimeout(()=>finish(new Error('MUSIC_SOURCE_TIMEOUT')),timeoutMs);
  const sizeTimer=setInterval(()=>{if(!directory||checking)return;checking=true;void (async()=>{try{let bytes=0;for(const file of await readdir(directory))bytes+=(await stat(join(directory,file))).size;if(bytes>400*1024*1024)finish(new Error('MUSIC_SOURCE_TOO_LARGE'));}catch{/* A cancelled directory may already have been removed. */}finally{checking=false;}})();},500);
  child.stdout.on('data',value=>{output+=value.toString();if(output.length>1024*1024)finish(new Error('MUSIC_SOURCE_TOO_LARGE'));});child.stderr.on('data',value=>{if(errors.length<16000)errors+=value.toString();});
- child.on('error',()=>finish(new Error('MUSIC_YOUTUBE_UNAVAILABLE')));child.on('close',code=>{if(code!==0)finish(new Error(/sign in|not a bot|cookies|HTTP Error 403|HTTP Error 429/i.test(errors)?'MUSIC_YOUTUBE_ACCESS_REQUIRED':'MUSIC_YOUTUBE_UNAVAILABLE'));else finish();});
+ child.on('error',()=>finish(new Error('MUSIC_YOUTUBE_UNAVAILABLE')));child.on('close',code=>{if(code!==0)finish(new Error(youtubeFailure(errors)));else finish();});
  });}finally{if(cookieDirectory)await rm(cookieDirectory,{recursive:true,force:true});}}
 export async function youtubeReferences(raw:string):Promise<MusicReference[]>{const link=youtubeSource(raw);if(!link)throw new Error('MUSIC_SOURCE_FAILED');const output=await run([...(link.kind==='playlist'?['--flat-playlist']:['--no-playlist']),'--skip-download','--dump-single-json','--playlist-end','100',canonicalYouTube(raw)],25000);let value:any;try{value=JSON.parse(output);}catch{throw new Error('MUSIC_YOUTUBE_UNAVAILABLE');}
  if(link.kind==='video'&&value.id===link.id)remember(link.id,output);
@@ -54,7 +56,7 @@ export async function openYouTubeAudio(raw:string){
  child.stderr.on('data',data=>{if(errors.length<16000)errors+=data.toString();});
  // Byte limit is enforced while the PCM publisher provides stream backpressure.
  child.stdout.on('data',chunk=>{bytes+=chunk.length;if(bytes>180*1024*1024)child.kill('SIGKILL');});
- const done=new Promise<void>((resolve,reject)=>{child.once('error',()=>reject(new Error('MUSIC_YOUTUBE_UNAVAILABLE')));child.once('close',code=>{if(code===0)resolve();else reject(new Error(/sign in|not a bot/i.test(errors)?'MUSIC_YOUTUBE_ACCESS_REQUIRED':'MUSIC_YOUTUBE_UNAVAILABLE'));});});
+ const done=new Promise<void>((resolve,reject)=>{child.once('error',()=>reject(new Error('MUSIC_YOUTUBE_UNAVAILABLE')));child.once('close',code=>{if(code===0)resolve();else reject(new Error(youtubeFailure(errors)));});});
  const cleanup=async()=>{clearTimeout(timer);if(privateDirectory)await rm(privateDirectory,{recursive:true,force:true});};
  void done.then(cleanup,cleanup);
  return{stream:child.stdout,done,close:async()=>{child.kill('SIGKILL');await done.catch(()=>{});await cleanup();}};

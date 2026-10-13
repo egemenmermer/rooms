@@ -24,7 +24,7 @@ export class MusicWorker{
  }
  private async play(s:Session,position=0){const item=s.queue[s.index];if(!item)return;const generation=s.generation;s.publisher.pause();s.status='connecting';s.error=null;
  try{if(youtubeSource(item.source)&&s.publisher.playYouTube){
- await s.publisher.playYouTube(item.source,Math.max(0,position),()=>{if(this.sessions.get(s.channelId)!==s||generation!==s.generation)return;void this.serial(s,async()=>{if(s.queue[s.index]?.id!==item.id)return;if(s.index+1<s.queue.length){s.index++;await this.play(s);}else{s.status='paused';s.pausedAt=this.now();}}).catch(()=>{});},()=>{if(this.sessions.get(s.channelId)===s){s.status='error';s.error='MUSIC_DECODE_FAILED';}});
+ await s.publisher.playYouTube(item.source,Math.max(0,position),()=>{if(this.sessions.get(s.channelId)!==s||generation!==s.generation)return;void this.serial(s,async()=>{if(s.queue[s.index]?.id!==item.id)return;if(s.index+1<s.queue.length){s.index++;await this.play(s);}else{s.status='paused';s.pausedAt=this.now();}}).catch(()=>{});},error=>{if(this.sessions.get(s.channelId)===s){s.status='error';s.error=error&&/^MUSIC_[A-Z_]+$/.test(error.message)?error.message:'MUSIC_DECODE_FAILED';}});
  if(this.sessions.get(s.channelId)===s&&generation===s.generation){s.status='playing';s.pausedAt=null;}return;
  }
  if(!item.file){

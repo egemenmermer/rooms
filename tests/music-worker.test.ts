@@ -38,3 +38,9 @@ it('does not mutate a queue or publish a song on an uncertain match',async()=>{
  const {publisher,lease}=await setup();const playYouTube=vi.fn(),worker=new MusicWorker({publisher:()=>({...publisher,playYouTube}),lease:async()=>lease,songMetadata:async()=>({provider:'soundcloud',title:'Song',artists:['Artist']}),matchingYouTubeReference:async()=>{throw new Error('MUSIC_MIRROR_NOT_FOUND');}});workers.push(worker);
  await expect(worker.command('mirror-room',lease,{type:'add',url:'https://soundcloud.com/artist/song'})).rejects.toThrow('MUSIC_MIRROR_NOT_FOUND');expect(worker.snapshot('mirror-room').queue).toEqual([]);expect(playYouTube).not.toHaveBeenCalled();
 });
+it('retains an access rejection received after playback starts',async()=>{
+ const {publisher,lease}=await setup();let fail!:(error?:Error)=>void;
+ const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube:async(_source,_position,_ended,onError)=>{fail=onError;}}),lease:async()=>lease,youtubeReferences:async()=>[{source:'https://www.youtube.com/watch?v=PgHzDZJwGW8',title:'Source',durationSec:30}]});workers.push(worker);
+ await worker.command('denied-room',lease,{type:'add',url:'https://www.youtube.com/watch?v=PgHzDZJwGW8'});
+ fail(new Error('MUSIC_YOUTUBE_ACCESS_REQUIRED'));expect(worker.snapshot('denied-room').status).toBe('error');expect(worker.snapshot('denied-room').error).toBe('MUSIC_YOUTUBE_ACCESS_REQUIRED');
+});
