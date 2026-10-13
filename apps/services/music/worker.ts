@@ -47,7 +47,7 @@ export class MusicWorker{
  let references:MusicReference[];if(youtubeSource(command.url))references=await (this.options.youtubeReferences??youtubeReferences)(command.url);else if(parseSongLink(command.url)){const song=await (this.options.songMetadata??songMetadata)(command.url);references=[await (this.options.matchingYouTubeReference??matchingYouTubeReference)(song)];}else{const url=new URL(command.url);if(url.protocol!=='https:'||url.username||url.password)throw new Error('MUSIC_SOURCE_FAILED');references=[{source:command.url,title:'Music',durationSec:0}];}
  if(s.queue.length+references.length>100)throw new Error('MUSIC_QUEUE_FULL');if(this.sessions.get(channelId)!==s)throw new Error('MUSIC_LEASE_EXPIRED');s.queue.push(...references.map(ref=>({...ref,id:randomUUID()})));if(s.index===-1){s.index=0;await this.play(s);}else if(s.status==='error'){s.index++;await this.play(s);}
  }finally{this.pending--;}break;}
- case 'play':if(s.index===-1&&s.queue.length)s.index=0;if(s.queue[s.index])await this.play(s,Math.min(s.publisher.position(),s.queue[s.index]!.durationSec-0.01));break;
+ case 'play':if(s.index===-1&&s.queue.length)s.index=0;if(s.queue[s.index])await this.play(s,Math.min(s.publisher.position(),(s.queue[s.index]!.durationSec>0?s.queue[s.index]!.durationSec:7200)-0.01));break;
  case 'pause':s.generation++;s.publisher.pause();s.status='paused';s.pausedAt=this.now();break;
  case 'next':if(s.index+1<s.queue.length){s.index++;await this.play(s);}else{s.generation++;s.publisher.pause();s.status='paused';s.pausedAt=this.now();}break;
  case 'previous':if(s.index>0)s.index--;await this.play(s);break;

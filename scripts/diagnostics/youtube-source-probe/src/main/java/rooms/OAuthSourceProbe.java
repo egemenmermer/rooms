@@ -14,14 +14,19 @@ public final class OAuthSourceProbe {
  static String diagnostic=""; static String trace="";
  static String classify(Throwable e){
   var queue=new java.util.ArrayDeque<Throwable>();queue.add(e);int count=0;
-  while(!queue.isEmpty()&&count++<12){var item=queue.remove();trace+=item.getClass().getSimpleName()+":";for(var frame:item.getStackTrace()){if(frame.getClassName().startsWith("dev.lavalink")||frame.getClassName().startsWith("com.sedmelluq")){trace+=frame.getClassName()+"."+frame.getMethodName()+":"+frame.getLineNumber()+";";break;}}if(item.getCause()!=null)queue.add(item.getCause());if(item instanceof dev.lavalink.youtube.AllClientsFailedException all)queue.addAll(all.getClientExceptions());}
-  String category=SourceProbe.category(e);String detail=SourceProbe.kinds.toLowerCase();
-  diagnostic=detail.contains("login")?"LOGIN_REQUIRED":detail.contains("format")?"FORMAT_UNAVAILABLE":detail.contains("bot")?"BOT_CHECK":detail.contains("unplayable")?"UNPLAYABLE":detail.contains("unsupported")?"UNSUPPORTED":detail.contains("restricted")?"RESTRICTED":detail.contains("cipher")?"CIPHER":detail.contains("suspicious")?"SUSPICIOUS_REQUEST":detail.contains("unavailable")||detail.contains("not available")?"NOT_AVAILABLE":"UNCLASSIFIED";
+  while(!queue.isEmpty()&&count++<12){var item=queue.remove();trace+=item.getClass().getSimpleName()+":";if(item instanceof UnsatisfiedLinkError){String nativeReason=String.valueOf(item.getMessage()).replaceAll("/[^ :]+","[NATIVE_PATH]").replaceAll("[^A-Za-z0-9 .:_\\[\\]-]"," ");trace+=nativeReason.substring(0,Math.min(260,nativeReason.length()))+";";}for(var frame:item.getStackTrace()){if(frame.getClassName().startsWith("dev.lavalink")||frame.getClassName().startsWith("com.sedmelluq")){trace+=frame.getClassName()+"."+frame.getMethodName()+":"+frame.getLineNumber()+";";break;}}if(item instanceof dev.lavalink.youtube.cipher.ScriptExtractionException script)diagnostic="SCRIPT_"+script.getFailureType().name();if(item.getCause()!=null)queue.add(item.getCause());if(item instanceof dev.lavalink.youtube.AllClientsFailedException all)queue.addAll(all.getClientExceptions());}
+  if(diagnostic.startsWith("SCRIPT_"))return "SOURCE_DECIPHER_FAILED";String category=SourceProbe.category(e);String detail=SourceProbe.kinds.toLowerCase();
+  diagnostic=detail.contains("page needs to be reloaded")?"PAGE_RELOAD_REQUIRED":detail.contains("age verification")?"AGE_VERIFICATION_REQUIRED":detail.contains("login")?"LOGIN_REQUIRED":detail.contains("format")?"FORMAT_UNAVAILABLE":detail.contains("bot")?"BOT_CHECK":detail.contains("unplayable")?"UNPLAYABLE":detail.contains("unsupported")?"UNSUPPORTED":detail.contains("restricted")?"RESTRICTED":detail.contains("cipher")?"CIPHER":detail.contains("suspicious")?"SUSPICIOUS_REQUEST":detail.contains("unavailable")||detail.contains("not available")?"NOT_AVAILABLE":"UNCLASSIFIED";
   return category;
  }
  public static void main(String[] args) {
   if(args.length!=1||!args[0].matches("[A-Za-z0-9_-]{11}"))throw new IllegalArgumentException("Video ID required");
-  var manager=new DefaultAudioPlayerManager();var source=new YoutubeAudioSourceManager(false,new Tv());
+  var manager=new DefaultAudioPlayerManager();
+  String cipher=System.getProperty("rooms.cipher");
+  if(cipher!=null&&!cipher.equals("http://rooms-dj-cipher-qa:8001/"))throw new IllegalArgumentException("Only isolated private parser endpoint allowed");
+  var options=new dev.lavalink.youtube.YoutubeSourceOptions().setAllowSearch(false);
+  if(cipher!=null)options.setRemoteCipher(cipher,null,"ROOMS-private-diagnostic");
+  var source=new YoutubeAudioSourceManager(options,new Tv());
   var player=manager.createPlayer();var failure=new AtomicReference<Throwable>();
   boolean authorized=false;int frames=0;long samples=0;double square=0;String result="AUTH_FAILED";
   try {
