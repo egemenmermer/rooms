@@ -1,12 +1,32 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { ConnectionState, RoomEvent, Track, type Room } from 'livekit-client';
+import { ConnectionState, RoomEvent, Track, LocalAudioTrack, createLocalAudioTrack, type Room } from 'livekit-client';
+import { SoundboardMixer } from '../packages/media-providers/src/soundboard';
 import { LiveKitMediaProvider } from '../packages/media-providers/src/index';
 
+
+// The SDK capture and DSP graph are isolated here; real WASM/native graphs are verified separately.
+vi.mock('livekit-client',async original=>({...await original<typeof import('livekit-client')>(),createLocalAudioTrack:vi.fn()}));
+vi.mock('../packages/media-providers/src/soundboard',()=>({SoundboardMixer:vi.fn(class{
+  processedTrack={readyState:'live'};
+  setNoiseSuppression=vi.fn(async()=>{});destroy=vi.fn(async()=>{});stop=vi.fn();play=vi.fn(async()=>{});
+})}));
+function audioTrack(){
+  const capture={readyState:'live',stop:vi.fn(),addEventListener:vi.fn()};
+  const track=Object.assign(Object.create(LocalAudioTrack.prototype),{
+    stop:vi.fn(()=>{capture.readyState='ended';}),setAudioContext:vi.fn(),setProcessor:vi.fn(async()=>{}),
+    applyConstraints:vi.fn(async()=>{}),mute:vi.fn(async()=>{}),unmute:vi.fn(async()=>{}),
+  });
+  Object.defineProperty(track,'mediaStreamTrack',{value:capture,configurable:true});return track as LocalAudioTrack;
+}
+
 function fixture() {
+  vi.stubGlobal('AudioContext',class{resume=vi.fn(async()=>{});close=vi.fn(async()=>{});});
+  vi.mocked(createLocalAudioTrack).mockReset().mockImplementation(async()=>audioTrack());
   const listeners = new Map<string, ((...args: unknown[]) => void)[]>();
   const emit = (event: string, ...args: unknown[]) => listeners.get(event)?.forEach(cb => cb(...args));
   const local = { identity: 'alice', name: 'Alice', isMicrophoneEnabled: false, isCameraEnabled: false, isScreenShareEnabled: false, isSpeaking: false, connectionQuality: 'excellent', trackPublications: new Map(), getTrackPublication: vi.fn(), setMicrophoneEnabled: vi.fn(async (enabled: boolean) => { local.isMicrophoneEnabled = enabled; }), setCameraEnabled: vi.fn(), setScreenShareEnabled: vi.fn(async (enabled: boolean) => { local.isScreenShareEnabled = enabled; }) };
+  Object.assign(local,{publishTrack:vi.fn(async(track:LocalAudioTrack)=>{local.isMicrophoneEnabled=true;local.getTrackPublication.mockReturnValue({track});local.trackPublications.set('mic',{track});}),unpublishTrack:vi.fn(async()=>{local.getTrackPublication.mockReturnValue(undefined);local.isMicrophoneEnabled=false;})});
   const room = { localParticipant: local, remoteParticipants: new Map(), on: vi.fn((event: string, cb: (...args: unknown[]) => void) => { listeners.set(event, [...(listeners.get(event) ?? []), cb]); }), connect: vi.fn(async () => { emit(RoomEvent.ConnectionStateChanged, ConnectionState.Connected); }), disconnect: vi.fn(async () => { emit(RoomEvent.Disconnected); }), removeAllListeners: vi.fn(), switchActiveDevice: vi.fn(async () => true), startAudio: vi.fn(async () => {}) };
   const provider = new LiveKitMediaProvider(() => room as unknown as Room);
   return { provider, room, local, emit };
@@ -113,17 +133,17 @@ it('reports observed encoder dimensions and codec instead of the requested profi
 
  it('recovers a missing selected microphone on explicit unmute and clears the stale error',async()=>{
   const {provider,local,room}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
-  local.setMicrophoneEnabled.mockRejectedValueOnce(new DOMException('Old device ID','OverconstrainedError'));
+  vi.mocked(createLocalAudioTrack).mockRejectedValueOnce(new DOMException('Old device ID','OverconstrainedError'));
   await provider.mute(false);
   expect(room.switchActiveDevice).toHaveBeenCalledWith('audioinput','default');
-  expect(local.setMicrophoneEnabled).toHaveBeenLastCalledWith(true,expect.objectContaining({deviceId:'default'}));
+  expect(createLocalAudioTrack).toHaveBeenLastCalledWith(expect.objectContaining({deviceId:'default',noiseSuppression:false}));
   expect(provider.snapshot()).toMatchObject({muted:false,error:null,inputDeviceFallback:true});await provider.disconnect();
  });
  it('does not retry capture after a permission denial',async()=>{
   const {provider,local,room}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
-  local.setMicrophoneEnabled.mockRejectedValueOnce(new DOMException('Denied','NotAllowedError'));
+  vi.mocked(createLocalAudioTrack).mockRejectedValueOnce(new DOMException('Denied','NotAllowedError'));
   await expect(provider.mute(false)).rejects.toThrow('izni kapalı');
-  expect(local.setMicrophoneEnabled).toHaveBeenCalledTimes(1);expect(room.switchActiveDevice).not.toHaveBeenCalled();await provider.disconnect();
+  expect(createLocalAudioTrack).toHaveBeenCalledTimes(1);expect(room.switchActiveDevice).not.toHaveBeenCalled();await provider.disconnect();
  });
  it('local volume is applied again when a muted participant publishes a replacement track',async()=>{
   const {provider,room,emit}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
@@ -137,15 +157,15 @@ it('reports observed encoder dimensions and codec instead of the requested profi
 it('does not publish a delayed microphone into a room that was left',async()=>{
  const {provider,local}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
  let finish!:()=>void;
- local.setMicrophoneEnabled.mockImplementationOnce(()=>new Promise<void>(resolve=>{finish=()=>{local.isMicrophoneEnabled=true;resolve();};}));
- const pending=provider.mute(false);await provider.disconnect();finish();await pending;
+ const track=audioTrack();vi.mocked(createLocalAudioTrack).mockImplementationOnce(()=>new Promise(resolve=>{finish=()=>resolve(track);}));
+ const pending=provider.mute(false);await vi.waitFor(()=>expect(createLocalAudioTrack).toHaveBeenCalled());const leaving=provider.disconnect();finish();await Promise.all([pending,leaving]);expect(track.stop).toHaveBeenCalled();
  expect(local.isMicrophoneEnabled).toBe(false);expect(provider.snapshot()).toMatchObject({status:'not-configured',muted:true,error:null});
 });
 it('does not show a late permission error after leaving voice',async()=>{
  const {provider,local}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
  let fail!:(error:unknown)=>void;
- local.setMicrophoneEnabled.mockImplementationOnce(()=>new Promise<void>((_,reject)=>{fail=reject;}));
- const pending=provider.mute(false).catch(()=>{});await provider.disconnect();fail(new DOMException('Denied','NotAllowedError'));await pending;
+ vi.mocked(createLocalAudioTrack).mockImplementationOnce(()=>new Promise((_,reject)=>{fail=reject;}));
+ const pending=provider.mute(false).catch(()=>{});await vi.waitFor(()=>expect(createLocalAudioTrack).toHaveBeenCalled());const leaving=provider.disconnect();fail(new DOMException('Denied','NotAllowedError'));await Promise.all([pending,leaving]);
  expect(provider.snapshot()).toMatchObject({status:'not-configured',muted:true,error:null});
 });
 
@@ -174,4 +194,19 @@ it('bot listener gain reaches very quiet levels, remains local, and survives rep
 it('listener settings survive reconnect and a new provider while remaining account scoped',async()=>{
  localStorage.clear();const first=fixture();first.provider.setListenerScope('DEMO-server:alice');await first.provider.connectRoom('room','token','ws://localhost:7880');first.provider.setParticipantVolume('rooms-music-room',.09);first.provider.setParticipantVolume('bob',.25);await first.provider.disconnect();await first.provider.connectRoom('other','token','ws://localhost:7880');const bot={identity:'rooms-music-room',setVolume:vi.fn(),trackPublications:new Map()};first.room.remoteParticipants.set(bot.identity,bot);const e=document.createElement('audio');e.play=vi.fn(async()=>{});e.pause=vi.fn();first.emit(RoomEvent.TrackSubscribed,{kind:'audio',attach:()=>e},{trackSid:'bot'},bot);expect(bot.setVolume).toHaveBeenLastCalledWith(.0081);await first.provider.disconnect();
  const second=fixture();second.provider.setListenerScope('DEMO-server:alice');await second.provider.connectRoom('room','token','ws://localhost:7880');second.room.remoteParticipants.set(bot.identity,bot);second.emit(RoomEvent.TrackSubscribed,{kind:'audio',attach:()=>e},{trackSid:'bot2'},bot);expect(bot.setVolume).toHaveBeenLastCalledWith(.0081);second.provider.setListenerScope('DEMO-server:bob');expect(second.provider.snapshot().participants.find(p=>p.id===bot.identity)?.volume).toBe(1);second.provider.setListenerScope('DEMO-server:alice');expect(second.provider.snapshot().participants.find(p=>p.id===bot.identity)?.volume).toBe(.09);await second.provider.disconnect();localStorage.clear();
+});
+
+
+it('attaches the selected local filter before any microphone publication',async()=>{
+ const {provider,local}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
+ await provider.setNoiseSuppression(true,'strong');await provider.publishMic();
+ expect(createLocalAudioTrack).toHaveBeenCalledWith(expect.objectContaining({noiseSuppression:false,autoGainControl:false,sampleRate:48000,channelCount:1}));
+ const track=vi.mocked(createLocalAudioTrack).mock.results[0];const captured=await track.value;
+ expect(vi.mocked(captured.setProcessor).mock.invocationCallOrder[0]).toBeLessThan((local as unknown as {publishTrack:ReturnType<typeof vi.fn>}).publishTrack.mock.invocationCallOrder[0]);
+ expect(SoundboardMixer).toHaveBeenCalledWith(true,'strong',expect.any(Object));await provider.disconnect();
+});
+it('never publishes raw microphone audio after a filter initialization failure',async()=>{
+ const {provider,local}=fixture();await provider.connectRoom('room','token','ws://localhost:7880');
+ const track=audioTrack();vi.mocked(track.setProcessor).mockRejectedValueOnce(new Error('Model unavailable'));vi.mocked(createLocalAudioTrack).mockResolvedValueOnce(track);
+ await expect(provider.publishMic()).rejects.toThrow();expect((local as unknown as {publishTrack:ReturnType<typeof vi.fn>}).publishTrack).not.toHaveBeenCalled();expect(track.stop).toHaveBeenCalled();expect(provider.snapshot().muted).toBe(true);await provider.disconnect();
 });
