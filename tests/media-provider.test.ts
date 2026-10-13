@@ -57,10 +57,10 @@ describe('LiveKit adapter lifecycle', () => {
     expect(provider.status).toBe('error'); expect(JSON.stringify(provider.snapshot())).not.toContain('TOP_SECRET');
     await provider.disconnect();
   });
-  it('rejects a second known presenter before requesting capture', async () => {
+  it('allows another authorized publisher while a friend is already sharing', async () => {
     const { provider, room, local } = fixture(); await provider.connectRoom('room', 'token', 'ws://localhost:7880');
-    room.remoteParticipants.set('bob', { isScreenShareEnabled: true });
-    await expect(provider.publishScreen()).rejects.toThrow('Another participant'); expect(local.setScreenShareEnabled).not.toHaveBeenCalled();
+    room.remoteParticipants.set('bob', { identity:'bob',trackPublications:new Map(),isScreenShareEnabled: true });
+    await provider.publishScreen();expect(local.setScreenShareEnabled).toHaveBeenCalledWith(true,expect.any(Object),expect.any(Object));
     await provider.disconnect();
   });
   it('stops screen capture immediately even when reconnecting and unpublication fails', async () => {
@@ -168,4 +168,10 @@ it('bot listener gain reaches very quiet levels, remains local, and survives rep
  provider.setParticipantVolume(human.identity,.01);expect(human.setVolume).toHaveBeenLastCalledWith(.01);
  const element=document.createElement('audio');element.play=vi.fn(async()=>{});element.pause=vi.fn();emit(RoomEvent.TrackSubscribed,{kind:'audio',attach:()=>element},{trackSid:'new-bot-track'},bot);expect(bot.setVolume).toHaveBeenLastCalledWith(.0001);
  provider.setParticipantVolume(bot.identity,0);expect(bot.setVolume).toHaveBeenLastCalledWith(0);provider.setParticipantVolume(bot.identity,1);expect(bot.setVolume).toHaveBeenLastCalledWith(1);await provider.disconnect();
+});
+
+
+it('listener settings survive reconnect and a new provider while remaining account scoped',async()=>{
+ localStorage.clear();const first=fixture();first.provider.setListenerScope('DEMO-server:alice');await first.provider.connectRoom('room','token','ws://localhost:7880');first.provider.setParticipantVolume('rooms-music-room',.09);first.provider.setParticipantVolume('bob',.25);await first.provider.disconnect();await first.provider.connectRoom('other','token','ws://localhost:7880');const bot={identity:'rooms-music-room',setVolume:vi.fn(),trackPublications:new Map()};first.room.remoteParticipants.set(bot.identity,bot);const e=document.createElement('audio');e.play=vi.fn(async()=>{});e.pause=vi.fn();first.emit(RoomEvent.TrackSubscribed,{kind:'audio',attach:()=>e},{trackSid:'bot'},bot);expect(bot.setVolume).toHaveBeenLastCalledWith(.0081);await first.provider.disconnect();
+ const second=fixture();second.provider.setListenerScope('DEMO-server:alice');await second.provider.connectRoom('room','token','ws://localhost:7880');second.room.remoteParticipants.set(bot.identity,bot);second.emit(RoomEvent.TrackSubscribed,{kind:'audio',attach:()=>e},{trackSid:'bot2'},bot);expect(bot.setVolume).toHaveBeenLastCalledWith(.0081);second.provider.setListenerScope('DEMO-server:bob');expect(second.provider.snapshot().participants.find(p=>p.id===bot.identity)?.volume).toBe(1);second.provider.setListenerScope('DEMO-server:alice');expect(second.provider.snapshot().participants.find(p=>p.id===bot.identity)?.volume).toBe(.09);await second.provider.disconnect();localStorage.clear();
 });

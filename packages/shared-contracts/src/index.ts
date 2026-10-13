@@ -20,6 +20,7 @@ export interface ChannelNotificationScope {serverUrl:string;userId:string}
 export interface ChannelNotificationInput extends ChannelNotificationScope {channelId:string;muted?:boolean}
 export interface DesktopWindowPreferences {keepOpenOnClose:boolean;warnOnVoiceClose:boolean;trayAvailable:boolean}
 export interface DesktopBridge {
+  soundboard?:import('./soundboard').SoundboardBridge;
   desktopWindow:{status():Promise<DesktopWindowPreferences>;setPreference(key:'keepOpenOnClose'|'warnOnVoiceClose',value:boolean):Promise<DesktopWindowPreferences>};
   pendingInvite():Promise<{serverUrl:string;code:string}|null>;
   onInvite(listener:(invite:{serverUrl:string;code:string})=>void):()=>void;
@@ -45,7 +46,7 @@ export interface DesktopBridge {
   agent: import('@rooms/agent-contracts').AgentBridge;
   activity: { exportBoard(roomId:string,format?:'svg'|'png'):Promise<boolean>; youtubePlaylist(playlistId:string):Promise<{url:string;nonce:string}>; youtubePlayer(videoId:string):Promise<{url:string;nonce:string}>; snapshot(roomId:string,afterRevision?:number):Promise<import('@rooms/activity-protocol').ActivityResponse>; command(roomId:string,envelope:import('@rooms/activity-protocol').ActivityCommandEnvelope):Promise<import('@rooms/activity-protocol').ActivityResponse> };
   media: {
-    directory?(channelIds:string[]):Promise<{rooms:{channelId:string;participants:{id:string;name:string;muted:boolean}[]}[]}>;
+    directory?(channelIds:string[]):Promise<{rooms:{channelId:string;participants:{id:string;name:string;muted:boolean;screen?:boolean}[]}[]}>;
     grant(channelId:string):Promise<{serverUrl:string;roomName:string;token:string;expiresAt:string}>;
     presenter(channelId:string,action:'acquire'|'release'):Promise<{granted:true;leaseId:string}|{released:true}>;
     screenState(channelId:string):Promise<ScreenPresenterState>;
