@@ -42,6 +42,8 @@ export interface RealtimeMediaProvider {
   setParticipantVolume(participantId: string, volume: number): void;
   startAudio(): Promise<void>; disconnect(): Promise<void>; reconnect(): Promise<void>;
 }
+/** Bot music needs finer attenuation than speech; the UI still stores a 0–1 level. */
+function listenerGain(id:string,level:number){return id.startsWith('rooms-music-')?level*level:level;}
 const emptyDiagnostics = (): MediaDiagnostics => ({ bitrate: null, packetLoss: null, rtt: null });
 /** No auth credentials other than the in-memory, short-lived room token enter this adapter. */
 export class LiveKitMediaProvider implements RealtimeMediaProvider {
@@ -133,7 +135,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       if(this.room!==room)return;
       if (track.kind === Track.Kind.Audio && typeof document !== 'undefined') {
         const element = track.attach(); element.hidden = true; document.body.append(element); this.audio.set(publication.trackSid, element);
-        element.muted = this.state.deafened; participant.setVolume(this.volumes.get(participant.identity) ?? 1);
+        element.muted = this.state.deafened; participant.setVolume(listenerGain(participant.identity,this.volumes.get(participant.identity) ?? 1));
         void element.play().catch(() => this.patch({ audioBlocked: true }));
       }
       sync();
@@ -199,7 +201,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     if (value) {this.stopSoundboard();await room.localParticipant.setMicrophoneEnabled(false);}
     this.sync();
   }
-  setParticipantVolume(id: string, volume: number) { if (!Number.isFinite(volume) || volume < 0 || volume > 1) throw new Error('Volume must be between 0 and 1.'); this.volumes.set(id, volume); this.room?.remoteParticipants.get(id)?.setVolume(volume); this.sync(); }
+  setParticipantVolume(id: string, volume: number) { if (!Number.isFinite(volume) || volume < 0 || volume > 1) throw new Error('Volume must be between 0 and 1.'); this.volumes.set(id, volume); this.room?.remoteParticipants.get(id)?.setVolume(listenerGain(id,volume)); this.sync(); }
   async startAudio() { try { await this.requireRoom().startAudio(); this.patch({ audioBlocked: false }); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
   async deviceSelection(inputId: string, outputId: string) { try { const room = this.requireRoom(); if (!await room.switchActiveDevice('audioinput', inputId||'default')) throw new Error('Input unavailable.'); if (!await room.switchActiveDevice('audiooutput', outputId||'default')) throw new Error('Output unavailable.'); this.patch({error:null,inputDeviceFallback:false}); this.sync(); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
   participantState() { return this.state.participants; }
