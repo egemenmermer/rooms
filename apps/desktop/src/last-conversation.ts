@@ -31,7 +31,7 @@ export function useConversationRestore(ready:boolean) {
    if(!valid())return;
    const access=target?useChannelAccess.getState().checks[target]:undefined;
    if(access){const fallback=useCommunity.getState().channels.find(ch=>ch.type===0&&ch.id!==target&&!useChannelAccess.getState().checks[ch.id]);if(fallback)await state.openChannel(fallback.id,true);}
-   if(valid()&&useCommunity.getState().activeChannelId&&!useChannelAccess.getState().checks[useCommunity.getState().activeChannelId!])navigate('/chat',{replace:true});
+   if(valid()&&useCommunity.getState().activeChannelId&&!useChannelAccess.getState().checks[useCommunity.getState().activeChannelId!])navigate(useCommunity.getState().channels.find(ch=>ch.id===useCommunity.getState().activeChannelId)?.type===2?'/voice':'/chat',{replace:true});
   })().catch(()=>{}).finally(()=>{if(epoch===generation.current)restoring.current=false;window.removeEventListener('pointerdown',interrupt);window.removeEventListener('keydown',interrupt);});
   return()=>{cancelled=true;generation.current++;restoring.current=false;window.removeEventListener('pointerdown',interrupt);window.removeEventListener('keydown',interrupt);};
  },[ready,scope,c.status,c.busy]);
