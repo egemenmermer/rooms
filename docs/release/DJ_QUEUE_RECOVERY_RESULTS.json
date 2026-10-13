@@ -1,0 +1,13 @@
+{
+  "scope": "Actual current Linux MusicWorker/publisher/decoder/SFU audio receiver; generated invalid decoder input and fixed public YouTube reference metadata, isolated QA grant/namespace, no real accounts/human subscriptions/speakers/recordings",
+  "initialFailure": "MUSIC_DECODE_FAILED",
+  "recovered": {
+    "status": "playing",
+    "queueLength": 2,
+    "frames": 375,
+    "maxRms": 7585.027368523465,
+    "position": 1.051
+  },
+  "stop": "disconnected",
+  "result": "PASS_FAILED_DECODER_NEW_REQUEST_REAL_AUDIO_AND_STOP"
+}
