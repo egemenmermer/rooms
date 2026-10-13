@@ -38,3 +38,13 @@ it('removes cached activity immediately when channel access is invalidated',asyn
  await waitFor(()=>expect(hook.result.current.status).toBe('error'));
  expect(hook.result.current.room).toBeNull();hook.unmount();
 });
+
+it('a rejected action releases controls without waiting for a pending long poll',async()=>{
+ act(()=>useCommunity.setState({user:{id:'user',username:'User',displayName:'User',avatar:null},serverUrl:'https://server'}));
+ const joined={...room,participants:[{userId:'user'}]};let finish!:(value:unknown)=>void;
+ native.snapshot.mockResolvedValueOnce({room:joined,serverTimeMs:Date.now()}).mockImplementationOnce(()=>new Promise(resolve=>finish=resolve)).mockResolvedValue({room:joined,serverTimeMs:Date.now()});
+ native.command.mockRejectedValue(new Error('NOT_YOUR_TURN'));const hook=renderHook(()=>useActivityRoom('room'));await waitFor(()=>expect(hook.result.current.status).toBe('connected'));
+ let pending!:Promise<void>;act(()=>{pending=hook.result.current.refresh();});await waitFor(()=>expect(native.snapshot).toHaveBeenCalledTimes(2));
+ await act(async()=>{await expect(hook.result.current.send({type:'game.action',action:'stand'})).rejects.toThrow('NOT_YOUR_TURN');});expect(hook.result.current.busy).toBe(false);expect(native.snapshot).toHaveBeenCalledTimes(3);expect(native.snapshot.mock.calls[2]).toEqual(['room',undefined]);
+ await act(async()=>finish({room:{...joined,revision:0},serverTimeMs:Date.now()}));await pending;expect(hook.result.current.room?.revision).toBe(1);hook.unmount();
+});
