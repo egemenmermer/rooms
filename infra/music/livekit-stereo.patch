@@ -1,0 +1,15 @@
+--- a/livekit/src/room/participant/local_participant.rs
++++ b/livekit/src/room/participant/local_participant.rs
+@@ -398,6 +398,12 @@
+         if options.preconnect_buffer {
+             req.audio_features.push(proto::AudioTrackFeature::TfPreconnectBuffer as i32);
+         }
++        // ROOMS: advertise exactly two native PCM channels so Opus negotiates stereo.
++        if let LocalTrack::Audio(audio) = &track {
++            if audio.rtc_source().num_channels() == 2 {
++                req.audio_features.push(proto::AudioTrackFeature::TfStereo as i32);
++            }
++        }
+ 
+         req.packet_trailer_features =
+             options.frame_metadata_features.to_proto().into_iter().map(|f| f as i32).collect();

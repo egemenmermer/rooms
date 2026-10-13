@@ -1,0 +1,7 @@
+# Verified derivative of the existing music runtime; no provider or permission changes.
+ARG BASE_MUSIC_IMAGE=sha256:8b5522aaf596881da2cd85c0ca88a41ae4d2040c69d75fc136a1543ec2db347a
+FROM ${BASE_MUSIC_IMAGE}
+COPY verified-stereo/ /service/native/
+RUN cd /service/native && sha256sum -c native.sha256
+RUN node -e "const fs=require('node:fs');const read=name=>JSON.parse(fs.readFileSync('/service/node_modules/'+name+'/package.json','utf8')).version;if(read('@livekit/rtc-node')!=='1.1.0'||read('@livekit/rtc-ffi-bindings')!=='0.12.73')throw Error('Native consumer version mismatch');"
+ENV NAPI_RS_NATIVE_LIBRARY_PATH=/service/native/rtc-node.rooms-stereo.node

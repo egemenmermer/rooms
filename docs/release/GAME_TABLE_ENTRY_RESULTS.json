@@ -1,0 +1,38 @@
+{
+  "scope": "Actual three isolated Electron Games UIs with actual local authoritative service; DEMO identities; no owner game/production records",
+  "commands": [
+    {
+      "attempt": "DEMO-alice",
+      "seat": 0,
+      "legal": [
+        "hit",
+        "stand",
+        "double"
+      ]
+    },
+    {
+      "actor": "DEMO-alice",
+      "action": "stand"
+    },
+    {
+      "attempt": "DEMO-bob",
+      "seat": 1,
+      "legal": []
+    },
+    {
+      "actor": "DEMO-bob",
+      "action": "stand"
+    },
+    {
+      "attempt": "DEMO-charlie",
+      "seat": 2,
+      "legal": []
+    },
+    {
+      "actor": "DEMO-charlie",
+      "action": "stand"
+    }
+  ],
+  "finalStatus": "finished",
+  "result": "PASS_REAL_TABLE_SURFACE_ENTRY_THREE_CLIENT_BLACKJACK_UI"
+}

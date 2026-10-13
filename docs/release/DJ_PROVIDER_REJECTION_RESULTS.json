@@ -1,0 +1,19 @@
+{
+  "source": "7FwDP17XPlk",
+  "exitCode": 1,
+  "classification": "YOUTUBE_BOT_VERIFICATION_REQUIRED",
+  "flags": {
+    "botCheck": true,
+    "cookieExpired": false,
+    "login": true,
+    "premium": false,
+    "age": false,
+    "region": false,
+    "private": false,
+    "removed": false,
+    "http403": false,
+    "http429": false
+  },
+  "scope": "One bounded request using the existing approved private server-only session; no secrets or raw provider output logged; no challenge bypass",
+  "status": "OPEN_NORMAL_PROVIDER_VERIFICATION_REQUIRED"
+}

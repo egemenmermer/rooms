@@ -90,3 +90,48 @@ Sourcea9911cb259bc0a5ccff2948103100ca2b0e1d29e, RC5/build1791883043 Apple Accept
 ## Owner-confirmed RC5 installation completed — 2026-10-13
 
 Owner confirmed normal app close and requested installation. Verified no installed main process, rechecked staged RC5 version/build/signatures/ticket/Gatekeeper, preserved RC3 at /Applications/.ROOMS-before-0.1.18-rc.5-rc.3.app and atomically installed exact retained ZIP app at /Applications/ROOMS.app. Post-install strict signature/ticket/Gatekeeper and build1791883043 PASS. Native CUA launch restored Lounge /voice without automatic audio join; navigation drawer confirmed existing egemen profile and Lounge/test rooms. Closed only the drawer and left app open. No profile edits/login/logout/owner microphone/camera/share/messages/game actions. Earlier pending-install entries are superseded by this completion; no UI guard was bypassed. Physical two-Mac acceptance remains OPEN. See RC_0_1_18_5_INSTALLATION.json.
+
+## Owner release hold — 2026-10-13
+
+No additional release, updater publication, installation or service deployment until the reported screen-sharing and DJ playback defects and related checks are resolved. RC.6 was already published before this instruction; now GitHub DRAFT and absent from live updater discovery. Its exact DMG/ZIP bytes were preserved outside the public download directory (SHA verified), alongside existing retained archives. Installed app remains RC.5; active owner room preserved and native update download cancelled. PR6 is draft; no main merge yet.
+
+Current defects and gates:
+- [ ] Installed RC.5 cannot enumerate screen/window sources despite macOS ROOMS permission ON. Isolated native Electron enumerates 2screens/9windows successfully; installed-process cause and repair not established. New unpublished typed local errors and preview-free per-type fallback; capture/dock regressions PASS. Must verify source selection, explicit confirmation, start/stop, source closure and system audio on/off in installed signed app.
+- [ ] Real YouTube source-to-PCM probes reject MUSIC_YOUTUBE_ACCESS_REQUIRED for both Spotify/SoundCloud matches. Metadata/search PASS is not audio playback. Existing approved bot session insufficient; no access/challenge/DRM/proxy/credential bypass attempted. Actual decode, DJ room publish/receive, pause/seek/queue/panel-close acceptance remain OPEN.
+- [ ] Unpublished music encoder ceiling 510kbps Opus with stereo48kHz PCM, DTX/RED disabled. Upstream source is compressed, then decoded/re-encoded; not lossless or measured listener quality. Real network/physical acceptance OPEN.
+- [ ] youtube-source MIT Java/Lavaplayer/Lavalink and LavaSrc Apache2/Lavalink4 reviewed. Direct reuse requires isolated Java service plus LiveKit media adapter. No architecture migration or authentication workaround introduced.
+- [ ] Friend coffeehouse/version diagnosis and two physical Mac acceptance remain OPEN; not replaced by local checks.
+
+Validation for unpublished corrections: scoped 8files/32tests PASS, lint PASS, typecheck/renderer/Electron build PASS, service bundles PASS. Source probes actual audio FAILED as stated; no successful audio claim. Details docs/release/DJ_MIRRORING.md; Trello open DJ and screen-share issue cards updated. Production music image remains rooms-music:20261013T102727Z, source dd0b9ded, from deployment before hold. No further production restart/data/account/Hoppers changes.
+
+
+## 2026-10-13 RC.5 friend defects and release hold continuation
+
+Owner permission renewal repaired his native screen publication; owner confirms friends receive it. Friends also use RC.5 and Kıraathane exists, but their capture still fails with the generic operation/server/permission message. Their OS cause and repair remain OPEN. No new installed client.
+
+Actual three-client Blackjack UI journey passed against isolated real service; rejected-command busy wait corrected and scoped checks recorded in DJ_MIRRORING.md. All-game/friend acceptance remains OPEN. DJ source decode restored by explicitly authorized YouTube-only session renewal; local true stereo/pause/resume/stop transport passed after experimental pinned native patch and queued-duration units fix. Linux native integration and actual room audibility remain OPEN. RC.6 held; no main merge or further release.
+
+
+## Owner-authorized rate budget incident repair
+
+General access budget60 ->600/minute deployed independently of desktop release hold. Registration5 and invitation60 limits retained;6files/25focused checks,lint/type and isolated exact runtimePASS. Initial externally linked build failed and rolled back; canonical bundled service build passed. Encrypted backup/access-only update/trusted public HTTPS600/healthPASS. Owner confirms friend can now join Lounge. Receipt ACCESS_BUDGET_RESULTS.json. Full media/game/DJ acceptance and client release remain open.
+
+## Room media follow-up and DJ counter — 2026-10-13
+
+Account/server scoped listener persistence; fitting focused/fullscreen share gallery, parallel/self previews and sidebar screen signals; independent authenticated screen grants; shared authorized durable community soundboard implemented. Current local116files/759tests and native scoped persistence/two-share/full-app-layout/shared-audio transport receiptsPASS; later37focusedstorage/mediachecks and React reviewPASS. Feature access-service update and client installation/publication remain pending; installedRC.5/heldRC.6 preserved.
+
+Renewed DJ report reproduced as audible room music with fixed0:00 position, owner confirms actual audibility. Existing queuedDuration ms→seconds correction deployed music-only as rooms-music:20261013-counter after scoped encrypted rollback backup/read-only isolatedstartup/16musicchecks. Owner confirms music and progressing timer. UI five-second jumps then corrected source-only via bounded monotonic clock with9tests/nativeclockPASS. Provider source-denial probe remainsOPEN; no authentication workaround. See ROOM_MEDIA_FOLLOWUP.md and DJ_COUNTER_FOLLOWUP.md. No release,feed,mainmerge/accountchange.
+
+
+## Linux stereo deployment and acceptance limits — 2026-10-13
+
+Pinned native build38403230313 and exact-source Verify38403230106/38403241196 succeeded (117files/771tests, native smoke and GitGuardian). The compatible derived image rooms-music:20261013-stereo passed native load, true separate-channel SFU receipt and approved-source pause/resume. Encrypted scoped rollback was retained; only music was recreated, health200 and bundle/native parity verified. Owner then confirmed actual room music (“calisti”). This closes the Linux native stereo integration gate and confirms this specific room source; source-provider availability and full physical two-Mac acceptance remain OPEN. See DJ_LINUX_STEREO_DEPLOYMENT.json and related receipts. No desktop package, install, feed publication or main merge.
+
+
+## Owner-selected video remains blocked — 2026-10-13
+
+After the owner's specific “calisti” confirmation, the owner reports that his own selection still fails, while the agent's selection plays. Installed RC.5 shows empty queue and “YouTube sunucudan bu parçanın erişimini engelledi. Başka bir bağlantı dene.” The exact link is vKHu4uPOJVg with RDvKHu4uPOJVg and optional start_radio. Existing parser selects this video and drops radio parameters; it is not a playlist interpretation defect.
+
+Recorded before any proposed repair: one bounded request in the current stereo music container returns exit1, botCheck=true/login=true, cookieExpired=false and no age/region/private/removed/403/429 flags. Same-session known control dQw4w9WgXcQ returns metadata exit0. No secrets or raw provider diagnostics logged. This confirms source-dependent provider rejection, not proof that all links work or an owner/agent privilege difference. No source substitution, security bypass or speculative restart performed.
+
+The provider block is unresolved. Current source already replaces the installed misleading “try another link” instruction with a server YouTube-access error in both command and snapshot paths; that wording is not installed and cannot restore provider access. DJ remains OPEN; prior room audio confirmation is limited to the accepted source. Release hold remains in effect. Receipt: DJ_OWNER_SOURCE_REJECTION.json.

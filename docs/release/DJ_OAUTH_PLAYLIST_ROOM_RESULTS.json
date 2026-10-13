@@ -1,0 +1,34 @@
+{
+  "scope": "Actual current MusicWorker + dedicated OAuth TV + private parser + Linux stereo publisher + isolated QA SFU receiver; only lease/room namespace are DEMO fixtures; no human subscriptions, speakers or audio recordings",
+  "single": {
+    "title": "Diyar Pala - Ye\u015filimi Ver",
+    "duration": 203,
+    "frames": 573,
+    "maxRms": 11694.241356548458,
+    "position": 2.015
+  },
+  "pauseStable": true,
+  "resume": {
+    "position": 3.02,
+    "rms": 1424.2082029002406
+  },
+  "playlist": {
+    "count": 10,
+    "firstTitle": "Diyar Pala - Bensiz Yapama",
+    "firstDuration": 200,
+    "rms": 7367.069302250839
+  },
+  "next": {
+    "title": "Diyar Pala - Ye\u015filimi Ver",
+    "rms": 1810.78241750401
+  },
+  "stop": "disconnected",
+  "result": "PASS_EXACT_SOURCE_PLAYLIST_NEXT_PAUSE_RESUME_STOP_TO_SFU",
+  "ownerLiveAcceptance": {
+    "date": "2026-10-13",
+    "room": "Lounge",
+    "result": "Owner confirms both Bensiz Yapama and next Ye\u015filimi Ver audible",
+    "reportedText": "\u0130kisi de \u00e7al\u0131yor",
+    "twoPhysicalMacAcceptance": "Not claimed"
+  }
+}

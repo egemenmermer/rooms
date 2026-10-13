@@ -1,0 +1,4 @@
+{
+  "scope": "Current clock component in isolated native Chromium, explicit DEMO confirmed-position input; real wall-clock progression, not room audibility",
+  "result": "PASS_NATIVE_SECOND_BY_SECOND_CLOCK_AUTHORITATIVE_PAUSE"
+}

@@ -1,0 +1,12 @@
+{
+  "scope": "Actual Linux current publisher/ffmpeg/generated440Hz-left880Hz-rightMP3/isolatedSFU/Node2channelreceiver; no provider access/human subscriptions/speakers/recordings",
+  "native": "stock",
+  "received": {
+    "frames": 152,
+    "left440": 1026.0675684859352,
+    "left880": 1023.4848720446157,
+    "right440": 1026.0675684859352,
+    "right880": 1023.4848720446157
+  },
+  "result": "BASELINE_STOCK_MONO_OBSERVED"
+}

@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-13",
+  "status": "SOURCE_PCM_VERIFIED_ROOM_PENDING",
+  "videoId": "vKHu4uPOJVg",
+  "engine": "youtube-source 1.18.2 / lavaplayer 2.2.7",
+  "client": "TV_OAUTH_ONLY",
+  "dedicatedAccountConsent": "Owner confirmed separate account",
+  "oauthAuthorized": true,
+  "audioFrames": 0,
+  "rms": 0,
+  "roomPublished": false,
+  "failureStage": "Client.getPlayabilityStatus",
+  "exceptionTypes": [
+    "AllClientsFailedException",
+    "ClientException",
+    "FriendlyException"
+  ],
+  "specificProviderReason": "Unclassified; no raw provider response or credentials logged",
+  "boundedAttempts": 3,
+  "attemptReason": "Initial source probe, then two diagnostic-only refinements; same source/account/client with no fallback",
+  "primaryAccountNewGrantConsumed": false,
+  "productionConfigChanged": false,
+  "desktopReleaseCreated": false,
+  "acceptance": "FAILED: no source PCM, no room audibility claim",
+  "followup": {
+    "date": "2026-10-13",
+    "baselineDiagnostic": "PAGE_RELOAD_REQUIRED",
+    "upstreamTVFix": "b33460b38ad13b5cd07da75e46444397cf0ea2df",
+    "fixedTVThenFailure": "ScriptExtractionException in bundled local parser",
+    "privateParser": {
+      "repository": "https://github.com/kikkia/yt-cipher",
+      "sourceRevision": "1e1fd8e2f34ca90cf23545be72e46307bd3d3d2a",
+      "imageDigest": "sha256:4c5ec381ff57336cfc24822d2b526a5ad7cd0171f61065a1bbc87bb736842449",
+      "publicPort": false,
+      "googleCredentialsMounted": false
+    },
+    "pcm": {
+      "frames": 150,
+      "rms": 2877.660540738296,
+      "result": "PASS_PCM"
+    },
+    "nativeProbeCorrection": "Lavaplayer native requires executable mapping; dedicated temporary JNI mount explicitly exec. Production will bake connector and use lava.native.connector.path, keeping temp noexec.",
+    "officialOembed": {
+      "status": 200,
+      "title": "Diyar Pala - Ye\u015filimi Ver",
+      "durationKnown": false
+    },
+    "roomAcceptance": "PENDING; source success is not room audibility"
+  }
+}

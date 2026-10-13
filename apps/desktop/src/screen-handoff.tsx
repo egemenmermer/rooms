@@ -36,28 +36,39 @@ export function ScreenHandoffRuntime() {
   const channelId = useVoiceContext(state => state.channelId);
   const identity = useCommunity(state => state.user?.id ?? null);
   const realtime = useRealtime();
+  const serverUrl = useCommunity(state => state.serverUrl);
+  const connected = realtime.status === 'connected';
   const value = useScreenHandoffStore(state => state.value);
   const stoppedRequest = useRef<string | null>(null);
 
   useEffect(() => {
     useScreenHandoffStore.getState().setChannel(channelId);
-    if (!channelId || !identity) return;
+    if (!channelId || !identity || !connected) return;
     let stopped = false;
     let running = false;
+    let timer: number | undefined;
+    let retryDelay = 0;
     const refresh = async () => {
       if (stopped || running) return;
       running = true;
       try {
         const result = await mediaBridge().screenState(channelId);
-        if (!stopped && useScreenHandoffStore.getState().channelId === channelId) useScreenHandoffStore.getState().update(result);
+        if (!stopped && useScreenHandoffStore.getState().channelId === channelId) { useScreenHandoffStore.getState().update(result); retryDelay = 0; }
       } catch (error) {
+        retryDelay = Math.min(60000, Math.max(10000, retryDelay * 2));
         if (!stopped && useScreenHandoffStore.getState().channelId === channelId) useScreenHandoffStore.getState().setError(uiError(error));
-      } finally { running = false; }
+      } finally {
+        running = false;
+        if (!stopped) {
+          const reservation = useScreenHandoffStore.getState().value?.reservation;
+          const interval = reservation && reservation.expiresAt > Date.now() ? 2000 : 5000;
+          timer = window.setTimeout(() => void refresh(), Math.max(interval, retryDelay));
+        }
+      }
     };
     void refresh();
-    const timer = window.setInterval(() => void refresh(), 2000);
-    return () => { stopped = true; window.clearInterval(timer); };
-  }, [channelId, identity]);
+    return () => { stopped = true; window.clearTimeout(timer); };
+  }, [channelId, identity, serverUrl, connected]);
 
   useEffect(() => {
     const reservation = value?.reservation;

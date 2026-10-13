@@ -3,7 +3,7 @@ import { useDmCall } from './dm-call';
 import { uiError } from './i18n';
 import { create } from 'zustand';
 import { useSyncExternalStore } from 'react';
-import { type MediaSnapshot } from '@rooms/media';
+import { type NoiseSuppressionMode, type MediaSnapshot } from '@rooms/media';
 import { mediaProvider, mediaBridge } from './runtime-sources';
 import { useRooms } from './store';
 export const useVoiceContext=create<{channelId:string|null;roomName:string|null;error:string|null;busy:boolean}>(()=>({channelId:null,roomName:null,error:null,busy:false}));
@@ -15,6 +15,8 @@ let pendingTarget:string|null=null,pendingPromise:Promise<void>|null=null;
 let desiredMuted=true,microphoneScope='';
 const sessionScope=()=>`${useCommunity.getState().serverUrl}:${useCommunity.getState().user?.id??''}`;
 function serialize(work:()=>Promise<void>){const next=sequence.catch(()=>{}).then(work);sequence=next.catch(()=>{});return next;}
+const updateListenerScope=()=>{const state=useCommunity.getState();mediaProvider().setListenerScope?.(state.user?JSON.stringify([state.serverUrl,state.user.id]):'');};
+updateListenerScope();useCommunity.subscribe((state,previous)=>{if(state.user?.id!==previous.user?.id||state.serverUrl!==previous.serverUrl)updateListenerScope();});
 function disconnectActive(){const id=activeChannel;activeChannel=null;const media=mediaProvider().disconnect();const presence=id&&window.rooms?bridge().leave(id).catch(()=>{}):Promise.resolve();return Promise.all([media,presence]).then(()=>{});}
 export function joinVoice(channelId:string,roomName:string):Promise<void>{
  const dm=useDmCall.getState();if(dm.busy||dm.call?.state==='ringing'||dm.call?.state==='accepted')return Promise.reject(new Error('Önce özel görüşmeyi bitir.'));
@@ -36,7 +38,7 @@ export function joinVoice(channelId:string,roomName:string):Promise<void>{
    activeChannel=channelId;
    await mediaProvider().connectRoom(grant.roomName,grant.token,grant.serverUrl);
    if(!current()){await disconnectActive();return;}
-   await mediaProvider().setNoiseSuppression(useRooms.getState().preferences.noiseSuppression);
+   await mediaProvider().setNoiseSuppression(useRooms.getState().preferences.noiseSuppression,useRooms.getState().preferences.noiseSuppressionMode);
    if(!current()){await disconnectActive();return;}
    await mediaProvider().deviceSelection(useRooms.getState().preferences.inputId,useRooms.getState().preferences.outputId);
    if(!current()){await disconnectActive();return;}
@@ -63,6 +65,6 @@ export const setParticipantVolume=(id:string,volume:number)=>mediaProvider().set
 export const startRoomAudio=()=>run(()=>mediaProvider().startAudio());
 export const attachMediaTrack=(id:string,element:HTMLMediaElement)=>mediaProvider().attachTrack(id,element);
 
-export const setNoiseSuppression=(value:boolean)=>run(()=>mediaProvider().setNoiseSuppression(value));
+export const setNoiseSuppression=(value:boolean,mode?:NoiseSuppressionMode)=>run(()=>mediaProvider().setNoiseSuppression(value,mode));
 export const playSoundboard=(buffer:AudioBuffer,volume:number)=>run(()=>mediaProvider().playSoundboard(buffer,volume));
 export const stopSoundboard=()=>mediaProvider().stopSoundboard();

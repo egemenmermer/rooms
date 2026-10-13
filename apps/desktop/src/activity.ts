@@ -24,13 +24,13 @@ function entryFor(roomId:string|null){
  }
  return entry;
 }
-function refreshEntry(entry:Entry):Promise<void>{
- if(entry.request)return entry.request;
+function refreshEntry(entry:Entry,immediate=false):Promise<void>{
+ if(entry.request&&!immediate)return entry.request;
  const generation=entry.generation;
  const request=(async()=>{
   const fixture=developmentActivityState(entry.roomId);
   if(fixture){if(valid(entry,generation))patch(entry,{room:fixture.room,status:fixture.status,error:fixture.error,serverOffsetMs:fixture.serverTimeMs-Date.now()});return;}
-  try{accept(entry,await activityBridge().snapshot(entry.roomId,entry.view.room?.revision??0),generation);}
+  try{accept(entry,await activityBridge().snapshot(entry.roomId,immediate?undefined:entry.view.room?.revision??0),generation);}
   catch(error){if(valid(entry,generation))patch(entry,{error:uiError(error),status:'error'});}
  })();
  entry.request=request;void request.finally(()=>{if(entry.request===request)entry.request=null;});return request;
@@ -60,7 +60,7 @@ export function useActivityRoom(roomId:string|null){
  const getSnapshot=useCallback(()=>entry?.view??idle,[entry]);
  const view=useSyncExternalStore(subscribe,getSnapshot,getSnapshot);
  useEffect(()=>{if(!entry)return;entry.users++;if(entry.users===1){entry.observerEpoch++;observe(entry);}return()=>{entry.users--;if(!entry.users){entry.observerEpoch++;clearTimeout(entry.timer);}};},[entry,accountScope]);
- const refresh=useCallback(()=>entry?refreshEntry(entry):Promise.resolve(),[entry]);
+ const refresh=useCallback(()=>entry?refreshEntry(entry,true):Promise.resolve(),[entry]);
  const send=useCallback(async(command:ActivityCommand)=>{
   if(!entry)throw new Error('Önce bir oda seçin.');
   const generation=entry.generation;
@@ -78,7 +78,7 @@ export function useActivityRoom(roomId:string|null){
     }
     if(!valid(entry,generation))throw new Error('Oturum değişti. Yeniden dene.');
     accept(entry,await activityBridge().command(entry.roomId,{protocolVersion:1,commandId:crypto.randomUUID(),expectedRevision:state.revision,command}),generation);
-   }catch(error){if(valid(entry,generation)){await refreshEntry(entry);patch(entry,{error:uiError(error)});}throw error;}
+   }catch(error){if(valid(entry,generation)){await refreshEntry(entry,true);if(valid(entry,generation))patch(entry,{error:uiError(error)});}throw error;}
    finally{if(valid(entry,generation))patch(entry,{busy:false});}
   });
   entry.pending=task;await task;

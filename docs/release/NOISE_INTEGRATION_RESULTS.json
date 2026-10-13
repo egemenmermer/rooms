@@ -1,0 +1,43 @@
+{
+  "preAbortedInitializationRefused": true,
+  "destroyedMixerRefused": true,
+  "runtimeFaultCallback": true,
+  "strongInitialization": true,
+  "standardInitialization": true,
+  "stableOutputTrackOnModeSwitch": true,
+  "restart": true,
+  "cleanup": true,
+  "unsupportedRateRefused": true,
+  "fileComparisonUi": true,
+  "nonSilentRecordings": [
+    {
+      "duration": 6,
+      "rms": 0.09896164045726873
+    },
+    {
+      "duration": 6.06,
+      "rms": 0.08117715989781898
+    }
+  ],
+  "cancellation": true,
+  "rendererErrors": [],
+  "scope": "Local Electron fixture and production audio graph, no microphone permission, account, remote server, or physical call",
+  "noiseBranch": "d13b1b39f3716e1a9716776d84da245b4a5cd7b3",
+  "integrationBase": "bca85c0dc9441e003cb37d1b4e1faf0010fd72fa",
+  "fullTests": {
+    "files": 117,
+    "tests": 774,
+    "result": "PASS"
+  },
+  "typecheck": "PASS",
+  "lint": "PASS",
+  "rendererElectronBuild": "PASS",
+  "servicesBuild": "PASS",
+  "desktopShell": "PASS",
+  "initialFailures": {
+    "unitTests": "6 legacy microphone mocks targeted setMicrophoneEnabled instead of the new preprocessed capture/publish path; updated fixtures retain denial/fallback/late-result assertions and add prepublication/fail-closed regressions",
+    "nativeUI": "First comparison selector timed out waiting for navigation after audio graph PASS; unchanged product retry completed comparison with nonzero raw/filtered output. Initial failure is preserved, not attributed to a diagnosed product defect."
+  },
+  "physicalTwoMac": "OPEN",
+  "realMicrophoneNoiseAcceptance": "OPEN"
+}

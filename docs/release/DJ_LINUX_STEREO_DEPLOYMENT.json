@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-13",
+  "image": "rooms-music:20261013-stereo",
+  "imageId": "sha256:2461a3d8001815eefc62e47af2cc845c517f7fda1d864c454f20839347ba7a96",
+  "bundleSha256": "a846a8f1896ead8fecaa86e0ee77f8905ab119b936b0063a18e480db4de4ad75",
+  "nativeSha256": "333c965e0e92414f64fa22960d162b6a43843db5cc777d961b3f4b83e13b4c3e",
+  "backup": "/opt/rooms/backups/music-before-stereo-20261013.tar.age",
+  "checks": [
+    "Isolated readonly/network-none health 200",
+    "Actual native two-channel AudioSource creation/disposal",
+    "Baked-image generated stereo to isolated SFU channel-separation PASS",
+    "Actual approved YouTube to isolated SFU pause/resume PASS",
+    "Music-only deployment, health 200 and bundle/native parity verified"
+  ],
+  "ownerConfirmation": "calisti",
+  "scope": "Specific actual room audibility after deployment; not all YouTube source availability or complete physical two-Mac acceptance",
+  "desktopRelease": "HELD; installed RC.5 unchanged",
+  "providerAccess": "OPEN"
+}

@@ -1,0 +1,26 @@
+{
+  "scope": "Isolated native Chromium, real SDK RemoteParticipant/RemoteAudioTrack and real audio element; synthetic silent MediaStream, simulated room events; no SFU or physical loudness claim, no microphone/owner data",
+  "levels": [
+    {
+      "setting": 0.01,
+      "actualElementGain": 0.0001,
+      "displayedSetting": 0.01
+    },
+    {
+      "setting": 0.09,
+      "actualElementGain": 0.0081,
+      "displayedSetting": 0.09
+    },
+    {
+      "setting": 0,
+      "actualElementGain": 0,
+      "displayedSetting": 0
+    },
+    {
+      "setting": 1,
+      "actualElementGain": 1,
+      "displayedSetting": 1
+    }
+  ],
+  "result": "PASS_NATIVE_SDK_AUDIO_ELEMENT_QUIET_GAIN"
+}

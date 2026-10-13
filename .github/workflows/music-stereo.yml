@@ -1,0 +1,76 @@
+name: Build experimental music stereo
+on:
+  push:
+    branches: [codex/reference-package]
+    paths:
+      - '.github/workflows/music-stereo.yml'
+      - 'infra/music/livekit-stereo.patch'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: music-stereo-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  linux-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    container:
+      image: rust@sha256:408fe88047cef61a2087653b0c5255fa51c0f2d6d94ddedd7a2562a9b91a46f6 # 1.97.1-bookworm, amd64
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: rooms
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: livekit/rust-sdks
+          ref: 63128d01d955d9d8967544f46cff64a361232bf6
+          path: upstream
+          submodules: recursive
+          persist-credentials: false
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends clang cmake pkg-config protobuf-compiler libssl-dev libx11-dev libgl1-mesa-dev libxext-dev libva-dev libdrm-dev libgbm-dev libxdamage-dev libxrandr-dev libxfixes-dev libxcomposite-dev
+      - uses: arduino/setup-protoc@c65c819552d16ad3c9b72d9dfd5ba5237b9c906b # upstream build action
+        with:
+          version: '29.5'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Apply exact stereo patch and build
+        working-directory: upstream
+        env:
+          CC: clang
+          CXX: clang++
+          CARGO_BUILD_JOBS: '2'
+        run: |
+          test "$(git rev-parse HEAD)" = 63128d01d955d9d8967544f46cff64a361232bf6
+          git apply --check ../rooms/infra/music/livekit-stereo.patch
+          git apply ../rooms/infra/music/livekit-stereo.patch
+          cargo build --release --locked -p rtc-node-ffi-bindings
+      - name: Collect binary, notices and provenance
+        working-directory: upstream
+        run: |
+          mkdir ../artifact
+          cp target/release/librtc_node_ffi_bindings.so ../artifact/rtc-node.rooms-stereo.node
+          cp LICENSE ../artifact/LICENSE.livekit-rust
+          cp yuv-sys/libyuv/LICENSE ../artifact/LICENSE.libyuv
+          test -s livekit-ffi/WEBRTC_LICENSE.md
+          cp livekit-ffi/WEBRTC_LICENSE.md ../artifact/LICENSE.webrtc.md
+          cp Cargo.lock ../artifact/Cargo.lock
+          git submodule status > ../artifact/submodules.txt
+          rustc --version > ../artifact/toolchain.txt
+          clang --version >> ../artifact/toolchain.txt
+          protoc --version >> ../artifact/toolchain.txt
+          git rev-parse HEAD > ../artifact/upstream-revision.txt
+          sha256sum ../rooms/infra/music/livekit-stereo.patch > ../artifact/patch.sha256
+          cd ../artifact
+          sha256sum rtc-node.rooms-stereo.node > native.sha256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: experimental-linux-music-stereo
+          path: artifact/
+          retention-days: 7
+          if-no-files-found: error
+# Build-only: no production credentials, deployment, signing or release publication.
+# Linux load/transport/channel-separation verification remains required before use.

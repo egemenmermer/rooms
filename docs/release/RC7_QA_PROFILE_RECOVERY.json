@@ -1,0 +1,26 @@
+{
+  "incident": "QA profile ID exceeded40character limit; old launcher silently used the default profile and unguarded harness cleanup removed its directory",
+  "responsibility": "Agent harness error",
+  "serverAccountsMessagesAndHoppers": "NOT_MODIFIED",
+  "recovery": {
+    "currentEncryptedSessionSaved": "PASS; from still-running main process, using normal encrypted persistence",
+    "isolatedExistingSessionReopen": "PASS_AUTHENTICATED",
+    "localStoragePreferences": "PASS; two keys recovered from current renderer and persisted through a validated disposable child profile",
+    "conversationCache": "FLUSHED_FROM_EXISTING_MEMORY",
+    "nativeNotificationsUpdatesWindowPreferences": "SAVED_FROM_CURRENT_MEMORY",
+    "personalProviderConnections": 0,
+    "agentConnectionConfigured": false,
+    "ownerProcess": "KEPT_RUNNING; no logout, password change or voice command",
+    "credentialOutput": "NONE",
+    "browserCachesAndOtherTemporaryQAProfiles": "Not byte-for-byte recoverable; regenerable browser cache and historical local test profiles were removed. Do not claim original profile unchanged."
+  },
+  "prevention": "Malformed ROOMS_PROFILE now fails before app setup;10regressions cover empty/overlong/traversal/invalid characters. QA launch/cleanup validates exact disposable child path before any deletion.",
+  "finalChecks": {
+    "files": 118,
+    "tests": 784,
+    "unit": "PASS",
+    "types": "PASS",
+    "lint": "PASS"
+  },
+  "initialCandidate": "Apple Accepted, DMG ticket validated, app stapling failed73; app has no stapled ticket and remains unpublished. macOS EPERM refused modifying the already-launched signed bundle. No permission/protection bypass; fresh corrected candidate will be built and stapled before launch."
+}

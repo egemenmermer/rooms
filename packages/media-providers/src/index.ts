@@ -1,6 +1,7 @@
 import { SpeakingMeter } from './speaking-meter';
+import type { NoiseSuppressionMode, NoiseProcessingState } from './noise-suppression';
 import { SoundboardMixer } from './soundboard';
-import { ConnectionState, Room, RoomEvent, Track, LocalAudioTrack, type Participant } from 'livekit-client';
+import { ConnectionState, Room, RoomEvent, Track, LocalAudioTrack, createLocalAudioTrack, type Participant } from 'livekit-client';
 import type { ConnectionStatus } from '@rooms/contracts';
 
 export interface MediaParticipant {
@@ -12,7 +13,7 @@ export interface MediaDiagnostics { bitrate: number | null; packetLoss: number |
 export interface MediaSnapshot {
   status: ConnectionStatus; roomId: string | null; error: string | null; muted: boolean;
   deafened: boolean; camera: boolean; sharing: boolean; audioBlocked: boolean;
-  inputDeviceFallback?: boolean; participants: MediaParticipant[]; tracks: MediaTrack[]; diagnostics: MediaDiagnostics;
+  inputDeviceFallback?: boolean; participants: MediaParticipant[]; tracks: MediaTrack[]; diagnostics: MediaDiagnostics; noiseProcessing?: NoiseProcessingState;
 }
 export interface MediaGrant { roomId: string; url: string; token: string }
 export type ScreenShareQuality='720p30'|'1080p30'|'1080p60'|'1440p60'|'4k30';
@@ -28,7 +29,7 @@ export interface RealtimeMediaProvider {
   readonly status: ConnectionStatus;
   connectRoom(roomId: string, shortLivedMembershipToken: string, serverUrl: string): Promise<void>;
   publishMic(deviceId?: string): Promise<void>;
-  setNoiseSuppression(value:boolean):Promise<void>;
+  setNoiseSuppression(value:boolean,mode?:NoiseSuppressionMode):Promise<void>;
   playSoundboard(buffer:AudioBuffer,volume:number):Promise<void>;
   stopSoundboard():void;
   publishCamera(enabled: boolean, deviceId?: string): Promise<void>;
@@ -39,9 +40,12 @@ export interface RealtimeMediaProvider {
   participantState(): MediaParticipant[]; diagnostics(): MediaDiagnostics;
   snapshot(): MediaSnapshot; subscribeState(listener: () => void): () => void;
   mute(value: boolean): Promise<void>; deafen(value: boolean): Promise<void>;
+  setListenerScope?(scope:string):void;
   setParticipantVolume(participantId: string, volume: number): void;
   startAudio(): Promise<void>; disconnect(): Promise<void>; reconnect(): Promise<void>;
 }
+/** Bot music needs finer attenuation than speech; the UI still stores a 0–1 level. */
+function listenerGain(id:string,level:number){return id.startsWith('rooms-music-')?level*level:level;}
 const emptyDiagnostics = (): MediaDiagnostics => ({ bitrate: null, packetLoss: null, rtt: null });
 /** No auth credentials other than the in-memory, short-lived room token enter this adapter. */
 export class LiveKitMediaProvider implements RealtimeMediaProvider {
@@ -50,6 +54,12 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   private listeners = new Set<() => void>();
   private audio = new Map<string, HTMLMediaElement>();
   private volumes = new Map<string, number>();
+  private listenerScope="";
+  setListenerScope(scope:string){
+    if(scope===this.listenerScope)return;this.listenerScope=scope;this.volumes.clear();
+    try{const value=JSON.parse(localStorage.getItem(`rooms-listener-levels-v1:${scope}`)??"{}");if(scope&&value&&typeof value==="object"&&!Array.isArray(value))for(const [id,level]of Object.entries(value).slice(0,512))if(id.length<=256&&typeof level==="number"&&Number.isFinite(level)&&level>=0&&level<=1)this.volumes.set(id,level);}catch{/* Missing or damaged settings do not prevent joining. */}
+    for(const [id,person]of this.room?.remoteParticipants??[])person.setVolume(listenerGain(id,this.volumes.get(id)??1));if(this.room)this.sync();
+  }
   private attachments = new Set<() => void>();
   private timer: ReturnType<typeof setInterval> | undefined;
   private speakingMeter = new SpeakingMeter(() => this.sync());
@@ -57,15 +67,43 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   private soundboardSerial=0;
   private soundboardWork:Promise<void>=Promise.resolve();
   private noiseSuppression=true;
+  private noiseMode:NoiseSuppressionMode='strong';
+  private inputDeviceId:string|undefined;
+  private microphoneSerial=0;
+  private pendingMic:LocalAudioTrack|null=null;
+  private pendingMixer:SoundboardMixer|null=null;
   private mixer:SoundboardMixer|null=null;
   private mixerTrack:LocalAudioTrack|null=null;
   private soundContext:AudioContext|null=null;
   private epoch = 0;
   private disconnecting:Promise<void>|null=null;
-  async setNoiseSuppression(value:boolean){
+  private microphoneWork:Promise<void>=Promise.resolve();
+  private microphoneTask<T>(operation:()=>Promise<T>):Promise<T>{const task=this.microphoneWork.then(operation);this.microphoneWork=task.then(()=>{},()=>{});return task;}
+  setNoiseSuppression(value:boolean,mode:NoiseSuppressionMode=this.noiseMode){return this.microphoneTask(async()=>{
+    const prior=this.noiseSuppression,previousMode=this.noiseMode;
     const track=this.room?.localParticipant.getTrackPublication(Track.Source.Microphone)?.track;
-    if(track instanceof LocalAudioTrack)await track.applyConstraints({noiseSuppression:value,echoCancellation:true});
-    this.noiseSuppression=value;
+    if(track instanceof LocalAudioTrack&&track.mediaStreamTrack.readyState==='live'){
+      await this.ensureMixer(track);
+      this.patch({noiseProcessing:{status:'starting',mode}});
+      try{await track.applyConstraints({noiseSuppression:false,echoCancellation:true,autoGainControl:!value||mode!=='strong'});await this.mixer!.setNoiseSuppression(value,mode);this.patch({noiseProcessing:{status:value?'active':'off',mode}});}
+      catch(error){try{await track.applyConstraints({noiseSuppression:false,echoCancellation:true,autoGainControl:!prior||previousMode!=='strong'});await this.mixer?.setNoiseSuppression(prior,previousMode);this.patch({noiseProcessing:{status:prior?'active':'off',mode:previousMode}});}catch{await track.mute();track.stop();this.patch({muted:true,noiseProcessing:{status:'failed',mode:previousMode}});}throw error;}
+    }
+    this.noiseSuppression=value;this.noiseMode=mode;
+  });}
+  private async ensureMixer(track:LocalAudioTrack){
+    const epoch=this.epoch,serial=this.microphoneSerial;
+    if(this.mixerTrack===track&&this.mixer?.processedTrack?.readyState==='live')return;
+    await this.mixer?.destroy();await this.soundContext?.close();
+    this.mixer=null;this.mixerTrack=null;
+    const context=new AudioContext({sampleRate:48_000});this.soundContext=context;
+    track.setAudioContext(context);this.patch({noiseProcessing:{status:this.noiseSuppression?'starting':'off',mode:this.noiseMode}});
+    const mixer=new SoundboardMixer(this.noiseSuppression,this.noiseMode,{
+      error:()=>{if(this.mixer!==mixer)return;this.stopSoundboard();this.patch({muted:true,error:'Gürültü filtresi durdu. Mikrofon kapatıldı. Filtre modunu değiştirip mikrofonu yeniden aç.',noiseProcessing:{status:'failed',mode:this.noiseMode}});void track.mute().catch(()=>{}).finally(()=>track.stop());},
+      stats:stats=>{if(this.mixer===mixer&&this.state.noiseProcessing?.status==='active')this.patch({noiseProcessing:{status:'active',mode:this.noiseMode,stats}});},
+    });
+    this.pendingMixer=mixer;
+    try{await track.setProcessor(mixer);await context.resume();if(epoch!==this.epoch||serial!==this.microphoneSerial)throw new DOMException('Cancelled','AbortError');this.mixer=mixer;this.mixerTrack=track;this.patch({noiseProcessing:{status:this.noiseSuppression?'active':'off',mode:this.noiseMode}});}
+    catch(error){await mixer.destroy();await context.close();if(this.soundContext===context)this.soundContext=null;if(epoch===this.epoch&&serial===this.microphoneSerial)this.patch({noiseProcessing:{status:'failed',mode:this.noiseMode}});throw error;}finally{if(this.pendingMixer===mixer)this.pendingMixer=null;}
   }
   stopSoundboard(){++this.soundboardSerial;this.mixer?.stop();}
   playSoundboard(buffer:AudioBuffer,volume:number){
@@ -79,13 +117,13 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     const room=this.requireRoom();if(this.state.muted||this.state.deafened)throw new Error('Önce mikrofonu aç.');
     const track=room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track;
     if(!(track instanceof LocalAudioTrack))throw new Error('Mikrofon kullanılamıyor.');
-    if(this.mixerTrack!==track){this.mixer?.stop();await this.mixer?.destroy();await this.soundContext?.close();this.soundContext=new AudioContext();track.setAudioContext(this.soundContext);const mixer=new SoundboardMixer();try{await track.setProcessor(mixer);}catch(error){await mixer.destroy();await this.soundContext.close();this.soundContext=null;throw error;}this.mixer=mixer;this.mixerTrack=track;}
+    await this.microphoneTask(()=>this.ensureMixer(track));
     if(this.room!==room||!room.localParticipant.isMicrophoneEnabled||this.state.deafened)throw new Error('Mikrofon kapalı.');
     await this.mixer!.play(buffer,volume,()=>serial===this.soundboardSerial&&this.room===room&&room.localParticipant.isMicrophoneEnabled&&!this.state.deafened);
     if(this.room!==room||!room.localParticipant.isMicrophoneEnabled||this.state.deafened)this.stopSoundboard();
   }
   private priorStats: { time: number; bytes: number } | null = null;
-  constructor(private readonly createRoom: () => Room = () => new Room({ adaptiveStream: true, dynacast: true, disconnectOnPageLeave: true, audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } })) {}
+  constructor(private readonly createRoom: () => Room = () => new Room({ adaptiveStream: true, dynacast: true, disconnectOnPageLeave: true, audioCaptureDefaults: { echoCancellation: true, noiseSuppression: false, autoGainControl: true } })) {}
   get status() { return this.state.status; }
   snapshot = () => this.state;
   subscribeState = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
@@ -133,7 +171,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       if(this.room!==room)return;
       if (track.kind === Track.Kind.Audio && typeof document !== 'undefined') {
         const element = track.attach(); element.hidden = true; document.body.append(element); this.audio.set(publication.trackSid, element);
-        element.muted = this.state.deafened; participant.setVolume(this.volumes.get(participant.identity) ?? 1);
+        element.muted = this.state.deafened; participant.setVolume(listenerGain(participant.identity,this.volumes.get(participant.identity) ?? 1));
         void element.play().catch(() => this.patch({ audioBlocked: true }));
       }
       sync();
@@ -151,41 +189,51 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       throw new Error('Unable to connect to the media server. Check the server URL and room membership.');
     }
   }
-  private async enableMicrophone(deviceId?: string) {
-    const room = this.requireRoom();
-    const options = { ...(deviceId ? { deviceId } : {}), echoCancellation: true, noiseSuppression: this.noiseSuppression };
-    try { await room.localParticipant.setMicrophoneEnabled(true, options); }
-    catch (error) {
-      if (this.room !== room) return;
-      const failure = error as { name?: string; constraint?: string };
-      // A disconnected or origin-rotated device ID must not make explicit unmute unusable.
-      // Permission failures never retry; only a missing device uses the system default.
-      if (failure?.name !== 'NotFoundError' && !(failure?.name === 'OverconstrainedError' && (!failure.constraint || failure.constraint === 'deviceId'))) throw error;
-      if (this.room !== room || this.state.deafened) throw error;
-      if (!await room.switchActiveDevice('audioinput', 'default')) throw error;
-      if (this.room !== room || this.state.deafened) return;
-      await room.localParticipant.setMicrophoneEnabled(true, { ...options, deviceId: 'default' });
-      if (this.room === room) this.patch({ inputDeviceFallback: true });
+  private async captureMicrophone(room:Room,serial:number,deviceId?:string){
+    const options={deviceId:deviceId??this.inputDeviceId,echoCancellation:true,noiseSuppression:false,autoGainControl:!this.noiseSuppression||this.noiseMode!=='strong',channelCount:1,sampleRate:48_000};
+    try{return await createLocalAudioTrack(options);}catch(error){
+      const failure=error as {name?:string;constraint?:string};
+      if(failure?.name!=='NotFoundError'&&!(failure?.name==='OverconstrainedError'&&(!failure.constraint||failure.constraint==='deviceId')))throw error;
+      if(this.room!==room||serial!==this.microphoneSerial||this.state.deafened)throw error;
+      if(!await room.switchActiveDevice('audioinput','default'))throw error;
+      if(this.room!==room||serial!==this.microphoneSerial||this.state.deafened)throw error;
+      const track=await createLocalAudioTrack({...options,deviceId:'default'});
+      if(this.room===room&&serial===this.microphoneSerial){this.inputDeviceId=undefined;this.patch({inputDeviceFallback:true});}
+      return track;
     }
-    // Permission/capture may finish after leave or deafen. Stop only that room's publication.
-    if (this.room !== room || this.state.deafened) {
-      room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track?.stop();
-      await room.localParticipant.setMicrophoneEnabled(false).catch(() => {});
-      return;
-    }
-    this.patch({ error: null }); this.sync();
   }
-  async publishMic(deviceId?: string) { const room=this.room; if (this.state.deafened) throw new Error('Undeafen before enabling your microphone.'); try { await this.enableMicrophone(deviceId); } catch (error) { if(this.room!==room)return; this.fail(error); throw new Error(this.state.error!); } }
-  async mute(value: boolean) {
-    const room=this.room;
-    if (!value && this.state.deafened) throw new Error('Undeafen before enabling your microphone.');
-    try { if(value){this.stopSoundboard();await this.requireRoom().localParticipant.setMicrophoneEnabled(false);this.patch({error:null});this.sync();}else await this.enableMicrophone(); }
-    catch(error){if(this.room!==room)return;this.fail(error);throw new Error(this.state.error!);}
+  publishMic(deviceId?:string){const serial=this.microphoneSerial;return this.microphoneTask(async()=>{
+    if(serial!==this.microphoneSerial)return;
+    if(this.state.deafened)throw new Error('Undeafen before enabling your microphone.');
+    const room=this.requireRoom();
+    let created:LocalAudioTrack|undefined;
+    try{
+      const existing=room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track;
+      if(existing instanceof LocalAudioTrack&&existing.mediaStreamTrack.readyState==='live'){await this.ensureMixer(existing);if(this.room!==room||this.state.deafened||serial!==this.microphoneSerial)throw new Error('Voice room changed while opening the microphone.');await existing.unmute();}
+      else{
+        if(existing instanceof LocalAudioTrack){await room.localParticipant.unpublishTrack(existing);existing.stop();}
+        if(this.room!==room||serial!==this.microphoneSerial)return;
+        created=await this.captureMicrophone(room,serial,deviceId);
+        this.pendingMic=created;
+        if(this.room!==room||this.state.deafened||serial!==this.microphoneSerial){created.stop();return;}
+        await this.ensureMixer(created);
+        if(this.room!==room||this.state.deafened||serial!==this.microphoneSerial)throw new Error('Voice room changed while opening the microphone.');
+        // Attach processing before publishing: never transmit an initial raw segment.
+        await room.localParticipant.publishTrack(created,{source:Track.Source.Microphone});
+        if(this.room!==room||this.state.deafened||serial!==this.microphoneSerial){await created.mute();throw new Error('Voice room changed while publishing the microphone.');}
+      }
+      this.patch({error:null});this.sync();
+    }catch(error){if(created){created.stop();await this.mixer?.destroy();this.mixer=null;this.mixerTrack=null;await this.soundContext?.close();this.soundContext=null;}if(serial!==this.microphoneSerial||this.room!==room)return;this.fail(error);throw new Error(this.state.error??'Media operation failed.');}finally{if(this.pendingMic===created)this.pendingMic=null;}
+  });}
+  async mute(value:boolean){
+    if(!value)return this.publishMic();
+    ++this.microphoneSerial;this.pendingMic?.stop();void this.pendingMixer?.destroy();
+    this.stopSoundboard();
+    return this.microphoneTask(async()=>{try{await this.requireRoom().localParticipant.setMicrophoneEnabled(false);this.sync();}catch(error){this.fail(error);throw new Error(this.state.error??'Media operation failed.');}});
   }
   async publishCamera(enabled: boolean, deviceId?: string) { try { await this.requireRoom().localParticipant.setCameraEnabled(enabled, { deviceId, resolution: { width: 1280, height: 720, frameRate: 30 } }); this.sync(); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
   async publishScreen(options:ScreenShareOptions={}) {
     const room = this.requireRoom();
-    if ([...room.remoteParticipants.values()].some(p => p.isScreenShareEnabled)) throw new Error('Another participant is presenting. Ask them to stop before presenting.');
     const profile=screenProfiles[options.quality??'1080p60'];
     try { await room.localParticipant.setScreenShareEnabled(true, { audio: options.audio?{channelCount:2,noiseSuppression:false,autoGainControl:false,echoCancellation:false,restrictOwnAudio:true}:false, resolution: { width: profile.width, height: profile.height, frameRate: profile.frameRate } }, { videoCodec:'h264',screenShareEncoding: { maxBitrate: profile.bitrate, maxFramerate: profile.frameRate },audioPreset:{maxBitrate:128000},forceStereo:true });
       if(options.audio&&!room.localParticipant.getTrackPublication(Track.Source.ScreenShareAudio)?.track){await this.stopScreen();throw new Error('System audio capture is unavailable.');}
@@ -196,12 +244,12 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     const room = this.room; if (!room) throw new Error('Join a voice room first.');
     // Deafen mutes playback without changing subscriptions: no audio can leak during resubscription.
     this.patch({ deafened: value }); this.audio.forEach(e => { e.muted = value; });
-    if (value) {this.stopSoundboard();await room.localParticipant.setMicrophoneEnabled(false);}
+    if (value) {++this.microphoneSerial;this.pendingMic?.stop();void this.pendingMixer?.destroy();this.stopSoundboard();await room.localParticipant.setMicrophoneEnabled(false);}
     this.sync();
   }
-  setParticipantVolume(id: string, volume: number) { if (!Number.isFinite(volume) || volume < 0 || volume > 1) throw new Error('Volume must be between 0 and 1.'); this.volumes.set(id, volume); this.room?.remoteParticipants.get(id)?.setVolume(volume); this.sync(); }
+  setParticipantVolume(id: string, volume: number) { if (!Number.isFinite(volume) || volume < 0 || volume > 1) throw new Error('Volume must be between 0 and 1.'); this.volumes.set(id, volume); if(this.listenerScope)try{localStorage.setItem(`rooms-listener-levels-v1:${this.listenerScope}`,JSON.stringify(Object.fromEntries([...this.volumes].slice(-512))));}catch{/* Playback remains usable when local storage is unavailable. */} this.room?.remoteParticipants.get(id)?.setVolume(listenerGain(id,volume)); this.sync(); }
   async startAudio() { try { await this.requireRoom().startAudio(); this.patch({ audioBlocked: false }); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
-  async deviceSelection(inputId: string, outputId: string) { try { const room = this.requireRoom(); if (!await room.switchActiveDevice('audioinput', inputId||'default')) throw new Error('Input unavailable.'); if (!await room.switchActiveDevice('audiooutput', outputId||'default')) throw new Error('Output unavailable.'); this.patch({error:null,inputDeviceFallback:false}); this.sync(); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
+  async deviceSelection(inputId: string, outputId: string) { try { const room = this.requireRoom(); if (!await room.switchActiveDevice('audioinput', inputId||'default')) throw new Error('Input unavailable.'); if (!await room.switchActiveDevice('audiooutput', outputId||'default')) throw new Error('Output unavailable.'); this.inputDeviceId=inputId||undefined;this.patch({error:null,inputDeviceFallback:false}); this.sync(); } catch (error) { this.fail(error); throw new Error(this.state.error ?? 'Media operation failed.'); } }
   participantState() { return this.state.participants; }
   diagnostics() { return this.state.diagnostics; }
   async subscribe(id: string) { const p = this.requireRoom().getParticipantByIdentity(id); if (!p) throw new Error('Participant is not in this room.'); return new MediaStream([...p.trackPublications.values()].flatMap(pub => pub.track ? [pub.track.mediaStreamTrack] : [])); }
@@ -224,15 +272,16 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   private cleanupPlayback() { this.speakingMeter.stop(); if (this.timer) clearInterval(this.timer); this.timer = undefined; this.attachments.forEach(detach => detach()); this.audio.forEach(e => { e.pause(); e.srcObject = null; e.remove(); }); this.audio.clear(); this.priorStats = null; }
   disconnect():Promise<void> {
     if(this.disconnecting)return this.disconnecting;
-    ++this.epoch;const room=this.room;this.room=null;this.grant=null;
+    ++this.epoch;++this.microphoneSerial;const room=this.room;this.room=null;this.grant=null;
+    this.pendingMic?.stop();this.mixerTrack?.stop();void this.pendingMixer?.destroy();void this.mixer?.destroy();
     this.stopSoundboard();
     // Stop capture and playback synchronously; network/mixer cleanup must not hold them open.
     for(const publication of room?.localParticipant.trackPublications.values()??[])publication.track?.stop();
-    this.cleanupPlayback();this.volumes.clear();
-    this.patch({status:'not-configured',roomId:null,error:null,muted:true,deafened:false,camera:false,sharing:false,audioBlocked:false,inputDeviceFallback:false,participants:[],tracks:[],diagnostics:emptyDiagnostics()});
+    this.cleanupPlayback();
+    this.patch({noiseProcessing:{status:'off',mode:this.noiseMode},status:'not-configured',roomId:null,error:null,muted:true,deafened:false,camera:false,sharing:false,audioBlocked:false,inputDeviceFallback:false,participants:[],tracks:[],diagnostics:emptyDiagnostics()});
     const transport=room?room.disconnect(true).finally(()=>room.removeAllListeners()):Promise.resolve();
     const cleanup=(async()=>{
-      await this.soundboardWork;
+      await this.soundboardWork;await this.microphoneWork;
       await this.mixer?.destroy();this.mixer=null;this.mixerTrack=null;
       await this.soundContext?.close();this.soundContext=null;
     })();
@@ -246,3 +295,8 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
 }
 export const liveKitMediaProvider = new LiveKitMediaProvider();
 export const mediaTransportStatus: ConnectionStatus = 'not-configured';
+
+export { createRnnoiseNode } from './rnnoise';
+
+export { createNoiseSuppressionNode } from './noise-suppression';
+export type { NoiseSuppressionMode, NoiseProcessingState } from './noise-suppression';

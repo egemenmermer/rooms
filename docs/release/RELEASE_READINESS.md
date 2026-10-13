@@ -30,3 +30,8 @@ Keep Agent, all media providers, all games, YouTube audio extraction and Windows
 Rough planning allocation, not additive independent tickets: baseline/scope 2–4d; core failures/acceptance 5–9d; data/security/observability 4–7d; release/onboarding/support 4–7d; RC soak/recovery 3–5d; 2–3d integration contingency overlaps these workstreams.
 Assumptions: preserve Stoat/Electron/LiveKit, one authoritative Activity process, one supported Mac platform, six-user initial room target, no paid launch/billing, no new integrations or design fidelity project. A severe physical media failure or restore incompatibility invalidates the estimate.
 The major gap is coherent current acceptance and operating the public product reliably, not lack of foundational code.
+
+
+2026-10-13 DJ source update: exact owner single and ten-track playlist now pass current Linux source/worker/SFU/pause/resume/next/stop. Owner confirms both playlist tracks audible in real Lounge. Music-only dedicated-account upstream bridge/private parser deployed; health200 and encrypted rollback retained. See DJ_YOUTUBE_BRIDGE_FIX.md and receipts. No desktop publication; release HOLD and remaining physical/UI/game/share acceptance stay open.
+
+2026-10-13 owner authorized a fresh private RC.7 publication after confirming exact playlist first/next room audio, and requested integration of feat/noise-suppression-v2. Earlier blanket hold is superseded for the verified private candidate; unverified physical/publicV1 gates stay open. See RC_0_1_18_7_NOTES.md and NOISE_INTEGRATION.md.
