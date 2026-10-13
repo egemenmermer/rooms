@@ -1,0 +1,84 @@
+{
+  "version": "0.1.18-rc.4",
+  "buildNumber": "1791881544",
+  "sourceSha": "4b38a862c729e52a30d6b5578340496b5630c1bb",
+  "artifacts": [
+    {
+      "name": "ROOMS-0.1.18-rc.4-arm64-mac.zip",
+      "sha256": "464b5103a3784938537e01cf3748d81a662dd78e9e598ae651825f5fabc32201",
+      "bytes": 161818261
+    },
+    {
+      "name": "ROOMS-0.1.18-rc.4-arm64.dmg",
+      "sha256": "0c5cdb57eb5fc7c1b065945e0588069660bd9d3a1a5fd2defa78b2b1efb34d8b",
+      "bytes": 160841940
+    }
+  ],
+  "notarization": {
+    "status": "Accepted",
+    "id": "de249c43-9587-4e24-99ca-ac757ca0f484"
+  },
+  "tests": {
+    "files": 109,
+    "tests": 716,
+    "result": "PASS"
+  },
+  "focusedTests": 15,
+  "lintTypeBuildServices": "PASS",
+  "hostedCI": {
+    "run": 38372221748,
+    "result": "PASS Ubuntu + macOS native"
+  },
+  "visualQA": {
+    "scope": "Native Electron DEV DEMO; no owner/production microphone, screen, messages or games",
+    "wide": [
+      1440,
+      774
+    ],
+    "narrow": [
+      900,
+      700
+    ],
+    "voiceClickOpensStage": true,
+    "singleParticipantActivityTile": true,
+    "visibleMicCameraShareControls": true,
+    "micToggle": true,
+    "micSettingsEscape": true,
+    "sourcePickerCancel": true,
+    "fullscreenEnterExit": true,
+    "soundboardSingleDialog": true,
+    "ownRoomChat": true,
+    "fiveParticipantLayout": true,
+    "incomingShareExplicitWatch": true,
+    "noPageOverflow": true,
+    "pageErrors": []
+  },
+  "signedLaunch": {
+    "result": "PASS_SIGNED_ISOLATED_LAUNCH",
+    "info": {
+      "version": "0.1.18-rc.4",
+      "platform": "darwin",
+      "arch": "arm64"
+    },
+    "asset": {
+      "width": 1280,
+      "height": 720,
+      "protocol": "file:"
+    },
+    "rendererNode": "undefined",
+    "pageErrors": [],
+    "scope": "signed-out random profile; packaged image loaded under file://; no owner credentials or real media acceptance"
+  },
+  "publication": {
+    "githubRelease": "https://github.com/egemenmermer/rooms/releases/tag/v0.1.18-rc.4",
+    "githubDigests": "PASS",
+    "sparkleFeed": "https://62.238.119.134/rooms-updates/appcast.xml",
+    "publicArchive": "https://62.238.119.134/rooms-updates/ROOMS-0.1.18-rc.4-arm64-mac.zip",
+    "publicDownloadSha256Ed25519": "PASS",
+    "previousEntriesPreserved": true
+  },
+  "installation": "PENDING owner app closure; UI safety guard blocked normal quit while owner changed app. Not bypassed.",
+  "physicalTwoMac": "OPEN",
+  "realFriendReception": "OPEN",
+  "fullRoomPopout": "Not implemented; active video supports PiP"
+}
