@@ -9,3 +9,9 @@ Final generation prompt:
 
 The former private-community real-person poster/clip, private reference screenshots and operator evidence are excluded from this source distribution and are not relicensed by the MIT file. Community-supplied customization remains the community operator's material; loading a manifest does not transfer ownership or redistribute it in the repository.
 
+
+## Documentation gallery
+
+`docs/images/home.png`, `chat.png`, and `voice.png` were captured on 2026-10-14 from the current ROOMS application renderer at source commit `f4e9e4f`, using isolated, deterministic sample community state (S08, S10, and S19). No account login, private server, provider session, or live call was used. The neutral landscape inside the chat activity card is original sample SVG artwork supplied only during capture. Avatars use the application's initial-letter fallbacks.
+
+The development indicator is omitted in the presentation captures; the application's development fixture marker and production boundaries remain unchanged. These are interface illustrations, not acceptance evidence for chat delivery, voice transport, or provider playback. The README and user guide identify sample community data. No private reference screenshot or real-person clip was reused.
