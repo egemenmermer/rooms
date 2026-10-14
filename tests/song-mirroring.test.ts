@@ -172,3 +172,39 @@ it('uses duration only from a matching public SoundCloud track page', async () =
     durationSec: 300.123,
   });
 });
+
+it('matches Turkish dotless-i credits without accepting a shorter music-video edit', () => {
+  const wanted = {
+    provider: 'spotify' as const,
+    title: 'Vakti Değil',
+    artists: ['Anıl K.Y', 'Savai'],
+    durationSec: 130.629,
+  };
+  const topic = {
+    id: 'IfJV6YIoBGk',
+    title: 'Vakti Değil',
+    duration: 131,
+    channel: 'Anil K.Y - Topic',
+    artists: ['Anıl K.Y', 'Savai'],
+  };
+  expect(
+    matchingSong(wanted, [
+      {
+        id: 'FDXNmpagxRM',
+        title: 'Anıl K.Y. feat. Savai - Vakti Değil (Official Video)',
+        duration: 103,
+      },
+      topic,
+    ]),
+  ).toEqual(topic);
+  expect(matchingSong(wanted, [{ ...topic, artists: [] }])).not.toBeNull();
+  expect(
+    matchingSong(wanted, [{ ...topic, channel: 'Other Artist - Topic', artists: [] }]),
+  ).toBeNull();
+  expect(
+    matchingSong(wanted, [
+      { ...topic, artists: [] },
+      { ...topic, id: 'M7lc1UVf-VE', artists: [] },
+    ]),
+  ).toBeNull();
+});

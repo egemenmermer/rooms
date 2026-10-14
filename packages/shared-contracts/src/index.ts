@@ -95,6 +95,7 @@ export interface DesktopBridge {
   };
   social: SocialBridge;
   music: {
+    history(channelId: string): Promise<import('./music').MusicHistorySession[]>;
     snapshot(channelId: string): Promise<import('./music').MusicSnapshot>;
     command(
       channelId: string,
@@ -255,6 +256,7 @@ export interface SocialBridge {
   createInvite(channelId: string): Promise<import('@rooms/social').SocialInvite>;
   inspectInvite(serverUrl: string, code: string): Promise<import('@rooms/social').SocialInvite>;
   acceptInvite(code: string): Promise<import('@rooms/social').SocialInvite>;
+  attachmentImage(channelId: string, messageId: string, fileId: string): Promise<string | null>;
   avatar(userId: string): Promise<string | null>;
   chooseAvatar(): Promise<import('@rooms/social').SocialUser | null>;
   channelPermissions(channelId: string): Promise<import('@rooms/social').SocialChannelPermissions>;

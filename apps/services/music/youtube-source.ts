@@ -330,7 +330,10 @@ export async function matchingYouTubeReference(song: SongMetadata): Promise<Musi
     throw new Error('MUSIC_MIRROR_NOT_FOUND');
   }
   const match = matchingSong(song, entries);
-  if (!match) throw new Error('MUSIC_MIRROR_NOT_FOUND');
+  if (!match)
+    throw Object.assign(new Error('MUSIC_MIRROR_NOT_FOUND'), {
+      song: { title: song.title, artists: song.artists },
+    });
   return {
     source: `https://www.youtube.com/watch?v=${match.id}`,
     title: match.title.replace(/[\x00-\x1f]/g, '').slice(0, 140),

@@ -7,12 +7,14 @@ export interface YouTubeCandidate {
   channel?: string;
   is_live?: boolean;
   has_drm?: boolean;
+  artists?: string[];
 }
 const normalize = (s: string) =>
   s
     .normalize('NFKD')
     .replace(/\p{M}/gu, '')
     .toLowerCase()
+    .replace(/ı/g, 'i')
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim();
 const variants = [
@@ -56,10 +58,9 @@ export function matchingSong(
     if (variants.some((v) => has(title, v) !== wanted.includes(v))) return false;
     const tokens = new Set(title.split(' '));
     if (words.filter((w) => tokens.has(w)).length / words.length < 0.9) return false;
-    const identity = normalize(`${c.title} ${c.channel ?? ''} ${c.uploader ?? ''}`).replace(
-      / /g,
-      '',
-    );
+    const identity = normalize(
+      `${c.title} ${c.channel ?? ''} ${c.uploader ?? ''} ${(c.artists ?? []).join(' ')}`,
+    ).replace(/ /g, '');
     if (!song.artists.every((a) => identity.includes(normalize(a).replace(/ /g, '')))) return false;
     if (
       song.durationSec &&
@@ -68,11 +69,27 @@ export function matchingSong(
       return false;
     return true;
   });
-  return (
-    good.sort((a, b) =>
-      song.durationSec
-        ? Math.abs(a.duration - song.durationSec) - Math.abs(b.duration - song.durationSec)
-        : 0,
-    )[0] ?? null
+  const exact = good.sort((a, b) =>
+    song.durationSec
+      ? Math.abs(a.duration - song.durationSec) - Math.abs(b.duration - song.durationSec)
+      : 0,
+  )[0];
+  if (exact) return exact;
+  // Topic search rows can omit featured artists. Require the exact primary artist,
+  // exact recording title and <=2 seconds duration difference; refuse ambiguity.
+  if (!song.durationSec) return null;
+  const primary = normalize(song.artists[0]!).replace(/ /g, '');
+  const topics = candidates.filter(
+    (c) =>
+      /^[A-Za-z0-9_-]{11}$/.test(c.id) &&
+      !c.is_live &&
+      !c.has_drm &&
+      Number.isFinite(c.duration) &&
+      Math.abs(c.duration - song.durationSec!) <= 2 &&
+      c.channel?.endsWith(' - Topic') &&
+      normalize(c.channel.slice(0, -8)).replace(/ /g, '') === primary &&
+      normalize(c.title) === target,
   );
+  const unique = [...new Map(topics.map((c) => [c.id, c])).values()];
+  return unique.length === 1 ? unique[0]! : null;
 }

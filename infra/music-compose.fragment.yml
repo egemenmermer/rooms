@@ -4,6 +4,11 @@ services:
     extra_hosts:
       - host.docker.internal:host-gateway
     # LiveKit runs on the host; without this mapping transport cannot connect.
+    volumes:
+      - ${ROOMS_MUSIC_HISTORY_DIR:?Set a private history directory}:/state
+    environment:
+      ROOMS_MUSIC_HISTORY_FILE: /state/music-history.json
+    # Provision the history directory as UID10001, mode0700; never mount account keys here.
     mem_limit: 1280m
     tmpfs:
       - /tmp:size=805306368,mode=1777

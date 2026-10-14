@@ -13,6 +13,24 @@ export const musicCommandSchema = z.discriminatedUnion('type', [
       positionSec: z.number().finite().min(0).max(7200),
     })
     .strict(),
+  z.object({ type: z.literal('select'), id: z.string().uuid() }).strict(),
+  z
+    .object({
+      type: z.literal('reorder'),
+      ids: z
+        .array(z.string().uuid())
+        .min(1)
+        .max(100)
+        .refine((ids) => new Set(ids).size === ids.length),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('restore'),
+      sessionId: z.string().uuid(),
+      trackId: z.string().uuid().optional(),
+    })
+    .strict(),
   z.object({ type: z.literal('stop') }).strict(),
   z.object({ type: z.literal('remove'), id: z.string().uuid() }).strict(),
 ]);
@@ -58,3 +76,35 @@ export const musicSnapshotSchema = z
   .strict();
 export type MusicSnapshot = z.infer<typeof musicSnapshotSchema>;
 export const musicIdentity = (channelId: string) => `rooms-music-${channelId.slice(0, 96)}`;
+
+export const musicHistorySchema = z
+  .array(
+    z
+      .object({
+        id: z.string().uuid(),
+        startedAt: z.string().datetime(),
+        endedAt: z.string().datetime().nullable(),
+        tracks: z
+          .array(
+            z
+              .object({
+                id: z.string().uuid(),
+                title: z.string().min(1).max(160),
+                durationSec: z.number().finite().min(0).max(7200),
+                played: z.boolean(),
+              })
+              .strict(),
+          )
+          .max(100),
+      })
+      .strict(),
+  )
+  .max(30);
+export type MusicHistorySession = z.infer<typeof musicHistorySchema>[number];
+
+export const musicFailedSongSchema = z
+  .object({
+    title: z.string().min(1).max(160),
+    artists: z.array(z.string().min(1).max(160)).min(1).max(8),
+  })
+  .strict();

@@ -1,3 +1,4 @@
+import { MusicHistory } from './history';
 import { randomUUID } from 'node:crypto';
 import { rm } from 'node:fs/promises';
 import type { MusicCommand, MusicSnapshot } from '../../../packages/shared-contracts/src/music';
@@ -33,6 +34,9 @@ interface Session {
   heartbeat?: ReturnType<typeof setInterval>;
   pausedAt: number | null;
   resumePosition: number | null;
+  historyId: string;
+  startedAt: string;
+  played: Set<string>;
 }
 export class MusicWorker {
   private sessions = new Map<string, Session>();
@@ -48,8 +52,48 @@ export class MusicWorker {
       songMetadata?: typeof songMetadata;
       matchingYouTubeReference?: typeof matchingYouTubeReference;
       now?: () => number;
+      history?: MusicHistory;
     },
   ) {}
+  async history(channelId: string) {
+    return this.options.history?.list(channelId) ?? [];
+  }
+  private async archive(s: Session, ended = false) {
+    if (!this.options.history) return;
+    const generation = s.generation;
+    const items = s.queue.filter((item) => youtubeSource(item.source)?.kind === 'video');
+    try {
+      const prior = await this.options.history.replay(s.channelId, s.historyId);
+      if (!ended && (this.sessions.get(s.channelId) !== s || generation !== s.generation)) return;
+      const current = items.map((item) => ({
+        source: `https://www.youtube.com/watch?v=${youtubeSource(item.source)!.id}`,
+        track: {
+          id: item.id,
+          title: item.title,
+          durationSec: item.durationSec,
+          played: s.played.has(item.id),
+        },
+      }));
+      const ids = new Set(current.map((item) => item.track.id));
+      const removed = (prior?.session.tracks ?? []).flatMap((track, i) =>
+        track.played && !ids.has(track.id) ? [{ track, source: prior!.sources[i]! }] : [],
+      );
+      const records = [...current, ...removed].slice(0, 100);
+      if (!records.length) return;
+      await this.options.history.save(
+        s.channelId,
+        {
+          id: s.historyId,
+          startedAt: s.startedAt,
+          endedAt: ended ? new Date(this.now()).toISOString() : null,
+          tracks: records.map((item) => item.track),
+        },
+        records.map((item) => item.source),
+      );
+    } catch {
+      s.error = 'MUSIC_HISTORY_UNAVAILABLE';
+    }
+  }
   private now() {
     return this.options.now?.() ?? Date.now();
   }
@@ -74,6 +118,7 @@ export class MusicWorker {
     if (this.sessions.get(s.channelId) !== s) return;
     this.sessions.delete(s.channelId);
     s.generation++;
+    await this.archive(s, true);
     clearInterval(s.heartbeat);
     await s.publisher.close().catch(() => {});
     await Promise.all(
@@ -109,6 +154,9 @@ export class MusicWorker {
         generation: 0,
         pausedAt: null,
         resumePosition: null,
+        historyId: randomUUID(),
+        startedAt: new Date(this.now()).toISOString(),
+        played: new Set(),
       };
       this.sessions.set(channelId, s);
     }
@@ -193,6 +241,8 @@ export class MusicWorker {
         ) {
           s.status = 'playing';
           s.pausedAt = null;
+          s.played.add(item.id);
+          await this.archive(s);
         }
         return;
       }
@@ -254,6 +304,10 @@ export class MusicWorker {
           }
         },
       );
+      if (this.sessions.get(s.channelId) === s && generation === s.generation) {
+        s.played.add(item.id);
+        await this.archive(s);
+      }
     } catch (error) {
       if (this.sessions.get(s.channelId) === s && generation === s.generation) {
         s.status = 'error';
@@ -305,8 +359,18 @@ export class MusicWorker {
             }
             if (s.queue.length + references.length > 100) throw new Error('MUSIC_QUEUE_FULL');
             if (this.sessions.get(channelId) !== s) throw new Error('MUSIC_LEASE_EXPIRED');
+            const firstNew = s.queue.length,
+              current = s.queue[s.index],
+              finished =
+                s.status === 'paused' &&
+                !!current &&
+                current.durationSec > 0 &&
+                (s.resumePosition ?? 0) >= current.durationSec;
             s.queue.push(...references.map((ref) => ({ ...ref, id: randomUUID() })));
-            if (s.index === -1) {
+            if (finished) {
+              s.index = firstNew;
+              await this.play(s);
+            } else if (s.index === -1) {
               s.index = 0;
               await this.play(s);
             } else if (s.status === 'error') {
@@ -318,15 +382,61 @@ export class MusicWorker {
           }
           break;
         }
+        case 'select': {
+          const index = s.queue.findIndex((item) => item.id === command.id);
+          if (index < 0) throw new Error('MUSIC_CURRENT_ITEM');
+          s.index = index;
+          await this.play(s);
+          break;
+        }
+        case 'reorder': {
+          const current = s.queue[s.index]?.id;
+          if (
+            command.ids.length !== s.queue.length ||
+            new Set(command.ids).size !== command.ids.length ||
+            command.ids.some((id) => !s.queue.some((item) => item.id === id))
+          )
+            throw new Error('MUSIC_QUEUE_CHANGED');
+          const items = new Map(s.queue.map((item) => [item.id, item]));
+          s.queue = command.ids.map((id) => items.get(id)!);
+          s.index = current ? s.queue.findIndex((item) => item.id === current) : -1;
+          break;
+        }
+        case 'restore': {
+          const previous = await this.options.history?.replay(channelId, command.sessionId);
+          if (this.sessions.get(channelId) !== s) throw new Error('MUSIC_LEASE_EXPIRED');
+          if (!previous?.sources.length) throw new Error('MUSIC_HISTORY_MISSING');
+          const selected = previous.sources
+            .map((source, i) => ({ source, track: previous.session.tracks[i]! }))
+            .filter((item) => !command.trackId || item.track.id === command.trackId);
+          if (!selected.length) throw new Error('MUSIC_HISTORY_MISSING');
+          if (s.queue.length + selected.length > 100) throw new Error('MUSIC_QUEUE_FULL');
+          const start = s.queue.length;
+          s.queue.push(
+            ...selected.map(({ source, track }) => ({
+              source,
+              title: track.title,
+              durationSec: track.durationSec,
+              id: randomUUID(),
+            })),
+          );
+          s.index = start;
+          await this.play(s);
+          break;
+        }
         case 'play':
           if (s.index === -1 && s.queue.length) s.index = 0;
           if (s.queue[s.index])
             await this.play(
               s,
-              Math.min(
-                s.resumePosition ?? s.publisher.position(),
-                (s.queue[s.index]!.durationSec > 0 ? s.queue[s.index]!.durationSec : 7200) - 0.01,
-              ),
+              s.queue[s.index]!.durationSec > 0 &&
+                (s.resumePosition ?? 0) >= s.queue[s.index]!.durationSec
+                ? 0
+                : Math.min(
+                    s.resumePosition ?? s.publisher.position(),
+                    (s.queue[s.index]!.durationSec > 0 ? s.queue[s.index]!.durationSec : 7200) -
+                      0.01,
+                  ),
             );
           break;
         case 'pause':
@@ -380,6 +490,7 @@ export class MusicWorker {
           break;
         }
       }
+      await this.archive(s);
       return this.snapshot(channelId);
     });
   }

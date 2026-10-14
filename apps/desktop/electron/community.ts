@@ -7,6 +7,8 @@ import {
   musicSnapshotSchema,
   musicSearchQuerySchema,
   musicSearchResultsSchema,
+  musicHistorySchema,
+  musicFailedSongSchema,
 } from '../../../packages/shared-contracts/src/music';
 import { release } from 'node:os';
 import { enumerateCaptureSources, CaptureSourcesError } from './capture-sources';
@@ -571,6 +573,18 @@ export async function setupCommunity(
   );
   handle('rooms:social-remove-friend', (userId) => requireClient().removeFriend(id.parse(userId)));
   const avatarRequests = new Map<string, Promise<string | null>>();
+  handle('rooms:social-attachment-image', async (channelId, messageId, fileId) => {
+    const current = requireClient(),
+      owner = user!.id;
+    const result = await current.attachmentImage(
+      id.parse(channelId),
+      id.parse(messageId),
+      id.parse(fileId),
+    );
+    if (client !== current || user?.id !== owner)
+      throw new SocialInputError('The conversation session changed.');
+    return result;
+  });
   handle('rooms:social-avatar', async (userId) => {
     const selectedId = id.parse(userId),
       current = requireClient();
@@ -932,6 +946,9 @@ export async function setupCommunity(
       throw new SocialInputError('Oturum değişti.');
     if (!response.ok) {
       const messages: Record<string, string> = {
+        MUSIC_QUEUE_CHANGED: 'Kuyruk değişti. Güncel sırayla yeniden dene.',
+        MUSIC_HISTORY_MISSING: 'Geçmiş liste bulunamadı.',
+        MUSIC_HISTORY_UNAVAILABLE: 'DJ geçmişi kaydedilemedi. Müzik bağlantısı korunuyor.',
         MUSIC_SEARCH_BUSY: 'Arama meşgul. Biraz sonra yeniden dene.',
         MUSIC_SEARCH_UNAVAILABLE: 'Arama şu anda kullanılamıyor. Yeniden dene.',
         MUSIC_SEEK_INVALID: 'Bu parçanın süresi doğrulanmadı veya seçilen konum geçersiz.',
@@ -946,7 +963,7 @@ export async function setupCommunity(
         MUSIC_MIRROR_SINGLE_TRACK_ONLY:
           'Spotify ve SoundCloud için tek şarkı bağlantısı gir. Albüm ve listeler henüz desteklenmiyor.',
         MUSIC_MIRROR_NOT_FOUND:
-          'YouTube’da güvenilir bir eşleşme bulunamadı. Şarkının YouTube bağlantısını gir.',
+          'Spotify/SoundCloud parçasıyla aynı sanatçı ve sürede bir YouTube kaydı bulunamadı. Şarkı adını arayıp uygun sonucu seçebilirsin.',
         MUSIC_JOIN_FIRST: 'Önce ses odasına katıl.',
         MUSIC_PERMISSION_DENIED: 'Bu odada müzik kontrol yetkin yok.',
         MUSIC_QUEUE_FULL: 'Kuyruk dolu. En fazla 100 parça eklenebilir.',
@@ -954,14 +971,33 @@ export async function setupCommunity(
         MUSIC_TRANSPORT_UNAVAILABLE: 'Müzik botu ses odasına bağlanamadı.',
         MUSIC_CURRENT_ITEM: 'Çalan parçayı kaldırmadan önce başka parçaya geç.',
       };
+      const song = musicFailedSongSchema.safeParse(value?.song);
+      if (value?.error === 'MUSIC_MIRROR_NOT_FOUND' && song.success)
+        throw new SocialInputError(
+          `Spotify/SoundCloud şarkısı “${song.data.title}” (${song.data.artists.join(', ')}) için aynı sanatçı ve sürede bir YouTube kaydı bulunamadı. Şarkı adını arayıp uygun sonucu seçebilirsin.`,
+        );
       throw new SocialInputError(
-        messages[value?.error] ?? 'Müzik botuna ulaşılamıyor. Yeniden dene.',
+        messages[value?.error] ?? 'DJ sunucusu yanıt vermedi. Biraz sonra yeniden dene.',
       );
     }
     return search !== undefined
       ? musicSearchResultsSchema.parse(value)
       : musicSnapshotSchema.parse(value);
   }
+  handle('rooms:music-history', async (channelId) => {
+    const current = requireClient(),
+      token = current.getToken()!,
+      room = id.parse(channelId);
+    const response = await fetch(
+      `${new URL(current.instanceUrl).origin}/rooms-access/v1/music/${encodeURIComponent(room)}/history`,
+      { headers: { Authorization: token }, redirect: 'error', signal: AbortSignal.timeout(15000) },
+    );
+    const value = await response.json();
+    if (current !== client || current.getToken() !== token)
+      throw new SocialInputError('Oturum değişti.');
+    if (!response.ok) throw new SocialInputError('DJ geçmişi alınamadı.');
+    return musicHistorySchema.parse(value);
+  });
   handle('rooms:music-snapshot', (channelId) => musicRequest(id.parse(channelId)));
   handle('rooms:music-command', (channelId, command) => musicRequest(id.parse(channelId), command));
   handle('rooms:music-search', (channelId, query) =>

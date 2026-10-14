@@ -28,6 +28,21 @@ export function ChannelTools({ children }: { children: ReactNode }) {
     channel?: SocialChannel;
     type: 'text' | 'voice';
   } | null>(null);
+  const [manageChannels, setManageChannels] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    setManageChannels(false);
+    if (c.activeSpaceId && window.rooms?.social.communityManagement)
+      void window.rooms.social
+        .communityManagement(c.activeSpaceId)
+        .then((value) => {
+          if (alive) setManageChannels(value.capabilities.manageChannels);
+        })
+        .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [c.serverUrl, c.user?.id, c.activeSpaceId]);
   const [refreshWarning, setRefreshWarning] = useState('');
   const [action, setAction] = useState<Action | null>(null),
     [busy] = useState(false);
@@ -148,9 +163,10 @@ export function ChannelTools({ children }: { children: ReactNode }) {
     if (!sameAccount() || useCommunity.getState().activeSpaceId !== spaceId) return;
     useCommunity.setState({ channels });
     const active = useCommunity.getState().activeChannelId;
-    if (action?.kind === 'create' && channel?.type === 0)
+    if (action?.kind === 'create' && channel?.type === 0) {
       await useCommunity.getState().openChannel(channel.id);
-    else if (active && !channels.some((ch) => ch.id === active)) {
+      if (sameAccount() && useCommunity.getState().activeSpaceId === spaceId) navigate('/chat');
+    } else if (active && !channels.some((ch) => ch.id === active)) {
       const next = channels.find((ch) => ch.type === 0);
       if (next) await useCommunity.getState().openChannel(next.id);
       else useCommunity.setState({ activeChannelId: null, messages: [] });
@@ -245,7 +261,10 @@ export function ChannelTools({ children }: { children: ReactNode }) {
           space={c.spaces.find((space) => space.id === c.activeSpaceId)!}
           channel={action.channel}
           initialType={action.type}
-          canManage={c.spaces.find((space) => space.id === c.activeSpaceId)?.ownerId === c.user?.id}
+          canManage={
+            manageChannels ||
+            c.spaces.find((space) => space.id === c.activeSpaceId)?.ownerId === c.user?.id
+          }
           onClose={close}
           onCreate={
             window.rooms

@@ -1,3 +1,4 @@
+import { ChatAttachment } from './ChatAttachment';
 import { ScreenShareGallery } from './ScreenShareGallery';
 import { VoiceRoomViewActions } from './VoiceRoomViewActions';
 import { QuietMenu } from './QuietMenu';
@@ -614,36 +615,12 @@ export function CommunityChat({
                   {!!m.attachments?.length && (
                     <div className="message-attachments">
                       {m.attachments.map((file) => (
-                        <a
-                          key={file.id}
-                          className={`message-attachment ${file.mime.startsWith('image/') ? 'image-attachment' : ''}`}
-                          href={file.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          aria-disabled={!file.url}
-                          onClick={(e) => {
-                            if (!file.url) {
-                              e.preventDefault();
-                              notify('Dosya bağlantısı henüz hazır değil.');
-                            }
-                          }}
-                        >
-                          {file.mime.startsWith('image/') && file.url ? (
-                            <img src={file.url} alt={file.name} loading="lazy" />
-                          ) : (
-                            <FileText size={27} />
-                          )}
-                          <span>
-                            <strong>{file.name}</strong>
-                            <small>
-                              {file.mime === 'application/pdf'
-                                ? 'PDF'
-                                : file.mime.split('/').at(-1)?.toUpperCase()}{' '}
-                              · {Math.round(file.size / 1024)} KB
-                            </small>
-                          </span>
-                          <Download size={19} />
-                        </a>
+                        <ChatAttachment
+                          key={`${c.serverUrl}:${c.user?.id}:${file.id}`}
+                          file={file}
+                          channelId={m.channelId}
+                          messageId={m.id}
+                        />
                       ))}
                     </div>
                   )}

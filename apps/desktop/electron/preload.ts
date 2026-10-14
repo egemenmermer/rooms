@@ -69,6 +69,8 @@ const bridge: DesktopBridge = {
     createInvite: (id) => ipcRenderer.invoke('rooms:social-create-invite', id),
     inspectInvite: (url, code) => ipcRenderer.invoke('rooms:social-inspect-invite', url, code),
     acceptInvite: (code) => ipcRenderer.invoke('rooms:social-accept-invite', code),
+    attachmentImage: (channel, message, file) =>
+      ipcRenderer.invoke('rooms:social-attachment-image', channel, message, file),
     avatar: (userId) => ipcRenderer.invoke('rooms:social-avatar', userId),
     chooseAvatar: () => ipcRenderer.invoke('rooms:social-choose-avatar'),
     readStates: () => ipcRenderer.invoke('rooms:social-read-states'),
@@ -107,6 +109,7 @@ const bridge: DesktopBridge = {
     remove: (id, clip) => ipcRenderer.invoke('rooms:soundboard-remove', id, clip),
   },
   music: {
+    history: (channelId) => ipcRenderer.invoke('rooms:music-history', channelId),
     snapshot: (channelId) => ipcRenderer.invoke('rooms:music-snapshot', channelId),
     command: (channelId, command) => ipcRenderer.invoke('rooms:music-command', channelId, command),
     search: (channelId, query) => ipcRenderer.invoke('rooms:music-search', channelId, query),

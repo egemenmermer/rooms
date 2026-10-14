@@ -430,3 +430,33 @@ it('rechecks decoder generation after a seek ahead of an already queued end call
   expect(worker.snapshot('seek-race').currentId).toBe(state.currentId);
   expect(ends).toHaveLength(2);
 });
+
+it('restarts a finished last track from zero and starts a newly added track after queue completion', async () => {
+  const { publisher, lease } = await setup();
+  let end!: () => void;
+  const playYouTube = vi.fn(async (_source: string, _offset: number, done: () => void) => {
+    end = done;
+  });
+  const worker = new MusicWorker({
+    publisher: () => ({ ...publisher, playYouTube }),
+    lease: async () => lease,
+    youtubeReferences: async (source) => [{ source, title: 'Song', durationSec: 200 }],
+  });
+  workers.push(worker);
+  await worker.command('finished-room', lease, {
+    type: 'add',
+    url: 'https://www.youtube.com/watch?v=w2BTr6qsLFc',
+  });
+  end();
+  await vi.waitFor(() => expect(worker.snapshot('finished-room').status).toBe('paused'));
+  await worker.command('finished-room', lease, { type: 'play' });
+  expect(playYouTube.mock.calls.at(-1)?.[1]).toBe(0);
+  end();
+  await vi.waitFor(() => expect(worker.snapshot('finished-room').status).toBe('paused'));
+  await worker.command('finished-room', lease, {
+    type: 'add',
+    url: 'https://www.youtube.com/watch?v=M7lc1UVf-VE',
+  });
+  expect(playYouTube.mock.calls.at(-1)?.[0]).toContain('M7lc1UVf-VE');
+  expect(worker.snapshot('finished-room').status).toBe('playing');
+});

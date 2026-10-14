@@ -643,3 +643,25 @@
 .minimal-room-ui.voice-mode .familiar-room-dock .reference-start-activity {
   box-shadow: none !important;
 }
+
+.minimal-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.minimal-section > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  color: inherit;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.minimal-section > button:hover {
+  background: #ffffff0b;
+  color: #ddd8f1;
+}

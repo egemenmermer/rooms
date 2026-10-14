@@ -7,6 +7,7 @@ import {
   MicOff,
   PhoneOff,
   Settings,
+  Plus,
   Hash,
   Volume2,
   Search,
@@ -118,6 +119,14 @@ export function MinimalSidebar({
           </button>
           <div className="minimal-section" data-channel-type="text" tabIndex={0}>
             Sohbetler
+            <button
+              data-create-type="text"
+              aria-label="Sohbet kanalı oluştur"
+              disabled={!c.activeSpaceId}
+              title={!c.activeSpaceId ? 'Önce topluluk seç.' : undefined}
+            >
+              <Plus size={14} />
+            </button>
           </div>
           {c.channels
             .filter((ch) => ch.type === 0)
@@ -138,6 +147,14 @@ export function MinimalSidebar({
             ))}
           <div className="minimal-section" data-channel-type="voice" tabIndex={0}>
             Odalar
+            <button
+              data-create-type="voice"
+              aria-label="Ses odası oluştur"
+              disabled={!c.activeSpaceId}
+              title={!c.activeSpaceId ? 'Önce topluluk seç.' : undefined}
+            >
+              <Plus size={14} />
+            </button>
           </div>
           {voices.map((ch) => {
             const occupants =

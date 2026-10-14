@@ -5,7 +5,7 @@ ENV PATH="/opt/youtube/bin:${PATH}"
 WORKDIR /service
 RUN npm init -y && npm install --omit=dev @livekit/rtc-node@1.1.0
 COPY dist-services/music.cjs ./music.cjs
-RUN useradd --system --uid 10001 music
+RUN useradd --system --uid 10001 music && mkdir /state && chown music:music /state
 USER music
 ENV MUSIC_PORT=3040
 CMD ["node","music.cjs"]
