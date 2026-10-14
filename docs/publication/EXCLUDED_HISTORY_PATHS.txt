@@ -338,6 +338,7 @@ docs/screenshots/production/game-full-batak-koz-maca.png
 docs/screenshots/production/game-holdem-00.png
 docs/screenshots/production/game-holdem-full-0.png
 docs/screenshots/production/game-holdem-full-1.png
+docs/screenshots/production/game-holdem-insufficient-chips.png
 docs/screenshots/production/game-staging-0-101-00.png
 docs/screenshots/production/game-staging-1-101-00.png
 docs/screenshots/production/guest-chat.png

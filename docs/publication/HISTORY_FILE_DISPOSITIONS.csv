@@ -1139,3 +1139,4 @@ tooling/aliases.ts,2,retain,retained source/dependency/documentation
 tsconfig.json,2,retain,retained source/dependency/documentation
 vite.config.ts,5,redact-known-private-literals,retained source/dependency/documentation
 vitest.config.ts,3,retain,retained source/dependency/documentation
+docs/screenshots/production/game-holdem-insufficient-chips.png,1,exclude-path-history,Private screenshot blob also appeared at this historical alias; full-tree enumeration and prefix removal cover it.

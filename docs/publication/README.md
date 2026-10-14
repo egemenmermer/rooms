@@ -6,7 +6,7 @@ Date: 2026-10-14. The publication target remains **egemenmermer/rooms**, under M
 
 The frozen original review covered 240 reachable commits (including fetched PR merge refs), 25 tags and 50 local refs. All 240 commits are preserved unchanged in a verified local Git bundle and the independent PRIVATE `rooms-private-archive` backup. The archival GitHub branch/tag references and all three backup asset digests were checked. The public-history candidate also contains 240 mapped commits, with zero pruned commits; author names, timestamps and parent relationships are preserved. The maintainer email is replaced with the GitHub noreply address. Original and redacted commit IDs necessarily differ. The complete mapping remains in the private archive.
 
-484 historical private/archive paths are excluded, with every path listed in HISTORY_FILE_DISPOSITIONS.csv. This includes private-community PNG/WebM, private operator records, screenshot/reference evidence and internal planning archives. These are publication-scope exclusions, not 484 asserted security vulnerabilities. Thirteen retained source paths have known private host/email/filesystem literals replaced. Twenty-one safe historical engineering documents and legacy tools were retained after review. Four historical artwork references are retained without redistributing the private binaries, preserving current legacy-title handling.
+485 historical private/archive paths are excluded, with every path listed in HISTORY_FILE_DISPOSITIONS.csv. This includes private-community PNG/WebM, private operator records, screenshot/reference evidence and internal planning archives. These are publication-scope exclusions, not 484 asserted security vulnerabilities. Thirteen retained source paths have known private host/email/filesystem literals replaced. Twenty-one safe historical engineering documents and legacy tools were retained after review. Four historical artwork references are retained without redistributing the private binaries, preserving current legacy-title handling.
 
 The latest prepared application/source tree was byte-for-byte identical before and after history redaction. Final changes after that comparison are publication documentation only. Source work retains the Electron/React client, Stoat adapter, media transport, game rules and services.
 
@@ -39,3 +39,9 @@ Dependency update PR creation is temporarily paused during the publication revie
 3. Owner reviews final source, file/asset decisions and the precise remote cleanup receipt, then explicitly approves visibility change.
 
 Official GitHub explanation: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository . A visibility change is not performed by this work.
+
+## Final cleanup receipt
+
+All 25 historical release records / 96 assets have been separated from this repository, while all 25 redacted code tags remain. RC8/RC7 have 19 privately retained and checksum-verified asset copies. A transient GitHub deletion HTTP 502 was recorded and retried; no live community distribution was changed. The final history guard caught one alternate private screenshot path absent from the original object-name inventory. Full per-commit tree enumeration identified it; full-directory history removal resolves aliases as well as the listed paths. No gate was disabled to conceal this finding.
+
+Other existing checkouts must preserve local work and restart from a fresh clone of the redacted repository. Do not merge/push the old history back. The original development history is available in the private archive and commit map.
