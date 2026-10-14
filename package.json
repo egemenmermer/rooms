@@ -81,7 +81,11 @@
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
-      "package.json"
+      "package.json",
+      "!node_modules/**/docs/**",
+      "!node_modules/**/doc/**",
+      "!node_modules/**/examples/**",
+      "!node_modules/**/example/**"
     ],
     "mac": {
       "category": "public.app-category.social-networking",
