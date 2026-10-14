@@ -1,0 +1,82 @@
+name: Build and verify RC7 Windows candidate
+on:
+  push:
+    branches: [codex/reference-package]
+    paths:
+      - .github/workflows/windows-rc7.yml
+      - scripts/verify-windows-package.mjs
+      - scripts/build-notices.mjs
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: windows-rc7-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: source
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: tooling
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: b38f8e91b600bd4319e1ddc885b2831542790859
+          path: source
+          persist-credentials: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: 11.25.0
+          package_json_file: source/package.json
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.22.0
+          cache: pnpm
+          cache-dependency-path: source/pnpm-lock.yaml
+      - name: Record exact package source and portable build tooling
+        run: |
+          if ((git rev-parse HEAD) -ne 'b38f8e91b600bd4319e1ddc885b2831542790859') { throw 'Unexpected RC7 source' }
+          Copy-Item ../tooling/scripts/build-notices.mjs scripts/build-notices.mjs
+          New-Item -ItemType Directory -Force .local | Out-Null
+          Copy-Item ../tooling/scripts/verify-windows-package.mjs .local/verify-windows-package.mjs
+      - run: pnpm install --frozen-lockfile
+      - name: Windows source checks
+        run: |
+          pnpm typecheck
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Access registration runs on the Linux server and requires POSIX directory fsync.
+          # Its full durable-registration suite remains required in Ubuntu verify.yml.
+          pnpm exec vitest run --config vitest.config.ts --exclude tests/stoat-registration.test.ts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build NSIS installer (unsigned candidate, no publication)
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          pnpm build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm exec electron-builder --win nsis --x64 --publish never --config.win.icon=apps/desktop/public/icon.png --config.win.artifactName=ROOMS-0.1.18-rc.7-windows-x64-setup.exe --config.nsis.runAfterFinish=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install and verify packaged Windows application
+        env:
+          ROOMS_WINDOWS_INSTALL_DIR: ${{ runner.temp }}/rooms-rc7-installed
+        run: node .local/verify-windows-package.mjs
+      - name: Retain package and verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rooms-rc7-windows-x64-candidate
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            source/release/ROOMS-0.1.18-rc.7-windows-x64-setup.exe
+            source/release/windows-rc7-results.json
+            source/release/windows-rc7-*.png
+# No production credentials, live accounts, release writes or update-feed publication.
+# Hosted Windows checks do not replace a friend's microphone/screen-share acceptance.
