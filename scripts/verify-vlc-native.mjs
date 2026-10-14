@@ -4,6 +4,9 @@ import { build } from 'esbuild';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import assert from 'node:assert/strict';
+const outputMode = process.env.ROOMS_VLC_QA_OUTPUT ?? 'display';
+if (!['display', 'decode'].includes(outputMode)) throw Error('Invalid native QA output mode');
+const displayRequired = outputMode === 'display';
 const output = resolve('.local/vlc-native-check');
 await mkdir(output, { recursive: true });
 const chunk = (type, bytes) => {
@@ -116,6 +119,10 @@ const result = {
   scope:
     'Synthetic AVI/PCM, real libVLC native output and capability transport; no real IPTV or physical-device acceptance',
   platform: process.platform,
+  outputMode,
+  compositorAcceptance: displayRequired
+    ? 'required by this check'
+    : 'excluded: hosted decoder check only',
   status: 'FAIL',
 };
 try {
@@ -140,7 +147,11 @@ try {
     throw Error('Native output did not reach required state');
   };
   result.playing = await waitState(
-    (s) => s.displayedFrames > 2 && s.audioBuffers > 0 && s.time > 0.5,
+    (s) =>
+      s.decodedFrames > 2 &&
+      s.audioBuffers > 0 &&
+      s.time > 0.5 &&
+      (!displayRequired || s.displayedFrames > 2),
   );
   assert.equal(result.playing.width, width);
   assert.equal(result.playing.height, height);
@@ -161,7 +172,9 @@ try {
   });
   result.status = 'PASS';
   result.checks = [
-    'actual video frames displayed',
+    displayRequired
+      ? 'actual video frames displayed'
+      : 'actual video frames decoded; compositor not certified',
     'actual decoded PCM reaches audio output (muted test)',
     'pause/resume',
     'resize/hide/show API',

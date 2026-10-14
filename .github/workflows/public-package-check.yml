@@ -44,8 +44,10 @@ jobs:
           if (!$vs) { throw 'Visual Studio x64 compiler unavailable' }
           cmd /c "`"$vs\VC\Auxiliary\Build\vcvars64.bat`" && node scripts/prepare-vlc.mjs"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Decode synthetic media through the actual VLC adapter
+      - name: Decode synthetic media (hosted compositor not certified)
         if: runner.os == 'macOS'
+        env:
+          ROOMS_VLC_QA_OUTPUT: decode
         run: node scripts/verify-vlc-native.mjs
       - name: Inspect actual macOS package resources before signing
         if: runner.os == 'macOS'
