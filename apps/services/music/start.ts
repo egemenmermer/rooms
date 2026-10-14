@@ -4,10 +4,9 @@ import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import {
   musicCommandSchema,
-  musicSearchQuerySchema,
   musicFailedSongSchema,
 } from '../../../packages/shared-contracts/src/music';
-import { searchYouTube } from './youtube-source';
+import { registerMusicSearch } from './search-route';
 import { MusicWorker, type MusicLease } from './worker';
 import { LiveMusicPublisher } from './publisher';
 const secret = process.env.ROOMS_MUSIC_SECRET;
@@ -42,21 +41,7 @@ const worker = new MusicWorker({
 });
 const id = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 server.get('/health', async () => ({ service: 'music', status: 'ok' }));
-server.post('/v1/search', async (request, reply) => {
-  try {
-    const body = z
-      .object({ query: musicSearchQuerySchema, musicFailedSongSchema })
-      .strict()
-      .parse(request.body);
-    return await searchYouTube(body.query);
-  } catch (error) {
-    const code =
-      error instanceof Error && /^MUSIC_[A-Z_]+$/.test(error.message)
-        ? error.message
-        : 'MUSIC_SEARCH_UNAVAILABLE';
-    return reply.code(400).send({ error: code });
-  }
-});
+registerMusicSearch(server);
 server.get('/v1/rooms/:channelId/history', async (request) =>
   worker.history(id.parse((request.params as { channelId: string }).channelId)),
 );
