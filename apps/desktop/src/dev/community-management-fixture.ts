@@ -48,7 +48,7 @@ export function getCommunityManagementFixtureMetadata(value: string): CommunityM
     label: 'DEMO · Yerel topluluk yönetimi örneği',
     renderable: !['invite', 'invite_created', 'revoke'].includes(variant),
     unsupportedReason: unsupported[variant] ?? null,
-    originalPath: `/Users/maintainer/Downloads/ROOMS_Design_Package/04_screens/S68_community_management${variant === 'default' ? '' : `__${variant}`}.png`,
+    originalPath: `<ROOMS_REFERENCE_ROOT>/04_screens/S68_community_management${variant === 'default' ? '' : `__${variant}`}.png`,
     spaceId: 'demo-bizim-oda', ownerId: 'demo-deniz',
     avatarPaths: Object.fromEntries(memberNames.map(name => {
       const id = `demo-${name.toLowerCase()}`;

@@ -1,3 +1,4 @@
+import {defaultServer} from './default-server';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, ChevronRight, LockKeyhole, Mail, Mic, Monitor, Users, Video } from 'lucide-react';
@@ -33,6 +34,7 @@ export function PasswordRecoveryPane({serverUrl,onBack,onReset,bridge}:{serverUr
     const notice=useRef<HTMLDivElement>(null);
     const load=async()=>{
         const epoch=++generation.current;setLoading(true);setCapabilities(null);setError('');setAccepted(false);setBusy(false);
+        if(!serverUrl.trim()){setLoading(false);setError('Giriş ekranından sunucu adresini seç.');return;}
         try{
             if(!social?.passwordRecoveryCapabilities)throw new Error('Kurtarma isteği yalnızca masaüstü uygulamasında kullanılabilir.');
             const result=await social.passwordRecoveryCapabilities(serverUrl);
@@ -76,14 +78,14 @@ export function ReferenceAuthFrame({mode,children}:{mode:ReferenceOnboardingMode
 /** Reference geometry with real native account operations; no prototype scenario state. */
 export function ReferenceOnboarding({ mode, onNavigate, onComplete, onOpenSettings }: ReferenceOnboardingProps) {
     const c = useCommunity();
-    const recoveryServer = useRooms(state=>state.preferences.serverUrl.trim() || 'https://community.example.invalid');
+    const recoveryServer = useRooms(state=>state.preferences.serverUrl.trim() || defaultServer);
     const [recoveryView,setRecoveryView]=useState<'request'|'reset'>('request');
     const resetBridge=window.rooms?.social;
     const resetAvailable=!!resetBridge&&[resetBridge.importPasswordRecoveryLink,resetBridge.confirmPasswordRecovery,resetBridge.cancelPasswordRecovery].every(method=>typeof method==='function');
     const recoveryScope=`${c.serverUrl}:${c.user?.id??'signed-out'}:${c.status}`;
     const sessionExpired=!c.user&&c.status==='error'&&c.error==='Oturumunun süresi doldu. Çıkış yapıp yeniden giriş yap.';
     const [params, setParams] = useSearchParams();
-    const [server, setServer] = useState(() => params.get('server') || useRooms.getState().preferences.serverUrl || 'https://community.example.invalid');
+    const [server, setServer] = useState(() => params.get('server') || useRooms.getState().preferences.serverUrl || defaultServer);
     const [code, setCode] = useState(() => params.get('invite') || '');
     const [invite, setInvite] = useState<SocialInvite | null>(null);
     const [error, setError] = useState('');

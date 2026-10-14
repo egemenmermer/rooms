@@ -1,0 +1,17 @@
+name: Bug
+description: Report a reproducible product problem
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+      description: Include version, platform and safe reproduction steps. No credentials or private messages.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+

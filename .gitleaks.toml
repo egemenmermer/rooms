@@ -1,0 +1,11 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Exact non-secret test values and the documented example placeholder"
+regexTarget = "secret"
+regexes = [
+  '''^ebec8431-5c02-42df-a153-36506b9fe499$''',
+  '''^fixture-secret-at-least-32-characters$''',
+  '''^REPLACE_WITH_PERSISTENT_64_HEX_CHARACTER_KEY$''',
+]

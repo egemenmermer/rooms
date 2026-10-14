@@ -9,10 +9,12 @@ const output=process.env.ROOMS_RELEASE_OUTPUT??`/tmp/rooms-signed-${sourceVersio
 checkReleaseSpace({output});
 const sourceSha=assertCommittedReleaseSource();
 const buildNumber=Math.floor(Date.now()/1000);
-const identity=process.env.ROOMS_SIGNING_IDENTITY??'Developer ID Application: Çagatay Yucelen (U95637XJ6C)';
+const identity=process.env.ROOMS_SIGNING_IDENTITY??'';
 if(!identity?.startsWith('Developer ID Application: '))throw new Error('Set ROOMS_SIGNING_IDENTITY to your own Developer ID Application identity. No automatic keychain identity selection.');
 const profile=process.env.ROOMS_NOTARY_KEYCHAIN_PROFILE||process.env.APPLE_KEYCHAIN_PROFILE||'ROOMS-notary';
-process.env.APPLE_TEAM_ID??='U95637XJ6C';
+if(!process.env.APPLE_TEAM_ID)throw new Error('Set your own APPLE_TEAM_ID.');
+const sparkleKey=process.env.ROOMS_SPARKLE_PUBLIC_KEY;
+if(!sparkleKey||!/^[A-Za-z0-9+/]{43}=$/.test(sparkleKey))throw new Error('Set your own 32-byte base64 ROOMS_SPARKLE_PUBLIC_KEY.');
 if(profile){
   if(profile.length>256||/[\r\n\0]/.test(profile))throw new Error('Invalid notarization Keychain profile name.');
   process.env.APPLE_KEYCHAIN_PROFILE=profile;
@@ -20,10 +22,10 @@ if(profile){
 process.env.ROOMS_SPARKLE='1';
 const sparkle=spawnSync('node',['scripts/prepare-sparkle.mjs'],{stdio:'inherit',env:process.env});if(sparkle.status!==0)process.exit(sparkle.status??1);
 const build=spawnSync('pnpm',['build'],{stdio:'inherit',env:process.env});if(build.status!==0)process.exit(build.status??1);
-if(!process.env.ROOMS_UPDATE_FEED)process.env.ROOMS_UPDATE_FEED='https://community.example.invalid/rooms-updates/';
+if(!process.env.ROOMS_UPDATE_FEED)throw new Error('Set your own HTTPS ROOMS_UPDATE_FEED.');
 if(process.env.ROOMS_UPDATE_FEED){if(!process.env.APPLE_TEAM_ID)throw new Error('An explicit team ID is required for update configuration.');const url=new URL(process.env.ROOMS_UPDATE_FEED);if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash)throw new Error('Use a public HTTPS update feed without credentials.');writeFileSync('dist/update-config.json',JSON.stringify({feed:url.href,teamId:process.env.APPLE_TEAM_ID}));}
 
-const args=['exec','electron-builder','--mac','dmg','zip','--arm64',`--config.mac.identity=${identity.slice('Developer ID Application: '.length)}`,'--config.mac.notarize=false','--config.mac.hardenedRuntime=true','--config.mac.extendInfo.SUPublicEDKey=K6W7OQfKBZ3Hzm6Eu1GS5LRsax6cU174AF9IAMwM2cs=',`--config.mac.extendInfo.SUFeedURL=${process.env.ROOMS_UPDATE_FEED}appcast.xml`,'--config.mac.extendInfo.SUEnableAutomaticChecks=true','--config.mac.extendInfo.SUAutomaticallyUpdate=true','--config.mac.extendInfo.SUVerifyUpdateBeforeExtraction=true'];
+const args=['exec','electron-builder','--mac','dmg','zip','--arm64',`--config.mac.identity=${identity.slice('Developer ID Application: '.length)}`,'--config.mac.notarize=false','--config.mac.hardenedRuntime=true',`--config.mac.extendInfo.SUPublicEDKey=${sparkleKey}`,`--config.mac.extendInfo.SUFeedURL=${process.env.ROOMS_UPDATE_FEED}appcast.xml`,'--config.mac.extendInfo.SUEnableAutomaticChecks=true','--config.mac.extendInfo.SUAutomaticallyUpdate=true','--config.mac.extendInfo.SUVerifyUpdateBeforeExtraction=true'];
 if(process.env.ROOMS_UPDATE_FEED)args.push('--config.publish.provider=generic',`--config.publish.url=${process.env.ROOMS_UPDATE_FEED}`);
 if(process.env.ROOMS_RELEASE_VERSION)args.push(`--config.extraMetadata.version=${process.env.ROOMS_RELEASE_VERSION}`);
 args.push(`--config.directories.output=${output}`);

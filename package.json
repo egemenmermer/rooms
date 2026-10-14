@@ -4,7 +4,7 @@
   "private": true,
   "description": "A private desktop clubhouse",
   "author": "ROOMS",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "main": "dist-electron/main.cjs",
   "packageManager": "pnpm@11.25.0",
   "scripts": {
@@ -18,10 +18,7 @@
     "package:mac": "node scripts/release-preflight.mjs && pnpm build && electron-builder --mac dmg zip --arm64 && node scripts/verify-mac-signature.mjs",
     "package:win": "pnpm build && electron-builder --win nsis --x64",
     "services:build": "node scripts/build-services.mjs",
-    "services:native": "node scripts/services-native.mjs",
-    "spacebar:native": "node scripts/spacebar-native.mjs",
     "livekit:native": "node scripts/livekit-native.mjs",
-    "verify:social": "node scripts/spacebar-integration.mjs",
     "verify:media": "node scripts/livekit-verify.mjs",
     "activities:native": "node dist-services/activities.cjs",
     "agent:server": "node dist-services/agent.cjs",
@@ -29,9 +26,12 @@
     "stoat:verify": "node scripts/stoat-integration.mjs",
     "package:mac:signed": "node scripts/package-signed-mac.mjs",
     "verify:activities": "node scripts/verify-activity-desktop.mjs",
-    "release:mac": "ROOMS_PUBLISH_UPDATES=1 node scripts/package-signed-mac.mjs",
+    "release:mac": "node scripts/package-signed-mac.mjs",
     "lint": "eslint apps packages tests scripts *.ts *.mjs --max-warnings 0",
-    "verify:ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm services:build"
+    "verify:ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm services:build",
+    "release:mac:publish": "ROOMS_PUBLISH_UPDATES=1 node scripts/package-signed-mac.mjs",
+    "format": "prettier --write apps packages tests tooling scripts *.json *.ts *.mjs .github",
+    "format:check": "prettier --check apps packages tests tooling scripts *.json *.ts *.mjs .github"
   },
   "dependencies": {
     "@fastify/rate-limit": "11.2.0",
@@ -66,6 +66,7 @@
     "esbuild": "0.28.2",
     "eslint": "10.12.0",
     "jsdom": "26.1.0",
+    "prettier": "3.9.10",
     "typescript": "5.9.3",
     "typescript-eslint": "8.70.0",
     "vite": "7.3.7",

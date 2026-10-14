@@ -1,6 +1,6 @@
 # Third-party notices and source references
 
-ROOMS uses the owner-approved original ROOMS Design Package brand/vector assets. Development reference fixtures and artwork are excluded from the production bundle. Apple/Discord screenshots in docs/reference remain external private-study references and are not distributed as product assets. The bundled Inter font is licensed under SIL Open Font License 1.1; its complete notice is included at reference-brand/fonts/OFL-Inter.txt. No proprietary Apple font is bundled.
+Original ROOMS source and original project artwork are offered under the root MIT license. Generated default DJ artwork and the retained assets are described in docs/ASSETS.md. Community-provided media remains owned by its provider and is never relicensed by this repository. The bundled Inter font retains SIL OFL 1.1; complete font and embedded native notices are retained below.
 
 Dependencies retain their own licenses. Consult the corresponding installed LICENSE files and lockfile for exact versions. The build generates dist/THIRD_PARTY_NOTICES.txt from installed production dependency metadata and LICENSE/NOTICE files; this is bundled in app.asar. Deployment images and official CLIs retain their upstream notices separately.
 
@@ -19,7 +19,7 @@ Unmodified self-hosted Stoat and its official self-hosted configuration are sepa
 
 The legacy Spacebar integration remains source/evidence for rollback and is not the active new backend: https://github.com/spacebarchat/server (AGPL-3.0).
 
-The remote worker installs unmodified official Codex and Claude Code CLIs. Their usage/authentication terms are independent of ROOMS; each initiating person uses their own eligible provider account. Do not distribute cached auth material. The official YouTube IFrame player keeps its branding/controls and loads from its permitted origin; no scraped media or redistributed streams are bundled.
+The remote worker installs unmodified official Codex and Claude Code CLIs. Their usage/authentication terms are independent of ROOMS; each initiating person uses their own eligible provider account. Do not distribute cached auth material. The optional official YouTube player and separate server audio adapters retain their own provider requirements. No provider credentials, account sessions or media streams are bundled. Functionality is not a grant of provider/content redistribution rights.
 
 - Inter / SIL Open Font License 1.1: https://github.com/rsms/inter. Full license is bundled with the font and generated notices.
 

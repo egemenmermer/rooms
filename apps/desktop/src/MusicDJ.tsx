@@ -1,3 +1,4 @@
+import {useCommunityBranding} from './use-community-branding';
 import {DJCharacter} from './DJCharacter';
 import {useNavigate} from 'react-router-dom';
 import {useEffect,useRef,useState} from 'react';
@@ -16,9 +17,9 @@ export const openMusicDJ=()=>useDJ.getState().show();
 export function openRoomActivity(path:string,navigate:(path:string)=>void){if(path==='/youtube')openMusicDJ();else navigate(path);}
 export function MusicDJEntry({returnTo='/home'}:{returnTo?:string}){const navigate=useNavigate();useEffect(()=>{openMusicDJ();navigate(returnTo,{replace:true});},[navigate,returnTo]);return null;}
 export function MusicDJ({showTrigger=true}:{showTrigger?:boolean}){
- const community=useCommunity(),voice=useRealtime(),dj=useDJ();
+ const community=useCommunity(),voice=useRealtime(),dj=useDJ(),branding=useCommunityBranding();
  if(!community.user)return null;
- return <>{showTrigger&&!dj.open&&<button className="dj-launch" onClick={dj.show} title="DJ Recep"><Music2 size={20}/><span>DJ</span></button>}{dj.open&&<DJPanel key={`${community.serverUrl}:${community.user.id}:${voice.channelId??'none'}`} channelId={voice.channelId} onClose={dj.hide}/>}</>;
+ return <>{showTrigger&&!dj.open&&<button className="dj-launch" onClick={dj.show} title={branding.name}><Music2 size={20}/><span>DJ</span></button>}{dj.open&&<DJPanel key={`${community.serverUrl}:${community.user.id}:${voice.channelId??'none'}`} channelId={voice.channelId} onClose={dj.hide}/>}</>;
 }
 const clock=(v:number)=>`${Math.floor(v/60)}:${String(Math.floor(v%60)).padStart(2,'0')}`;
 /** Smooth only between confirmed playing snapshots; stop estimating after a missed poll. */
@@ -35,6 +36,7 @@ export function MusicSeekControl({id,position,duration,disabled,onSeek}:{id:stri
  return <input className="dj-seek" type="range" aria-label="Parçada konum" aria-valuetext={clock(draft??position)} min={0} max={Math.max(0,duration-.1)} step={.1} value={draft??Math.min(position,Math.max(0,duration-.1))} disabled={disabled||duration<=0} onChange={event=>{pending.current=Number(event.target.value);setDraft(pending.current);}} onPointerUp={commit} onKeyUp={event=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(event.key))commit();}} onBlur={commit} onPointerCancel={()=>{pending.current=null;setDraft(null);}}/>;
 }
 function DJPanel({channelId,onClose}:{channelId:string|null;onClose():void}){
+ const branding=useCommunityBranding();
  const community=useCommunity(),voice=useRealtime(),legacy=useActivityRoom(channelId);
  const [input,setInput]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[placement,setPlacement]=useState<{x:number;y:number}|null>(null);
  const [results,setResults]=useState<MusicSearchResult[]|null>(null);
@@ -57,9 +59,9 @@ function DJPanel({channelId,onClose}:{channelId:string|null;onClose():void}){
  const validLink=()=>{try{const url=new URL(input.trim());return url.protocol==='https:'&&!url.username&&!url.password;}catch{return false;}};
  const validSearch=()=>!/^\w+:|^www\./i.test(input.trim())&&musicSearchQuerySchema.safeParse(input).success;
  const search=async()=>{if(busy||!available||!validSearch())return;setBusy(true);setError('');setResults(null);try{const found=await window.rooms!.music.search(channelId!,input.trim());if(alive.current)setResults(found);}catch(e){if(alive.current)setError(uiError(e));}finally{if(alive.current)setBusy(false);}};
- return <section ref={panel} className="music-dj" style={placement?{left:placement.x,top:placement.y,right:'auto'}:undefined} role="dialog" tabIndex={-1} aria-label="DJ Recep" onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();onClose();}}}>
- <header onPointerDown={e=>{if((e.target as HTMLElement).closest('button'))return;const rect=panel.current!.getBoundingClientRect();drag.current={x:e.clientX,y:e.clientY,left:rect.left,top:rect.top};e.currentTarget.setPointerCapture(e.pointerId);}} onPointerMove={e=>{const start=drag.current;if(!start)return;const rect=panel.current!.getBoundingClientRect();setPlacement({x:Math.max(8,Math.min(innerWidth-rect.width-8,start.left+e.clientX-start.x)),y:Math.max(40,Math.min(innerHeight-rect.height-8,start.top+e.clientY-start.y))});}} onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}}><span><Music2 size={15}/>DJ Recep<small>{voice.roomName??''}</small></span><button aria-label="DJ panelini kapat" onClick={onClose}><X size={18}/></button></header>
- <DJCharacter/>
+ return <section ref={panel} className="music-dj" style={placement?{left:placement.x,top:placement.y,right:'auto'}:undefined} role="dialog" tabIndex={-1} aria-label={branding.name} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();onClose();}}}>
+ <header onPointerDown={e=>{if((e.target as HTMLElement).closest('button'))return;const rect=panel.current!.getBoundingClientRect();drag.current={x:e.clientX,y:e.clientY,left:rect.left,top:rect.top};e.currentTarget.setPointerCapture(e.pointerId);}} onPointerMove={e=>{const start=drag.current;if(!start)return;const rect=panel.current!.getBoundingClientRect();setPlacement({x:Math.max(8,Math.min(innerWidth-rect.width-8,start.left+e.clientX-start.x)),y:Math.max(40,Math.min(innerHeight-rect.height-8,start.top+e.clientY-start.y))});}} onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}}><span><Music2 size={15}/>{branding.name}<small>{voice.roomName??''}</small></span><button aria-label="DJ panelini kapat" onClick={onClose}><X size={18}/></button></header>
+ <DJCharacter key={`${branding.poster}:${branding.animation}`} branding={branding}/>
  <div className="dj-content"><form className="dj-add" onSubmit={e=>{e.preventDefault();if(validLink())void run({type:'add',url:input.trim()});else void search();}}><input aria-label="YouTube, Spotify, SoundCloud veya ses bağlantısı" placeholder="Şarkı adı veya bağlantı" maxLength={2048} value={input} onChange={e=>{setInput(e.target.value);setResults(null);}} disabled={!available||busy} required/><button type="submit" aria-label={validSearch()?'Şarkı ara':'Kuyruğa ekle'} disabled={!available||busy||(!validLink()&&!validSearch())}>{busy?'…':validSearch()?<Search size={18}/>:<Plus size={18}/>}</button></form>
  {results&&<div className="dj-search-results" role="region" aria-label="YouTube arama sonuçları">{results.length===0?<p>Parça bulunamadı.</p>:results.map(item=><button key={item.id} disabled={!available||busy} onClick={()=>void run({type:'add',url:`https://www.youtube.com/watch?v=${item.id}`})}><span>{item.title}</span><small>{item.durationSec>0?clock(item.durationSec):'YouTube'}</small><Plus size={14}/></button>)}</div>}
  <div className="dj-track"><strong>{active?.title??(query.isLoading?'Yükleniyor…':'Kuyruk boş')}</strong>{active&&<MusicPlaybackClock key={`${snapshot?.currentId}:${query.dataUpdatedAt}:${snapshot?.status}:${!!query.error}`} position={snapshot?.positionSec??0} duration={active.durationSec} playing={snapshot?.status==='playing'&&!query.error&&voice.status==='connected'} receivedAt={query.dataUpdatedAt}/>}</div>

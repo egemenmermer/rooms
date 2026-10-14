@@ -1,3 +1,4 @@
+import {defaultServer} from './default-server';
 import { tr, uiError } from './i18n';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -6,7 +7,7 @@ import { Avatar } from '@rooms/design';
 import { useCommunity } from './community';
 import { useRooms } from './store';
 import './onboarding.css';
-const productionServer = 'https://community.example.invalid';
+const productionServer = defaultServer;
 const localServer = 'http://127.0.0.1:3021';
 const normalizedServer = (value: string) => value.trim().replace(/\/+$/, '');
 export function ConnectionPane({ referenceMode, sessionExpired = false, onAuthenticated, onAccessChange, onRecovery }: { sessionExpired?: boolean; referenceMode?: 'signin' | 'register'; onAuthenticated?(): void; onAccessChange?(mode: 'signin' | 'register'): void; onRecovery?(): void } = {}) {
@@ -110,7 +111,7 @@ export function ConnectionPane({ referenceMode, sessionExpired = false, onAuthen
             <label className="field-label">E-posta adresi<input required type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} value={email} onChange={e => setEmail(e.target.value)} placeholder="sen@ornek.com"/></label>
             <label className="field-label">Şifre<span className="ref-auth-password"><input required type={showPassword ? 'text' : 'password'} autoComplete={registration ? 'new-password' : 'current-password'} minLength={registration ? 8 : 1} value={password} onChange={e => setPassword(e.target.value)} placeholder={registration ? 'En az 8 karakter' : 'Şifren'}/><button type="button" aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}</button></span></label>
             {!registration && <div className="ref-auth-options"><label title="Bu sürümde oturum, sistemin güvenli deposunda saklanır."><input type="checkbox" checked disabled/>Beni hatırla</label><button type="button" onClick={() => { useRooms.getState().setPreference('serverUrl', normalizedServer(server)); onRecovery?.(); }} disabled={!onRecovery}>Şifreni mi unuttun?</button></div>}
-            <details className="ref-auth-server"><summary>Sunucu ve davet seçenekleri</summary><label className="field-label">Sunucu adresi<input required type="url" autoCapitalize="none" spellCheck={false} value={server} onChange={e => setServer(e.target.value)}/></label>{!registration && <label className="field-label">Topluluk davet kodu (isteğe bağlı)<input autoComplete="off" maxLength={128} spellCheck={false} value={invite} onChange={e => setInvite(e.target.value)}/></label>}</details>
+            <details className="ref-auth-server" open={!productionServer}><summary>Sunucu ve davet seçenekleri</summary><label className="field-label">Sunucu adresi<input required type="url" autoCapitalize="none" spellCheck={false} value={server} onChange={e => setServer(e.target.value)}/></label>{!registration && <label className="field-label">Topluluk davet kodu (isteğe bağlı)<input autoComplete="off" maxLength={128} spellCheck={false} value={invite} onChange={e => setInvite(e.target.value)}/></label>}</details>
             <button className="button primary full" type="submit" disabled={busy || !email.trim() || !password || !server.trim() || (registration && (!invite.trim() || !username.trim()))}>{busy ? <><LoaderCircle size={16} className="spin"/>{registration ? 'Hesap oluşturuluyor…' : 'Giriş yapılıyor…'}</> : <>{registration ? 'Hesap oluştur ve katıl' : invite ? 'Giriş yap ve katıl' : sessionExpired ? 'Giriş yap ve devam et' : 'Giriş yap'}<ArrowRight size={16}/></>}</button>
         </fieldset>
         </form>}
@@ -139,7 +140,7 @@ export function ConnectionPane({ referenceMode, sessionExpired = false, onAuthen
                     <div className="onboarding-server">
                         <div className="onboarding-server-label"><Globe size={14}/><span>SUNUCU</span></div>
                         <div className="onboarding-presets">
-                            <button type="button" aria-pressed={normalizedServer(server) === productionServer} onClick={() => { setServer(productionServer); clearError(); }}><span>ROOMS sunucusu</span>{normalizedServer(server) === productionServer && <Check size={13}/>}</button>
+                            <button type="button" disabled={!productionServer} aria-pressed={!!productionServer && normalizedServer(server) === productionServer} onClick={() => { setServer(productionServer); clearError(); }}><span>Varsayılan sunucu</span>{normalizedServer(server) === productionServer && <Check size={13}/>}</button>
                             <button type="button" aria-pressed={normalizedServer(server) === localServer} onClick={() => { setServer(localServer); clearError(); }}>Bu bilgisayar{normalizedServer(server) === localServer && <Check size={13}/>}</button>
                         </div>
                         <label className="field-label onboarding-address"><span>Sunucu adresi</span><input required type="url" aria-label={tr('Community server address')} autoCapitalize="none" spellCheck={false} value={server} onChange={e => setServer(e.target.value)} placeholder="https://sunucun.example"/></label>

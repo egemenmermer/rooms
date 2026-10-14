@@ -1,3 +1,4 @@
+import {useCommunityBranding} from './use-community-branding';
 import {openRoomActivity} from './MusicDJ';
 import './reference-voice.css';
 import { useState } from 'react';
@@ -11,6 +12,7 @@ import { uiError } from './i18n';
 
 export function ActivityLauncher({ onClose }: { onClose(): void }) {
     const community=useCommunity(),voice=useRealtime(),navigate=useNavigate();
+    const branding=useCommunityBranding();
     const roomId=voice.channelId??community.activeChannelId;
     const activity=useActivityRoom(roomId);
     const [error,setError]=useState('');
@@ -24,7 +26,7 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
     const roomCount=activity.room?.participants.length;
     const catalog=[
         {label:'Cinema',icon:'film',description:'Kendi dosyanı seç veya ekran paylaş.',path:'/cinema'},
-        {label:'DJ Recep',icon:'play',description:'Ses odasına müzik botu çağır.',path:'/youtube'},
+        {label:branding.name,icon:'play',description:'Ses odasına müzik botu çağır.',path:'/youtube'},
         {label:'Kıraathane',icon:'cards',description:'Hold’em, Blackjack, Batak ve 101 Okey.',path:'/games'},
     ];
     return <Modal title={forbidden?'Etkinlik başlatılamıyor':primary?(primary.activity==='cinema'?'Salonda Cinema devam ediyor':'Devam eden etkinlik'):'Etkinlikler'} onClose={onClose} className={`launcher-modal reference-launcher-modal ${primary?'has-active-activity':''} ${forbidden?'is-forbidden':''}`}>
