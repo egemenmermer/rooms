@@ -22,6 +22,7 @@ for (const [name, url, sha, ext] of vlcSourceInputs) {
 }
 for (const file of [
   'apps/desktop/native/vlc-player.mm',
+  'apps/desktop/native/windows-node-host.cc',
   'scripts/prepare-vlc.mjs',
   'scripts/build-vlc-source-mac.mjs',
   'scripts/copy-vlc-runtime.cjs',

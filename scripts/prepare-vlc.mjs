@@ -134,8 +134,11 @@ if (mac) {
     '/DNAPI_VERSION=8',
     `/I${headers}`,
     'apps/desktop/native/vlc-player.mm',
+    'apps/desktop/native/windows-node-host.cc',
     '/link',
     importLibrary,
+    'delayimp.lib',
+    '/DELAYLOAD:node.exe',
     'user32.lib',
     `/OUT:${join(output, 'rooms-vlc.node')}`,
   ]);
