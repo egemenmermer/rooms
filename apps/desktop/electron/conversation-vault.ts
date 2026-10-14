@@ -68,21 +68,19 @@ export class ConversationVault {
     return found ?? [];
   }
   put(channelId: string, messages: SocialMessage[]) {
-    const text = messages
-      .slice(-200)
-      .map((m) => ({
-        id: m.id,
-        channelId: m.channelId,
-        author: {
-          id: m.author.id,
-          username: m.author.username,
-          displayName: m.author.displayName,
-          avatar: null,
-        },
-        content: m.content,
-        timestamp: m.timestamp,
-        editedTimestamp: m.editedTimestamp,
-      }));
+    const text = messages.slice(-200).map((m) => ({
+      id: m.id,
+      channelId: m.channelId,
+      author: {
+        id: m.author.id,
+        username: m.author.username,
+        displayName: m.author.displayName,
+        avatar: null,
+      },
+      content: m.content,
+      timestamp: m.timestamp,
+      editedTimestamp: m.editedTimestamp,
+    }));
     const parsed = z.array(record).max(200).safeParse(text);
     if (!parsed.success) return;
     this.entries.delete(channelId);

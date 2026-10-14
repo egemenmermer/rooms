@@ -82,13 +82,11 @@ it('does not let a delayed stored-session restoration replace a newer sign-in', 
   window.rooms = { social } as unknown as DesktopBridge;
   const { initializeCommunity, useCommunity } = await import('../apps/desktop/src/community');
   const initializing = initializeCommunity();
-  const signingIn = useCommunity
-    .getState()
-    .connect({
-      serverUrl: 'https://new.example.test',
-      email: 'new@example.test',
-      password: 'secret',
-    });
+  const signingIn = useCommunity.getState().connect({
+    serverUrl: 'https://new.example.test',
+    email: 'new@example.test',
+    password: 'secret',
+  });
   restore({
     instanceUrl: 'https://old.example.test',
     user: { id: 'old', username: 'old', displayName: 'Old', avatar: null },

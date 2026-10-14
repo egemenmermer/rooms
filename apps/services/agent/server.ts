@@ -211,13 +211,11 @@ export async function createAgentServer(config: AgentConfig) {
         .send({ error: 'INVALID_INPUT', message: 'Check the supplied fields.' });
     const code = (error as any).statusCode ?? 503;
     const message = error instanceof Error ? error.message : 'AGENT_UNAVAILABLE';
-    return reply
-      .code(code)
-      .send({
-        error: code === 503 ? 'AGENT_UNAVAILABLE' : message,
-        message:
-          code === 503 ? 'The agent service is unavailable. Check server configuration.' : message,
-      });
+    return reply.code(code).send({
+      error: code === 503 ? 'AGENT_UNAVAILABLE' : message,
+      message:
+        code === 503 ? 'The agent service is unavailable. Check server configuration.' : message,
+    });
   });
   app.get('/health', async () => ({ service: 'rooms-agent', ready: true }));
   app.addHook('preHandler', async (request) => {

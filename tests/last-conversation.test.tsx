@@ -43,12 +43,10 @@ function setup() {
 }
 it('restores saved voice-room view without joining audio', async () => {
   const open = setup();
-  useLastConversation
-    .getState()
-    .remember(conversationScope('https://one.test', 'owner'), {
-      spaceId: 'space',
-      channelId: 'voice',
-    });
+  useLastConversation.getState().remember(conversationScope('https://one.test', 'owner'), {
+    spaceId: 'space',
+    channelId: 'voice',
+  });
   render(
     <MemoryRouter initialEntries={['/home']}>
       <Probe />
@@ -59,12 +57,10 @@ it('restores saved voice-room view without joining audio', async () => {
 });
 it('different server or account cannot restore another identity position', async () => {
   const open = setup();
-  useLastConversation
-    .getState()
-    .remember(conversationScope('https://other.test', 'owner'), {
-      spaceId: 'space',
-      channelId: 'voice',
-    });
+  useLastConversation.getState().remember(conversationScope('https://other.test', 'owner'), {
+    spaceId: 'space',
+    channelId: 'voice',
+  });
   render(
     <MemoryRouter initialEntries={['/home']}>
       <Probe />
@@ -75,12 +71,10 @@ it('different server or account cannot restore another identity position', async
 });
 it('removed saved channel falls back to an existing text channel', async () => {
   const open = setup();
-  useLastConversation
-    .getState()
-    .remember(conversationScope('https://one.test', 'owner'), {
-      spaceId: 'space',
-      channelId: 'removed',
-    });
+  useLastConversation.getState().remember(conversationScope('https://one.test', 'owner'), {
+    spaceId: 'space',
+    channelId: 'removed',
+  });
   render(
     <MemoryRouter initialEntries={['/home']}>
       <Probe />

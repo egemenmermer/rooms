@@ -289,18 +289,14 @@ export async function createAccessServer(config: AccessConfig) {
     if ((error as { statusCode?: number }).statusCode === 400)
       return reply.code(400).send({ error: 'INVALID_INPUT' });
     if ((error as { statusCode?: number }).statusCode === 429)
-      return reply
-        .code(429)
-        .send({
-          error: 'RATE_LIMITED',
-          message: 'Too many requests. Please wait before retrying.',
-        });
-    return reply
-      .code(503)
-      .send({
-        error: 'SERVICE_UNAVAILABLE',
-        message: 'The access or media service is unavailable. Retry shortly.',
+      return reply.code(429).send({
+        error: 'RATE_LIMITED',
+        message: 'Too many requests. Please wait before retrying.',
       });
+    return reply.code(503).send({
+      error: 'SERVICE_UNAVAILABLE',
+      message: 'The access or media service is unavailable. Retry shortly.',
+    });
   });
   server.post(
     '/v1/media/webhook',
@@ -545,16 +541,14 @@ export async function createAccessServer(config: AccessConfig) {
             }
           return {
             channelId,
-            participants: participants
-              .slice(0, 100)
-              .map((p) => ({
-                id: p.identity,
-                name: (p.name || p.identity).slice(0, 128),
-                muted: !p.tracks.some((t) => t.source === TrackSource.MICROPHONE && !t.muted),
-                ...(p.tracks.some((t) => t.source === TrackSource.SCREEN_SHARE && !t.muted)
-                  ? { screen: true }
-                  : {}),
-              })),
+            participants: participants.slice(0, 100).map((p) => ({
+              id: p.identity,
+              name: (p.name || p.identity).slice(0, 128),
+              muted: !p.tracks.some((t) => t.source === TrackSource.MICROPHONE && !t.muted),
+              ...(p.tracks.some((t) => t.source === TrackSource.SCREEN_SHARE && !t.muted)
+                ? { screen: true }
+                : {}),
+            })),
           };
         }),
       );

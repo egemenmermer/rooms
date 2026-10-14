@@ -6,13 +6,11 @@ delete env.ELECTRON_RUN_AS_NODE;
 const app = await electron.launch({ args: ['.'], env });
 const metrics = () =>
   app.evaluate(({ app }) =>
-    app
-      .getAppMetrics()
-      .map((p) => ({
-        type: p.type,
-        workingSetKB: p.memory.workingSetSize,
-        cpuPercent: p.cpu.percentCPUUsage,
-      })),
+    app.getAppMetrics().map((p) => ({
+      type: p.type,
+      workingSetKB: p.memory.workingSetSize,
+      cpuPercent: p.cpu.percentCPUUsage,
+    })),
   );
 try {
   const page = await app.firstWindow();
@@ -32,14 +30,12 @@ try {
     samples.push({
       seconds: (i + 1) * 10,
       processes: await metrics(),
-      video: await page
-        .locator('video')
-        .evaluate((v) => ({
-          time: v.currentTime,
-          dropped: v.getVideoPlaybackQuality().droppedVideoFrames,
-          total: v.getVideoPlaybackQuality().totalVideoFrames,
-          ready: v.readyState,
-        })),
+      video: await page.locator('video').evaluate((v) => ({
+        time: v.currentTime,
+        dropped: v.getVideoPlaybackQuality().droppedVideoFrames,
+        total: v.getVideoPlaybackQuality().totalVideoFrames,
+        ready: v.readyState,
+      })),
     });
     console.log(`Playback performance sample ${(i + 1) * 10}/120 seconds.`);
   }

@@ -31,13 +31,11 @@ export class StoatAuthorizationReader {
       throw new StoatError(403, 'ROOM_ACCESS_DENIED');
     const [server, member] = await Promise.all([
       db.collection('servers').findOne({ _id: channel.server } as any),
-      db
-        .collection('server_members')
-        .findOne({
-          '_id.server': channel.server,
-          '_id.user': userId,
-          pending_deletion_at: { $exists: false },
-        }),
+      db.collection('server_members').findOne({
+        '_id.server': channel.server,
+        '_id.user': userId,
+        pending_deletion_at: { $exists: false },
+      }),
     ]);
     if (!server || !member) throw new StoatError(403, 'ROOM_ACCESS_DENIED');
     return {

@@ -129,9 +129,7 @@ export interface DesktopBridge {
     ): Promise<import('@rooms/activity-protocol').ActivityResponse>;
   };
   media: {
-    directory?(
-      channelIds: string[],
-    ): Promise<{
+    directory?(channelIds: string[]): Promise<{
       rooms: {
         channelId: string;
         participants: { id: string; name: string; muted: boolean; screen?: boolean }[];
@@ -219,11 +217,7 @@ export interface SocialBridge {
   importPasswordRecoveryLink(input: {
     serverUrl: string;
   }): Promise<{ handle: string; expiresAt: number; serverOrigin: string }>;
-  confirmPasswordRecovery(input: {
-    serverUrl: string;
-    handle: string;
-    password: string;
-  }): Promise<{
+  confirmPasswordRecovery(input: { serverUrl: string; handle: string; password: string }): Promise<{
     state:
       | 'completed'
       | 'invalid-token'

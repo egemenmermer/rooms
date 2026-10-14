@@ -122,14 +122,12 @@ export async function createActivityServer(options: ActivityServerOptions) {
       };
     } catch (error) {
       operationalError(error, 'health');
-      return reply
-        .code(503)
-        .send({
-          service: 'rooms-activities',
-          ready: false,
-          persistence: 'unavailable',
-          ...activityBuildInfo,
-        });
+      return reply.code(503).send({
+        service: 'rooms-activities',
+        ready: false,
+        persistence: 'unavailable',
+        ...activityBuildInfo,
+      });
     }
   });
   app.post('/v1/rooms/:roomId/activity/commands', async (request) => {

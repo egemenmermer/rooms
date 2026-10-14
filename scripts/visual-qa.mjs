@@ -29,14 +29,12 @@ try {
   await shot('cinema-1440');
   await page.getByRole('button', { name: 'Play Blue hour', exact: true }).click();
   await page.waitForTimeout(1500);
-  const playback = await page
-    .locator('video')
-    .evaluate((v) => ({
-      time: v.currentTime,
-      duration: v.duration,
-      paused: v.paused,
-      error: v.error?.message,
-    }));
+  const playback = await page.locator('video').evaluate((v) => ({
+    time: v.currentTime,
+    duration: v.duration,
+    paused: v.paused,
+    error: v.error?.message,
+  }));
   assert(playback.time > 0 && !playback.paused && !playback.error);
   assert.equal(playback.duration, 30);
   await page.getByRole('button', { name: 'Pause local video', exact: true }).click();

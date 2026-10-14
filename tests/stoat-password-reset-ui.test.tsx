@@ -6,13 +6,11 @@ import { PasswordResetPane, type PasswordResetBridge } from '../apps/desktop/src
 const handle = 'df5694c9-d74d-4eee-b390-e248fe92e18a';
 function setup() {
   const bridge: PasswordResetBridge = {
-    importPasswordRecoveryLink: vi
-      .fn()
-      .mockResolvedValue({
-        handle,
-        expiresAt: Date.now() + 180000,
-        serverOrigin: 'https://social.example',
-      }),
+    importPasswordRecoveryLink: vi.fn().mockResolvedValue({
+      handle,
+      expiresAt: Date.now() + 180000,
+      serverOrigin: 'https://social.example',
+    }),
     confirmPasswordRecovery: vi.fn().mockResolvedValue({ state: 'completed' }),
     cancelPasswordRecovery: vi.fn().mockResolvedValue(undefined),
   };
