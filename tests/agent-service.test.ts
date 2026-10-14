@@ -1,15 +1,173 @@
-import {describe,it,expect} from 'vitest';
-import {mkdtempSync,rmSync,readFileSync} from 'node:fs';
-import {tmpdir} from 'node:os';
-import {join} from 'node:path';
-import {randomBytes} from 'node:crypto';
-import {AgentRepository} from '../apps/services/agent/repository';
-import {createAgentServer} from '../apps/services/agent/server';
-import {safeWorkspacePath} from '../apps/services/agent/worker';
-const principal={userId:'alice',roomIds:['room-one'],canManage:true};
-async function fixture(){const directory=mkdtempSync(join(tmpdir(),'rooms-agent-'));const key=randomBytes(32);let enabled=true;let count=0;const repository=new AgentRepository(directory,key);const app=await createAgentServer({repository,authorize:async token=>{if(token!=='test-alice'||!enabled)throw Object.assign(new Error('AUTH_DENIED'),{statusCode:403});return principal;},reauthorize:async()=>{if(!enabled)throw new Error('Authorization revoked.');return principal;},executor:async()=>{count++;return{result:'Actual injected test executor result',artifacts:[]};}});await app.server.listen({host:'127.0.0.1',port:0});const origin=app.server.listeningOrigin;const request=async(path:string,method='GET',body?:unknown,token='test-alice')=>fetch(origin+path,{method,headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});return{...app,directory,key,repository,request,count:()=>count,revoke:()=>{enabled=false;},close:async()=>{await app.server.close();rmSync(directory,{recursive:true,force:true});}};}
-describe('separate agent service authority and persistence',()=>{
- it('uses actual HTTP auth, own models, room scope and approval; encrypts keys without persisting task conversations as memory',async()=>{const f=await fixture();try{expect((await f.request('/v1/status','GET',undefined,'task-owner:alice')).status).toBe(403);const model=await(await f.request('/v1/connections','POST',{provider:'openrouter',label:'My model',model:'test-model',apiKey:'test-secret-key'})).json() as any;expect(model.secret).toBeUndefined();expect(readFileSync(join(f.directory,'agent.enc')).includes(Buffer.from('test-secret-key'))).toBe(false);expect((await f.request('/v1/tasks','POST',{roomId:'forbidden',prompt:'Do work',modelConnectionId:model.id})).status).toBe(403);const task=await(await f.request('/v1/tasks','POST',{roomId:'room-one',prompt:'Do work',modelConnectionId:model.id})).json() as any;expect(task.state).toBe('awaiting-approval');expect(f.count()).toBe(0);await f.request(`/v1/tasks/${task.id}/approve`,'POST',{});await f.tick();await new Promise(r=>setTimeout(r,25));expect(f.repository.data.tasks[0].state).toBe('completed');await f.tick();expect(f.count()).toBe(1);expect(f.repository.data.memory).toHaveLength(0);}finally{await f.close();}});
- it('preserves single-shot schedule, rechecks revoked access, never repeats completed on restart',async()=>{const f=await fixture();try{const model=await(await f.request('/v1/connections','POST',{provider:'openrouter',label:'My model',model:'test-model',apiKey:'test-secret-key'})).json() as any;await f.request('/v1/yolo','POST',{value:true});const t=await(await f.request('/v1/tasks','POST',{roomId:'room-one',prompt:'Later',modelConnectionId:model.id,runAt:new Date(Date.now()+60000).toISOString()})).json() as any;expect(t.state).toBe('scheduled');f.repository.data.tasks[0].runAt=new Date(Date.now()-1000).toISOString();f.revoke();await f.tick();expect(f.count()).toBe(0);expect(f.repository.data.tasks[0].state).toBe('failed');f.repository.data.tasks[0].state='running';f.repository.save();const reloaded=new AgentRepository(f.directory,f.key);expect(reloaded.data.tasks[0].state).toBe('interrupted');}finally{await f.close();}});
- it('rejects traversal and prevents CLI OAuth token collection via model endpoint',async()=>{const f=await fixture();try{expect(()=>safeWorkspacePath(f.directory,'../secret')).toThrow();expect((await f.request('/v1/connections','POST',{provider:'claude',label:'Claude',model:'default',apiKey:'collected-oauth-token'})).status).toBe(400);const m=await(await f.request('/v1/connections','POST',{provider:'codex',label:'Codex',model:'default'})).json() as any;expect(m.status).toBe('login-required');expect((await f.request('/v1/tasks','POST',{roomId:'room-one',prompt:'Run',modelConnectionId:m.id})).status).toBe(409);}finally{await f.close();}});
+import { describe, it, expect } from 'vitest';
+import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { randomBytes } from 'node:crypto';
+import { AgentRepository } from '../apps/services/agent/repository';
+import { createAgentServer } from '../apps/services/agent/server';
+import { safeWorkspacePath } from '../apps/services/agent/worker';
+const principal = { userId: 'alice', roomIds: ['room-one'], canManage: true };
+async function fixture() {
+  const directory = mkdtempSync(join(tmpdir(), 'rooms-agent-'));
+  const key = randomBytes(32);
+  let enabled = true;
+  let count = 0;
+  const repository = new AgentRepository(directory, key);
+  const app = await createAgentServer({
+    repository,
+    authorize: async (token) => {
+      if (token !== 'test-alice' || !enabled)
+        throw Object.assign(new Error('AUTH_DENIED'), { statusCode: 403 });
+      return principal;
+    },
+    reauthorize: async () => {
+      if (!enabled) throw new Error('Authorization revoked.');
+      return principal;
+    },
+    executor: async () => {
+      count++;
+      return { result: 'Actual injected test executor result', artifacts: [] };
+    },
+  });
+  await app.server.listen({ host: '127.0.0.1', port: 0 });
+  const origin = app.server.listeningOrigin;
+  const request = async (path: string, method = 'GET', body?: unknown, token = 'test-alice') =>
+    fetch(origin + path, {
+      method,
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  return {
+    ...app,
+    directory,
+    key,
+    repository,
+    request,
+    count: () => count,
+    revoke: () => {
+      enabled = false;
+    },
+    close: async () => {
+      await app.server.close();
+      rmSync(directory, { recursive: true, force: true });
+    },
+  };
+}
+describe('separate agent service authority and persistence', () => {
+  it('uses actual HTTP auth, own models, room scope and approval; encrypts keys without persisting task conversations as memory', async () => {
+    const f = await fixture();
+    try {
+      expect((await f.request('/v1/status', 'GET', undefined, 'task-owner:alice')).status).toBe(
+        403,
+      );
+      const model = (await (
+        await f.request('/v1/connections', 'POST', {
+          provider: 'openrouter',
+          label: 'My model',
+          model: 'test-model',
+          apiKey: 'test-secret-key',
+        })
+      ).json()) as any;
+      expect(model.secret).toBeUndefined();
+      expect(
+        readFileSync(join(f.directory, 'agent.enc')).includes(Buffer.from('test-secret-key')),
+      ).toBe(false);
+      expect(
+        (
+          await f.request('/v1/tasks', 'POST', {
+            roomId: 'forbidden',
+            prompt: 'Do work',
+            modelConnectionId: model.id,
+          })
+        ).status,
+      ).toBe(403);
+      const task = (await (
+        await f.request('/v1/tasks', 'POST', {
+          roomId: 'room-one',
+          prompt: 'Do work',
+          modelConnectionId: model.id,
+        })
+      ).json()) as any;
+      expect(task.state).toBe('awaiting-approval');
+      expect(f.count()).toBe(0);
+      await f.request(`/v1/tasks/${task.id}/approve`, 'POST', {});
+      await f.tick();
+      await new Promise((r) => setTimeout(r, 25));
+      expect(f.repository.data.tasks[0].state).toBe('completed');
+      await f.tick();
+      expect(f.count()).toBe(1);
+      expect(f.repository.data.memory).toHaveLength(0);
+    } finally {
+      await f.close();
+    }
+  });
+  it('preserves single-shot schedule, rechecks revoked access, never repeats completed on restart', async () => {
+    const f = await fixture();
+    try {
+      const model = (await (
+        await f.request('/v1/connections', 'POST', {
+          provider: 'openrouter',
+          label: 'My model',
+          model: 'test-model',
+          apiKey: 'test-secret-key',
+        })
+      ).json()) as any;
+      await f.request('/v1/yolo', 'POST', { value: true });
+      const t = (await (
+        await f.request('/v1/tasks', 'POST', {
+          roomId: 'room-one',
+          prompt: 'Later',
+          modelConnectionId: model.id,
+          runAt: new Date(Date.now() + 60000).toISOString(),
+        })
+      ).json()) as any;
+      expect(t.state).toBe('scheduled');
+      f.repository.data.tasks[0].runAt = new Date(Date.now() - 1000).toISOString();
+      f.revoke();
+      await f.tick();
+      expect(f.count()).toBe(0);
+      expect(f.repository.data.tasks[0].state).toBe('failed');
+      f.repository.data.tasks[0].state = 'running';
+      f.repository.save();
+      const reloaded = new AgentRepository(f.directory, f.key);
+      expect(reloaded.data.tasks[0].state).toBe('interrupted');
+    } finally {
+      await f.close();
+    }
+  });
+  it('rejects traversal and prevents CLI OAuth token collection via model endpoint', async () => {
+    const f = await fixture();
+    try {
+      expect(() => safeWorkspacePath(f.directory, '../secret')).toThrow();
+      expect(
+        (
+          await f.request('/v1/connections', 'POST', {
+            provider: 'claude',
+            label: 'Claude',
+            model: 'default',
+            apiKey: 'collected-oauth-token',
+          })
+        ).status,
+      ).toBe(400);
+      const m = (await (
+        await f.request('/v1/connections', 'POST', {
+          provider: 'codex',
+          label: 'Codex',
+          model: 'default',
+        })
+      ).json()) as any;
+      expect(m.status).toBe('login-required');
+      expect(
+        (
+          await f.request('/v1/tasks', 'POST', {
+            roomId: 'room-one',
+            prompt: 'Run',
+            modelConnectionId: m.id,
+          })
+        ).status,
+      ).toBe(409);
+    } finally {
+      await f.close();
+    }
+  });
 });

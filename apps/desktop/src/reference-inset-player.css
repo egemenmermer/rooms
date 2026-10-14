@@ -1,5 +1,7 @@
 /* Scope positioning to the content pane so the shell toolbar stays visible. */
-.app.personal-media-mode .main-view { position: relative; }
+.app.personal-media-mode .main-view {
+  position: relative;
+}
 /* S36/S38 reuse the persistent player inside the existing community shell. */
 .personal-playback-runtime.foreground.inset {
   position: absolute;
@@ -9,10 +11,14 @@
 }
 
 /* Neutral wrappers keep the full-window and S30 layouts on their existing rules. */
-.personal-playback-runtime .personal-inset-stage { display: contents; }
+.personal-playback-runtime .personal-inset-stage {
+  display: contents;
+}
 .personal-playback-runtime .personal-programme-grid,
 .personal-playback-runtime .personal-inset-notice,
-.personal-playback-runtime .personal-inset-privacy { display: none; }
+.personal-playback-runtime .personal-inset-privacy {
+  display: none;
+}
 
 .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) {
   height: 100%;
@@ -34,13 +40,15 @@
   pointer-events: auto;
 }
 
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-title { gap: 12px; }
+.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-title {
+  gap: 12px;
+}
 .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-title h1 {
   margin: 0 0 7px;
   font-size: 25px;
   font-weight: 650;
   line-height: 1.25;
-  letter-spacing: -.7px;
+  letter-spacing: -0.7px;
   overflow-wrap: anywhere;
 }
 .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-title p {
@@ -48,7 +56,12 @@
   font-size: 13px;
   line-height: 1.5;
 }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) > .ref-media-top .ref-media-actions { gap: 12px; }
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  > .ref-media-top
+  .ref-media-actions {
+  gap: 12px;
+}
 .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) > .ref-media-top .button {
   min-height: 36px;
   padding: 8px 14px;
@@ -67,12 +80,19 @@
   border-radius: 11px;
   background: #090c12;
 }
-.personal-playback-runtime.inset .ref-personal-player.vod:not(:fullscreen) .personal-inset-stage { aspect-ratio: 1064 / 524; }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-inset-stage:has(.ref-media-stage-state) {
+.personal-playback-runtime.inset .ref-personal-player.vod:not(:fullscreen) .personal-inset-stage {
+  aspect-ratio: 1064 / 524;
+}
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .personal-inset-stage:has(.ref-media-stage-state) {
   aspect-ratio: 1064 / 512;
   border-color: #343945;
 }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-inset-stage > .ref-media-stage {
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .personal-inset-stage
+  > .ref-media-stage {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -82,12 +102,21 @@
   border-radius: 0;
   background: #090c12;
 }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-stage video { object-fit: contain; }
+.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-stage video {
+  object-fit: contain;
+}
 .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-stage-state {
   padding: 28px;
   background: radial-gradient(ellipse at 50% 30%, #2c2c43, #090c11 95%);
 }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-stage-state > svg { width: 38px; height: 38px; flex-shrink: 0; }
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .ref-media-stage-state
+  > svg {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+}
 .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-stage-state h2 {
   margin: 22px 0 12px;
   font-size: 21px;
@@ -99,7 +128,13 @@
   font-size: 12px;
   line-height: 1.7;
 }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-stage-state .ref-media-actions { justify-content: center; flex-wrap: wrap; }
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .ref-media-stage-state
+  .ref-media-actions {
+  justify-content: center;
+  flex-wrap: wrap;
+}
 
 .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-controls {
   left: 0;
@@ -113,16 +148,53 @@
   backdrop-filter: none;
   box-shadow: none;
 }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-inset-stage:has(.ref-media-stage-state) .personal-live-controls { display: none; }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-scrubber { height: 5px; margin-bottom: 12px; }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-row { gap: 13px; min-height: 29px; }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-row > .icon-button { width: 27px; height: 29px; flex-shrink: 0; }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-row > input[type=range]:not(.personal-live-scrubber) { width: 54px; min-width: 35px; }
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .personal-inset-stage:has(.ref-media-stage-state)
+  .personal-live-controls {
+  display: none;
+}
+.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-scrubber {
+  height: 5px;
+  margin-bottom: 12px;
+}
+.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-row {
+  gap: 13px;
+  min-height: 29px;
+}
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .personal-live-row
+  > .icon-button {
+  width: 27px;
+  height: 29px;
+  flex-shrink: 0;
+}
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .personal-live-row
+  > input[type='range']:not(.personal-live-scrubber) {
+  width: 54px;
+  min-width: 35px;
+}
 .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-playback-time,
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-row > span[role=status] { font-size: 10px; }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-edge { padding: 5px 10px; font-size: 11px; }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-playback-badge { padding: 5px 10px; font-size: 11px; }
-.personal-playback-runtime.inset .ref-personal-player.vod:not(:fullscreen) .personal-playback-time { margin-right: auto; }
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .personal-live-row
+  > span[role='status'] {
+  font-size: 10px;
+}
+.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-edge {
+  padding: 5px 10px;
+  font-size: 11px;
+}
+.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-playback-badge {
+  padding: 5px 10px;
+  font-size: 11px;
+}
+.personal-playback-runtime.inset .ref-personal-player.vod:not(:fullscreen) .personal-playback-time {
+  margin-right: auto;
+}
 
 .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-programme-grid {
   display: grid;
@@ -133,17 +205,35 @@
   border-radius: 9px;
   background: #232730;
 }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-programme-grid > article { min-width: 0; padding: 20px 15px 16px; }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-programme-grid > article + article { border-left: 1px solid #3c4350; }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-programme-grid :is(time, small) {
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .personal-programme-grid
+  > article {
+  min-width: 0;
+  padding: 20px 15px 16px;
+}
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .personal-programme-grid
+  > article
+  + article {
+  border-left: 1px solid #3c4350;
+}
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .personal-programme-grid
+  :is(time, small) {
   display: block;
   margin: 0 0 9px;
   color: #94a3b9;
   font-size: 10px;
   line-height: 1.4;
-  letter-spacing: .3px;
+  letter-spacing: 0.3px;
 }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-programme-grid strong {
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .personal-programme-grid
+  strong {
   display: block;
   color: #e8edf5;
   font-size: 14px;
@@ -151,7 +241,13 @@
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-programme-grid p { margin: 7px 0 0; color: #a8b3c5; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-programme-grid p {
+  margin: 7px 0 0;
+  color: #a8b3c5;
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
 .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) > .ref-media-footnote {
   display: flex;
   position: static;
@@ -185,8 +281,18 @@
   font-size: 12px;
   line-height: 1.5;
 }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-inset-notice > svg { flex-shrink: 0; }
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-inset-notice .button { flex-shrink: 0; }
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .personal-inset-notice
+  > svg {
+  flex-shrink: 0;
+}
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .personal-inset-notice
+  .button {
+  flex-shrink: 0;
+}
 .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-inset-privacy {
   display: flex;
   align-items: center;
@@ -200,29 +306,89 @@
 }
 
 @media (min-width: 1101px) {
-  .app.personal-media-mode.community-mode:has(.voice-channel-sidebar) .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-playback-voice { display: none; }
+  .app.personal-media-mode.community-mode:has(.voice-channel-sidebar)
+    .personal-playback-runtime.inset
+    .ref-personal-player:not(:fullscreen)
+    .personal-playback-voice {
+    display: none;
+  }
 }
 @media (max-width: 1150px) {
-  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) { padding: 22px 22px 90px; }
-  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) > .ref-media-top { flex-wrap: wrap; gap: 14px; }
-  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) > .ref-media-top .ref-media-actions { flex-wrap: wrap; justify-content: flex-start; }
-  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-inset-notice { flex-wrap: wrap; }
+  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) {
+    padding: 22px 22px 90px;
+  }
+  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) > .ref-media-top {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .personal-playback-runtime.inset
+    .ref-personal-player:not(:fullscreen)
+    > .ref-media-top
+    .ref-media-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-inset-notice {
+    flex-wrap: wrap;
+  }
 }
 @media (max-width: 700px) {
-  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) { padding: 18px 16px 100px; }
-  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-title h1 { font-size: 21px; }
-  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-inset-stage { min-height: 280px; }
-  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-controls { padding: 12px 10px 10px; }
-  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-row { gap: 8px; flex-wrap: wrap; }
-  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-programme-grid { grid-template-columns: minmax(0, 1fr); }
-  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-programme-grid > article + article { border-left: 0; border-top: 1px solid #3c4350; }
-  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-stage-state { padding: 20px; }
-  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-stage-state h2 { font-size: 18px; margin-top: 14px; }
+  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) {
+    padding: 18px 16px 100px;
+  }
+  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-title h1 {
+    font-size: 21px;
+  }
+  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-inset-stage {
+    min-height: 280px;
+  }
+  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-controls {
+    padding: 12px 10px 10px;
+  }
+  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-row {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-programme-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .personal-playback-runtime.inset
+    .ref-personal-player:not(:fullscreen)
+    .personal-programme-grid
+    > article
+    + article {
+    border-left: 0;
+    border-top: 1px solid #3c4350;
+  }
+  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-stage-state {
+    padding: 20px;
+  }
+  .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .ref-media-stage-state h2 {
+    font-size: 18px;
+    margin-top: 14px;
+  }
 }
-@media (prefers-reduced-transparency: reduce) {html:not([data-transparency]) .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-controls{ background: #11141d; }
+@media (prefers-reduced-transparency: reduce) {
+  html:not([data-transparency])
+    .personal-playback-runtime.inset
+    .ref-personal-player:not(:fullscreen)
+    .personal-live-controls {
+    background: #11141d;
+  }
 }
 
-.personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-programme-grid small time { display:inline; }
+.personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .personal-programme-grid
+  small
+  time {
+  display: inline;
+}
 
 /* Effective app preference, including manual and followed system reductions. */
-html[data-transparency=reduce] .personal-playback-runtime.inset .ref-personal-player:not(:fullscreen) .personal-live-controls{ background: #11141d; }
+html[data-transparency='reduce']
+  .personal-playback-runtime.inset
+  .ref-personal-player:not(:fullscreen)
+  .personal-live-controls {
+  background: #11141d;
+}

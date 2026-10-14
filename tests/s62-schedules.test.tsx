@@ -1,28 +1,234 @@
 // @vitest-environment jsdom
 import React from 'react';
-import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
-import {act,cleanup,fireEvent,render,screen,waitFor,within} from '@testing-library/react';
-import {MemoryRouter} from 'react-router-dom';
-import {AgentSchedulesSurface,type AgentSchedulesProps} from '../apps/desktop/src/Agent';
-import {getS62Fixture,S62_VARIANTS} from '../apps/desktop/src/dev/S62SchedulesEntry';
-import type {AgentBridge,AgentTask} from '../packages/agent-contracts/src';
-beforeEach(()=>{vi.useFakeTimers({toFake:['Date']});vi.setSystemTime(new Date('2026-10-10T12:00:00Z'));});
-afterEach(()=>{cleanup();vi.useRealTimers();});
-const task:AgentTask={id:'task',roomId:'room',ownerId:'owner',modelConnectionId:'model',prompt:'Fixture scheduled task',state:'scheduled',createdAt:'2026-10-10T12:00:00Z',runAt:'2099-10-10T19:00:00Z',progress:[],artifacts:[],result:null,error:null};
-const defaults=():AgentSchedulesProps=>({tasks:[task],models:[{id:'model',ownerId:'owner',provider:'openrouter',label:'Own model',model:'model-a',status:'connected'},{id:'other-model',ownerId:'other',provider:'codex',label:'PRIVATE OTHER MODEL',model:'other',status:'connected'}],userId:'owner',roomId:'room',roomName:'Fixture room',channelName:'general',ready:true,onRefresh:vi.fn(async()=>{})});
-const mount=(props:AgentSchedulesProps,query='')=>render(<MemoryRouter initialEntries={['/agent?tab=schedules'+query]}><AgentSchedulesSurface {...props}/></MemoryRouter>);
-function draft(){fireEvent.change(screen.getByLabelText('Asistan ne yapsın?'),{target:{value:'  Future work  '}});fireEvent.change(screen.getByLabelText('Tarih'),{target:{value:'2026-10-11'}});fireEvent.change(screen.getByLabelText('Saat'),{target:{value:'21:00'}});fireEvent.change(screen.getByLabelText('Kişisel model bağlantısı'),{target:{value:'model'}});}
-describe('S62 one-shot schedules actual component',()=>{
- it('filters room scope and does not expose another owner model selector',()=>{const p=defaults();p.tasks.push({...task,id:'private',roomId:'other-room',prompt:'PRIVATE OTHER ROOM'});mount(p,'&view=create');expect(screen.queryByText('PRIVATE OTHER ROOM')).toBeNull();expect(screen.queryByRole('option',{name:/PRIVATE OTHER MODEL/})).toBeNull();});
- it('lists every active schedule and computes totals from actual state',()=>{const p=defaults();p.tasks.push({...task,id:'two',prompt:'Second schedule'});mount(p);expect(screen.getByText('Second schedule')).toBeTruthy();expect(screen.getByText('2')).toBeTruthy();});
- it('submits one ISO instant and selected personal model only after explicit action',async()=>{const p=defaults(),submit=vi.fn(async(input)=>({...task,id:'created',prompt:input.prompt,runAt:input.runAt}));p.bridge={submit} as unknown as AgentBridge;mount(p,'&view=create');draft();expect(submit).not.toHaveBeenCalled();fireEvent.click(screen.getByRole('button',{name:'Görevi planla'}));await waitFor(()=>expect(submit).toHaveBeenCalledTimes(1));expect(submit).toHaveBeenCalledWith({roomId:'room',prompt:'Future work',modelConnectionId:'model',runAt:new Date('2026-10-11T21:00').toISOString()});await waitFor(()=>expect(p.onRefresh).toHaveBeenCalledTimes(1));expect((await screen.findByRole('status')).textContent).toContain('Görev planlandı.');});
- it('does not claim created success from a URL or a failed receipt',async()=>{const p=defaults();p.bridge={submit:vi.fn(async()=>{throw new Error('Fixture denied');})} as unknown as AgentBridge;const r=mount(p,'&view=created');expect(screen.queryByRole('status')).toBeNull();r.unmount();mount(p,'&view=create');draft();fireEvent.click(screen.getByRole('button',{name:'Görevi planla'}));await screen.findAllByRole('alert');expect(screen.queryByRole('status')).toBeNull();expect(p.onRefresh).not.toHaveBeenCalled();expect(screen.getByRole('dialog')).toBeTruthy();});
- it('rejects a past date without calling the service',async()=>{const p=defaults();p.bridge={submit:vi.fn()} as unknown as AgentBridge;mount(p,'&view=create');draft();fireEvent.change(screen.getByLabelText('Tarih'),{target:{value:'2000-01-01'}});fireEvent.click(screen.getByRole('button',{name:'Görevi planla'}));await screen.findAllByText('Gelecekte bir tarih ve saat seç.');expect(p.bridge.submit).not.toHaveBeenCalled();});
- it('cancels only after review and uses the returned state without synthesizing cancellation',async()=>{const p=defaults(),cancel=vi.fn(async()=>({...task,state:'running' as const}));p.bridge={cancel} as unknown as AgentBridge;mount(p);fireEvent.click(screen.getByRole('button',{name:'İptal et'}));expect(cancel).not.toHaveBeenCalled();fireEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Görevi iptal et'}));await waitFor(()=>expect(cancel).toHaveBeenCalledWith('task'));await waitFor(()=>expect(p.onRefresh).toHaveBeenCalledTimes(1));expect(screen.queryByText('İptal edildi')).toBeNull();});
- it('blocks other-owner cancellation without manager authority',()=>{const p=defaults();p.tasks=[{...task,ownerId:'other'}];p.bridge={cancel:vi.fn()} as unknown as AgentBridge;mount(p,'&view=cancel');expect(screen.queryByRole('dialog')).toBeNull();expect(screen.queryByRole('button',{name:'İptal et'})).toBeNull();});
- it('ignores pending private receipts after access invalidation',async()=>{const p=defaults();let resolve!:(task:AgentTask)=>void;const pending=new Promise<AgentTask>(r=>{resolve=r;});p.bridge={submit:vi.fn(()=>pending)} as unknown as AgentBridge;mount(p,'&view=create');draft();fireEvent.click(screen.getByRole('button',{name:'Görevi planla'}));act(()=>window.dispatchEvent(new Event('rooms:channel-access-invalidated')));await act(async()=>resolve({...task,id:'private-completion'}));expect(p.onRefresh).not.toHaveBeenCalled();expect(screen.queryByRole('dialog')).toBeNull();expect(screen.queryByText('Fixture scheduled task')).toBeNull();});
- it('rejects a date beyond the actual server horizon',async()=>{const p=defaults();p.bridge={submit:vi.fn()} as unknown as AgentBridge;mount(p,'&view=create');draft();fireEvent.change(screen.getByLabelText('Tarih'),{target:{value:'2028-10-11'}});fireEvent.click(screen.getByRole('button',{name:'Görevi planla'}));await screen.findAllByText('Gelecek bir yıl içinde bir tarih ve saat seç.');expect(p.bridge.submit).not.toHaveBeenCalled();});
- it('discards a successful receipt from a different room',async()=>{const p=defaults();p.bridge={submit:vi.fn(async()=>({...task,roomId:'other-room'}))} as unknown as AgentBridge;mount(p,'&view=create');draft();fireEvent.click(screen.getByRole('button',{name:'Görevi planla'}));await screen.findAllByRole('alert');expect(p.onRefresh).not.toHaveBeenCalled();expect(screen.queryByRole('status')).toBeNull();});
- it('ignores pending completion after account scope changes',async()=>{const p=defaults();let resolve!:(task:AgentTask)=>void;p.bridge={submit:vi.fn(()=>new Promise<AgentTask>(r=>{resolve=r;}))} as unknown as AgentBridge;const r=mount(p,'&view=create');draft();fireEvent.click(screen.getByRole('button',{name:'Görevi planla'}));r.rerender(<MemoryRouter><AgentSchedulesSurface {...p} userId="other-owner"/></MemoryRouter>);await act(async()=>resolve(task));expect(p.onRefresh).not.toHaveBeenCalled();expect(screen.queryByRole('status')).toBeNull();});
- it.each(S62_VARIANTS)('renders DEV %s projection without any bridge or account calls',variant=>{const p=getS62Fixture(variant);expect(p.bridge).toBeUndefined();mount(p);expect(screen.getByText('Yerel demo önizlemesi')).toBeTruthy();if(variant==='create'||variant==='cancel')expect(screen.getByRole('dialog')).toBeTruthy();});
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { AgentSchedulesSurface, type AgentSchedulesProps } from '../apps/desktop/src/Agent';
+import { getS62Fixture, S62_VARIANTS } from '../apps/desktop/src/dev/S62SchedulesEntry';
+import type { AgentBridge, AgentTask } from '../packages/agent-contracts/src';
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-10-10T12:00:00Z'));
+});
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
+const task: AgentTask = {
+  id: 'task',
+  roomId: 'room',
+  ownerId: 'owner',
+  modelConnectionId: 'model',
+  prompt: 'Fixture scheduled task',
+  state: 'scheduled',
+  createdAt: '2026-10-10T12:00:00Z',
+  runAt: '2099-10-10T19:00:00Z',
+  progress: [],
+  artifacts: [],
+  result: null,
+  error: null,
+};
+const defaults = (): AgentSchedulesProps => ({
+  tasks: [task],
+  models: [
+    {
+      id: 'model',
+      ownerId: 'owner',
+      provider: 'openrouter',
+      label: 'Own model',
+      model: 'model-a',
+      status: 'connected',
+    },
+    {
+      id: 'other-model',
+      ownerId: 'other',
+      provider: 'codex',
+      label: 'PRIVATE OTHER MODEL',
+      model: 'other',
+      status: 'connected',
+    },
+  ],
+  userId: 'owner',
+  roomId: 'room',
+  roomName: 'Fixture room',
+  channelName: 'general',
+  ready: true,
+  onRefresh: vi.fn(async () => {}),
+});
+const mount = (props: AgentSchedulesProps, query = '') =>
+  render(
+    <MemoryRouter initialEntries={['/agent?tab=schedules' + query]}>
+      <AgentSchedulesSurface {...props} />
+    </MemoryRouter>,
+  );
+function draft() {
+  fireEvent.change(screen.getByLabelText('Asistan ne yapsın?'), {
+    target: { value: '  Future work  ' },
+  });
+  fireEvent.change(screen.getByLabelText('Tarih'), { target: { value: '2026-10-11' } });
+  fireEvent.change(screen.getByLabelText('Saat'), { target: { value: '21:00' } });
+  fireEvent.change(screen.getByLabelText('Kişisel model bağlantısı'), {
+    target: { value: 'model' },
+  });
+}
+describe('S62 one-shot schedules actual component', () => {
+  it('filters room scope and does not expose another owner model selector', () => {
+    const p = defaults();
+    p.tasks.push({ ...task, id: 'private', roomId: 'other-room', prompt: 'PRIVATE OTHER ROOM' });
+    mount(p, '&view=create');
+    expect(screen.queryByText('PRIVATE OTHER ROOM')).toBeNull();
+    expect(screen.queryByRole('option', { name: /PRIVATE OTHER MODEL/ })).toBeNull();
+  });
+  it('lists every active schedule and computes totals from actual state', () => {
+    const p = defaults();
+    p.tasks.push({ ...task, id: 'two', prompt: 'Second schedule' });
+    mount(p);
+    expect(screen.getByText('Second schedule')).toBeTruthy();
+    expect(screen.getByText('2')).toBeTruthy();
+  });
+  it('submits one ISO instant and selected personal model only after explicit action', async () => {
+    const p = defaults(),
+      submit = vi.fn(async (input) => ({
+        ...task,
+        id: 'created',
+        prompt: input.prompt,
+        runAt: input.runAt,
+      }));
+    p.bridge = { submit } as unknown as AgentBridge;
+    mount(p, '&view=create');
+    draft();
+    expect(submit).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Görevi planla' }));
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+    expect(submit).toHaveBeenCalledWith({
+      roomId: 'room',
+      prompt: 'Future work',
+      modelConnectionId: 'model',
+      runAt: new Date('2026-10-11T21:00').toISOString(),
+    });
+    await waitFor(() => expect(p.onRefresh).toHaveBeenCalledTimes(1));
+    expect((await screen.findByRole('status')).textContent).toContain('Görev planlandı.');
+  });
+  it('does not claim created success from a URL or a failed receipt', async () => {
+    const p = defaults();
+    p.bridge = {
+      submit: vi.fn(async () => {
+        throw new Error('Fixture denied');
+      }),
+    } as unknown as AgentBridge;
+    const r = mount(p, '&view=created');
+    expect(screen.queryByRole('status')).toBeNull();
+    r.unmount();
+    mount(p, '&view=create');
+    draft();
+    fireEvent.click(screen.getByRole('button', { name: 'Görevi planla' }));
+    await screen.findAllByRole('alert');
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(p.onRefresh).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeTruthy();
+  });
+  it('rejects a past date without calling the service', async () => {
+    const p = defaults();
+    p.bridge = { submit: vi.fn() } as unknown as AgentBridge;
+    mount(p, '&view=create');
+    draft();
+    fireEvent.change(screen.getByLabelText('Tarih'), { target: { value: '2000-01-01' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Görevi planla' }));
+    await screen.findAllByText('Gelecekte bir tarih ve saat seç.');
+    expect(p.bridge.submit).not.toHaveBeenCalled();
+  });
+  it('cancels only after review and uses the returned state without synthesizing cancellation', async () => {
+    const p = defaults(),
+      cancel = vi.fn(async () => ({ ...task, state: 'running' as const }));
+    p.bridge = { cancel } as unknown as AgentBridge;
+    mount(p);
+    fireEvent.click(screen.getByRole('button', { name: 'İptal et' }));
+    expect(cancel).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Görevi iptal et' }),
+    );
+    await waitFor(() => expect(cancel).toHaveBeenCalledWith('task'));
+    await waitFor(() => expect(p.onRefresh).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText('İptal edildi')).toBeNull();
+  });
+  it('blocks other-owner cancellation without manager authority', () => {
+    const p = defaults();
+    p.tasks = [{ ...task, ownerId: 'other' }];
+    p.bridge = { cancel: vi.fn() } as unknown as AgentBridge;
+    mount(p, '&view=cancel');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'İptal et' })).toBeNull();
+  });
+  it('ignores pending private receipts after access invalidation', async () => {
+    const p = defaults();
+    let resolve!: (task: AgentTask) => void;
+    const pending = new Promise<AgentTask>((r) => {
+      resolve = r;
+    });
+    p.bridge = { submit: vi.fn(() => pending) } as unknown as AgentBridge;
+    mount(p, '&view=create');
+    draft();
+    fireEvent.click(screen.getByRole('button', { name: 'Görevi planla' }));
+    act(() => window.dispatchEvent(new Event('rooms:channel-access-invalidated')));
+    await act(async () => resolve({ ...task, id: 'private-completion' }));
+    expect(p.onRefresh).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByText('Fixture scheduled task')).toBeNull();
+  });
+  it('rejects a date beyond the actual server horizon', async () => {
+    const p = defaults();
+    p.bridge = { submit: vi.fn() } as unknown as AgentBridge;
+    mount(p, '&view=create');
+    draft();
+    fireEvent.change(screen.getByLabelText('Tarih'), { target: { value: '2028-10-11' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Görevi planla' }));
+    await screen.findAllByText('Gelecek bir yıl içinde bir tarih ve saat seç.');
+    expect(p.bridge.submit).not.toHaveBeenCalled();
+  });
+  it('discards a successful receipt from a different room', async () => {
+    const p = defaults();
+    p.bridge = {
+      submit: vi.fn(async () => ({ ...task, roomId: 'other-room' })),
+    } as unknown as AgentBridge;
+    mount(p, '&view=create');
+    draft();
+    fireEvent.click(screen.getByRole('button', { name: 'Görevi planla' }));
+    await screen.findAllByRole('alert');
+    expect(p.onRefresh).not.toHaveBeenCalled();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+  it('ignores pending completion after account scope changes', async () => {
+    const p = defaults();
+    let resolve!: (task: AgentTask) => void;
+    p.bridge = {
+      submit: vi.fn(
+        () =>
+          new Promise<AgentTask>((r) => {
+            resolve = r;
+          }),
+      ),
+    } as unknown as AgentBridge;
+    const r = mount(p, '&view=create');
+    draft();
+    fireEvent.click(screen.getByRole('button', { name: 'Görevi planla' }));
+    r.rerender(
+      <MemoryRouter>
+        <AgentSchedulesSurface {...p} userId="other-owner" />
+      </MemoryRouter>,
+    );
+    await act(async () => resolve(task));
+    expect(p.onRefresh).not.toHaveBeenCalled();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+  it.each(S62_VARIANTS)(
+    'renders DEV %s projection without any bridge or account calls',
+    (variant) => {
+      const p = getS62Fixture(variant);
+      expect(p.bridge).toBeUndefined();
+      mount(p);
+      expect(screen.getByText('Yerel demo önizlemesi')).toBeTruthy();
+      if (variant === 'create' || variant === 'cancel')
+        expect(screen.getByRole('dialog')).toBeTruthy();
+    },
+  );
 });

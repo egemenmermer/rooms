@@ -1,41 +1,354 @@
-import {beforeEach,afterEach,describe,expect,it,vi} from 'vitest';
-const mocks=vi.hoisted(()=>({handlers:new Map<string,(...args:any[])=>Promise<any>>(),fetch:vi.fn(),write:vi.fn(),encrypt:vi.fn((value:string)=>Buffer.from(value)),stored:[] as any[],vaults:new Map<string,Buffer>(),reads:[] as string[]}));
-vi.mock('node:fs',async original=>({...await original<typeof import('node:fs')>(),readFileSync:(path:string)=>{mocks.reads.push(path);return mocks.vaults.get(path)??Buffer.from(JSON.stringify(mocks.stored));},writeFileSync:mocks.write,renameSync:(from:string,to:string)=>{const value=mocks.vaults.get(from);if(value)mocks.vaults.set(to,value);}}));
-vi.mock('electron',()=>({app:{isPackaged:false,getPath:()=>'/private-data'},dialog:{showOpenDialog:vi.fn()},ipcMain:{handle:(name:string,handler:(...args:any[])=>Promise<any>)=>mocks.handlers.set(name,handler)},protocol:{handle:vi.fn()},safeStorage:{isEncryptionAvailable:()=>true,encryptString:mocks.encrypt,decryptString:(value:Buffer)=>value.toString()},shell:{openExternal:vi.fn()}}));
-vi.mock('../packages/personal-media/src/network',async original=>({...await original<typeof import('../packages/personal-media/src/network')>(),privateFetch:mocks.fetch}));
-const id='11111111-1111-4111-8111-111111111111';
-const other='22222222-2222-4222-8222-222222222222';
-const now=Date.parse('2026-10-11T12:00:00.000Z');
-const playlist=(count=2)=>'#EXTM3U\n'+Array.from({length:count},(_,i)=>`#EXTINF:-1,Channel ${i}\nhttps://example.com/live/${i}?token=private-source`).join('\n');
-async function setup(){vi.resetModules();let scope='epoch-1',identity:string|null='server-a:user';const {setupProviders}=await import('../apps/desktop/electron/providers');const runtime=setupProviders(vi.fn(),()=>scope,()=>identity);return{runtime,setScope:(value:string)=>{scope=value;},setIdentity:(value:string|null)=>{identity=value;},invoke:(name:string,...args:any[])=>mocks.handlers.get('rooms:provider-'+name)!({senderFrame:{url:'file:///app/index.html'}},...args)};}
-beforeEach(()=>{vi.useFakeTimers();vi.setSystemTime(now);vi.clearAllMocks();mocks.write.mockReset().mockImplementation((path:string,value:Buffer)=>mocks.vaults.set(path,value));mocks.fetch.mockReset();mocks.handlers.clear();mocks.vaults.clear();mocks.reads=[];delete process.env.ROOMS_DEV_URL;mocks.stored=[{id,type:'playlist',name:'Personal',playlistText:playlist(),favorites:[]},{id:other,type:'playlist',name:'Other',playlistText:playlist().replaceAll('/live/','/other/'),favorites:[]}];});
-afterEach(()=>vi.useRealTimers());
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+const mocks = vi.hoisted(() => ({
+  handlers: new Map<string, (...args: any[]) => Promise<any>>(),
+  fetch: vi.fn(),
+  write: vi.fn(),
+  encrypt: vi.fn((value: string) => Buffer.from(value)),
+  stored: [] as any[],
+  vaults: new Map<string, Buffer>(),
+  reads: [] as string[],
+}));
+vi.mock('node:fs', async (original) => ({
+  ...(await original<typeof import('node:fs')>()),
+  readFileSync: (path: string) => {
+    mocks.reads.push(path);
+    return mocks.vaults.get(path) ?? Buffer.from(JSON.stringify(mocks.stored));
+  },
+  writeFileSync: mocks.write,
+  renameSync: (from: string, to: string) => {
+    const value = mocks.vaults.get(from);
+    if (value) mocks.vaults.set(to, value);
+  },
+}));
+vi.mock('electron', () => ({
+  app: { isPackaged: false, getPath: () => '/private-data' },
+  dialog: { showOpenDialog: vi.fn() },
+  ipcMain: {
+    handle: (name: string, handler: (...args: any[]) => Promise<any>) =>
+      mocks.handlers.set(name, handler),
+  },
+  protocol: { handle: vi.fn() },
+  safeStorage: {
+    isEncryptionAvailable: () => true,
+    encryptString: mocks.encrypt,
+    decryptString: (value: Buffer) => value.toString(),
+  },
+  shell: { openExternal: vi.fn() },
+}));
+vi.mock('../packages/personal-media/src/network', async (original) => ({
+  ...(await original<typeof import('../packages/personal-media/src/network')>()),
+  privateFetch: mocks.fetch,
+}));
+const id = '11111111-1111-4111-8111-111111111111';
+const other = '22222222-2222-4222-8222-222222222222';
+const now = Date.parse('2026-10-11T12:00:00.000Z');
+const playlist = (count = 2) =>
+  '#EXTM3U\n' +
+  Array.from(
+    { length: count },
+    (_, i) => `#EXTINF:-1,Channel ${i}\nhttps://example.com/live/${i}?token=private-source`,
+  ).join('\n');
+async function setup() {
+  vi.resetModules();
+  let scope = 'epoch-1',
+    identity: string | null = 'server-a:user';
+  const { setupProviders } = await import('../apps/desktop/electron/providers');
+  const runtime = setupProviders(
+    vi.fn(),
+    () => scope,
+    () => identity,
+  );
+  return {
+    runtime,
+    setScope: (value: string) => {
+      scope = value;
+    },
+    setIdentity: (value: string | null) => {
+      identity = value;
+    },
+    invoke: (name: string, ...args: any[]) =>
+      mocks.handlers.get('rooms:provider-' + name)!(
+        { senderFrame: { url: 'file:///app/index.html' } },
+        ...args,
+      ),
+  };
+}
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(now);
+  vi.clearAllMocks();
+  mocks.write
+    .mockReset()
+    .mockImplementation((path: string, value: Buffer) => mocks.vaults.set(path, value));
+  mocks.fetch.mockReset();
+  mocks.handlers.clear();
+  mocks.vaults.clear();
+  mocks.reads = [];
+  delete process.env.ROOMS_DEV_URL;
+  mocks.stored = [
+    { id, type: 'playlist', name: 'Personal', playlistText: playlist(), favorites: [] },
+    {
+      id: other,
+      type: 'playlist',
+      name: 'Other',
+      playlistText: playlist().replaceAll('/live/', '/other/'),
+      favorites: [],
+    },
+  ];
+});
+afterEach(() => vi.useRealTimers());
 
-describe('genuine private IPTV playback history',()=>{
- it('records only an explicit playback acknowledgement rather than source resolution',async()=>{const {invoke}=await setup();const [row]=await invoke('channels',id);const playback=await invoke('play',id,row.id);expect(await invoke('recent-channels',id)).toEqual([]);expect(mocks.write).not.toHaveBeenCalled();await invoke('acknowledge-playback',playback.url);expect(await invoke('recent-channels',id)).toEqual([{channelId:row.id,watchedAt:'2026-10-11T12:00:00.000Z'}]);expect(mocks.fetch).not.toHaveBeenCalled();expect(mocks.encrypt).toHaveBeenCalledOnce();const stored=JSON.parse(mocks.encrypt.mock.calls[0][0]).find((value:any)=>value.id===id);expect(stored.recentChannels).toEqual([{channelId:row.id,watchedAt:'2026-10-11T12:00:00.000Z'}]);expect(JSON.stringify(stored.recentChannels)).not.toContain('private-source');});
- it('acknowledges a handle once, moves genuine later playback to the front and deduplicates channels',async()=>{const {invoke}=await setup();const [one,two]=await invoke('channels',id);const first=await invoke('play',id,one.id);await invoke('acknowledge-playback',first.url);vi.advanceTimersByTime(1000);await invoke('acknowledge-playback',first.url);expect(mocks.write).toHaveBeenCalledOnce();const second=await invoke('play',id,two.id);await invoke('acknowledge-playback',second.url);vi.advanceTimersByTime(1000);const again=await invoke('play',id,one.id);await invoke('acknowledge-playback',again.url);expect(await invoke('recent-channels',id)).toEqual([{channelId:one.id,watchedAt:'2026-10-11T12:00:02.000Z'},{channelId:two.id,watchedAt:'2026-10-11T12:00:01.000Z'}]);});
- it('caps each connection at the latest 100 actual channels',async()=>{mocks.stored[0].playlistText=playlist(105);const {invoke}=await setup();const rows=await invoke('channels',id);for(const row of rows){const playback=await invoke('play',id,row.id);await invoke('acknowledge-playback',playback.url);vi.advanceTimersByTime(1);}const result=await invoke('recent-channels',id);expect(result).toHaveLength(100);expect(result[0].channelId).toBe(rows[104].id);expect(result[99].channelId).toBe(rows[5].id);expect(await invoke('recent-channels',other)).toEqual([]);const saved=JSON.parse(mocks.encrypt.mock.calls.at(-1)![0]).find((value:any)=>value.id===id);expect(saved.recentChannels).toHaveLength(100);});
- it('rejects forged/raw/altered/expired handles before recording',async()=>{const {invoke}=await setup();const [row]=await invoke('channels',id);const playback=await invoke('play',id,row.id);for(const invalid of ['https://example.com/live?token=secret',playback.url+'?token=secret',playback.url+'#fragment',playback.url.replace('/stream','/other'),'rooms-provider://33333333-3333-4333-8333-333333333333/stream'])await expect(invoke('acknowledge-playback',invalid)).rejects.toThrow();vi.advanceTimersByTime(3600000);await expect(invoke('acknowledge-playback',playback.url)).rejects.toThrow('expired');expect(mocks.write).not.toHaveBeenCalled();expect(await invoke('recent-channels',id)).toEqual([]);});
- it('revokes acknowledgements on update, disconnect and clearPlayback and removes histories with the connection',async()=>{const {invoke,runtime}=await setup();const [row]=await invoke('channels',id);const watched=await invoke('play',id,row.id);await invoke('acknowledge-playback',watched.url);const stale=await invoke('play',id,row.id);await invoke('playlist-update',{id,name:'Renamed'});await expect(invoke('acknowledge-playback',stale.url)).rejects.toThrow('expired');expect(await invoke('recent-channels',id)).toHaveLength(1);const clear=await invoke('play',id,row.id);runtime.clearPlayback();await expect(invoke('acknowledge-playback',clear.url)).rejects.toThrow('expired');const remove=await invoke('play',id,row.id);await invoke('disconnect',id);await expect(invoke('acknowledge-playback',remove.url)).rejects.toThrow('expired');await expect(invoke('recent-channels',id)).rejects.toThrow('not found');expect(JSON.parse(mocks.encrypt.mock.calls.at(-1)![0]).some((value:any)=>value.id===id)).toBe(false);});
- it('filters removed/unloaded/malformed channel history and preserves actual entries after restart',async()=>{const first=await setup();const [row]=await first.invoke('channels',id);const playback=await first.invoke('play',id,row.id);await first.invoke('acknowledge-playback',playback.url);const restored=await setup();expect(await restored.invoke('recent-channels',id)).toEqual([]);await restored.invoke('channels',id);expect(await restored.invoke('recent-channels',id)).toEqual([{channelId:row.id,watchedAt:'2026-10-11T12:00:00.000Z'}]);mocks.fetch.mockResolvedValueOnce(new Response('#EXTM3U\n#EXTINF:-1,New\nhttps://example.com/new-channel'));await restored.invoke('playlist-update',{id,name:'New source',url:'https://example.com/new-list'});expect(await restored.invoke('recent-channels',id)).toEqual([]);});
- it('isolates equal user identities on different servers, rejects logout/session ABA and restores the correct partition only',async()=>{const {invoke,setIdentity,setScope}=await setup();const [row]=await invoke('channels',id);const playback=await invoke('play',id,row.id);await invoke('acknowledge-playback',playback.url);setIdentity('server-b:user');await invoke('channels',id);expect(await invoke('recent-channels',id)).toEqual([]);await expect(invoke('acknowledge-playback',playback.url)).rejects.toThrow('expired');setIdentity(null);await expect(invoke('recent-channels',id)).rejects.toThrow('signed-in');setIdentity('server-a:user');setScope('epoch-2');await invoke('channels',id);expect(await invoke('recent-channels',id)).toHaveLength(1);await expect(invoke('acknowledge-playback',playback.url)).rejects.toThrow('expired');const stale=await invoke('play',id,row.id);setScope('epoch-3');await invoke('status');setScope('epoch-4');await expect(invoke('acknowledge-playback',stale.url)).rejects.toThrow('expired');expect(mocks.reads.every(path=>path.includes('personal-providers-v2-'))).toBe(true);});
- it('preserves prior history on encrypted persistence failure and allows acknowledgement retry',async()=>{const {invoke}=await setup();const [row]=await invoke('channels',id);const playback=await invoke('play',id,row.id);mocks.write.mockImplementationOnce(()=>{throw new Error('private-vault-error');});await expect(invoke('acknowledge-playback',playback.url)).rejects.toThrow('request failed');expect(await invoke('recent-channels',id)).toEqual([]);await invoke('acknowledge-playback',playback.url);expect(await invoke('recent-channels',id)).toHaveLength(1);});
- it('strictly validates history arguments and ignores unsafe persisted data',async()=>{mocks.stored[0].recentChannels=[{channelId:'https://example.com/private',watchedAt:new Date(now).toISOString()},{channelId:'unknown',watchedAt:'2026-02-31T00:00:00.000Z'},null,{channelId:'unknown',watchedAt:'invalid'}];const {invoke}=await setup();await invoke('channels',id);expect(await invoke('recent-channels',id)).toEqual([]);await expect(invoke('recent-channels',id,'extra')).rejects.toThrow('fields');await expect(invoke('acknowledge-playback','rooms-provider://bad/stream','extra')).rejects.toThrow('fields');});
- it('rejects RD playback receipts as IPTV history and records only their owning channel connection',async()=>{const rdId='33333333-3333-4333-8333-333333333333';mocks.stored.push({id:rdId,type:'real-debrid',name:'Real-Debrid',favorites:[],credentials:{client_id:'c',client_secret:'s',access_token:'access',refresh_token:'refresh',expiresAt:now+600000}});const {invoke}=await setup();mocks.fetch.mockResolvedValueOnce(new Response(JSON.stringify([{id:'personal',filename:'Personal video',download:'https://example.com/personal.mp4'}])));await invoke('rd-library');const rd=await invoke('rd-play','personal');await expect(invoke('acknowledge-playback',rd.url)).rejects.toThrow('expired');await expect(invoke('recent-channels',rdId)).rejects.toThrow('not available');const [row]=await invoke('channels',other);const playback=await invoke('play',other,row.id);await invoke('acknowledge-playback',playback.url);expect(await invoke('recent-channels',id)).toEqual([]);expect(await invoke('recent-channels',other)).toHaveLength(1);});
+describe('genuine private IPTV playback history', () => {
+  it('records only an explicit playback acknowledgement rather than source resolution', async () => {
+    const { invoke } = await setup();
+    const [row] = await invoke('channels', id);
+    const playback = await invoke('play', id, row.id);
+    expect(await invoke('recent-channels', id)).toEqual([]);
+    expect(mocks.write).not.toHaveBeenCalled();
+    await invoke('acknowledge-playback', playback.url);
+    expect(await invoke('recent-channels', id)).toEqual([
+      { channelId: row.id, watchedAt: '2026-10-11T12:00:00.000Z' },
+    ]);
+    expect(mocks.fetch).not.toHaveBeenCalled();
+    expect(mocks.encrypt).toHaveBeenCalledOnce();
+    const stored = JSON.parse(mocks.encrypt.mock.calls[0][0]).find((value: any) => value.id === id);
+    expect(stored.recentChannels).toEqual([
+      { channelId: row.id, watchedAt: '2026-10-11T12:00:00.000Z' },
+    ]);
+    expect(JSON.stringify(stored.recentChannels)).not.toContain('private-source');
+  });
+  it('acknowledges a handle once, moves genuine later playback to the front and deduplicates channels', async () => {
+    const { invoke } = await setup();
+    const [one, two] = await invoke('channels', id);
+    const first = await invoke('play', id, one.id);
+    await invoke('acknowledge-playback', first.url);
+    vi.advanceTimersByTime(1000);
+    await invoke('acknowledge-playback', first.url);
+    expect(mocks.write).toHaveBeenCalledOnce();
+    const second = await invoke('play', id, two.id);
+    await invoke('acknowledge-playback', second.url);
+    vi.advanceTimersByTime(1000);
+    const again = await invoke('play', id, one.id);
+    await invoke('acknowledge-playback', again.url);
+    expect(await invoke('recent-channels', id)).toEqual([
+      { channelId: one.id, watchedAt: '2026-10-11T12:00:02.000Z' },
+      { channelId: two.id, watchedAt: '2026-10-11T12:00:01.000Z' },
+    ]);
+  });
+  it('caps each connection at the latest 100 actual channels', async () => {
+    mocks.stored[0].playlistText = playlist(105);
+    const { invoke } = await setup();
+    const rows = await invoke('channels', id);
+    for (const row of rows) {
+      const playback = await invoke('play', id, row.id);
+      await invoke('acknowledge-playback', playback.url);
+      vi.advanceTimersByTime(1);
+    }
+    const result = await invoke('recent-channels', id);
+    expect(result).toHaveLength(100);
+    expect(result[0].channelId).toBe(rows[104].id);
+    expect(result[99].channelId).toBe(rows[5].id);
+    expect(await invoke('recent-channels', other)).toEqual([]);
+    const saved = JSON.parse(mocks.encrypt.mock.calls.at(-1)![0]).find(
+      (value: any) => value.id === id,
+    );
+    expect(saved.recentChannels).toHaveLength(100);
+  });
+  it('rejects forged/raw/altered/expired handles before recording', async () => {
+    const { invoke } = await setup();
+    const [row] = await invoke('channels', id);
+    const playback = await invoke('play', id, row.id);
+    for (const invalid of [
+      'https://example.com/live?token=secret',
+      playback.url + '?token=secret',
+      playback.url + '#fragment',
+      playback.url.replace('/stream', '/other'),
+      'rooms-provider://33333333-3333-4333-8333-333333333333/stream',
+    ])
+      await expect(invoke('acknowledge-playback', invalid)).rejects.toThrow();
+    vi.advanceTimersByTime(3600000);
+    await expect(invoke('acknowledge-playback', playback.url)).rejects.toThrow('expired');
+    expect(mocks.write).not.toHaveBeenCalled();
+    expect(await invoke('recent-channels', id)).toEqual([]);
+  });
+  it('revokes acknowledgements on update, disconnect and clearPlayback and removes histories with the connection', async () => {
+    const { invoke, runtime } = await setup();
+    const [row] = await invoke('channels', id);
+    const watched = await invoke('play', id, row.id);
+    await invoke('acknowledge-playback', watched.url);
+    const stale = await invoke('play', id, row.id);
+    await invoke('playlist-update', { id, name: 'Renamed' });
+    await expect(invoke('acknowledge-playback', stale.url)).rejects.toThrow('expired');
+    expect(await invoke('recent-channels', id)).toHaveLength(1);
+    const clear = await invoke('play', id, row.id);
+    runtime.clearPlayback();
+    await expect(invoke('acknowledge-playback', clear.url)).rejects.toThrow('expired');
+    const remove = await invoke('play', id, row.id);
+    await invoke('disconnect', id);
+    await expect(invoke('acknowledge-playback', remove.url)).rejects.toThrow('expired');
+    await expect(invoke('recent-channels', id)).rejects.toThrow('not found');
+    expect(
+      JSON.parse(mocks.encrypt.mock.calls.at(-1)![0]).some((value: any) => value.id === id),
+    ).toBe(false);
+  });
+  it('filters removed/unloaded/malformed channel history and preserves actual entries after restart', async () => {
+    const first = await setup();
+    const [row] = await first.invoke('channels', id);
+    const playback = await first.invoke('play', id, row.id);
+    await first.invoke('acknowledge-playback', playback.url);
+    const restored = await setup();
+    expect(await restored.invoke('recent-channels', id)).toEqual([]);
+    await restored.invoke('channels', id);
+    expect(await restored.invoke('recent-channels', id)).toEqual([
+      { channelId: row.id, watchedAt: '2026-10-11T12:00:00.000Z' },
+    ]);
+    mocks.fetch.mockResolvedValueOnce(
+      new Response('#EXTM3U\n#EXTINF:-1,New\nhttps://example.com/new-channel'),
+    );
+    await restored.invoke('playlist-update', {
+      id,
+      name: 'New source',
+      url: 'https://example.com/new-list',
+    });
+    expect(await restored.invoke('recent-channels', id)).toEqual([]);
+  });
+  it('isolates equal user identities on different servers, rejects logout/session ABA and restores the correct partition only', async () => {
+    const { invoke, setIdentity, setScope } = await setup();
+    const [row] = await invoke('channels', id);
+    const playback = await invoke('play', id, row.id);
+    await invoke('acknowledge-playback', playback.url);
+    setIdentity('server-b:user');
+    await invoke('channels', id);
+    expect(await invoke('recent-channels', id)).toEqual([]);
+    await expect(invoke('acknowledge-playback', playback.url)).rejects.toThrow('expired');
+    setIdentity(null);
+    await expect(invoke('recent-channels', id)).rejects.toThrow('signed-in');
+    setIdentity('server-a:user');
+    setScope('epoch-2');
+    await invoke('channels', id);
+    expect(await invoke('recent-channels', id)).toHaveLength(1);
+    await expect(invoke('acknowledge-playback', playback.url)).rejects.toThrow('expired');
+    const stale = await invoke('play', id, row.id);
+    setScope('epoch-3');
+    await invoke('status');
+    setScope('epoch-4');
+    await expect(invoke('acknowledge-playback', stale.url)).rejects.toThrow('expired');
+    expect(mocks.reads.every((path) => path.includes('personal-providers-v2-'))).toBe(true);
+  });
+  it('preserves prior history on encrypted persistence failure and allows acknowledgement retry', async () => {
+    const { invoke } = await setup();
+    const [row] = await invoke('channels', id);
+    const playback = await invoke('play', id, row.id);
+    mocks.write.mockImplementationOnce(() => {
+      throw new Error('private-vault-error');
+    });
+    await expect(invoke('acknowledge-playback', playback.url)).rejects.toThrow('request failed');
+    expect(await invoke('recent-channels', id)).toEqual([]);
+    await invoke('acknowledge-playback', playback.url);
+    expect(await invoke('recent-channels', id)).toHaveLength(1);
+  });
+  it('strictly validates history arguments and ignores unsafe persisted data', async () => {
+    mocks.stored[0].recentChannels = [
+      { channelId: 'https://example.com/private', watchedAt: new Date(now).toISOString() },
+      { channelId: 'unknown', watchedAt: '2026-02-31T00:00:00.000Z' },
+      null,
+      { channelId: 'unknown', watchedAt: 'invalid' },
+    ];
+    const { invoke } = await setup();
+    await invoke('channels', id);
+    expect(await invoke('recent-channels', id)).toEqual([]);
+    await expect(invoke('recent-channels', id, 'extra')).rejects.toThrow('fields');
+    await expect(
+      invoke('acknowledge-playback', 'rooms-provider://bad/stream', 'extra'),
+    ).rejects.toThrow('fields');
+  });
+  it('rejects RD playback receipts as IPTV history and records only their owning channel connection', async () => {
+    const rdId = '33333333-3333-4333-8333-333333333333';
+    mocks.stored.push({
+      id: rdId,
+      type: 'real-debrid',
+      name: 'Real-Debrid',
+      favorites: [],
+      credentials: {
+        client_id: 'c',
+        client_secret: 's',
+        access_token: 'access',
+        refresh_token: 'refresh',
+        expiresAt: now + 600000,
+      },
+    });
+    const { invoke } = await setup();
+    mocks.fetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify([
+          {
+            id: 'personal',
+            filename: 'Personal video',
+            download: 'https://example.com/personal.mp4',
+          },
+        ]),
+      ),
+    );
+    await invoke('rd-library');
+    const rd = await invoke('rd-play', 'personal');
+    await expect(invoke('acknowledge-playback', rd.url)).rejects.toThrow('expired');
+    await expect(invoke('recent-channels', rdId)).rejects.toThrow('not available');
+    const [row] = await invoke('channels', other);
+    const playback = await invoke('play', other, row.id);
+    await invoke('acknowledge-playback', playback.url);
+    expect(await invoke('recent-channels', id)).toEqual([]);
+    expect(await invoke('recent-channels', other)).toHaveLength(1);
+  });
 });
 
-
-describe('Xtream human-readable channel groups',()=>{
- it('resolves live categories without exposing provider URLs or credentials',async()=>{
-  mocks.stored=[{id,type:'xtream',name:'TV',url:'https://example.com/',username:'private-user',password:'private-password',favorites:[]}];
-  mocks.fetch.mockImplementation(async(raw:string)=>new Response(JSON.stringify(new URL(raw).searchParams.get('action')==='get_live_categories'?[{category_id:'7',category_name:'Türkiye · Spor'}]:[{stream_id:22,name:'Sports channel',category_id:7}])));
-  const {invoke}=await setup();const rows=await invoke('channels',id);
-  expect(rows).toEqual([{id:'22',name:'Sports channel',group:'Türkiye · Spor',favorite:false}]);
-  expect(JSON.stringify(rows)).not.toContain('private-');
- });
- it('keeps channels available with an explicit fallback when category metadata fails',async()=>{
-  mocks.stored=[{id,type:'xtream',name:'TV',url:'https://example.com/',username:'u',password:'p',favorites:[]}];
-  mocks.fetch.mockImplementation(async(raw:string)=>{if(new URL(raw).searchParams.get('action')==='get_live_categories')throw Error('metadata unavailable');return new Response(JSON.stringify([{stream_id:22,name:'Channel',category_id:7}]));});
-  const {invoke}=await setup();expect((await invoke('channels',id))[0].group).toBe('Grup 7');
- });
+describe('Xtream human-readable channel groups', () => {
+  it('resolves live categories without exposing provider URLs or credentials', async () => {
+    mocks.stored = [
+      {
+        id,
+        type: 'xtream',
+        name: 'TV',
+        url: 'https://example.com/',
+        username: 'private-user',
+        password: 'private-password',
+        favorites: [],
+      },
+    ];
+    mocks.fetch.mockImplementation(
+      async (raw: string) =>
+        new Response(
+          JSON.stringify(
+            new URL(raw).searchParams.get('action') === 'get_live_categories'
+              ? [{ category_id: '7', category_name: 'Türkiye · Spor' }]
+              : [{ stream_id: 22, name: 'Sports channel', category_id: 7 }],
+          ),
+        ),
+    );
+    const { invoke } = await setup();
+    const rows = await invoke('channels', id);
+    expect(rows).toEqual([
+      { id: '22', name: 'Sports channel', group: 'Türkiye · Spor', favorite: false },
+    ]);
+    expect(JSON.stringify(rows)).not.toContain('private-');
+  });
+  it('keeps channels available with an explicit fallback when category metadata fails', async () => {
+    mocks.stored = [
+      {
+        id,
+        type: 'xtream',
+        name: 'TV',
+        url: 'https://example.com/',
+        username: 'u',
+        password: 'p',
+        favorites: [],
+      },
+    ];
+    mocks.fetch.mockImplementation(async (raw: string) => {
+      if (new URL(raw).searchParams.get('action') === 'get_live_categories')
+        throw Error('metadata unavailable');
+      return new Response(JSON.stringify([{ stream_id: 22, name: 'Channel', category_id: 7 }]));
+    });
+    const { invoke } = await setup();
+    expect((await invoke('channels', id))[0].group).toBe('Grup 7');
+  });
 });

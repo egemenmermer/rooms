@@ -1,18 +1,45 @@
 export class CaptureSourcesError extends Error {}
-type Options = { types: ('screen'|'window')[]; thumbnailSize: {width:number;height:number}; fetchWindowIcons:boolean };
+type Options = {
+  types: ('screen' | 'window')[];
+  thumbnailSize: { width: number; height: number };
+  fetchWindowIcons: boolean;
+};
 /** A thumbnail failure must not prevent an explicit source selection. No source is auto-selected. */
-export async function enumerateCaptureSources<T extends {id:string}>(getSources:(options:Options)=>Promise<T[]>,screenPermission:()=>string):Promise<T[]> {
-  const permissionMessage='macOS ekran kaydı izni kapalı. Sistem Ayarları → Gizlilik ve Güvenlik → Ekran ve Sistem Sesi Kaydı bölümünden ROOMS’a izin ver; ardından uygulamayı yeniden aç.';
-  if(['denied','restricted'].includes(screenPermission()))throw new CaptureSourcesError(permissionMessage);
-  try{return await getSources({types:['screen','window'],thumbnailSize:{width:320,height:180},fetchWindowIcons:false});}
-  catch{
-    if(['denied','restricted'].includes(screenPermission()))throw new CaptureSourcesError(permissionMessage);
-    const sources:T[]=[];
-    for(const type of ['screen','window'] as const){
-      try{sources.push(...await getSources({types:[type],thumbnailSize:{width:0,height:0},fetchWindowIcons:false}));}
-      catch{/* Retain accessible sources of the other type. */}
+export async function enumerateCaptureSources<T extends { id: string }>(
+  getSources: (options: Options) => Promise<T[]>,
+  screenPermission: () => string,
+): Promise<T[]> {
+  const permissionMessage =
+    'macOS ekran kaydı izni kapalı. Sistem Ayarları → Gizlilik ve Güvenlik → Ekran ve Sistem Sesi Kaydı bölümünden ROOMS’a izin ver; ardından uygulamayı yeniden aç.';
+  if (['denied', 'restricted'].includes(screenPermission()))
+    throw new CaptureSourcesError(permissionMessage);
+  try {
+    return await getSources({
+      types: ['screen', 'window'],
+      thumbnailSize: { width: 320, height: 180 },
+      fetchWindowIcons: false,
+    });
+  } catch {
+    if (['denied', 'restricted'].includes(screenPermission()))
+      throw new CaptureSourcesError(permissionMessage);
+    const sources: T[] = [];
+    for (const type of ['screen', 'window'] as const) {
+      try {
+        sources.push(
+          ...(await getSources({
+            types: [type],
+            thumbnailSize: { width: 0, height: 0 },
+            fetchWindowIcons: false,
+          })),
+        );
+      } catch {
+        /* Retain accessible sources of the other type. */
+      }
     }
-    if(!sources.length)throw new CaptureSourcesError('Ekran ve pencere listesi macOS tarafından alınamadı. Ekran kaydı iznini kontrol et; izin açıksa ROOMS’u normal şekilde kapatıp yeniden aç.');
-    return [...new Map(sources.map(source=>[source.id,source])).values()];
+    if (!sources.length)
+      throw new CaptureSourcesError(
+        'Ekran ve pencere listesi macOS tarafından alınamadı. Ekran kaydı iznini kontrol et; izin açıksa ROOMS’u normal şekilde kapatıp yeniden aç.',
+      );
+    return [...new Map(sources.map((source) => [source.id, source])).values()];
   }
 }

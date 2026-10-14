@@ -1,11 +1,86 @@
-import {expect,it} from 'vitest';import Fastify from 'fastify';import {mkdtemp,rm} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';import {registerSoundboard,soundDuration} from '../apps/services/access/soundboard';
-function audio(){const b=Buffer.alloc(44+9600);b.write('RIFF');b.writeUInt32LE(b.length-8,4);b.write('WAVE',8);b.write('fmt ',12);b.writeUInt32LE(16,16);b.writeUInt16LE(1,20);b.writeUInt16LE(1,22);b.writeUInt32LE(48000,24);b.writeUInt32LE(96000,28);b.writeUInt16LE(2,32);b.writeUInt16LE(16,34);b.write('data',36);b.writeUInt32LE(b.length-44,40);return b;}
-const scope='DEMO-room';
-it('shares uploaded sounds between real HTTP clients, survives service recreation and isolates another community',async()=>{
- const directory=await mkdtemp(join(tmpdir(),'rooms-soundboard-'));const open=async()=>{const server=Fastify();server.setErrorHandler((e,_r,reply)=>reply.code((e as any).status??(e as any).statusCode??400).send({error:(e as any).code??'INVALID'}));registerSoundboard(server,{directory,authorize:async token=>{if(token==='outsider')throw Object.assign(Error(),{status:403,code:'DENIED'});return {communityId:token==='other'?'DEMO-other':'DEMO-community',userId:token,canUpload:true,canManage:token==='admin'};}});const base=await server.listen({host:'127.0.0.1',port:0});return {server,base};};let app=await open();
- const request=(base:string,token:string,method:string,path='',body?:unknown)=>fetch(`${base}/v1/soundboard/${scope}${path}`,{method,headers:{Authorization:token,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
- try{const sent=await request(app.base,'alice','POST','',{name:'DEMO sound',audio:audio().toString('base64')});expect(sent.status).toBe(200);const entry=await sent.json();const list=await(await request(app.base,'bob','GET')).json();expect(list.clips.map((c:any)=>c.id)).toEqual([entry.id]);const received=await request(app.base,'bob','GET','/'+entry.id);expect(Buffer.from(await received.arrayBuffer())).toEqual(audio());expect((await request(app.base,'other','GET','/'+entry.id)).status).toBe(404);expect((await request(app.base,'outsider','GET')).status).toBe(403);expect((await request(app.base,'bob','DELETE','/'+entry.id)).status).toBe(403);
- await app.server.close();app=await open();expect((await(await request(app.base,'bob','GET')).json()).clips[0].id).toBe(entry.id);expect((await request(app.base,'alice','DELETE','/'+entry.id)).status).toBe(200);expect((await(await request(app.base,'bob','GET')).json()).clips).toEqual([]);
- }finally{await app.server.close();await rm(directory,{recursive:true,force:true});}
+import { expect, it } from 'vitest';
+import Fastify from 'fastify';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { registerSoundboard, soundDuration } from '../apps/services/access/soundboard';
+function audio() {
+  const b = Buffer.alloc(44 + 9600);
+  b.write('RIFF');
+  b.writeUInt32LE(b.length - 8, 4);
+  b.write('WAVE', 8);
+  b.write('fmt ', 12);
+  b.writeUInt32LE(16, 16);
+  b.writeUInt16LE(1, 20);
+  b.writeUInt16LE(1, 22);
+  b.writeUInt32LE(48000, 24);
+  b.writeUInt32LE(96000, 28);
+  b.writeUInt16LE(2, 32);
+  b.writeUInt16LE(16, 34);
+  b.write('data', 36);
+  b.writeUInt32LE(b.length - 44, 40);
+  return b;
+}
+const scope = 'DEMO-room';
+it('shares uploaded sounds between real HTTP clients, survives service recreation and isolates another community', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'rooms-soundboard-'));
+  const open = async () => {
+    const server = Fastify();
+    server.setErrorHandler((e, _r, reply) =>
+      reply
+        .code((e as any).status ?? (e as any).statusCode ?? 400)
+        .send({ error: (e as any).code ?? 'INVALID' }),
+    );
+    registerSoundboard(server, {
+      directory,
+      authorize: async (token) => {
+        if (token === 'outsider') throw Object.assign(Error(), { status: 403, code: 'DENIED' });
+        return {
+          communityId: token === 'other' ? 'DEMO-other' : 'DEMO-community',
+          userId: token,
+          canUpload: true,
+          canManage: token === 'admin',
+        };
+      },
+    });
+    const base = await server.listen({ host: '127.0.0.1', port: 0 });
+    return { server, base };
+  };
+  let app = await open();
+  const request = (base: string, token: string, method: string, path = '', body?: unknown) =>
+    fetch(`${base}/v1/soundboard/${scope}${path}`, {
+      method,
+      headers: { Authorization: token, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  try {
+    const sent = await request(app.base, 'alice', 'POST', '', {
+      name: 'DEMO sound',
+      audio: audio().toString('base64'),
+    });
+    expect(sent.status).toBe(200);
+    const entry = await sent.json();
+    const list = await (await request(app.base, 'bob', 'GET')).json();
+    expect(list.clips.map((c: any) => c.id)).toEqual([entry.id]);
+    const received = await request(app.base, 'bob', 'GET', '/' + entry.id);
+    expect(Buffer.from(await received.arrayBuffer())).toEqual(audio());
+    expect((await request(app.base, 'other', 'GET', '/' + entry.id)).status).toBe(404);
+    expect((await request(app.base, 'outsider', 'GET')).status).toBe(403);
+    expect((await request(app.base, 'bob', 'DELETE', '/' + entry.id)).status).toBe(403);
+    await app.server.close();
+    app = await open();
+    expect((await (await request(app.base, 'bob', 'GET')).json()).clips[0].id).toBe(entry.id);
+    expect((await request(app.base, 'alice', 'DELETE', '/' + entry.id)).status).toBe(200);
+    expect((await (await request(app.base, 'bob', 'GET')).json()).clips).toEqual([]);
+  } finally {
+    await app.server.close();
+    await rm(directory, { recursive: true, force: true });
+  }
 });
-it('validates canonical bounded PCM instead of trusting declared extensions or durations',()=>{expect(soundDuration(audio())).toBe(.1);expect(()=>soundDuration(Buffer.from('not audio'))).toThrow();const bad=audio();bad.writeUInt32LE(44100,24);expect(()=>soundDuration(bad)).toThrow();});
+it('validates canonical bounded PCM instead of trusting declared extensions or durations', () => {
+  expect(soundDuration(audio())).toBe(0.1);
+  expect(() => soundDuration(Buffer.from('not audio'))).toThrow();
+  const bad = audio();
+  bad.writeUInt32LE(44100, 24);
+  expect(() => soundDuration(bad)).toThrow();
+});

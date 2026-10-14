@@ -1,27 +1,232 @@
 /** Local pinned-protocol fixtures; no deployed account or remote mutations. */
-import {afterEach,expect,it,vi} from 'vitest';
-import {StoatClient} from '@rooms/stoat';
-afterEach(()=>vi.unstubAllGlobals());
-function fixture(options:{self?:string;bits?:number;timeout?:string;writeDenied?:boolean;roles?:Record<string,unknown>;pauseMembers?:()=>Promise<void>}={}){
- const calls:{path:string;method:string;body:any}[]=[];
- const server={_id:'space',owner:'owner',name:'Private community',default_permissions:0,roles:options.roles??{manager:{name:'Actual manager',rank:1,permissions:{a:options.bits??(512+64),d:0}},member:{name:'Actual member',rank:10,permissions:{a:0,d:0}},higher:{name:'Higher role',rank:0,permissions:{a:0,d:0}}}};
- const members:any[]=[{_id:{server:'space',user:'owner'},roles:[]},{_id:{server:'space',user:'manager'},roles:['manager'],...(options.timeout?{timeout:options.timeout}:{})},{_id:{server:'space',user:'member'},roles:['member']},{_id:{server:'space',user:'peer'},roles:['manager']}];
- const users=members.map(m=>({_id:m._id.user,username:m._id.user,private_token:'DO_NOT_EXPOSE'}));
- vi.stubGlobal('fetch',vi.fn(async(url:string,init:RequestInit)=>{const path=new URL(url).pathname,method=init.method??'GET',body=init.body?JSON.parse(String(init.body)):null;calls.push({path,method,body});let value:any={},status=200;
- if(method!=='GET'){if(options.writeDenied){status=403;value={type:'NotElevated'};}else {const user=path.split('/').at(-1);if(method==='PATCH'){members.find(m=>m._id.user===user).roles=body.roles;}else members.splice(members.findIndex(m=>m._id.user===user),1);value={};}}
- else if(path==='/api/users/@me')value={_id:options.self??'manager',username:'Viewer'};
- else if(path==='/api/servers/space')value=server;
- else if(path==='/api/servers/space/members'){await options.pauseMembers?.();value={users,members};}
- else if(path.startsWith('/api/servers/space/members/')){value=members.find(m=>m._id.user===path.split('/').at(-1));if(!value){status=404;value={type:'NotFound'};}}
- else throw new Error('Unexpected request '+path);
- return new Response(JSON.stringify(value),{status});}));
- return {client:new StoatClient('http://127.0.0.1:9999','local-fixture-secret'),calls,members,server};
+import { afterEach, expect, it, vi } from 'vitest';
+import { StoatClient } from '@rooms/stoat';
+afterEach(() => vi.unstubAllGlobals());
+function fixture(
+  options: {
+    self?: string;
+    bits?: number;
+    timeout?: string;
+    writeDenied?: boolean;
+    roles?: Record<string, unknown>;
+    pauseMembers?: () => Promise<void>;
+  } = {},
+) {
+  const calls: { path: string; method: string; body: any }[] = [];
+  const server = {
+    _id: 'space',
+    owner: 'owner',
+    name: 'Private community',
+    default_permissions: 0,
+    roles: options.roles ?? {
+      manager: {
+        name: 'Actual manager',
+        rank: 1,
+        permissions: { a: options.bits ?? 512 + 64, d: 0 },
+      },
+      member: { name: 'Actual member', rank: 10, permissions: { a: 0, d: 0 } },
+      higher: { name: 'Higher role', rank: 0, permissions: { a: 0, d: 0 } },
+    },
+  };
+  const members: any[] = [
+    { _id: { server: 'space', user: 'owner' }, roles: [] },
+    {
+      _id: { server: 'space', user: 'manager' },
+      roles: ['manager'],
+      ...(options.timeout ? { timeout: options.timeout } : {}),
+    },
+    { _id: { server: 'space', user: 'member' }, roles: ['member'] },
+    { _id: { server: 'space', user: 'peer' }, roles: ['manager'] },
+  ];
+  const users = members.map((m) => ({
+    _id: m._id.user,
+    username: m._id.user,
+    private_token: 'DO_NOT_EXPOSE',
+  }));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init: RequestInit) => {
+      const path = new URL(url).pathname,
+        method = init.method ?? 'GET',
+        body = init.body ? JSON.parse(String(init.body)) : null;
+      calls.push({ path, method, body });
+      let value: any = {},
+        status = 200;
+      if (method !== 'GET') {
+        if (options.writeDenied) {
+          status = 403;
+          value = { type: 'NotElevated' };
+        } else {
+          const user = path.split('/').at(-1);
+          if (method === 'PATCH') {
+            members.find((m) => m._id.user === user).roles = body.roles;
+          } else
+            members.splice(
+              members.findIndex((m) => m._id.user === user),
+              1,
+            );
+          value = {};
+        }
+      } else if (path === '/api/users/@me')
+        value = { _id: options.self ?? 'manager', username: 'Viewer' };
+      else if (path === '/api/servers/space') value = server;
+      else if (path === '/api/servers/space/members') {
+        await options.pauseMembers?.();
+        value = { users, members };
+      } else if (path.startsWith('/api/servers/space/members/')) {
+        value = members.find((m) => m._id.user === path.split('/').at(-1));
+        if (!value) {
+          status = 404;
+          value = { type: 'NotFound' };
+        }
+      } else throw new Error('Unexpected request ' + path);
+      return new Response(JSON.stringify(value), { status });
+    }),
+  );
+  return {
+    client: new StoatClient('http://127.0.0.1:9999', 'local-fixture-secret'),
+    calls,
+    members,
+    server,
+  };
 }
-it('projects real role names/member hierarchy without private credentials or any upstream invite request',async()=>{const {client,calls}=fixture();const result=await client.communityManagement('space');expect(result).toMatchObject({access:'allowed',capabilities:{assignRoles:true,kickMembers:true,manageServer:false},invites:{source:'rooms-broker',state:'unsupported',managementSupported:false}});expect(result.roles.find(r=>r.id==='member')).toMatchObject({name:'Actual member',assignable:true});expect(result.roles.find(r=>r.id==='higher')!.assignable).toBe(false);expect(result.members.find(m=>m.user.id==='member')).toMatchObject({canAssignRoles:true,canRemove:true});expect(result.members.find(m=>m.user.id==='peer')).toMatchObject({canAssignRoles:false,canRemove:false});expect(result.members.find(m=>m.user.id==='manager')).toMatchObject({canAssignRoles:true,canRemove:false});expect(result.members.find(m=>m.user.id==='owner')).toMatchObject({canAssignRoles:false,canRemove:false});expect(JSON.stringify(result)).not.toMatch(/DO_NOT_EXPOSE|local-fixture-secret/);expect(calls.every(c=>!c.path.includes('invites'))).toBe(true);});
-it.each([{bits:0},{timeout:'2999-01-01T00:00:00Z'}])('returns no management roster and makes no roster request when permissions disallow it: %j',async options=>{const {client,calls}=fixture(options);expect(await client.communityManagement('space')).toMatchObject({access:'denied',members:[],roles:[]});expect(calls.some(c=>c.path==='/api/servers/space/members')).toBe(false);});
-it('uses server roles despite absent ViewChannel and conservatively denies conflicting equal-rank allowance',async()=>{const f=fixture({roles:{manager:{name:'Manager',rank:1,permissions:{a:512,d:0}},member:{name:'Member',rank:1,permissions:{a:0,d:512}}}});f.members.find(m=>m._id.user==='manager')!.roles=['manager','member'];expect((await f.client.communityManagement('space')).access).toBe('denied');});
-it('sends exact authorized role PATCH and member DELETE, then returns authoritative roster',async()=>{const {client,calls}=fixture();const changed=await client.setCommunityMemberRoles({spaceId:'space',userId:'member',roleIds:[]});expect(changed.members.find(m=>m.user.id==='member')!.roles).toEqual([]);expect(calls.find(c=>c.method==='PATCH')).toEqual({path:'/api/servers/space/members/member',method:'PATCH',body:{roles:[]}});const removed=await client.removeCommunityMember({spaceId:'space',userId:'member'});expect(removed.members.some(m=>m.user.id==='member')).toBe(false);expect(calls.find(c=>c.method==='DELETE')!.path).toBe('/api/servers/space/members/member');});
-it('blocks privilege escalation, same-rank edits, owner changes and self removal before mutation',async()=>{const {client,calls}=fixture();await expect(client.setCommunityMemberRoles({spaceId:'space',userId:'member',roleIds:['higher']})).rejects.toMatchObject({code:'NotElevated'});await expect(client.setCommunityMemberRoles({spaceId:'space',userId:'peer',roleIds:[]})).rejects.toMatchObject({code:'NotElevated'});await expect(client.setCommunityMemberRoles({spaceId:'space',userId:'owner',roleIds:[]})).rejects.toMatchObject({status:403});await expect(client.removeCommunityMember({spaceId:'space',userId:'manager'})).rejects.toMatchObject({status:403});await expect(client.removeCommunityMember({spaceId:'space',userId:'owner'})).rejects.toMatchObject({status:403});expect(calls.every(c=>c.method==='GET')).toBe(true);});
-it('preserves upstream final authorization rejection and does not emit successful mutation refresh',async()=>{const {client}=fixture({writeDenied:true});const events:any[]=[];client.subscribe(e=>events.push(e));await expect(client.setCommunityMemberRoles({spaceId:'space',userId:'member',roleIds:[]})).rejects.toMatchObject({status:403,code:'NotElevated'});expect(events).toEqual([]);});
-it('owner uses upstream bypass while hidden malformed member context fails closed',async()=>{const {client,members}=fixture({self:'owner'});expect((await client.communityManagement('space')).roles.every(r=>r.assignable)).toBe(true);members[2].roles='manager';await expect(client.removeCommunityMember({spaceId:'space',userId:'member'})).rejects.toMatchObject({code:'INVALID_MEMBER_RESPONSE'});});
-it.each(['logout','gateway'] as const)('drops stale administrative response after %s even without cached channels',async mode=>{let release!:()=>void;let entered!:()=>void;const waiting=new Promise<void>(r=>{release=r}),started=new Promise<void>(r=>{entered=r});const {client}=fixture({pauseMembers:async()=>{entered();await waiting;}});const pending=client.communityManagement('space');await started;if(mode==='logout')await client.disconnect();else await (client as any).processPacket({type:'ServerRoleUpdate',id:'space',role_id:'manager',data:{permissions:{a:0,d:512}}});release();await expect(pending).rejects.toMatchObject({code:mode==='logout'?'SESSION_CHANGED':'ACCESS_CHANGED'});});
+it('projects real role names/member hierarchy without private credentials or any upstream invite request', async () => {
+  const { client, calls } = fixture();
+  const result = await client.communityManagement('space');
+  expect(result).toMatchObject({
+    access: 'allowed',
+    capabilities: { assignRoles: true, kickMembers: true, manageServer: false },
+    invites: { source: 'rooms-broker', state: 'unsupported', managementSupported: false },
+  });
+  expect(result.roles.find((r) => r.id === 'member')).toMatchObject({
+    name: 'Actual member',
+    assignable: true,
+  });
+  expect(result.roles.find((r) => r.id === 'higher')!.assignable).toBe(false);
+  expect(result.members.find((m) => m.user.id === 'member')).toMatchObject({
+    canAssignRoles: true,
+    canRemove: true,
+  });
+  expect(result.members.find((m) => m.user.id === 'peer')).toMatchObject({
+    canAssignRoles: false,
+    canRemove: false,
+  });
+  expect(result.members.find((m) => m.user.id === 'manager')).toMatchObject({
+    canAssignRoles: true,
+    canRemove: false,
+  });
+  expect(result.members.find((m) => m.user.id === 'owner')).toMatchObject({
+    canAssignRoles: false,
+    canRemove: false,
+  });
+  expect(JSON.stringify(result)).not.toMatch(/DO_NOT_EXPOSE|local-fixture-secret/);
+  expect(calls.every((c) => !c.path.includes('invites'))).toBe(true);
+});
+it.each([{ bits: 0 }, { timeout: '2999-01-01T00:00:00Z' }])(
+  'returns no management roster and makes no roster request when permissions disallow it: %j',
+  async (options) => {
+    const { client, calls } = fixture(options);
+    expect(await client.communityManagement('space')).toMatchObject({
+      access: 'denied',
+      members: [],
+      roles: [],
+    });
+    expect(calls.some((c) => c.path === '/api/servers/space/members')).toBe(false);
+  },
+);
+it('uses server roles despite absent ViewChannel and conservatively denies conflicting equal-rank allowance', async () => {
+  const f = fixture({
+    roles: {
+      manager: { name: 'Manager', rank: 1, permissions: { a: 512, d: 0 } },
+      member: { name: 'Member', rank: 1, permissions: { a: 0, d: 512 } },
+    },
+  });
+  f.members.find((m) => m._id.user === 'manager')!.roles = ['manager', 'member'];
+  expect((await f.client.communityManagement('space')).access).toBe('denied');
+});
+it('sends exact authorized role PATCH and member DELETE, then returns authoritative roster', async () => {
+  const { client, calls } = fixture();
+  const changed = await client.setCommunityMemberRoles({
+    spaceId: 'space',
+    userId: 'member',
+    roleIds: [],
+  });
+  expect(changed.members.find((m) => m.user.id === 'member')!.roles).toEqual([]);
+  expect(calls.find((c) => c.method === 'PATCH')).toEqual({
+    path: '/api/servers/space/members/member',
+    method: 'PATCH',
+    body: { roles: [] },
+  });
+  const removed = await client.removeCommunityMember({ spaceId: 'space', userId: 'member' });
+  expect(removed.members.some((m) => m.user.id === 'member')).toBe(false);
+  expect(calls.find((c) => c.method === 'DELETE')!.path).toBe('/api/servers/space/members/member');
+});
+it('blocks privilege escalation, same-rank edits, owner changes and self removal before mutation', async () => {
+  const { client, calls } = fixture();
+  await expect(
+    client.setCommunityMemberRoles({ spaceId: 'space', userId: 'member', roleIds: ['higher'] }),
+  ).rejects.toMatchObject({ code: 'NotElevated' });
+  await expect(
+    client.setCommunityMemberRoles({ spaceId: 'space', userId: 'peer', roleIds: [] }),
+  ).rejects.toMatchObject({ code: 'NotElevated' });
+  await expect(
+    client.setCommunityMemberRoles({ spaceId: 'space', userId: 'owner', roleIds: [] }),
+  ).rejects.toMatchObject({ status: 403 });
+  await expect(
+    client.removeCommunityMember({ spaceId: 'space', userId: 'manager' }),
+  ).rejects.toMatchObject({ status: 403 });
+  await expect(
+    client.removeCommunityMember({ spaceId: 'space', userId: 'owner' }),
+  ).rejects.toMatchObject({ status: 403 });
+  expect(calls.every((c) => c.method === 'GET')).toBe(true);
+});
+it('preserves upstream final authorization rejection and does not emit successful mutation refresh', async () => {
+  const { client } = fixture({ writeDenied: true });
+  const events: any[] = [];
+  client.subscribe((e) => events.push(e));
+  await expect(
+    client.setCommunityMemberRoles({ spaceId: 'space', userId: 'member', roleIds: [] }),
+  ).rejects.toMatchObject({ status: 403, code: 'NotElevated' });
+  expect(events).toEqual([]);
+});
+it('owner uses upstream bypass while hidden malformed member context fails closed', async () => {
+  const { client, members } = fixture({ self: 'owner' });
+  expect((await client.communityManagement('space')).roles.every((r) => r.assignable)).toBe(true);
+  members[2].roles = 'manager';
+  await expect(
+    client.removeCommunityMember({ spaceId: 'space', userId: 'member' }),
+  ).rejects.toMatchObject({ code: 'INVALID_MEMBER_RESPONSE' });
+});
+it.each(['logout', 'gateway'] as const)(
+  'drops stale administrative response after %s even without cached channels',
+  async (mode) => {
+    let release!: () => void;
+    let entered!: () => void;
+    const waiting = new Promise<void>((r) => {
+        release = r;
+      }),
+      started = new Promise<void>((r) => {
+        entered = r;
+      });
+    const { client } = fixture({
+      pauseMembers: async () => {
+        entered();
+        await waiting;
+      },
+    });
+    const pending = client.communityManagement('space');
+    await started;
+    if (mode === 'logout') await client.disconnect();
+    else
+      await (client as any).processPacket({
+        type: 'ServerRoleUpdate',
+        id: 'space',
+        role_id: 'manager',
+        data: { permissions: { a: 0, d: 512 } },
+      });
+    release();
+    await expect(pending).rejects.toMatchObject({
+      code: mode === 'logout' ? 'SESSION_CHANGED' : 'ACCESS_CHANGED',
+    });
+  },
+);

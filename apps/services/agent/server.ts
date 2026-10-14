@@ -1,92 +1,934 @@
 import Fastify from 'fastify';
 import rateLimit from '@fastify/rate-limit';
-import {z} from 'zod';
-import {randomUUID} from 'node:crypto';
-import {mkdirSync,readFileSync,lstatSync} from 'node:fs';
-import {join,basename,extname} from 'node:path';
-import type {AgentTask,AgentStatus,AgentAuthoritySnapshot,AgentAuthorityScope,AgentArtifact,AgentArtifactPreview} from '../../../packages/agent-contracts/src/index';
-import {AGENT_ARTIFACT_PREVIEW_LIMIT,agentArtifactPreviewSchema} from '../../../packages/agent-contracts/src/index';
-import {AgentRepository,type SecretModel,type AgentOutboxItem,type ToolOperation,type NotificationTarget} from './repository';
-import {readWorkspaceArtifact,safeWorkspacePath,type AgentExecutor} from './worker';
-import {AgentApprovalRequired,AgentUncertainEffect,projectAgentAudit} from './authority';
-export interface AgentPrincipal {userId:string;roomIds:string[];canManage:boolean}
-export interface ReminderInput {roomId:string;channelId:string;sourceMessageId:string}
-export interface AgentConfig {authority?:(principal:AgentPrincipal,roomId:string)=>Promise<{principals:AgentPrincipal[];scopes:AgentAuthorityScope[];discord:{configured:boolean;mappings:{userId:string;roomId:string;channelId:string;modelConnectionId:string}[]}}>;repository:AgentRepository;authorize:(token:string)=>Promise<AgentPrincipal>;reauthorize:(userId:string)=>Promise<AgentPrincipal>;executor:AgentExecutor;modelStatus?:(model:SecretModel)=>Promise<'connected'|'login-required'|'unavailable'>;capabilities?:string[];clock?:()=>number;deliverNotification?:(item:AgentOutboxItem)=>Promise<void>;reminderTarget?:(principal:AgentPrincipal,input:ReminderInput)=>Promise<NotificationTarget>;remindersAvailable?:(principal:AgentPrincipal)=>Promise<boolean>}
-const id=z.string().min(1).max(128).regex(/^[a-zA-Z0-9_-]+$/);const uuid=z.string().uuid();
-function artifactPreview(root:string,taskId:string,artifact:AgentArtifact):AgentArtifactPreview {
- const base={taskId,sourcesAvailable:false as const};
- try{
-  // Use the same path/symlink constraints as downloads before exposing any metadata.
-  const path=safeWorkspacePath(root,artifact.name),stat=lstatSync(path);
-  if(!stat.isFile())throw new Error('Unavailable artifact');
-  const metadata={id:artifact.id,name:basename(artifact.name),mime:artifact.mime,size:stat.size};
-  const extension=extname(artifact.name).toLowerCase(),mime=artifact.mime.toLowerCase().split(';')[0].trim();
-  const extensions=['.txt','.md','.markdown','.csv','.tsv','.json','.yaml','.yml','.log'];
-  const mimes=['text/plain','text/markdown','text/csv','text/tab-separated-values','application/json','application/yaml','text/yaml','application/octet-stream'];
-  if(!extensions.includes(extension)||!mimes.includes(mime))return agentArtifactPreviewSchema.parse({...base,state:'unsupported',artifact:metadata,reason:'unsupported-type'});
-  if(stat.size>AGENT_ARTIFACT_PREVIEW_LIMIT)return agentArtifactPreviewSchema.parse({...base,state:'too-large',artifact:metadata,reason:'preview-size-limit'});
-  // Downloads recheck descriptor identity and the existing 10MB storage ceiling.
-  const bytes=readWorkspaceArtifact(root,artifact.name);metadata.size=bytes.length;
-  if(bytes.length>AGENT_ARTIFACT_PREVIEW_LIMIT)return agentArtifactPreviewSchema.parse({...base,state:'too-large',artifact:metadata,reason:'preview-size-limit'});
-  let text:string;try{text=new TextDecoder('utf-8',{fatal:true}).decode(bytes);}catch{return agentArtifactPreviewSchema.parse({...base,state:'unsupported',artifact:metadata,reason:'invalid-text'});}
-  if(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(text))return agentArtifactPreviewSchema.parse({...base,state:'unsupported',artifact:metadata,reason:'invalid-text'});
-  if(/<(?:!doctype\s+html|html|script|svg|iframe|object|embed)\b/i.test(text))return agentArtifactPreviewSchema.parse({...base,state:'unsupported',artifact:metadata,reason:'active-content'});
-  return agentArtifactPreviewSchema.parse({...base,state:'text',artifact:metadata,text,encoding:'utf-8'});
- }catch{return {...base,state:'unavailable',artifact:null,reason:'artifact-unavailable'};}
+import { z } from 'zod';
+import { randomUUID } from 'node:crypto';
+import { mkdirSync, readFileSync, lstatSync } from 'node:fs';
+import { join, basename, extname } from 'node:path';
+import type {
+  AgentTask,
+  AgentStatus,
+  AgentAuthoritySnapshot,
+  AgentAuthorityScope,
+  AgentArtifact,
+  AgentArtifactPreview,
+} from '../../../packages/agent-contracts/src/index';
+import {
+  AGENT_ARTIFACT_PREVIEW_LIMIT,
+  agentArtifactPreviewSchema,
+} from '../../../packages/agent-contracts/src/index';
+import {
+  AgentRepository,
+  type SecretModel,
+  type AgentOutboxItem,
+  type ToolOperation,
+  type NotificationTarget,
+} from './repository';
+import { readWorkspaceArtifact, safeWorkspacePath, type AgentExecutor } from './worker';
+import { AgentApprovalRequired, AgentUncertainEffect, projectAgentAudit } from './authority';
+export interface AgentPrincipal {
+  userId: string;
+  roomIds: string[];
+  canManage: boolean;
 }
-export async function createAgentServer(config:AgentConfig){
- const repo=config.repository;const now=config.clock??Date.now;const app=Fastify({logger:false,bodyLimit:1024*1024});await app.register(rateLimit,{max:60,timeWindow:'1 minute'});
- const jobs=new Map<string,AbortController>();let busy=false;const cancelled=(t:AgentTask)=>t.state==='cancelled';
- const authenticate=async(header:string|undefined)=>{if(!header?.startsWith('Bearer ')||header.length>8192)throw Object.assign(new Error('AUTH_REQUIRED'),{statusCode:401});return config.authorize(header.slice(7));};
- const room=(p:AgentPrincipal,roomId:string)=>{if(!p.roomIds.includes(id.parse(roomId)))throw Object.assign(new Error('ROOM_ACCESS_DENIED'),{statusCode:403});};
- const task=(p:AgentPrincipal,taskId:string)=>{const t=repo.data.tasks.find(t=>t.id===uuid.parse(taskId));if(!t)throw Object.assign(new Error('TASK_NOT_FOUND'),{statusCode:404});room(p,t.roomId);return t;};
- const status=():AgentStatus=>({configured:true,connected:true,yolo:repo.data.yolo,executionHost:'separate-server',capabilities:config.capabilities??['files','code','models','single-shot-schedules','memory']});
- const publicModel=(m:SecretModel)=>{const {secret,...safe}=m;return safe;};
- app.setErrorHandler((error,_request,reply)=>{if(error instanceof z.ZodError)return reply.code(400).send({error:'INVALID_INPUT',message:'Check the supplied fields.'});const code=(error as any).statusCode??503;const message=error instanceof Error?error.message:'AGENT_UNAVAILABLE';return reply.code(code).send({error:code===503?'AGENT_UNAVAILABLE':message,message:code===503?'The agent service is unavailable. Check server configuration.':message});});
- app.get('/health',async()=>({service:'rooms-agent',ready:true}));
- app.addHook('preHandler',async(request)=>{if(request.url==='/health')return;(request as any).principal=await authenticate(request.headers.authorization);});
- const principal=(request:any)=>request.principal as AgentPrincipal;
- app.get('/v1/status',async request=>{const p=principal(request);const value=status();if(config.reminderTarget&&config.deliverNotification&&await config.remindersAvailable?.(p))value.capabilities=[...value.capabilities,'stoat-reminders'];return{...value,userId:p.userId,canManage:p.canManage};});
- app.get<{Querystring:{roomId:string}}>('/v1/authority',async request=>{
-  const p=principal(request),roomId=id.parse(request.query.roomId);room(p,roomId);
-  const policy=await config.authority?.(p,roomId);
-  const current=await authenticate(request.headers.authorization);room(current,roomId);
-  if(current.userId!==p.userId||current.canManage!==p.canManage)throw Object.assign(new Error('AUTHORITY_CHANGED'),{statusCode:403});
-  const principals=(policy?.principals??[current]).filter(other=>other.roomIds.includes(roomId)&&(current.canManage||other.userId===current.userId));
-  const mappings=(policy?.discord.mappings??[]).filter(mapping=>mapping.roomId===roomId&&(current.canManage||mapping.userId===current.userId)&&principals.some(other=>other.userId===mapping.userId));
-  const scopes=(policy?.scopes??[{kind:'room' as const,read:true,write:true,resources:[roomId]},{kind:'workspace' as const,read:true,write:true,resources:[]}]).filter(scope=>['room','workspace','github','drive','research','browser'].includes(scope.kind)).map(scope=>({kind:scope.kind,read:scope.read===true,write:scope.write===true,resources:scope.kind==='room'?[roomId]:scope.kind==='workspace'||!current.canManage?[]:scope.resources.filter(value=>typeof value==='string'&&value.length<=253&&(scope.kind==='github'?/^[\w.-]+\/[\w.-]+$/.test(value):scope.kind==='drive'?/^[-\w]{1,200}$/.test(value):/^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z0-9-]+$/.test(value))).slice(0,200)}));
-  const snapshot:AgentAuthoritySnapshot={userId:current.userId,roomId,canManage:current.canManage,yolo:repo.data.yolo,principals:[...new Map(principals.map(other=>[other.userId,{userId:other.userId,canManage:other.canManage,canStart:true as const}])).values()],scopes,discord:{state:policy?(policy.discord.configured?'configured':'not-configured'):'unknown',mentionOnly:true,mappings:mappings.map(mapping=>({userId:mapping.userId,channelId:mapping.channelId,personalModel:mapping.userId!==current.userId?'private':repo.data.models.some(model=>model.ownerId===current.userId&&model.id===mapping.modelConnectionId)?'selected':'missing'}))},permissionsMutable:false,configurationSource:'server-admin'};
-  return snapshot;
- });
- app.get<{Querystring:{roomId?:string}}>('/v1/audit',async request=>{const p=principal(request),roomId=request.query.roomId===undefined?undefined:id.parse(request.query.roomId);if(roomId){room(p,roomId);if(!p.canManage)throw Object.assign(new Error('MANAGE_REQUIRED'),{statusCode:403});}return projectAgentAudit(repo.data,p,roomId);});
- app.get('/v1/connections',async request=>{const p=principal(request);return Promise.all(repo.data.models.filter(m=>m.ownerId===p.userId).map(async m=>({...publicModel(m),status:config.modelStatus?await config.modelStatus(m):m.provider==='openrouter'?'connected':'login-required'})));});
- app.post('/v1/connections',async request=>{const p=principal(request);const b=z.object({provider:z.enum(['openrouter','codex','claude']),label:z.string().min(1).max(80),model:z.string().min(1).max(160),apiKey:z.string().min(10).max(2048).optional()}).strict().parse(request.body);if(b.provider==='openrouter'&&!b.apiKey)throw Object.assign(new Error('API_KEY_REQUIRED'),{statusCode:400});if(b.provider!=='openrouter'&&b.apiKey)throw Object.assign(new Error('USE_OFFICIAL_CLI_LOGIN'),{statusCode:400});const m:SecretModel={id:randomUUID(),ownerId:p.userId,provider:b.provider,label:b.label,model:b.model,status:b.provider==='openrouter'?'connected':'login-required',secret:b.provider==='openrouter'?b.apiKey:undefined};repo.data.models.push(m);repo.audit(p.userId,'model-connected',m.id);return publicModel(m);});
- app.delete<{Params:{id:string}}>('/v1/connections/:id',async request=>{const p=principal(request);const model=repo.data.models.find(m=>m.id===uuid.parse(request.params.id)&&m.ownerId===p.userId);if(!model)throw Object.assign(new Error('MODEL_NOT_FOUND'),{statusCode:404});for(const t of repo.data.tasks)if(t.modelConnectionId===model.id&&!['completed','failed','cancelled','interrupted'].includes(t.state)){jobs.get(t.id)?.abort();t.state='cancelled';}repo.data.models=repo.data.models.filter(m=>m!==model);repo.audit(p.userId,'model-disconnected',model.id);return{deleted:true};});
- app.post('/v1/yolo',async request=>{const p=principal(request);if(!p.canManage)throw Object.assign(new Error('MANAGE_REQUIRED'),{statusCode:403});const {value}=z.object({value:z.boolean()}).strict().parse(request.body);repo.data.yolo=value;if(value)for(const t of repo.data.tasks)if(t.state==='awaiting-approval'){if(t.pendingApproval){const op=repo.data.checkpoints[t.id]?.operations.find(op=>op.id===t.pendingApproval!.operationId);if(op?.status==='planned')op.status='approved';t.pendingApproval=undefined;}t.state='queued';repo.audit(p.userId,'yolo-task-resumed',t.id);}repo.audit(p.userId,value?'yolo-enabled':'yolo-disabled','global');void tick();return{...status(),userId:p.userId,canManage:p.canManage};});
- app.get<{Querystring:{roomId:string}}>('/v1/tasks',async request=>{const p=principal(request);room(p,request.query.roomId);return repo.data.tasks.filter(t=>t.roomId===request.query.roomId).slice(-100);});
- app.post('/v1/reminders',async request=>{const p=principal(request);const b=z.object({roomId:id,channelId:id,sourceMessageId:id,text:z.string().trim().min(1).max(1700),runAt:z.string().datetime()}).strict().parse(request.body);room(p,b.roomId);if(!config.reminderTarget||!config.deliverNotification)throw Object.assign(new Error('STOAT_REMINDERS_UNAVAILABLE'),{statusCode:409});if(Date.parse(b.runAt)<=now()||Date.parse(b.runAt)>now()+365*86400_000)throw Object.assign(new Error('SCHEDULE_IN_FUTURE_REQUIRED'),{statusCode:400});const target=await config.reminderTarget(p,b);if(target.platform!=='stoat'||target.channelId!==b.channelId||target.sourceMessageId!==b.sourceMessageId||!target.sourceAuthorId)throw Object.assign(new Error('REMINDER_TARGET_DENIED'),{statusCode:403});const t:AgentTask={kind:'reminder',id:randomUUID(),roomId:b.roomId,ownerId:p.userId,prompt:b.text,modelConnectionId:'',state:'scheduled',progress:['Hatırlatma planlandı.'],result:null,artifacts:[],createdAt:new Date(now()).toISOString(),runAt:b.runAt,error:null};repo.data.tasks.push(t);repo.data.notificationTargets[t.id]=structuredClone(target);repo.audit(p.userId,'reminder-created',t.id);return t;});
- app.post('/v1/tasks',async request=>{const p=principal(request);const b=z.object({roomId:id,prompt:z.string().min(1).max(20000),modelConnectionId:uuid,runAt:z.string().datetime().optional()}).strict().parse(request.body);room(p,b.roomId);const model=repo.data.models.find(m=>m.id===b.modelConnectionId&&m.ownerId===p.userId);if(!model)throw Object.assign(new Error('OWN_MODEL_REQUIRED'),{statusCode:403});if(model.provider!=='openrouter'&&(!config.modelStatus||await config.modelStatus(model)!=='connected'))throw Object.assign(new Error('OFFICIAL_CLI_LOGIN_REQUIRED'),{statusCode:409});if(b.runAt&&(Date.parse(b.runAt)<=now()||Date.parse(b.runAt)>now()+365*86400_000))throw Object.assign(new Error('SCHEDULE_IN_FUTURE_REQUIRED'),{statusCode:400});const t:AgentTask={id:randomUUID(),roomId:b.roomId,ownerId:p.userId,prompt:b.prompt,modelConnectionId:b.modelConnectionId,state:b.runAt?'scheduled':repo.data.yolo?'queued':'awaiting-approval',progress:[],result:null,artifacts:[],createdAt:new Date(now()).toISOString(),runAt:b.runAt??null,error:null};repo.data.tasks.push(t);repo.audit(p.userId,'task-created',t.id);void tick();return t;});
- app.post<{Params:{id:string}}>('/v1/tasks/:id/cancel',async request=>{const p=principal(request);const t=task(p,request.params.id);if(!['completed','failed','cancelled','interrupted'].includes(t.state)){jobs.get(t.id)?.abort();t.state='cancelled';repo.audit(p.userId,'task-cancelled',t.id);}return t;});
- app.post<{Params:{id:string}}>('/v1/tasks/:id/approve',async request=>{const p=principal(request);const t=task(p,request.params.id);if(t.state!=='awaiting-approval')throw Object.assign(new Error('TASK_NOT_AWAITING_APPROVAL'),{statusCode:409});if(t.pendingApproval){const op=repo.data.checkpoints[t.id]?.operations.find(op=>op.id===t.pendingApproval!.operationId);if(!op||op.status!=='planned')throw Object.assign(new Error('PENDING_OPERATION_CHANGED'),{statusCode:409});op.status='approved';repo.audit(p.userId,'operation-approved',op.id);t.pendingApproval=undefined;}t.state='queued';repo.audit(p.userId,'task-approved',t.id);void tick();return t;});
- app.post<{Params:{id:string}}>('/v1/tasks/:id/resolve-operation',async request=>{const p=principal(request);const t=task(p,request.params.id);const b=z.object({operationId:z.string().regex(/^[a-f0-9]{64}$/),resolution:z.enum(['record-result','confirm-not-applied']),result:z.string().max(30000).optional()}).strict().parse(request.body);if(t.state!=='interrupted')throw Object.assign(new Error('TASK_NOT_INTERRUPTED'),{statusCode:409});const op=repo.data.checkpoints[t.id]?.operations.find(op=>op.id===b.operationId);if(!op||!['started','uncertain'].includes(op.status))throw Object.assign(new Error('UNCERTAIN_OPERATION_REQUIRED'),{statusCode:409});if(b.resolution==='record-result'){if(!b.result)throw Object.assign(new Error('VERIFIED_RESULT_REQUIRED'),{statusCode:400});op.result=b.result;op.status='completed';}else op.status='approved';t.error=null;t.uncertainOperation=undefined;t.state='queued';repo.audit(p.userId,`operation-${b.resolution}`,op.id);void tick();return t;});
- app.get<{Querystring:{roomId:string}}>('/v1/outbox',async request=>{const p=principal(request);room(p,request.query.roomId);return repo.data.outbox.filter(item=>item.roomId===request.query.roomId).slice(-100);});
- app.get<{Querystring:{roomId:string}}>('/v1/memory',async request=>{const p=principal(request);room(p,request.query.roomId);return repo.data.memory.filter(m=>m.roomId===request.query.roomId);});
- app.post('/v1/memory',async request=>{const p=principal(request);const b=z.object({roomId:id,text:z.string().min(1).max(20000),sourceMessageId:id.optional()}).strict().parse(request.body);room(p,b.roomId);const m={id:randomUUID(),roomId:b.roomId,authorId:p.userId,text:b.text,sourceMessageId:b.sourceMessageId??null,createdAt:new Date(now()).toISOString()};repo.data.memory.push(m);repo.audit(p.userId,'memory-saved',m.id);return m;});
- app.delete<{Params:{id:string}}>('/v1/memory/:id',async request=>{const p=principal(request);const m=repo.data.memory.find(m=>m.id===uuid.parse(request.params.id));if(!m)throw Object.assign(new Error('MEMORY_NOT_FOUND'),{statusCode:404});room(p,m.roomId);repo.data.memory=repo.data.memory.filter(x=>x!==m);repo.audit(p.userId,'memory-deleted',m.id,m.roomId);return{deleted:true};});
- app.get<{Params:{id:string;artifactId:string}}>('/v1/tasks/:id/artifacts/:artifactId/preview',async(request,reply)=>{const p=principal(request),t=task(p,request.params.id),artifactId=uuid.parse(request.params.artifactId),a=t.artifacts.find(a=>a.id===artifactId);if(!a)throw Object.assign(new Error('ARTIFACT_NOT_FOUND'),{statusCode:404});const result=artifactPreview(join(repo.directory,'workspaces',t.id),t.id,a);const current=await authenticate(request.headers.authorization);if(current.userId!==p.userId)throw Object.assign(new Error('AUTHORITY_CHANGED'),{statusCode:403});room(current,t.roomId);return reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff').send(result);});
- app.get<{Params:{id:string;artifactId:string}}>('/v1/tasks/:id/artifacts/:artifactId',async(request,reply)=>{const p=principal(request);const t=task(p,request.params.id);const a=t.artifacts.find(a=>a.id===uuid.parse(request.params.artifactId));if(!a)throw Object.assign(new Error('ARTIFACT_NOT_FOUND'),{statusCode:404});const root=join(repo.directory,'workspaces',t.id);const data=readWorkspaceArtifact(root,a.name);if(data.length>10_000_000)throw Object.assign(new Error('ARTIFACT_TOO_LARGE'),{statusCode:413});return reply.header('Content-Type','application/octet-stream').header('Content-Disposition',`attachment; filename="${a.name.replace(/[^a-zA-Z0-9_.-]/g,'_')}"`).send(data);});
- async function tick(){if(busy)return;busy=true;try{for(const t of repo.data.tasks){if(t.state==='scheduled'&&Date.parse(t.runAt!)<=now()){t.state=t.kind==='reminder'||repo.data.yolo?'queued':'awaiting-approval';repo.save();}if(t.state!=='queued')continue;if(t.kind==='reminder'){try{const p=await config.reauthorize(t.ownerId);room(p,t.roomId);const target=repo.data.notificationTargets[t.id];if(!target||!config.reminderTarget)throw new Error('Reminder target unavailable.');const current=await config.reminderTarget(p,{roomId:t.roomId,channelId:target.channelId,sourceMessageId:target.sourceMessageId});if(JSON.stringify(current)!==JSON.stringify(target))throw new Error('Reminder target authorization changed.');if(cancelled(t))continue;t.state='running';t.progress=['Hatırlatma gönderiliyor.'];queueNotification(t,'reminder',`Hatırlatma: ${t.prompt}`);}catch{if(!cancelled(t)){t.state='failed';t.error='Reminder source or authorization is unavailable.';}repo.save();}continue;}const controller=new AbortController();jobs.set(t.id,controller);t.state='running';repo.save();try{
- // Reauthorize at execution time: a revoked user cannot run a previously scheduled job.
- const p=await config.reauthorize(t.ownerId);room(p,t.roomId);const model=repo.data.models.find(m=>m.id===t.modelConnectionId&&m.ownerId===t.ownerId);if(!model)throw new Error('The initiating user model is no longer connected.');const workspace=join(repo.directory,'workspaces',t.id);mkdirSync(workspace,{recursive:true,mode:0o700});const output=await config.executor({task:t,model,workspace,memory:repo.data.memory.filter(m=>m.roomId===t.roomId).slice(-20).map(m=>m.text),signal:controller.signal,progress:text=>{if(t.state==='running'){t.progress.push(text.slice(0,500));t.progress=t.progress.slice(-100);repo.save();}},checkpoint:{read:()=>repo.data.checkpoints[t.id]?structuredClone(repo.data.checkpoints[t.id]):undefined,save:value=>{repo.data.checkpoints[t.id]=structuredClone(value);t.artifacts=structuredClone(value.artifacts);repo.save();}},ensureAuthorized:async()=>{const active=await config.reauthorize(t.ownerId);room(active,t.roomId);if(controller.signal.aborted||t.state==='cancelled')throw new Error('Task cancelled.');},approveOperation:async(operation:ToolOperation)=>{const active=await config.reauthorize(t.ownerId);room(active,t.roomId);if(controller.signal.aborted||t.state==='cancelled')throw new Error('Task cancelled.');if(repo.data.yolo||operation.status==='approved'){operation.status='approved';return;}t.pendingApproval={operationId:operation.id,description:operation.description,tool:operation.tool,preview:operation.preview};t.state='awaiting-approval';repo.audit(t.ownerId,'operation-awaiting-approval',operation.id);throw new AgentApprovalRequired(operation);}});if(t.state==='running'){t.result=output.result;t.artifacts=output.artifacts;t.state='completed';queueNotification(t,'completed',`Görev tamamlandı.\n${t.result}`);}
- }catch(error){if(!controller.signal.aborted){if(error instanceof AgentApprovalRequired){t.state='awaiting-approval';queueNotification(t,'approval',`Görev bir işlem için onay bekliyor: ${error.operation.description}`);}else if(error instanceof AgentUncertainEffect){t.state='interrupted';t.error=error.message;const uncertain=repo.data.checkpoints[t.id]?.operations.find(op=>op.id===error.operationId);if(uncertain)t.uncertainOperation={operationId:uncertain.id,description:uncertain.description,tool:uncertain.tool,preview:uncertain.preview};queueNotification(t,'interrupted','İşlem sonucu belirsiz. Tekrar çalıştırmadan önce dış uygulamadaki sonucu doğrulayın.');}else{t.state='failed';t.error=error instanceof Error?error.message:'Agent execution failed.';queueNotification(t,'failed',`Görev tamamlanamadı. ${t.error}`);}}}finally{jobs.delete(t.id);if(['completed','failed','interrupted'].includes(t.state))repo.audit(t.ownerId,`task-${t.state}`,t.id,t.roomId);else repo.save();}}await dispatchOutbox();}finally{busy=false;}}
- function queueNotification(t:AgentTask,kind:string,content:string){const target=repo.data.notificationTargets[t.id];if(!target)return;const marker=`${t.id}:${kind}:${t.pendingApproval?.operationId??''}`;if(repo.data.outbox.some(item=>item.id===marker))return;repo.data.outbox.push({...target,id:marker,taskId:t.id,userId:t.ownerId,roomId:t.roomId,content:content.slice(0,1900),state:'pending',attempts:0,createdAt:new Date(now()).toISOString(),error:null});repo.save();}
- async function dispatchOutbox(){if(!config.deliverNotification)return;for(const item of repo.data.outbox){if(item.state!=='pending')continue;const reminder=repo.data.tasks.find(t=>t.id===item.taskId&&t.kind==='reminder');if(reminder&&reminder.state!=='running'){item.state='uncertain';item.error='Reminder is no longer eligible for delivery.';repo.save();continue;}try{const p=await config.reauthorize(item.userId);room(p,item.roomId);if(reminder){const current=await config.reminderTarget?.(p,{roomId:item.roomId,channelId:item.channelId,sourceMessageId:item.sourceMessageId});const stored=repo.data.notificationTargets[reminder.id];if(!current||JSON.stringify(current)!==JSON.stringify(stored))throw new Error('Reminder target revoked.');if(cancelled(reminder)){item.state='uncertain';item.error='Reminder cancelled before delivery.';repo.save();continue;}}}catch{item.state='uncertain';item.error='Authorization revoked before notification delivery.';if(reminder&&reminder.state!=='cancelled'){reminder.state='failed';reminder.error=item.error;}repo.save();continue;}item.state='sending';item.attempts++;repo.save();try{await config.deliverNotification(structuredClone(item));item.state='sent';item.error=null;if(reminder&&reminder.state!=='cancelled'){reminder.state='completed';reminder.result='Hatırlatma kaynak mesaja gönderildi.';reminder.progress=['Hatırlatma gönderildi.'];}}catch{item.state='uncertain';item.error='Delivery outcome uncertain. Verify the remote message before retrying.';if(reminder&&reminder.state!=='cancelled'){reminder.state='interrupted';reminder.error=item.error;}}repo.save();}}
- const timer=setInterval(()=>void tick(),1000);timer.unref();app.addHook('onClose',async()=>{clearInterval(timer);for(const controller of jobs.values())controller.abort();await config.executor.close?.();});
- async function enqueueMention(input:{userId:string;roomId:string;prompt:string;modelConnectionId:string;sourceMessageId:string;platform:'stoat'|'discord';channelId?:string;sourceAuthorId?:string}){
- const p=await config.reauthorize(input.userId);room(p,input.roomId);const source=`${input.platform}:${id.parse(input.sourceMessageId)}`;
- if(repo.data.audit.some(a=>a.action==='mention-ingested'&&a.target===source))return null;
- const model=repo.data.models.find(m=>m.id===uuid.parse(input.modelConnectionId)&&m.ownerId===p.userId);if(!model)throw new Error('The initiating user model is not connected.');
- const t:AgentTask={id:randomUUID(),roomId:input.roomId,ownerId:p.userId,prompt:z.string().min(1).max(20000).parse(input.prompt),modelConnectionId:model.id,state:repo.data.yolo?'queued':'awaiting-approval',progress:[],result:null,artifacts:[],createdAt:new Date(now()).toISOString(),runAt:null,error:null};repo.data.tasks.push(t);if(input.channelId)repo.data.notificationTargets[t.id]={platform:input.platform,channelId:id.parse(input.channelId),sourceMessageId:input.sourceMessageId,...(input.sourceAuthorId?{sourceAuthorId:id.parse(input.sourceAuthorId)}:{})};repo.audit(p.userId,'mention-ingested',source,t.roomId);void tick();return t;
- }
- return {server:app,tick,enqueueMention};
+export interface ReminderInput {
+  roomId: string;
+  channelId: string;
+  sourceMessageId: string;
+}
+export interface AgentConfig {
+  authority?: (
+    principal: AgentPrincipal,
+    roomId: string,
+  ) => Promise<{
+    principals: AgentPrincipal[];
+    scopes: AgentAuthorityScope[];
+    discord: {
+      configured: boolean;
+      mappings: { userId: string; roomId: string; channelId: string; modelConnectionId: string }[];
+    };
+  }>;
+  repository: AgentRepository;
+  authorize: (token: string) => Promise<AgentPrincipal>;
+  reauthorize: (userId: string) => Promise<AgentPrincipal>;
+  executor: AgentExecutor;
+  modelStatus?: (model: SecretModel) => Promise<'connected' | 'login-required' | 'unavailable'>;
+  capabilities?: string[];
+  clock?: () => number;
+  deliverNotification?: (item: AgentOutboxItem) => Promise<void>;
+  reminderTarget?: (principal: AgentPrincipal, input: ReminderInput) => Promise<NotificationTarget>;
+  remindersAvailable?: (principal: AgentPrincipal) => Promise<boolean>;
+}
+const id = z
+  .string()
+  .min(1)
+  .max(128)
+  .regex(/^[a-zA-Z0-9_-]+$/);
+const uuid = z.string().uuid();
+function artifactPreview(
+  root: string,
+  taskId: string,
+  artifact: AgentArtifact,
+): AgentArtifactPreview {
+  const base = { taskId, sourcesAvailable: false as const };
+  try {
+    // Use the same path/symlink constraints as downloads before exposing any metadata.
+    const path = safeWorkspacePath(root, artifact.name),
+      stat = lstatSync(path);
+    if (!stat.isFile()) throw new Error('Unavailable artifact');
+    const metadata = {
+      id: artifact.id,
+      name: basename(artifact.name),
+      mime: artifact.mime,
+      size: stat.size,
+    };
+    const extension = extname(artifact.name).toLowerCase(),
+      mime = artifact.mime.toLowerCase().split(';')[0].trim();
+    const extensions = [
+      '.txt',
+      '.md',
+      '.markdown',
+      '.csv',
+      '.tsv',
+      '.json',
+      '.yaml',
+      '.yml',
+      '.log',
+    ];
+    const mimes = [
+      'text/plain',
+      'text/markdown',
+      'text/csv',
+      'text/tab-separated-values',
+      'application/json',
+      'application/yaml',
+      'text/yaml',
+      'application/octet-stream',
+    ];
+    if (!extensions.includes(extension) || !mimes.includes(mime))
+      return agentArtifactPreviewSchema.parse({
+        ...base,
+        state: 'unsupported',
+        artifact: metadata,
+        reason: 'unsupported-type',
+      });
+    if (stat.size > AGENT_ARTIFACT_PREVIEW_LIMIT)
+      return agentArtifactPreviewSchema.parse({
+        ...base,
+        state: 'too-large',
+        artifact: metadata,
+        reason: 'preview-size-limit',
+      });
+    // Downloads recheck descriptor identity and the existing 10MB storage ceiling.
+    const bytes = readWorkspaceArtifact(root, artifact.name);
+    metadata.size = bytes.length;
+    if (bytes.length > AGENT_ARTIFACT_PREVIEW_LIMIT)
+      return agentArtifactPreviewSchema.parse({
+        ...base,
+        state: 'too-large',
+        artifact: metadata,
+        reason: 'preview-size-limit',
+      });
+    let text: string;
+    try {
+      text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    } catch {
+      return agentArtifactPreviewSchema.parse({
+        ...base,
+        state: 'unsupported',
+        artifact: metadata,
+        reason: 'invalid-text',
+      });
+    }
+    if (/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(text))
+      return agentArtifactPreviewSchema.parse({
+        ...base,
+        state: 'unsupported',
+        artifact: metadata,
+        reason: 'invalid-text',
+      });
+    if (/<(?:!doctype\s+html|html|script|svg|iframe|object|embed)\b/i.test(text))
+      return agentArtifactPreviewSchema.parse({
+        ...base,
+        state: 'unsupported',
+        artifact: metadata,
+        reason: 'active-content',
+      });
+    return agentArtifactPreviewSchema.parse({
+      ...base,
+      state: 'text',
+      artifact: metadata,
+      text,
+      encoding: 'utf-8',
+    });
+  } catch {
+    return { ...base, state: 'unavailable', artifact: null, reason: 'artifact-unavailable' };
+  }
+}
+export async function createAgentServer(config: AgentConfig) {
+  const repo = config.repository;
+  const now = config.clock ?? Date.now;
+  const app = Fastify({ logger: false, bodyLimit: 1024 * 1024 });
+  await app.register(rateLimit, { max: 60, timeWindow: '1 minute' });
+  const jobs = new Map<string, AbortController>();
+  let busy = false;
+  const cancelled = (t: AgentTask) => t.state === 'cancelled';
+  const authenticate = async (header: string | undefined) => {
+    if (!header?.startsWith('Bearer ') || header.length > 8192)
+      throw Object.assign(new Error('AUTH_REQUIRED'), { statusCode: 401 });
+    return config.authorize(header.slice(7));
+  };
+  const room = (p: AgentPrincipal, roomId: string) => {
+    if (!p.roomIds.includes(id.parse(roomId)))
+      throw Object.assign(new Error('ROOM_ACCESS_DENIED'), { statusCode: 403 });
+  };
+  const task = (p: AgentPrincipal, taskId: string) => {
+    const t = repo.data.tasks.find((t) => t.id === uuid.parse(taskId));
+    if (!t) throw Object.assign(new Error('TASK_NOT_FOUND'), { statusCode: 404 });
+    room(p, t.roomId);
+    return t;
+  };
+  const status = (): AgentStatus => ({
+    configured: true,
+    connected: true,
+    yolo: repo.data.yolo,
+    executionHost: 'separate-server',
+    capabilities: config.capabilities ?? [
+      'files',
+      'code',
+      'models',
+      'single-shot-schedules',
+      'memory',
+    ],
+  });
+  const publicModel = (m: SecretModel) => {
+    const { secret, ...safe } = m;
+    return safe;
+  };
+  app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof z.ZodError)
+      return reply
+        .code(400)
+        .send({ error: 'INVALID_INPUT', message: 'Check the supplied fields.' });
+    const code = (error as any).statusCode ?? 503;
+    const message = error instanceof Error ? error.message : 'AGENT_UNAVAILABLE';
+    return reply
+      .code(code)
+      .send({
+        error: code === 503 ? 'AGENT_UNAVAILABLE' : message,
+        message:
+          code === 503 ? 'The agent service is unavailable. Check server configuration.' : message,
+      });
+  });
+  app.get('/health', async () => ({ service: 'rooms-agent', ready: true }));
+  app.addHook('preHandler', async (request) => {
+    if (request.url === '/health') return;
+    (request as any).principal = await authenticate(request.headers.authorization);
+  });
+  const principal = (request: any) => request.principal as AgentPrincipal;
+  app.get('/v1/status', async (request) => {
+    const p = principal(request);
+    const value = status();
+    if (
+      config.reminderTarget &&
+      config.deliverNotification &&
+      (await config.remindersAvailable?.(p))
+    )
+      value.capabilities = [...value.capabilities, 'stoat-reminders'];
+    return { ...value, userId: p.userId, canManage: p.canManage };
+  });
+  app.get<{ Querystring: { roomId: string } }>('/v1/authority', async (request) => {
+    const p = principal(request),
+      roomId = id.parse(request.query.roomId);
+    room(p, roomId);
+    const policy = await config.authority?.(p, roomId);
+    const current = await authenticate(request.headers.authorization);
+    room(current, roomId);
+    if (current.userId !== p.userId || current.canManage !== p.canManage)
+      throw Object.assign(new Error('AUTHORITY_CHANGED'), { statusCode: 403 });
+    const principals = (policy?.principals ?? [current]).filter(
+      (other) =>
+        other.roomIds.includes(roomId) && (current.canManage || other.userId === current.userId),
+    );
+    const mappings = (policy?.discord.mappings ?? []).filter(
+      (mapping) =>
+        mapping.roomId === roomId &&
+        (current.canManage || mapping.userId === current.userId) &&
+        principals.some((other) => other.userId === mapping.userId),
+    );
+    const scopes = (
+      policy?.scopes ?? [
+        { kind: 'room' as const, read: true, write: true, resources: [roomId] },
+        { kind: 'workspace' as const, read: true, write: true, resources: [] },
+      ]
+    )
+      .filter((scope) =>
+        ['room', 'workspace', 'github', 'drive', 'research', 'browser'].includes(scope.kind),
+      )
+      .map((scope) => ({
+        kind: scope.kind,
+        read: scope.read === true,
+        write: scope.write === true,
+        resources:
+          scope.kind === 'room'
+            ? [roomId]
+            : scope.kind === 'workspace' || !current.canManage
+              ? []
+              : scope.resources
+                  .filter(
+                    (value) =>
+                      typeof value === 'string' &&
+                      value.length <= 253 &&
+                      (scope.kind === 'github'
+                        ? /^[\w.-]+\/[\w.-]+$/.test(value)
+                        : scope.kind === 'drive'
+                          ? /^[-\w]{1,200}$/.test(value)
+                          : /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z0-9-]+$/.test(value)),
+                  )
+                  .slice(0, 200),
+      }));
+    const snapshot: AgentAuthoritySnapshot = {
+      userId: current.userId,
+      roomId,
+      canManage: current.canManage,
+      yolo: repo.data.yolo,
+      principals: [
+        ...new Map(
+          principals.map((other) => [
+            other.userId,
+            { userId: other.userId, canManage: other.canManage, canStart: true as const },
+          ]),
+        ).values(),
+      ],
+      scopes,
+      discord: {
+        state: policy ? (policy.discord.configured ? 'configured' : 'not-configured') : 'unknown',
+        mentionOnly: true,
+        mappings: mappings.map((mapping) => ({
+          userId: mapping.userId,
+          channelId: mapping.channelId,
+          personalModel:
+            mapping.userId !== current.userId
+              ? 'private'
+              : repo.data.models.some(
+                    (model) =>
+                      model.ownerId === current.userId && model.id === mapping.modelConnectionId,
+                  )
+                ? 'selected'
+                : 'missing',
+        })),
+      },
+      permissionsMutable: false,
+      configurationSource: 'server-admin',
+    };
+    return snapshot;
+  });
+  app.get<{ Querystring: { roomId?: string } }>('/v1/audit', async (request) => {
+    const p = principal(request),
+      roomId = request.query.roomId === undefined ? undefined : id.parse(request.query.roomId);
+    if (roomId) {
+      room(p, roomId);
+      if (!p.canManage) throw Object.assign(new Error('MANAGE_REQUIRED'), { statusCode: 403 });
+    }
+    return projectAgentAudit(repo.data, p, roomId);
+  });
+  app.get('/v1/connections', async (request) => {
+    const p = principal(request);
+    return Promise.all(
+      repo.data.models
+        .filter((m) => m.ownerId === p.userId)
+        .map(async (m) => ({
+          ...publicModel(m),
+          status: config.modelStatus
+            ? await config.modelStatus(m)
+            : m.provider === 'openrouter'
+              ? 'connected'
+              : 'login-required',
+        })),
+    );
+  });
+  app.post('/v1/connections', async (request) => {
+    const p = principal(request);
+    const b = z
+      .object({
+        provider: z.enum(['openrouter', 'codex', 'claude']),
+        label: z.string().min(1).max(80),
+        model: z.string().min(1).max(160),
+        apiKey: z.string().min(10).max(2048).optional(),
+      })
+      .strict()
+      .parse(request.body);
+    if (b.provider === 'openrouter' && !b.apiKey)
+      throw Object.assign(new Error('API_KEY_REQUIRED'), { statusCode: 400 });
+    if (b.provider !== 'openrouter' && b.apiKey)
+      throw Object.assign(new Error('USE_OFFICIAL_CLI_LOGIN'), { statusCode: 400 });
+    const m: SecretModel = {
+      id: randomUUID(),
+      ownerId: p.userId,
+      provider: b.provider,
+      label: b.label,
+      model: b.model,
+      status: b.provider === 'openrouter' ? 'connected' : 'login-required',
+      secret: b.provider === 'openrouter' ? b.apiKey : undefined,
+    };
+    repo.data.models.push(m);
+    repo.audit(p.userId, 'model-connected', m.id);
+    return publicModel(m);
+  });
+  app.delete<{ Params: { id: string } }>('/v1/connections/:id', async (request) => {
+    const p = principal(request);
+    const model = repo.data.models.find(
+      (m) => m.id === uuid.parse(request.params.id) && m.ownerId === p.userId,
+    );
+    if (!model) throw Object.assign(new Error('MODEL_NOT_FOUND'), { statusCode: 404 });
+    for (const t of repo.data.tasks)
+      if (
+        t.modelConnectionId === model.id &&
+        !['completed', 'failed', 'cancelled', 'interrupted'].includes(t.state)
+      ) {
+        jobs.get(t.id)?.abort();
+        t.state = 'cancelled';
+      }
+    repo.data.models = repo.data.models.filter((m) => m !== model);
+    repo.audit(p.userId, 'model-disconnected', model.id);
+    return { deleted: true };
+  });
+  app.post('/v1/yolo', async (request) => {
+    const p = principal(request);
+    if (!p.canManage) throw Object.assign(new Error('MANAGE_REQUIRED'), { statusCode: 403 });
+    const { value } = z.object({ value: z.boolean() }).strict().parse(request.body);
+    repo.data.yolo = value;
+    if (value)
+      for (const t of repo.data.tasks)
+        if (t.state === 'awaiting-approval') {
+          if (t.pendingApproval) {
+            const op = repo.data.checkpoints[t.id]?.operations.find(
+              (op) => op.id === t.pendingApproval!.operationId,
+            );
+            if (op?.status === 'planned') op.status = 'approved';
+            t.pendingApproval = undefined;
+          }
+          t.state = 'queued';
+          repo.audit(p.userId, 'yolo-task-resumed', t.id);
+        }
+    repo.audit(p.userId, value ? 'yolo-enabled' : 'yolo-disabled', 'global');
+    void tick();
+    return { ...status(), userId: p.userId, canManage: p.canManage };
+  });
+  app.get<{ Querystring: { roomId: string } }>('/v1/tasks', async (request) => {
+    const p = principal(request);
+    room(p, request.query.roomId);
+    return repo.data.tasks.filter((t) => t.roomId === request.query.roomId).slice(-100);
+  });
+  app.post('/v1/reminders', async (request) => {
+    const p = principal(request);
+    const b = z
+      .object({
+        roomId: id,
+        channelId: id,
+        sourceMessageId: id,
+        text: z.string().trim().min(1).max(1700),
+        runAt: z.string().datetime(),
+      })
+      .strict()
+      .parse(request.body);
+    room(p, b.roomId);
+    if (!config.reminderTarget || !config.deliverNotification)
+      throw Object.assign(new Error('STOAT_REMINDERS_UNAVAILABLE'), { statusCode: 409 });
+    if (Date.parse(b.runAt) <= now() || Date.parse(b.runAt) > now() + 365 * 86400_000)
+      throw Object.assign(new Error('SCHEDULE_IN_FUTURE_REQUIRED'), { statusCode: 400 });
+    const target = await config.reminderTarget(p, b);
+    if (
+      target.platform !== 'stoat' ||
+      target.channelId !== b.channelId ||
+      target.sourceMessageId !== b.sourceMessageId ||
+      !target.sourceAuthorId
+    )
+      throw Object.assign(new Error('REMINDER_TARGET_DENIED'), { statusCode: 403 });
+    const t: AgentTask = {
+      kind: 'reminder',
+      id: randomUUID(),
+      roomId: b.roomId,
+      ownerId: p.userId,
+      prompt: b.text,
+      modelConnectionId: '',
+      state: 'scheduled',
+      progress: ['Hatırlatma planlandı.'],
+      result: null,
+      artifacts: [],
+      createdAt: new Date(now()).toISOString(),
+      runAt: b.runAt,
+      error: null,
+    };
+    repo.data.tasks.push(t);
+    repo.data.notificationTargets[t.id] = structuredClone(target);
+    repo.audit(p.userId, 'reminder-created', t.id);
+    return t;
+  });
+  app.post('/v1/tasks', async (request) => {
+    const p = principal(request);
+    const b = z
+      .object({
+        roomId: id,
+        prompt: z.string().min(1).max(20000),
+        modelConnectionId: uuid,
+        runAt: z.string().datetime().optional(),
+      })
+      .strict()
+      .parse(request.body);
+    room(p, b.roomId);
+    const model = repo.data.models.find(
+      (m) => m.id === b.modelConnectionId && m.ownerId === p.userId,
+    );
+    if (!model) throw Object.assign(new Error('OWN_MODEL_REQUIRED'), { statusCode: 403 });
+    if (
+      model.provider !== 'openrouter' &&
+      (!config.modelStatus || (await config.modelStatus(model)) !== 'connected')
+    )
+      throw Object.assign(new Error('OFFICIAL_CLI_LOGIN_REQUIRED'), { statusCode: 409 });
+    if (b.runAt && (Date.parse(b.runAt) <= now() || Date.parse(b.runAt) > now() + 365 * 86400_000))
+      throw Object.assign(new Error('SCHEDULE_IN_FUTURE_REQUIRED'), { statusCode: 400 });
+    const t: AgentTask = {
+      id: randomUUID(),
+      roomId: b.roomId,
+      ownerId: p.userId,
+      prompt: b.prompt,
+      modelConnectionId: b.modelConnectionId,
+      state: b.runAt ? 'scheduled' : repo.data.yolo ? 'queued' : 'awaiting-approval',
+      progress: [],
+      result: null,
+      artifacts: [],
+      createdAt: new Date(now()).toISOString(),
+      runAt: b.runAt ?? null,
+      error: null,
+    };
+    repo.data.tasks.push(t);
+    repo.audit(p.userId, 'task-created', t.id);
+    void tick();
+    return t;
+  });
+  app.post<{ Params: { id: string } }>('/v1/tasks/:id/cancel', async (request) => {
+    const p = principal(request);
+    const t = task(p, request.params.id);
+    if (!['completed', 'failed', 'cancelled', 'interrupted'].includes(t.state)) {
+      jobs.get(t.id)?.abort();
+      t.state = 'cancelled';
+      repo.audit(p.userId, 'task-cancelled', t.id);
+    }
+    return t;
+  });
+  app.post<{ Params: { id: string } }>('/v1/tasks/:id/approve', async (request) => {
+    const p = principal(request);
+    const t = task(p, request.params.id);
+    if (t.state !== 'awaiting-approval')
+      throw Object.assign(new Error('TASK_NOT_AWAITING_APPROVAL'), { statusCode: 409 });
+    if (t.pendingApproval) {
+      const op = repo.data.checkpoints[t.id]?.operations.find(
+        (op) => op.id === t.pendingApproval!.operationId,
+      );
+      if (!op || op.status !== 'planned')
+        throw Object.assign(new Error('PENDING_OPERATION_CHANGED'), { statusCode: 409 });
+      op.status = 'approved';
+      repo.audit(p.userId, 'operation-approved', op.id);
+      t.pendingApproval = undefined;
+    }
+    t.state = 'queued';
+    repo.audit(p.userId, 'task-approved', t.id);
+    void tick();
+    return t;
+  });
+  app.post<{ Params: { id: string } }>('/v1/tasks/:id/resolve-operation', async (request) => {
+    const p = principal(request);
+    const t = task(p, request.params.id);
+    const b = z
+      .object({
+        operationId: z.string().regex(/^[a-f0-9]{64}$/),
+        resolution: z.enum(['record-result', 'confirm-not-applied']),
+        result: z.string().max(30000).optional(),
+      })
+      .strict()
+      .parse(request.body);
+    if (t.state !== 'interrupted')
+      throw Object.assign(new Error('TASK_NOT_INTERRUPTED'), { statusCode: 409 });
+    const op = repo.data.checkpoints[t.id]?.operations.find((op) => op.id === b.operationId);
+    if (!op || !['started', 'uncertain'].includes(op.status))
+      throw Object.assign(new Error('UNCERTAIN_OPERATION_REQUIRED'), { statusCode: 409 });
+    if (b.resolution === 'record-result') {
+      if (!b.result)
+        throw Object.assign(new Error('VERIFIED_RESULT_REQUIRED'), { statusCode: 400 });
+      op.result = b.result;
+      op.status = 'completed';
+    } else op.status = 'approved';
+    t.error = null;
+    t.uncertainOperation = undefined;
+    t.state = 'queued';
+    repo.audit(p.userId, `operation-${b.resolution}`, op.id);
+    void tick();
+    return t;
+  });
+  app.get<{ Querystring: { roomId: string } }>('/v1/outbox', async (request) => {
+    const p = principal(request);
+    room(p, request.query.roomId);
+    return repo.data.outbox.filter((item) => item.roomId === request.query.roomId).slice(-100);
+  });
+  app.get<{ Querystring: { roomId: string } }>('/v1/memory', async (request) => {
+    const p = principal(request);
+    room(p, request.query.roomId);
+    return repo.data.memory.filter((m) => m.roomId === request.query.roomId);
+  });
+  app.post('/v1/memory', async (request) => {
+    const p = principal(request);
+    const b = z
+      .object({ roomId: id, text: z.string().min(1).max(20000), sourceMessageId: id.optional() })
+      .strict()
+      .parse(request.body);
+    room(p, b.roomId);
+    const m = {
+      id: randomUUID(),
+      roomId: b.roomId,
+      authorId: p.userId,
+      text: b.text,
+      sourceMessageId: b.sourceMessageId ?? null,
+      createdAt: new Date(now()).toISOString(),
+    };
+    repo.data.memory.push(m);
+    repo.audit(p.userId, 'memory-saved', m.id);
+    return m;
+  });
+  app.delete<{ Params: { id: string } }>('/v1/memory/:id', async (request) => {
+    const p = principal(request);
+    const m = repo.data.memory.find((m) => m.id === uuid.parse(request.params.id));
+    if (!m) throw Object.assign(new Error('MEMORY_NOT_FOUND'), { statusCode: 404 });
+    room(p, m.roomId);
+    repo.data.memory = repo.data.memory.filter((x) => x !== m);
+    repo.audit(p.userId, 'memory-deleted', m.id, m.roomId);
+    return { deleted: true };
+  });
+  app.get<{ Params: { id: string; artifactId: string } }>(
+    '/v1/tasks/:id/artifacts/:artifactId/preview',
+    async (request, reply) => {
+      const p = principal(request),
+        t = task(p, request.params.id),
+        artifactId = uuid.parse(request.params.artifactId),
+        a = t.artifacts.find((a) => a.id === artifactId);
+      if (!a) throw Object.assign(new Error('ARTIFACT_NOT_FOUND'), { statusCode: 404 });
+      const result = artifactPreview(join(repo.directory, 'workspaces', t.id), t.id, a);
+      const current = await authenticate(request.headers.authorization);
+      if (current.userId !== p.userId)
+        throw Object.assign(new Error('AUTHORITY_CHANGED'), { statusCode: 403 });
+      room(current, t.roomId);
+      return reply
+        .header('Cache-Control', 'no-store')
+        .header('X-Content-Type-Options', 'nosniff')
+        .send(result);
+    },
+  );
+  app.get<{ Params: { id: string; artifactId: string } }>(
+    '/v1/tasks/:id/artifacts/:artifactId',
+    async (request, reply) => {
+      const p = principal(request);
+      const t = task(p, request.params.id);
+      const a = t.artifacts.find((a) => a.id === uuid.parse(request.params.artifactId));
+      if (!a) throw Object.assign(new Error('ARTIFACT_NOT_FOUND'), { statusCode: 404 });
+      const root = join(repo.directory, 'workspaces', t.id);
+      const data = readWorkspaceArtifact(root, a.name);
+      if (data.length > 10_000_000)
+        throw Object.assign(new Error('ARTIFACT_TOO_LARGE'), { statusCode: 413 });
+      return reply
+        .header('Content-Type', 'application/octet-stream')
+        .header(
+          'Content-Disposition',
+          `attachment; filename="${a.name.replace(/[^a-zA-Z0-9_.-]/g, '_')}"`,
+        )
+        .send(data);
+    },
+  );
+  async function tick() {
+    if (busy) return;
+    busy = true;
+    try {
+      for (const t of repo.data.tasks) {
+        if (t.state === 'scheduled' && Date.parse(t.runAt!) <= now()) {
+          t.state = t.kind === 'reminder' || repo.data.yolo ? 'queued' : 'awaiting-approval';
+          repo.save();
+        }
+        if (t.state !== 'queued') continue;
+        if (t.kind === 'reminder') {
+          try {
+            const p = await config.reauthorize(t.ownerId);
+            room(p, t.roomId);
+            const target = repo.data.notificationTargets[t.id];
+            if (!target || !config.reminderTarget) throw new Error('Reminder target unavailable.');
+            const current = await config.reminderTarget(p, {
+              roomId: t.roomId,
+              channelId: target.channelId,
+              sourceMessageId: target.sourceMessageId,
+            });
+            if (JSON.stringify(current) !== JSON.stringify(target))
+              throw new Error('Reminder target authorization changed.');
+            if (cancelled(t)) continue;
+            t.state = 'running';
+            t.progress = ['Hatırlatma gönderiliyor.'];
+            queueNotification(t, 'reminder', `Hatırlatma: ${t.prompt}`);
+          } catch {
+            if (!cancelled(t)) {
+              t.state = 'failed';
+              t.error = 'Reminder source or authorization is unavailable.';
+            }
+            repo.save();
+          }
+          continue;
+        }
+        const controller = new AbortController();
+        jobs.set(t.id, controller);
+        t.state = 'running';
+        repo.save();
+        try {
+          // Reauthorize at execution time: a revoked user cannot run a previously scheduled job.
+          const p = await config.reauthorize(t.ownerId);
+          room(p, t.roomId);
+          const model = repo.data.models.find(
+            (m) => m.id === t.modelConnectionId && m.ownerId === t.ownerId,
+          );
+          if (!model) throw new Error('The initiating user model is no longer connected.');
+          const workspace = join(repo.directory, 'workspaces', t.id);
+          mkdirSync(workspace, { recursive: true, mode: 0o700 });
+          const output = await config.executor({
+            task: t,
+            model,
+            workspace,
+            memory: repo.data.memory
+              .filter((m) => m.roomId === t.roomId)
+              .slice(-20)
+              .map((m) => m.text),
+            signal: controller.signal,
+            progress: (text) => {
+              if (t.state === 'running') {
+                t.progress.push(text.slice(0, 500));
+                t.progress = t.progress.slice(-100);
+                repo.save();
+              }
+            },
+            checkpoint: {
+              read: () =>
+                repo.data.checkpoints[t.id]
+                  ? structuredClone(repo.data.checkpoints[t.id])
+                  : undefined,
+              save: (value) => {
+                repo.data.checkpoints[t.id] = structuredClone(value);
+                t.artifacts = structuredClone(value.artifacts);
+                repo.save();
+              },
+            },
+            ensureAuthorized: async () => {
+              const active = await config.reauthorize(t.ownerId);
+              room(active, t.roomId);
+              if (controller.signal.aborted || t.state === 'cancelled')
+                throw new Error('Task cancelled.');
+            },
+            approveOperation: async (operation: ToolOperation) => {
+              const active = await config.reauthorize(t.ownerId);
+              room(active, t.roomId);
+              if (controller.signal.aborted || t.state === 'cancelled')
+                throw new Error('Task cancelled.');
+              if (repo.data.yolo || operation.status === 'approved') {
+                operation.status = 'approved';
+                return;
+              }
+              t.pendingApproval = {
+                operationId: operation.id,
+                description: operation.description,
+                tool: operation.tool,
+                preview: operation.preview,
+              };
+              t.state = 'awaiting-approval';
+              repo.audit(t.ownerId, 'operation-awaiting-approval', operation.id);
+              throw new AgentApprovalRequired(operation);
+            },
+          });
+          if (t.state === 'running') {
+            t.result = output.result;
+            t.artifacts = output.artifacts;
+            t.state = 'completed';
+            queueNotification(t, 'completed', `Görev tamamlandı.\n${t.result}`);
+          }
+        } catch (error) {
+          if (!controller.signal.aborted) {
+            if (error instanceof AgentApprovalRequired) {
+              t.state = 'awaiting-approval';
+              queueNotification(
+                t,
+                'approval',
+                `Görev bir işlem için onay bekliyor: ${error.operation.description}`,
+              );
+            } else if (error instanceof AgentUncertainEffect) {
+              t.state = 'interrupted';
+              t.error = error.message;
+              const uncertain = repo.data.checkpoints[t.id]?.operations.find(
+                (op) => op.id === error.operationId,
+              );
+              if (uncertain)
+                t.uncertainOperation = {
+                  operationId: uncertain.id,
+                  description: uncertain.description,
+                  tool: uncertain.tool,
+                  preview: uncertain.preview,
+                };
+              queueNotification(
+                t,
+                'interrupted',
+                'İşlem sonucu belirsiz. Tekrar çalıştırmadan önce dış uygulamadaki sonucu doğrulayın.',
+              );
+            } else {
+              t.state = 'failed';
+              t.error = error instanceof Error ? error.message : 'Agent execution failed.';
+              queueNotification(t, 'failed', `Görev tamamlanamadı. ${t.error}`);
+            }
+          }
+        } finally {
+          jobs.delete(t.id);
+          if (['completed', 'failed', 'interrupted'].includes(t.state))
+            repo.audit(t.ownerId, `task-${t.state}`, t.id, t.roomId);
+          else repo.save();
+        }
+      }
+      await dispatchOutbox();
+    } finally {
+      busy = false;
+    }
+  }
+  function queueNotification(t: AgentTask, kind: string, content: string) {
+    const target = repo.data.notificationTargets[t.id];
+    if (!target) return;
+    const marker = `${t.id}:${kind}:${t.pendingApproval?.operationId ?? ''}`;
+    if (repo.data.outbox.some((item) => item.id === marker)) return;
+    repo.data.outbox.push({
+      ...target,
+      id: marker,
+      taskId: t.id,
+      userId: t.ownerId,
+      roomId: t.roomId,
+      content: content.slice(0, 1900),
+      state: 'pending',
+      attempts: 0,
+      createdAt: new Date(now()).toISOString(),
+      error: null,
+    });
+    repo.save();
+  }
+  async function dispatchOutbox() {
+    if (!config.deliverNotification) return;
+    for (const item of repo.data.outbox) {
+      if (item.state !== 'pending') continue;
+      const reminder = repo.data.tasks.find((t) => t.id === item.taskId && t.kind === 'reminder');
+      if (reminder && reminder.state !== 'running') {
+        item.state = 'uncertain';
+        item.error = 'Reminder is no longer eligible for delivery.';
+        repo.save();
+        continue;
+      }
+      try {
+        const p = await config.reauthorize(item.userId);
+        room(p, item.roomId);
+        if (reminder) {
+          const current = await config.reminderTarget?.(p, {
+            roomId: item.roomId,
+            channelId: item.channelId,
+            sourceMessageId: item.sourceMessageId,
+          });
+          const stored = repo.data.notificationTargets[reminder.id];
+          if (!current || JSON.stringify(current) !== JSON.stringify(stored))
+            throw new Error('Reminder target revoked.');
+          if (cancelled(reminder)) {
+            item.state = 'uncertain';
+            item.error = 'Reminder cancelled before delivery.';
+            repo.save();
+            continue;
+          }
+        }
+      } catch {
+        item.state = 'uncertain';
+        item.error = 'Authorization revoked before notification delivery.';
+        if (reminder && reminder.state !== 'cancelled') {
+          reminder.state = 'failed';
+          reminder.error = item.error;
+        }
+        repo.save();
+        continue;
+      }
+      item.state = 'sending';
+      item.attempts++;
+      repo.save();
+      try {
+        await config.deliverNotification(structuredClone(item));
+        item.state = 'sent';
+        item.error = null;
+        if (reminder && reminder.state !== 'cancelled') {
+          reminder.state = 'completed';
+          reminder.result = 'Hatırlatma kaynak mesaja gönderildi.';
+          reminder.progress = ['Hatırlatma gönderildi.'];
+        }
+      } catch {
+        item.state = 'uncertain';
+        item.error = 'Delivery outcome uncertain. Verify the remote message before retrying.';
+        if (reminder && reminder.state !== 'cancelled') {
+          reminder.state = 'interrupted';
+          reminder.error = item.error;
+        }
+      }
+      repo.save();
+    }
+  }
+  const timer = setInterval(() => void tick(), 1000);
+  timer.unref();
+  app.addHook('onClose', async () => {
+    clearInterval(timer);
+    for (const controller of jobs.values()) controller.abort();
+    await config.executor.close?.();
+  });
+  async function enqueueMention(input: {
+    userId: string;
+    roomId: string;
+    prompt: string;
+    modelConnectionId: string;
+    sourceMessageId: string;
+    platform: 'stoat' | 'discord';
+    channelId?: string;
+    sourceAuthorId?: string;
+  }) {
+    const p = await config.reauthorize(input.userId);
+    room(p, input.roomId);
+    const source = `${input.platform}:${id.parse(input.sourceMessageId)}`;
+    if (repo.data.audit.some((a) => a.action === 'mention-ingested' && a.target === source))
+      return null;
+    const model = repo.data.models.find(
+      (m) => m.id === uuid.parse(input.modelConnectionId) && m.ownerId === p.userId,
+    );
+    if (!model) throw new Error('The initiating user model is not connected.');
+    const t: AgentTask = {
+      id: randomUUID(),
+      roomId: input.roomId,
+      ownerId: p.userId,
+      prompt: z.string().min(1).max(20000).parse(input.prompt),
+      modelConnectionId: model.id,
+      state: repo.data.yolo ? 'queued' : 'awaiting-approval',
+      progress: [],
+      result: null,
+      artifacts: [],
+      createdAt: new Date(now()).toISOString(),
+      runAt: null,
+      error: null,
+    };
+    repo.data.tasks.push(t);
+    if (input.channelId)
+      repo.data.notificationTargets[t.id] = {
+        platform: input.platform,
+        channelId: id.parse(input.channelId),
+        sourceMessageId: input.sourceMessageId,
+        ...(input.sourceAuthorId ? { sourceAuthorId: id.parse(input.sourceAuthorId) } : {}),
+      };
+    repo.audit(p.userId, 'mention-ingested', source, t.roomId);
+    void tick();
+    return t;
+  }
+  return { server: app, tick, enqueueMention };
 }

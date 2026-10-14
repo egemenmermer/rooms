@@ -11,10 +11,16 @@ export async function createRnnoiseNode(context: AudioContext): Promise<RnnoiseW
   if (context.sampleRate !== 48_000 || !context.audioWorklet)
     throw new Error('RNNoise için 48 kHz ses işleme desteği gerekiyor.');
   const { loadRnnoise, RnnoiseWorkletNode } = await import('@sapphi-red/web-noise-suppressor');
-  binary ??= loadRnnoise({ url: wasmUrl, simdUrl }).catch(error => { binary = undefined; throw error; });
+  binary ??= loadRnnoise({ url: wasmUrl, simdUrl }).catch((error) => {
+    binary = undefined;
+    throw error;
+  });
   let module = modules.get(context);
   if (!module) {
-    module = context.audioWorklet.addModule(workletUrl).catch(error => { modules.delete(context); throw error; });
+    module = context.audioWorklet.addModule(workletUrl).catch((error) => {
+      modules.delete(context);
+      throw error;
+    });
     modules.set(context, module);
   }
   const [wasmBinary] = await Promise.all([binary, module]);

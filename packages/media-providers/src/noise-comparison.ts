@@ -20,26 +20,36 @@ export async function compareNoise(options: {
   let stream: MediaStream | undefined;
   let source: AudioNode | undefined;
   let denoiser: Awaited<ReturnType<typeof createNoiseSuppressionNode>> | undefined;
-  let processingFailure:Error|undefined;
-  let failRecording:(()=>void)|undefined;
+  let processingFailure: Error | undefined;
+  let failRecording: (() => void) | undefined;
   let interval: ReturnType<typeof setInterval> | undefined;
   const destinations: MediaStreamAudioDestinationNode[] = [];
   const recorders: MediaRecorder[] = [];
   const release = () => {
-    stream?.getTracks().forEach(track => track.stop());
+    stream?.getTracks().forEach((track) => track.stop());
     for (const recorder of recorders) if (recorder.state !== 'inactive') recorder.stop();
     if (interval) clearInterval(interval);
     source?.disconnect();
     denoiser?.disconnect();
     denoiser?.destroy();
-    destinations.forEach(node => node.stream.getTracks().forEach(track => track.stop()));
+    destinations.forEach((node) => node.stream.getTracks().forEach((track) => track.stop()));
     if (context.state !== 'closed') void context.close();
   };
   options.signal.addEventListener('abort', release, { once: true });
-  const check = () => { if(processingFailure)throw processingFailure;if (options.signal.aborted) throw new DOMException('Cancelled', 'AbortError'); };
+  const check = () => {
+    if (processingFailure) throw processingFailure;
+    if (options.signal.aborted) throw new DOMException('Cancelled', 'AbortError');
+  };
   try {
     check();
-    denoiser = await createNoiseSuppressionNode(context,options.mode??'strong',{signal:options.signal,error:()=>{processingFailure=new Error('Gürültü filtresi durdu. Kayıt iptal edildi.');failRecording?.();release();}});
+    denoiser = await createNoiseSuppressionNode(context, options.mode ?? 'strong', {
+      signal: options.signal,
+      error: () => {
+        processingFailure = new Error('Gürültü filtresi durdu. Kayıt iptal edildi.');
+        failRecording?.();
+        release();
+      },
+    });
     check();
     let duration = 15;
     let bufferSource: AudioBufferSourceNode | undefined;
@@ -47,17 +57,24 @@ export async function compareNoise(options: {
       if (options.file.size > 20_000_000) throw new Error('En fazla 20 MB ses dosyası seç.');
       const buffer = await context.decodeAudioData(await options.file.arrayBuffer());
       check();
-      if (buffer.duration < 5 || buffer.duration > 30) throw new Error('5–30 saniyelik bir ses kaydı seç.');
+      if (buffer.duration < 5 || buffer.duration > 30)
+        throw new Error('5–30 saniyelik bir ses kaydı seç.');
       duration = buffer.duration;
       bufferSource = context.createBufferSource();
       bufferSource.buffer = buffer;
       source = bufferSource;
     } else {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: {
-        deviceId: options.deviceId ? { exact: options.deviceId } : undefined,
-        channelCount: 1, sampleRate: 48_000, echoCancellation: false,
-        noiseSuppression: false, autoGainControl: false,
-      }, video: false });
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          deviceId: options.deviceId ? { exact: options.deviceId } : undefined,
+          channelCount: 1,
+          sampleRate: 48_000,
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        },
+        video: false,
+      });
       check();
       source = context.createMediaStreamSource(stream);
     }
@@ -66,22 +83,28 @@ export async function compareNoise(options: {
     mono.channelCountMode = 'explicit';
     source.connect(mono);
     mono.connect(denoiser);
-    const rawAnalyser = context.createAnalyser(), filteredAnalyser = context.createAnalyser();
+    const rawAnalyser = context.createAnalyser(),
+      filteredAnalyser = context.createAnalyser();
     rawAnalyser.fftSize = filteredAnalyser.fftSize = 2048;
     mono.connect(rawAnalyser);
     denoiser.connect(filteredAnalyser);
-    const rawDestination = context.createMediaStreamDestination(), filteredDestination = context.createMediaStreamDestination();
+    const rawDestination = context.createMediaStreamDestination(),
+      filteredDestination = context.createMediaStreamDestination();
     destinations.push(rawDestination, filteredDestination);
     mono.connect(rawDestination);
     denoiser.connect(filteredDestination);
-    const mimeType = ['audio/webm;codecs=opus', 'audio/webm'].find(type => MediaRecorder.isTypeSupported(type));
+    const mimeType = ['audio/webm;codecs=opus', 'audio/webm'].find((type) =>
+      MediaRecorder.isTypeSupported(type),
+    );
     if (!mimeType) throw new Error('Bu ortam ses kaydını desteklemiyor.');
-    const blobs = destinations.map(destination => {
+    const blobs = destinations.map((destination) => {
       const recorder = new MediaRecorder(destination.stream, { mimeType });
       recorders.push(recorder);
       return new Promise<Blob>((resolve, reject) => {
         const chunks: BlobPart[] = [];
-        recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+        recorder.ondataavailable = (event) => {
+          if (event.data.size) chunks.push(event.data);
+        };
         recorder.onerror = () => reject(new Error('Ses kaydı tamamlanamadı.'));
         recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
       });
@@ -90,15 +113,17 @@ export async function compareNoise(options: {
     void recorded.catch(() => {});
     await context.resume();
     check();
-    recorders.forEach(recorder => recorder.start());
+    recorders.forEach((recorder) => recorder.start());
     bufferSource?.start();
     const started = context.currentTime;
     const samples = new Float32Array(2048);
-    let rawPower = 0, filteredPower = 0, count = 0;
+    let rawPower = 0,
+      filteredPower = 0,
+      count = 0;
     interval = setInterval(() => {
       const elapsed = context.currentTime - started;
       // Skip startup; only the instructed initial noise-only segment contributes.
-      if (elapsed < .5 || elapsed > 3) return;
+      if (elapsed < 0.5 || elapsed > 3) return;
       rawAnalyser.getFloatTimeDomainData(samples);
       for (const sample of samples) rawPower += sample * sample;
       filteredAnalyser.getFloatTimeDomainData(samples);
@@ -107,21 +132,40 @@ export async function compareNoise(options: {
     }, 40);
     options.onRecording();
     await new Promise<void>((resolve, reject) => {
-      const cleanup = () => { clearInterval(clock); clearTimeout(watchdog); options.signal.removeEventListener('abort', abort); failRecording=undefined; };
-      failRecording=()=>{cleanup();reject(processingFailure);};
-      const abort = () => { cleanup(); reject(new DOMException('Cancelled', 'AbortError')); };
+      const cleanup = () => {
+        clearInterval(clock);
+        clearTimeout(watchdog);
+        options.signal.removeEventListener('abort', abort);
+        failRecording = undefined;
+      };
+      failRecording = () => {
+        cleanup();
+        reject(processingFailure);
+      };
+      const abort = () => {
+        cleanup();
+        reject(new DOMException('Cancelled', 'AbortError'));
+      };
       // Wall-clock timers can outpace the audio renderer during startup or device changes.
       const clock = setInterval(() => {
-        if (context.currentTime - started >= duration + (bufferSource ? .1 : 0)) { cleanup(); resolve(); }
+        if (context.currentTime - started >= duration + (bufferSource ? 0.1 : 0)) {
+          cleanup();
+          resolve();
+        }
       }, 50);
-      const watchdog = setTimeout(() => { cleanup(); reject(new Error('Ses işleme durdu. Cihazı kontrol edip yeniden dene.')); }, 60_000);
+      const watchdog = setTimeout(() => {
+        cleanup();
+        reject(new Error('Ses işleme durdu. Cihazı kontrol edip yeniden dene.'));
+      }, 60_000);
       options.signal.addEventListener('abort', abort, { once: true });
     });
     check();
-    recorders.forEach(recorder => { if (recorder.state !== 'inactive') recorder.stop(); });
+    recorders.forEach((recorder) => {
+      if (recorder.state !== 'inactive') recorder.stop();
+    });
     const [raw, filtered] = await recorded;
     check();
-    const db = (power: number) => count && power > 0 ? 10 * Math.log10(power / count) : null;
+    const db = (power: number) => (count && power > 0 ? 10 * Math.log10(power / count) : null);
     return { raw, filtered, rawDb: db(rawPower), filteredDb: db(filteredPower), duration };
   } finally {
     options.signal.removeEventListener('abort', release);
