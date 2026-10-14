@@ -35,7 +35,7 @@ ROOMS is a desktop clubhouse for a small community: talk in a voice room, share 
 
 **You choose the server.** ROOMS is not a centrally hosted service with a universal account or a public room directory. A community operator runs the backend, manages invitations, and supplies the server address. Your account belongs to that server. The source distribution has no built-in maintainer server or shared credentials.
 
-The client uses Electron, React, and TypeScript. An unmodified, separately self-hosted **Stoat** backend handles social accounts and chat; **LiveKit** carries realtime audio and video. ROOMS services connect those systems and manage shared activities.
+The client uses Electron, React, and TypeScript. A separately self-hosted backend handles social accounts and chat; **LiveKit** carries realtime audio and video. ROOMS services connect those systems and manage shared activities.
 
 ## Getting started
 
@@ -76,7 +76,7 @@ These images are captured from the actual application interface with sample comm
 
 | Area | What it is for | What it depends on |
 | --- | --- | --- |
-| Community and chat | Accounts, channels, messages, relationships, and profiles | A compatible Stoat deployment and your channel permissions |
+| Community and chat | Accounts, channels, messages, relationships, and profiles | A compatible backend deployment and your channel permissions |
 | Voice and screen sharing | Talk and share a selected screen or window | LiveKit, the access service, reachable media ports, and OS permissions |
 | Shared activities | Room activities and games with server-owned state | The Activities service and persistent storage |
 | Music | A community DJ and shared queue | Optional music worker, supported sources, and operator configuration |
@@ -117,7 +117,7 @@ For build, verification, and packaging commands, see [development](docs/DEVELOPM
 Self-hosting means operating several services, not just serving the desktop files:
 
 1. Prepare an isolated server and persistent storage.
-2. Configure the pinned Stoat backend for accounts, chat, and uploads.
+2. Configure the pinned social backend for accounts, chat, and uploads.
 3. Run the ROOMS access service and LiveKit for authorized voice/media.
 4. Run Activities if you want shared activities and games.
 5. Bootstrap the first account/community, then issue invitations.
@@ -130,7 +130,7 @@ The [self-hosting guide](docs/SELF_HOSTING.md) explains the files, commands, por
 
 ```mermaid
 flowchart LR
-    Desktop[ROOMS desktop] --> Social[Stoat: accounts and chat]
+    Desktop[ROOMS desktop] --> Social[Self-hosted backend: accounts and chat]
     Desktop --> Access[ROOMS access: identity and media grants]
     Access --> Social
     Desktop --> Media[LiveKit: realtime audio and video]
@@ -172,7 +172,7 @@ The public client includes an original static DJ illustration. Each community ca
 | [Troubleshooting and FAQ](docs/TROUBLESHOOTING.md) | Common setup, connection, media, and update problems |
 | [Customization](docs/CUSTOMIZATION.md) | Per-community DJ artwork and naming |
 | [Releasing](docs/RELEASING.md) | Development builds, signing, update feeds, and release checks |
-| [Stoat integration](infra/stoat/README.md) | Detailed adapter, registration, and upstream acceptance notes |
+| [Backend integration](infra/stoat/README.md) | Detailed adapter, registration, and upstream acceptance notes |
 | [Media transport](docs/MEDIA_TRANSPORT.md) | Media design and historical verification notes |
 | [Agent deployment](docs/AGENT_DEPLOYMENT.md) | Optional isolated Agent infrastructure |
 | [Asset provenance](docs/ASSETS.md) | Source of bundled artwork and fonts |
@@ -186,4 +186,4 @@ For vulnerabilities, follow [SECURITY.md](SECURITY.md) instead of posting sensit
 
 ## License
 
-Original ROOMS code and eligible original assets are [MIT licensed](LICENSE). Dependencies, fonts, and separate backend services retain their own licenses. In particular, MIT licensing of ROOMS does not relicense Stoat or third-party media.
+Original ROOMS code and eligible original assets are [MIT licensed](LICENSE). Dependencies, fonts, and separate backend services retain their own licenses. In particular, MIT licensing of ROOMS does not relicense upstream services or third-party media.
