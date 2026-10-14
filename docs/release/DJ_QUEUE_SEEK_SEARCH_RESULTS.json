@@ -15,11 +15,11 @@
     },
     {
       "id": "VbNOdPDMoxI",
-      "title": "♡Diyar Pala-Bensiz Yapama♡      ´´Speed Up``      **Lizzom**"
+      "title": "\u2661Diyar Pala-Bensiz Yapama\u2661      \u00b4\u00b4Speed Up``      **Lizzom**"
     },
     {
       "id": "2p3pTOvxSm4",
-      "title": "Diyar Pala - Bensiz Yapama (Sözleri/Lyrics)"
+      "title": "Diyar Pala - Bensiz Yapama (S\u00f6zleri/Lyrics)"
     }
   ],
   "queueCount": 10,
@@ -36,7 +36,7 @@
     "maxRms": 7287.230137227496
   },
   "automaticNext": {
-    "title": "Diyar Pala - Yeşilimi Ver",
+    "title": "Diyar Pala - Ye\u015filimi Ver",
     "position": 0.686,
     "frames": 221,
     "maxRms": 7363.088847844361
@@ -80,5 +80,14 @@
   },
   "productionDeployment": false,
   "desktopReleasePublished": false,
-  "physicalAcceptance": "OPEN"
+  "physicalAcceptance": "OPEN",
+  "deliveryFollowup": {
+    "version": "0.1.18-rc.8",
+    "liveAccessAndMusicDeployed": true,
+    "ownerMacInstalled": true,
+    "ownerFeedback": "calisiyor release et",
+    "publishedMacAndWindows": true,
+    "receipt": "RC_0_1_18_8_RESULTS.json",
+    "physicalTwoMacAndWindowsAcceptance": "OPEN"
+  }
 }

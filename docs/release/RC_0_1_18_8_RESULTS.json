@@ -1,0 +1,205 @@
+{
+  "version": "0.1.18-rc.8",
+  "sourceSha": "59dee893cc1b9d4de05cb10c16c7baa8abc9088c",
+  "package": {
+    "manifestVersion": 1,
+    "version": "0.1.18-rc.8",
+    "buildNumber": "1791973156",
+    "sourceSha": "59dee893cc1b9d4de05cb10c16c7baa8abc9088c",
+    "platform": "darwin",
+    "architecture": "arm64",
+    "toolchain": {
+      "node": "22.22.0",
+      "packageManager": "pnpm@11.25.0"
+    },
+    "activityStorage": {
+      "writeVersion": 1,
+      "readVersions": [
+        0,
+        1
+      ],
+      "legacyScope": "validated existing unversioned shape; production archive acceptance pending"
+    },
+    "services": {
+      "access": "437459a842ee38c42b1743e173339e65473bc04600c62a8b4c5e8fbbfcf57669",
+      "activities": "cbcc1d1b8681edaa9da02ba0e220e3ecc7c7ecddfe92176cb912055df1dea629",
+      "agent": "88ddb6d795cbe07984f4f0ab4a20e6fd600f4b59b19e19be2266ba1163e4bd33",
+      "music": "4798fb1f9a556128ff4928873c2c0658590035176a59cccc2743208d02ccca87"
+    },
+    "serviceScope": "locally built, not deployed digest certification",
+    "artifacts": [
+      {
+        "name": "ROOMS-0.1.18-rc.8-arm64-mac.zip",
+        "sha256": "15f76d562a149226980463f9f34d6f38196dfb39430ebd94f71eb26919e97938",
+        "bytes": 162779182
+      },
+      {
+        "name": "ROOMS-0.1.18-rc.8-arm64.dmg",
+        "sha256": "847ad9d968d3870f5d42aefd90057950edb2cd55441ddeedcb7c78af34e12782",
+        "bytes": 161747868
+      }
+    ],
+    "validation": {
+      "appleNotarization": {
+        "status": "Accepted",
+        "id": "9c532e99-69cd-4ba2-8cc8-f035e2be93a0"
+      },
+      "signature": "strict deep verification before manifest creation in signed pipeline",
+      "physicalTwoMac": "OPEN",
+      "freshInstall": "OPEN",
+      "nextCandidateUpdateRecovery": "OPEN",
+      "ownerAcceptance": "OPEN"
+    }
+  },
+  "liveDeployment": {
+    "sourceSha": "59dee893cc1b9d4de05cb10c16c7baa8abc9088c",
+    "version": "0.1.18-rc.8",
+    "services": {
+      "rooms-core-access-1": "sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20",
+      "rooms-core-music-1": "sha256:b75a579b3cbb6af74e1f9ea08c4ea746972712fd5721275b7aa3519800f09d7f"
+    },
+    "bundleSha256": {
+      "access.cjs": "437459a842ee38c42b1743e173339e65473bc04600c62a8b4c5e8fbbfcf57669",
+      "music.cjs": "4798fb1f9a556128ff4928873c2c0658590035176a59cccc2743208d02ccca87"
+    },
+    "jarSha256": "7fe318a2fe1008ce51420e1ad91618de2c9d0eade36bcd23ad13b2cdd4bf536b",
+    "health": {
+      "rooms-core-access-1": 200,
+      "rooms-core-music-1": 200
+    },
+    "otherContainersUnchanged": true,
+    "publicUpdateMetadataUnchanged": true,
+    "rollbackArchive": "/opt/rooms/backups/dj-before-rc8-20261014.tar.age",
+    "accountDataModified": false,
+    "dedicatedOAuthFileModified": false
+  },
+  "ownerInstallation": {
+    "installedVersion": "0.1.18-rc.8",
+    "installedBuild": "1791973156",
+    "oldVersion": "0.1.18-rc.7",
+    "oldBuild": "1791907402",
+    "rollbackApp": "/Users/egemenmermer/Library/Application Support/ROOMS Release Backups/20261014-before-rc8/ROOMS.app",
+    "profileDirectoryTouchedByInstaller": false,
+    "installedAsarSha256": "6f01f07aaf245f2d7be1768ebf053c618c315f6e4d10e388e5e5b5062d4e6b30"
+  },
+  "ownerFeedback": {
+    "date": "2026-10-14",
+    "verbatim": "calisiyor release et",
+    "scope": "Owner confirms installed candidate works and explicitly authorizes publication; not universal physical acceptance"
+  },
+  "checks": {
+    "focused": "33 tests / 5 files, scoped lint/types/build/services/Maven passed",
+    "sourceCi": [
+      "38548735919",
+      "38548864915"
+    ],
+    "windowsBuildRun": "38550807020",
+    "windowsPublicationRun": "38551735748",
+    "toolingCi": [
+      "38551129096",
+      "38551135650"
+    ],
+    "initialWindowsAttachmentFailure": "38551597422: tag endpoint cannot address draft; fixed exact release ID before successful attachment; no artifact replacement"
+  },
+  "openAcceptance": [
+    "Physical two-Mac voice/noise/screens/system-audio",
+    "Physical Windows friend microphone and screen sharing",
+    "Sustained use, all-game/soundboard edge cases",
+    "Exact IPTV-provider recovery",
+    "Real updater recovery"
+  ],
+  "preserved": [
+    "Existing accounts, owner profile, Hoppers, RC7 and earlier artifacts",
+    "Dedicated DJ OAuth file unchanged"
+  ],
+  "settingsChanges": "Reverted at owner request; no Settings cleanup included",
+  "publication": {
+    "version": "0.1.18-rc.8",
+    "publishedAt": "2026-10-14T10:45:17.790975+00:00",
+    "catalogSha256": "5568dc907ebd630c8a2aa0cdc6ea71815800847b10253389745b4524960d9d06",
+    "appcastSha256": "1aee9892f157fb413f87bf826bb43e6f9d9bf376231c546a4105c041da0bfc57",
+    "previousUpdateEntriesPreserved": 5,
+    "previousCatalogRowsPreserved": 6,
+    "artifacts": [
+      {
+        "name": "ROOMS-0.1.18-rc.8-arm64-mac.zip",
+        "sha256": "15f76d562a149226980463f9f34d6f38196dfb39430ebd94f71eb26919e97938",
+        "bytes": 162779182
+      },
+      {
+        "name": "ROOMS-0.1.18-rc.8-arm64.dmg",
+        "sha256": "847ad9d968d3870f5d42aefd90057950edb2cd55441ddeedcb7c78af34e12782",
+        "bytes": 161747868
+      },
+      {
+        "name": "ROOMS-0.1.18-rc.8-windows-x64-setup.exe",
+        "sha256": "1c22348d7729052e5d04a2760c47a53c4f4c9270d90585e072d67142dffd8abe",
+        "bytes": 135105044
+      }
+    ],
+    "rollbackMetadata": "/opt/rooms/rc8-publication-stage/metadata-before"
+  },
+  "windows": {
+    "version": "0.1.18-rc.8",
+    "sourceSha": "59dee893cc1b9d4de05cb10c16c7baa8abc9088c",
+    "platform": "win32",
+    "arch": "x64",
+    "status": "PASS_NATIVE_WINDOWS_PACKAGE",
+    "signed": false,
+    "checks": [
+      "NSIS silent installation to disposable CI directory",
+      "Installed ASAR equals packaged ASAR",
+      "Actual installed x64 packaged Electron app, file:// onboarding, sandboxed renderer",
+      "Invalid privileged window command refused",
+      "Login and invitation signup navigation without submitting credentials",
+      "Settings and 900x700 / 1440x900 Windows viewport screenshots, no horizontal overflow",
+      "Actual installed file:// Strong/Standard models initialize under packaged CSP",
+      "Normal packaged relaunch preserves disposable profile preference"
+    ],
+    "limitations": [
+      "Hosted Windows Server 2022 VM, not a physical Windows friend device",
+      "No live login, microphone, camera, room, private IPTV or DJ publication",
+      "RC8 Windows automatic updates unavailable; manual installers only",
+      "Unsigned candidate; no SmartScreen/security warning bypass"
+    ],
+    "installer": {
+      "name": "ROOMS-0.1.18-rc.8-windows-x64-setup.exe",
+      "sha256": "1c22348d7729052e5d04a2760c47a53c4f4c9270d90585e072d67142dffd8abe",
+      "bytes": 135105044
+    },
+    "info": {
+      "version": "0.1.18-rc.8",
+      "platform": "win32",
+      "arch": "x64",
+      "electron": "44.7.0"
+    },
+    "captureStatus": {
+      "microphone": "unknown",
+      "camera": "unknown",
+      "screen": "unknown",
+      "systemAudio": true
+    },
+    "captureSources": {
+      "count": 3,
+      "screenCount": 1
+    },
+    "models": {
+      "modes": [
+        "standard",
+        "strong"
+      ],
+      "scope": "Real bundled WASM/worklet readiness, no physical microphone or noise-quality acceptance"
+    },
+    "rendererErrors": [],
+    "at": "2026-10-14T10:43:04.751Z"
+  },
+  "githubRelease": "https://github.com/egemenmermer/rooms/releases/tag/v0.1.18-rc.8",
+  "publicVerification": {
+    "status": "PASS",
+    "publicAppcastSha256": "1aee9892f157fb413f87bf826bb43e6f9d9bf376231c546a4105c041da0bfc57",
+    "updateEntries": 6,
+    "headAndRangeDownloads": true,
+    "unauthenticatedCatalogAndDownloadsDenied": true
+  },
+  "windowsScreenshotReview": "900x700 and 1440x900 hosted installed UI screenshots inspected: readable controls, no horizontal overflow"
+}

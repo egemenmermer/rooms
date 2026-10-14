@@ -2,11 +2,11 @@
 
 ## Download the private-friend release
 
-[Download ROOMS 0.1.18-rc.7 for Mac](https://62.238.119.134/rooms-updates/ROOMS-0.1.18-rc.7-arm64.dmg) — macOS 14+ on Apple Silicon (M-series). GitHub sign-in is not required to download.
+[Download ROOMS 0.1.18-rc.8 for Mac](https://62.238.119.134/rooms-updates/ROOMS-0.1.18-rc.8-arm64.dmg) — macOS 14+ on Apple Silicon (M-series). GitHub sign-in is not required to download.
 
 Open the DMG, drag ROOMS into Applications and open it. Use your existing account or an account invitation from the community owner. The private service remains invite-only. This release is Developer ID signed and Apple notarized; real two-Mac voice/share/DJ acceptance remains open. Windows and Intel packages are not included.
 
-The immutable binary and its manifest are retained in [RC7](https://github.com/egemenmermer/rooms/releases/tag/v0.1.18-rc.7). SHA256: `efb3c1eb6341f0b9d2f4c4fed6356c6fa23db86f8c2aa2a3e5854a8d0d01f520`.
+The immutable binary and its manifest are retained in [RC8](https://github.com/egemenmermer/rooms/releases/tag/v0.1.18-rc.8). SHA256: `847ad9d968d3870f5d42aefd90057950edb2cd55441ddeedcb7c78af34e12782`.
 
 Current candidate: [changes and acceptance limits](docs/release/RC_0_1_18_7_NOTES.md), [publication evidence](docs/release/RC_0_1_18_7_RESULTS.json). Includes local Strong/Standard microphone suppression, fitting parallel shares, durable community sounds and verified owner-playlist DJ playback.
 
@@ -76,4 +76,4 @@ Signed Sparkle-enabled releases can check updates in Settings → Güncelleme ve
 
 ### Windows RC.7 friend-test package
 
-[Windows x64 installer](https://62.238.119.134/rooms-updates/ROOMS-0.1.18-rc.7-windows-x64-setup.exe) — unsigned, manual updates. Same frozen runtime source as Mac RC.7. Native hosted Windows installation/launch and780client-applicable tests passed; physical friend voice/screen/soundboard acceptance remains open. [Results](docs/release/WINDOWS_RC7_RESULTS.json). SHA256: `eacd4adb42f8db1aeacfd9bfbe533427cebd461ecb71001df9fabe6ba3388add`.
+[Windows x64 installer](https://62.238.119.134/rooms-updates/ROOMS-0.1.18-rc.8-windows-x64-setup.exe) — unsigned, manual updates. Same frozen runtime source as Mac RC.8. Native hosted Windows installation/launch and source checks passed; physical friend voice/screen/soundboard acceptance remains open. [Results](docs/release/WINDOWS_RC8_RESULTS.json). SHA256: `1c22348d7729052e5d04a2760c47a53c4f4c9270d90585e072d67142dffd8abe`.

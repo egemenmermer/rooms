@@ -29,3 +29,7 @@ Search uses a separate native IPC command and access gateway endpoint. It requir
 -Existing production services, dedicated OAuth token file, account data, Hoppers and retained release artifacts were not modified. Source changes are not yet deployed to the live worker/access service or distributed desktop. No new release or install was made. Live user/two-physical-device acceptance remains OPEN.
 
 Official completion contract: https://github.com/lavalink-devs/lavaplayer/blob/main/README.md . No extractor/client bypass or account reauthorization was added.
+
+## Delivery follow-up, 2026-10-14
+
+The above no-deployment statement describes the initial source verification phase. Source59dee893 was subsequently deployed to live access/music, packaged as RC.8, installed with retained RC.7 rollback, and accepted by the owner for friend publication. Mac and Windows RC.8 artifacts are published. Scoped server backup, exact digests, signing/notarization and acceptance limits are in RC_0_1_18_8_RESULTS.json. No Settings cleanup, new account authorization or credential transfer.
