@@ -104,6 +104,11 @@ jobs:
         env:
           ROOMS_WINDOWS_INSTALL_DIR: ${{ runner.temp }}\ROOMS-Çığ\rooms-rc9-installed
         run: node scripts/verify-windows-package.mjs
+      - name: Record native crash diagnostics
+        if: failure()
+        shell: pwsh
+        run: |
+          Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-20)} -ErrorAction SilentlyContinue | Where-Object { $_.Message -match 'electron.exe|ROOMS.exe|libvlc' } | Select-Object TimeCreated, Id, Message | Format-List | Out-File .local/windows-native-events.txt
       - name: Preserve verified candidate and receipts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -116,5 +121,8 @@ jobs:
             release/windows-rc9-*.json
             release/windows-rc9-*.png
             .local/vlc-native-check/result.json
+            .local/vlc-native-check/stages.log
+            .local/vlc-native-check/crashes/**
+            .local/windows-native-events.txt
             .local/vlc-ui-check/result.json
             .local/vlc-ui-check/*.png

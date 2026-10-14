@@ -96,17 +96,20 @@ const nativeRoot = resolve(process.env.ROOMS_VLC_QA_NATIVE_ROOT ?? 'dist-native'
 await writeFile(
   join(output, 'main.cjs'),
   `
-const {app,BrowserWindow}=require('electron');const {readFileSync}=require('node:fs');const {createVLCStream}=require('./stream.cjs');
+const {app,BrowserWindow,crashReporter}=require('electron');const {readFileSync,appendFileSync}=require('node:fs');
+const stage=s=>{appendFileSync(__dirname+'/stages.log',s+'\\n');console.log('native-check: '+s)};
+crashReporter.start({uploadToServer:false,compress:false});
+app.setPath('crashDumps',__dirname+'/crashes');const {createVLCStream}=require('./stream.cjs');
 let check;
 app.whenReady().then(async()=>{
- const binding=require(${JSON.stringify(join(nativeRoot, 'rooms-vlc.node'))});
- binding.initialize(${JSON.stringify(join(nativeRoot, 'vlc', process.platform === 'darwin' ? 'lib/libvlc.dylib' : 'libvlc.dll'))},${JSON.stringify(join(nativeRoot, 'vlc/plugins'))});
- const win=new BrowserWindow({width:900,height:700,show:true,webPreferences:{sandbox:true}});await win.loadURL('data:text/html,<html><body>ROOMS native media check</body></html>');
+ stage('load binding');const binding=require(${JSON.stringify(join(nativeRoot, 'rooms-vlc.node'))});
+ stage('initialize library');binding.initialize(${JSON.stringify(join(nativeRoot, 'vlc', process.platform === 'darwin' ? 'lib/libvlc.dylib' : 'libvlc.dll'))},${JSON.stringify(join(nativeRoot, 'vlc/plugins'))});
+ stage('create window');const win=new BrowserWindow({width:900,height:700,show:true,webPreferences:{sandbox:true}});await win.loadURL('data:text/html,<html><body>ROOMS native media check</body></html>');
  const data=readFileSync(__dirname+'/sample.avi');let current=true;const stream=await createVLCStream('rooms-provider://11111111-1111-4111-8111-111111111111/stream',async(request)=>{
  const range=request.headers.get('range');const start=range?Number(range.match(/bytes=(\\d+)/)[1]):0;
  return new Response(data.subarray(start),{status:range?206:200,headers:{'Content-Type':'video/x-msvideo','Content-Length':String(data.length-start),...(range?{'Content-Range':'bytes '+start+'-'+(data.length-1)+'/'+data.length,'Accept-Ranges':'bytes'}:{'Accept-Ranges':'bytes'})}});
  },()=>{if(!current)throw new Error('Scope changed');});
- await binding.create(win.getNativeWindowHandle());binding.control('volume',0);binding.bounds(20,20,640,360,true);binding.play(stream.url);
+ stage('create player');await binding.create(win.getNativeWindowHandle());stage('player ready');binding.control('volume',0);binding.bounds(20,20,640,360,true);stage('play');binding.play(stream.url);stage('play returned');
  check={binding,win,stream,get current(){return current},revoke(){current=false;stream.close();}};
 }).catch(e=>{globalThis.failure=e.message;});
 globalThis.getCheck=()=>check;
