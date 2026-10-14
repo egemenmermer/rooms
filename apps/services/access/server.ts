@@ -13,7 +13,7 @@ import { StoatClient, StoatError } from '@rooms/stoat';
 import { SOCIAL_ID_PATTERN } from '@rooms/social';
 import { stoatChannelPermissions, StoatPermissions as Permissions, type StoatServer, type StoatChannel, type StoatMember } from './stoat-permissions';
 
-export interface AccessConfig {soundboardDirectory?:string;musicUrl?:string;musicSecret?:string; stoatUrl?:string; /** Legacy configuration accepted only for validation tests; never contacts Spacebar. */ spacebarUrl?:string; livekitUrl:string; publicLivekitUrl:string; apiKey:string; apiSecret:string;registrationInvitesFile?:string;accountInviteMongoUrl?:string;socialReadMongoUrl?:string }
+export interface AccessConfig {soundboardDirectory?:string;musicName?:string;musicUrl?:string;musicSecret?:string; stoatUrl?:string; /** Legacy configuration accepted only for validation tests; never contacts Spacebar. */ spacebarUrl?:string; livekitUrl:string; publicLivekitUrl:string; apiKey:string; apiSecret:string;registrationInvitesFile?:string;accountInviteMongoUrl?:string;socialReadMongoUrl?:string }
 const opaqueId=z.string().regex(SOCIAL_ID_PATTERN); const channelBody=z.object({channelId:opaqueId}).strict();
 const credentialBody=z.object({email:z.string().email().max(254),password:z.string().min(1).max(256)}).strict();
 const registrationBody=credentialBody.extend({username:z.string().min(2).max(32).regex(/^[\p{L}\d_.-]+$/u),inviteCode:z.string().regex(/^[a-zA-Z0-9_-]{2,128}$/)});
@@ -75,7 +75,7 @@ export async function createAccessServer(config:AccessConfig){
     return {user,permissions,communityId:channel.server,canManage:rawServer.owner===user.id};
   };
   registerSoundboard(server,{directory:config.soundboardDirectory,authorize:async(token,channelId)=>{const value=await authorize(token,channelId);return {communityId:value.communityId,userId:value.user.id,canUpload:(value.permissions&Permissions.SPEAK)!==0n,canManage:value.canManage};}});
-  const music=registerMusicGateway(server,{url:config.musicUrl,secret:config.musicSecret,apiKey:config.apiKey,apiSecret:config.apiSecret,livekitUrl:config.livekitUrl.replace(/^http/,'ws'),roomService,authorize:async(token,channelId)=>{const result=await authorize(token,channelId);return{userId:result.user.id,canControl:(result.permissions&Permissions.SPEAK)!==0n&&(result.permissions&Permissions.LISTEN)!==0n};}});
+  const music=registerMusicGateway(server,{displayName:config.musicName,url:config.musicUrl,secret:config.musicSecret,apiKey:config.apiKey,apiSecret:config.apiSecret,livekitUrl:config.livekitUrl.replace(/^http/,'ws'),roomService,authorize:async(token,channelId)=>{const result=await authorize(token,channelId);return{userId:result.user.id,canControl:(result.permissions&Permissions.SPEAK)!==0n&&(result.permissions&Permissions.LISTEN)!==0n};}});
   const screenMember=async(token:string,channelId:string)=>{
     let result;try{result=await authorize(token,channelId);}catch(error){const grant=[...grants.values()].find(g=>g.channelId===channelId&&g.token===token);if(grant)invalidateScreenUser(channelId,grant.userId);throw error;}
     if((result.permissions&Permissions.VIDEO)===0n){invalidateScreenUser(channelId,result.user.id);throw new StoatError(403,'PRESENT_PERMISSION_REQUIRED');}

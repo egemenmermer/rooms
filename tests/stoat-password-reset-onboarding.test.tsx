@@ -34,10 +34,11 @@ describe('S04 integrated onboarding and exact DEV entry (local mocked components
     expect(document.body.textContent).not.toContain('private-query-secret'); expect(document.body.textContent).not.toContain('attacker');
     fireEvent.click(screen.getByRole('button', { name: 'Giriş ekranına dön' })); expect(onNavigate).toHaveBeenCalledWith('signin');
   });
-  it('direct recovery uses the production default when saved address is empty', async () => {
+  it('direct recovery with no selected server never contacts an implicit production host', async () => {
     const social = runtime(); useRooms.getState().setPreference('serverUrl', '');
     render(<MemoryRouter><ReferenceOnboarding mode="recovery" onNavigate={vi.fn()}/></MemoryRouter>);
-    await waitFor(() => expect(social.passwordRecoveryCapabilities).toHaveBeenCalledWith('https://community.example.invalid'));
+    await screen.findByText('Giriş ekranından sunucu adresini seç.');
+    expect(social.passwordRecoveryCapabilities).not.toHaveBeenCalled();
     expect(social.requestPasswordRecovery).not.toHaveBeenCalled();
   });
   it('forgot-password hands off the displayed custom server without sending credentials', () => {

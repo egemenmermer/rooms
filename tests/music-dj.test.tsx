@@ -23,14 +23,14 @@ it('sends a room bot MP3 command without creating an iframe or local audio playe
 it('opens DJ without changing the current conversation and restores legacy route links',async()=>{
  window.rooms={music:{snapshot:async()=>empty}} as unknown as DesktopBridge;const navigate=vi.fn();openRoomActivity('/youtube',navigate);expect(navigate).not.toHaveBeenCalled();
  render(<MemoryRouter initialEntries={['/youtube']}><Routes><Route path="/youtube" element={<MusicDJEntry returnTo="/chat"/>}/><Route path="/chat" element={<p>Current conversation</p>}/></Routes><MusicDJ/></MemoryRouter>);
- await screen.findByText('Current conversation');expect(screen.getByRole('dialog',{name:'DJ Recep'})).toBeTruthy();expect(screen.queryByText('DJ panelini aç')).toBeNull();
+ await screen.findByText('Current conversation');expect(screen.getByRole('dialog',{name:'DJ'})).toBeTruthy();expect(screen.queryByText('DJ panelini aç')).toBeNull();
 });
 
 it('changes only the listener bot gain and keeps controller gain disabled without a bot',async()=>{
  const command=vi.fn();window.rooms={music:{snapshot:async()=>empty,command}} as unknown as DesktopBridge;
  const view=render(<MusicDJ/>);
  const gain=screen.getByRole('slider',{name:'Botun ses seviyesi'});expect((gain as HTMLInputElement).disabled).toBe(true);
- media.voice={...media.voice,participants:[{id:empty.identity,name:'DJ Recep',local:false,muted:false,speaking:true,camera:false,screen:false,volume:.6,quality:'excellent'}]};
+ media.voice={...media.voice,participants:[{id:empty.identity,name:'DJ',local:false,muted:false,speaking:true,camera:false,screen:false,volume:.6,quality:'excellent'}]};
  await waitFor(()=>expect(screen.queryByText('Yükleniyor…')).toBeNull());view.rerender(<MusicDJ/>);
  fireEvent.change(gain,{target:{value:'.25'}});expect(media.volume).toHaveBeenLastCalledWith(empty.identity,.25);
  fireEvent.click(screen.getByRole('button',{name:'Botun sesini kapat'}));expect(media.volume).toHaveBeenLastCalledWith(empty.identity,0);
@@ -52,9 +52,9 @@ it('does not let a late pre-command snapshot hide the newly resolved queue item'
 
 it('restores the prior quiet listener setting after muting and closes independently of bot errors',async()=>{
  const command=vi.fn();window.rooms={music:{snapshot:async()=>empty,command}} as unknown as DesktopBridge;
- media.voice={...media.voice,participants:[{id:empty.identity,name:'DJ Recep',local:false,muted:false,speaking:true,camera:false,screen:false,volume:.09,quality:'excellent'}]};const view=render(<MusicDJ/>);await waitFor(()=>expect(screen.queryByText('Yükleniyor…')).toBeNull());
+ media.voice={...media.voice,participants:[{id:empty.identity,name:'DJ',local:false,muted:false,speaking:true,camera:false,screen:false,volume:.09,quality:'excellent'}]};const view=render(<MusicDJ/>);await waitFor(()=>expect(screen.queryByText('Yükleniyor…')).toBeNull());
  fireEvent.click(screen.getByRole('button',{name:'Botun sesini kapat'}));expect(media.volume).toHaveBeenLastCalledWith(empty.identity,0);media.voice={...media.voice,participants:media.voice.participants.map(p=>({...p,volume:0}))};view.rerender(<MusicDJ/>);
- fireEvent.click(screen.getByRole('button',{name:'Botun sesini aç'}));expect(media.volume).toHaveBeenLastCalledWith(empty.identity,.09);fireEvent.click(screen.getByRole('button',{name:'DJ panelini kapat'}));expect(screen.queryByRole('dialog',{name:'DJ Recep'})).toBeNull();expect(command).not.toHaveBeenCalled();
+ fireEvent.click(screen.getByRole('button',{name:'Botun sesini aç'}));expect(media.volume).toHaveBeenLastCalledWith(empty.identity,.09);fireEvent.click(screen.getByRole('button',{name:'DJ panelini kapat'}));expect(screen.queryByRole('dialog',{name:'DJ'})).toBeNull();expect(command).not.toHaveBeenCalled();
 });
 it('shows an actionable provider access error from a room snapshot',async()=>{
  window.rooms={music:{snapshot:async()=>({...empty,status:'error',error:'MUSIC_YOUTUBE_ACCESS_REQUIRED'})}} as unknown as DesktopBridge;

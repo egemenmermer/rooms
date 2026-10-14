@@ -1,0 +1,27 @@
+name: Publication hygiene
+on:
+  pull_request:
+  push:
+    branches: [main, 'prep/**']
+permissions:
+  contents: read
+jobs:
+  source-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Scan the intended source tree, not the retained private history
+        run: |
+          set -euo pipefail
+          mkdir ../public-source
+          git archive HEAD | tar -x -C ../public-source
+          curl --fail --silent --show-error --location https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz -o /tmp/gitleaks.tar.gz
+          echo '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  /tmp/gitleaks.tar.gz' | sha256sum --check --strict
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          /tmp/gitleaks dir ../public-source --config .gitleaks.toml --redact --no-banner
+      - name: Check publication file policy
+        run: node scripts/check-publication.mjs
+# This job scans the exported tree. Existing private history is NOT approved for publication.

@@ -9,6 +9,7 @@ it('lets the friend choose their own credentials with one signup ticket, without
  const done=vi.fn();const register=vi.fn(async()=>{useCommunity.setState({user:{id:'friend',username:'Friend',displayName:'Friend',avatar:null},busy:false});});
  useCommunity.setState({user:null,busy:false,error:null,register});
  render(<MemoryRouter><ConnectionPane referenceMode="register" onAuthenticated={done}/></MemoryRouter>);
+ fireEvent.change(screen.getByLabelText('Sunucu adresi'),{target:{value:'https://community.example.test'}});
  expect(screen.queryByText(/Kayıt davet kodu \(sunucu istiyorsa\)/)).toBeNull();
  fireEvent.change(screen.getByLabelText('Topluluk davet kodu'),{target:{value:'single-invite'}});
  fireEvent.change(screen.getByLabelText('Kullanıcı adı'),{target:{value:'Friend'}});
@@ -16,5 +17,5 @@ it('lets the friend choose their own credentials with one signup ticket, without
  fireEvent.change(screen.getByLabelText('Şifre'),{target:{value:'unique-test-password'}});
  fireEvent.click(screen.getByRole('button',{name:/Hesap oluştur ve katıl/}));
  await waitFor(()=>expect(done).toHaveBeenCalledTimes(1));
- expect(register).toHaveBeenCalledWith({serverUrl:'https://community.example.invalid',email:'friend@example.test',password:'unique-test-password',username:'Friend',inviteCode:'single-invite'});
+ expect(register).toHaveBeenCalledWith({serverUrl:'https://community.example.test',email:'friend@example.test',password:'unique-test-password',username:'Friend',inviteCode:'single-invite'});
 });

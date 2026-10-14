@@ -1,0 +1,8 @@
+node_modules/
+.local/
+dist*/
+release/
+apps/desktop/public/
+**/target/
+**/LICENSE*
+pnpm-lock.yaml

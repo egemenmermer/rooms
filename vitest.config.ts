@@ -1,3 +1,4 @@
+import {roomsAliases} from './tooling/aliases';
 import { defineConfig } from 'vitest/config';
 import path from 'node:path';
-export default defineConfig({resolve:{alias:{'@rooms/contracts':path.resolve('packages/shared-contracts/src/index.ts'),'@rooms/activities':path.resolve('packages/activity-sdk/src/index.ts'),'@rooms/design':path.resolve('packages/design-system/src/index.tsx'),'@rooms/spacebar':path.resolve('packages/spacebar-adapter/src/index.ts'),'@rooms/social':path.resolve('packages/social-domain/src/index.ts'),'@rooms/stoat':path.resolve('packages/stoat-adapter/src/index.ts'),'@rooms/activity-protocol':path.resolve('packages/activity-protocol/src/index.ts'),'@rooms/games':path.resolve('packages/games/src/index.ts'),'@rooms/media':path.resolve('packages/media-providers/src/index.ts')}},test:{include:['tests/**/*.test.ts','tests/**/*.test.tsx','packages/**/src/**/*.test.ts'],exclude:['.local/**','node_modules/**'],maxWorkers:2}});
+export default defineConfig({resolve:{alias:roomsAliases},test:{include:['tests/**/*.test.ts','tests/**/*.test.tsx','packages/**/src/**/*.test.ts'],exclude:['.local/**','node_modules/**'],maxWorkers:2}});

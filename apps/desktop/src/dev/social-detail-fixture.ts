@@ -60,7 +60,7 @@ export interface SocialDetailFixture {
   assets: { avatars: Record<string, string>; attachments: Record<string, string> };
 }
 
-const referenceRoot = '/Users/maintainer/Downloads/ROOMS_Design_Package/04_screens';
+const referenceRoot = '<ROOMS_REFERENCE_ROOT>/04_screens';
 const slugs: Record<SocialDetailFixtureId, string> = {
   S12: 'direct_message', S13: 'search_quick_switch', S14: 'file_sharing',
   S15: 'user_profile', S16: 'notifications', S17: 'community_editor', S18: 'channel_editor',

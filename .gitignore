@@ -22,3 +22,9 @@ dist-services/
 
 # Generated native updater build
 dist-native/
+
+# Local assets and publication exports never enter source control.
+*.p8
+**/target/
+.private/
+publication-output/

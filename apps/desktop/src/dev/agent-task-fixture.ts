@@ -66,6 +66,6 @@ export function getAgentTaskFixture(id: string, value: string): AgentTaskFixture
     ...(screen === 'S58' && variant === 'uncertain' ? { modal: 'uncertain' as const } : {}),
     ...(variant === 'sources' ? { initialTab: 'sources' as const } : {}), fixturePreview,
     metadata: { id: screen, variant, integration_status: 'LOCAL_FIXTURE', demo: true, label: 'DEMO · Yerel Agent görevi örneği', unsupportedReason,
-      originalPath: `/Users/maintainer/Downloads/ROOMS_Design_Package/04_screens/${screen}_${slug}${variant === 'default' ? '' : `__${variant}`}.png` },
+      originalPath: `<ROOMS_REFERENCE_ROOT>/04_screens/${screen}_${slug}${variant === 'default' ? '' : `__${variant}`}.png` },
   };
 }

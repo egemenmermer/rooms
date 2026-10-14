@@ -1,3 +1,6 @@
-# Private DJ visual
+# Default music character
 
-The owner supplied the trimmed local Recep DJ clip on 2026-10-12 and requested background removal and use inside this private application. `recep-dj.webm` is a silent VP9 alpha loop; `recep-dj.png` is its alpha poster. The source file and full-resolution editing master remain outside the repository. The visual does not publish music to the voice room; music uses each user's visible official YouTube player. No audio, provider credential or remote video download is included in these assets.
+default-dj.png is an original static generated illustration. See docs/ASSETS.md for the built-in ImageGen prompt/provenance and licensing.
+
+Communities can configure a different name/poster/animation without forking the music control logic; see docs/CUSTOMIZATION.md. No private-community clip is bundled.
+
