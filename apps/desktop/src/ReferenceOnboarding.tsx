@@ -420,7 +420,7 @@ export function ReferenceOnboarding({
                       }}
                     />
                   </label>
-                  <details className="ref-auth-server">
+                  <details className="ref-auth-server" open={!defaultServer}>
                     <summary>Sunucu adresi</summary>
                     <label className="field-label">
                       Sunucu adresi

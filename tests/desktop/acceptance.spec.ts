@@ -36,6 +36,8 @@ test('desktop shell isolates native APIs and supports current signed-out onboard
     await expect(page.getByLabel('Topluluk davet kodu', { exact: true })).toBeVisible();
     await page.evaluate(() => (location.hash = '/setup/invite'));
     await expect(page.getByRole('heading', { name: 'Topluluk daveti' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Davetimi aç', exact: true })).toBeDisabled();
+    await page.getByLabel('Sunucu adresi', { exact: true }).fill('https://community.example.test');
     await page.getByLabel('Davet kodu', { exact: true }).fill('!!!');
     await page.getByRole('button', { name: 'Davetimi aç', exact: true }).click();
     await expect(page.getByRole('alert')).toBeVisible(); // Native syntax rejection, no signup or valid invitation consumption.
