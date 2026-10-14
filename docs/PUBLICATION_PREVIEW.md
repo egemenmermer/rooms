@@ -23,7 +23,9 @@ Initial checks caught two old unit expectations and a native smoke assumption th
 
 The existing large-chunk/dependency-comment warnings remain visible. No physical Mac/Windows media session, provider permission, remote load, recovery or new signed release acceptance is inferred from these checks. No server credentials, signing keys, user data or live Hoppers/ROOMS services were changed.
 
-## Public boundary
-The candidate PR lives in the original PRIVATE repository for review. Its parent history still contains private operator material. Do NOT simply flip that repository's visibility based on this tree cleanup. The approved source export contains no .git history and is the input for a fresh public repository. Historical releases/logs/refs stay private unless separately reviewed.
+## Publication boundary and history preservation
+The owner selected the existing `egemenmermer/rooms` repository as the open-source project. The separate private snapshot repository is an earlier review artifact, not the authoritative continuation. This branch preserves existing commit IDs and merges the latest reviewed main (`252bb68`) without rebasing, squashing or force-pushing. All existing main commits remain ancestors.
 
-Before publication: owner reviews this exact candidate/visual; choose the fresh public repository identity; enable and verify its private security-reporting route; run the public repository checks. This document does not authorize a visibility change or deployment.
+Current-tree cleanup does not erase historical files. Read [HISTORY_PUBLICATION_REVIEW.md](HISTORY_PUBLICATION_REVIEW.md) before changing visibility. Private-community artwork, operator records and historical release payloads remain separate unresolved publication surfaces. No visibility change, production deployment, release deletion or history rewriting has been performed.
+
+Owner review remains required before publication. If selected historical assets must remain private, preserving every original public commit hash and hiding those assets are incompatible: any sanitized-history proposal must be prepared and reviewed separately, with the untouched original history retained privately. Do not silently replace this repository with a snapshot or rewrite it.
