@@ -1,4 +1,10 @@
-import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type ButtonHTMLAttributes,
+  type ReactNode,
+} from 'react';
 import { X } from 'lucide-react';
 export function IconButton({
   label,
@@ -18,6 +24,7 @@ export function IconButton({
     </button>
   );
 }
+const avatarSegmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
 export function Avatar({
   name,
   size = 'normal',
@@ -27,17 +34,22 @@ export function Avatar({
   size?: 'small' | 'normal' | 'large';
   tone?: string;
 }) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const initials =
+    words
+      .slice(0, 2)
+      .map((word) => avatarSegmenter.segment(word)[Symbol.iterator]().next().value?.segment ?? '')
+      .join('')
+      .toLocaleUpperCase() || '?';
   const tones = ['sand', 'lavender', 'sage', 'blue'];
-  const color = tone ?? tones[name.charCodeAt(0) % tones.length];
+  const color = tone ?? tones[(name.trim().codePointAt(0) ?? 0) % tones.length];
   return (
-    <span className={`avatar ${size} ${color}`} aria-label={name}>
-      <span>
-        {name
-          .split(' ')
-          .map((n) => n[0])
-          .slice(0, 2)
-          .join('')}
-      </span>
+    <span
+      className={`avatar ${size} ${color}`}
+      aria-label={name.trim() || 'Kullanıcı'}
+      title={name.trim() || undefined}
+    >
+      <span aria-hidden="true">{initials}</span>
     </span>
   );
 }
@@ -50,7 +62,7 @@ export function AvatarStack({ names = [] }: { names?: string[] }) {
     </span>
   );
 }
-const modalStack: symbol[] = [];
+const modalStack: { id: symbol; element: HTMLElement }[] = [];
 export function Modal({
   title,
   children,
@@ -66,54 +78,95 @@ export function Modal({
 }) {
   const token = useRef(Symbol());
   const ref = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  useLayoutEffect(() => {
+    close.current = onClose;
+  }, [onClose]);
   useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
     const id = token.current;
-    modalStack.push(id);
+    modalStack.push({ id, element });
+    // Child effects run before parent effects; DOM nesting determines ownership.
+    modalStack.sort((a, b) =>
+      a.element.contains(b.element) ? -1 : b.element.contains(a.element) ? 1 : 0,
+    );
     const previous = document.activeElement as HTMLElement | null;
+    const top = () => modalStack.at(-1)?.id === id;
     const focusable = () =>
       Array.from(
-        ref.current?.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), input, textarea, select, [tabindex="0"]',
-        ) ?? [],
+        element.querySelectorAll<HTMLElement>(
+          'button,input,textarea,select,a[href],[contenteditable="true"],[tabindex]',
+        ),
+      ).filter(
+        (node) =>
+          node.tabIndex >= 0 &&
+          !node.matches(':disabled,[aria-disabled="true"],input[type="hidden"]') &&
+          !node.closest('[hidden],[inert]') &&
+          node.closest('[role="dialog"]') === element &&
+          getComputedStyle(node).display !== 'none' &&
+          getComputedStyle(node).visibility !== 'hidden',
       );
-    (ref.current?.querySelector<HTMLElement>('input,textarea,select') ?? focusable()[0])?.focus();
+    const focusFirst = () => {
+      const elements = focusable();
+      (
+        elements.find((node) => node.matches('input:not([type="range"]),textarea,select')) ??
+        elements[0] ??
+        element
+      ).focus();
+    };
+    if (top()) focusFirst();
     const handler = (event: KeyboardEvent) => {
-      if (modalStack.at(-1) !== id) return;
+      if (!top()) return;
       if (event.key === 'Escape') {
         event.preventDefault();
-        event.stopPropagation();
-        onClose();
+        event.stopImmediatePropagation();
+        close.current();
       }
       if (event.key === 'Tab') {
         const elements = focusable();
         const first = elements[0];
         const last = elements.at(-1);
-        if (event.shiftKey && document.activeElement === first) {
+        if (!first) {
+          event.preventDefault();
+          element.focus();
+        } else if (!elements.includes(document.activeElement as HTMLElement)) {
+          event.preventDefault();
+          (event.shiftKey ? last : first)?.focus();
+        } else if (event.shiftKey && document.activeElement === first) {
           event.preventDefault();
           last?.focus();
         } else if (!event.shiftKey && document.activeElement === last) {
           event.preventDefault();
-          first?.focus();
+          first.focus();
         }
       }
     };
-    document.addEventListener('keydown', handler, true);
-    return () => {
-      document.removeEventListener('keydown', handler, true);
-      const index = modalStack.indexOf(id);
-      if (index >= 0) modalStack.splice(index, 1);
-      if (previous?.isConnected) previous.focus();
+    const keepFocus = (event: FocusEvent) => {
+      if (top() && !element.contains(event.target as Node)) focusFirst();
     };
-  }, [onClose]);
+    document.addEventListener('keydown', handler, true);
+    document.addEventListener('focusin', keepFocus);
+    return () => {
+      const wasTop = top();
+      document.removeEventListener('keydown', handler, true);
+      document.removeEventListener('focusin', keepFocus);
+      const index = modalStack.findIndex((entry) => entry.id === id);
+      if (index >= 0) modalStack.splice(index, 1);
+      if (wasTop && previous?.isConnected) previous.focus();
+    };
+  }, []);
   return (
     <div
-      className="modal-backdrop"
+      className={`modal-backdrop ${className.includes('command-modal') ? 'instant-overlay' : ''}`}
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget && modalStack.at(-1)?.id === token.current)
+          close.current();
       }}
     >
       <div
         ref={ref}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={title}
