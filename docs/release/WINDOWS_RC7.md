@@ -13,3 +13,9 @@ Pending: successful native CI receipt; owner decision on unsigned distribution/s
 ## First native source-check result
 
 Run38535360423: TypeScript PASS;781/784 tests PASS. Three failures were `EPERM fsync` in Linux-only Access service registration persistence tests. That module is not in the desktop bundle. Do not weaken its POSIX durability or claim Windows server support. Windows client verification excludes only `tests/stoat-registration.test.ts` (four tests); the complete backend suite remains required on Ubuntu. Full Mac/Ubuntu verification of tooling7c9dd49 passed in run38535360105. First attempt did not package or publish.
+
+## Native Windows verification
+
+Run38535819401 (toolingbec563c, runtime frozenb38f8e9) PASS:117files/780tests, types/build, NSIS installation, installed ASAR equality, packaged Win32/x64 launch, sandboxed onboarding, two viewport screenshots, Strong+Standard bundled model readiness, invalid privileged command rejection and preference persistence on relaunch. Capture enumeration:3sources/1screen; enumeration is not publication/transport acceptance.
+
+Installer:135103498bytes; SHA256 eacd4adb42f8db1aeacfd9bfbe533427cebd461ecb71001df9fabe6ba3388add. The next workflow adds only this frozen verified unsigned candidate and its receipts/screenshots to existing RC7 without replacing any asset. Physical friend voice/screen/soundboard acceptance remains open.
