@@ -259,8 +259,16 @@ export function prepareVLCSourceMac(destination) {
       const text = spawnSync('otool', ['-L', file], { encoding: 'utf8' }).stdout;
       for (const line of text.split('\n').slice(1)) {
         const dep = line.trim().split(' (')[0];
-        if (dep.startsWith(work + '/'))
-          run('install_name_tool', ['-change', dep, '@rpath/' + basename(dep), file], work);
+        // Plugins are loaded by libvlccore, not by the adapter's Mach-O loader.
+        // Resolve bundled dependencies relative to the loading binary itself.
+        if (existsSync(join(engine, 'lib', basename(dep)))) {
+          const relative = dir.endsWith('/plugins') ? '../lib/' : '';
+          run(
+            'install_name_tool',
+            ['-change', dep, '@loader_path/' + relative + basename(dep), file],
+            work,
+          );
+        }
       }
       if (name === 'libdvbpsi.10.dylib')
         run('install_name_tool', ['-id', '@rpath/' + name, file], work);
@@ -301,7 +309,7 @@ export function prepareVLCSourceMac(destination) {
     ),
   );
   const cacheEnv = { ...process.env, DYLD_LIBRARY_PATH: join(engine, 'lib') };
-  run(join(build, 'bin/vlc-cache-gen'), [join(engine, 'plugins')], work, cacheEnv);
+  run(join(build, 'bin/.libs/vlc-cache-gen'), [join(engine, 'plugins')], work, cacheEnv);
   // Reuse exactly the public gate; no third-party binary exemptions.
   const scan = spawnSync(
     process.execPath,

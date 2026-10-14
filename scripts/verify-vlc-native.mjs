@@ -98,7 +98,7 @@ let check;
 app.whenReady().then(async()=>{
  const binding=require(${JSON.stringify(join(nativeRoot, 'rooms-vlc.node'))});
  binding.initialize(${JSON.stringify(join(nativeRoot, 'vlc', process.platform === 'darwin' ? 'lib/libvlc.dylib' : 'libvlc.dll'))},${JSON.stringify(join(nativeRoot, 'vlc/plugins'))});
- const win=new BrowserWindow({width:900,height:700,show:false,webPreferences:{sandbox:true}});await win.loadURL('data:text/html,<html><body>ROOMS native media check</body></html>');
+ const win=new BrowserWindow({width:900,height:700,show:true,webPreferences:{sandbox:true}});await win.loadURL('data:text/html,<html><body>ROOMS native media check</body></html>');
  const data=readFileSync(__dirname+'/sample.avi');let current=true;const stream=await createVLCStream('rooms-provider://11111111-1111-4111-8111-111111111111/stream',async(request)=>{
  const range=request.headers.get('range');const start=range?Number(range.match(/bytes=(\\d+)/)[1]):0;
  return new Response(data.subarray(start),{status:range?206:200,headers:{'Content-Type':'video/x-msvideo','Content-Length':String(data.length-start),...(range?{'Content-Range':'bytes '+start+'-'+(data.length-1)+'/'+data.length,'Accept-Ranges':'bytes'}:{'Accept-Ranges':'bytes'})}});
@@ -129,11 +129,14 @@ try {
   });
   const waitState = async (predicate) => {
     const end = Date.now() + 15000;
+    let lastState;
     while (Date.now() < end) {
       const state = await app.evaluate(() => globalThis.getCheck().binding.state());
+      lastState = state;
       if (predicate(state)) return state;
       await new Promise((r) => setTimeout(r, 100));
     }
+    result.lastState = lastState;
     throw Error('Native output did not reach required state');
   };
   result.playing = await waitState(

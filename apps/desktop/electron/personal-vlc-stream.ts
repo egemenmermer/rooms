@@ -131,7 +131,18 @@ export async function createVLCStream(
       assertCurrent();
       // Opaque binary HLS segments/key bodies are authorized by their parent manifest.
       // Root streams may not be arbitrary ASX/XSPF/M3U/file-reference playlists.
-      if (!allowed.get(source) && (!first.value || !safeContainer(first.value)))
+      const prefix = Buffer.from(first.value ?? [])
+        .toString('utf8')
+        .trimStart();
+      if (/^(?:#EXTM3U|<\?xml|<asx\b|<playlist\b|<smil\b|\[playlist\])/i.test(prefix))
+        throw new Error('Unresolved native reference container.');
+      const offset = range ? Number(/^bytes=(\d+)/.exec(range)![1]) : 0;
+      // A new root read must always be sniffed again. Nonzero byte ranges are
+      // continuation data only after a successfully validated root read.
+      if (
+        source === root &&
+        (offset === 0 ? !first.value || !safeContainer(first.value) : !allowed.get(root))
+      )
         throw new Error('Unsupported native playback container.');
       allowed.set(source, true);
       const outputHeaders: Record<string, string> = {

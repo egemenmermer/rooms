@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const harness = vi.hoisted(() => ({
   handlers: new Map<string, (...args: unknown[]) => unknown>(),
   create: vi.fn(async () => {}),
@@ -49,9 +49,11 @@ function invoke(name: string, ...args: unknown[]) {
   return harness.handlers.get(`rooms:provider-native-${name}`)!({}, ...args);
 }
 beforeEach(() => {
+  vi.stubGlobal('process', { ...process, platform: 'darwin' });
   vi.clearAllMocks();
   harness.handlers.clear();
 });
+afterEach(() => vi.unstubAllGlobals());
 function setup() {
   let current = true;
   let revoke = () => {};

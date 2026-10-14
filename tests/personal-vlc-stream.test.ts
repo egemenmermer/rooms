@@ -72,6 +72,30 @@ describe('private local VLC streaming authority', () => {
     );
     expect((await fetch(stream.url)).status).toBe(502);
   });
+  it('revalidates a root on subsequent whole-file reads', async () => {
+    let first = true;
+    const stream = await open(async () => {
+      if (first) {
+        first = false;
+        return new Response(new Uint8Array([0x47]));
+      }
+      return new Response('<asx><ref href="https://example.com/hidden"/></asx>');
+    });
+    expect((await fetch(stream.url)).status).toBe(200);
+    expect((await fetch(stream.url)).status).toBe(502);
+  });
+  it('rejects reference documents in opaque HLS media children', async () => {
+    const stream = await open(async (request) =>
+      request.url === root
+        ? new Response(`#EXTM3U\n#EXTINF:5,\n${child}\n`, {
+            headers: { 'Content-Type': 'application/vnd.apple.mpegurl' },
+          })
+        : new Response('<asx><ref href="file:///etc/passwd"/></asx>'),
+    );
+    const text = await (await fetch(stream.url)).text();
+    const uri = text.split('\n').find((line) => line.startsWith('http:'))!;
+    expect((await fetch(uri)).status).toBe(502);
+  });
   it('fences stale scope before upstream access and while reading', async () => {
     let current = true,
       requests = 0;
