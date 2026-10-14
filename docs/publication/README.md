@@ -1,6 +1,6 @@
 # Publication review — existing ROOMS repository
 
-Date: 2026-10-14. The publication target remains **egemenmermer/rooms**, under MIT. Visibility remains private pending final review. The private archive is a backup, not a replacement open-source project.
+Initial review date: 2026-10-14. The publication target is **egemenmermer/rooms**, under MIT. The private archive is a backup, not a replacement open-source project. Current visibility and unresolved retained views are recorded below.
 
 Status update, 2026-10-14: the owner independently changed visibility to public and declined sending the prepared Support request. The retained-view gate below has **not** passed: an anonymous metadata lookup still resolves a removed private artwork file at its old commit. Current releases and Actions artifacts are absent; one historical PR description's operator address was removed and reread. These checks do not certify that old refs/cached views are purged. This task did not change visibility or contact Support. Public package gates are documented in PACKAGE_POLICY.md.
 
@@ -32,13 +32,13 @@ The exact preceding runtime/source candidate passed 801 tests in 119 files, lint
 
 A read-only HTTPS check of the current community appcast found six enclosure URLs, all community-hosted and none GitHub-hosted. The community server, update feed, installed apps, live accounts and server-only private artwork are unchanged. The public source uses the original generated static DJ and optional per-community customization.
 
-## Remaining publication gates
+## Publication checks and remaining gate
 
 1. GitHub-retained old PR refs, cached old commit/diff URLs and attachments need an explicit disposition. Replacing branches/tags does not guarantee GitHub purges them. Local cleaning cannot remove read-only PR refs. A maintainer support request is prepared privately and has not been sent. Do not make this repository public until those retained views are resolved or an informed publication decision covers their contents.
-2. Verify a usable private vulnerability-reporting route and branch/required-check policy on the chosen account/visibility configuration. Documentation alone does not enable a platform feature.
+2. Private vulnerability reporting is now enabled and its API state reread. Main branch protection requires current baseline, native-smoke and source-only checks through the GitHub Actions app, applies to administrators, requires PRs and resolved conversations, and prohibits force pushes/deletion. The API state was reread; documentation alone was not used as evidence.
 Dependency update PR creation is temporarily paused during the publication review; enable the intended limits after approval. A reachable-history privacy gate is added to prevent reviewed private paths being restored through old checkouts.
 
-3. Owner reviews final source, file/asset decisions and the precise remote cleanup receipt, then explicitly approves visibility change.
+3. The owner changed visibility independently and explicitly declined submitting the Support request. That decision does not close the old retained-view gate in item 1.
 
 Official GitHub explanation: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository . A visibility change is not performed by this work.
 
