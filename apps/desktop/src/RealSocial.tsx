@@ -1,8 +1,11 @@
+import { ChatAttachment } from './ChatAttachment';
 import { ScreenShareGallery } from './ScreenShareGallery';
 import { VoiceRoomViewActions } from './VoiceRoomViewActions';
 import { QuietMenu } from './QuietMenu';
 import { openRoomActivity } from './MusicDJ';
 import { FriendRequestButton } from './FriendRequestButton';
+import { MediaStage } from './MediaStage';
+export { MediaStage } from './MediaStage';
 import './reference-chat.css';
 import './reference-voice.css';
 import './discord-room.css';
@@ -80,7 +83,6 @@ import {
   stopScreen,
   setParticipantVolume,
   startRoomAudio,
-  attachMediaTrack,
 } from './realtime';
 const report = (operation: Promise<unknown>, notify: (message: string) => void) => {
   void operation.catch((e) => notify(uiError(e)));
@@ -614,36 +616,12 @@ export function CommunityChat({
                   {!!m.attachments?.length && (
                     <div className="message-attachments">
                       {m.attachments.map((file) => (
-                        <a
-                          key={file.id}
-                          className={`message-attachment ${file.mime.startsWith('image/') ? 'image-attachment' : ''}`}
-                          href={file.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          aria-disabled={!file.url}
-                          onClick={(e) => {
-                            if (!file.url) {
-                              e.preventDefault();
-                              notify('Dosya bağlantısı henüz hazır değil.');
-                            }
-                          }}
-                        >
-                          {file.mime.startsWith('image/') && file.url ? (
-                            <img src={file.url} alt={file.name} loading="lazy" />
-                          ) : (
-                            <FileText size={27} />
-                          )}
-                          <span>
-                            <strong>{file.name}</strong>
-                            <small>
-                              {file.mime === 'application/pdf'
-                                ? 'PDF'
-                                : file.mime.split('/').at(-1)?.toUpperCase()}{' '}
-                              · {Math.round(file.size / 1024)} KB
-                            </small>
-                          </span>
-                          <Download size={19} />
-                        </a>
+                        <ChatAttachment
+                          key={`${c.serverUrl}:${c.user?.id}:${file.id}`}
+                          file={file}
+                          channelId={m.channelId}
+                          messageId={m.id}
+                        />
                       ))}
                     </div>
                   )}
@@ -1339,30 +1317,6 @@ export function CommunitySpaces({ notify }: { notify(message: string): void }) {
     </div>
   );
 }
-export function MediaStage({
-  id,
-  label,
-  className = 'screen-stage',
-}: {
-  id: string;
-  label: string;
-  className?: string;
-}) {
-  const ref = useRef<HTMLVideoElement>(null);
-  const [error, setError] = useState('');
-  useEffect(() => {
-    try {
-      if (ref.current) return attachMediaTrack(id, ref.current);
-    } catch {
-      setError(tr('This stream has ended.'));
-    }
-  }, [id]);
-  return error ? (
-    <p className="muted">{error}</p>
-  ) : (
-    <video ref={ref} aria-label={label} autoPlay playsInline muted className={className} />
-  );
-}
 export function CommunityVoice({
   openLauncher,
   notify,
@@ -1467,7 +1421,7 @@ export function CommunityVoice({
             ) : (
               <ReferenceIcon name={p.muted ? 'mic-off' : 'mic'} size={13} />
             ))}
-          <span>
+          <span title={p.name}>
             {p.name}
             {p.local ? ' (sen)' : ''}
           </span>
@@ -1485,7 +1439,7 @@ export function CommunityVoice({
           <span className="reference-voice-eyebrow">
             {share ? 'EKRAN PAYLAŞIMI' : video ? 'GÖRÜNTÜLÜ ODA' : 'SES ODASI'}
           </span>
-          <h2>{roomName ?? 'Ses odaları'}</h2>
+          <h2 title={roomName ?? undefined}>{roomName ?? 'Ses odaları'}</h2>
           <p>
             {emptyFixture
               ? 'Şimdilik sessiz. İlk sen gel.'

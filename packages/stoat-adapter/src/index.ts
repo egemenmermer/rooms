@@ -765,6 +765,49 @@ export class StoatClient {
   async removeFriend(userId: string) {
     await this.request(`/users/${checked(userId)}/friend`, 'DELETE');
   }
+  async attachmentImage(
+    channelId: string,
+    messageId: string,
+    fileId: string,
+  ): Promise<string | null> {
+    const epoch = this.aclEpoch;
+    if (!this.fileOrigin) this.configureFileOrigin(await this.request<Raw>(''));
+    const message = await this.getMessage(channelId, messageId);
+    const attachment = message.attachments?.find((file) => file.id === fileId);
+    if (
+      !attachment?.url ||
+      !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(attachment.mime)
+    )
+      return null;
+    const response = await fetch(attachment.url, {
+      redirect: 'error',
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) throw new StoatError(response.status, 'ATTACHMENT_UNAVAILABLE');
+    const mime = response.headers.get('content-type')?.split(';')[0];
+    if (!mime || !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(mime))
+      return null;
+    const reader = response.body?.getReader();
+    if (!reader) return null;
+    let size = 0;
+    const parts: Uint8Array[] = [];
+    try {
+      while (true) {
+        const next = await reader.read();
+        if (next.done) break;
+        size += next.value.length;
+        if (size > 25 * 1024 * 1024) throw new StoatError(413, 'ATTACHMENT_TOO_LARGE');
+        parts.push(next.value);
+      }
+    } finally {
+      await reader.cancel();
+    }
+    const fresh = await this.getMessage(channelId, messageId);
+    if (!fresh.attachments?.some((file) => file.id === fileId))
+      throw new StoatError(409, 'ACCESS_CHANGED');
+    if (epoch !== this.aclEpoch) throw new StoatError(409, 'ACCESS_CHANGED');
+    return `data:${mime};base64,${Buffer.concat(parts).toString('base64')}`;
+  }
   async avatar(userId: string): Promise<string | null> {
     const raw = await this.request<Raw>(`/users/${checked(userId)}`);
     this.users.set(userId, raw);

@@ -1,4 +1,5 @@
 import { useCommunityBranding } from './use-community-branding';
+import { musicPlaybackError } from './music-errors';
 import { DJCharacter } from './DJCharacter';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
@@ -15,6 +16,9 @@ import {
   Square,
   Volume2,
   VolumeX,
+  History,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { create } from 'zustand';
 import { useQuery } from '@tanstack/react-query';
@@ -171,6 +175,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
     [placement, setPlacement] = useState<{ x: number; y: number } | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [results, setResults] = useState<MusicSearchResult[] | null>(null);
   const panel = useRef<HTMLElement>(null),
     alive = useRef(false),
@@ -195,6 +200,18 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           throw new Error('Oturum değişti.');
         return value;
       },
+    },
+    queryClient,
+  );
+  const historyKey = ['room-music-history', community.serverUrl, community.user?.id, channelId];
+  const history = useQuery(
+    {
+      queryKey: historyKey,
+      enabled: historyOpen && !!channelId && !fixture && !!window.rooms?.music,
+      staleTime: 10000,
+      refetchInterval: 30000,
+      retry: 1,
+      queryFn: () => window.rooms!.music.history(channelId!),
     },
     queryClient,
   );
@@ -225,6 +242,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
       const value = await window.rooms!.music.command(channelId!, command);
       if (alive.current) {
         queryClient.setQueryData(key, value);
+        void queryClient.invalidateQueries({ queryKey: historyKey, exact: true });
         if (command.type === 'add') {
           setInput('');
           setResults(null);
@@ -461,22 +479,139 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           />
           <small>{Math.round((bot?.volume ?? 1) * 100)}%</small>
         </div>
+        <div className="dj-queue-heading">
+          <span>Kuyruk</span>
+          <button aria-expanded={historyOpen} onClick={() => setHistoryOpen((value) => !value)}>
+            <History size={14} />
+            Geçmiş
+          </button>
+        </div>
         <ol className="dj-queue">
-          {snapshot?.queue.map((item, i) => (
-            <li key={item.id} className={item.id === active?.id ? 'current' : ''}>
-              <span>{i + 1}</span>
-              <strong>{item.title}</strong>
-              <small>{clock(item.durationSec)}</small>
-              <button
-                aria-label={`${item.title} sıradan kaldır`}
-                disabled={!available || busy || item.id === active?.id}
-                onClick={() => void run({ type: 'remove', id: item.id })}
+          {snapshot?.queue.map((item, i) => {
+            const move = (target: number) => {
+              const ids = snapshot.queue.map((track) => track.id);
+              ids.splice(i, 1);
+              ids.splice(target, 0, item.id);
+              void run({ type: 'reorder', ids });
+            };
+            return (
+              <li
+                key={item.id}
+                draggable={available && !busy}
+                className={item.id === active?.id ? 'current' : ''}
+                onDragStart={(event) => {
+                  event.dataTransfer.setData('application/x-rooms-music-id', item.id);
+                  event.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragOver={(event) => {
+                  if (
+                    available &&
+                    !busy &&
+                    event.dataTransfer.types.includes('application/x-rooms-music-id')
+                  )
+                    event.preventDefault();
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const source = event.dataTransfer.getData('application/x-rooms-music-id');
+                  const ids = snapshot.queue.map((track) => track.id),
+                    from = ids.indexOf(source);
+                  if (from < 0 || from === i) return;
+                  ids.splice(from, 1);
+                  ids.splice(i, 0, source);
+                  void run({ type: 'reorder', ids });
+                }}
               >
-                <Trash2 size={14} />
-              </button>
-            </li>
-          ))}
+                <span>{i + 1}</span>
+                <button
+                  className="dj-queue-title"
+                  title={item.title}
+                  disabled={!available || busy}
+                  aria-label={`${item.title} parçasını çal`}
+                  onClick={() => void run({ type: 'select', id: item.id })}
+                >
+                  {item.title}
+                </button>
+                <small>{clock(item.durationSec)}</small>
+                <div className="dj-order-controls">
+                  <button
+                    aria-label={`${item.title} yukarı taşı`}
+                    disabled={!available || busy || i === 0}
+                    onClick={() => move(i - 1)}
+                  >
+                    <ArrowUp size={12} />
+                  </button>
+                  <button
+                    aria-label={`${item.title} aşağı taşı`}
+                    disabled={!available || busy || i === snapshot.queue.length - 1}
+                    onClick={() => move(i + 1)}
+                  >
+                    <ArrowDown size={12} />
+                  </button>
+                </div>
+                <button
+                  aria-label={`${item.title} sıradan kaldır`}
+                  disabled={!available || busy || item.id === active?.id}
+                  onClick={() => void run({ type: 'remove', id: item.id })}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </li>
+            );
+          })}
         </ol>
+        {historyOpen && (
+          <div className="dj-history" aria-label="DJ oturum geçmişi">
+            {history.isLoading ? (
+              <p>Geçmiş yükleniyor…</p>
+            ) : history.error ? (
+              <p role="alert">
+                {uiError(history.error)}
+                <button onClick={() => void history.refetch()}>Yeniden dene</button>
+              </p>
+            ) : !history.data?.length ? (
+              <p>Henüz kayıtlı liste yok.</p>
+            ) : (
+              history.data.map((session) => (
+                <details key={session.id}>
+                  <summary>
+                    {new Date(session.startedAt).toLocaleString('tr-TR', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                    <small>{session.tracks.length} parça</small>
+                  </summary>
+                  <ol>
+                    {session.tracks.map((track) => (
+                      <li key={track.id}>
+                        <button
+                          disabled={!available || busy}
+                          aria-label={`${track.title} geçmişten çal`}
+                          onClick={() =>
+                            void run({ type: 'restore', sessionId: session.id, trackId: track.id })
+                          }
+                        >
+                          {track.title}
+                        </button>
+                        <small>{track.played ? 'Çalındı' : 'Kuyrukta'}</small>
+                      </li>
+                    ))}
+                  </ol>
+                  <button
+                    disabled={!available || busy}
+                    onClick={() => void run({ type: 'restore', sessionId: session.id })}
+                  >
+                    <Play size={13} />
+                    Kuyruğa ekle ve çal
+                  </button>
+                </details>
+              ))
+            )}
+          </div>
+        )}
+
         {!channelId && (
           <p className="dj-error" role="status">
             Önce ses odasına katıl.
@@ -493,11 +628,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
               (query.error
                 ? uiError(query.error)
                 : snapshot?.error
-                  ? snapshot.error === 'MUSIC_YOUTUBE_ACCESS_REQUIRED'
-                    ? 'Sunucunun YouTube ses erişimi doğrulanamadı. DJ bu kaynaktan çalamıyor.'
-                    : snapshot.error === 'MUSIC_SOURCE_TIMEOUT'
-                      ? 'Parça yüklenmesi zaman aşımına uğradı. Yeniden dene.'
-                      : 'Parça alınamadı. Başka bir bağlantı dene.'
+                  ? musicPlaybackError(snapshot.error, active?.title)
                   : null)}
           </p>
         )}

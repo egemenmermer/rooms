@@ -337,3 +337,103 @@
   outline: 2px solid #b8cdff;
   outline-offset: 2px;
 }
+
+.dj-queue-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #aaa4b5;
+  font-size: 11px;
+  margin-top: 14px;
+}
+.dj-queue-heading button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.dj-queue .dj-queue-title {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: auto;
+  height: auto;
+  font-weight: 600;
+  background: transparent;
+}
+.dj-order-controls {
+  display: flex;
+  opacity: 0;
+  gap: 1px;
+}
+.dj-queue li:hover .dj-order-controls,
+.dj-queue li:focus-within .dj-order-controls {
+  opacity: 1;
+}
+.dj-order-controls button {
+  width: 18px !important;
+}
+.dj-history {
+  font-size: 11px;
+  margin-top: 12px;
+}
+.dj-history details {
+  padding: 9px 0;
+  border-top: 1px solid #ffffff0b;
+}
+.dj-history summary {
+  cursor: pointer;
+}
+.dj-history summary small {
+  float: right;
+  color: #aaa4b5;
+}
+.dj-history ol {
+  padding: 0;
+  list-style: none;
+  max-height: 200px;
+  overflow: auto;
+}
+.dj-history li {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  margin: 8px 0;
+}
+.dj-history li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dj-history li small {
+  flex-shrink: 0;
+  color: #aaa4b5;
+}
+.dj-history details > button {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  background: #ffffff09;
+  border: 0;
+  border-radius: 5px;
+  padding: 8px;
+  color: #d8cff7;
+  cursor: pointer;
+}
+.dj-history li > button {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}

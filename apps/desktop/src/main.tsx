@@ -7,6 +7,8 @@ import './styles.css';
 import './reference-tokens.css';
 import App from './App';
 import './reference-shell.css';
+import './interaction-quality.css';
+import { installInputModality } from './input-modality';
 import { queryClient as client } from './query-client';
 class Boundary extends React.Component<
   {
@@ -35,6 +37,7 @@ class Boundary extends React.Component<
   }
 }
 async function bootstrap() {
+  installInputModality();
   const params = new URLSearchParams(window.location.search);
   const fixture = import.meta.env.DEV ? params.get('fixture') : null;
   if (fixture) {

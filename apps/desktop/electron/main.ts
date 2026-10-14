@@ -1,3 +1,4 @@
+import { setupPersonalVLC } from './personal-vlc';
 import { isolatedProfilePath } from './profile';
 import {
   app,
@@ -209,6 +210,10 @@ app.whenReady().then(async () => {
         : null;
     },
   );
+  const personalVLC = setupPersonalVLC(assertSender, () => win, providers);
+  app.on('before-quit', () => {
+    void personalVLC.close();
+  });
   setupUpdates(assertSender);
   setupAgent(
     () => win,

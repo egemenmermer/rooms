@@ -10,6 +10,7 @@ import {
   type PrivateRequestOptions,
 } from '../../../packages/personal-media/src/network';
 import { parseEPG } from '../../../packages/personal-media/src/epg';
+import { xtreamCategories, xtreamGroup } from '../../../packages/personal-media/src/xtream';
 import {
   parsePlaylist,
   rewriteHLS,
@@ -119,7 +120,9 @@ export function setupProviders(
   let activeScope: string | undefined;
   let activeIdentity: string | null | undefined;
   let vaultPath: string | null = null;
+  const playbackRevocations = new Set<() => void>();
   const clearPlayback = () => {
+    for (const revoke of playbackRevocations) revoke();
     handles.clear();
     rdGeneration++;
     pending = null;
@@ -423,23 +426,13 @@ export function setupProviders(
       const data = await jsonChecked(api.href, {}, check);
       if (!Array.isArray(data) || !data.length || data.length > 10000)
         throw new Error('The Xtream connection returned no valid channel list.');
-      const categories = new Map<string, string>();
+      let categories = new Map<string, string>();
       // Category metadata is optional; a failed lookup must not hide playable channels.
       const categoryApi = new URL(api);
       categoryApi.searchParams.set('action', 'get_live_categories');
       try {
         const rows: unknown = await jsonChecked(categoryApi.href, {}, check);
-        if (Array.isArray(rows) && rows.length <= 10000)
-          for (const row of rows) {
-            if (!row || typeof row !== 'object') continue;
-            const id = String(row.category_id ?? '');
-            if (
-              /^\d{1,20}$/.test(id) &&
-              typeof row.category_name === 'string' &&
-              row.category_name.trim()
-            )
-              categories.set(id, safeMediaLabel(row.category_name, 'Diğer'));
-          }
+        categories = xtreamCategories(rows);
       } catch {
         check();
       }
@@ -450,9 +443,7 @@ export function setupProviders(
         return {
           id: String(s.stream_id),
           name: safeMediaLabel(String(s.name ?? 'Channel')),
-          group:
-            categories.get(String(s.category_id ?? '')) ??
-            (/^\d{1,20}$/.test(String(s.category_id ?? '')) ? `Grup ${s.category_id}` : 'Diğer'),
+          group: xtreamGroup(s, categories),
           url: personalURL(
             new URL(
               `live/${encodeURIComponent(c.username!)}/${encodeURIComponent(c.password!)}/${s.stream_id}.m3u8`,
@@ -1023,7 +1014,7 @@ export function setupProviders(
       startAt: c.resume?.[id] ?? 0,
     };
   });
-  protocol.handle('rooms-provider', async (request) => {
+  const fetchPlayback = async (request: Request) => {
     try {
       refreshScope();
       const u = new URL(request.url);
@@ -1100,6 +1091,34 @@ export function setupProviders(
     } catch {
       return new Response('Personal source could not be loaded.', { status: 502 });
     }
-  });
-  return { clearPlayback };
+  };
+  protocol.handle('rooms-provider', fetchPlayback);
+  return {
+    clearPlayback,
+    fetchPlayback,
+    onPlaybackRevoked(callback: () => void) {
+      playbackRevocations.add(callback);
+      return () => playbackRevocations.delete(callback);
+    },
+    authorizePlayback(url: string) {
+      const scope = requireScope();
+      if (!/^rooms-provider:\/\/[a-f0-9-]{36}\/stream$/.test(url))
+        throw new Error('Invalid personal playback capability.');
+      const id = new URL(url).hostname;
+      const item = handles.get(id);
+      const check = () => {
+        checkScope(scope);
+        if (
+          !item ||
+          handles.get(id) !== item ||
+          item.scope !== scope ||
+          item.expires < Date.now() ||
+          !connections.has(item.connectionId)
+        )
+          throw new Error('Personal playback expired.');
+      };
+      check();
+      return check;
+    },
+  };
 }

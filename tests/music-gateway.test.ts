@@ -212,3 +212,52 @@ it('rejects malformed search text and invalid seek positions before contacting t
     fetcher.mockRestore();
   }
 });
+
+it('rechecks room access before returning history and never projects provider sources', async () => {
+  const server = Fastify();
+  let allowed = true;
+  const authorize = vi.fn(async () => {
+    if (!allowed) throw new Error('MUSIC_PERMISSION_DENIED');
+    return { userId: 'self', canControl: true };
+  });
+  const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+    allowed = false;
+    return new Response(
+      JSON.stringify([
+        {
+          id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          startedAt: '2026-10-14T10:00:00.000Z',
+          endedAt: null,
+          tracks: [],
+        },
+      ]),
+    );
+  });
+  registerMusicGateway(server, {
+    url: 'http://worker',
+    secret,
+    apiKey: 'devkey',
+    apiSecret: 'development-secret-at-least-32-characters',
+    livekitUrl: 'ws://livekit:7880',
+    roomService: {
+      getParticipant: async () => null,
+      listParticipants: async () => [],
+      removeParticipant: async () => {},
+      updateParticipant: async () => {},
+    } as any,
+    authorize,
+  });
+  try {
+    const response = await server.inject({
+      method: 'GET',
+      url: '/v1/music/room/history',
+      headers: { authorization: 'user-session' },
+    });
+    expect(response.statusCode).toBe(403);
+    expect(authorize).toHaveBeenCalledTimes(2);
+    expect(response.body).not.toContain('startedAt');
+  } finally {
+    fetcher.mockRestore();
+    await server.close();
+  }
+});

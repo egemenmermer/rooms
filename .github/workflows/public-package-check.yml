@@ -14,10 +14,11 @@ jobs:
       matrix:
         os: [macos-14, windows-2025]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 45
     env:
       ROOMS_DISTRIBUTION_SCOPE: public
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      ROOMS_VLC: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -32,6 +33,22 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: node scripts/release-preflight.mjs
       - run: pnpm build
+      - name: Prepare official VLC engine on macOS
+        if: runner.os == 'macOS'
+        run: pnpm prepare:vlc
+      - name: Prepare official VLC engine on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (!$vs) { throw 'Visual Studio x64 compiler unavailable' }
+          cmd /c "`"$vs\VC\Auxiliary\Build\vcvars64.bat`" && node scripts/prepare-vlc.mjs"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Decode synthetic media (hosted compositor not certified)
+        if: runner.os == 'macOS'
+        env:
+          ROOMS_VLC_QA_OUTPUT: decode
+        run: node scripts/verify-vlc-native.mjs
       - name: Inspect actual macOS package resources before signing
         if: runner.os == 'macOS'
         run: pnpm exec electron-builder --mac --arm64 --dir --publish never --config.mac.identity=null --config.directories.output=.local/public-package-check

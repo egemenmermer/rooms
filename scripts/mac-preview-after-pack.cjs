@@ -1,6 +1,7 @@
+const { copyVLCFiles } = require('./copy-vlc-runtime.cjs');
 const { join } = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { mkdirSync, copyFileSync, existsSync } = require('node:fs');
+const { mkdirSync, copyFileSync, existsSync, readFileSync } = require('node:fs');
 const { distributionScope, verifyPublicResources } = require('./package-privacy.cjs');
 
 module.exports = async (context) => {
@@ -12,6 +13,25 @@ module.exports = async (context) => {
           `${context.packager.appInfo.productFilename}.app/Contents/Resources`,
         )
       : join(context.appOutDir, 'resources');
+  if (process.env.ROOMS_VLC === '1') {
+    const metadata = JSON.parse(readFileSync('dist-native/vlc-version.json', 'utf8'));
+    if (metadata.platform !== process.platform || metadata.arch !== process.arch)
+      throw new Error('The VLC build does not match the package platform.');
+    const native = join(resources, 'native');
+    mkdirSync(native, { recursive: true });
+    copyVLCFiles('dist-native/vlc', join(native, 'vlc'));
+    copyFileSync('dist-native/rooms-vlc.node', join(native, 'rooms-vlc.node'));
+    copyFileSync('dist-native/vlc-version.json', join(native, 'vlc-version.json'));
+    copyFileSync('apps/desktop/native/vlc-player.mm', join(native, 'rooms-vlc-source.mm'));
+    copyFileSync('scripts/prepare-vlc.mjs', join(native, 'rooms-vlc-build.mjs'));
+    copyFileSync('scripts/copy-vlc-runtime.cjs', join(native, 'copy-vlc-runtime.cjs'));
+    copyFileSync('scripts/build-vlc-source-mac.mjs', join(native, 'build-vlc-source-mac.mjs'));
+    mkdirSync(join(native, 'vlc-patches'), { recursive: true });
+    copyFileSync(
+      'scripts/vlc-patches/avcodec-version-guard.patch',
+      join(native, 'vlc-patches/avcodec-version-guard.patch'),
+    );
+  }
   if (scope === 'public') verifyPublicResources(resources);
   if (context.electronPlatformName !== 'darwin') return;
   // Finder/resource-fork metadata on generated files invalidates codesign sealing.

@@ -1,11 +1,12 @@
+import { MusicHistory } from './history';
 import Fastify from 'fastify';
 import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import {
   musicCommandSchema,
-  musicSearchQuerySchema,
+  musicFailedSongSchema,
 } from '../../../packages/shared-contracts/src/music';
-import { searchYouTube } from './youtube-source';
+import { registerMusicSearch } from './search-route';
 import { MusicWorker, type MusicLease } from './worker';
 import { LiveMusicPublisher } from './publisher';
 const secret = process.env.ROOMS_MUSIC_SECRET;
@@ -21,6 +22,7 @@ server.addHook('onRequest', async (request, reply) => {
     return reply.code(401).send({ error: 'AUTH_REQUIRED' });
 });
 const worker = new MusicWorker({
+  history: new MusicHistory(process.env.ROOMS_MUSIC_HISTORY_FILE ?? '/state/music-history.json'),
   publisher: () => new LiveMusicPublisher(),
   lease: async (channelId, leaseId) => {
     const response = await fetch(
@@ -39,18 +41,10 @@ const worker = new MusicWorker({
 });
 const id = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 server.get('/health', async () => ({ service: 'music', status: 'ok' }));
-server.post('/v1/search', async (request, reply) => {
-  try {
-    const body = z.object({ query: musicSearchQuerySchema }).strict().parse(request.body);
-    return await searchYouTube(body.query);
-  } catch (error) {
-    const code =
-      error instanceof Error && /^MUSIC_[A-Z_]+$/.test(error.message)
-        ? error.message
-        : 'MUSIC_SEARCH_UNAVAILABLE';
-    return reply.code(400).send({ error: code });
-  }
-});
+registerMusicSearch(server);
+server.get('/v1/rooms/:channelId/history', async (request) =>
+  worker.history(id.parse((request.params as { channelId: string }).channelId)),
+);
 server.get('/v1/rooms/:channelId', async (request) =>
   worker.snapshot(id.parse((request.params as { channelId: string }).channelId)),
 );
@@ -70,7 +64,8 @@ server.post('/v1/rooms/:channelId', async (request, reply) => {
   } catch (error) {
     const value = error instanceof Error ? error.message : '';
     const code = /^MUSIC_[A-Z_]+$/.test(value) ? value : 'MUSIC_SOURCE_FAILED';
-    return reply.code(400).send({ error: code });
+    const song = musicFailedSongSchema.safeParse((error as { song?: unknown })?.song);
+    return reply.code(400).send({ error: code, ...(song.success ? { song: song.data } : {}) });
   }
 });
 server.addHook('onClose', () => worker.close());

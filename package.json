@@ -1,6 +1,6 @@
 {
   "name": "rooms",
-  "version": "0.1.18-rc.8",
+  "version": "0.1.18-rc.9",
   "private": true,
   "description": "A private desktop clubhouse",
   "author": "ROOMS",
@@ -31,7 +31,8 @@
     "verify:ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm services:build",
     "release:mac:publish": "ROOMS_PUBLISH_UPDATES=1 node scripts/package-signed-mac.mjs",
     "format": "prettier --write apps packages tests tooling scripts *.json *.ts *.mjs .github",
-    "format:check": "prettier --check apps packages tests tooling scripts *.json *.ts *.mjs .github"
+    "format:check": "prettier --check apps packages tests tooling scripts *.json *.ts *.mjs .github",
+    "prepare:vlc": "node scripts/prepare-vlc.mjs"
   },
   "dependencies": {
     "@fastify/rate-limit": "11.2.0",

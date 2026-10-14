@@ -71,8 +71,15 @@ export function VoiceSidebar({
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
+        e.stopImmediatePropagation();
         close();
       }
+      if (e.key === 'Tab') {
+        setMenuOpen(false);
+        triggerRef.current?.focus();
+        return;
+      }
+      if (!menu?.contains(document.activeElement)) return;
       if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) {
         e.preventDefault();
         const items = [...menu!.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
@@ -87,10 +94,10 @@ export function VoiceSidebar({
       }
     };
     window.addEventListener('pointerdown', outside);
-    window.addEventListener('keydown', key);
+    document.addEventListener('keydown', key, true);
     return () => {
       window.removeEventListener('pointerdown', outside);
-      window.removeEventListener('keydown', key);
+      document.removeEventListener('keydown', key, true);
     };
   }, [menuOpen]);
   const currentSpace = c.spaces.find((s) => s.id === c.activeSpaceId);
@@ -120,6 +127,7 @@ export function VoiceSidebar({
             aria-label="Topluluk menüsü"
             aria-haspopup="menu"
             aria-expanded={menuOpen}
+            title={currentSpace?.name}
             onClick={() => setMenuOpen((v) => !v)}
           >
             <strong>{currentSpace?.name ?? 'Topluluk'}</strong>
@@ -182,6 +190,7 @@ export function VoiceSidebar({
           {text.map((ch) => (
             <button
               data-channel-id={ch.id}
+              title={ch.name}
               className={`room-channel ${c.activeChannelId === ch.id && (location.pathname === '/chat' || location.pathname === '/files') ? 'selected' : ''}`}
               key={ch.id}
               onClick={() => {
@@ -204,6 +213,7 @@ export function VoiceSidebar({
             <div key={ch.id}>
               <button
                 data-channel-id={ch.id}
+                title={ch.name}
                 className={`room-channel ${r.channelId === ch.id && location.pathname !== '/voice' ? 'joined' : ''} ${(r.channelId === ch.id && location.pathname === '/voice') || (emptyVoiceFixture && ch.name === 'Salon' && location.pathname === '/voice') ? 'selected' : ''}`}
                 disabled={r.busy}
                 onClick={() => {
@@ -229,7 +239,7 @@ export function VoiceSidebar({
                   }}
                 >
                   <VoiceAvatar id={p.id} name={p.name} />
-                  <span>{p.name}</span>
+                  <span title={p.name}>{p.name}</span>
                   {p.muted ? (
                     <ReferenceIcon name="mic-off" size={13} />
                   ) : p.speaking && r.status === 'connected' ? (
@@ -360,6 +370,7 @@ export function VoiceSidebar({
           </button>
           <IconButton
             label={r.muted ? 'Mikrofonu aç' : 'Mikrofonu kapat'}
+            aria-pressed={!r.muted}
             disabled={r.status !== 'connected'}
             onClick={() => run(toggleMic())}
           >
@@ -371,6 +382,7 @@ export function VoiceSidebar({
           </IconButton>
           <IconButton
             label={r.deafened ? 'Sesi aç' : 'Sağırlaştır'}
+            aria-pressed={r.deafened}
             className={r.deafened ? 'muted-control' : ''}
             disabled={r.status !== 'connected'}
             onClick={() => run(toggleDeafen())}

@@ -783,3 +783,41 @@
 .reference-chat .message-attachment {
   padding: 10px 13px;
 }
+
+.chat-image-attachment {
+  max-width: min(520px, 100%);
+}
+.chat-image-preview {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+.chat-image-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 9px;
+}
+.chat-image-status {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 90px;
+  color: #aaa5b8;
+}
+.chat-image-status button {
+  background: transparent;
+  border: 0;
+  color: #b9aaff;
+  cursor: pointer;
+}
+.chat-image-modal img {
+  display: block;
+  max-width: 100%;
+  max-height: 75vh;
+  object-fit: contain;
+  margin: auto;
+}

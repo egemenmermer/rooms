@@ -236,7 +236,7 @@ it('shows an actionable provider access error from a room snapshot', async () =>
   render(<MusicDJ />);
   expect(await screen.findByRole('alert')).toHaveProperty(
     'textContent',
-    'Sunucunun YouTube ses erişimi doğrulanamadı. DJ bu kaynaktan çalamıyor.',
+    'Parça için YouTube ses erişimini reddetti. DJ sunucu oturumu kontrol edilmeli; tekrar tekrar eklemek bu engeli çözmez.',
   );
 });
 
@@ -282,5 +282,64 @@ it('commits a seek once on release and includes the selected track identity', as
   fireEvent.pointerUp(slider);
   await waitFor(() =>
     expect(command).toHaveBeenCalledExactlyOnceWith('room', { type: 'seek', id, positionSec: 55 }),
+  );
+});
+
+it('selects queue tracks and moves them without submitting a source URL', async () => {
+  const one = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    two = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  const snapshot = {
+    ...empty,
+    currentId: one,
+    status: 'playing' as const,
+    queue: [
+      { id: one, title: 'One', durationSec: 30 },
+      { id: two, title: 'Two', durationSec: 40 },
+    ],
+  };
+  const command = vi.fn(async () => snapshot);
+  window.rooms = { music: { snapshot: async () => snapshot, command } } as unknown as DesktopBridge;
+  render(<MusicDJ />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Two parçasını çal' }));
+  await waitFor(() => expect(command).toHaveBeenCalledWith('room', { type: 'select', id: two }));
+  await waitFor(() =>
+    expect(
+      screen.getByRole('button', { name: 'Two yukarı taşı' }).getAttribute('disabled'),
+    ).toBeNull(),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Two yukarı taşı' }));
+  await waitFor(() =>
+    expect(command).toHaveBeenCalledWith('room', { type: 'reorder', ids: [two, one] }),
+  );
+  expect(JSON.stringify(command.mock.calls)).not.toContain('https:');
+});
+it('loads room history only when opened and replays through the same bot command', async () => {
+  const id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    history = vi.fn(async () => [
+      {
+        id,
+        startedAt: '2026-10-14T10:00:00.000Z',
+        endedAt: null,
+        tracks: [
+          {
+            id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+            title: 'Saved song',
+            durationSec: 200,
+            played: true,
+          },
+        ],
+      },
+    ]),
+    command = vi.fn(async () => empty);
+  window.rooms = {
+    music: { snapshot: async () => empty, history, command },
+  } as unknown as DesktopBridge;
+  render(<MusicDJ />);
+  expect(history).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Geçmiş' }));
+  await screen.findByText('Saved song');
+  fireEvent.click(screen.getByRole('button', { name: 'Kuyruğa ekle ve çal' }));
+  await waitFor(() =>
+    expect(command).toHaveBeenCalledWith('room', { type: 'restore', sessionId: id }),
   );
 });

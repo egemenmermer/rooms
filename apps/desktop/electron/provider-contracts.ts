@@ -39,6 +39,7 @@ export interface PersonalPlaylistSelection {
   channelCount: number;
 }
 export interface ProviderBridge {
+  nativePlayer?: PersonalNativePlayer;
   updatePlaylist(input: {
     id: string;
     name: string;
@@ -96,4 +97,34 @@ export interface ProviderBridge {
   rdPoll(): Promise<{ state: 'pending' | 'connected' | 'expired' }>;
   rdLibrary(): Promise<PersonalLibraryItem[]>;
   rdPlay(id: string): Promise<{ url: string; name: string; live: boolean; startAt?: number }>;
+}
+
+export interface PersonalNativeState {
+  displayedFrames: number;
+  decodedFrames: number;
+  audioBuffers: number;
+  state: number;
+  time: number;
+  duration: number;
+  seekable: number;
+  width: number;
+  height: number;
+  audioId: number;
+  captionId: number;
+  audio: { id: number; label: string }[];
+  captions: { id: number; label: string }[];
+}
+export interface PersonalNativePlayer {
+  status(): Promise<{ available: boolean }>;
+  start(url: string): Promise<{ token: string }>;
+  state(token: string): Promise<PersonalNativeState>;
+  bounds(
+    token: string,
+    rect: { x: number; y: number; width: number; height: number; visible: boolean },
+  ): Promise<void>;
+  control(
+    token: string,
+    input: { action: 'pause' | 'seek' | 'volume' | 'audio' | 'caption'; value: number },
+  ): Promise<void>;
+  stop(token: string): Promise<void>;
 }

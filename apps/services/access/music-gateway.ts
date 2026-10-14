@@ -8,6 +8,8 @@ import {
   musicIdentity,
   musicSearchQuerySchema,
   musicSearchResultsSchema,
+  musicHistorySchema,
+  musicFailedSongSchema,
 } from '../../../packages/shared-contracts/src/music';
 const channel = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 interface Lease {
@@ -52,12 +54,17 @@ export function registerMusicGateway(
       signal: AbortSignal.timeout(body ? 150000 : 10000),
     });
     const result = await response.json();
-    if (!response.ok)
-      throw new Error(
-        typeof result?.error === 'string' && /^MUSIC_[A-Z_]+$/.test(result.error)
-          ? result.error
-          : 'MUSIC_SERVICE_UNAVAILABLE',
+    if (!response.ok) {
+      const song = musicFailedSongSchema.safeParse(result?.song);
+      throw Object.assign(
+        new Error(
+          typeof result?.error === 'string' && /^MUSIC_[A-Z_]+$/.test(result.error)
+            ? result.error
+            : 'MUSIC_SERVICE_UNAVAILABLE',
+        ),
+        song.success ? { song: song.data } : {},
       );
+    }
     return musicSnapshotSchema.parse(result);
   }
   async function revoke(channelId: string) {
@@ -137,6 +144,9 @@ export function registerMusicGateway(
         error: /^(MUSIC_[A-Z_]+|AUTH_REQUIRED)$/.test(message)
           ? message
           : 'MUSIC_SERVICE_UNAVAILABLE',
+        ...(musicFailedSongSchema.safeParse((error as { song?: unknown })?.song).success
+          ? { song: musicFailedSongSchema.parse((error as { song: unknown }).song) }
+          : {}),
       });
   };
   server.get('/v1/music/:channelId', async (request, reply) => {
@@ -144,6 +154,26 @@ export function registerMusicGateway(
       const id = channel.parse((request.params as { channelId: string }).channelId);
       await options.authorize(token(request.headers.authorization), id);
       return await worker(id);
+    } catch (error) {
+      return fail(reply, error);
+    }
+  });
+  server.get('/v1/music/:channelId/history', async (request, reply) => {
+    try {
+      const id = channel.parse((request.params as { channelId: string }).channelId),
+        credential = token(request.headers.authorization);
+      const initial = await options.authorize(credential, id);
+      if (!configured) throw new Error('MUSIC_NOT_CONFIGURED');
+      const response = await fetch(`${options.url}/v1/rooms/${encodeURIComponent(id)}/history`, {
+        headers: { Authorization: `Bearer ${options.secret}` },
+        redirect: 'error',
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!response.ok) throw new Error('MUSIC_HISTORY_UNAVAILABLE');
+      const value = musicHistorySchema.parse(await response.json());
+      const fresh = await options.authorize(credential, id);
+      if (initial.userId !== fresh.userId) throw new Error('MUSIC_PERMISSION_DENIED');
+      return value;
     } catch (error) {
       return fail(reply, error);
     }

@@ -1,0 +1,210 @@
+/* Extend the existing ROOMS tokens. Geometry, branding and media ownership stay put. */
+.page-enter {
+  animation: none !important;
+}
+button {
+  transition:
+    background-color var(--motion-quick) ease,
+    color var(--motion-quick) ease;
+}
+button:active:not(:disabled) {
+  transform: none;
+}
+.button,
+.icon-button {
+  transition:
+    background-color var(--motion-quick) ease,
+    color var(--motion-quick) ease,
+    transform var(--motion-quick) var(--motion-ease-out);
+  touch-action: manipulation;
+}
+html[data-input='pointer'][data-motion='full'] :is(.button, .icon-button):active:not(:disabled) {
+  transform: scale(0.97);
+  transition-duration: 100ms;
+}
+:is(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-action-focus);
+  outline-offset: 3px;
+}
+.modal:focus {
+  outline: none;
+}
+.modal-heading > div {
+  min-width: 0;
+}
+.modal-heading h2 {
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-h2);
+  line-height: var(--line-height-h2);
+}
+.modal-heading > .icon-button {
+  flex: 0 0 auto;
+}
+.modal-backdrop {
+  animation: none;
+}
+
+/* Occasional pointer-opened surfaces. Dismissal stays immediate, including Escape. */
+html[data-input='pointer'][data-motion='full'] .modal-backdrop:not(.instant-overlay) > .modal {
+  transform-origin: center;
+  transition:
+    opacity var(--motion-modal) var(--motion-ease-out),
+    transform var(--motion-modal) var(--motion-ease-out);
+}
+html[data-input='pointer'][data-motion='full'] .community-menu {
+  transform-origin: top center;
+  transition:
+    opacity var(--motion-modal) var(--motion-ease-out),
+    transform var(--motion-modal) var(--motion-ease-out);
+}
+@starting-style {
+  html[data-input='pointer'][data-motion='full'] .modal-backdrop:not(.instant-overlay) > .modal {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  html[data-input='pointer'][data-motion='full'] .community-menu {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+html[data-input='keyboard']
+  :is(.modal-backdrop, .modal, .community-menu, .button, .icon-button, .toggle > span) {
+  animation: none !important;
+  transition: none !important;
+}
+.instant-overlay,
+.instant-overlay > .modal {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* High-frequency controls and speaking rings show actual state without moving content. */
+.toggle > span {
+  transition: transform var(--motion-quick) var(--motion-ease-out);
+}
+.voice-call-tile,
+.voice-tile-avatar {
+  transition: none;
+}
+.game-tile:hover {
+  transform: none;
+}
+.voice-context-panel > header > span,
+.reference-participant-name > span,
+.reference-voice-heading h2 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reference-participant-name {
+  max-width: calc(100% - 24px);
+}
+.reference-voice-heading > div:first-child {
+  min-width: 0;
+}
+.reference-voice-header-actions {
+  flex-shrink: 0;
+}
+/* Large rosters scroll instead of shrinking every tile to fit the viewport. */
+.familiar-room
+  .reference-voice-grid-wrap:has(
+    > .reference-participant-grid:not(.focus-grid) > .reference-participant:nth-child(7)
+  ) {
+  align-items: flex-start;
+  padding-top: 44px;
+  scrollbar-gutter: stable;
+}
+.familiar-room
+  .reference-participant-grid:not(.focus-grid):has(> .reference-participant:nth-child(7)) {
+  max-width: 100%;
+}
+@media (max-width: 1000px) {
+  .familiar-room
+    .reference-participant-grid:not(.focus-grid):has(> .reference-participant:nth-child(7)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.voice-context-member > span:nth-child(2) {
+  min-width: 0;
+}
+.voice-context-member strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.channel-count,
+.voice-channel-count,
+.voice-context-volume > div > span:last-child {
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.community-orb img {
+  object-fit: cover;
+}
+.toast {
+  overflow-wrap: anywhere;
+}
+.toast > .icon-button {
+  flex-shrink: 0;
+}
+.media-stage-status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-24);
+  background: #080a0f;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-ui);
+  text-align: center;
+  pointer-events: none;
+  overflow-wrap: anywhere;
+}
+.media-stage-status.error {
+  color: var(--color-status-error);
+}
+
+/* Keep legible feedback while eliminating vestibular motion. */
+html[data-motion='reduce'] *,
+html[data-motion='reduce'] *::before,
+html[data-motion='reduce'] *::after {
+  animation: none !important;
+  transition-property: opacity, color, background-color, border-color !important;
+  transition-duration: var(--motion-quick) !important;
+  scroll-behavior: auto !important;
+}
+html[data-motion='reduce'] :is(.button, .icon-button):active {
+  transform: none !important;
+}
+html[data-motion='reduce'] .game-tile:hover {
+  transform: none !important;
+}
+@media (hover: none), (pointer: coarse) {
+  .game-tile:hover {
+    transform: none !important;
+  }
+  .button:hover,
+  .icon-button:hover {
+    transform: none;
+  }
+}
+@media (prefers-contrast: more) {
+  .modal,
+  .community-menu {
+    background: var(--color-background-sidebar);
+    border: 1px solid var(--color-text-secondary);
+  }
+}
+@media (max-width: 1000px) {
+  .reference-voice-heading {
+    gap: var(--space-12);
+    flex-wrap: wrap;
+  }
+  .reference-voice-heading > div:first-child {
+    flex: 1 1 180px;
+  }
+}

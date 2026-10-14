@@ -220,4 +220,115 @@ describe('bounded live HLS recovery after genuine playing', () => {
     expect(hls.startLoad).not.toHaveBeenCalled();
     expect(hls.destroy).toHaveBeenCalled();
   });
+  it('recovers a real stall without needing a fatal HLS event, and cancels on pause', () => {
+    const { video, hls } = playing();
+    fireEvent.waiting(video);
+    act(() => vi.advanceTimersByTime(20000));
+    act(() => vi.advanceTimersByTime(1500));
+    expect(hls.startLoad).toHaveBeenCalledOnce();
+    Object.defineProperty(video, 'currentTime', { configurable: true, value: 1 });
+    fireEvent.timeUpdate(video);
+    act(() => vi.advanceTimersByTime(15000));
+    expect(screen.queryByRole('heading', { name: 'Kaynağa ulaşılamıyor' })).toBeNull();
+    fireEvent.stalled(video);
+    fireEvent.pause(video);
+    act(() => vi.advanceTimersByTime(25000));
+    expect(hls.startLoad).toHaveBeenCalledOnce();
+  });
+  it('disposes a pending stall watchdog on account change', async () => {
+    const { video, hls } = playing();
+    fireEvent.stalled(video);
+    await act(async () => useCommunity.setState({ user: null }));
+    act(() => vi.advanceTimersByTime(30000));
+    expect(hls.startLoad).not.toHaveBeenCalled();
+  });
+});
+
+describe('native personal-player controls', () => {
+  it('uses the native engine once and closes its own token', async () => {
+    const observer = { observe: vi.fn(), disconnect: vi.fn() };
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe = observer.observe;
+        disconnect = observer.disconnect;
+      },
+    );
+    const native = {
+      status: vi.fn(async () => ({ available: true })),
+      start: vi.fn(async () => ({ token: 'own-native-session' })),
+      state: vi.fn(async () => ({
+        state: 3,
+        displayedFrames: 1,
+        decodedFrames: 1,
+        audioBuffers: 1,
+        time: 5,
+        duration: 0,
+        width: 640,
+        height: 360,
+        seekable: 0,
+        audioId: 1,
+        captionId: -1,
+        audio: [{ id: 1, label: 'English' }],
+        captions: [],
+      })),
+      bounds: vi.fn(async () => {}),
+      control: vi.fn(async () => {}),
+      stop: vi.fn(async () => {}),
+    };
+    window.rooms!.providers.nativePlayer = native;
+    window.rooms!.providers.acknowledgePlayback = vi.fn(async () => {});
+    let rendered!: ReturnType<typeof render>;
+    await act(async () => {
+      rendered = render(
+        <MemoryRouter initialEntries={['/media?player=1']}>
+          <PersonalPlaybackRuntime notify={() => {}} />
+        </MemoryRouter>,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    expect(native.start).toHaveBeenCalledExactlyOnceWith(source.url);
+    expect(hlsMock.instances).toHaveLength(0);
+    const video = rendered.container.querySelector('video')!;
+    expect(video.getAttribute('src')).toBeNull();
+    expect(window.rooms!.providers.acknowledgePlayback).toHaveBeenCalledExactlyOnceWith(source.url);
+    vi.spyOn(video, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 100, 640, 360));
+    const controlBar = rendered.container.querySelector('.personal-live-controls')!;
+    vi.spyOn(controlBar, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 380, 640, 80));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 130));
+    });
+    expect(native.bounds).toHaveBeenLastCalledWith(
+      'own-native-session',
+      expect.objectContaining({ y: 100, height: 280 }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Duraklat' }));
+    expect(native.control).toHaveBeenCalledWith('own-native-session', {
+      action: 'pause',
+      value: 1,
+    });
+    rendered.unmount();
+    expect(native.stop).toHaveBeenCalledWith('own-native-session');
+    vi.unstubAllGlobals();
+  });
+});
+
+it('exits its own fullscreen with Escape even while a player button holds focus', async () => {
+  const original = Object.getOwnPropertyDescriptor(document, 'fullscreenElement');
+  const originalExit = document.exitFullscreen;
+  const exit = vi.fn(async () => {});
+  const rendered = mount();
+  const stage = rendered.container.querySelector('.ref-personal-player')!;
+  Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => stage });
+  document.exitFullscreen = exit;
+  try {
+    const control = rendered.container.querySelector('button')!;
+    control.focus();
+    fireEvent.keyDown(control, { key: 'Escape' });
+    expect(exit).toHaveBeenCalledOnce();
+  } finally {
+    if (original) Object.defineProperty(document, 'fullscreenElement', original);
+    else Object.defineProperty(document, 'fullscreenElement', { configurable: true, value: null });
+    document.exitFullscreen = originalExit;
+  }
 });
