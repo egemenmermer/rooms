@@ -6,13 +6,14 @@ import { join, resolve, basename } from 'node:path';
 import { _electron } from '@playwright/test';
 
 assert.equal(process.platform, 'win32', 'Native Windows verification is required');
-const version = '0.1.18-rc.7',
-  sourceSha = 'b38f8e91b600bd4319e1ddc885b2831542790859';
+const { version } = JSON.parse(await readFile('package.json', 'utf8'));
+const sourceSha = spawnSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout.trim();
+assert(/^[a-f0-9]{40}$/.test(sourceSha), 'Source provenance required');
 const output = resolve('release'),
   installer = join(output, `ROOMS-${version}-windows-x64-setup.exe`);
 const installDir = resolve(process.env.ROOMS_WINDOWS_INSTALL_DIR ?? '');
 assert(
-  process.env.ROOMS_WINDOWS_INSTALL_DIR && basename(installDir) === 'rooms-rc7-installed',
+  process.env.ROOMS_WINDOWS_INSTALL_DIR && basename(installDir) === 'rooms-rc9-installed',
   'Use a dedicated disposable CI install directory',
 );
 const result = {
@@ -24,9 +25,9 @@ const result = {
   signed: false,
   checks: [],
   limitations: [
-    'Hosted Windows Server 2022 VM, not a physical Windows friend device',
+    'Hosted Windows Server 2025 VM, not a physical Windows friend device',
     'No live login, microphone, camera, room, private IPTV or DJ publication',
-    'RC7 Windows automatic updates unavailable; manual installers only',
+    'Windows automatic updates unavailable; manual installers only',
     'Unsigned candidate; no SmartScreen/security warning bypass',
   ],
 };
@@ -82,6 +83,9 @@ try {
   assert.equal(info.platform, 'win32');
   assert.equal(info.arch, 'x64');
   result.info = info;
+  result.nativePlayer = await page.evaluate(() => window.rooms.providers.nativePlayer.status());
+  assert.equal(result.nativePlayer.available, true, 'Installed VLC engine must load');
+  result.checks.push('Installed native VLC adapter and official runtime load');
   assert.equal(await app.evaluate(({ app }) => app.isPackaged), true);
   assert(page.url().startsWith('file:///'));
   assert.equal(await page.evaluate(() => typeof window.require), 'undefined');
@@ -109,7 +113,7 @@ try {
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
       'Horizontal overflow',
     );
-    await page.screenshot({ path: join(output, `windows-rc7-${width}.png`) });
+    await page.screenshot({ path: join(output, `windows-rc9-${width}.png`) });
   }
   result.checks.push(
     'Settings and 900x700 / 1440x900 Windows viewport screenshots, no horizontal overflow',
@@ -224,6 +228,6 @@ try {
   if (profile && resolve(profile).toLowerCase() === expectedProfile.toLowerCase())
     await rm(expectedProfile, { recursive: true, force: true });
   result.at = new Date().toISOString();
-  await writeFile(join(output, 'windows-rc7-results.json'), JSON.stringify(result, null, 2) + '\n');
+  await writeFile(join(output, 'windows-rc9-results.json'), JSON.stringify(result, null, 2) + '\n');
   console.log(JSON.stringify(result));
 }
