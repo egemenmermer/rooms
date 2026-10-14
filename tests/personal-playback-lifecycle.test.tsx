@@ -7,11 +7,22 @@ import { useCommunity } from '../apps/desktop/src/community';
 import { PersonalPlaybackRuntime } from '../apps/desktop/src/PersonalMedia';
 import { startPersonalPlayback, stopPersonalPlayback, usePersonalPlayback } from '../apps/desktop/src/personal-playback';
 vi.mock('../apps/desktop/src/realtime', () => ({ useRealtime: () => ({ status: 'disconnected', participants: [], tracks: [] }), toggleMic: vi.fn() }));
-vi.mock('hls.js', () => ({ default: class { static isSupported() { return false; } } }));
+const hlsMock=vi.hoisted(()=>({enabled:false,instances:[] as any[]}));
+vi.mock('hls.js', () => ({ default: class {
+ static isSupported(){return hlsMock.enabled;}
+ static Events={ERROR:'error',MANIFEST_PARSED:'manifest',AUDIO_TRACKS_UPDATED:'audio',SUBTITLE_TRACKS_UPDATED:'subtitles'};
+ static ErrorTypes={NETWORK_ERROR:'networkError',MEDIA_ERROR:'mediaError'};
+ static ErrorDetails={MANIFEST_PARSING_ERROR:'manifestParsingError'};
+ handlers=new Map<string,Function>();audioTracks=[];subtitleTracks=[];
+ startLoad=vi.fn();stopLoad=vi.fn();recoverMediaError=vi.fn();destroy=vi.fn();loadSource=vi.fn();attachMedia=vi.fn();
+ constructor(){hlsMock.instances.push(this);}
+ on(event:string,handler:Function){this.handlers.set(event,handler);}
+ emit(data:any){this.handlers.get('error')?.('error',data);}
+} }));
 const load = vi.fn(), pause = vi.fn();
 const source = { url: 'rooms-provider://e0536721-3849-40d9-9875-71d72cd19e76/stream', name: 'Authorized live source', live: true };
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.clearAllMocks();hlsMock.enabled=false;hlsMock.instances=[];
   Object.defineProperty(HTMLMediaElement.prototype, 'textTracks', { configurable: true, get: () => Object.assign(new EventTarget(), { length: 0 }) });
   Object.defineProperty(HTMLMediaElement.prototype, 'load', { configurable: true, value: load });
   Object.defineProperty(HTMLMediaElement.prototype, 'pause', { configurable: true, value: pause });
@@ -77,4 +88,31 @@ describe('persistent personal live player', () => {
     expect(window.rooms!.providers.acknowledgePlayback).toHaveBeenCalledExactlyOnceWith(source.url);
   });
 
+});
+
+
+describe('bounded live HLS recovery after genuine playing',()=>{
+ beforeEach(()=>{vi.useFakeTimers();hlsMock.enabled=true;});
+ afterEach(()=>vi.useRealTimers());
+ const playing=()=>{const result=mount(),video=result.container.querySelector('video')!;Object.defineProperty(video,'paused',{configurable:true,value:false});fireEvent.playing(video);return{...result,video,hls:hlsMock.instances[0]};};
+ it('retries temporary transport failures with delay, then stops after two attempts',()=>{
+  const {video,hls}=playing();const error={fatal:true,type:'networkError',response:{code:503}};
+  act(()=>hls.emit(error));expect(hls.startLoad).not.toHaveBeenCalled();
+  act(()=>vi.advanceTimersByTime(1500));expect(hls.startLoad).toHaveBeenCalledOnce();fireEvent.playing(video);
+  act(()=>hls.emit(error));act(()=>vi.advanceTimersByTime(3000));expect(hls.startLoad).toHaveBeenCalledTimes(2);fireEvent.playing(video);
+  act(()=>hls.emit(error));expect(screen.getByRole('heading',{name:'Kaynağa ulaşılamıyor'})).toBeTruthy();
+ });
+ it('reports authorization failure directly and never retries it',()=>{
+  const {hls}=playing();act(()=>hls.emit({fatal:true,type:'networkError',response:{code:403}}));
+  expect(screen.getByRole('heading',{name:'Kaynak erişimi reddedildi'})).toBeTruthy();act(()=>vi.advanceTimersByTime(15000));expect(hls.startLoad).not.toHaveBeenCalled();
+ });
+ it('attempts one actual decode recovery, with a deadline and no infinite loop',()=>{
+  const {video,hls}=playing();Object.defineProperty(video,'error',{configurable:true,value:{code:3}});fireEvent.error(video);
+  expect(hls.recoverMediaError).toHaveBeenCalledOnce();act(()=>vi.advanceTimersByTime(10000));
+  expect(screen.getByRole('heading',{name:'Bu medya biçimi oynatılamıyor'})).toBeTruthy();fireEvent.error(video);expect(hls.recoverMediaError).toHaveBeenCalledOnce();
+ });
+ it('cancels delayed reload when the account changes',async()=>{
+  const {hls}=playing();act(()=>hls.emit({fatal:true,type:'networkError',response:{code:503}}));
+  await act(async()=>useCommunity.setState({user:null}));act(()=>vi.advanceTimersByTime(15000));expect(hls.startLoad).not.toHaveBeenCalled();expect(hls.destroy).toHaveBeenCalled();
+ });
 });

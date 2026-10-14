@@ -23,3 +23,19 @@ describe('genuine private IPTV playback history',()=>{
  it('strictly validates history arguments and ignores unsafe persisted data',async()=>{mocks.stored[0].recentChannels=[{channelId:'https://example.com/private',watchedAt:new Date(now).toISOString()},{channelId:'unknown',watchedAt:'2026-02-31T00:00:00.000Z'},null,{channelId:'unknown',watchedAt:'invalid'}];const {invoke}=await setup();await invoke('channels',id);expect(await invoke('recent-channels',id)).toEqual([]);await expect(invoke('recent-channels',id,'extra')).rejects.toThrow('fields');await expect(invoke('acknowledge-playback','rooms-provider://bad/stream','extra')).rejects.toThrow('fields');});
  it('rejects RD playback receipts as IPTV history and records only their owning channel connection',async()=>{const rdId='33333333-3333-4333-8333-333333333333';mocks.stored.push({id:rdId,type:'real-debrid',name:'Real-Debrid',favorites:[],credentials:{client_id:'c',client_secret:'s',access_token:'access',refresh_token:'refresh',expiresAt:now+600000}});const {invoke}=await setup();mocks.fetch.mockResolvedValueOnce(new Response(JSON.stringify([{id:'personal',filename:'Personal video',download:'https://example.com/personal.mp4'}])));await invoke('rd-library');const rd=await invoke('rd-play','personal');await expect(invoke('acknowledge-playback',rd.url)).rejects.toThrow('expired');await expect(invoke('recent-channels',rdId)).rejects.toThrow('not available');const [row]=await invoke('channels',other);const playback=await invoke('play',other,row.id);await invoke('acknowledge-playback',playback.url);expect(await invoke('recent-channels',id)).toEqual([]);expect(await invoke('recent-channels',other)).toHaveLength(1);});
 });
+
+
+describe('Xtream human-readable channel groups',()=>{
+ it('resolves live categories without exposing provider URLs or credentials',async()=>{
+  mocks.stored=[{id,type:'xtream',name:'TV',url:'https://example.com/',username:'private-user',password:'private-password',favorites:[]}];
+  mocks.fetch.mockImplementation(async(raw:string)=>new Response(JSON.stringify(new URL(raw).searchParams.get('action')==='get_live_categories'?[{category_id:'7',category_name:'Türkiye · Spor'}]:[{stream_id:22,name:'Sports channel',category_id:7}])));
+  const {invoke}=await setup();const rows=await invoke('channels',id);
+  expect(rows).toEqual([{id:'22',name:'Sports channel',group:'Türkiye · Spor',favorite:false}]);
+  expect(JSON.stringify(rows)).not.toContain('private-');
+ });
+ it('keeps channels available with an explicit fallback when category metadata fails',async()=>{
+  mocks.stored=[{id,type:'xtream',name:'TV',url:'https://example.com/',username:'u',password:'p',favorites:[]}];
+  mocks.fetch.mockImplementation(async(raw:string)=>{if(new URL(raw).searchParams.get('action')==='get_live_categories')throw Error('metadata unavailable');return new Response(JSON.stringify([{stream_id:22,name:'Channel',category_id:7}]));});
+  const {invoke}=await setup();expect((await invoke('channels',id))[0].group).toBe('Grup 7');
+ });
+});
