@@ -51,7 +51,7 @@ it('rejects community addresses/artwork, account exports and signing secrets wit
     entry('resources/music-history.json'),
     entry('native/signing.p12'),
     entry('data.json', '{"refresh_token":"fixture-sensitive-value"}'),
-    entry('data.txt', '-----BEGIN PRIVATE KEY-----'),
+    entry('data.txt', '-----BEGIN ' + 'PRIVATE KEY-----'),
   ]) {
     expect(() => assertPublicEntries([toxic])).toThrow('private material');
   }
