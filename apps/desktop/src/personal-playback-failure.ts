@@ -1,6 +1,6 @@
 /** Classify only observed transport/media evidence; an opaque failure is not an expired account. */
 export type PersonalPlaybackFailure =
-  'expired' | 'unauthorized' | 'unsupported' | 'network' | 'unknown';
+  'expired' | 'unauthorized' | 'unsupported' | 'network' | 'stalled' | 'unknown';
 export function playbackFailure(httpStatus?: number, mediaCode?: number): PersonalPlaybackFailure {
   if (httpStatus === 410) return 'expired';
   if (httpStatus === 401 || httpStatus === 403) return 'unauthorized';
@@ -25,5 +25,13 @@ export const playbackFailureCopy: Record<
     message: 'Kaynak desteklenen bir ses ve video biçimi sunmuyor.',
   },
   network: { title: 'Kaynağa ulaşılamıyor', message: 'Bağlantını kontrol edip yeniden dene.' },
-  unknown: { title: 'Kaynak oynatılamadı', message: 'Kaynağını kontrol edip yeniden dene.' },
+  stalled: {
+    title: 'Yayın ilerlemiyor',
+    message: 'Yeni görüntü gelmedi. Yayını yeniden açmayı dene.',
+  },
+  unknown: {
+    title: 'Kaynak oynatılamadı',
+    message:
+      'ROOMS bu yayını açamadı; hata nedeni belirlenemedi. Oynatma seçeneklerinden başka bir oynatıcıyla kontrol edebilirsin.',
+  },
 };

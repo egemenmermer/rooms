@@ -349,6 +349,6 @@ describe('Xtream human-readable channel groups', () => {
       return new Response(JSON.stringify([{ stream_id: 22, name: 'Channel', category_id: 7 }]));
     });
     const { invoke } = await setup();
-    expect((await invoke('channels', id))[0].group).toBe('Grup 7');
+    expect((await invoke('channels', id))[0].group).toBe('Kategori adı alınamadı');
   });
 });

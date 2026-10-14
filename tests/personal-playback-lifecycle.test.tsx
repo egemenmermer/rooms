@@ -220,4 +220,26 @@ describe('bounded live HLS recovery after genuine playing', () => {
     expect(hls.startLoad).not.toHaveBeenCalled();
     expect(hls.destroy).toHaveBeenCalled();
   });
+  it('recovers a real stall without needing a fatal HLS event, and cancels on pause', () => {
+    const { video, hls } = playing();
+    fireEvent.waiting(video);
+    act(() => vi.advanceTimersByTime(20000));
+    act(() => vi.advanceTimersByTime(1500));
+    expect(hls.startLoad).toHaveBeenCalledOnce();
+    Object.defineProperty(video, 'currentTime', { configurable: true, value: 1 });
+    fireEvent.timeUpdate(video);
+    act(() => vi.advanceTimersByTime(15000));
+    expect(screen.queryByRole('heading', { name: 'Kaynağa ulaşılamıyor' })).toBeNull();
+    fireEvent.stalled(video);
+    fireEvent.pause(video);
+    act(() => vi.advanceTimersByTime(25000));
+    expect(hls.startLoad).toHaveBeenCalledOnce();
+  });
+  it('disposes a pending stall watchdog on account change', async () => {
+    const { video, hls } = playing();
+    fireEvent.stalled(video);
+    await act(async () => useCommunity.setState({ user: null }));
+    act(() => vi.advanceTimersByTime(30000));
+    expect(hls.startLoad).not.toHaveBeenCalled();
+  });
 });

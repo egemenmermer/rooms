@@ -1892,7 +1892,13 @@ function PersonalPlayer({
       disposed = false,
       hasPlayed = false;
     let retryTimer: ReturnType<typeof setTimeout> | undefined,
-      recoveryDeadline: ReturnType<typeof setTimeout> | undefined;
+      recoveryDeadline: ReturnType<typeof setTimeout> | undefined,
+      stallTimer: ReturnType<typeof setTimeout> | undefined;
+    let progressTime = video.currentTime;
+    const clearStall = () => {
+      clearTimeout(stallTimer);
+      stallTimer = undefined;
+    };
     const clearRecovery = () => {
       recovering = false;
       clearTimeout(retryTimer);
@@ -1900,6 +1906,7 @@ function PersonalPlayer({
     };
     const fail = (kind: PersonalPlaybackFailure) => {
       clearRecovery();
+      clearStall();
       if (disposed) return;
       setLoading(false);
       setFailure(kind);
@@ -1907,6 +1914,8 @@ function PersonalPlayer({
     };
     const recovered = () => {
       hasPlayed = true;
+      clearStall();
+      progressTime = video.currentTime;
       clearRecovery();
       setFailure(null);
       setError('');
@@ -1937,10 +1946,28 @@ function PersonalPlayer({
       }
       return true;
     };
+    const stalled = () => {
+      if (!media.live || !hasPlayed || disposed || video.paused || video.ended || stallTimer)
+        return;
+      stallTimer = setTimeout(() => {
+        stallTimer = undefined;
+        if (!disposed && !video.paused && !video.ended && !recover('network')) fail('stalled');
+      }, 20000);
+    };
+    const progressed = () => {
+      if (Math.abs(video.currentTime - progressTime) < 0.1) return;
+      progressTime = video.currentTime;
+      clearStall();
+      if (recovering) recovered();
+    };
     const nativeError = () => {
       if (video.error?.code === 3 && hls && !recover('unsupported')) fail('unsupported');
     };
     video.addEventListener('playing', recovered);
+    video.addEventListener('waiting', stalled);
+    video.addEventListener('stalled', stalled);
+    video.addEventListener('pause', clearStall);
+    video.addEventListener('timeupdate', progressed);
     video.addEventListener('error', nativeError);
     const readTracks = () => {
       if (hls) {
@@ -2006,8 +2033,13 @@ function PersonalPlayer({
     } else video.src = media.url;
     return () => {
       disposed = true;
+      clearStall();
       clearRecovery();
       video.removeEventListener('playing', recovered);
+      video.removeEventListener('waiting', stalled);
+      video.removeEventListener('stalled', stalled);
+      video.removeEventListener('pause', clearStall);
+      video.removeEventListener('timeupdate', progressed);
       video.removeEventListener('error', nativeError);
       video.removeEventListener('loadedmetadata', readTracks);
       video.textTracks.removeEventListener('addtrack', readTracks);
