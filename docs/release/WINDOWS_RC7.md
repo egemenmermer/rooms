@@ -9,3 +9,7 @@ Record issues before fixes: `build-notices.mjs` previously executed the pnpm shi
 Workflow builds on Windows Server 2022, checks source, installs the generated installer, launches its actual installed executable in a validated disposable profile, verifies bundled models/native APIs/CSP/onboarding and retains screenshots/results. No account, microphone, private stream, live room or server data is used.
 
 Pending: successful native CI receipt; owner decision on unsigned distribution/signing; physical Windows friend acceptance for login/voice/mic/noise, two-way screen/system audio, DJ, soundboard and games. Windows automatic updating is unavailable in RC7: existing updater deliberately enables only verified signed macOS Sparkle. Manual Windows installer updates remain available. Existing Mac assets/appcast must remain unchanged.
+
+## First native source-check result
+
+Run38535360423: TypeScript PASS;781/784 tests PASS. Three failures were `EPERM fsync` in Linux-only Access service registration persistence tests. That module is not in the desktop bundle. Do not weaken its POSIX durability or claim Windows server support. Windows client verification excludes only `tests/stoat-registration.test.ts` (four tests); the complete backend suite remains required on Ubuntu. Full Mac/Ubuntu verification of tooling7c9dd49 passed in run38535360105. First attempt did not package or publish.
