@@ -102,7 +102,7 @@ jobs:
         run: pnpm exec electron-builder --win nsis --x64 --publish never --config.win.artifactName=ROOMS-0.1.18-rc.9-windows-x64-setup.exe
       - name: Install and verify actual packaged application
         env:
-          ROOMS_WINDOWS_INSTALL_DIR: ${{ runner.temp }}\rooms-rc9-installed
+          ROOMS_WINDOWS_INSTALL_DIR: ${{ runner.temp }}\ROOMS-Çığ\rooms-rc9-installed
         run: node scripts/verify-windows-package.mjs
       - name: Preserve verified candidate and receipts
         if: always()
