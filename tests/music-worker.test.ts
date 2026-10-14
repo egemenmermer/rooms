@@ -70,3 +70,30 @@ it('resumes a stream with unknown provider duration at its actual paused positio
  await worker.command('unknown-length',lease,{type:'add',url:'https://www.youtube.com/watch?v=vKHu4uPOJVg'});await worker.command('unknown-length',lease,{type:'pause'});await worker.command('unknown-length',lease,{type:'play'});
  expect(playYouTube).toHaveBeenLastCalledWith('https://www.youtube.com/watch?v=vKHu4uPOJVg',12.5,expect.any(Function),expect.any(Function));
 });
+
+it('advances exactly once when a stream completes and ignores retired end events',async()=>{
+ const {publisher,lease}=await setup(),ends:Array<()=>void>=[];
+ const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube:async(_source,_position,ended)=>{ends.push(ended);}}),lease:async()=>lease,youtubeReferences:async()=>[{source:'https://www.youtube.com/watch?v=w2BTr6qsLFc',title:'One',durationSec:200},{source:'https://www.youtube.com/watch?v=vKHu4uPOJVg',title:'Two',durationSec:203}]});workers.push(worker);
+ const first=await worker.command('auto-room',lease,{type:'add',url:'https://www.youtube.com/playlist?list=PLabcdefgh123'});
+ ends[0]!();ends[0]!();await vi.waitFor(()=>expect(worker.snapshot('auto-room').currentId).toBe(first.queue[1]!.id));
+ expect(ends).toHaveLength(2);ends[0]!();await Promise.resolve();expect(worker.snapshot('auto-room').currentId).toBe(first.queue[1]!.id);
+ ends[1]!();await vi.waitFor(()=>expect(worker.snapshot('auto-room').status).toBe('paused'));expect(worker.snapshot('auto-room').positionSec).toBe(203);
+});
+it('seeks the active stream, preserves paused seeking, and rejects a retired track or out-of-range position',async()=>{
+ const {publisher,lease}=await setup(),playYouTube=vi.fn(async()=>{});
+ const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube}),lease:async()=>lease,youtubeReferences:async source=>[{source,title:'One',durationSec:200}]});workers.push(worker);
+ const state=await worker.command('seek-room',lease,{type:'add',url:'https://www.youtube.com/watch?v=w2BTr6qsLFc'}),id=state.currentId!;
+ await worker.command('seek-room',lease,{type:'seek',id,positionSec:42.5});expect(playYouTube).toHaveBeenLastCalledWith('https://www.youtube.com/watch?v=w2BTr6qsLFc',42.5,expect.any(Function),expect.any(Function));
+ await worker.command('seek-room',lease,{type:'pause'});const count=playYouTube.mock.calls.length;
+ const paused=await worker.command('seek-room',lease,{type:'seek',id,positionSec:90});expect(paused).toMatchObject({status:'paused',positionSec:90});expect(playYouTube).toHaveBeenCalledTimes(count);
+ await worker.command('seek-room',lease,{type:'play'});expect(playYouTube).toHaveBeenLastCalledWith(expect.any(String),90,expect.any(Function),expect.any(Function));
+ await expect(worker.command('seek-room',lease,{type:'seek',id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',positionSec:5})).rejects.toThrow('MUSIC_CURRENT_ITEM');
+ await expect(worker.command('seek-room',lease,{type:'seek',id,positionSec:201})).rejects.toThrow('MUSIC_SEEK_INVALID');
+});
+it('rechecks decoder generation after a seek ahead of an already queued end callback',async()=>{
+ const {publisher,lease}=await setup(),ends:Array<()=>void>=[];let gate:Promise<void>|undefined,release!:()=>void;
+ const worker=new MusicWorker({publisher:()=>({...publisher,playYouTube:async(_source,_position,ended)=>{ends.push(ended);}}),lease:async()=>{if(gate)await gate;return lease;},youtubeReferences:async()=>[{source:'https://www.youtube.com/watch?v=w2BTr6qsLFc',title:'One',durationSec:200},{source:'https://www.youtube.com/watch?v=vKHu4uPOJVg',title:'Two',durationSec:203}]});workers.push(worker);
+ const state=await worker.command('seek-race',lease,{type:'add',url:'https://www.youtube.com/playlist?list=PLabcdefgh123'});
+ gate=new Promise(resolve=>{release=resolve;});const seeking=worker.command('seek-race',lease,{type:'seek',id:state.currentId!,positionSec:15});await new Promise(resolve=>setTimeout(resolve,0));ends[0]!();release();await seeking;await new Promise(resolve=>setTimeout(resolve,0));
+ expect(worker.snapshot('seek-race').currentId).toBe(state.currentId);expect(ends).toHaveLength(2);
+});
