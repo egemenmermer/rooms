@@ -74,6 +74,14 @@ try {
     'Installed app differs from built package',
   );
   result.checks.push('Installed ASAR equals packaged ASAR');
+  const nativeCheck = spawnSync(process.execPath, ['scripts/verify-vlc-native.mjs'], {
+    env: { ...process.env, ROOMS_VLC_QA_NATIVE_ROOT: join(installDir, 'resources', 'native') },
+    stdio: 'inherit',
+    timeout: 180000,
+  });
+  assert.equal(nativeCheck.error, undefined);
+  assert.equal(nativeCheck.status, 0, 'Installed VLC synthetic output check failed');
+  result.checks.push('Installed VLC runtime displays synthetic video and plays muted PCM buffers');
   let page = await launch();
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));

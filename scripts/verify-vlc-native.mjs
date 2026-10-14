@@ -92,7 +92,7 @@ await build({
   platform: 'node',
   format: 'cjs',
 });
-const nativeRoot = resolve('dist-native');
+const nativeRoot = resolve(process.env.ROOMS_VLC_QA_NATIVE_ROOT ?? 'dist-native');
 await writeFile(
   join(output, 'main.cjs'),
   `

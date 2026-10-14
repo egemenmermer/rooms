@@ -96,6 +96,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Verify real native decoder and output
         run: node scripts/verify-vlc-native.mjs
+      - name: Verify actual personal-player UI and native IPC
+        run: node scripts/verify-vlc-ui.mjs
       - name: Build unsigned NSIS installer with public resource guard
         run: pnpm exec electron-builder --win nsis --x64 --publish never --config.win.artifactName=ROOMS-0.1.18-rc.9-windows-x64-setup.exe
       - name: Install and verify actual packaged application
@@ -114,3 +116,5 @@ jobs:
             release/windows-rc9-*.json
             release/windows-rc9-*.png
             .local/vlc-native-check/result.json
+            .local/vlc-ui-check/result.json
+            .local/vlc-ui-check/*.png
