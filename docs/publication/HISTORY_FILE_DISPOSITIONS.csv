@@ -1,0 +1,1141 @@
+path,versions,decision,reason
+.cursor/rules/rooms-design-delegation.mdc,1,exclude-path-history,private operational/reference evidence
+.env.example,1,retain,retained source/dependency/documentation
+.github/ISSUE_TEMPLATE/bug.yml,2,retain,retained source/dependency/documentation
+.github/dependabot.yml,2,retain,retained source/dependency/documentation
+.github/pull_request_template.md,2,retain,retained source/dependency/documentation
+.github/workflows/music-stereo.yml,2,retain,retained source/dependency/documentation
+.github/workflows/publication-hygiene.yml,1,retain,retained source/dependency/documentation
+.github/workflows/verify.yml,4,retain,retained source/dependency/documentation
+.github/workflows/windows-rc7-add.yml,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+.github/workflows/windows-rc7.yml,2,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+.github/workflows/windows-rc8-add.yml,2,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+.github/workflows/windows-rc8.yml,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+.gitignore,3,retain,retained source/dependency/documentation
+.gitleaks.toml,1,retain,retained source/dependency/documentation
+.prettierignore,1,retain,retained source/dependency/documentation
+.prettierrc.json,1,retain,retained source/dependency/documentation
+AGENTS.md,7,retain,retained source/dependency/documentation
+CODE_OF_CONDUCT.md,1,retain,retained source/dependency/documentation
+CONTRIBUTING.md,1,retain,retained source/dependency/documentation
+LICENSE,1,retain,retained source/dependency/documentation
+README.md,8,redact-known-private-literals,retained source/dependency/documentation
+SECURITY.md,1,retain,retained source/dependency/documentation
+apps/desktop/electron/activity-http.ts,4,retain,retained source/dependency/documentation
+apps/desktop/electron/agent.ts,3,retain,retained source/dependency/documentation
+apps/desktop/electron/caption-file.ts,2,retain,retained source/dependency/documentation
+apps/desktop/electron/capture-sources.ts,2,retain,retained source/dependency/documentation
+apps/desktop/electron/community.ts,18,retain,retained source/dependency/documentation
+apps/desktop/electron/conversation-vault.ts,3,retain,retained source/dependency/documentation
+apps/desktop/electron/dm-call-http.ts,3,retain,retained source/dependency/documentation
+apps/desktop/electron/main.ts,9,retain,retained source/dependency/documentation
+apps/desktop/electron/media-capabilities.ts,2,retain,retained source/dependency/documentation
+apps/desktop/electron/native-links.ts,2,retain,retained source/dependency/documentation
+apps/desktop/electron/notifications.ts,6,retain,retained source/dependency/documentation
+apps/desktop/electron/password-recovery.ts,2,retain,retained source/dependency/documentation
+apps/desktop/electron/playlist-file.ts,2,retain,retained source/dependency/documentation
+apps/desktop/electron/preload.ts,18,retain,retained source/dependency/documentation
+apps/desktop/electron/profile.ts,2,retain,retained source/dependency/documentation
+apps/desktop/electron/provider-contracts.ts,5,retain,retained source/dependency/documentation
+apps/desktop/electron/providers.ts,6,retain,retained source/dependency/documentation
+apps/desktop/electron/updates.ts,4,retain,retained source/dependency/documentation
+apps/desktop/electron/whiteboard-export.ts,3,retain,retained source/dependency/documentation
+apps/desktop/electron/whiteboard-raster.ts,2,retain,retained source/dependency/documentation
+apps/desktop/electron/window-policy.ts,2,retain,retained source/dependency/documentation
+apps/desktop/index.html,3,retain,retained source/dependency/documentation
+apps/desktop/native/sparkle.mm,1,retain,retained source/dependency/documentation
+apps/desktop/public/artwork/blue-hour.jpg,1,retain,retained source/dependency/documentation
+apps/desktop/public/blue-hour.mp4,1,retain,retained source/dependency/documentation
+apps/desktop/public/dj/README.md,2,retain-historical-reference-without-artwork,Historical code/reference only; referenced private binary removed. Preserve current legacy-title migration behavior.
+apps/desktop/public/dj/default-dj.png,1,retain,retained source/dependency/documentation
+apps/desktop/public/dj/recep-dj.png,1,exclude-path-history,private-community artwork without established redistribution rights
+apps/desktop/public/dj/recep-dj.webm,1,exclude-path-history,private-community artwork without established redistribution rights
+apps/desktop/public/icon.icns,2,retain,retained source/dependency/documentation
+apps/desktop/public/icon.png,2,retain,retained source/dependency/documentation
+apps/desktop/public/kiraathane/interior.jpg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/app-icons/ROOMS.ico,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/app-icons/app-icon-1024.png,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/app-icons/app-icon-128.png,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/app-icons/app-icon-16.png,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/app-icons/app-icon-256.png,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/app-icons/app-icon-32.png,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/app-icons/app-icon-64.png,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/app-icons/app-icon-master.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/app-icons/app-icon-small.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/brand/illustration-empty.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/brand/illustration-offline.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/brand/illustration-permission.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/brand/logo-compact-black.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/brand/logo-compact-lilac.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/brand/logo-compact-white.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/brand/logo-lockup-black.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/brand/logo-lockup-lilac.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/brand/logo-lockup-white.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/brand/logo-symbol-black.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/brand/logo-symbol-lilac.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/brand/logo-symbol-white.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/brand/logo-wordmark-black.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/brand/logo-wordmark-lilac.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/brand/logo-wordmark-white.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/fonts/InterVariable.woff2,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/fonts/OFL-Inter.txt,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/alert-circle.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/alert-triangle.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/arrow-down.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/arrow-left.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/arrow-right.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/arrow-up.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/bell.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/board.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/bookmark.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/bot.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/calendar.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/cards.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/cast.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/check-circle.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/check.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/chevron-down.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/chevron-left.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/chevron-right.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/circle.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/close.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/club.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/copy.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/download.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/edit.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/expand.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/external-link.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/eye.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/file-x.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/film.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/folder.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/game.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/github.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/grid.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/hash.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/headphones.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/heart.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/help.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/history.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/home.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/image.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/info.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/key.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/layers.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/link.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/list.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/lock.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/logout.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/message-circle.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/mic-off.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/mic.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/minus.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/monitor.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/moon.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/more-horizontal.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/mouse-pointer.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/move.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/paperclip.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/pause.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/phone-off.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/phone.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/pin.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/play.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/plus.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/poll.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/queue.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/refresh-cw.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/reorder.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/save.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/search.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/send.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/settings.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/shield.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/sliders.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/smile.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/sort.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/spade.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/sparkles.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/square.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/star-filled.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/star.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/sticky-note.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/sun.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/trash.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/triangle.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/trophy.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/tv.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/type.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/undo.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/upload.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/user-plus.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/user.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/users.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/video-off.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/video.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/volume-off.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/volume.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/wifi-off.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/icons/wifi.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/tray/tray-template-22.png,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/tray/tray-template-44.png,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/tray/tray-template-white-22.png,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/tray/tray-template-white-44.png,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/tray/tray-template-white.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/reference-brand/tray/tray-template.svg,1,retain,retained source/dependency/documentation
+apps/desktop/public/tray.png,1,retain,retained source/dependency/documentation
+apps/desktop/src/About.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/Activities.tsx,11,retain,retained source/dependency/documentation
+apps/desktop/src/Agent.tsx,5,retain,retained source/dependency/documentation
+apps/desktop/src/AgentAutomation.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/AgentTaskSurface.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/App.tsx,23,retain,retained source/dependency/documentation
+apps/desktop/src/ArtifactPreview.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/AssistantManagement.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/ChannelNotifications.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/ChannelPermissionsSurface.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/ChannelTools.tsx,6,retain,retained source/dependency/documentation
+apps/desktop/src/ChatAgent.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/Cinema.tsx,6,retain,retained source/dependency/documentation
+apps/desktop/src/CinemaPlayback.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/CinemaScreenStage.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/CinemaSourceCheck.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/CommunityManagementEntry.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/CommunityManagementSurface.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/CommunitySettings.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/ConnectionPane.tsx,11,redact-known-private-literals,retained source/dependency/documentation
+apps/desktop/src/DJCharacter.tsx,3,retain-historical-reference-without-artwork,Historical code/reference only; referenced private binary removed. Preserve current legacy-title migration behavior.
+apps/desktop/src/DesktopWindowSettings.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/DmCallRuntime.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/FriendRequestButton.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/FriendsPage.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/Games.tsx,10,retain,retained source/dependency/documentation
+apps/desktop/src/Home.tsx,8,retain,retained source/dependency/documentation
+apps/desktop/src/Invite.tsx,4,retain,retained source/dependency/documentation
+apps/desktop/src/Kiraathane.tsx,4,retain,retained source/dependency/documentation
+apps/desktop/src/Messages.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/MiniPlaybackChrome.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/MinimalSidebar.tsx,4,retain,retained source/dependency/documentation
+apps/desktop/src/MusicDJ.tsx,13,retain-historical-reference-without-artwork,Historical code/reference only; referenced private binary removed. Preserve current legacy-title migration behavior.
+apps/desktop/src/NoiseComparison.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/ParticipantAudioMenu.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/PasswordResetPane.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/People.tsx,7,retain,retained source/dependency/documentation
+apps/desktop/src/PersonalMedia.tsx,6,retain,retained source/dependency/documentation
+apps/desktop/src/PersonalMediaMetadata.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/PersonalSidebar.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/Providers.tsx,4,retain,retained source/dependency/documentation
+apps/desktop/src/PushToTalk.tsx,4,retain,retained source/dependency/documentation
+apps/desktop/src/QuietMenu.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/RealSocial.tsx,17,retain,retained source/dependency/documentation
+apps/desktop/src/ReferenceIcon.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/ReferenceOnboarding.tsx,7,redact-known-private-literals,retained source/dependency/documentation
+apps/desktop/src/ReferenceRDConnection.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/Reminder.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/RoomConversation.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/RoomMembers.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/ScreenShareGallery.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/Settings.tsx,24,retain,retained source/dependency/documentation
+apps/desktop/src/SettingsConnection.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/SharedCinema.tsx,1,retain,retained source/dependency/documentation
+apps/desktop/src/Social.tsx,1,retain,retained source/dependency/documentation
+apps/desktop/src/SocialReferenceEntry.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/SocialSurfaces.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/Soundboard.tsx,6,retain,retained source/dependency/documentation
+apps/desktop/src/SystemState.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/Together.tsx,6,retain,retained source/dependency/documentation
+apps/desktop/src/Updates.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/VoiceAvatar.tsx,4,retain,retained source/dependency/documentation
+apps/desktop/src/VoiceContext.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/VoiceRoomViewActions.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/VoiceSidebar.tsx,8,retain,retained source/dependency/documentation
+apps/desktop/src/Whiteboard.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/YouTube.tsx,8,retain,retained source/dependency/documentation
+apps/desktop/src/activity.ts,6,retain,retained source/dependency/documentation
+apps/desktop/src/appearance-preferences.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/channel-access.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/cinema-session.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/community-branding.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/community.ts,9,retain,retained source/dependency/documentation
+apps/desktop/src/conversation-cache.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/default-server.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/dev/AgentTaskEntry.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/dev/PersonalMediaEntry.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/dev/S04RecoveryEntry.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/dev/S59S61Entry.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/dev/S62SchedulesEntry.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/dev/S63AutomationEntry.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/dev/agent-task-fixture.ts,3,redact-known-private-literals,retained source/dependency/documentation
+apps/desktop/src/dev/appearance-fixture.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/dev/cinema-fixture.ts,3,retain,retained source/dependency/documentation
+apps/desktop/src/dev/community-management-fixture.ts,3,redact-known-private-literals,retained source/dependency/documentation
+apps/desktop/src/dev/fixture-navigation.ts,1,retain,retained source/dependency/documentation
+apps/desktop/src/dev/games-fixture.ts,4,retain,retained source/dependency/documentation
+apps/desktop/src/dev/media-fixture.ts,3,retain,retained source/dependency/documentation
+apps/desktop/src/dev/mini-playback-fixture.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/dev/notification-fixture.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/dev/personal-media-fixture.ts,4,retain,retained source/dependency/documentation
+apps/desktop/src/dev/personal-playback-fixture.ts,3,retain,retained source/dependency/documentation
+apps/desktop/src/dev/reference-fixtures.ts,3,retain,retained source/dependency/documentation
+apps/desktop/src/dev/social-detail-fixture.ts,3,redact-known-private-literals,retained source/dependency/documentation
+apps/desktop/src/discord-room.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/dj-links.ts,3,retain,retained source/dependency/documentation
+apps/desktop/src/dm-call.ts,4,retain,retained source/dependency/documentation
+apps/desktop/src/env.d.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/i18n.ts,7,retain,retained source/dependency/documentation
+apps/desktop/src/kiraathane.css,4,retain,retained source/dependency/documentation
+apps/desktop/src/last-conversation.ts,4,retain,retained source/dependency/documentation
+apps/desktop/src/main.tsx,8,retain,retained source/dependency/documentation
+apps/desktop/src/messages.tr.ts,3,retain,retained source/dependency/documentation
+apps/desktop/src/minimal-room.css,3,retain,retained source/dependency/documentation
+apps/desktop/src/music-dj.css,7,retain,retained source/dependency/documentation
+apps/desktop/src/onboarding.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/participant-audio-menu.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/personal-playback-failure.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/personal-playback.ts,3,retain,retained source/dependency/documentation
+apps/desktop/src/personal-provider-runtime.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/query-client.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/realtime.ts,14,retain,retained source/dependency/documentation
+apps/desktop/src/reference-about.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/reference-agent-automation.css,3,retain,retained source/dependency/documentation
+apps/desktop/src/reference-agent-management.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/reference-agent-task.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/reference-agent.css,3,retain,retained source/dependency/documentation
+apps/desktop/src/reference-chat.css,3,retain,retained source/dependency/documentation
+apps/desktop/src/reference-cinema.css,4,retain,retained source/dependency/documentation
+apps/desktop/src/reference-community-management.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/reference-community-settings.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/reference-dm-call.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/reference-games.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/reference-home.css,3,retain,retained source/dependency/documentation
+apps/desktop/src/reference-inset-player.css,4,retain,retained source/dependency/documentation
+apps/desktop/src/reference-media.css,4,retain,retained source/dependency/documentation
+apps/desktop/src/reference-mini-playback.css,3,retain,retained source/dependency/documentation
+apps/desktop/src/reference-onboarding.css,3,retain,retained source/dependency/documentation
+apps/desktop/src/reference-rd-connection.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/reference-settings.css,7,retain,retained source/dependency/documentation
+apps/desktop/src/reference-shell.css,3,retain,retained source/dependency/documentation
+apps/desktop/src/reference-social.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/reference-system.css,3,retain,retained source/dependency/documentation
+apps/desktop/src/reference-together.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/reference-tokens.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/reference-voice.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/room-event-sounds.tsx,2,retain,retained source/dependency/documentation
+apps/desktop/src/runtime-sources.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/screen-handoff.tsx,3,retain,retained source/dependency/documentation
+apps/desktop/src/screen-share-gallery.css,2,retain,retained source/dependency/documentation
+apps/desktop/src/soundboard-audio.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/store.ts,10,retain,retained source/dependency/documentation
+apps/desktop/src/styles.css,12,retain,retained source/dependency/documentation
+apps/desktop/src/use-community-branding.ts,2,retain,retained source/dependency/documentation
+apps/desktop/src/voice-directory.ts,4,retain,retained source/dependency/documentation
+apps/desktop/src/youtube-controls.css,3,retain,retained source/dependency/documentation
+apps/distribution/public/index.html,1,retain,retained source/dependency/documentation
+apps/distribution/public/portal.css,1,retain,retained source/dependency/documentation
+apps/distribution/public/portal.js,1,retain,retained source/dependency/documentation
+apps/distribution/server.mjs,2,redact-known-private-literals,retained source/dependency/documentation
+apps/services/access/dm-calls.ts,2,retain,retained source/dependency/documentation
+apps/services/access/music-gateway.ts,5,retain,retained source/dependency/documentation
+apps/services/access/permissions.ts,2,retain,retained source/dependency/documentation
+apps/services/access/registration.ts,2,retain,retained source/dependency/documentation
+apps/services/access/server.ts,10,retain,retained source/dependency/documentation
+apps/services/access/soundboard.ts,2,retain,retained source/dependency/documentation
+apps/services/access/start.ts,6,retain,retained source/dependency/documentation
+apps/services/access/stoat-authorization.ts,3,retain,retained source/dependency/documentation
+apps/services/access/stoat-permissions.ts,3,retain,retained source/dependency/documentation
+apps/services/activities/engine.ts,4,retain,retained source/dependency/documentation
+apps/services/activities/games.ts,3,retain,retained source/dependency/documentation
+apps/services/activities/operational-events.ts,2,retain,retained source/dependency/documentation
+apps/services/activities/postgres.ts,4,retain,retained source/dependency/documentation
+apps/services/activities/repository.ts,4,retain,retained source/dependency/documentation
+apps/services/activities/server.ts,7,retain,retained source/dependency/documentation
+apps/services/activities/start.ts,3,retain,retained source/dependency/documentation
+apps/services/activities/storage-codec.ts,2,retain,retained source/dependency/documentation
+apps/services/activities/youtube-player.ts,4,retain,retained source/dependency/documentation
+apps/services/agent/authority.ts,3,retain,retained source/dependency/documentation
+apps/services/agent/browser.ts,2,retain,retained source/dependency/documentation
+apps/services/agent/connectors.ts,2,retain,retained source/dependency/documentation
+apps/services/agent/discord.ts,2,retain,retained source/dependency/documentation
+apps/services/agent/repository.ts,3,retain,retained source/dependency/documentation
+apps/services/agent/server.ts,4,retain,retained source/dependency/documentation
+apps/services/agent/start.ts,3,retain,retained source/dependency/documentation
+apps/services/agent/stoat-bot.ts,2,retain,retained source/dependency/documentation
+apps/services/agent/worker.ts,3,retain,retained source/dependency/documentation
+apps/services/music/audio-file.ts,3,retain,retained source/dependency/documentation
+apps/services/music/package.json,2,retain,retained source/dependency/documentation
+apps/services/music/publisher.ts,8,retain,retained source/dependency/documentation
+apps/services/music/song-match.ts,2,retain,retained source/dependency/documentation
+apps/services/music/song-metadata.ts,2,retain,retained source/dependency/documentation
+apps/services/music/start.ts,3,retain,retained source/dependency/documentation
+apps/services/music/worker.ts,8,retain,retained source/dependency/documentation
+apps/services/music/youtube-bridge.ts,2,retain,retained source/dependency/documentation
+apps/services/music/youtube-bridge/.gitignore,1,retain,retained source/dependency/documentation
+apps/services/music/youtube-bridge/README.md,1,retain,retained source/dependency/documentation
+apps/services/music/youtube-bridge/pom.xml,1,retain,retained source/dependency/documentation
+apps/services/music/youtube-bridge/src/main/java/rooms/PcmStream.java,2,retain,retained source/dependency/documentation
+apps/services/music/youtube-source.ts,9,retain,retained source/dependency/documentation
+docs/ACTIVITY_PROTOCOL.md,1,retain,retained source/dependency/documentation
+docs/AGENT_DEPLOYMENT.md,2,retain,retained source/dependency/documentation
+docs/APPLE_SIGNED_DELIVERY.md,1,exclude-path-history,private operational/reference evidence
+docs/ARCHITECTURE.md,3,retain,retained source/dependency/documentation
+docs/ASSETS.md,1,retain,retained source/dependency/documentation
+docs/CONTINUATION_CHECKPOINT.md,37,exclude-path-history,private operational/reference evidence
+docs/CUSTOMIZATION.md,1,retain,retained source/dependency/documentation
+docs/DEPLOYMENT.md,3,exclude-path-history,private operational/reference evidence
+docs/DESIGN_SYSTEM.md,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+docs/DEVELOPMENT.md,1,retain,retained source/dependency/documentation
+docs/FEATURE_MATRIX.md,16,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+docs/FRIEND_PREVIEW_INSTALL.md,12,exclude-path-history,private operational/reference evidence
+docs/GAME_RULES.md,1,retain,retained source/dependency/documentation
+docs/HISTORY_PUBLICATION_REVIEW.md,1,retain,retained source/dependency/documentation
+docs/IMPLEMENTATION_PROGRESS.md,23,exclude-path-history,private operational/reference evidence
+docs/LEGACY_SPACEBAR_DEPLOYMENT.md,1,exclude-path-history,private operational/reference evidence
+docs/MANUAL_CHECKS.md,6,exclude-path-history,private operational/reference evidence
+docs/MEDIA_TRANSPORT.md,1,retain,retained source/dependency/documentation
+docs/MILESTONES_0_3.md,2,exclude-path-history,private operational/reference evidence
+docs/NOISE_SUPPRESSION_V2.md,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+docs/OVERNIGHT_DEPLOYMENT_PLAN.md,25,exclude-path-history,private operational/reference evidence
+docs/PACKAGE_TEST_RESULTS.json,6,retain,retained source/dependency/documentation
+docs/PACKAGE_TEST_RESULTS_0.1.6.json,1,exclude-path-history,private operational/reference evidence
+docs/PACKAGE_TEST_RESULTS_0.1.7.json,1,exclude-path-history,private operational/reference evidence
+docs/PACKAGE_TEST_RESULTS_0.1.8.json,1,exclude-path-history,private operational/reference evidence
+docs/PACKAGE_TEST_RESULTS_0.1.9_BEFORE_MINIMAL_COPY.json,1,exclude-path-history,private operational/reference evidence
+docs/PERFORMANCE_CURRENT.json,1,exclude-path-history,private operational/reference evidence
+docs/POSTGRES_ACTIVITY_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/PRODUCTION_ONBOARDING_QA.md,1,exclude-path-history,private operational/reference evidence
+docs/PUBLICATION_PREVIEW.md,2,retain,retained source/dependency/documentation
+docs/REA_DISCORD_AUDIO_STUDY.md,1,exclude-path-history,private operational/reference evidence
+docs/RELEASE_NOTES_0.1.5.md,1,exclude-path-history,private operational/reference evidence
+docs/RELEASE_SHA256.txt,2,exclude-path-history,private operational/reference evidence
+docs/RELEASE_SHA256_0.1.1.txt,1,exclude-path-history,private operational/reference evidence
+docs/RELEASE_SHA256_0.1.14.txt,1,exclude-path-history,private operational/reference evidence
+docs/RELEASE_SHA256_0.1.2.txt,1,exclude-path-history,private operational/reference evidence
+docs/RELEASE_SHA256_0.1.3.txt,1,exclude-path-history,private operational/reference evidence
+docs/RELEASE_SHA256_0.1.4.txt,1,exclude-path-history,private operational/reference evidence
+docs/RELEASE_SHA256_0.1.6.txt,1,exclude-path-history,private operational/reference evidence
+docs/RELEASE_SHA256_0.1.7.txt,1,exclude-path-history,private operational/reference evidence
+docs/RELEASE_SHA256_0.1.8.txt,1,exclude-path-history,private operational/reference evidence
+docs/RELEASING.md,1,retain,retained source/dependency/documentation
+docs/REMAINING_PHASES_PLAN.md,3,exclude-path-history,private operational/reference evidence
+docs/REPOSITORY_HISTORY.md,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+docs/RISKS.md,1,exclude-path-history,private operational/reference evidence
+docs/RNNOISE_PROTOTYPE.md,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+docs/SELF_HOSTING.md,1,retain,retained source/dependency/documentation
+docs/SERVER_ASSESSMENT.md,1,exclude-path-history,private operational/reference evidence
+docs/SPACEBAR_COMPATIBILITY.md,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+docs/SPACEBAR_PRESENCE_EVIDENCE.json,1,exclude-path-history,private operational/reference evidence
+docs/SPACEBAR_TEST_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/THIRD_PARTY_NOTICES.md,5,retain,retained source/dependency/documentation
+docs/VERIFICATION.md,1,exclude-path-history,private operational/reference evidence
+docs/VISUAL_QA.md,1,exclude-path-history,private operational/reference evidence
+docs/project/CONTRIBUTOR_START.md,2,exclude-path-history,private operational/reference evidence
+docs/project/README.md,1,exclude-path-history,private operational/reference evidence
+docs/project/architecture.md,1,exclude-path-history,private operational/reference evidence
+docs/project/assets/topology.svg,1,exclude-path-history,private operational/reference evidence
+docs/project/data.md,1,exclude-path-history,private operational/reference evidence
+docs/project/development.md,1,exclude-path-history,private operational/reference evidence
+docs/project/operations.md,1,exclude-path-history,private operational/reference evidence
+docs/project/repository.md,1,exclude-path-history,private operational/reference evidence
+docs/project/runtime-flows.md,1,exclude-path-history,private operational/reference evidence
+docs/project/security.md,1,exclude-path-history,private operational/reference evidence
+docs/project/services.md,1,exclude-path-history,private operational/reference evidence
+docs/reference/ROOMS_BEGIN_IMPLEMENTATION.txt,1,exclude-path-history,private operational/reference evidence
+docs/reference/ROOMS_DESKTOP_MASTER_PROMPT.md,1,exclude-path-history,private operational/reference evidence
+docs/reference/ROOMS_START_HERE.txt,1,exclude-path-history,private operational/reference evidence
+docs/reference/ROOMS_VISUAL_REFERENCES.html,1,exclude-path-history,private operational/reference evidence
+docs/reference/ROOMS_VISUAL_REFERENCES.md,1,exclude-path-history,private operational/reference evidence
+docs/release/ACCESS_BUDGET_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/ACCESS_RC7_DEPLOYMENT.json,1,exclude-path-history,private operational/reference evidence
+docs/release/AUDIT_REPORT.md,2,exclude-path-history,private operational/reference evidence
+docs/release/COMMUNITY_SOUNDBOARD_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/CURRENT_STATE.md,1,exclude-path-history,private operational/reference evidence
+docs/release/DEPENDENCY_TRIAGE.md,1,exclude-path-history,private operational/reference evidence
+docs/release/DISCORD_ROOM_VIEW.md,2,exclude-path-history,private operational/reference evidence
+docs/release/DISTRIBUTION_PLATFORM_DOWNLOADS.md,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_CLOCK_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_COUNTER_FOLLOWUP.md,7,exclude-path-history,private operational/reference evidence
+docs/release/DJ_LINUX_SOURCE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_LINUX_STEREO_DEPLOYMENT.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_LINUX_STEREO_IMAGE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_LINUX_STEREO_PROVENANCE.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_LINUX_STEREO_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_LINUX_STEREO_SOURCE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_LINUX_STOCK_STEREO_BASELINE.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_LOCAL_NATIVE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_MIRRORING.md,6,exclude-path-history,private operational/reference evidence
+docs/release/DJ_OAUTH_LINUX_SOURCE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_OAUTH_PLAYLIST_ROOM_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_OWNER_SOURCE_REJECTION.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_PROVIDER_REJECTION_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_QUEUE_RECOVERY_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_QUEUE_SEEK_SEARCH.md,2,exclude-path-history,private operational/reference evidence
+docs/release/DJ_QUEUE_SEEK_SEARCH_RESULTS.json,2,exclude-path-history,private operational/reference evidence
+docs/release/DJ_QUIET_LISTENER_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_YOUTUBE_BRIDGE_DEPLOYMENT.json,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_YOUTUBE_BRIDGE_FIX.md,1,exclude-path-history,private operational/reference evidence
+docs/release/DJ_YOUTUBE_OAUTH_SOURCE_RESULTS.json,2,exclude-path-history,private operational/reference evidence
+docs/release/DJ_YOUTUBE_SOURCE_LIBRARY_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/EVIDENCE.md,6,exclude-path-history,private operational/reference evidence
+docs/release/FEATURE_INVENTORY.md,2,exclude-path-history,private operational/reference evidence
+docs/release/GAME_TABLE_ENTRY_900_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/GAME_TABLE_ENTRY_BEFORE.json,1,exclude-path-history,private operational/reference evidence
+docs/release/GAME_TABLE_ENTRY_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/GAME_THREE_CLIENT_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/IMPLEMENTATION_STATUS.md,17,exclude-path-history,private operational/reference evidence
+docs/release/KIRAATHANE_SPEAKING_UI.md,6,exclude-path-history,private operational/reference evidence
+docs/release/LISTENER_PERSISTENCE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/MAIN_INTEGRATION.md,2,exclude-path-history,private operational/reference evidence
+docs/release/MINIMAL_ROOM_UI.md,4,exclude-path-history,private operational/reference evidence
+docs/release/MUSICBOT_REVIEW.md,1,exclude-path-history,private operational/reference evidence
+docs/release/NOISE_INTEGRATION.md,1,exclude-path-history,private operational/reference evidence
+docs/release/NOISE_INTEGRATION_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/OPEN_SOURCE_READINESS_2026_10_14.md,1,exclude-path-history,private operational/reference evidence
+docs/release/PHASE_FOUR_LOCAL.md,3,exclude-path-history,private operational/reference evidence
+docs/release/PHASE_ONE_RESULTS.md,2,exclude-path-history,private operational/reference evidence
+docs/release/PHASE_THREE_DATA.md,2,exclude-path-history,private operational/reference evidence
+docs/release/PHASE_TWO_DEFECTS.md,2,exclude-path-history,private operational/reference evidence
+docs/release/POST_LAUNCH.md,1,exclude-path-history,private operational/reference evidence
+docs/release/POST_RC7_MEDIA_ISSUES.md,2,exclude-path-history,private operational/reference evidence
+docs/release/PRIVATE_ACCEPTANCE.md,10,exclude-path-history,private operational/reference evidence
+docs/release/PROJECT_HISTORY.md,1,exclude-path-history,private operational/reference evidence
+docs/release/QA_MATRIX.md,4,exclude-path-history,private operational/reference evidence
+docs/release/RC7_QA_PROFILE_RECOVERY.json,1,exclude-path-history,private operational/reference evidence
+docs/release/RC_0_1_18_2_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/RC_0_1_18_3_INSTALLATION.json,1,exclude-path-history,private operational/reference evidence
+docs/release/RC_0_1_18_3_PUBLICATION.json,1,exclude-path-history,private operational/reference evidence
+docs/release/RC_0_1_18_3_RESULTS.json,3,exclude-path-history,private operational/reference evidence
+docs/release/RC_0_1_18_4_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/RC_0_1_18_5_INSTALLATION.json,1,exclude-path-history,private operational/reference evidence
+docs/release/RC_0_1_18_5_RESULTS.json,2,exclude-path-history,private operational/reference evidence
+docs/release/RC_0_1_18_6_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/RC_0_1_18_7_NOTES.md,2,exclude-path-history,private operational/reference evidence
+docs/release/RC_0_1_18_7_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/RC_0_1_18_8_NOTES.md,1,exclude-path-history,private operational/reference evidence
+docs/release/RC_0_1_18_8_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/RC_0_1_18_8_TRIAL.md,2,exclude-path-history,private operational/reference evidence
+docs/release/RC_0_1_18_RESULTS.json,2,exclude-path-history,private operational/reference evidence
+docs/release/README.md,2,exclude-path-history,private operational/reference evidence
+docs/release/RELEASE_BLOCKERS.md,7,exclude-path-history,private operational/reference evidence
+docs/release/RELEASE_CHECKLIST.md,1,exclude-path-history,private operational/reference evidence
+docs/release/RELEASE_READINESS.md,4,exclude-path-history,private operational/reference evidence
+docs/release/REPOSITORY_CLEANUP.md,1,exclude-path-history,private operational/reference evidence
+docs/release/ROADMAP_TO_V1.md,2,exclude-path-history,private operational/reference evidence
+docs/release/ROOM_MEDIA_FOLLOWUP.md,1,exclude-path-history,private operational/reference evidence
+docs/release/ROOM_MULTI_SHARE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/ROOM_SHARE_LAYOUT_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/ROOM_SWITCH_FOLLOWUP.md,3,exclude-path-history,private operational/reference evidence
+docs/release/SMTP_RECOVERY_SETUP.md,2,exclude-path-history,private operational/reference evidence
+docs/release/SPARKLE_UPDATE_ACCEPTANCE.md,1,exclude-path-history,private operational/reference evidence
+docs/release/SPARKLE_UPDATE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/V1_SCOPE.md,2,exclude-path-history,private operational/reference evidence
+docs/release/WINDOWS_RC7.md,4,exclude-path-history,private operational/reference evidence
+docs/release/WINDOWS_RC7_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/WINDOWS_RC8_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+docs/release/evidence/audit-agent-signedout.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/release/evidence/audit-onboarding.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/rooms-implementation/BRIEF.md,5,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/CHECKPOINT.md,38,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/CINEMA_LIFECYCLE_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/CINEMA_SYNC_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/DECISIONS.md,7,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/DM_CALL_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/MUSIC_BOT.md,7,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/PROGRESS.json,13,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/REPO_AUDIT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/SPARKLE_DELIVERY.md,3,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/USABILITY_REMEDIATION.md,3,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S33-default.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S33-empty.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S33-iptv_removed.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S33-offline.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S34-checking.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S34-default.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S34-edit.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S34-error.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S34-remove.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S34-xtream.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S35-default.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S35-empty.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S35-no_guide.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S37-cancelled.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S37-connected.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S37-default.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S37-error.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S37-expired.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S37-waiting.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S38-default.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S38-details.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S38-empty.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S63-confirm.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S63-default.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S63-enabled.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/S63-readonly.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/appearance/S66-1280x800.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/appearance/S66-1920x1080.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/appearance/S66-900x700.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/appearance/S66-compact.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/appearance/S66-default.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/appearance/S66-focus.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/appearance/S66-reduced.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/appearance/drawer.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/chat-font/result.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S04-default.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S04-expired.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S04-reset.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S04-sent.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S36-buffering.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S36-default.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S36-error.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S36-expired.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S36-rewound.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S38-playing.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S39-default.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S39-external.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/inset-recovery/S39-unsupported.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/notifications/default-capture.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/notifications/interaction.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/notifications/muted-capture.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/notifications/system_permission-capture.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/notifications/tray-capture.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S33-default.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S33-empty.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S33-iptv_removed.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S33-offline.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S35-default.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S35-empty.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S35-no_guide.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S37-cancelled.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S37-connected.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S37-default.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S37-error.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S37-expired.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S37-waiting.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S38-default.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S38-details.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/personal-metadata/S38-empty.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/settings-navigation/S63-default.receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/settings-navigation/layout.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/evidence/2026-10-11/system-accessibility/result.json,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/ABOUT_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/AGENT_AUTHORITY_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/AGENT_TASK_LIFECYCLE_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/AGENT_TASK_UI_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/ARTIFACT_PREVIEW_NATIVE_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/ASSISTANT_MANAGEMENT_UI_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/ASSISTANT_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/CHANNEL_ACL_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/CHAT_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/CINEMA_24_28_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/CINEMA_CAPTIONS_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/CINEMA_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/COMMON_SYSTEM_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/COMMUNITY_MANAGEMENT_NATIVE_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/COMMUNITY_MANAGEMENT_UI_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/COMMUNITY_SETTINGS_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/DISCORD_ROOM_CORRECTION_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/GAMES_40_43_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/GAMES_44_50_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/GAMES_51_54_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/GAME_FIXTURES_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/GAME_HISTORY_RECOVERY_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/HOLDEM_AUTHORITY_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/HOME_FRIENDS_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/INSET_PLAYER_STYLE_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/INSET_RECOVERY_INTEGRATION.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/ONBOARDING_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/PERSONAL_CHANNEL_HISTORY_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/PERSONAL_LIVE_PLAYBACK_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/PERSONAL_MEDIA_FIXTURE_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/PERSONAL_MEDIA_INTEGRATION_2026_10_11.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/PERSONAL_MEDIA_METADATA_INTEGRATION.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/PERSONAL_MEDIA_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/PERSONAL_PROVIDER_METADATA_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/PERSONAL_PROVIDER_MUTATION_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/PLAYLIST_FILE_IMPORT_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/REPO_MAPPING.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/S01_VISUAL_REVIEW.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/S04_RECOVERY_REQUEST_INTEGRATION_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/S04_RESET_COMPLETION_REPORT.md,2,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/S10_VISUAL_REVIEW.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/S30_MINI_PLAYBACK_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/S37_RD_PANEL_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/S54_EXPORT_VISUAL_REVIEW.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/S59_S61_PERSONAL_AGENT_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/S62_SCHEDULES_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/S63_AUTOMATION_INTEGRATION_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/S67_NOTIFICATION_REFERENCE_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/S70_VISUAL_REVIEW.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/S71_VISUAL_REVIEW.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/S72_VISUAL_REVIEW.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/SCREEN_HANDOFF_ACCESS_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/SCREEN_HANDOFF_INTEGRATION_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/SCREEN_HANDOFF_PROTOCOL_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/SETTINGS_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/SOCIAL_DETAIL_FIXTURE_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/SOCIAL_SURFACES_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/SOCIAL_VISUAL_REVIEW_2026-10-10.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/STOAT_PASSWORD_RECOVERY_ADAPTER_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/VOICE_REPORT.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/VOICE_VISUAL_CALIBRATION_2026-10-10.md,1,exclude-path-history,private operational/reference evidence
+docs/rooms-implementation/reports/mapping.json,1,exclude-path-history,private operational/reference evidence
+docs/screenshots/activity-launcher.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/chat-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/cinema-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/cinema-fullscreen.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/cinema-media-error.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/command-palette.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/community-chat-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/community-home-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/community-voice-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/connections-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/home-1280.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/home-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/home-900.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/home-empty-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/home-zoom-125.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/home-zoom-150.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/onboarding/invalid-invitation.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/onboarding/invitation-login-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/onboarding/invitation-register-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/onboarding/qa-result.json,1,exclude-path-history,private operational/reference evidence
+docs/screenshots/onboarding/reduced-effects.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/onboarding/sign-in-1280.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/onboarding/sign-in-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/onboarding/sign-in-900.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/onboarding/unreachable-server-error.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/poll-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/activity-disconnected-0.1.5.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/activity-disconnected.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/activity-recovered-0.1.5.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/activity-recovered.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-101-00.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-101-01.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-101-10.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-101-11.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-advanced-blackjack-00.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-batak-esli.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-batak-gommeli.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-batak-ihaleli.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-batak-koz-maca.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-blackjack-00.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-blackjack-split.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-full-batak-esli.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-full-batak-gommeli.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-full-batak-history-esli.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-full-batak-history-gommeli.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-full-batak-history-ihaleli.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-full-batak-history-koz-maca.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-full-batak-ihaleli.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-full-batak-koz-maca-before-ui-wait.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-full-batak-koz-maca.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-holdem-00.png,3,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-holdem-full-0.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-holdem-full-1.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-staging-0-101-00.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/game-staging-1-101-00.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/guest-chat.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/home.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/native-attachment.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/native-media-revoked.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/native-presence.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/no-demo-real-home.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/owner-chat.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/packaged-soak-cinema.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/personal-file-playback.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/registered-friend.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/whiteboard-native-1280.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/whiteboard-native-900.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/whiteboard-undo-export.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/youtube-shared-controls.png,2,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/youtube-timeout.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/production/youtube-unavailable.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/settings-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/settings-reduced-effects.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/101-service-table.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/agent-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/agent-settings-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/blackjack-service-table.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/cinema-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/cinema-alice-shared-service.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/cinema-bob-shared-service.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/esli-service-table.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/games-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/games-fixture-empty-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/gommeli-service-table.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/holdem-alice-live-service.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/holdem-bob-live-service.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/holdem-finished-service.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/home-1280.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/home-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/home-900.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/ihaleli-service-table.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/koz-maca-service-table.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/launcher-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/packaged-cinema.png,6,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/packaged-home.png,10,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/personal-hls-public-demo.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/poll-two-client-service.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/providers-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/qa-errors.json,1,exclude-path-history,private operational/reference evidence
+docs/screenshots/tr/reminder-cancelled-fixture.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/reminder-dialog-fixture.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/reminder-unavailable-fixture.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/together-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/updates-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/whiteboard-two-client-service.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/tr/youtube-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/voice-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/voice-empty-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/screenshots/voice-empty-preview-1440.png,1,exclude-path-history,historical visual/reference evidence; exclude from public scope
+docs/site/.gitignore,1,exclude-path-history,private operational/reference evidence
+docs/site/Caddyfile.snippet,1,exclude-path-history,private operational/reference evidence
+docs/site/DEPLOYMENT.md,1,exclude-path-history,private operational/reference evidence
+docs/site/README.md,1,exclude-path-history,private operational/reference evidence
+docs/site/build.py,1,exclude-path-history,private operational/reference evidence
+docs/site/deployment-receipt.json,1,exclude-path-history,private operational/reference evidence
+docs/site/requirements.txt,1,exclude-path-history,private operational/reference evidence
+docs/site/style.css,1,exclude-path-history,private operational/reference evidence
+eslint.config.mjs,2,retain,retained source/dependency/documentation
+infra/access.Dockerfile,1,retain,retained source/dependency/documentation
+infra/agent/browser.cjs,1,retain,retained source/dependency/documentation
+infra/agent/compose.yml,1,retain,retained source/dependency/documentation
+infra/agent/egress-proxy.mjs,1,retain,retained source/dependency/documentation
+infra/agent/egress.Dockerfile,1,retain,retained source/dependency/documentation
+infra/agent/rooms-agent.service,1,retain,retained source/dependency/documentation
+infra/agent/service.env.example,2,redact-known-private-literals,retained source/dependency/documentation
+infra/agent/worker.Dockerfile,1,retain,retained source/dependency/documentation
+infra/docker-compose.yml,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+infra/music-compose.fragment.yml,2,retain,retained source/dependency/documentation
+infra/music.Dockerfile,1,retain,retained source/dependency/documentation
+infra/music/Dockerfile.stereo,1,retain,retained source/dependency/documentation
+infra/music/Dockerfile.youtube-bridge,1,retain,retained source/dependency/documentation
+infra/music/LICENSE.livekit-rust,1,retain,retained source/dependency/documentation
+infra/music/README.md,4,retain,retained source/dependency/documentation
+infra/music/livekit-stereo.patch,1,retain,retained source/dependency/documentation
+infra/nginx.conf,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+infra/production/ACCEPTANCE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/ACTIVITY_AUTH_ERROR_BEFORE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/ACTIVITY_GAME_DEPLOYMENT_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/ACTIVITY_LOAD_BEFORE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/ACTIVITY_LOAD_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/ACTIVITY_RATE_DEPLOYMENT_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/AUTHORIZATION_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/DESKTOP_RESULTS.json,2,exclude-path-history,private operational/reference evidence
+infra/production/GAMES_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/GAME_LIFECYCLE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/IMAGE_DIGESTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/MAINTENANCE_ACCESS_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/MEDIA_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_ACTIVITY_RECOVERY_0.1.5_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_ACTIVITY_RECOVERY_0.1.6_COPY_SELECTOR_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_ACTIVITY_RECOVERY_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_ATTACHMENT_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_BATAK_FULL_BEFORE_UI_WAIT_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_BATAK_FULL_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_BLACKJACK_ADVANCED_0.1.5_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_BLACKJACK_ADVANCED_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_BLACKJACK_ADVANCED_START_WAIT_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_CANVAS_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_GAMES_0.1.5_RATE_LIMIT_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_GAMES_RESULTS.json,2,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_GAME_STAGING_0.1.4_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_GAME_STAGING_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_HOLDEM_FULL_0.1.7_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_HOLDEM_FULL_BEFORE_ACCOUNTING_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_HOLDEM_FULL_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_MEDIA_LIFECYCLE_RESULTS.json,2,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_NO_DEMO_CHANNEL_DESCRIPTION_SELECTOR_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_NO_DEMO_CHANNEL_NAME_SELECTOR_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_NO_DEMO_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_PERSONAL_PLAYBACK_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_PRESENCE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_VOICE_RESULTS.json,2,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_WHITEBOARD_BEFORE_COMPARISON_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_WHITEBOARD_DEVELOPMENT_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/NATIVE_WHITEBOARD_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/OBJECT_READ_RESTORE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/OBJECT_TLS_RESTORE_RESULTS.json,2,exclude-path-history,private operational/reference evidence
+infra/production/PACKAGED_SOAK_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/PERSISTENCE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/PORT_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/REBOOT_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/RELEASE_0.1.14_DELIVERY.json,1,exclude-path-history,private operational/reference evidence
+infra/production/RELEASE_0.1.3_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/RELEASE_0.1.4_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/RELEASE_0.1.5_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/RELEASE_0.1.6_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/RELEASE_0.1.7_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/RELEASE_0.1.8_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/RESTORE_RESULTS.json,3,exclude-path-history,private operational/reference evidence
+infra/production/SCHEDULED_BACKUP_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/TLS_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/YOUTUBE_RECOVERY_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/YOUTUBE_RESULTS.json,1,exclude-path-history,private operational/reference evidence
+infra/production/YOUTUBE_SHARED_RESULTS.json,3,exclude-path-history,private operational/reference evidence
+infra/production/authorize-mongo.py,1,exclude-path-history,private operational/reference evidence
+infra/production/backup.py,3,exclude-path-history,private operational/reference evidence
+infra/production/backup.service,1,exclude-path-history,private operational/reference evidence
+infra/production/backup.timer,1,exclude-path-history,private operational/reference evidence
+infra/production/baseline.py,1,exclude-path-history,private operational/reference evidence
+infra/production/bootstrap.py,1,exclude-path-history,private operational/reference evidence
+infra/production/configure.py,1,exclude-path-history,private operational/reference evidence
+infra/production/reconcile.py,1,exclude-path-history,private operational/reference evidence
+infra/production/renew.service,1,exclude-path-history,private operational/reference evidence
+infra/production/renew.timer,1,exclude-path-history,private operational/reference evidence
+infra/production/rooms-maintain.py,1,exclude-path-history,private operational/reference evidence
+infra/production/stage-object-metadata.py,1,exclude-path-history,private operational/reference evidence
+infra/production/verify-authorization.py,1,exclude-path-history,private operational/reference evidence
+infra/production/verify-object-restore.py,1,exclude-path-history,private operational/reference evidence
+infra/production/verify-restore.py,3,exclude-path-history,private operational/reference evidence
+infra/release/entitlements.mac.plist,1,retain,retained source/dependency/documentation
+infra/spacebar.Dockerfile,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+infra/stoat/INTEGRATION_RESULTS.json,1,retain,retained source/dependency/documentation
+infra/stoat/README.md,1,retain,retained source/dependency/documentation
+infra/stoat/UPSTREAM.json,1,retain,retained source/dependency/documentation
+infra/templates/core.env.example,1,retain,retained source/dependency/documentation
+package.json,32,retain,retained source/dependency/documentation
+packages/activity-protocol/src/index.ts,3,retain,retained source/dependency/documentation
+packages/activity-sdk/src/index.ts,2,retain,retained source/dependency/documentation
+packages/agent-contracts/src/index.ts,3,retain,retained source/dependency/documentation
+packages/design-system/src/index.tsx,4,retain,retained source/dependency/documentation
+packages/games/src/batak-table.ts,2,retain,retained source/dependency/documentation
+packages/games/src/batak.ts,2,retain,retained source/dependency/documentation
+packages/games/src/blackjack-table.ts,2,retain,retained source/dependency/documentation
+packages/games/src/blackjack.ts,2,retain,retained source/dependency/documentation
+packages/games/src/cards.ts,3,retain,retained source/dependency/documentation
+packages/games/src/holdem.ts,3,retain,retained source/dependency/documentation
+packages/games/src/okey101-table.ts,2,retain,retained source/dependency/documentation
+packages/games/src/okey101.ts,2,retain,retained source/dependency/documentation
+packages/games/src/seats.ts,2,retain,retained source/dependency/documentation
+packages/media-providers/src/index.ts,14,retain,retained source/dependency/documentation
+packages/media-providers/src/noise-comparison.ts,3,retain,retained source/dependency/documentation
+packages/media-providers/src/noise-suppression.ts,2,retain,retained source/dependency/documentation
+packages/media-providers/src/noise-worklet.ts,2,retain,retained source/dependency/documentation
+packages/media-providers/src/rnnoise-core.ts,2,retain,retained source/dependency/documentation
+packages/media-providers/src/rnnoise.ts,2,retain,retained source/dependency/documentation
+packages/media-providers/src/soundboard.ts,4,retain,retained source/dependency/documentation
+packages/media-providers/src/speaking-meter.ts,2,retain,retained source/dependency/documentation
+packages/personal-media/src/epg.ts,2,retain,retained source/dependency/documentation
+packages/personal-media/src/network.ts,3,retain,retained source/dependency/documentation
+packages/personal-media/src/playlist.ts,2,retain,retained source/dependency/documentation
+packages/shared-contracts/src/dm-call.ts,2,retain,retained source/dependency/documentation
+packages/shared-contracts/src/index.ts,18,retain,retained source/dependency/documentation
+packages/shared-contracts/src/music-links.ts,2,retain,retained source/dependency/documentation
+packages/shared-contracts/src/music.ts,4,retain,retained source/dependency/documentation
+packages/shared-contracts/src/song-links.ts,2,retain,retained source/dependency/documentation
+packages/shared-contracts/src/soundboard.ts,2,retain,retained source/dependency/documentation
+packages/social-domain/src/index.ts,3,retain,retained source/dependency/documentation
+packages/spacebar-adapter/src/index.test.ts,2,retain,retained source/dependency/documentation
+packages/spacebar-adapter/src/index.ts,2,retain,retained source/dependency/documentation
+packages/stoat-adapter/src/index.ts,8,retain,retained source/dependency/documentation
+packages/stoat-adapter/src/rate-limit.ts,2,retain,retained source/dependency/documentation
+playwright.config.ts,2,retain,retained source/dependency/documentation
+pnpm-lock.yaml,7,retain,retained source/dependency/documentation
+pnpm-workspace.yaml,3,retain,retained source/dependency/documentation
+scripts/README.md,2,retain,retained source/dependency/documentation
+scripts/activities-build.mjs,2,retain,retained source/dependency/documentation
+scripts/agent-issue-access.mjs,2,retain,retained source/dependency/documentation
+scripts/agent-model-login.mjs,2,retain,retained source/dependency/documentation
+scripts/benchmark-noise-suppression.mjs,2,retain,retained source/dependency/documentation
+scripts/build-access.mjs,2,retain,retained source/dependency/documentation
+scripts/build-electron.mjs,2,retain,retained source/dependency/documentation
+scripts/build-notices.mjs,5,retain,retained source/dependency/documentation
+scripts/build-services.mjs,4,retain,retained source/dependency/documentation
+scripts/capture-reference.mjs,7,retain,retained source/dependency/documentation
+scripts/check-publication.mjs,2,retain,retained source/dependency/documentation
+scripts/dev.mjs,2,retain,retained source/dependency/documentation
+scripts/diagnostics/youtube-source-probe/.gitignore,1,retain,retained source/dependency/documentation
+scripts/diagnostics/youtube-source-probe/README.md,3,retain,retained source/dependency/documentation
+scripts/diagnostics/youtube-source-probe/pom.xml,1,retain,retained source/dependency/documentation
+scripts/diagnostics/youtube-source-probe/src/main/java/rooms/DeviceLogin.java,1,retain,retained source/dependency/documentation
+scripts/diagnostics/youtube-source-probe/src/main/java/rooms/OAuthSourceProbe.java,2,retain,retained source/dependency/documentation
+scripts/diagnostics/youtube-source-probe/src/main/java/rooms/SourceProbe.java,1,retain,retained source/dependency/documentation
+scripts/electron-activity-fixture.mjs,2,retain,retained source/dependency/documentation
+scripts/install-youtube-bot-session.py,2,exclude-path-history,private operational/reference evidence
+scripts/livekit-native.mjs,2,retain,retained source/dependency/documentation
+scripts/livekit-setup.mjs,2,retain,retained source/dependency/documentation
+scripts/livekit-verify.mjs,3,retain,retained source/dependency/documentation
+scripts/mac-preview-after-pack.cjs,4,retain,retained source/dependency/documentation
+scripts/package-agent.mjs,2,retain,retained source/dependency/documentation
+scripts/package-signed-mac.mjs,8,redact-known-private-literals,retained source/dependency/documentation
+scripts/prepare-noise-fixtures.mjs,2,retain,retained source/dependency/documentation
+scripts/prepare-rnnoise-fixtures.mjs,2,retain,retained source/dependency/documentation
+scripts/prepare-sparkle.mjs,2,retain,retained source/dependency/documentation
+scripts/publish-sparkle.mjs,3,redact-known-private-literals,retained source/dependency/documentation
+scripts/release-manifest.mjs,2,retain,retained source/dependency/documentation
+scripts/release-preflight.mjs,2,retain,retained source/dependency/documentation
+scripts/services-native.mjs,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+scripts/spacebar-bootstrap.mjs,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+scripts/spacebar-integration.mjs,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+scripts/spacebar-loopback.cjs,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+scripts/spacebar-native.mjs,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+scripts/spacebar-setup.mjs,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+scripts/stoat-configure-media.mjs,2,retain,retained source/dependency/documentation
+scripts/stoat-integration.mjs,2,retain,retained source/dependency/documentation
+scripts/stoat-issue-invite.mjs,2,retain,retained source/dependency/documentation
+scripts/stoat-setup.mjs,2,retain,retained source/dependency/documentation
+scripts/stoat-start.mjs,2,retain,retained source/dependency/documentation
+scripts/ui-activity-qa.mjs,2,retain,retained source/dependency/documentation
+scripts/ui-games-qa.mjs,2,retain,retained source/dependency/documentation
+scripts/ui-premium-qa.mjs,2,retain,retained source/dependency/documentation
+scripts/ui-reminder-qa.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-activity-desktop.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-activity-load.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-core-reboot.mjs,1,exclude-path-history,private operational/reference evidence
+scripts/verify-distribution-platforms.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-game-lifecycle.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-mac-signature.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-native-activity-recovery.mjs,1,exclude-path-history,private operational/reference evidence
+scripts/verify-native-attachment.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-native-canvas.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-native-games.mjs,8,retain,retained source/dependency/documentation
+scripts/verify-native-media-lifecycle.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-native-no-demo.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-native-personal-playback.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-native-presence.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-native-voice.mjs,3,retain,retained source/dependency/documentation
+scripts/verify-native-whiteboard.mjs,1,exclude-path-history,private operational/reference evidence
+scripts/verify-noise-suppression.mjs,3,retain,retained source/dependency/documentation
+scripts/verify-package.mjs,5,retain,retained source/dependency/documentation
+scripts/verify-packaged-soak.mjs,3,retain,retained source/dependency/documentation
+scripts/verify-performance.mjs,3,retain,retained source/dependency/documentation
+scripts/verify-personal-hls.mjs,3,retain,retained source/dependency/documentation
+scripts/verify-postgres-activity.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-private-release.mjs,4,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+scripts/verify-production-desktop.mjs,3,retain,retained source/dependency/documentation
+scripts/verify-production-games.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-production.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-public-youtube.mjs,2,exclude-path-history,private operational/reference evidence
+scripts/verify-rnnoise.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-scheduled-backup.mjs,1,exclude-path-history,private operational/reference evidence
+scripts/verify-shared-youtube.mjs,3,retain,retained source/dependency/documentation
+scripts/verify-windows-package.mjs,2,retain,retained source/dependency/documentation
+scripts/verify-windows-rc8-package.mjs,1,retain-historical-technical-content,"Retain safe engineering history or legacy source at historical revisions; current-tree removal is organizational, not a privacy requirement."
+scripts/verify-youtube-recovery.mjs,2,retain,retained source/dependency/documentation
+scripts/visual-edge-qa.mjs,2,retain,retained source/dependency/documentation
+scripts/visual-qa.mjs,3,retain,retained source/dependency/documentation
+tests/access-permissions.test.ts,2,retain,retained source/dependency/documentation
+tests/access-rate-limit.test.ts,2,retain,retained source/dependency/documentation
+tests/activities.test.ts,2,retain,retained source/dependency/documentation
+tests/activity-cache-lifecycle.test.tsx,3,retain,retained source/dependency/documentation
+tests/activity-capabilities.test.ts,2,retain,retained source/dependency/documentation
+tests/activity-http.test.ts,4,retain,retained source/dependency/documentation
+tests/activity-operational-events.test.ts,2,retain,retained source/dependency/documentation
+tests/activity-rate-limit.test.ts,2,retain,retained source/dependency/documentation
+tests/activity-realtime.test.ts,3,retain,retained source/dependency/documentation
+tests/activity-storage-compatibility.test.ts,2,retain,retained source/dependency/documentation
+tests/agent-artifact-preview.test.ts,2,retain,retained source/dependency/documentation
+tests/agent-authority.test.ts,2,retain,retained source/dependency/documentation
+tests/agent-connectors.test.ts,2,retain,retained source/dependency/documentation
+tests/agent-operations.test.ts,3,retain,retained source/dependency/documentation
+tests/agent-preview-native.test.ts,2,retain,retained source/dependency/documentation
+tests/agent-reminders.test.ts,2,retain,retained source/dependency/documentation
+tests/agent-service.test.ts,3,retain,retained source/dependency/documentation
+tests/agent-task-lifecycle.test.tsx,2,retain,retained source/dependency/documentation
+tests/appearance-preferences.test.ts,2,retain,retained source/dependency/documentation
+tests/artifact-preview-lifecycle.test.tsx,2,retain,retained source/dependency/documentation
+tests/caption-file.test.ts,2,retain,retained source/dependency/documentation
+tests/capture-sources.test.ts,2,retain,retained source/dependency/documentation
+tests/channel-access-lifecycle.test.ts,2,retain,retained source/dependency/documentation
+tests/channel-mutation-refresh.test.tsx,3,retain,retained source/dependency/documentation
+tests/channel-notifications.test.tsx,2,retain,retained source/dependency/documentation
+tests/chat-font-preference.test.ts,2,retain,retained source/dependency/documentation
+tests/chat-reaction-lifecycle.test.tsx,2,retain,retained source/dependency/documentation
+tests/cinema-captions.test.tsx,2,retain,retained source/dependency/documentation
+tests/cinema-lifecycle.test.tsx,2,retain,retained source/dependency/documentation
+tests/cinema-mini-playback.test.tsx,2,retain,retained source/dependency/documentation
+tests/cinema-protocol.test.ts,2,retain,retained source/dependency/documentation
+tests/cinema-reference-24-28.test.tsx,2,retain,retained source/dependency/documentation
+tests/community-bootstrap.test.ts,3,retain,retained source/dependency/documentation
+tests/community-branding.test.ts,2,retain,retained source/dependency/documentation
+tests/community-cache-lifecycle.test.ts,4,retain,retained source/dependency/documentation
+tests/community-soundboard.test.ts,2,retain,retained source/dependency/documentation
+tests/conversation-cache.test.ts,2,retain,retained source/dependency/documentation
+tests/conversation-vault.test.ts,2,retain,retained source/dependency/documentation
+tests/desktop-window-settings.test.tsx,2,retain,retained source/dependency/documentation
+tests/desktop/acceptance.spec.ts,5,retain,retained source/dependency/documentation
+tests/discord-mention.test.ts,2,retain,retained source/dependency/documentation
+tests/dj-character.test.tsx,3,retain-historical-reference-without-artwork,Historical code/reference only; referenced private binary removed. Preserve current legacy-title migration behavior.
+tests/dj-links.test.ts,3,retain,retained source/dependency/documentation
+tests/dj-player-route.test.ts,2,retain,retained source/dependency/documentation
+tests/dm-call-http.test.ts,2,retain,retained source/dependency/documentation
+tests/dm-call-lifecycle.test.tsx,3,retain,retained source/dependency/documentation
+tests/dm-calls.test.ts,2,retain,retained source/dependency/documentation
+tests/fixtures/activity-server.ts,2,retain,retained source/dependency/documentation
+tests/fixtures/postgres-activity.ts,2,retain,retained source/dependency/documentation
+tests/friend-list-cache.test.tsx,2,retain,retained source/dependency/documentation
+tests/game-history-recovery.test.ts,2,retain,retained source/dependency/documentation
+tests/game-suspension.test.ts,2,retain,retained source/dependency/documentation
+tests/games-lifecycle.test.ts,2,retain,retained source/dependency/documentation
+tests/games-realtime.test.ts,3,retain,retained source/dependency/documentation
+tests/games-rule-edgecases.test.ts,2,retain,retained source/dependency/documentation
+tests/games.test.ts,2,retain,retained source/dependency/documentation
+tests/holdem-authority-service.test.ts,2,retain,retained source/dependency/documentation
+tests/holdem-authority.test.ts,2,retain,retained source/dependency/documentation
+tests/isolated-profile.test.ts,2,retain,retained source/dependency/documentation
+tests/kiraathane.test.tsx,3,retain,retained source/dependency/documentation
+tests/last-conversation.test.tsx,4,retain,retained source/dependency/documentation
+tests/media-capabilities.test.ts,2,retain,retained source/dependency/documentation
+tests/media-provider.test.ts,9,retain,retained source/dependency/documentation
+tests/minimal-voice-transitions.test.ts,4,retain,retained source/dependency/documentation
+tests/music-clock.test.tsx,2,retain,retained source/dependency/documentation
+tests/music-cookie-scope.test.ts,2,retain,retained source/dependency/documentation
+tests/music-dj.test.tsx,10,retain,retained source/dependency/documentation
+tests/music-gateway.test.ts,3,retain,retained source/dependency/documentation
+tests/music-worker.test.ts,8,retain,retained source/dependency/documentation
+tests/music-youtube-source.test.ts,3,retain,retained source/dependency/documentation
+tests/native-links.test.ts,2,retain,retained source/dependency/documentation
+tests/notification-fixture.test.ts,2,retain,retained source/dependency/documentation
+tests/notification-preferences.test.ts,4,retain,retained source/dependency/documentation
+tests/participant-audio-menu.test.tsx,2,retain,retained source/dependency/documentation
+tests/personal-media-fixture.test.ts,2,retain,retained source/dependency/documentation
+tests/personal-media-import.test.tsx,3,retain,retained source/dependency/documentation
+tests/personal-media-metadata.test.tsx,3,retain,retained source/dependency/documentation
+tests/personal-media.test.ts,2,retain,retained source/dependency/documentation
+tests/personal-playback-failure.test.ts,2,retain,retained source/dependency/documentation
+tests/personal-playback-lifecycle.test.tsx,4,retain,retained source/dependency/documentation
+tests/personal-playback.test.ts,2,retain,retained source/dependency/documentation
+tests/playlist-file.test.ts,2,retain,retained source/dependency/documentation
+tests/profile-friend-request.test.tsx,2,retain,retained source/dependency/documentation
+tests/provider-channel-history.test.ts,3,retain,retained source/dependency/documentation
+tests/provider-connections-ipc.test.ts,2,retain,retained source/dependency/documentation
+tests/provider-media-metadata.test.ts,2,retain,retained source/dependency/documentation
+tests/reference-rd-connection.test.tsx,2,retain,retained source/dependency/documentation
+tests/release-preflight.test.ts,2,retain,retained source/dependency/documentation
+tests/room-event-sounds-runtime.test.tsx,2,retain,retained source/dependency/documentation
+tests/room-event-sounds.test.ts,2,retain,retained source/dependency/documentation
+tests/s59-s61-personal-agent.test.tsx,2,retain,retained source/dependency/documentation
+tests/s62-schedules.test.tsx,2,retain,retained source/dependency/documentation
+tests/s63-automation.test.tsx,2,retain,retained source/dependency/documentation
+tests/screen-handoff-access.test.ts,3,retain,retained source/dependency/documentation
+tests/screen-handoff-runtime.test.tsx,2,retain,retained source/dependency/documentation
+tests/screen-share-gallery.test.tsx,2,retain,retained source/dependency/documentation
+tests/self-signup-form.test.tsx,3,redact-known-private-literals,retained source/dependency/documentation
+tests/song-mirroring.test.ts,2,retain,retained source/dependency/documentation
+tests/sparkle-updates.test.ts,3,retain,retained source/dependency/documentation
+tests/speaking-meter.test.ts,2,retain,retained source/dependency/documentation
+tests/stoat-adapter.test.ts,4,retain,retained source/dependency/documentation
+tests/stoat-bot.test.ts,2,retain,retained source/dependency/documentation
+tests/stoat-channel-permissions.test.ts,2,retain,retained source/dependency/documentation
+tests/stoat-channel-update-stability.test.ts,2,retain,retained source/dependency/documentation
+tests/stoat-community-management.test.ts,2,retain,retained source/dependency/documentation
+tests/stoat-password-recovery-ipc.test.ts,3,retain,retained source/dependency/documentation
+tests/stoat-password-recovery-ui.test.tsx,2,retain,retained source/dependency/documentation
+tests/stoat-password-recovery.test.ts,2,retain,retained source/dependency/documentation
+tests/stoat-password-reset-broker.test.ts,2,retain,retained source/dependency/documentation
+tests/stoat-password-reset-onboarding.test.tsx,5,redact-known-private-literals,retained source/dependency/documentation
+tests/stoat-password-reset-ui.test.tsx,3,retain,retained source/dependency/documentation
+tests/stoat-permissions.test.ts,3,retain,retained source/dependency/documentation
+tests/stoat-registration.test.ts,2,retain,retained source/dependency/documentation
+tests/stoat-typing.test.ts,2,retain,retained source/dependency/documentation
+tests/stoat-webhook.test.ts,2,retain,retained source/dependency/documentation
+tests/voice-directory-access.test.ts,2,retain,retained source/dependency/documentation
+tests/voice-directory-lifecycle.test.tsx,3,retain,retained source/dependency/documentation
+tests/voice-dock-controls.test.tsx,2,retain,retained source/dependency/documentation
+tests/voice-room-route.test.tsx,2,retain,retained source/dependency/documentation
+tests/whiteboard-export.test.ts,3,retain,retained source/dependency/documentation
+tests/window-policy.test.ts,2,retain,retained source/dependency/documentation
+tooling/aliases.ts,2,retain,retained source/dependency/documentation
+tsconfig.json,2,retain,retained source/dependency/documentation
+vite.config.ts,5,redact-known-private-literals,retained source/dependency/documentation
+vitest.config.ts,3,retain,retained source/dependency/documentation
