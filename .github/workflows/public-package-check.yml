@@ -2,6 +2,11 @@ name: Public package boundary
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      windows_installer:
+        description: Build and verify unsigned Windows friend installer
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -9,6 +14,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   package-resources:
+    if: github.event_name != 'workflow_dispatch' || !inputs.windows_installer
     strategy:
       fail-fast: false
       matrix:
@@ -55,6 +61,71 @@ jobs:
       - name: Inspect actual Windows package resources
         if: runner.os == 'Windows'
         run: pnpm exec electron-builder --win --x64 --dir --publish never --config.directories.output=.local/public-package-check
-# Generated application directories are ephemeral. No keys, production configuration,
-# signing, notarization, installer publication, deployment or artifact upload.
-# This checks package resources; it does not close physical-device media acceptance.
+  # Generated application directories are ephemeral. No keys, production configuration,
+  # signing, notarization, installer publication or deployment.
+  # The explicit manual Windows job below preserves a test candidate for owner review.
+  # This checks package resources; it does not close physical-device media acceptance.
+
+  windows-friend-installer:
+    if: github.event_name == 'workflow_dispatch' && inputs.windows_installer
+    runs-on: windows-2025
+    timeout-minutes: 45
+    env:
+      ROOMS_DISTRIBUTION_SCOPE: public
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      ROOMS_VLC: '1'
+      # Hosted Windows has no speaker endpoint; physical audio acceptance remains open.
+      ROOMS_VLC_QA_AUDIO: unavailable
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.22.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/release-preflight.mjs
+      - run: pnpm build
+      - name: Prepare official Windows VLC runtime and adapter
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (!$vs) { throw 'Visual Studio x64 compiler unavailable' }
+          cmd /c "`"$vs\VC\Auxiliary\Build\vcvars64.bat`" && node scripts/prepare-vlc.mjs"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify real native decoder and output
+        run: node scripts/verify-vlc-native.mjs
+      - name: Verify actual personal-player UI and native IPC
+        run: node scripts/verify-vlc-ui.mjs
+      - name: Build unsigned NSIS installer with public resource guard
+        run: pnpm exec electron-builder --win nsis --x64 --publish never --config.win.artifactName=ROOMS-0.1.18-rc.9-windows-x64-setup.exe
+      - name: Install and verify actual packaged application
+        env:
+          ROOMS_WINDOWS_INSTALL_DIR: ${{ runner.temp }}\ROOMS-Çığ\rooms-rc9-installed
+        run: node scripts/verify-windows-package.mjs
+      - name: Record native crash diagnostics
+        if: failure()
+        shell: pwsh
+        run: |
+          Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-20)} -ErrorAction SilentlyContinue | Where-Object { $_.Message -match 'electron.exe|ROOMS.exe|libvlc' } | Select-Object TimeCreated, Id, Message | Format-List | Out-File .local/windows-native-events.txt
+      - name: Preserve verified candidate and receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: windows-rc9-candidate
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            release/*setup.exe
+            release/windows-rc9-*.json
+            release/windows-rc9-*.png
+            .local/vlc-native-check/result.json
+            .local/vlc-native-check/stages.log
+            .local/vlc-native-check/crashes/**
+            .local/windows-native-events.txt
+            .local/vlc-ui-check/result.json
+            .local/vlc-ui-check/*.png

@@ -6,7 +6,7 @@ import { build as viteBuild, loadConfigFromFile } from 'vite';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import assert from 'node:assert/strict';
-const root = resolve('.');
+const root = resolve('.').replaceAll('\\', '/');
 const out = resolve('.local/vlc-ui-check');
 await mkdir(out, { recursive: true });
 const url = 'rooms-provider://11111111-1111-4111-8111-111111111111/stream';

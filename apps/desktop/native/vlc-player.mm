@@ -91,7 +91,17 @@ static napi_value Initialize(napi_env env, napi_callback_info info) {
  if(![NSThread isMainThread])return fail(env,"VLC requires the main thread");
  setenv("VLC_PLUGIN_PATH",plugins.c_str(),1); library=dlopen(path.c_str(),RTLD_NOW|RTLD_LOCAL);
 #else
- SetEnvironmentVariableA("VLC_PLUGIN_PATH",plugins.c_str()); library=LoadLibraryExA(path.c_str(),nullptr,LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR|LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+ // N-API strings are UTF-8. ANSI APIs corrupt non-ASCII Windows install paths.
+ auto wide=[](const std::string &value){
+  int count=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,value.data(),static_cast<int>(value.size()),nullptr,0);
+  std::wstring result(count,L'\0');
+  if(count)MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,value.data(),static_cast<int>(value.size()),result.data(),count);
+  return result;
+ };
+ auto runtimePath=wide(path), pluginPath=wide(plugins);
+ if(runtimePath.empty()||pluginPath.empty())return fail(env,"Invalid UTF-8 runtime path");
+ if(!SetEnvironmentVariableW(L"VLC_PLUGIN_PATH",pluginPath.c_str()))return fail(env,"VLC plugin path unavailable");
+ library=LoadLibraryExW(runtimePath.c_str(),nullptr,LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR|LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
 #endif
  if(!library)return fail(env,"VLC runtime could not be loaded");
  LOAD(libvlc_new); LOAD(libvlc_release); LOAD(libvlc_media_new_location); LOAD(libvlc_media_add_option); LOAD(libvlc_media_release); LOAD(libvlc_media_get_stats); LOAD(libvlc_media_player_get_media); LOAD(libvlc_media_player_new); LOAD(libvlc_media_player_set_media); LOAD(libvlc_media_player_play); LOAD(libvlc_media_player_set_pause); LOAD(libvlc_media_player_stop); LOAD(libvlc_media_player_release); LOAD(libvlc_media_player_get_state); LOAD(libvlc_media_player_get_time); LOAD(libvlc_media_player_get_length); LOAD(libvlc_media_player_set_time); LOAD(libvlc_media_player_is_seekable); LOAD(libvlc_audio_set_volume); LOAD(libvlc_audio_get_track); LOAD(libvlc_audio_set_track); LOAD(libvlc_video_get_spu); LOAD(libvlc_video_set_spu); LOAD(libvlc_audio_get_track_description); LOAD(libvlc_video_get_spu_description); LOAD(libvlc_track_description_list_release); LOAD(libvlc_video_get_size); LOAD(libvlc_video_set_mouse_input); LOAD(libvlc_video_set_key_input);
