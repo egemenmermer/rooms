@@ -43,7 +43,7 @@
     "hls.js": "^1.7.3",
     "livekit-client": "2.22.3",
     "livekit-server-sdk": "2.19.1",
-    "lucide-react": "1.52.0",
+    "lucide-react": "1.55.0",
     "mongodb": "^7.7.0",
     "pg": "^8.23.1",
     "react": "19.3.0",
