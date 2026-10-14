@@ -34,6 +34,8 @@ A read-only HTTPS check of the current community appcast found six enclosure URL
 
 1. GitHub-retained old PR refs, cached old commit/diff URLs and attachments need an explicit disposition. Replacing branches/tags does not guarantee GitHub purges them. Local cleaning cannot remove read-only PR refs. A maintainer support request is prepared privately and has not been sent. Do not make this repository public until those retained views are resolved or an informed publication decision covers their contents.
 2. Verify a usable private vulnerability-reporting route and branch/required-check policy on the chosen account/visibility configuration. Documentation alone does not enable a platform feature.
+Dependency update PR creation is temporarily paused during the publication review; enable the intended limits after approval. A reachable-history privacy gate is added to prevent reviewed private paths being restored through old checkouts.
+
 3. Owner reviews final source, file/asset decisions and the precise remote cleanup receipt, then explicitly approves visibility change.
 
 Official GitHub explanation: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository . A visibility change is not performed by this work.

@@ -13,7 +13,8 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - name: Scan the intended source tree, not the retained private history
+          fetch-depth: 0
+      - name: Scan the intended source tree
         run: |
           set -euo pipefail
           mkdir ../public-source
@@ -22,6 +23,8 @@ jobs:
           echo '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  /tmp/gitleaks.tar.gz' | sha256sum --check --strict
           tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
           /tmp/gitleaks dir ../public-source --config .gitleaks.toml --redact --no-banner
+      - name: Check reachable history privacy
+        run: node scripts/check-publication-history.mjs
       - name: Check publication file policy
         run: node scripts/check-publication.mjs
-# This job scans the exported tree. Existing private history is NOT approved for publication.
+# GitHub-retained PR refs/cached views are outside the fetched source history.
