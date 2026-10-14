@@ -36,13 +36,13 @@ jobs:
           assert struct.unpack_from('<II',data,directory+4*8)==(0,0), 'Unexpected Authenticode state'
           print('Confirmed unsigned PE installer; no trusted-publisher claim')
           PYCODE
-          gh api repos/egemenmermer/rooms/releases/tags/v0.1.18-rc.8 > release-before.json
-          jq -e '.draft == true and .prerelease == true and .target_commitish == "59dee893cc1b9d4de05cb10c16c7baa8abc9088c"' release-before.json
+          gh api repos/egemenmermer/rooms/releases/412598371 > release-before.json
+          jq -e '.tag_name == "v0.1.18-rc.8" and .draft == true and .prerelease == true and .target_commitish == "59dee893cc1b9d4de05cb10c16c7baa8abc9088c"' release-before.json
       - name: Add candidate files, without replacing any existing asset
         run: |
           set -euo pipefail
           gh release upload v0.1.18-rc.8 candidate/ROOMS-0.1.18-rc.8-windows-x64-setup.exe candidate/windows-rc8-results.json candidate/windows-rc8-900.png candidate/windows-rc8-1440.png
-          gh api repos/egemenmermer/rooms/releases/tags/v0.1.18-rc.8 > release-after.json
+          gh api repos/egemenmermer/rooms/releases/412598371 > release-after.json
           python3 - <<'PYCODE'
           import json
           before=json.load(open('release-before.json'));after=json.load(open('release-after.json'))
