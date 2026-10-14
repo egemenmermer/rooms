@@ -17,13 +17,11 @@ function runtime() {
       .fn()
       .mockResolvedValue({ emailEnabled: true, captcha: { required: false, siteKey: null } }),
     requestPasswordRecovery: vi.fn().mockResolvedValue({ accepted: true }),
-    importPasswordRecoveryLink: vi
-      .fn()
-      .mockResolvedValue({
-        handle,
-        expiresAt: Date.now() + 180000,
-        serverOrigin: 'https://selected.example',
-      }),
+    importPasswordRecoveryLink: vi.fn().mockResolvedValue({
+      handle,
+      expiresAt: Date.now() + 180000,
+      serverOrigin: 'https://selected.example',
+    }),
     confirmPasswordRecovery: vi.fn().mockResolvedValue({ state: 'completed' }),
     cancelPasswordRecovery: vi.fn().mockResolvedValue(undefined),
   };

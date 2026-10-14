@@ -133,11 +133,9 @@ export function useConversationRestore(ready: boolean) {
       !useChannelAccess.getState().checks[c.activeChannelId] &&
       ['/chat', '/dm', '/voice'].includes(location.pathname)
     )
-      useLastConversation
-        .getState()
-        .remember(scope, {
-          spaceId: c.dms.some((dm) => dm.id === c.activeChannelId) ? null : c.activeSpaceId,
-          channelId: c.activeChannelId,
-        });
+      useLastConversation.getState().remember(scope, {
+        spaceId: c.dms.some((dm) => dm.id === c.activeChannelId) ? null : c.activeSpaceId,
+        channelId: c.activeChannelId,
+      });
   }, [scope, c.activeChannelId, c.activeSpaceId, location.pathname]);
 }

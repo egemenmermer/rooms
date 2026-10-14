@@ -31,14 +31,12 @@ export function RoomMembers({
         let next: SocialMember[] = [];
         if (import.meta.env.DEV && new URLSearchParams(location.search).has('fixture')) {
           const fixture = await import('./dev/reference-fixtures');
-          next = fixture
-            .getReferenceFriends()
-            .map((f) => ({
-              user: f.user,
-              status: f.status,
-              statusText: fixture.getReferencePresenceText(f.user.id),
-              roles: [],
-            }));
+          next = fixture.getReferenceFriends().map((f) => ({
+            user: f.user,
+            status: f.status,
+            statusText: fixture.getReferencePresenceText(f.user.id),
+            roles: [],
+          }));
           if (c.user)
             next.unshift({ user: c.user, status: 'online', statusText: 'Buradayım', roles: [] });
         } else if (c.activeSpaceId && window.rooms) {

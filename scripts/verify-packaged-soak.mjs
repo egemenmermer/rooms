@@ -61,13 +61,11 @@ try {
     const sample = {
       seconds: Math.round((Date.now() - start) / 1000),
       processes: await app.evaluate(({ app }) =>
-        app
-          .getAppMetrics()
-          .map((p) => ({
-            type: p.type,
-            workingSetKB: p.memory.workingSetSize,
-            cpuPercent: p.cpu.percentCPUUsage,
-          })),
+        app.getAppMetrics().map((p) => ({
+          type: p.type,
+          workingSetKB: p.memory.workingSetSize,
+          cpuPercent: p.cpu.percentCPUUsage,
+        })),
       ),
       video: await page.locator('.cinema-stage video').evaluate((video) => {
         const q = video.getVideoPlaybackQuality();

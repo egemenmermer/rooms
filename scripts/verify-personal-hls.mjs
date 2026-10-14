@@ -33,15 +33,13 @@ try {
     () => document.querySelector('.personal-player video')?.currentTime > 2,
     { timeout: 20000 },
   );
-  const result = await page
-    .locator('.personal-player video')
-    .evaluate((video) => ({
-      time: video.currentTime,
-      width: video.videoWidth,
-      height: video.videoHeight,
-      readyState: video.readyState,
-      source: video.currentSrc,
-    }));
+  const result = await page.locator('.personal-player video').evaluate((video) => ({
+    time: video.currentTime,
+    width: video.videoWidth,
+    height: video.videoHeight,
+    readyState: video.readyState,
+    source: video.currentSrc,
+  }));
   assert(result.width > 0 && result.height > 0);
   assert.equal(await page.locator('[src*="test-streams.mux.dev"]').count(), 0);
   assert.equal(errors.length, 0);

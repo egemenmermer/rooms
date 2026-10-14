@@ -552,21 +552,19 @@ function holdem(v: string): GamePublicState {
         hiddenCardCount: index > 2 ? 2 : 0,
       }));
       view.showdown = Object.fromEntries(
-        ids
-          .slice(0, 3)
-          .map((id, index) => [
-            id,
-            {
-              category: 'one-pair' as const,
-              score: [1, 14 - index, 11, 9, 7],
-              bestFiveCardIds: [
-                ...revealed[index].map((c) => c.id),
-                ...(view.board as DemoCard[])
-                  .filter((c) => [11, 9, 7].includes(c.rank))
-                  .map((c) => c.id),
-              ],
-            },
-          ]),
+        ids.slice(0, 3).map((id, index) => [
+          id,
+          {
+            category: 'one-pair' as const,
+            score: [1, 14 - index, 11, 9, 7],
+            bestFiveCardIds: [
+              ...revealed[index].map((c) => c.id),
+              ...(view.board as DemoCard[])
+                .filter((c) => [11, 9, 7].includes(c.rank))
+                .map((c) => c.id),
+            ],
+          },
+        ]),
       );
       view.payouts = { [self]: 400, 'demo-ece': 200 };
       view.pots = [
@@ -689,15 +687,13 @@ function blackjack(v: string): GamePublicState {
         activeHand: split && (v.includes('second') || v.includes('played')) ? 1 : 0,
         bet: 100,
       },
-      ...game.seats
-        .slice(1)
-        .map((seat) => ({
-          userId: seat.userId,
-          credits: 1000,
-          hands: [],
-          activeHand: 0,
-          bet: 100,
-        })),
+      ...game.seats.slice(1).map((seat) => ({
+        userId: seat.userId,
+        credits: 1000,
+        hands: [],
+        activeHand: 0,
+        bet: 100,
+      })),
     ],
     finished: ended,
     results,
@@ -1215,16 +1211,14 @@ export function createGamesFixtureProjection(
   const room: RoomSnapshot = {
     roomId: GAME_FIXTURE_ROOM,
     revision: 1,
-    participants: people
-      .slice(0, 4)
-      .map((person) => ({
-        userId: person.userId,
-        displayName: person.name,
-        joinedAt: epoch - 300_000,
-        lastSeenAt: epoch,
-        canControl: !(screen === 'S53' && v === 'not_owner' && person.userId === self),
-        canCreate: !(screen === 'S53' && v === 'not_owner' && person.userId === self),
-      })),
+    participants: people.slice(0, 4).map((person) => ({
+      userId: person.userId,
+      displayName: person.name,
+      joinedAt: epoch - 300_000,
+      lastSeenAt: epoch,
+      canControl: !(screen === 'S53' && v === 'not_owner' && person.userId === self),
+      canCreate: !(screen === 'S53' && v === 'not_owner' && person.userId === self),
+    })),
     primary,
     timeline: {
       playing: false,
