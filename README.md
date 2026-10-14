@@ -73,3 +73,7 @@ The last command opens two actual Electron clients and uses the actual Activity 
 ## Mac in-app updates
 
 Signed Sparkle-enabled releases can check updates in Settings → Güncelleme ve hakkında. With automatic updates enabled, downloaded updates install on normal app quit and are used at the next open. Cmd-Q quits; closing to tray may keep the application running. Releases without Sparkle need one manual signed installation. See [Sparkle delivery](docs/rooms-implementation/SPARKLE_DELIVERY.md) and [actual old-to-new acceptance](docs/release/SPARKLE_UPDATE_ACCEPTANCE.md).
+
+### Windows RC.7 friend-test package
+
+[Windows x64 installer](https://community.example.invalid/rooms-updates/ROOMS-0.1.18-rc.7-windows-x64-setup.exe) — unsigned, manual updates. Same frozen runtime source as Mac RC.7. Native hosted Windows installation/launch and780client-applicable tests passed; physical friend voice/screen/soundboard acceptance remains open. [Results](docs/release/WINDOWS_RC7_RESULTS.json). SHA256: `eacd4adb42f8db1aeacfd9bfbe533427cebd461ecb71001df9fabe6ba3388add`.
