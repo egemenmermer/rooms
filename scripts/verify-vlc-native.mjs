@@ -7,6 +7,9 @@ import assert from 'node:assert/strict';
 const outputMode = process.env.ROOMS_VLC_QA_OUTPUT ?? 'display';
 if (!['display', 'decode'].includes(outputMode)) throw Error('Invalid native QA output mode');
 const displayRequired = outputMode === 'display';
+const audioRequired = process.env.ROOMS_VLC_QA_AUDIO !== 'unavailable';
+if (!audioRequired && !(process.platform === 'win32' && process.env.CI === 'true'))
+  throw Error('Audio exclusion is restricted to the Windows hosted check');
 const output = resolve('.local/vlc-native-check');
 await mkdir(output, { recursive: true });
 const chunk = (type, bytes) => {
@@ -122,6 +125,9 @@ const result = {
   scope:
     'Synthetic AVI/PCM, real libVLC native output and capability transport; no real IPTV or physical-device acceptance',
   platform: process.platform,
+  audioAcceptance: audioRequired
+    ? 'required by this check'
+    : 'excluded: hosted Windows has no audio endpoint',
   outputMode,
   compositorAcceptance: displayRequired
     ? 'required by this check'
@@ -152,7 +158,7 @@ try {
   result.playing = await waitState(
     (s) =>
       s.decodedFrames > 2 &&
-      s.audioBuffers > 0 &&
+      (!audioRequired || s.audioBuffers > 0) &&
       s.time > 0.5 &&
       (!displayRequired || s.displayedFrames > 2),
   );
@@ -178,7 +184,7 @@ try {
     displayRequired
       ? 'actual video frames displayed'
       : 'actual video frames decoded; compositor not certified',
-    'actual decoded PCM reaches audio output (muted test)',
+    ...(audioRequired ? ['actual decoded PCM reaches audio output (muted test)'] : []),
     'pause/resume',
     'resize/hide/show API',
     'scope revocation and asynchronous stop',

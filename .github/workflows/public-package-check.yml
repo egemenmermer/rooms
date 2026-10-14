@@ -73,6 +73,8 @@ jobs:
       ROOMS_DISTRIBUTION_SCOPE: public
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       ROOMS_VLC: '1'
+      # Hosted Windows has no speaker endpoint; physical audio acceptance remains open.
+      ROOMS_VLC_QA_AUDIO: unavailable
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:

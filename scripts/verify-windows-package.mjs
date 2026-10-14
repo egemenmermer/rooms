@@ -27,6 +27,7 @@ const result = {
   limitations: [
     'Hosted Windows Server 2025 VM, not a physical Windows friend device',
     'No live login, microphone, camera, room, private IPTV or DJ publication',
+    'Hosted Windows has no audio endpoint; native video display is required, physical audio stays open',
     'Windows automatic updates unavailable; manual installers only',
     'Unsigned candidate; no SmartScreen/security warning bypass',
   ],
@@ -81,7 +82,9 @@ try {
   });
   assert.equal(nativeCheck.error, undefined);
   assert.equal(nativeCheck.status, 0, 'Installed VLC synthetic output check failed');
-  result.checks.push('Installed VLC runtime displays synthetic video and plays muted PCM buffers');
+  result.checks.push(
+    'Installed VLC runtime displays synthetic video; hosted physical audio excluded',
+  );
   let page = await launch();
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
