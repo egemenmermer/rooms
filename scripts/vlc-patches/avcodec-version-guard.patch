@@ -1,0 +1,11 @@
+--- a/modules/codec/avcodec/avcommon.h
++++ b/modules/codec/avcodec/avcommon.h
+@@ -123,7 +123,7 @@ static inline void vlc_init_avcodec(vlc_object_t *obj)
+ 
+     vlc_init_avutil(obj);
+ 
+-#if (LIBAVFORMAT_VERSION_MICRO < 100) || !(LIBAVCODEC_VERSION_CHECK(58, 10, 100))
++#if (LIBAVCODEC_VERSION_MICRO < 100) || !(LIBAVCODEC_VERSION_CHECK(58, 10, 100))
+     avcodec_register_all();
+ #endif
+ 

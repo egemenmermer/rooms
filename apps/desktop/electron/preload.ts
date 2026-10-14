@@ -145,6 +145,14 @@ const bridge: DesktopBridge = {
     setVoiceActive: (value) => ipcRenderer.invoke('rooms:notification-voice-active', value),
   },
   providers: {
+    nativePlayer: {
+      status: () => ipcRenderer.invoke('rooms:provider-native-status'),
+      start: (url) => ipcRenderer.invoke('rooms:provider-native-start', url),
+      state: (token) => ipcRenderer.invoke('rooms:provider-native-state', token),
+      bounds: (token, rect) => ipcRenderer.invoke('rooms:provider-native-bounds', token, rect),
+      control: (token, input) => ipcRenderer.invoke('rooms:provider-native-control', token, input),
+      stop: (token) => ipcRenderer.invoke('rooms:provider-native-stop', token),
+    },
     recentChannels: (id) => ipcRenderer.invoke('rooms:provider-recent-channels', id),
     acknowledgePlayback: (url) => ipcRenderer.invoke('rooms:provider-acknowledge-playback', url),
     updatePlaylist: (input) => ipcRenderer.invoke('rooms:provider-playlist-update', input),

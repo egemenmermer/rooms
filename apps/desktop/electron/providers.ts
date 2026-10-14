@@ -120,7 +120,9 @@ export function setupProviders(
   let activeScope: string | undefined;
   let activeIdentity: string | null | undefined;
   let vaultPath: string | null = null;
+  const playbackRevocations = new Set<() => void>();
   const clearPlayback = () => {
+    for (const revoke of playbackRevocations) revoke();
     handles.clear();
     rdGeneration++;
     pending = null;
@@ -1012,7 +1014,7 @@ export function setupProviders(
       startAt: c.resume?.[id] ?? 0,
     };
   });
-  protocol.handle('rooms-provider', async (request) => {
+  const fetchPlayback = async (request: Request) => {
     try {
       refreshScope();
       const u = new URL(request.url);
@@ -1089,6 +1091,34 @@ export function setupProviders(
     } catch {
       return new Response('Personal source could not be loaded.', { status: 502 });
     }
-  });
-  return { clearPlayback };
+  };
+  protocol.handle('rooms-provider', fetchPlayback);
+  return {
+    clearPlayback,
+    fetchPlayback,
+    onPlaybackRevoked(callback: () => void) {
+      playbackRevocations.add(callback);
+      return () => playbackRevocations.delete(callback);
+    },
+    authorizePlayback(url: string) {
+      const scope = requireScope();
+      if (!/^rooms-provider:\/\/[a-f0-9-]{36}\/stream$/.test(url))
+        throw new Error('Invalid personal playback capability.');
+      const id = new URL(url).hostname;
+      const item = handles.get(id);
+      const check = () => {
+        checkScope(scope);
+        if (
+          !item ||
+          handles.get(id) !== item ||
+          item.scope !== scope ||
+          item.expires < Date.now() ||
+          !connections.has(item.connectionId)
+        )
+          throw new Error('Personal playback expired.');
+      };
+      check();
+      return check;
+    },
+  };
 }

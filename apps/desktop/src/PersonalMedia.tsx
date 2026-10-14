@@ -1745,6 +1745,228 @@ function PersonalPlayer({
     [captionId, setCaptionId] = useState(-1);
   const [liveLag, setLiveLag] = useState(0),
     [canSeekLive, setCanSeekLive] = useState(false);
+  const native = providers?.nativePlayer;
+  const nativeToken = useRef<string | null>(null);
+  const nativeTime = useRef(0);
+  const nativeVolume = useRef(volume);
+  nativeVolume.current = volume;
+  const [nativeAvailable, setNativeAvailable] = useState(false);
+  const [engine, setEngine] = useState<'checking' | 'vlc' | 'web'>(
+    native && !referenceFixture ? 'checking' : 'web',
+  );
+  useEffect(() => {
+    let active = true;
+    if (!native || referenceFixture) {
+      setEngine('web');
+      return;
+    }
+    void native
+      .status()
+      .then((status) => {
+        if (active) {
+          setNativeAvailable(status.available);
+          setEngine(status.available ? 'vlc' : 'web');
+        }
+      })
+      .catch(() => {
+        if (active) setEngine('web');
+      });
+    return () => {
+      active = false;
+    };
+  }, [native, referenceFixture]);
+  useEffect(() => {
+    if (engine !== 'vlc' || !native) return;
+    let active = true;
+    let ownToken: string | null = null;
+    let busy = false;
+    let hasPlayback = false;
+    let resumeApplied = false;
+    let timer: ReturnType<typeof setInterval> | undefined;
+    setError('');
+    setFailure(null);
+    setLoading(true);
+    setPlaying(false);
+    setSeekWindow(null);
+    setCanSeekLive(false);
+    setLiveLag(0);
+    setAudio([]);
+    setCaptions([]);
+    setAudioId(-1);
+    setCaptionId(-1);
+    completed.current = false;
+    void native
+      .start(media.url)
+      .then(async (result) => {
+        ownToken = result.token;
+        if (!active) {
+          await native.stop(result.token);
+          return;
+        }
+        nativeToken.current = result.token;
+        await native.control(result.token, {
+          action: 'volume',
+          value: Math.round(nativeVolume.current * 100),
+        });
+        const tick = async () => {
+          if (!active || busy) return;
+          busy = true;
+          try {
+            const state = await native.state(result.token);
+            if (!active) return;
+            setPlaying(state.state === 3);
+            setCurrentTime(Math.max(0, state.time));
+            nativeTime.current = Math.max(0, state.time);
+            setDuration(Math.max(0, state.duration));
+            setAudioId((value) => (value < 0 ? state.audioId : value));
+            setAudio(state.audio.filter((track) => track.id >= 0));
+            setCaptions(state.captions.filter((track) => track.id >= 0));
+            if (state.state === 7) {
+              setLoading(false);
+              setFailure('unknown');
+              setError(
+                'VLC bu yayını açamadı. Kaynak bağlantısı veya yayın biçimi nedeniyle oynatma durdu. Yeniden deneyebilirsin.',
+              );
+              return;
+            }
+            if (state.state === 6) {
+              completed.current = true;
+              setLoading(false);
+            }
+            if (state.state === 2) setLoading(true);
+            if (
+              state.state === 3 &&
+              state.width > 0 &&
+              state.height > 0 &&
+              state.displayedFrames > 0
+            ) {
+              hasPlayback = true;
+              setLoading(false);
+              if (media.live && acknowledged.current !== media.url) {
+                acknowledged.current = media.url;
+                void providers
+                  ?.acknowledgePlayback(media.url)
+                  .then(() =>
+                    usePersonalPlayback.setState((state) => ({
+                      historyRevision: state.historyRevision + 1,
+                    })),
+                  )
+                  .catch(() => {
+                    if (acknowledged.current === media.url) acknowledged.current = null;
+                  });
+              }
+            }
+            if (
+              !media.live &&
+              !resumeApplied &&
+              media.startAt &&
+              state.state === 3 &&
+              state.seekable &&
+              state.duration > media.startAt + 2
+            ) {
+              resumeApplied = true;
+              await native.control(result.token, { action: 'seek', value: media.startAt });
+            }
+            // VLC does not expose a trustworthy live/DVR interval through this adapter.
+            // Never invent a seekable live edge; VOD seeking follows actual engine support.
+            if (!media.live && state.seekable && state.duration > 0)
+              setSeekWindow({
+                start: 0,
+                end: state.duration,
+                position: state.time,
+                canSeek: true,
+                lag: 0,
+              });
+          } catch {
+            if (active) {
+              setLoading(false);
+              setFailure('expired');
+              setError('Oynatma oturumu sona erdi. Kaynağı yeniden aç.');
+            }
+          } finally {
+            busy = false;
+          }
+        };
+        await tick();
+        if (!active) return;
+        timer = setInterval(() => void tick(), 500);
+      })
+      .catch(() => {
+        if (active) {
+          setLoading(false);
+          setFailure('unknown');
+          setError('VLC yayını başlatamadı. Kaynak bağlantısını kontrol edip yeniden dene.');
+        }
+      });
+    return () => {
+      active = false;
+      if (timer) clearInterval(timer);
+      if (nativeToken.current === ownToken) nativeToken.current = null;
+      if (ownToken) {
+        if (!media.live && hasPlayback)
+          void providers
+            ?.saveResume(media.url, completed.current ? 0 : nativeTime.current)
+            .catch(() => {});
+        void native.stop(ownToken).catch(() => {});
+      }
+    };
+  }, [engine, native, media.url, attempt]);
+  useEffect(() => {
+    if (engine !== 'vlc' || !native) return;
+    let disposed = false;
+    let busy = false;
+    const update = async () => {
+      const token = nativeToken.current;
+      const element = ref.current;
+      if (disposed || busy || !token || !element) return;
+      busy = true;
+      const rect = element.getBoundingClientRect();
+      // Native views draw above Chromium. Reserve the DOM toolbar/control areas,
+      // otherwise visually hidden controls could still respond to automation clicks.
+      let top = rect.top;
+      let bottom = rect.bottom;
+      const header = stageRef.current?.querySelector('.ref-media-top')?.getBoundingClientRect();
+      const controls = stageRef.current
+        ?.querySelector('.personal-live-controls')
+        ?.getBoundingClientRect();
+      if (header && header.top <= top && header.bottom > top) top = Math.min(bottom, header.bottom);
+      if (controls && controls.top > top && controls.top < bottom) bottom = controls.top;
+      const height = Math.max(0, bottom - top);
+      const obstructed = !!document.querySelector(
+        '[role="dialog"], [role="menu"], [role="listbox"]',
+      );
+      try {
+        await native.bounds(token, {
+          x: Math.max(0, rect.x),
+          y: Math.max(0, top),
+          width: rect.x < 0 ? 0 : rect.width,
+          height: top < 0 ? 0 : height,
+          visible: visible && !miniHidden && !options && !loading && !error && !obstructed,
+        });
+      } catch {
+        /* Stale cleanup cannot update the replacement player. */
+      } finally {
+        busy = false;
+      }
+    };
+    const timer = setInterval(() => void update(), 100);
+    const observer = new ResizeObserver(() => void update());
+    if (ref.current) observer.observe(ref.current);
+    window.addEventListener('scroll', update, true);
+    void update();
+    return () => {
+      disposed = true;
+      clearInterval(timer);
+      observer.disconnect();
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [engine, native, visible, miniHidden, options, loading, error, fullscreen]);
+  useEffect(() => {
+    if (engine === 'vlc' && native && nativeToken.current)
+      void native
+        .control(nativeToken.current, { action: 'volume', value: Math.round(volume * 100) })
+        .catch(() => {});
+  }, [engine, native, volume]);
   const closeOptions = useCallback(() => {
     setOptions(false);
     setExternal(false);
@@ -1757,6 +1979,22 @@ function PersonalPlayer({
       delete document.documentElement.dataset.roomPlayerFullscreen;
     };
   }, []);
+  useEffect(() => {
+    const escape = (event: KeyboardEvent) => {
+      if (
+        event.key !== 'Escape' ||
+        options ||
+        document.querySelector('[role="dialog"]') ||
+        document.fullscreenElement !== stageRef.current
+      )
+        return;
+      event.preventDefault();
+      event.stopPropagation();
+      void document.exitFullscreen().catch((error) => notify(uiError(error)));
+    };
+    document.addEventListener('keydown', escape, true);
+    return () => document.removeEventListener('keydown', escape, true);
+  }, [options, notify]);
   useEffect(() => {
     if (fullscreen) document.documentElement.dataset.roomPlayerFullscreen = 'true';
     else delete document.documentElement.dataset.roomPlayerFullscreen;
@@ -1790,6 +2028,12 @@ function PersonalPlayer({
       revealControls();
       return;
     }
+    if (engine === 'vlc' && native && nativeToken.current) {
+      void native
+        .control(nativeToken.current, { action: 'pause', value: playing ? 1 : 0 })
+        .catch(() => notify('Oynatma kontrolü uygulanamadı.'));
+      return;
+    }
     const video = ref.current;
     if (!video) return;
     if (video.paused)
@@ -1807,6 +2051,13 @@ function PersonalPlayer({
 
   const savePosition = useCallback(
     (force = false) => {
+      if (engine === 'vlc') {
+        if (!media.live && providers && nativeToken.current)
+          void providers
+            .saveResume(media.url, completed.current ? 0 : nativeTime.current)
+            .catch(() => {});
+        return;
+      }
       const video = ref.current;
       if (!video || media.live || !providers || !video.readyState) return;
       const now = Date.now();
@@ -1816,7 +2067,7 @@ function PersonalPlayer({
         ?.saveResume(media.url, completed.current ? 0 : video.currentTime)
         .catch((e) => notify(uiError(e)));
     },
-    [media.url, media.live, notify],
+    [media.url, media.live, notify, engine],
   );
   useEffect(() => {
     completed.current = false;
@@ -1830,6 +2081,7 @@ function PersonalPlayer({
     };
   }, [media.url, media.live, notify]);
   useEffect(() => {
+    if (engine !== 'web') return;
     const video = ref.current;
     if (!video) return;
     setError('');
@@ -2049,8 +2301,17 @@ function PersonalPlayer({
       video.removeAttribute('src');
       video.load();
     };
-  }, [media.url, attempt, referenceFixture]);
+  }, [media.url, attempt, referenceFixture, engine]);
   const applyTracks = () => {
+    if (engine === 'vlc' && native && nativeToken.current) {
+      const token = nativeToken.current;
+      void Promise.all([
+        native.control(token, { action: 'audio', value: audioId }),
+        native.control(token, { action: 'caption', value: captionId }),
+      ]).catch(() => notify('Ses veya altyazı seçimi uygulanamadı.'));
+      setOptions(false);
+      return;
+    }
     const hls = hlsRef.current;
     if (hls) {
       if (audioId >= 0 && audio.some((track) => track.id === audioId)) hls.audioTrack = audioId;
@@ -2123,6 +2384,12 @@ function PersonalPlayer({
     if (referenceFixture) {
       setCurrentTime(next);
       if (media.live) setLiveLag(Math.max(0, 21600 - next));
+      return;
+    }
+    if (engine === 'vlc' && native && nativeToken.current && canSeek) {
+      void native
+        .control(nativeToken.current, { action: 'seek', value: next })
+        .catch(() => notify('Bu kaynakta konum değiştirilemiyor.'));
       return;
     }
     if (ref.current && canSeek) {
@@ -2576,6 +2843,21 @@ function PersonalPlayer({
             </>
           ) : (
             <>
+              {nativeAvailable && !referenceFixture && (
+                <label className="field-label">
+                  Oynatıcı
+                  <select
+                    value={engine}
+                    onChange={(event) => {
+                      setEngine(event.target.value as 'vlc' | 'web');
+                      closeOptions();
+                    }}
+                  >
+                    <option value="vlc">VLC</option>
+                    <option value="web">Standart</option>
+                  </select>
+                </label>
+              )}
               <h3>Ses dili</h3>
               {audio.length ? (
                 audio.map((track) => (
