@@ -156,9 +156,33 @@ Pushing or merging source into `main` does **not** update installed ROOMS client
 
 Contributor workflow: **feature branch → PR → green checks + review → main → maintainer release**. Send your PR link to the owner. Do not reuse RC.7 filenames/tags for different binaries. Windows RC.7 is unsigned and updates manually; Mac uses the configured Sparkle feed. Physical Windows and two-Mac acceptance remain separate gates.
 
+## Apple account and signing: who does what?
+
+An Apple Developer Program membership is **not required to edit ROOMS or run `pnpm dev` on your own computer**. This is an Electron application; a contributor can code, run the native development shell, build and submit changes without the owner's Apple account or Keychain. Windows development also does not require an Apple account. Actual device/privacy permissions still belong to that computer and user.
+
+Recommended arrangement for this project:
+
+1. Contributor develops and checks their feature on their own machine and opens a PR.
+2. Maintainer reviews the exact source and merges it.
+3. The existing authorized Mac release machine builds that committed source, signs with the existing ROOMS Developer ID identity, notarizes with Apple, staples and verifies the resulting package.
+4. Maintainer signs the Sparkle update metadata and publishes the immutable package and download catalog. Apple application signing and Sparkle update signing are separate keys.
+
+The contributor does not need to purchase a membership or sign each code change. Source commits are not Apple application signatures. The final distributed Mac application is signed after building. For the existing ROOMS update channel, keep the current authorized team identity and updater trust configuration. A different team's certificate is not a drop-in replacement: it needs a planned trust/update migration and actual upgrade/permission validation.
+
+If the owner explicitly delegates **release signing**, selective credential provisioning is possible; do not send an entire Keychain or Apple login:
+
+- A Developer ID Application certificate **and its matching private key** are needed on the signing Mac. A `.cer` file alone cannot sign. The relevant certificate/private key can be exported as a password-protected `.p12` and imported on an explicitly trusted signing Mac. This grants the ability to sign software under that identity, beyond merely editing ROOMS.
+- Apple notarization authorization must be provisioned separately. A local `notarytool` Keychain profile name is only a reference to credentials on that Mac; sending the name does not transfer authorization. Prefer authorized team access and a separately provisioned release credential where the membership supports it. Individual and organization membership permissions differ.
+- Publishing updates also requires the appropriate Sparkle signing authority and restricted deployment/release access. Do not include these secrets in the starter document, repository, chat or ordinary shared archive.
+- Our signed packaging script is `scripts/package-signed-mac.mjs`, invoked through `pnpm package:mac:signed`. It currently requires an Apple Silicon Mac and explicit/approved signing configuration (`ROOMS_SIGNING_IDENTITY`, `ROOMS_NOTARY_KEYCHAIN_PROFILE`, `APPLE_TEAM_ID`). Development commands do not require those variables. The signing script has project defaults; those names are not transferable credentials.
+
+For normal contributions, keep all release credentials with the maintainer. If release delegation is later chosen, provision only the exact authorized credentials through a private channel; this document does not export or grant them.
+
+Official references: [Apple membership comparison](https://developer.apple.com/support/compare-memberships/), [Developer ID certificates](https://developer.apple.com/help/account/certificates/create-developer-id-certificates/), [certificate/private-key export](https://help.apple.com/xcode/mac/current/en.lproj/dev154b28f09.html), [macOS notarization](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution).
+
 ## Open work as of this handoff
 
-- Fix Settings saving Strong → Standard and remove noise-comparison/developer clutter from normal settings (owner-reported; in progress).
+- The reported Settings save problem was resolved by the owner selecting a microphone. The later proposed Settings edits were reverted at the owner's request; no Settings cleanup or save-logic change is included in this handoff.
 - Owner-reported soundboard problem still needs a precise reproduced action/error.
 - Post-RC.7 IPTV category/recovery fixes are on source; real playback failure acceptance remains open.
 - Physical Windows microphone/screen/community-sound acceptance remains open.
