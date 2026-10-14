@@ -74,6 +74,17 @@ it('allows generic application resources, public verification keys and configura
       ),
       entry('dist/dj/original-static.svg', '<svg/>'),
       entry('public-key.txt', '-----BEGIN PUBLIC KEY-----'),
+      entry('node_modules/fastify/docs/Reference/Server.md', 'Published upstream documentation'),
+      entry(
+        'node_modules/mongodb/lib/client-side-encryption/providers/azure.js',
+        'http://169.254.169.254/metadata/identity/oauth2/token?',
+      ),
     ]),
   ).not.toThrow();
+});
+it('does not accept cloud metadata or private project documents as application configuration', () => {
+  expect(() =>
+    assertPublicEntries([entry('dist/update-config.json', '{"feed":"http://169.254.169.254/"}')]),
+  ).toThrow();
+  expect(() => assertPublicEntries([entry('docs/screenshots/private.png')])).toThrow();
 });
