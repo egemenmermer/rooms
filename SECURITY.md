@@ -1,8 +1,8 @@
 # Security policy
 
-This project is under active development. Report suspected vulnerabilities privately to the repository maintainer through GitHub private vulnerability reporting when enabled, or request a private contact channel without posting sensitive details.
+This project is under active development. Report suspected vulnerabilities through [GitHub private vulnerability reporting](https://github.com/egemenmermer/rooms/security/advisories/new). This route is enabled on the repository.
 
-Before opening the public repository, the maintainer must enable and verify a working private reporting route. Do not post credentials, private user content or exploit details in public issues. Include affected version/commit, impact, minimal safe reproduction and an appropriate contact route in the private report.
+Do not post credentials, private user content or exploit details in public issues. Include affected version/commit, impact, minimal safe reproduction and an appropriate contact route in the private report.
 
 Only test systems/accounts you are authorized to use. Production disruption/load tests require separate authorization. Never use another operator's signing, deployment or provider credentials.
 
