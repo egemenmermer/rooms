@@ -1,17 +1,12 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
+import packagePrivacy from './package-privacy.cjs';
 
 const paths = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8' })
   .split('\0')
   .filter(Boolean);
 const forbidden =
   /^(docs\/(screenshots|reference|rooms-implementation|release)\/|infra\/production\/|\.local\/)|\.(p8|p12|pfx|pem|key|dump|sqlite)$/i;
-const markers = [
-  '62.238' + '.119.134',
-  '37.27' + '.182.96',
-  '/Users/' + 'egemenmermer',
-  'U956' + '37XJ6C',
-];
 const failures = [];
 for (const path of paths) {
   if (!existsSync(path)) continue;
@@ -23,7 +18,8 @@ for (const path of paths) {
     continue;
   if (statSync(path).size > 2_000_000) continue;
   const text = readFileSync(path, 'utf8');
-  if (markers.some((marker) => text.includes(marker))) failures.push(path);
+  const fixture = path.startsWith('tests/') || /\.test\.[^.]+$/.test(path);
+  if (packagePrivacy.containsPrivateLiteral(text, process.env, fixture)) failures.push(path);
 }
 if (failures.length)
   throw new Error(`Private publication material remains: ${[...new Set(failures)].join(', ')}`);
