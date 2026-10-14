@@ -14,6 +14,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   package-resources:
+    if: github.event_name != 'workflow_dispatch' || !inputs.windows_installer
     strategy:
       fail-fast: false
       matrix:
