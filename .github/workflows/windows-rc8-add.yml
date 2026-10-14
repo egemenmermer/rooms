@@ -1,0 +1,61 @@
+name: Add verified Windows candidate to existing RC8
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  add-verified-candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: egemenmermer/rooms
+    steps:
+      - name: Fetch only the successful frozen-source Windows build
+        run: |
+          set -euo pipefail
+          gh api repos/egemenmermer/rooms/actions/runs/38550807020 > run.json
+          jq -e '.conclusion == "success" and .head_sha == "9035b623ddacd797c603b776f24aead74c875214"' run.json
+          gh run download 38550807020 --name rooms-rc8-windows-x64-candidate --dir candidate
+      - name: Verify receipt and exact executable before publication
+        run: |
+          set -euo pipefail
+          jq -e '.status == "PASS_NATIVE_WINDOWS_PACKAGE" and .version == "0.1.18-rc.8" and .sourceSha == "59dee893cc1b9d4de05cb10c16c7baa8abc9088c" and .platform == "win32" and .arch == "x64" and .signed == false and .rendererErrors == []' candidate/windows-rc8-results.json
+          jq -r '.installer.sha256 + "  candidate/" + .installer.name' candidate/windows-rc8-results.json | sha256sum --check --strict
+          python3 - <<'PYCODE'
+          import pathlib,struct
+          data=pathlib.Path('candidate/ROOMS-0.1.18-rc.8-windows-x64-setup.exe').read_bytes()
+          offset=struct.unpack_from('<I',data,0x3c)[0]
+          assert data[offset:offset+4]==b'PE\0\0'
+          optional=offset+24
+          magic=struct.unpack_from('<H',data,optional)[0]
+          directory=optional+(112 if magic==0x20b else 96)
+          assert struct.unpack_from('<II',data,directory+4*8)==(0,0), 'Unexpected Authenticode state'
+          print('Confirmed unsigned PE installer; no trusted-publisher claim')
+          PYCODE
+          gh api repos/egemenmermer/rooms/releases/tags/v0.1.18-rc.8 > release-before.json
+          jq -e '.draft == true and .prerelease == true and .target_commitish == "59dee893cc1b9d4de05cb10c16c7baa8abc9088c"' release-before.json
+      - name: Add candidate files, without replacing any existing asset
+        run: |
+          set -euo pipefail
+          gh release upload v0.1.18-rc.8 candidate/ROOMS-0.1.18-rc.8-windows-x64-setup.exe candidate/windows-rc8-results.json candidate/windows-rc8-900.png candidate/windows-rc8-1440.png
+          gh api repos/egemenmermer/rooms/releases/tags/v0.1.18-rc.8 > release-after.json
+          python3 - <<'PYCODE'
+          import json
+          before=json.load(open('release-before.json'));after=json.load(open('release-after.json'))
+          current={item['id']:item for item in after['assets']}
+          for item in before['assets']:
+            assert item['id'] in current
+            for key in ['name','size','digest','updated_at']:
+              assert item.get(key)==current[item['id']].get(key), f'Existing asset changed: {key}'
+          installer=next(item for item in after['assets'] if item['name']=='ROOMS-0.1.18-rc.8-windows-x64-setup.exe')
+          receipt=json.load(open('candidate/windows-rc8-results.json'))
+          assert installer['digest']=='sha256:'+receipt['installer']['sha256']
+          assert installer['size']==receipt['installer']['bytes']
+          print('Windows candidate added; all existing release assets preserved')
+          PYCODE
+# Owner explicitly requested adding the verified Windows build to RC8.
+# No signing keys, production server access or Mac update-feed modification.
