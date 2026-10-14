@@ -6,4 +6,3 @@ Release: release-preflight/manifest, prepare-sparkle, package-signed-mac and pub
 Verification: verify-* and focused UI/noise harnesses. Read a harness before running it; native, account, provider and service checks have different prerequisites.
 
 Historical personal-host bootstrap/reboot/disruption and legacy Spacebar commands are excluded. No verification command should target another operator's live room implicitly. Generic release publication requires explicit owner configuration and authorization.
-

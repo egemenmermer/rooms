@@ -1,1 +1,8 @@
-{"name":"@rooms/music","version":"0.1.0","private":true,"dependencies":{"@livekit/rtc-node":"1.1.0"}}
+{
+  "name": "@rooms/music",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@livekit/rtc-node": "1.1.0"
+  }
+}

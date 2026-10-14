@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": [
-      "ES2023",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
@@ -14,49 +10,20 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "types": [
-      "vite/client",
-      "node"
-    ],
+    "types": ["vite/client", "node"],
     "baseUrl": ".",
     "paths": {
-      "@rooms/contracts": [
-        "packages/shared-contracts/src/index.ts"
-      ],
-      "@rooms/activities": [
-        "packages/activity-sdk/src/index.ts"
-      ],
-      "@rooms/design": [
-        "packages/design-system/src/index.tsx"
-      ],
-      "@rooms/spacebar": [
-        "packages/spacebar-adapter/src/index.ts"
-      ],
-      "@rooms/media": [
-        "packages/media-providers/src/index.ts"
-      ],
-      "@rooms/social": [
-        "packages/social-domain/src/index.ts"
-      ],
-      "@rooms/stoat": [
-        "packages/stoat-adapter/src/index.ts"
-      ],
-      "@rooms/activity-protocol": [
-        "packages/activity-protocol/src/index.ts"
-      ],
-      "@rooms/games": [
-        "packages/games/src/index.ts"
-      ],
-      "@rooms/agent-contracts": [
-        "packages/agent-contracts/src/index.ts"
-      ]
+      "@rooms/contracts": ["packages/shared-contracts/src/index.ts"],
+      "@rooms/activities": ["packages/activity-sdk/src/index.ts"],
+      "@rooms/design": ["packages/design-system/src/index.tsx"],
+      "@rooms/spacebar": ["packages/spacebar-adapter/src/index.ts"],
+      "@rooms/media": ["packages/media-providers/src/index.ts"],
+      "@rooms/social": ["packages/social-domain/src/index.ts"],
+      "@rooms/stoat": ["packages/stoat-adapter/src/index.ts"],
+      "@rooms/activity-protocol": ["packages/activity-protocol/src/index.ts"],
+      "@rooms/games": ["packages/games/src/index.ts"],
+      "@rooms/agent-contracts": ["packages/agent-contracts/src/index.ts"]
     }
   },
-  "include": [
-    "apps",
-    "packages",
-    "tests",
-    "vite.config.ts",
-    "playwright.config.ts"
-  ]
+  "include": ["apps", "packages", "tests", "vite.config.ts", "playwright.config.ts"]
 }

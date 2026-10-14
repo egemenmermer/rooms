@@ -1,33 +1,284 @@
-import type {FastifyInstance} from 'fastify';
-import {AccessToken,TrackSource,type RoomServiceClient} from 'livekit-server-sdk';
-import {randomUUID,timingSafeEqual,createHash} from 'node:crypto';
-import {z} from 'zod';
-import {musicCommandSchema,musicSnapshotSchema,musicIdentity,musicSearchQuerySchema,musicSearchResultsSchema} from '../../../packages/shared-contracts/src/music';
-const channel=z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
-interface Lease {id:string;token:string;userId:string;expires:number}
-export function registerMusicGateway(server:FastifyInstance,options:{displayName?:string;url?:string;secret?:string;apiKey:string;apiSecret:string;livekitUrl:string;roomService:Pick<RoomServiceClient,'getParticipant'|'listParticipants'|'removeParticipant'|'updateParticipant'>;authorize(token:string,channelId:string):Promise<{userId:string;canControl:boolean}>}){
- const displayName=z.string().trim().min(1).max(40).regex(/^[^\x00-\x1f\x7f]+$/).parse(options.displayName??'DJ');
- const leases=new Map<string,Lease>();const room=(id:string)=>`stoat-channel-${id}`;
- const configured=!!options.url&&!!options.secret&&options.secret.length>=32;
- async function worker(channelId:string,body?:unknown){if(!configured)throw new Error('MUSIC_NOT_CONFIGURED');const response=await fetch(`${options.url}/v1/rooms/${encodeURIComponent(channelId)}`,{method:body?'POST':'GET',headers:{Authorization:`Bearer ${options.secret}`,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,redirect:'error',signal:AbortSignal.timeout(body?150000:10000)});const result=await response.json();if(!response.ok)throw new Error(typeof result?.error==='string'&&/^MUSIC_[A-Z_]+$/.test(result.error)?result.error:'MUSIC_SERVICE_UNAVAILABLE');return musicSnapshotSchema.parse(result);}
- async function revoke(channelId:string){leases.delete(channelId);await options.roomService.removeParticipant(room(channelId),musicIdentity(channelId)).catch(()=>{});}
- async function validate(channelId:string,lease:Lease){const access=await options.authorize(lease.token,channelId);if(access.userId!==lease.userId||!access.canControl)throw new Error('MUSIC_PERMISSION_DENIED');const humans=(await options.roomService.listParticipants(room(channelId))).filter(p=>p.identity!==musicIdentity(channelId));if(!humans.length)throw new Error('MUSIC_ROOM_EMPTY');}
- async function grant(channelId:string,lease:Lease){await validate(channelId,lease);lease.expires=Date.now()+35000;const access=new AccessToken(options.apiKey,options.apiSecret,{identity:musicIdentity(channelId),name:displayName,ttl:300,metadata:JSON.stringify({musicLeaseId:lease.id})});access.addGrant({roomJoin:true,room:room(channelId),canSubscribe:false,canPublish:true,canPublishSources:[TrackSource.MICROPHONE],canPublishData:false,canUpdateOwnMetadata:false});return{leaseId:lease.id,url:options.livekitUrl,token:await access.toJwt()};}
- server.post('/v1/music/internal/lease',async(request,reply)=>{const received=request.headers.authorization?.replace(/^Bearer /,'')??'',secret=options.secret??'';if(!configured||Buffer.byteLength(received)!==Buffer.byteLength(secret)||!timingSafeEqual(Buffer.from(received),Buffer.from(secret)))return reply.code(401).send({error:'AUTH_REQUIRED'});const body=z.object({channelId:channel,leaseId:z.string().uuid()}).strict().parse(request.body);const lease=leases.get(body.channelId);if(!lease||lease.id!==body.leaseId||lease.expires<Date.now())return reply.code(403).send({error:'MUSIC_LEASE_EXPIRED'});try{return await grant(body.channelId,lease);}catch{await revoke(body.channelId);return reply.code(403).send({error:'MUSIC_PERMISSION_DENIED'});}});
- const token=(header:string|undefined)=>{const value=header?.replace(/^Bearer /,'');if(!value)throw new Error('AUTH_REQUIRED');return value;};
- const fail=(reply:{code(n:number):{send(v:unknown):unknown}},error:unknown)=>{const message=error instanceof Error?error.message:'';return reply.code(message==='AUTH_REQUIRED'?401:message==='MUSIC_PERMISSION_DENIED'||message==='MUSIC_JOIN_FIRST'?403:503).send({error:/^(MUSIC_[A-Z_]+|AUTH_REQUIRED)$/.test(message)?message:'MUSIC_SERVICE_UNAVAILABLE'});};
- server.get('/v1/music/:channelId',async(request,reply)=>{try{const id=channel.parse((request.params as {channelId:string}).channelId);await options.authorize(token(request.headers.authorization),id);return await worker(id);}catch(error){return fail(reply,error);}});
- server.post('/v1/music/:channelId/search',{config:{rateLimit:{max:12,timeWindow:'1 minute',keyGenerator:request=>'music-search:'+createHash('sha256').update(request.headers.authorization??request.ip).digest('hex')}}},async(request,reply)=>{try{
-  const id=channel.parse((request.params as {channelId:string}).channelId),body=z.object({query:musicSearchQuerySchema}).strict().parse(request.body);
-  const access=await options.authorize(token(request.headers.authorization),id);if(!access.canControl)throw new Error('MUSIC_PERMISSION_DENIED');
-  if(!await options.roomService.getParticipant(room(id),access.userId).catch(()=>null))throw new Error('MUSIC_JOIN_FIRST');
-  if(!configured)throw new Error('MUSIC_NOT_CONFIGURED');
-  const response=await fetch(`${options.url}/v1/search`,{method:'POST',headers:{Authorization:`Bearer ${options.secret}`,'Content-Type':'application/json'},body:JSON.stringify(body),redirect:'error',signal:AbortSignal.timeout(50000)});
-  const result=await response.json();if(!response.ok)throw new Error('MUSIC_SEARCH_UNAVAILABLE');
-  const fresh=await options.authorize(token(request.headers.authorization),id);if(fresh.userId!==access.userId||!fresh.canControl||!await options.roomService.getParticipant(room(id),access.userId).catch(()=>null))throw new Error('MUSIC_PERMISSION_DENIED');
-  return musicSearchResultsSchema.parse(result);
- }catch(error){return fail(reply,error);}});
- server.post('/v1/music/:channelId',async(request,reply)=>{let id:string|undefined;try{id=channel.parse((request.params as {channelId:string}).channelId);const command=musicCommandSchema.parse(request.body),credential=token(request.headers.authorization),access=await options.authorize(credential,id);if(!access.canControl)throw new Error('MUSIC_PERMISSION_DENIED');const member=await options.roomService.getParticipant(room(id),access.userId).catch(()=>null);if(!member)throw new Error('MUSIC_JOIN_FIRST');const lease=leases.get(id)??{id:randomUUID(),token:credential,userId:access.userId,expires:Date.now()+35000};lease.token=credential;lease.userId=access.userId;leases.set(id,lease);const media=await grant(id,lease);try{return await worker(id,{lease:media,command});}finally{if(command.type==='stop')await revoke(id);}}catch(error){return fail(reply,error);}});
- let sweeping=false;const timer=setInterval(()=>{if(sweeping)return;sweeping=true;void (async()=>{try{for(const [id,lease]of leases){try{if(lease.expires<Date.now())throw new Error('Expired');await validate(id,lease);}catch{await revoke(id);}}}finally{sweeping=false;}})();},10000);timer.unref();server.addHook('onClose',async()=>{clearInterval(timer);await Promise.all([...leases.keys()].map(revoke));});
- return {async webhook(channelId:string,identity:string,metadata:string){if(identity!==musicIdentity(channelId))return false;const lease=leases.get(channelId);let valid=false;try{valid=!!lease&&lease.expires>Date.now()&&JSON.parse(metadata||'{}').musicLeaseId===lease.id;if(valid)await validate(channelId,lease!);}catch{valid=false;}if(!valid){await revoke(channelId);return true;}await options.roomService.updateParticipant(room(channelId),identity,{permission:{canSubscribe:false,canPublish:true,canPublishSources:[TrackSource.MICROPHONE],canPublishData:false}});return true;}};
+import type { FastifyInstance } from 'fastify';
+import { AccessToken, TrackSource, type RoomServiceClient } from 'livekit-server-sdk';
+import { randomUUID, timingSafeEqual, createHash } from 'node:crypto';
+import { z } from 'zod';
+import {
+  musicCommandSchema,
+  musicSnapshotSchema,
+  musicIdentity,
+  musicSearchQuerySchema,
+  musicSearchResultsSchema,
+} from '../../../packages/shared-contracts/src/music';
+const channel = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
+interface Lease {
+  id: string;
+  token: string;
+  userId: string;
+  expires: number;
+}
+export function registerMusicGateway(
+  server: FastifyInstance,
+  options: {
+    displayName?: string;
+    url?: string;
+    secret?: string;
+    apiKey: string;
+    apiSecret: string;
+    livekitUrl: string;
+    roomService: Pick<
+      RoomServiceClient,
+      'getParticipant' | 'listParticipants' | 'removeParticipant' | 'updateParticipant'
+    >;
+    authorize(token: string, channelId: string): Promise<{ userId: string; canControl: boolean }>;
+  },
+) {
+  const displayName = z
+    .string()
+    .trim()
+    .min(1)
+    .max(40)
+    .regex(/^[^\x00-\x1f\x7f]+$/)
+    .parse(options.displayName ?? 'DJ');
+  const leases = new Map<string, Lease>();
+  const room = (id: string) => `stoat-channel-${id}`;
+  const configured = !!options.url && !!options.secret && options.secret.length >= 32;
+  async function worker(channelId: string, body?: unknown) {
+    if (!configured) throw new Error('MUSIC_NOT_CONFIGURED');
+    const response = await fetch(`${options.url}/v1/rooms/${encodeURIComponent(channelId)}`, {
+      method: body ? 'POST' : 'GET',
+      headers: { Authorization: `Bearer ${options.secret}`, 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+      redirect: 'error',
+      signal: AbortSignal.timeout(body ? 150000 : 10000),
+    });
+    const result = await response.json();
+    if (!response.ok)
+      throw new Error(
+        typeof result?.error === 'string' && /^MUSIC_[A-Z_]+$/.test(result.error)
+          ? result.error
+          : 'MUSIC_SERVICE_UNAVAILABLE',
+      );
+    return musicSnapshotSchema.parse(result);
+  }
+  async function revoke(channelId: string) {
+    leases.delete(channelId);
+    await options.roomService
+      .removeParticipant(room(channelId), musicIdentity(channelId))
+      .catch(() => {});
+  }
+  async function validate(channelId: string, lease: Lease) {
+    const access = await options.authorize(lease.token, channelId);
+    if (access.userId !== lease.userId || !access.canControl)
+      throw new Error('MUSIC_PERMISSION_DENIED');
+    const humans = (await options.roomService.listParticipants(room(channelId))).filter(
+      (p) => p.identity !== musicIdentity(channelId),
+    );
+    if (!humans.length) throw new Error('MUSIC_ROOM_EMPTY');
+  }
+  async function grant(channelId: string, lease: Lease) {
+    await validate(channelId, lease);
+    lease.expires = Date.now() + 35000;
+    const access = new AccessToken(options.apiKey, options.apiSecret, {
+      identity: musicIdentity(channelId),
+      name: displayName,
+      ttl: 300,
+      metadata: JSON.stringify({ musicLeaseId: lease.id }),
+    });
+    access.addGrant({
+      roomJoin: true,
+      room: room(channelId),
+      canSubscribe: false,
+      canPublish: true,
+      canPublishSources: [TrackSource.MICROPHONE],
+      canPublishData: false,
+      canUpdateOwnMetadata: false,
+    });
+    return { leaseId: lease.id, url: options.livekitUrl, token: await access.toJwt() };
+  }
+  server.post('/v1/music/internal/lease', async (request, reply) => {
+    const received = request.headers.authorization?.replace(/^Bearer /, '') ?? '',
+      secret = options.secret ?? '';
+    if (
+      !configured ||
+      Buffer.byteLength(received) !== Buffer.byteLength(secret) ||
+      !timingSafeEqual(Buffer.from(received), Buffer.from(secret))
+    )
+      return reply.code(401).send({ error: 'AUTH_REQUIRED' });
+    const body = z
+      .object({ channelId: channel, leaseId: z.string().uuid() })
+      .strict()
+      .parse(request.body);
+    const lease = leases.get(body.channelId);
+    if (!lease || lease.id !== body.leaseId || lease.expires < Date.now())
+      return reply.code(403).send({ error: 'MUSIC_LEASE_EXPIRED' });
+    try {
+      return await grant(body.channelId, lease);
+    } catch {
+      await revoke(body.channelId);
+      return reply.code(403).send({ error: 'MUSIC_PERMISSION_DENIED' });
+    }
+  });
+  const token = (header: string | undefined) => {
+    const value = header?.replace(/^Bearer /, '');
+    if (!value) throw new Error('AUTH_REQUIRED');
+    return value;
+  };
+  const fail = (reply: { code(n: number): { send(v: unknown): unknown } }, error: unknown) => {
+    const message = error instanceof Error ? error.message : '';
+    return reply
+      .code(
+        message === 'AUTH_REQUIRED'
+          ? 401
+          : message === 'MUSIC_PERMISSION_DENIED' || message === 'MUSIC_JOIN_FIRST'
+            ? 403
+            : 503,
+      )
+      .send({
+        error: /^(MUSIC_[A-Z_]+|AUTH_REQUIRED)$/.test(message)
+          ? message
+          : 'MUSIC_SERVICE_UNAVAILABLE',
+      });
+  };
+  server.get('/v1/music/:channelId', async (request, reply) => {
+    try {
+      const id = channel.parse((request.params as { channelId: string }).channelId);
+      await options.authorize(token(request.headers.authorization), id);
+      return await worker(id);
+    } catch (error) {
+      return fail(reply, error);
+    }
+  });
+  server.post(
+    '/v1/music/:channelId/search',
+    {
+      config: {
+        rateLimit: {
+          max: 12,
+          timeWindow: '1 minute',
+          keyGenerator: (request) =>
+            'music-search:' +
+            createHash('sha256')
+              .update(request.headers.authorization ?? request.ip)
+              .digest('hex'),
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const id = channel.parse((request.params as { channelId: string }).channelId),
+          body = z.object({ query: musicSearchQuerySchema }).strict().parse(request.body);
+        const access = await options.authorize(token(request.headers.authorization), id);
+        if (!access.canControl) throw new Error('MUSIC_PERMISSION_DENIED');
+        if (!(await options.roomService.getParticipant(room(id), access.userId).catch(() => null)))
+          throw new Error('MUSIC_JOIN_FIRST');
+        if (!configured) throw new Error('MUSIC_NOT_CONFIGURED');
+        const response = await fetch(`${options.url}/v1/search`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${options.secret}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+          redirect: 'error',
+          signal: AbortSignal.timeout(50000),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error('MUSIC_SEARCH_UNAVAILABLE');
+        const fresh = await options.authorize(token(request.headers.authorization), id);
+        if (
+          fresh.userId !== access.userId ||
+          !fresh.canControl ||
+          !(await options.roomService.getParticipant(room(id), access.userId).catch(() => null))
+        )
+          throw new Error('MUSIC_PERMISSION_DENIED');
+        return musicSearchResultsSchema.parse(result);
+      } catch (error) {
+        return fail(reply, error);
+      }
+    },
+  );
+  server.post('/v1/music/:channelId', async (request, reply) => {
+    let id: string | undefined;
+    try {
+      id = channel.parse((request.params as { channelId: string }).channelId);
+      const command = musicCommandSchema.parse(request.body),
+        credential = token(request.headers.authorization),
+        access = await options.authorize(credential, id);
+      if (!access.canControl) throw new Error('MUSIC_PERMISSION_DENIED');
+      const member = await options.roomService
+        .getParticipant(room(id), access.userId)
+        .catch(() => null);
+      if (!member) throw new Error('MUSIC_JOIN_FIRST');
+      const lease = leases.get(id) ?? {
+        id: randomUUID(),
+        token: credential,
+        userId: access.userId,
+        expires: Date.now() + 35000,
+      };
+      lease.token = credential;
+      lease.userId = access.userId;
+      leases.set(id, lease);
+      const media = await grant(id, lease);
+      try {
+        return await worker(id, { lease: media, command });
+      } finally {
+        if (command.type === 'stop') await revoke(id);
+      }
+    } catch (error) {
+      return fail(reply, error);
+    }
+  });
+  let sweeping = false;
+  const timer = setInterval(() => {
+    if (sweeping) return;
+    sweeping = true;
+    void (async () => {
+      try {
+        for (const [id, lease] of leases) {
+          try {
+            if (lease.expires < Date.now()) throw new Error('Expired');
+            await validate(id, lease);
+          } catch {
+            await revoke(id);
+          }
+        }
+      } finally {
+        sweeping = false;
+      }
+    })();
+  }, 10000);
+  timer.unref();
+  server.addHook('onClose', async () => {
+    clearInterval(timer);
+    await Promise.all([...leases.keys()].map(revoke));
+  });
+  return {
+    async webhook(channelId: string, identity: string, metadata: string) {
+      if (identity !== musicIdentity(channelId)) return false;
+      const lease = leases.get(channelId);
+      let valid = false;
+      try {
+        valid =
+          !!lease &&
+          lease.expires > Date.now() &&
+          JSON.parse(metadata || '{}').musicLeaseId === lease.id;
+        if (valid) await validate(channelId, lease!);
+      } catch {
+        valid = false;
+      }
+      if (!valid) {
+        await revoke(channelId);
+        return true;
+      }
+      await options.roomService.updateParticipant(room(channelId), identity, {
+        permission: {
+          canSubscribe: false,
+          canPublish: true,
+          canPublishSources: [TrackSource.MICROPHONE],
+          canPublishData: false,
+        },
+      });
+      return true;
+    },
+  };
 }

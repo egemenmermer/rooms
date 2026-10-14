@@ -7,23 +7,51 @@ import CinemaPlayback from '../apps/desktop/src/CinemaPlayback';
 import { clearCinemaSession, useCinemaSession } from '../apps/desktop/src/cinema-session';
 import { miniPlaybackFixtureVariant } from '../apps/desktop/src/dev/mini-playback-fixture';
 
-const pause = vi.fn(), load = vi.fn(), mic = vi.fn(async () => {});
-vi.mock('../apps/desktop/src/realtime', () => ({ useRealtime: () => ({ status: 'connected', muted: false, roomName: 'Salon', participants: [], tracks: [] }), toggleMic: () => mic() }));
-const source = { url: 'rooms-media://e65709dd-7fa1-4dbb-a7b5-ce0c7777a034/video', name: 'Owned source' };
+const pause = vi.fn(),
+  load = vi.fn(),
+  mic = vi.fn(async () => {});
+vi.mock('../apps/desktop/src/realtime', () => ({
+  useRealtime: () => ({
+    status: 'connected',
+    muted: false,
+    roomName: 'Salon',
+    participants: [],
+    tracks: [],
+  }),
+  toggleMic: () => mic(),
+}));
+const source = {
+  url: 'rooms-media://e65709dd-7fa1-4dbb-a7b5-ce0c7777a034/video',
+  name: 'Owned source',
+};
 beforeEach(() => {
   vi.clearAllMocks();
   window.rooms = { releaseMedia: vi.fn(async () => {}) } as unknown as NonNullable<Window['rooms']>;
   Object.defineProperty(HTMLMediaElement.prototype, 'pause', { configurable: true, value: pause });
   Object.defineProperty(HTMLMediaElement.prototype, 'load', { configurable: true, value: load });
-  Object.defineProperty(HTMLMediaElement.prototype, 'play', { configurable: true, value: vi.fn(async () => {}) });
+  Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+    configurable: true,
+    value: vi.fn(async () => {}),
+  });
   useCinemaSession.setState({ media: source, choosing: false });
 });
-afterEach(() => { cleanup(); clearCinemaSession(); });
-const mount = () => render(<MemoryRouter initialEntries={['/chat']}><Link to="/cinema?view=personal">Main player</Link><Link to="/chat">Chat</Link><CinemaPlayback notify={vi.fn()}/></MemoryRouter>);
+afterEach(() => {
+  cleanup();
+  clearCinemaSession();
+});
+const mount = () =>
+  render(
+    <MemoryRouter initialEntries={['/chat']}>
+      <Link to="/cinema?view=personal">Main player</Link>
+      <Link to="/chat">Chat</Link>
+      <CinemaPlayback notify={vi.fn()} />
+    </MemoryRouter>,
+  );
 describe('S30 persistent miniature playback', () => {
   it('hides the miniature without stopping/revoking/reloading the source and restores it after return', () => {
     const { container } = mount();
-    const video = container.querySelector('video')!; video.currentTime = 137;
+    const video = container.querySelector('video')!;
+    video.currentTime = 137;
     const loads = load.mock.calls.length;
     fireEvent.click(screen.getByRole('button', { name: 'Küçük oynatıcıyı gizle' }));
     expect(container.querySelector('.cinema-mini-hidden')).not.toBeNull();
@@ -38,7 +66,8 @@ describe('S30 persistent miniature playback', () => {
     expect(container.querySelector('video')).toBe(video);
   });
   it('collapses/expands only presentation and retains the current video and voice operation', async () => {
-    const { container } = mount(); const video = container.querySelector('video');
+    const { container } = mount();
+    const video = container.querySelector('video');
     fireEvent.click(screen.getByRole('button', { name: 'Kompakt oynatıcıya geç' }));
     expect(container.querySelector('.cinema-mini-collapsed')).not.toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Mikrofonu kapat' }));
@@ -51,7 +80,8 @@ describe('S30 persistent miniature playback', () => {
   });
   it('rejects unlisted development variants', () => {
     expect(miniPlaybackFixtureVariant('')).toBe('default');
-    for (const value of ['default', 'compact', 'personal', 'live']) expect(miniPlaybackFixtureVariant(value)).toBe(value);
+    for (const value of ['default', 'compact', 'personal', 'live'])
+      expect(miniPlaybackFixtureVariant(value)).toBe(value);
     expect(() => miniPlaybackFixtureVariant('fake_native')).toThrow();
   });
 });

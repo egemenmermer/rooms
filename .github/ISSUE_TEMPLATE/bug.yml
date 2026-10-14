@@ -14,4 +14,3 @@ body:
       label: Reproduction steps
     validations:
       required: true
-

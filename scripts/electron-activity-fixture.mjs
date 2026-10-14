@@ -1,11 +1,117 @@
-import {build} from 'esbuild';
-import {createRequire} from 'node:module';
-import {_electron as electron} from '@playwright/test';
-import {mkdir} from 'node:fs/promises';
-import {resolve} from 'node:path';
-const dir=resolve('.local/qa');await mkdir(dir,{recursive:true});await build({entryPoints:['tests/fixtures/activity-server.ts'],outfile:dir+'/activity-fixture.cjs',bundle:true,platform:'node',format:'cjs'});const require=createRequire(import.meta.url);const {startFixtureActivity}=require(dir+'/activity-fixture.cjs');const server=await startFixtureActivity();
-const sessions=[];export async function openFixtureClient(token){const env={...process.env,ROOMS_PROFILE:`qa-activity-${token}-${Date.now()}`};delete env.ELECTRON_RUN_AS_NODE;const app=await electron.launch({args:['.'],env});sessions.push(app);const page=await app.firstWindow();await page.waitForSelector('.hero');const fixture={token,origin:server.listeningOrigin,user:{id:token,username:token,displayName:`QA fixture · ${token==='qa-alice'?'Alice':'Bob'}`,avatar:null}};
-await app.evaluate(({ipcMain},f)=>{const social={instanceUrl:'https://qa-fixture.invalid',user:f.user,status:'connected',remembered:false};const replace=(name,handler)=>{ipcMain.removeHandler(name);ipcMain.handle(name,handler);};replace('rooms:social-session',()=>social);replace('rooms:social-login',()=>social);replace('rooms:social-spaces',()=>[{id:'qa-space',name:'QA FIXTURE — not a Stoat server',ownerId:'qa-alice',icon:null}]);replace('rooms:social-channels',()=>[{id:'qa-room',spaceId:'qa-space',name:'QA fixture table',type:0,topic:'Test-only authorization; actual Activity service.',recipients:[]}]);replace('rooms:social-messages',()=>[]);replace('rooms:social-dms',()=>[]);const call=async(roomId,method,body,afterRevision)=>{const result=await fetch(`${f.origin}/v1/rooms/${roomId}/activity${method==='POST'?'/commands':''}${method==='GET'&&afterRevision!==undefined?`?afterRevision=${afterRevision}&waitMs=1000`:''}`,{method,headers:{Authorization:`Bearer ${f.token}`,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});if(!result.ok)throw new Error(await result.text());return result.json();};replace('rooms:activity-snapshot',(_e,roomId,revision)=>call(roomId,'GET',undefined,revision));replace('rooms:activity-command',(_e,roomId,body)=>call(roomId,'POST',body));},fixture);
-await page.reload();await page.waitForTimeout(300);await page.evaluate(()=>{const label=document.createElement('div');label.textContent='QA FIXTURE · Actual Activity service / test-only social authorization';label.id='qa-evidence-label';Object.assign(label.style,{position:'fixed',bottom:'0',left:'0',right:'0',background:'#e7b96f',color:'#111',font:'11px system-ui',textAlign:'center',zIndex:'999999',padding:'4px'});document.body.append(label);});return{app,page,fixture};}
-export async function closeFixture(){for(const app of sessions)await app.close();await server.close();}
-if(process.argv[1]===new URL(import.meta.url).pathname){try{const {page}=await openFixtureClient('qa-alice');await page.evaluate(()=>location.hash='/games');await page.waitForSelector('.games-page');await page.screenshot({path:'docs/screenshots/tr/games-fixture-empty-1440.png'});console.log('Explicit fixture Electron connected to actual Activity service.');}finally{await closeFixture();}}
+import { build } from 'esbuild';
+import { createRequire } from 'node:module';
+import { _electron as electron } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
+const dir = resolve('.local/qa');
+await mkdir(dir, { recursive: true });
+await build({
+  entryPoints: ['tests/fixtures/activity-server.ts'],
+  outfile: dir + '/activity-fixture.cjs',
+  bundle: true,
+  platform: 'node',
+  format: 'cjs',
+});
+const require = createRequire(import.meta.url);
+const { startFixtureActivity } = require(dir + '/activity-fixture.cjs');
+const server = await startFixtureActivity();
+const sessions = [];
+export async function openFixtureClient(token) {
+  const env = { ...process.env, ROOMS_PROFILE: `qa-activity-${token}-${Date.now()}` };
+  delete env.ELECTRON_RUN_AS_NODE;
+  const app = await electron.launch({ args: ['.'], env });
+  sessions.push(app);
+  const page = await app.firstWindow();
+  await page.waitForSelector('.hero');
+  const fixture = {
+    token,
+    origin: server.listeningOrigin,
+    user: {
+      id: token,
+      username: token,
+      displayName: `QA fixture · ${token === 'qa-alice' ? 'Alice' : 'Bob'}`,
+      avatar: null,
+    },
+  };
+  await app.evaluate(({ ipcMain }, f) => {
+    const social = {
+      instanceUrl: 'https://qa-fixture.invalid',
+      user: f.user,
+      status: 'connected',
+      remembered: false,
+    };
+    const replace = (name, handler) => {
+      ipcMain.removeHandler(name);
+      ipcMain.handle(name, handler);
+    };
+    replace('rooms:social-session', () => social);
+    replace('rooms:social-login', () => social);
+    replace('rooms:social-spaces', () => [
+      { id: 'qa-space', name: 'QA FIXTURE — not a Stoat server', ownerId: 'qa-alice', icon: null },
+    ]);
+    replace('rooms:social-channels', () => [
+      {
+        id: 'qa-room',
+        spaceId: 'qa-space',
+        name: 'QA fixture table',
+        type: 0,
+        topic: 'Test-only authorization; actual Activity service.',
+        recipients: [],
+      },
+    ]);
+    replace('rooms:social-messages', () => []);
+    replace('rooms:social-dms', () => []);
+    const call = async (roomId, method, body, afterRevision) => {
+      const result = await fetch(
+        `${f.origin}/v1/rooms/${roomId}/activity${method === 'POST' ? '/commands' : ''}${method === 'GET' && afterRevision !== undefined ? `?afterRevision=${afterRevision}&waitMs=1000` : ''}`,
+        {
+          method,
+          headers: { Authorization: `Bearer ${f.token}`, 'Content-Type': 'application/json' },
+          body: body ? JSON.stringify(body) : undefined,
+        },
+      );
+      if (!result.ok) throw new Error(await result.text());
+      return result.json();
+    };
+    replace('rooms:activity-snapshot', (_e, roomId, revision) =>
+      call(roomId, 'GET', undefined, revision),
+    );
+    replace('rooms:activity-command', (_e, roomId, body) => call(roomId, 'POST', body));
+  }, fixture);
+  await page.reload();
+  await page.waitForTimeout(300);
+  await page.evaluate(() => {
+    const label = document.createElement('div');
+    label.textContent = 'QA FIXTURE · Actual Activity service / test-only social authorization';
+    label.id = 'qa-evidence-label';
+    Object.assign(label.style, {
+      position: 'fixed',
+      bottom: '0',
+      left: '0',
+      right: '0',
+      background: '#e7b96f',
+      color: '#111',
+      font: '11px system-ui',
+      textAlign: 'center',
+      zIndex: '999999',
+      padding: '4px',
+    });
+    document.body.append(label);
+  });
+  return { app, page, fixture };
+}
+export async function closeFixture() {
+  for (const app of sessions) await app.close();
+  await server.close();
+}
+if (process.argv[1] === new URL(import.meta.url).pathname) {
+  try {
+    const { page } = await openFixtureClient('qa-alice');
+    await page.evaluate(() => (location.hash = '/games'));
+    await page.waitForSelector('.games-page');
+    await page.screenshot({ path: 'docs/screenshots/tr/games-fixture-empty-1440.png' });
+    console.log('Explicit fixture Electron connected to actual Activity service.');
+  } finally {
+    await closeFixture();
+  }
+}

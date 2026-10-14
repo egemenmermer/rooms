@@ -1,21 +1,142 @@
-.room-screen-gallery{display:flex;flex-direction:column;flex:1;gap:10px;min-width:0;min-height:0;overflow:hidden;}
-.room-screen-focus{position:relative;flex:1;min-width:0;min-height:0;overflow:hidden;background:#050608;border-radius:10px;}
-.room-screen-focus video{display:block;width:100%;height:100%;object-fit:contain;}
-.room-screen-overlay{position:absolute;inset:auto 10px 10px;display:flex;align-items:center;justify-content:space-between;pointer-events:none;}
-.room-screen-overlay span,.room-screen-overlay button{display:flex;align-items:center;gap:7px;padding:8px;background:#101116c9;border:0;border-radius:7px;color:#eee;}
-.room-screen-overlay button{pointer-events:auto;cursor:pointer;}
-.room-screen-focus:fullscreen{width:100vw;height:100vh;border-radius:0;max-height:none;}
-.room-screen-focus:fullscreen video{width:100%;height:100%;object-fit:contain;}
-.room-screen-thumbnails{display:flex;flex-shrink:0;gap:8px;overflow-x:auto;padding:2px;}
-.room-screen-thumbnails button{position:relative;flex:0 0 156px;aspect-ratio:16/9;overflow:hidden;border:1px solid #343540;border-radius:7px;background:#090a0c;padding:0;cursor:pointer;color:#eee;}
-.room-screen-thumbnails button[aria-pressed=true]{border-color:#a798ef;}
-.room-screen-thumbnails video,.room-share-preview video{width:100%;height:100%;object-fit:contain;}
-.room-screen-thumbnails span,.room-share-preview span{position:absolute;bottom:5px;left:5px;display:flex;align-items:center;gap:5px;background:#101116b8;padding:4px 6px;border-radius:5px;}
-.room-share-preview{position:relative;min-height:0;overflow:hidden;border:1px solid #373844;border-radius:9px;background:#08090b;color:#eee;padding:0;cursor:pointer;}
-.minimal-room-ui.voice-mode .familiar-room.is-screen{height:100%;min-height:0;box-sizing:border-box;overflow:hidden;padding:12px 12px 110px!important;}
-.minimal-room-ui.voice-mode .familiar-room.is-screen>.reference-voice-heading{display:none;}
-.minimal-room-ui.voice-mode .familiar-room.is-screen .reference-share-content{min-height:0;overflow:hidden;gap:8px;}
-.minimal-room-ui.voice-mode .familiar-room.is-screen .reference-share-banner{padding:6px 10px;flex-shrink:0;}
-@media(max-height:760px){.room-screen-thumbnails button{flex-basis:120px;}.minimal-room-ui.voice-mode .familiar-room.is-screen{padding:10px 10px 96px!important;}}
+.room-screen-gallery {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.room-screen-focus {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #050608;
+  border-radius: 10px;
+}
+.room-screen-focus video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.room-screen-overlay {
+  position: absolute;
+  inset: auto 10px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.room-screen-overlay span,
+.room-screen-overlay button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px;
+  background: #101116c9;
+  border: 0;
+  border-radius: 7px;
+  color: #eee;
+}
+.room-screen-overlay button {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.room-screen-focus:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  max-height: none;
+}
+.room-screen-focus:fullscreen video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.room-screen-thumbnails {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px;
+}
+.room-screen-thumbnails button {
+  position: relative;
+  flex: 0 0 156px;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  border: 1px solid #343540;
+  border-radius: 7px;
+  background: #090a0c;
+  padding: 0;
+  cursor: pointer;
+  color: #eee;
+}
+.room-screen-thumbnails button[aria-pressed='true'] {
+  border-color: #a798ef;
+}
+.room-screen-thumbnails video,
+.room-share-preview video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.room-screen-thumbnails span,
+.room-share-preview span {
+  position: absolute;
+  bottom: 5px;
+  left: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #101116b8;
+  padding: 4px 6px;
+  border-radius: 5px;
+}
+.room-share-preview {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid #373844;
+  border-radius: 9px;
+  background: #08090b;
+  color: #eee;
+  padding: 0;
+  cursor: pointer;
+}
+.minimal-room-ui.voice-mode .familiar-room.is-screen {
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 12px 12px 110px !important;
+}
+.minimal-room-ui.voice-mode .familiar-room.is-screen > .reference-voice-heading {
+  display: none;
+}
+.minimal-room-ui.voice-mode .familiar-room.is-screen .reference-share-content {
+  min-height: 0;
+  overflow: hidden;
+  gap: 8px;
+}
+.minimal-room-ui.voice-mode .familiar-room.is-screen .reference-share-banner {
+  padding: 6px 10px;
+  flex-shrink: 0;
+}
+@media (max-height: 760px) {
+  .room-screen-thumbnails button {
+    flex-basis: 120px;
+  }
+  .minimal-room-ui.voice-mode .familiar-room.is-screen {
+    padding: 10px 10px 96px !important;
+  }
+}
 
-.room-screen-overlay>div{display:flex;gap:6px;pointer-events:auto;}
+.room-screen-overlay > div {
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+}

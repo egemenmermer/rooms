@@ -9,7 +9,8 @@ export function getPersonalProviders(): ProviderBridge | undefined {
 }
 
 export function installPersonalProviderFixture(bridge: ProviderBridge): () => void {
-  if (!import.meta.env.DEV) throw new Error('Personal provider fixtures are unavailable in production.');
+  if (!import.meta.env.DEV)
+    throw new Error('Personal provider fixtures are unavailable in production.');
   const entry = { bridge };
   fixtures.push(entry);
   return () => {
