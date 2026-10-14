@@ -19,3 +19,9 @@ Run38535360423: TypeScript PASS;781/784 tests PASS. Three failures were `EPERM f
 Run38535819401 (toolingbec563c, runtime frozenb38f8e9) PASS:117files/780tests, types/build, NSIS installation, installed ASAR equality, packaged Win32/x64 launch, sandboxed onboarding, two viewport screenshots, Strong+Standard bundled model readiness, invalid privileged command rejection and preference persistence on relaunch. Capture enumeration:3sources/1screen; enumeration is not publication/transport acceptance.
 
 Installer:135103498bytes; SHA256 eacd4adb42f8db1aeacfd9bfbe533427cebd461ecb71001df9fabe6ba3388add. The next workflow adds only this frozen verified unsigned candidate and its receipts/screenshots to existing RC7 without replacing any asset. Physical friend voice/screen/soundboard acceptance remains open.
+
+## Distribution
+
+Verified Windows installer and receipts/screenshots added to https://github.com/egemenmermer/rooms/releases/tag/v0.1.18-rc.7 by run38537078822. Unsigned Windows friend-test download: https://62.238.119.134/rooms-updates/ROOMS-0.1.18-rc.7-windows-x64-setup.exe . Source remains existing Mac RC7 b38f8e9. GitHub existing assets preserved byte/hash metadata; public server file hash matches native receipt.
+
+Manual friend acceptance: normal installation and login with existing account; join Lounge with a Mac participant; microphone/mute/deafen and Strong/Standard filters; two-way screen share including system sound; DJ playlist/Next; community soundboard upload/play; restart and confirm saved levels. Record actual outcomes and error text, never provider credentials. Existing RC7 soundboard/real-provider issues remain open; this platform build does not silently fix them.
