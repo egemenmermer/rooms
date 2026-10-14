@@ -1,8 +1,8 @@
 import type {FastifyInstance} from 'fastify';
 import {AccessToken,TrackSource,type RoomServiceClient} from 'livekit-server-sdk';
-import {randomUUID,timingSafeEqual} from 'node:crypto';
+import {randomUUID,timingSafeEqual,createHash} from 'node:crypto';
 import {z} from 'zod';
-import {musicCommandSchema,musicSnapshotSchema,musicIdentity} from '../../../packages/shared-contracts/src/music';
+import {musicCommandSchema,musicSnapshotSchema,musicIdentity,musicSearchQuerySchema,musicSearchResultsSchema} from '../../../packages/shared-contracts/src/music';
 const channel=z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 interface Lease {id:string;token:string;userId:string;expires:number}
 export function registerMusicGateway(server:FastifyInstance,options:{url?:string;secret?:string;apiKey:string;apiSecret:string;livekitUrl:string;roomService:Pick<RoomServiceClient,'getParticipant'|'listParticipants'|'removeParticipant'|'updateParticipant'>;authorize(token:string,channelId:string):Promise<{userId:string;canControl:boolean}>}){
@@ -16,6 +16,16 @@ export function registerMusicGateway(server:FastifyInstance,options:{url?:string
  const token=(header:string|undefined)=>{const value=header?.replace(/^Bearer /,'');if(!value)throw new Error('AUTH_REQUIRED');return value;};
  const fail=(reply:{code(n:number):{send(v:unknown):unknown}},error:unknown)=>{const message=error instanceof Error?error.message:'';return reply.code(message==='AUTH_REQUIRED'?401:message==='MUSIC_PERMISSION_DENIED'||message==='MUSIC_JOIN_FIRST'?403:503).send({error:/^(MUSIC_[A-Z_]+|AUTH_REQUIRED)$/.test(message)?message:'MUSIC_SERVICE_UNAVAILABLE'});};
  server.get('/v1/music/:channelId',async(request,reply)=>{try{const id=channel.parse((request.params as {channelId:string}).channelId);await options.authorize(token(request.headers.authorization),id);return await worker(id);}catch(error){return fail(reply,error);}});
+ server.post('/v1/music/:channelId/search',{config:{rateLimit:{max:12,timeWindow:'1 minute',keyGenerator:request=>'music-search:'+createHash('sha256').update(request.headers.authorization??request.ip).digest('hex')}}},async(request,reply)=>{try{
+  const id=channel.parse((request.params as {channelId:string}).channelId),body=z.object({query:musicSearchQuerySchema}).strict().parse(request.body);
+  const access=await options.authorize(token(request.headers.authorization),id);if(!access.canControl)throw new Error('MUSIC_PERMISSION_DENIED');
+  if(!await options.roomService.getParticipant(room(id),access.userId).catch(()=>null))throw new Error('MUSIC_JOIN_FIRST');
+  if(!configured)throw new Error('MUSIC_NOT_CONFIGURED');
+  const response=await fetch(`${options.url}/v1/search`,{method:'POST',headers:{Authorization:`Bearer ${options.secret}`,'Content-Type':'application/json'},body:JSON.stringify(body),redirect:'error',signal:AbortSignal.timeout(50000)});
+  const result=await response.json();if(!response.ok)throw new Error('MUSIC_SEARCH_UNAVAILABLE');
+  const fresh=await options.authorize(token(request.headers.authorization),id);if(fresh.userId!==access.userId||!fresh.canControl||!await options.roomService.getParticipant(room(id),access.userId).catch(()=>null))throw new Error('MUSIC_PERMISSION_DENIED');
+  return musicSearchResultsSchema.parse(result);
+ }catch(error){return fail(reply,error);}});
  server.post('/v1/music/:channelId',async(request,reply)=>{let id:string|undefined;try{id=channel.parse((request.params as {channelId:string}).channelId);const command=musicCommandSchema.parse(request.body),credential=token(request.headers.authorization),access=await options.authorize(credential,id);if(!access.canControl)throw new Error('MUSIC_PERMISSION_DENIED');const member=await options.roomService.getParticipant(room(id),access.userId).catch(()=>null);if(!member)throw new Error('MUSIC_JOIN_FIRST');const lease=leases.get(id)??{id:randomUUID(),token:credential,userId:access.userId,expires:Date.now()+35000};lease.token=credential;lease.userId=access.userId;leases.set(id,lease);const media=await grant(id,lease);try{return await worker(id,{lease:media,command});}finally{if(command.type==='stop')await revoke(id);}}catch(error){return fail(reply,error);}});
  let sweeping=false;const timer=setInterval(()=>{if(sweeping)return;sweeping=true;void (async()=>{try{for(const [id,lease]of leases){try{if(lease.expires<Date.now())throw new Error('Expired');await validate(id,lease);}catch{await revoke(id);}}}finally{sweeping=false;}})();},10000);timer.unref();server.addHook('onClose',async()=>{clearInterval(timer);await Promise.all([...leases.keys()].map(revoke));});
  return {async webhook(channelId:string,identity:string,metadata:string){if(identity!==musicIdentity(channelId))return false;const lease=leases.get(channelId);let valid=false;try{valid=!!lease&&lease.expires>Date.now()&&JSON.parse(metadata||'{}').musicLeaseId===lease.id;if(valid)await validate(channelId,lease!);}catch{valid=false;}if(!valid){await revoke(channelId);return true;}await options.roomService.updateParticipant(room(channelId),identity,{permission:{canSubscribe:false,canPublish:true,canPublishSources:[TrackSource.MICROPHONE],canPublishData:false}});return true;}};

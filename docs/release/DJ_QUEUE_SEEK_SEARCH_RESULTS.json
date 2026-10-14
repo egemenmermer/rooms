@@ -1,0 +1,84 @@
+{
+  "scope": "Actual dedicated-account YouTube PCM -> MusicWorker -> Linux LiveKit publisher -> isolated QA SFU receiver. Fixture room/grant namespace, no human call or recording.",
+  "search": [
+    {
+      "id": "w2BTr6qsLFc",
+      "title": "Diyar Pala - Bensiz Yapama"
+    },
+    {
+      "id": "F_kbwdDCfAQ",
+      "title": "Diyar Pala - Bensiz Yapama LIVE (Instagram reels - no autotune)"
+    },
+    {
+      "id": "i-JDDdyxS-A",
+      "title": "Diyar Pala - Bensiz Yapama (Akustik)"
+    },
+    {
+      "id": "VbNOdPDMoxI",
+      "title": "♡Diyar Pala-Bensiz Yapama♡      ´´Speed Up``      **Lizzom**"
+    },
+    {
+      "id": "2p3pTOvxSm4",
+      "title": "Diyar Pala - Bensiz Yapama (Sözleri/Lyrics)"
+    }
+  ],
+  "queueCount": 10,
+  "initial": {
+    "title": "Diyar Pala - Bensiz Yapama",
+    "position": 0.6990000000000001,
+    "frames": 328,
+    "maxRms": 7474.901484997422
+  },
+  "pausedSeek": true,
+  "sought": {
+    "position": 190.002,
+    "frames": 191,
+    "maxRms": 7287.230137227496
+  },
+  "automaticNext": {
+    "title": "Diyar Pala - Yeşilimi Ver",
+    "position": 0.686,
+    "frames": 221,
+    "maxRms": 7363.088847844361
+  },
+  "result": "PASS",
+  "date": "2026-10-14",
+  "bridgeSha256": "7fe318a2fe1008ce51420e1ad91618de2c9d0eade36bcd23ad13b2cdd4bf536b",
+  "completionRegression": {
+    "old": {
+      "videoId": "w2BTr6qsLFc",
+      "offset": 197,
+      "pcmSeconds": 2.94,
+      "elapsedSec": 63.899,
+      "exitCode": 1
+    },
+    "fixed": {
+      "videoId": "w2BTr6qsLFc",
+      "offset": 197,
+      "pcmSeconds": 2.94,
+      "elapsedSec": 1.461,
+      "exitCode": 0
+    }
+  },
+  "localChecks": {
+    "focusedTests": 33,
+    "typecheck": "PASS",
+    "scopedLint": "PASS",
+    "desktopBuild": "PASS",
+    "servicesBuild": "PASS",
+    "mavenBuild": "PASS",
+    "nativeUiFixture": {
+      "searchSelection": true,
+      "keyboardSeek": true,
+      "closeWithoutStop": true,
+      "rendererErrors": [],
+      "screenshots": [
+        "900x700",
+        "1440x900"
+      ]
+    }
+  },
+  "productionDeployment": false,
+  "desktopReleasePublished": false,
+  "physicalAcceptance": "OPEN"
+}

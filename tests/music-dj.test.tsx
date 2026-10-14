@@ -60,3 +60,17 @@ it('shows an actionable provider access error from a room snapshot',async()=>{
  window.rooms={music:{snapshot:async()=>({...empty,status:'error',error:'MUSIC_YOUTUBE_ACCESS_REQUIRED'})}} as unknown as DesktopBridge;
  render(<MusicDJ/>);expect(await screen.findByRole('alert')).toHaveProperty('textContent','Sunucunun YouTube ses erişimi doğrulanamadı. DJ bu kaynaktan çalamıyor.');
 });
+
+it('searches a title without changing playback and adds only the selected result',async()=>{
+ const command=vi.fn(async()=>empty),search=vi.fn(async()=>[{id:'w2BTr6qsLFc',title:'Diyar Pala - Bensiz Yapama',durationSec:200}]);
+ window.rooms={music:{snapshot:async()=>empty,command,search}} as unknown as DesktopBridge;render(<MusicDJ/>);
+ fireEvent.change(screen.getByLabelText('YouTube, Spotify, SoundCloud veya ses bağlantısı'),{target:{value:'Diyar Pala Bensiz Yapama'}});fireEvent.click(screen.getByRole('button',{name:'Şarkı ara'}));
+ const selected=await screen.findByRole('button',{name:/Diyar Pala - Bensiz Yapama/});expect(search).toHaveBeenCalledWith('room','Diyar Pala Bensiz Yapama');expect(command).not.toHaveBeenCalled();
+ fireEvent.click(selected);await waitFor(()=>expect(command).toHaveBeenCalledWith('room',{type:'add',url:'https://www.youtube.com/watch?v=w2BTr6qsLFc'}));
+});
+it('commits a seek once on release and includes the selected track identity',async()=>{
+ const id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',snapshot={...empty,status:'playing' as const,currentId:id,positionSec:10,queue:[{id,title:'Song',durationSec:200}]};
+ const command=vi.fn(async()=>snapshot);window.rooms={music:{snapshot:async()=>snapshot,command}} as unknown as DesktopBridge;render(<MusicDJ/>);
+ const slider=await screen.findByRole('slider',{name:'Parçada konum'});fireEvent.change(slider,{target:{value:'55'}});expect(command).not.toHaveBeenCalled();fireEvent.pointerUp(slider);
+ await waitFor(()=>expect(command).toHaveBeenCalledExactlyOnceWith('room',{type:'seek',id,positionSec:55}));
+});
