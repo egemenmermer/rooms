@@ -8,6 +8,7 @@ import {parseDJLink} from '../../../packages/shared-contracts/src/music-links';
 import {matchingSong,type YouTubeCandidate} from './song-match';
 import type {SongMetadata} from './song-metadata';
 import type {MusicFile} from './audio-file';
+import {musicSearchQuerySchema,musicSearchResultsSchema} from '../../../packages/shared-contracts/src/music';
 const videoMetadata=new Map<string,{json:string;expires:number}>();
 const remember=(id:string,json:string)=>{if(json.length>1024*1024)return;videoMetadata.set(id,{json,expires:Date.now()+15*60*1000});while(videoMetadata.size>8)videoMetadata.delete(videoMetadata.keys().next().value!);};
 export interface MusicReference{source:string;title:string;durationSec:number;requestedProvider?:'spotify'|'soundcloud'}
@@ -71,4 +72,16 @@ export async function matchingYouTubeReference(song:SongMetadata):Promise<MusicR
  let entries:YouTubeCandidate[];try{const value=JSON.parse(output);entries=Array.isArray(value.entries)?value.entries:[];}catch{throw new Error('MUSIC_MIRROR_NOT_FOUND');}
  const match=matchingSong(song,entries);if(!match)throw new Error('MUSIC_MIRROR_NOT_FOUND');
  return{source:`https://www.youtube.com/watch?v=${match.id}`,title:match.title.replace(/[\x00-\x1f]/g,'').slice(0,140),durationSec:match.duration,requestedProvider:song.provider};
+}
+
+let searchesPending=0;
+/** Bounded public metadata only; selecting a result still uses the authorized audio bridge. */
+export async function searchYouTube(raw:string){
+ const query=musicSearchQuerySchema.parse(raw);if(searchesPending>=2)throw new Error('MUSIC_SEARCH_BUSY');searchesPending++;
+ try{
+ const output=await run(['--flat-playlist','--skip-download','--dump-single-json',`ytsearch5:${query}`],45000);
+ let value:any;try{value=JSON.parse(output);}catch{throw new Error('MUSIC_SEARCH_UNAVAILABLE');}
+ const results=(Array.isArray(value.entries)?value.entries:[]).filter((entry:any)=>entry&&/^[A-Za-z0-9_-]{11}$/.test(entry.id)&&typeof entry.title==='string'&&entry.title.trim()&&!entry.is_live&&!entry.has_drm&&Number(entry.duration)<=7200).slice(0,5).map((entry:any)=>({id:entry.id,title:entry.title.replace(/[\x00-\x1f\x7f]/g,'').trim().slice(0,160),durationSec:Number.isFinite(entry.duration)&&entry.duration>0?entry.duration:0}));
+ return musicSearchResultsSchema.parse(results);
+ }finally{searchesPending--;}
 }

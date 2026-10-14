@@ -38,13 +38,19 @@ public final class PcmStream {
    }
    if(metadata){var output=com.sedmelluq.discord.lavaplayer.tools.JsonBrowser.newMap();output.put("title",tv.title);output.put("durationSec",tv.duration);System.out.println(output.format());return;}
    stage="DECODE";manager.registerSourceManager(source);manager.getConfiguration().setOutputFormat(StandardAudioDataFormats.DISCORD_PCM_S16_BE);
-   player.addListener(new AudioEventAdapter(){@Override public void onTrackException(AudioPlayer p,AudioTrack t,FriendlyException e){failure.set(e);}});
+   var ended=new AtomicReference<AudioTrackEndReason>();
+   player.addListener(new AudioEventAdapter(){
+    @Override public void onTrackException(AudioPlayer p,AudioTrack t,FriendlyException e){failure.set(e);}
+    @Override public void onTrackEnd(AudioPlayer p,AudioTrack t,AudioTrackEndReason reason){ended.set(reason);}
+   });
    var track=source.buildAudioTrack(new AudioTrackInfo(tv.title,tv.author,tv.duration*1000,args[0],false,"https://www.youtube.com/watch?v="+args[0]));
    track.setPosition((long)(offset*1000));player.playTrack(track);
    long frames=0,last=System.nanoTime();boolean started=false;
    while(frames<360000&&failure.get()==null){
     var frame=player.provide();
-    if(frame==null){if(started&&track.getState()==AudioTrackState.FINISHED)break;if(System.nanoTime()-last>java.util.concurrent.TimeUnit.SECONDS.toNanos(60))throw new IllegalStateException("TIMEOUT");Thread.sleep(5);continue;}
+    // DefaultAudioPlayer consumes the terminator and clears the executor before getState()
+    // can report FINISHED. Its end event is the authoritative completion signal.
+    if(frame==null){if(started&&ended.get()==AudioTrackEndReason.FINISHED)break;if(ended.get()!=null)throw new IllegalStateException("SOURCE");if(System.nanoTime()-last>java.util.concurrent.TimeUnit.SECONDS.toNanos(60))throw new IllegalStateException("TIMEOUT");Thread.sleep(5);continue;}
     byte[] data=frame.getData();for(int i=0;i+1<data.length;i+=2){byte a=data[i];data[i]=data[i+1];data[i+1]=a;}
     System.out.write(data);if(System.out.checkError())break;frames++;started=true;last=System.nanoTime();
    }
