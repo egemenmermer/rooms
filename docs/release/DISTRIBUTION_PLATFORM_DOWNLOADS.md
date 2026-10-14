@@ -1,0 +1,13 @@
+# Invitation terminal: Mac and Windows — 2026-10-14
+
+Owner requested side-by-side Windows/Mac downloads in the existing invitation terminal and asked to preserve its appearance. Existing portal source was deployed separately on the server and previously admitted signed/notarized/stapled Mac-only catalog entries. Capture that source under apps/distribution, retain its existing invitation validation, revocation/expiry, origin checks, no-store/HttpOnly/Secure/SameSite policy, bounded requests and opaque download paths.
+
+UI: two equal outlined terminal buttons in one row; platform/file/size beneath each; unsigned Windows preview label visible before clicking; one RC7 history row for both platforms, platform metadata follows selected device/file, unavailable older-platform button disabled. Desktop1280default:174px each and identical y269.19; mobile390:172px each and identical y236.56. Local browser fixture clearly labelled YEREL GÖRÜNÜM KONTROLÜ; no real invitation or authentication used for visual QA. Both views inspected.
+
+API: Mac signature/notarization/staple policy unchanged. Only explicitly verified, owner-approved Windows friend-preview catalog entries admitted. Strict Windows x64 installer filename, metadata bounds and platform-specific MIME. Both download routes retain identical invitation authorization, HEAD/GET/range semantics and path isolation. No direct public-feed redirect replaces the gate.
+
+Tests: isolated real Node service fixture verifies protected catalogs/downloads denied401, wrong origin denied403, scoped fixture invitation permits Mac+Windows, unsigned Mac/unverified Windows/withdrawn entries excluded, filenames/MIME/content/ranges correct, revoked fixture session denied. Syntax/whitespace checks pass. Added fixture verification to Ubuntu CI. Existing native Windows package/source checks remain separate.
+
+Deployment: only rooms-distribution service rebuilt/recreated using its pinned Node base and existing read-only data mount, capabilities dropped/no-new-privileges retained. Final image rooms-distribution:platforms-rc7-20261014-r3. Previous source, compose and release manifest backed up under /opt/rooms/distribution/backup-platforms-20261014. Catalog adds existing hash-verified RC7 Mac and Windows artifacts; all previous rows/files preserved; invitation ledger untouched. Startup first probe briefly502, follow-up root200; all protected routes reject unauthenticated requests401. In-memory portal sessions require code re-entry after recreation; ROOMS application accounts and voice were not logged out/restarted.
+
+Site: https://62.238.119.134/ . Authenticated production browser/download acceptance awaits owner invitation login; no code issued, consumed, printed or changed by the agent.

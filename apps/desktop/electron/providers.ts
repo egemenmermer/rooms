@@ -113,7 +113,19 @@ export function setupProviders(assertSender:(event:Electron.IpcMainInvokeEvent)=
    const api=new URL('player_api.php',c.url);api.search=new URLSearchParams({username:c.username!,password:c.password!,action:'get_live_streams'}).toString();
    const data=await jsonChecked(api.href,{},check);
    if(!Array.isArray(data)||!data.length||data.length>10000)throw new Error('The Xtream connection returned no valid channel list.');
-   const list:PlaylistEntry[]=data.map((s:any)=>{if(!/^\d{1,20}$/.test(String(s.stream_id)))throw new Error('Invalid provider stream identifier.');return{id:String(s.stream_id),name:safeMediaLabel(String(s.name??'Channel')),group:String(s.category_id??'Other').slice(0,100),url:personalURL(new URL(`live/${encodeURIComponent(c.username!)}/${encodeURIComponent(c.password!)}/${s.stream_id}.m3u8`,c.url).href).href};});check();return list;
+   const categories=new Map<string,string>();
+   // Category metadata is optional; a failed lookup must not hide playable channels.
+   const categoryApi=new URL(api);categoryApi.searchParams.set('action','get_live_categories');
+   try{
+    const rows:unknown=await jsonChecked(categoryApi.href,{},check);
+    if(Array.isArray(rows)&&rows.length<=10000)for(const row of rows){
+     if(!row||typeof row!=='object')continue;
+     const id=String(row.category_id??'');
+     if(/^\d{1,20}$/.test(id)&&typeof row.category_name==='string'&&row.category_name.trim())categories.set(id,safeMediaLabel(row.category_name,'Diğer'));
+    }
+   }catch{check();}
+   check();
+   const list:PlaylistEntry[]=data.map((s:any)=>{if(!/^\d{1,20}$/.test(String(s.stream_id)))throw new Error('Invalid provider stream identifier.');return{id:String(s.stream_id),name:safeMediaLabel(String(s.name??'Channel')),group:categories.get(String(s.category_id??''))??(/^\d{1,20}$/.test(String(s.category_id??''))?`Grup ${s.category_id}`:'Diğer'),url:personalURL(new URL(`live/${encodeURIComponent(c.username!)}/${encodeURIComponent(c.password!)}/${s.stream_id}.m3u8`,c.url).href).href};});check();return list;
   }
   return [];
  }

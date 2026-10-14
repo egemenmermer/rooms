@@ -1,0 +1,73 @@
+{
+  "version": "0.1.18-rc.7",
+  "sourceSha": "b38f8e91b600bd4319e1ddc885b2831542790859",
+  "platform": "win32",
+  "arch": "x64",
+  "status": "PASS_NATIVE_WINDOWS_PACKAGE",
+  "signed": false,
+  "checks": [
+    "NSIS silent installation to disposable CI directory",
+    "Installed ASAR equals packaged ASAR",
+    "Actual installed x64 packaged Electron app, file:// onboarding, sandboxed renderer",
+    "Invalid privileged window command refused",
+    "Login and invitation signup navigation without submitting credentials",
+    "Settings and 900x700 / 1440x900 Windows viewport screenshots, no horizontal overflow",
+    "Actual installed file:// Strong/Standard models initialize under packaged CSP",
+    "Normal packaged relaunch preserves disposable profile preference"
+  ],
+  "limitations": [
+    "Hosted Windows Server 2022 VM, not a physical Windows friend device",
+    "No live login, microphone, camera, room, private IPTV or DJ publication",
+    "RC7 Windows automatic updates unavailable; manual installers only",
+    "Unsigned candidate; no SmartScreen/security warning bypass"
+  ],
+  "installer": {
+    "name": "ROOMS-0.1.18-rc.7-windows-x64-setup.exe",
+    "sha256": "eacd4adb42f8db1aeacfd9bfbe533427cebd461ecb71001df9fabe6ba3388add",
+    "bytes": 135103498
+  },
+  "info": {
+    "version": "0.1.18-rc.7",
+    "platform": "win32",
+    "arch": "x64",
+    "electron": "44.7.0"
+  },
+  "captureStatus": {
+    "microphone": "unknown",
+    "camera": "unknown",
+    "screen": "unknown",
+    "systemAudio": true
+  },
+  "captureSources": {
+    "count": 3,
+    "screenCount": 1
+  },
+  "models": {
+    "modes": [
+      "standard",
+      "strong"
+    ],
+    "scope": "Real bundled WASM/worklet readiness, no physical microphone or noise-quality acceptance"
+  },
+  "rendererErrors": [],
+  "at": "2026-10-14T08:39:24.950Z",
+  "windowsSourceTests": {
+    "files": 117,
+    "tests": 780,
+    "status": "PASS",
+    "excludedLinuxOnlyServerSuite": "tests/stoat-registration.test.ts; full suite passed on Ubuntu"
+  },
+  "nativeRun": 38535819401,
+  "publicationRun": 38537078822,
+  "toolingSource": "bec563c988d1e93e9acf12fdd518c04c596b56d5",
+  "publicDownload": "https://62.238.119.134/rooms-updates/ROOMS-0.1.18-rc.7-windows-x64-setup.exe",
+  "release": "https://github.com/egemenmermer/rooms/releases/tag/v0.1.18-rc.7",
+  "publicServerFileHash": "MATCHES_VERIFIED_INSTALLER",
+  "existingGitHubMacAssets": "UNCHANGED",
+  "visualInspection": "900x700 and1440x900 settings screenshots inspected; no horizontal clipping; vertical settings scroll expected",
+  "physicalFriendAcceptance": "OPEN; owner reports a friend can test",
+  "localMacInstallation": "NOT_MODIFIED",
+  "publicHTTPSFullDownload": "PASS on server network; SHA256 matches installer",
+  "existingPublicMacAssetsAndAppcast": "UNCHANGED; all three before/after hashes match",
+  "localMacExternalFullDownload": "Not completed; slow redundant downloads terminated normally. No partial file retained as a release asset."
+}
