@@ -1,0 +1,43 @@
+name: Public package boundary
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: public-package-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  package-resources:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      ROOMS_DISTRIBUTION_SCOPE: public
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.22.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/release-preflight.mjs
+      - run: pnpm build
+      - name: Inspect actual macOS package resources before signing
+        if: runner.os == 'macOS'
+        run: pnpm exec electron-builder --mac --arm64 --dir --publish never --config.mac.identity=null --config.directories.output=.local/public-package-check
+      - name: Inspect actual Windows package resources
+        if: runner.os == 'Windows'
+        run: pnpm exec electron-builder --win --x64 --dir --publish never --config.directories.output=.local/public-package-check
+# Generated application directories are ephemeral. No keys, production configuration,
+# signing, notarization, installer publication, deployment or artifact upload.
+# This checks package resources; it does not close physical-device media acceptance.
