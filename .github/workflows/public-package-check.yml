@@ -73,7 +73,6 @@ jobs:
       ROOMS_DISTRIBUTION_SCOPE: public
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       ROOMS_VLC: '1'
-      ROOMS_WINDOWS_INSTALL_DIR: ${{ runner.temp }}\rooms-rc9-installed
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -100,6 +99,8 @@ jobs:
       - name: Build unsigned NSIS installer with public resource guard
         run: pnpm exec electron-builder --win nsis --x64 --publish never --config.win.artifactName=ROOMS-0.1.18-rc.9-windows-x64-setup.exe
       - name: Install and verify actual packaged application
+        env:
+          ROOMS_WINDOWS_INSTALL_DIR: ${{ runner.temp }}\rooms-rc9-installed
         run: node scripts/verify-windows-package.mjs
       - name: Preserve verified candidate and receipts
         if: always()
