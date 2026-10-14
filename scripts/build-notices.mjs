@@ -1,7 +1,11 @@
 import {execFileSync} from 'node:child_process';
 import {readFileSync,readdirSync,writeFileSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
-const graph=JSON.parse(execFileSync('pnpm',['list','--prod','--depth','Infinity','--json'],{encoding:'utf8',maxBuffer:20_000_000}));
+const pnpmArgs=['list','--prod','--depth','Infinity','--json'];
+// pnpm is a .cmd shim on Windows; execute its Node entry point without a shell.
+const pnpmEntry=process.env.npm_execpath;
+if(process.platform==='win32'&&!pnpmEntry)throw new Error('Run notices through pnpm on Windows.');
+const graph=JSON.parse(execFileSync(pnpmEntry?process.execPath:'pnpm',pnpmEntry?[pnpmEntry,...pnpmArgs]:pnpmArgs,{encoding:'utf8',maxBuffer:20_000_000}));
 const packages=new Map();
 function collect(node,optional=false){if(node.path&&node.version){if(existsSync(join(node.path,'package.json')))packages.set(`${node.from}@${node.version}`,node);else if(!optional)throw new Error(`Installed dependency metadata is missing: ${node.from}`);}for(const child of Object.values(node.dependencies??{}))collect(child);for(const child of Object.values(node.optionalDependencies??{}))collect(child,true);}
 const desktopRoots=graph.filter(root=>root.path===process.cwd());if(desktopRoots.length!==1)throw new Error('Desktop dependency graph is unavailable.');
