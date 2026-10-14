@@ -2,6 +2,8 @@
 
 Date: 2026-10-14. The publication target remains **egemenmermer/rooms**, under MIT. Visibility remains private pending final review. The private archive is a backup, not a replacement open-source project.
 
+Status update, 2026-10-14: the owner independently changed visibility to public and declined sending the prepared Support request. The retained-view gate below has **not** passed: an anonymous metadata lookup still resolves a removed private artwork file at its old commit. Current releases and Actions artifacts are absent; one historical PR description's operator address was removed and reread. These checks do not certify that old refs/cached views are purged. This task did not change visibility or contact Support. Public package gates are documented in PACKAGE_POLICY.md.
+
 ## History preservation
 
 The frozen original review covered 240 reachable commits (including fetched PR merge refs), 25 tags and 50 local refs. All 240 commits are preserved unchanged in a verified local Git bundle and the independent PRIVATE `rooms-private-archive` backup. The archival GitHub branch/tag references and all three backup asset digests were checked. The public-history candidate also contains 240 mapped commits, with zero pruned commits; author names, timestamps and parent relationships are preserved. The maintainer email is replaced with the GitHub noreply address. Original and redacted commit IDs necessarily differ. The complete mapping remains in the private archive.
