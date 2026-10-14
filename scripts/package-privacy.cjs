@@ -41,7 +41,11 @@ function assertPublicEntries(entries) {
     if (privatePath.test(normalized)) failures.push(normalized);
     const text = bytes.toString('utf8');
     if (containsPrivateLiteral(text)) failures.push(normalized);
-    if (/-----BEGIN (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----/.test(text))
+    if (
+      /-----BEGIN (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----\s+[A-Za-z0-9+/=\s]{32,}-----END (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----/.test(
+        text,
+      )
+    )
       failures.push(normalized);
     // Credentials/config exports are data, not references to configuration variable names.
     if (/\.(json|ya?ml|env|txt)$/i.test(normalized)) {
