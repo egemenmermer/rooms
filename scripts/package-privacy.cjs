@@ -22,6 +22,7 @@ function containsPrivateLiteral(
   // Loopback and RFC documentation addresses are examples, not infrastructure.
   for (const match of text.matchAll(/https?:\/\/(\d{1,3}(?:\.\d{1,3}){3})(?=[:/\s"'<>]|$)/g)) {
     const ip = match[1];
+    if (allowFixtureExamples && ip === '169.254.169.254') continue;
     if (allowMetadataEndpoint && ip === '169.254.169.254') continue;
     if (allowFixtureExamples && /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(ip)) continue;
     if (isIP(ip) && !/^(127\.|0\.0\.0\.0$|192\.0\.2\.|198\.51\.100\.|203\.0\.113\.)/.test(ip))
