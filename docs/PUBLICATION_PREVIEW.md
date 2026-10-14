@@ -23,9 +23,6 @@ Initial checks caught two old unit expectations and a native smoke assumption th
 
 The existing large-chunk/dependency-comment warnings remain visible. No physical Mac/Windows media session, provider permission, remote load, recovery or new signed release acceptance is inferred from these checks. No server credentials, signing keys, user data or live Hoppers/ROOMS services were changed.
 
-## Publication boundary and history preservation
-The owner selected the existing `egemenmermer/rooms` repository as the open-source project. The separate private snapshot repository is an earlier review artifact, not the authoritative continuation. This branch preserves existing commit IDs and merges the latest reviewed main (`252bb68`) without rebasing, squashing or force-pushing. All existing main commits remain ancestors.
+## Publication boundary and final review
 
-Current-tree cleanup does not erase historical files. Read [HISTORY_PUBLICATION_REVIEW.md](HISTORY_PUBLICATION_REVIEW.md) before changing visibility. Private-community artwork, operator records and historical release payloads remain separate unresolved publication surfaces. No visibility change, production deployment, release deletion or history rewriting has been performed.
-
-Owner review remains required before publication. If selected historical assets must remain private, preserving every original public commit hash and hiding those assets are incompatible: any sanitized-history proposal must be prepared and reviewed separately, with the untouched original history retained privately. Do not silently replace this repository with a snapshot or rewrite it.
+The existing `egemenmermer/rooms` repository remains the publication target. Original history is retained unchanged in a PRIVATE archive; the reviewed redacted history preserves development commits and graph structure with changed IDs. See [publication/README.md](publication/README.md) and its complete file/release tables. The earlier fresh snapshot is not the authoritative continuation. Visibility remains private pending retained GitHub-view cleanup and owner approval. No live application or server deployment is included.
