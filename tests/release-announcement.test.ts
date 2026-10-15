@@ -34,7 +34,8 @@ it('announces once, uses stable nonce and never persists the credential', async 
       body: string;
       headers: Record<string, string>;
     };
-    expect(JSON.parse(posted.body).nonce).toBe(posted.headers['Idempotency-Key']);
+    expect(JSON.parse(posted.body)).not.toHaveProperty('nonce');
+    expect(posted.headers['Idempotency-Key']).toMatch(/^rooms-release-v2-[a-f0-9]{32}$/);
     for (const file of await readdir(join(dir, 'state')))
       expect(await readFile(join(dir, 'state', file), 'utf8')).not.toContain('fixture-secret');
   } finally {
