@@ -6,6 +6,11 @@
 
 ### Arkadaşlarınla buluş. Sunucun sende kalsın.
 
+[![Son sürüm](https://img.shields.io/github/v/release/egemenmermer/rooms?style=flat-square&label=son%20s%C3%BCr%C3%BCm&color=8B5CF6)](https://github.com/egemenmermer/rooms/releases/latest)
+[![MIT lisansı](https://img.shields.io/badge/lisans-MIT-64748B?style=flat-square)](LICENSE)
+[![macOS indir](https://img.shields.io/badge/macOS-indir-18181B?style=flat-square&logo=apple&logoColor=white)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.12/ROOMS-0.1.18-rc.12-arm64.dmg)
+[![Windows indir](https://img.shields.io/badge/Windows-indir-2563EB?style=flat-square)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.12/ROOMS-0.1.18-rc.12-windows-x64-setup.exe)
+
 Sesli sohbet, ekran paylaşımı, mesajlar, müzik ve ortak etkinlikler — tek masaüstü uygulamasında.
 
 [Başlangıç](#başlangıç) · [Ekran görüntüleri](#uygulamadan-görüntüler) · [Kendi sunucunu kur](docs/SELF_HOSTING.md) · [Belgeler](#belgeler)
