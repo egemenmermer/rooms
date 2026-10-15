@@ -49,5 +49,43 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm test:desktop --grep 'desktop shell'
-# No signing, production credentials, real accounts, deployment or release publication.
-# A GitHub hosted native smoke is not physical two-Mac media acceptance.
+  # No signing, production credentials, real accounts, deployment or release publication.
+  # A GitHub hosted native smoke is not physical two-Mac media acceptance.
+  hostops-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.22.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir infra/hostops install --frozen-lockfile
+      - name: Configure disposable unprivileged terminal profile
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends tmux
+          sudo useradd --create-home --shell /bin/bash rooms-operator
+          sudo install -d -o rooms-operator -g rooms-operator -m 0700 /srv/rooms-operator
+          sudo install -d -o root -g root -m 0755 /etc/rooms-hostops /usr/local/libexec
+          sudo install -o root -g root -m 0640 infra/hostops/profiles.example.json /etc/rooms-hostops/profiles.json
+          sudo python3 - <<'PY'
+          import json
+          path='/etc/rooms-hostops/profiles.json'
+          with open(path,'w') as file:
+              json.dump({'qa-operator': {'user':'rooms-operator','directory':'/srv/rooms-operator'}},file)
+          PY
+          sudo install -o root -g root -m 0755 infra/hostops/rooms-terminal-helper.py /usr/local/libexec/rooms-terminal-helper
+          sudo install -o root -g root -m 0644 infra/hostops/rooms-host-terminal@.service /etc/systemd/system/rooms-host-terminal@.service
+          sudo systemctl daemon-reload
+      - name: Actual Linux terminal lifecycle
+        run: node scripts/verify-hostops-native.mjs
+      - name: Clean up disposable terminal server
+        if: always()
+        run: sudo systemctl stop rooms-host-terminal@rooms-operator.service || true
