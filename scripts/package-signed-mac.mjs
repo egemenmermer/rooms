@@ -174,5 +174,9 @@ if (process.env.ROOMS_PUBLISH_UPDATES === '1') {
     stdio: 'inherit',
     env: { ...process.env, ROOMS_RELEASE_OUTPUT: output },
   });
+  if (publish.status === 2)
+    throw new Error(
+      'Signed release published; channel announcement needs reconciliation. Do not republish artifacts.',
+    );
   if (publish.status !== 0) throw new Error('Signed release built, but update publication failed');
 }

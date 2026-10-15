@@ -1,3 +1,4 @@
+import { announcePublishedRelease, prepareReleaseAnnouncement } from './release-announcement.mjs';
 import { spawnSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -41,6 +42,8 @@ if (
   directory === '/'
 )
   throw new Error('Set a bounded absolute ROOMS_UPDATE_REMOTE_DIR.');
+// Validate announcement notes before publishing any artifact.
+await prepareReleaseAnnouncement(output);
 remote(`mkdir -p ${directory}`);
 for (const file of readdirSync(join(output, 'sparkle-feed')).filter((name) =>
   name.endsWith('.zip'),
@@ -57,3 +60,14 @@ remote(
   `cat > ${directory}/appcast.xml.stage && mv ${directory}/appcast.xml.stage ${directory}/appcast.xml`,
   readFileSync(join(output, 'sparkle-feed/appcast.xml')),
 );
+
+// The feed is already public; an announcement failure must not roll it back or upload again.
+try {
+  const result = await announcePublishedRelease(output);
+  console.log(`Release announcement: ${result.status}`);
+} catch {
+  console.error(
+    'Release published, but its channel announcement is pending. Inspect the local announcement receipt and release-notes.json; do not republish artifacts.',
+  );
+  process.exitCode = 2;
+}

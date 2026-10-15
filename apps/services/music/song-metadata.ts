@@ -20,7 +20,8 @@ export async function songMetadata(
 ): Promise<SongMetadata> {
   let link = parseSongLink(raw);
   if (!link) throw new Error('MUSIC_SOURCE_FAILED');
-  if (link.kind === 'unsupported') throw new Error('MUSIC_MIRROR_SINGLE_TRACK_ONLY');
+  if (link.kind === 'unsupported' || link.kind === 'playlist')
+    throw new Error('MUSIC_MIRROR_SINGLE_TRACK_ONLY');
   const hosts =
     link.provider === 'spotify'
       ? ['open.spotify.com', 'spotify.link']

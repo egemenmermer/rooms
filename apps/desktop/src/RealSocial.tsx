@@ -189,7 +189,7 @@ export function CommunityChat({
   }, []);
   const activityPath =
     primary?.activity === 'youtube'
-      ? '/youtube'
+      ? '/watch/youtube'
       : primary?.activity === 'screen'
         ? '/voice'
         : primary?.activity === 'cinema'
@@ -2297,8 +2297,15 @@ export function RealVoiceDock({
                   content: 'motion',
                 })
                   .then(() => {
-                    navigate('/voice?view=share');
-                    if (generation.current === epoch) close();
+                    // Keep the selected personal player visible while its window is shared.
+                    if (generation.current !== epoch) return;
+                    if (location.pathname !== '/media')
+                      navigate(
+                        location.pathname === '/cinema'
+                          ? '/cinema?view=screen'
+                          : '/voice?view=share',
+                      );
+                    close();
                   })
                   .catch((e) => {
                     if (generation.current === epoch) setError(uiError(e));

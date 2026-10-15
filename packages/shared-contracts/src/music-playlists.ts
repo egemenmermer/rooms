@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { parseDJLink } from './music-links';
-export const playlistTrackSchema = z
+import { parseSongLink } from './song-links';
+export const isPlaylistLink = (url: string) =>
+  parseDJLink(url)?.kind === 'playlist' || parseSongLink(url)?.kind === 'playlist';
+const youtubePlaylistTrackSchema = z
   .object({
     videoId: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
     title: z
@@ -12,6 +15,28 @@ export const playlistTrackSchema = z
     durationSec: z.number().finite().min(0).max(7200),
   })
   .strict();
+export const spotifyPlaylistTrackSchema = youtubePlaylistTrackSchema
+  .omit({ videoId: true })
+  .extend({
+    spotifyTrackId: z.string().regex(/^[A-Za-z0-9]{22}$/),
+    artists: z
+      .array(
+        z
+          .string()
+          .trim()
+          .min(1)
+          .max(160)
+          .regex(/^[^\x00-\x1f]+$/),
+      )
+      .min(1)
+      .max(8),
+  })
+  .strict();
+export const playlistTrackSchema = z.union([
+  youtubePlaylistTrackSchema,
+  spotifyPlaylistTrackSchema,
+]);
+export type SpotifyPlaylistTrack = z.infer<typeof spotifyPlaylistTrackSchema>;
 export const playlistSchema = z
   .object({
     id: z.string().uuid(),
@@ -44,10 +69,7 @@ export const playlistChangeSchema = z.discriminatedUnion('op', [
     .object({
       op: z.literal('import'),
       name: z.string().trim().min(1).max(80),
-      url: z
-        .string()
-        .max(2048)
-        .refine((v) => parseDJLink(v)?.kind === 'playlist'),
+      url: z.string().max(2048).refine(isPlaylistLink),
     })
     .strict(),
   z

@@ -668,7 +668,7 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
               <button
                 className="button primary"
                 onClick={() =>
-                  primary.activity === 'youtube' ? navigate('/youtube') : setView('screen')
+                  primary.activity === 'youtube' ? navigate('/watch/youtube') : setView('screen')
                 }
               >
                 Etkinliğe dön
@@ -763,7 +763,7 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
         <header className="reference-cinema-heading">
           <div>
             <span className="reference-cinema-eyebrow">CINEMA</span>
-            <h2>{activityEnded ? 'Etkinlik sona erdi' : 'Cinema'}</h2>
+            <h2>{activityEnded ? 'Etkinlik sona erdi' : 'Birlikte izle'}</h2>
             <p>
               {activity.room?.primary?.activity === 'cinema'
                 ? 'Ortak içerik listesi açık. Kendi kaynağınla katıl.'
@@ -785,6 +785,35 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
           </div>
         )}
         <div className="reference-cinema-mode-grid">
+          <section className="reference-cinema-mode">
+            <h3>YouTube</h3>
+            <p>Aynı videoyu odanın ortak kuyruğu ve oynatma kontrolleriyle izle.</p>
+            <button className="button primary" onClick={() => navigate('/watch/youtube')}>
+              Birlikte YouTube aç
+            </button>
+          </section>
+          <section className="reference-cinema-mode">
+            <h3>IPTV ve kişisel medyam</h3>
+            <p>
+              Kendi bağlantını ekle, içeriği aç ve oynatıcıdaki “Odayla paylaş” düğmesinden
+              pencereni seç.
+            </p>
+            <button className="button secondary" onClick={() => navigate('/media')}>
+              Medyamı aç
+            </button>
+          </section>
+          <section className="reference-cinema-mode">
+            <h3>Stremio veya başka uygulama</h3>
+            <p>İçeriği kendi uygulamanda aç. Ardından o pencereyi seçerek odadakilerle izle.</p>
+            <button
+              className="button secondary"
+              disabled={realtime.status !== 'connected'}
+              title={realtime.status !== 'connected' ? 'Önce ses odasına katıl.' : undefined}
+              onClick={chooseScreen}
+            >
+              Uygulama penceresi seç
+            </button>
+          </section>
           <section className="reference-cinema-mode selected">
             <span className="reference-cinema-private-pill">
               <ReferenceIcon name="lock" size={13} />
@@ -853,7 +882,7 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
             <ReferenceIcon name="queue" size={16} />
             Ortak kuyruk
           </button>
-          <button className="button secondary" onClick={() => navigate('/youtube')}>
+          <button className="button secondary" onClick={() => navigate('/watch/youtube')}>
             <ReferenceIcon name="play" size={16} />
             YouTube Together
           </button>

@@ -1,6 +1,6 @@
 export type SongLink = {
   provider: 'spotify' | 'soundcloud';
-  kind: 'track' | 'short' | 'unsupported';
+  kind: 'track' | 'playlist' | 'short' | 'unsupported';
   url: string;
   id?: string;
 };
@@ -21,11 +21,13 @@ export function parseSongLink(raw: string): SongLink | null {
     if (u.hostname === 'spotify.link' || u.hostname === 'on.soundcloud.com') {
       if (/^\/[A-Za-z0-9_-]{1,128}\/?$/.test(u.pathname)) kind = 'short';
     } else if (provider === 'spotify') {
-      const match = u.pathname.match(/^\/(?:intl-[a-z]{2}\/)?track\/([A-Za-z0-9]{22})\/?$/);
+      const match = u.pathname.match(
+        /^\/(?:intl-[a-z]{2}\/)?(track|playlist)\/([A-Za-z0-9]{22})\/?$/,
+      );
       if (match) {
-        kind = 'track';
-        id = match[1];
-        canonical.href = `https://open.spotify.com/track/${id}`;
+        kind = match[1] as 'track' | 'playlist';
+        id = match[2];
+        canonical.href = `https://open.spotify.com/${kind}/${id}`;
       }
     } else if (
       /^\/[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+\/?$/.test(u.pathname) &&

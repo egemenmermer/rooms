@@ -83,21 +83,19 @@ it('imports only an explicit YouTube playlist and saves the queue as a separate 
   } as unknown as DesktopBridge;
   render(<SharedPlaylists channelId="room" canPlay play={async () => {}} />);
   fireEvent.change(screen.getByLabelText('Liste adı'), { target: { value: 'Imported' } });
-  const input = screen.getByLabelText('Listeye eklenecek YouTube bağlantısı');
+  const input = screen.getByLabelText('Listeye eklenecek YouTube veya Spotify bağlantısı');
   fireEvent.change(input, { target: { value: 'https://example.test/private.m3u?token=secret' } });
   expect(
     (
       screen.getByRole('button', {
-        name: 'YouTube listesini yeni liste olarak aktar',
+        name: 'Listeyi yeni liste olarak aktar',
       }) as HTMLButtonElement
     ).disabled,
   ).toBe(true);
   fireEvent.change(input, {
     target: { value: 'https://www.youtube.com/playlist?list=PLabcdefgh123' },
   });
-  fireEvent.click(
-    screen.getByRole('button', { name: 'YouTube listesini yeni liste olarak aktar' }),
-  );
+  fireEvent.click(screen.getByRole('button', { name: 'Listeyi yeni liste olarak aktar' }));
   await waitFor(() =>
     expect(changePlaylist).toHaveBeenCalledWith('room', {
       op: 'import',
@@ -115,4 +113,30 @@ it('imports only an explicit YouTube playlist and saves the queue as a separate 
   await waitFor(() =>
     expect(changePlaylist).toHaveBeenLastCalledWith('room', { op: 'saveQueue', name: 'Friends' }),
   );
+});
+it('imports a Spotify playlist and plays its ordered metadata through the bot command', async () => {
+  const tracks = [
+    {
+      spotifyTrackId: 'a'.repeat(22),
+      title: 'Spotify song',
+      artists: ['Artist'],
+      durationSec: 100,
+    },
+  ];
+  const changePlaylist = vi.fn(async () => [{ ...item, tracks }]),
+    play = vi.fn(async () => {});
+  window.rooms = {
+    music: { playlists: async () => [], changePlaylist },
+  } as unknown as DesktopBridge;
+  render(<SharedPlaylists channelId="room" canPlay play={play} />);
+  fireEvent.change(screen.getByLabelText('Liste adı'), { target: { value: 'Mix' } });
+  const url = 'https://open.spotify.com/playlist/' + 'b'.repeat(22);
+  fireEvent.change(screen.getByLabelText('Listeye eklenecek YouTube veya Spotify bağlantısı'), {
+    target: { value: url },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Listeyi yeni liste olarak aktar' }));
+  await screen.findByText('Spotify song');
+  expect(changePlaylist).toHaveBeenCalledWith('room', { op: 'import', name: 'Mix', url });
+  fireEvent.click(screen.getByRole('button', { name: 'Listeyi şimdi çal' }));
+  expect(play).toHaveBeenCalledWith({ type: 'add-list', tracks, playNow: true });
 });

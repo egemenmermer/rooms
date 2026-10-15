@@ -56,7 +56,7 @@ import {
   liveWindow,
   type PersonalPlaybackSource,
 } from './personal-playback';
-import { useRealtime, toggleMic } from './realtime';
+import { useRealtime, toggleMic, stopScreen } from './realtime';
 import { VoiceAvatar } from './VoiceAvatar';
 import { getPersonalProviders } from './personal-provider-runtime';
 import {
@@ -2455,6 +2455,24 @@ function PersonalPlayer({
           </div>
         </div>
         <div className="ref-media-actions">
+          <button
+            className="button secondary"
+            disabled={referenceFixture || realtime.status !== 'connected' || realtime.busy}
+            title={
+              referenceFixture
+                ? 'Örnek görünümde paylaşım kapalı.'
+                : realtime.status !== 'connected'
+                  ? 'Önce ses odasına katıl.'
+                  : 'Paylaşılacak pencereyi seç; istersen sistem sesini de aç.'
+            }
+            onClick={() => {
+              if (realtime.sharing)
+                void stopScreen().catch(() => notify('Paylaşım durdurulamadı. Yeniden dene.'));
+              else window.dispatchEvent(new Event('rooms:choose-capture'));
+            }}
+          >
+            {realtime.sharing ? 'Paylaşımı durdur' : 'Odayla paylaş'}
+          </button>
           {!inset && (
             <button className="button secondary" onClick={onChat}>
               <MessageCircle size={15} />

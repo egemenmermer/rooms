@@ -1,0 +1,11 @@
+# Spotify playlist import
+
+The DJ input and Shared Playlists import accept public `open.spotify.com/playlist/<id>` URLs, including localized links and share parameters. Track order and duplicate entries are preserved. Spotify supplies display metadata only; the existing YouTube matcher and room publisher supply audio. No Spotify credentials, cookies, previews, or client-side player are used.
+
+Public embed metadata is bounded to 2 MiB and a 12-second request. Empty, unavailable, malformed, or unsupported entries fail the entire import with a specific message. The public embed can truncate long playlists, so lists exposing 100 or more entries are rejected rather than silently importing a prefix. Private playlists, albums, podcast/local-file entries and shortened playlist URLs are not supported. The room queue still holds at most 100 tracks in total.
+
+Each Spotify track is matched only when selected for playback. Once a list is inserted, a playback error remains attached to the queue snapshot; retrying an import is not required. Users can select another track or advance past an unmatched entry. Completed audio advances to the next track through the existing publisher callback. Stopping or losing the session during matching prevents late audio publication.
+
+Pending Spotify tracks are retained in shared lists and DJ history as validated IDs and display metadata, without private source addresses. Existing YouTube history remains readable. Shared playlist records and persisted history now accept Spotify records as well as YouTube records: deploy the Access service, music worker and desktop client together. Old clients cannot parse shared lists containing the new records, and old workers cannot read history containing them. Back up history and shared-list storage before deployment; a rollback requires restoring the corresponding storage backup.
+
+Validation covers public metadata parsing, ordering/duplicates, invalid and truncated lists, lazy matching, natural-end advancement, stopped-session fencing, queue capacity, playlist persistence and desktop import/play commands. Live room audio remains a separate deployment check: import a public playlist, confirm the visible count/order, hear the first song from a second participant, then verify next/select and a natural track ending.

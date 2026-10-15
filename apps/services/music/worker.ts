@@ -1,3 +1,8 @@
+import { spotifyPlaylist } from './spotify-playlist';
+import type {
+  PlaylistTrack,
+  SpotifyPlaylistTrack,
+} from '../../../packages/shared-contracts/src/music-playlists';
 import { MusicHistory } from './history';
 import { randomUUID } from 'node:crypto';
 import { rm } from 'node:fs/promises';
@@ -19,7 +24,23 @@ export interface MusicLease {
   url: string;
   token: string;
 }
-type Entry = MusicReference & { id: string; file?: MusicFile };
+type Entry = MusicReference & { id: string; file?: MusicFile; spotify?: SpotifyPlaylistTrack };
+function playlistReference(
+  track: PlaylistTrack,
+): MusicReference & { spotify?: SpotifyPlaylistTrack } {
+  return 'videoId' in track
+    ? {
+        source: `https://www.youtube.com/watch?v=${track.videoId}`,
+        title: track.title,
+        durationSec: track.durationSec,
+      }
+    : {
+        source: `https://open.spotify.com/track/${track.spotifyTrackId}`,
+        title: track.title,
+        durationSec: track.durationSec,
+        spotify: track,
+      };
+}
 interface Session {
   channelId: string;
   leaseId: string;
@@ -50,6 +71,7 @@ export class MusicWorker {
       youtubeReferences?: typeof youtubeReferences;
       youtubeFile?: typeof fetchYouTubeMusic;
       songMetadata?: typeof songMetadata;
+      spotifyPlaylist?: typeof spotifyPlaylist;
       matchingYouTubeReference?: typeof matchingYouTubeReference;
       now?: () => number;
       history?: MusicHistory;
@@ -58,17 +80,22 @@ export class MusicWorker {
   async history(channelId: string) {
     return this.options.history?.list(channelId) ?? [];
   }
-  async references(channelId: string, sessionId?: string) {
+  async references(channelId: string, sessionId?: string): Promise<PlaylistTrack[]> {
     if (sessionId) {
       const old = await this.options.history?.replay(channelId, sessionId);
       if (!old) throw Error('MUSIC_HISTORY_MISSING');
-      return old.sources.map((source, index) => ({
-        videoId: youtubeSource(source)!.id,
-        title: old.session.tracks[index].title,
-        durationSec: old.session.tracks[index].durationSec,
-      }));
+      return old.sources.map((source, index) =>
+        typeof source !== 'string'
+          ? source
+          : {
+              videoId: youtubeSource(source)!.id,
+              title: old.session.tracks[index].title,
+              durationSec: old.session.tracks[index].durationSec,
+            },
+      );
     }
-    return (this.sessions.get(channelId)?.queue ?? []).flatMap((item) => {
+    return (this.sessions.get(channelId)?.queue ?? []).flatMap<PlaylistTrack>((item) => {
+      if (item.spotify) return [item.spotify];
       const source = youtubeSource(item.source);
       return source?.kind === 'video'
         ? [{ videoId: source.id, title: item.title, durationSec: item.durationSec }]
@@ -78,12 +105,14 @@ export class MusicWorker {
   private async archive(s: Session, ended = false) {
     if (!this.options.history) return;
     const generation = s.generation;
-    const items = s.queue.filter((item) => youtubeSource(item.source)?.kind === 'video');
+    const items = s.queue.filter(
+      (item) => item.spotify || youtubeSource(item.source)?.kind === 'video',
+    );
     try {
       const prior = await this.options.history.replay(s.channelId, s.historyId);
       if (!ended && (this.sessions.get(s.channelId) !== s || generation !== s.generation)) return;
       const current = items.map((item) => ({
-        source: `https://www.youtube.com/watch?v=${youtubeSource(item.source)!.id}`,
+        source: item.spotify ?? `https://www.youtube.com/watch?v=${youtubeSource(item.source)!.id}`,
         track: {
           id: item.id,
           title: item.title,
@@ -236,6 +265,18 @@ export class MusicWorker {
     s.error = null;
     s.resumePosition = null;
     try {
+      if (item.spotify && !youtubeSource(item.source)) {
+        const ref = await (this.options.matchingYouTubeReference ?? matchingYouTubeReference)({
+          provider: 'spotify',
+          title: item.spotify.title,
+          artists: item.spotify.artists,
+          durationSec: item.spotify.durationSec,
+        });
+        if (this.sessions.get(s.channelId) !== s || generation !== s.generation) return;
+        await this.options.lease(s.channelId, s.leaseId);
+        if (this.sessions.get(s.channelId) !== s || generation !== s.generation) return;
+        Object.assign(item, ref);
+      }
       if (youtubeSource(item.source) && s.publisher.playYouTube) {
         await s.publisher.playYouTube(
           item.source,
@@ -361,13 +402,12 @@ export class MusicWorker {
           if (s.queue.length >= 100 || this.pending >= 1) throw new Error('MUSIC_QUEUE_FULL');
           this.pending++;
           try {
-            let references: MusicReference[];
-            if (command.type === 'add-list')
-              references = command.tracks.map((t) => ({
-                source: `https://www.youtube.com/watch?v=${t.videoId}`,
-                title: t.title,
-                durationSec: t.durationSec,
-              }));
+            let references: (MusicReference & { spotify?: SpotifyPlaylistTrack })[];
+            if (command.type === 'add-list') references = command.tracks.map(playlistReference);
+            else if (parseSongLink(command.url)?.kind === 'playlist')
+              references = (
+                await (this.options.spotifyPlaylist ?? spotifyPlaylist)(command.url)
+              ).tracks.map(playlistReference);
             else if (youtubeSource(command.url))
               references = await (this.options.youtubeReferences ?? youtubeReferences)(command.url);
             else if (parseSongLink(command.url)) {
@@ -381,8 +421,13 @@ export class MusicWorker {
                 throw new Error('MUSIC_SOURCE_FAILED');
               references = [{ source: command.url, title: 'Music', durationSec: 0 }];
             }
+            await this.options.lease(channelId, s.leaseId);
             if (s.queue.length + references.length > 100) throw new Error('MUSIC_QUEUE_FULL');
             if (this.sessions.get(channelId) !== s) throw new Error('MUSIC_LEASE_EXPIRED');
+            const start = async () => {
+              if (references.some((ref) => ref.spotify)) await this.play(s).catch(() => {});
+              else await this.play(s);
+            };
             const firstNew = s.queue.length,
               current = s.queue[s.index],
               finished =
@@ -393,13 +438,13 @@ export class MusicWorker {
             s.queue.push(...references.map((ref) => ({ ...ref, id: randomUUID() })));
             if (command.playNow || finished) {
               s.index = firstNew;
-              await this.play(s);
+              await start();
             } else if (s.index === -1) {
               s.index = 0;
-              await this.play(s);
+              await start();
             } else if (s.status === 'error') {
               s.index++;
-              await this.play(s);
+              await start();
             }
           } finally {
             this.pending--;
@@ -438,7 +483,7 @@ export class MusicWorker {
           const start = s.queue.length;
           s.queue.push(
             ...selected.map(({ source, track }) => ({
-              source,
+              ...(typeof source === 'string' ? { source } : playlistReference(source)),
               title: track.title,
               durationSec: track.durationSec,
               id: randomUUID(),

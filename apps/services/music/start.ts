@@ -1,7 +1,12 @@
 import { MusicHistory } from './history';
 import { youtubeReferences } from './youtube-source';
 import { parseDJLink } from '../../../packages/shared-contracts/src/music-links';
-import { playlistTrackSchema } from '../../../packages/shared-contracts/src/music-playlists';
+import { spotifyPlaylist } from './spotify-playlist';
+import { parseSongLink } from '../../../packages/shared-contracts/src/song-links';
+import {
+  isPlaylistLink,
+  playlistTrackSchema,
+} from '../../../packages/shared-contracts/src/music-playlists';
 import { matchingResponse } from './matching-response';
 import Fastify from 'fastify';
 import { timingSafeEqual } from 'node:crypto';
@@ -52,11 +57,7 @@ server.post('/v1/references', async (request, reply) => {
     .object({
       channelId: id,
       sessionId: z.string().uuid().optional(),
-      url: z
-        .string()
-        .max(2048)
-        .refine((v) => parseDJLink(v)?.kind === 'playlist')
-        .optional(),
+      url: z.string().max(2048).refine(isPlaylistLink).optional(),
     })
     .strict()
     .parse(request.body);
@@ -64,6 +65,8 @@ server.post('/v1/references', async (request, reply) => {
   if (importing) return reply.code(429).send({ error: 'MUSIC_SEARCH_BUSY' });
   importing = true;
   try {
+    if (parseSongLink(body.url)?.kind === 'playlist')
+      return (await spotifyPlaylist(body.url)).tracks;
     return z
       .array(playlistTrackSchema)
       .max(100)
@@ -74,6 +77,11 @@ server.post('/v1/references', async (request, reply) => {
           durationSec: ref.durationSec,
         })),
       );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    return reply.code(400).send({
+      error: /^MUSIC_[A-Z_]+$/.test(message) ? message : 'MUSIC_PLAYLIST_SOURCE_UNAVAILABLE',
+    });
   } finally {
     importing = false;
   }

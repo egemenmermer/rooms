@@ -1,3 +1,4 @@
+import { MusicLyrics } from './MusicLyrics';
 import { useCommunityBranding } from './use-community-branding';
 import { SharedPlaylists, playlistsKey } from './SharedPlaylists';
 import { musicPlaybackError } from './music-errors';
@@ -370,7 +371,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
         >
           <input
             aria-label="YouTube, Spotify, SoundCloud veya ses bağlantısı"
-            placeholder="Şarkı adı veya bağlantı"
+            placeholder="Şarkı adı veya şarkı/liste bağlantısı"
             maxLength={2048}
             value={input}
             onChange={(e) => {
@@ -514,6 +515,16 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           />
           <small>{Math.round((bot?.volume ?? 1) * 100)}%</small>
         </div>
+        {active && channelId && !fixture && (
+          <MusicLyrics
+            key={active.id}
+            channelId={channelId}
+            trackId={active.id}
+            position={snapshot?.positionSec ?? 0}
+            playing={snapshot?.status === 'playing' && !query.error && voice.status === 'connected'}
+            receivedAt={query.dataUpdatedAt}
+          />
+        )}
         <div className="dj-queue-heading">
           <span>Kuyruk</span>
           <button

@@ -1496,7 +1496,7 @@ function ReferenceGames({
                       activity.room?.primary?.activity === 'cinema'
                         ? '/cinema'
                         : activity.room?.primary?.activity === 'youtube'
-                          ? '/youtube'
+                          ? '/watch/youtube'
                           : '/voice',
                     );
                   }}

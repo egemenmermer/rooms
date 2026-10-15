@@ -189,3 +189,30 @@ it('accepts the documented 100-track catalog edit under the production Access bo
     await app.close();
   }
 });
+it('imports Spotify display references and preserves them across a store restart', async () => {
+  const path = await directory(),
+    app = Fastify();
+  const tracks = [
+    { spotifyTrackId: 'a'.repeat(22), title: 'Song', artists: ['Artist'], durationSec: 120 },
+  ];
+  const references = vi.fn(async () => tracks);
+  registerMusicPlaylists(app, {
+    directory: path,
+    authorize: async () => ({ communityId: 'one', userId: 'alice' }),
+    references,
+  });
+  try {
+    const url = 'https://open.spotify.com/playlist/' + 'b'.repeat(22);
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/music/room/playlists',
+      headers: { authorization: 'Bearer test' },
+      payload: { op: 'import', name: 'Mix', url },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(references).toHaveBeenCalledWith('room', { url });
+    expect((await new SharedMusicPlaylists(path).list('one'))[0].tracks).toEqual(tracks);
+  } finally {
+    await app.close();
+  }
+});

@@ -363,6 +363,7 @@ export default function App() {
         '/together',
         '/agent',
         '/youtube',
+        '/watch/youtube',
         '/media',
       ].includes(visiblePath));
   const personalSidebarView =
@@ -371,7 +372,14 @@ export default function App() {
     const main = document.querySelector('.main-view');
     if (main) main.scrollTop = 0;
   }, [visiblePath]);
-  const settings = ['/agent', '/together', '/games', '/youtube', '/media'].includes(visiblePath);
+  const settings = [
+    '/agent',
+    '/together',
+    '/games',
+    '/youtube',
+    '/watch/youtube',
+    '/media',
+  ].includes(visiblePath);
   const selected = spaces.find((s) => s.id === activeSpace) ?? { name: tr('Your community') };
   const open = (value: Overlay) => {
     setSearch('');
@@ -461,7 +469,8 @@ export default function App() {
     '/agent': 'Agent',
     '/together': 'Birlikte',
     '/games': 'Kıraathane',
-    '/youtube': 'Birlikte YouTube',
+    '/youtube': 'DJ',
+    '/watch/youtube': 'Birlikte YouTube',
   };
   const setupName = visiblePath.startsWith('/setup/') ? visiblePath.slice(7) : null;
   const setupModes: ReferenceOnboardingMode[] = [
@@ -800,6 +809,7 @@ export default function App() {
                       localFixture ? <YouTube /> : <MusicDJEntry returnTo={lastNonDJPath.current} />
                     }
                   />
+                  <Route path="/watch/youtube" element={<YouTube />} />
                   <Route path="*" element={<Navigate to="/home" replace />} />
                 </Routes>
               </Suspense>
