@@ -1,0 +1,22 @@
+# Install as a USER unit for the dedicated rooms-ai account. No Docker group/socket.
+[Unit]
+Description=ROOMS rootless shared-host Agent
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/rooms-agent
+EnvironmentFile=/etc/rooms-agent/shared.env
+Environment=ROOMS_AGENT_BACKEND=shared-rootless
+ExecStart=/usr/bin/node /opt/rooms-agent/agent.cjs
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=45
+KillMode=control-group
+UMask=0077
+# newuidmap/newgidmap need their normal rootless Podman setup privileges.
+# No privilege is granted inside workers; their own no-new-privileges is mandatory.
+Delegate=yes
+
+[Install]
+WantedBy=default.target

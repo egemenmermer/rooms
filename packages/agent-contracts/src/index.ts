@@ -46,7 +46,7 @@ export interface AgentStatus {
   connected: boolean;
   userId?: string;
   yolo: boolean;
-  executionHost: 'separate-server';
+  executionHost: 'separate-server' | 'shared-rootless';
   capabilities: string[];
   reason?: string;
 }

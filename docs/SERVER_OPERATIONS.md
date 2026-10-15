@@ -42,3 +42,10 @@ Validation checkpoint: `pnpm verify:ci` passed lint, strict TypeScript,135test f
 A separate ephemeral Linux CI job now installs the pinned node-pty kit with a narrowly scoped build approval and tests the real root-owned helper/unprivileged tmux chain: Unicode, resize, Ctrl+C, detach, broker reconstruction, once-only counter and explicit termination. Its result must be checked before treating that gate as passed. It never uses production profiles or credentials.
 
 - OPS-008: actual Linux PTY CI exposed a size mismatch caused by tmux's extra status row. Disable that internal status bar: the desktop already displays host/user/session status. Keep the real33×91 terminal assertion; do not weaken it to mask a row loss.
+
+## Shared-host runner work — 2026-10-15
+
+- OPS-009: the existing Agent required a dedicated Docker host. Added an explicit optional rootless Podman backend; its default dedicated-host guards remain intact. Startup checks actual cgroups v2, root-owned aggregate limits, distinct UID and a private bounded persistent workspace filesystem. Worker arguments accept only offline per-task workspace commands; arbitrary mounts, model homes and network flags are rejected.
+- OPS-010: shared-host tasks had no host-capacity admission/pressure guard. Added a continuous actual60s CPU window, memory/disk reserve,15minute duration and pressure interruption. Gaps/unknown measurements fail closed. Mutating-command uncertainty remains recorded rather than replayed.
+
+Focused admission/mount-boundary and existing Agent tests passed17tests. Actual rootless runtime verification is being added as a separate disposable Linux CI job: UID/network/filesystem boundaries, actual cgroup limits, persistent files, cancellation and enforced ENOSPC. Do not enable production Agent availability until that job and shared terminal/grant integration pass. This is source work, not a deployment or release.

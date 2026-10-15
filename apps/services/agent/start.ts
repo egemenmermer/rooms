@@ -9,6 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { AgentRepository, type AgentOutboxItem } from './repository';
 import { createAgentServer, type AgentPrincipal } from './server';
 import { createRemoteExecutor, executorCapabilities, type RemoteExecutorConfig } from './worker';
+import { sharedHostExecutor, sharedWorker, verifySharedHost } from './shared-host';
 const subject = z
   .string()
   .min(1)
@@ -90,8 +91,9 @@ function privateJSON(path: string) {
   return JSON.parse(readFileSync(path, 'utf8'));
 }
 async function main() {
-  if (process.platform !== 'linux') throw new Error('Separate Linux agent host required.');
-  if (process.getuid?.() !== 10001)
+  const shared = process.env.ROOMS_AGENT_BACKEND === 'shared-rootless';
+  if (process.platform !== 'linux') throw new Error('Linux agent host required.');
+  if (!shared && process.getuid?.() !== 10001)
     throw new Error('Run the dedicated service as UID 10001 to match isolated worker mounts.');
   const key = process.env.ROOMS_AGENT_STORAGE_KEY;
   if (!key || !/^([a-fA-F0-9]{64})$/.test(key))
@@ -113,6 +115,15 @@ async function main() {
     ? accountsSchema.parse(privateJSON(process.env.ROOMS_AGENT_CONNECTORS_FILE))
     : accountsSchema.parse({});
   const workerNetworkEnabled = process.env.ROOMS_AGENT_WORKER_NETWORK === 'enabled';
+  const sharedConfig = {
+    image: process.env.ROOMS_AGENT_WORKER_IMAGE ?? '',
+    workspaceRoot: join(directory, 'workspaces'),
+  };
+  if (shared) {
+    if (workerNetworkEnabled || policy.browserHosts.length || policy.egressVerified)
+      throw new Error('Shared-host workers have no network or browser access.');
+    await verifySharedHost(sharedConfig);
+  }
   if (workerNetworkEnabled && policy.egressVerified) {
     if (policy.networkName !== 'rooms-agent-egress')
       throw new Error('Use the dedicated isolated proxy network.');
@@ -137,6 +148,7 @@ async function main() {
     allowedResearchHosts: policy.allowedResearchHosts,
     externalAccounts: accounts,
     connectorScopes: policy.connectorScopes,
+    ...(shared ? { runtime: { runWorker: sharedWorker(sharedConfig) } } : {}),
     ...(policy.browserHosts.length
       ? {
           browser: {
@@ -319,7 +331,10 @@ async function main() {
         ? 'connected'
         : 'login-required';
     },
-    executor: createRemoteExecutor(executorConfig),
+    executionHost: shared ? 'shared-rootless' : 'separate-server',
+    executor: shared
+      ? sharedHostExecutor(sharedConfig, createRemoteExecutor(executorConfig))
+      : createRemoteExecutor(executorConfig),
     deliverNotification,
     reminderTarget,
     remindersAvailable,

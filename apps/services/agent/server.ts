@@ -25,6 +25,7 @@ import {
 } from './repository';
 import { readWorkspaceArtifact, safeWorkspacePath, type AgentExecutor } from './worker';
 import { AgentApprovalRequired, AgentUncertainEffect, projectAgentAudit } from './authority';
+import { AgentInterrupted } from './shared-host';
 export interface AgentPrincipal {
   userId: string;
   roomIds: string[];
@@ -36,6 +37,7 @@ export interface ReminderInput {
   sourceMessageId: string;
 }
 export interface AgentConfig {
+  executionHost?: AgentStatus['executionHost'];
   authority?: (
     principal: AgentPrincipal,
     roomId: string,
@@ -171,6 +173,7 @@ export async function createAgentServer(config: AgentConfig) {
   await app.register(rateLimit, { max: 60, timeWindow: '1 minute' });
   const jobs = new Map<string, AbortController>();
   let busy = false;
+  let closing = false;
   const cancelled = (t: AgentTask) => t.state === 'cancelled';
   const authenticate = async (header: string | undefined) => {
     if (!header?.startsWith('Bearer ') || header.length > 8192)
@@ -191,7 +194,7 @@ export async function createAgentServer(config: AgentConfig) {
     configured: true,
     connected: true,
     yolo: repo.data.yolo,
-    executionHost: 'separate-server',
+    executionHost: config.executionHost ?? 'separate-server',
     capabilities: config.capabilities ?? [
       'files',
       'code',
@@ -641,10 +644,11 @@ export async function createAgentServer(config: AgentConfig) {
     },
   );
   async function tick() {
-    if (busy) return;
+    if (busy || closing) return;
     busy = true;
     try {
       for (const t of repo.data.tasks) {
+        if (closing) break;
         if (t.state === 'scheduled' && Date.parse(t.runAt!) <= now()) {
           t.state = t.kind === 'reminder' || repo.data.yolo ? 'queued' : 'awaiting-approval';
           repo.save();
@@ -776,6 +780,10 @@ export async function createAgentServer(config: AgentConfig) {
                 'interrupted',
                 'İşlem sonucu belirsiz. Tekrar çalıştırmadan önce dış uygulamadaki sonucu doğrulayın.',
               );
+            } else if (error instanceof AgentInterrupted) {
+              t.state = 'interrupted';
+              t.error = error.message;
+              queueNotification(t, 'interrupted', error.message);
             } else {
               t.state = 'failed';
               t.error = error instanceof Error ? error.message : 'Agent execution failed.';
@@ -879,6 +887,7 @@ export async function createAgentServer(config: AgentConfig) {
   const timer = setInterval(() => void tick(), 1000);
   timer.unref();
   app.addHook('onClose', async () => {
+    closing = true;
     clearInterval(timer);
     for (const controller of jobs.values()) controller.abort();
     await config.executor.close?.();

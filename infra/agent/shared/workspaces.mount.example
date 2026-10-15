@@ -1,0 +1,15 @@
+# Name this unit var-lib-rooms\x2dagent-workspaces.mount.
+# Pre-provision a private ROOT-OWNED 2 GiB ext4 image and chown the MOUNTED root
+# to the dedicated rooms-ai UID, mode0700. Never mount over existing task data.
+[Unit]
+Description=ROOMS bounded persistent Agent workspaces
+Before=user@DEDICATED_UID.service
+
+[Mount]
+What=/var/lib/rooms-agent-volumes/workspaces.ext4
+Where=/var/lib/rooms-agent/workspaces
+Type=ext4
+Options=loop,nosuid,nodev
+
+[Install]
+WantedBy=multi-user.target
