@@ -47,7 +47,10 @@ async function main() {
     await new Promise((r) => setTimeout(r, 300));
     output = '';
     send('stty size\r');
-    await wait(() => output.includes('33 91'), 'PTY resize failed');
+    await wait(
+      () => output.includes('33 91'),
+      `PTY resize failed: ${JSON.stringify(output.slice(-500))}`,
+    );
     send('sleep 30\r');
     await new Promise((r) => setTimeout(r, 300));
     send('\x03');

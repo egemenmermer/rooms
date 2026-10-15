@@ -67,7 +67,8 @@ def main(args):
         # Fixed shell; no command, path, environment or tmux option comes from IPC.
         command = ['new-session', '-d', '-s', name, '-c', directory, '/bin/bash', '--noprofile', '--norc',
                    ';', 'set-option', '-t', name, 'history-limit', '2000',
-                   ';', 'set-option', '-t', name, 'set-clipboard', 'off']
+                   ';', 'set-option', '-t', name, 'set-clipboard', 'off',
+                   ';', 'set-option', '-t', name, 'status', 'off']
     elif verb == 'attach':
         command = ['attach-session', '-t', name]
     elif verb == 'exists':

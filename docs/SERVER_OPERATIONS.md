@@ -40,3 +40,5 @@ Validation checkpoint: `pnpm verify:ci` passed lint, strict TypeScript,135test f
 - OPS-007: two windows from the same account could previously submit input under one user-level writer. The broker now binds writes to one connection; read-only state is projected per connection. Late terminal actions are fenced when the host/panel/account changes.
 
 A separate ephemeral Linux CI job now installs the pinned node-pty kit with a narrowly scoped build approval and tests the real root-owned helper/unprivileged tmux chain: Unicode, resize, Ctrl+C, detach, broker reconstruction, once-only counter and explicit termination. Its result must be checked before treating that gate as passed. It never uses production profiles or credentials.
+
+- OPS-008: actual Linux PTY CI exposed a size mismatch caused by tmux's extra status row. Disable that internal status bar: the desktop already displays host/user/session status. Keep the real33×91 terminal assertion; do not weaken it to mask a row loss.
