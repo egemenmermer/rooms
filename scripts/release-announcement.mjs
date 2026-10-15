@@ -51,6 +51,7 @@ export async function announceRelease({ version, notes, config, stateDirectory, 
   const key = createHash('sha256')
     .update(`${origin.origin}:${config.channelId}:${version}`)
     .digest('hex');
+  const deliveryKey = `rooms-release-v2-${key.slice(0, 32)}`;
   const ledger = join(stateDirectory, `${key}.json`),
     lock = ledger + '.lock';
   await mkdir(stateDirectory, { recursive: true, mode: 0o700 });
@@ -92,7 +93,7 @@ export async function announceRelease({ version, notes, config, stateDirectory, 
     if (!Array.isArray(history)) throw Error('Invalid announcement history');
     const existing = history.find(
       (message) =>
-        message.nonce === `rooms-release-${key.slice(0, 32)}` ||
+        message.nonce === deliveryKey ||
         (typeof message.content === 'string' &&
           message.content.startsWith(`ROOMS ${version} yayınlandı\n`)),
     );
@@ -105,8 +106,10 @@ export async function announceRelease({ version, notes, config, stateDirectory, 
     await save({ version, status: 'pending' });
     const result = await call(`/channels/${config.channelId}/messages`, {
       method: 'POST',
-      headers: { 'Idempotency-Key': `rooms-release-${key.slice(0, 32)}` },
-      body: JSON.stringify({ content, nonce: `rooms-release-${key.slice(0, 32)}` }),
+      // Stoat consumes the header before the legacy body nonce. Sending both
+      // with the same value makes the first delivery look like a duplicate.
+      headers: { 'Idempotency-Key': deliveryKey },
+      body: JSON.stringify({ content }),
     });
     if (typeof result?._id !== 'string')
       throw Error('Announcement delivery is uncertain; inspect channel history');
