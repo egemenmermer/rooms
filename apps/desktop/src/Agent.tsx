@@ -763,7 +763,9 @@ function AgentWorkspaceScope({
                 : 'Oda asistanı'}
           </h2>
           <p className="reference-agent-description">
-            {'Görevler ayrı Agent sunucusunda çalışır.'}
+            {status?.executionHost === 'shared-rootless'
+              ? 'Görevler sunucudaki izole çalışma alanında çalışır.'
+              : 'Görevler ayrı Agent sunucusunda çalışır.'}
           </p>
         </div>
         <button className="button secondary small" onClick={() => navigate('/settings?tab=agent')}>

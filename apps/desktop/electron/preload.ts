@@ -200,6 +200,15 @@ const bridge: DesktopBridge = {
     rdLibrary: () => ipcRenderer.invoke('rooms:provider-rd-library'),
     rdPlay: (id) => ipcRenderer.invoke('rooms:provider-rd-play', id),
   },
+  remoteControl: {
+    register: (room, track) => ipcRenderer.invoke('rooms:remote-register', room, track),
+    state: (room) => ipcRenderer.invoke('rooms:remote-state', room),
+    request: (room, peer, epoch) => ipcRenderer.invoke('rooms:remote-request', room, peer, epoch),
+    decide: (room, id, approve) => ipcRenderer.invoke('rooms:remote-decide', room, id, approve),
+    revoke: () => ipcRenderer.invoke('rooms:remote-revoke'),
+    frame: (value, leaseId) => ipcRenderer.invoke('rooms:remote-frame', value, leaseId),
+    receive: (value) => ipcRenderer.invoke('rooms:remote-receive', value),
+  },
   agent: {
     workspace: {
       terminals: (id) => ipcRenderer.invoke('rooms:agent-workspace-terminals', id),

@@ -1,4 +1,6 @@
 import { setupHostOps } from './hostops';
+import { setupRemoteControl } from './remote-control';
+import { randomUUID } from 'node:crypto';
 import {
   soundboardCatalogSchema,
   soundboardClipSchema,
@@ -106,6 +108,8 @@ export async function setupCommunity(
   let selectedAudio = false;
   let selected: DesktopCapturerSource | null = null;
   let selectedAt = 0;
+  let activeCapture: { epoch: string; displayId: string } | null = null;
+  let activeCaptureScope: StoatClient | null = null;
   let choices: DesktopCapturerSource[] = [];
   let choicesAt = 0;
   const conversationVault = new ConversationVault(app.getPath('userData'), safeStorage);
@@ -825,6 +829,17 @@ export async function setupCommunity(
       throw new SocialInputError('The conversation session changed. Join the voice room again.');
     if (!response.ok) {
       const reasons: Record<string, string> = {
+        REMOTE_SOURCE_LIMIT:
+          'Bu odada çok fazla ekran kontrolü kaydı var. Bir paylaşımı kapatıp yeniden dene.',
+        REMOTE_HUMAN_PEER_REQUIRED:
+          'Ekran kontrolü yalnızca odadaki insanlar arasında kullanılabilir.',
+        REMOTE_ALREADY_ACTIVE:
+          'Senin veya arkadaşının başka bir kontrol oturumu açık. Önce onu bırak.',
+        REMOTE_REQUEST_PENDING: 'Kontrol isteğin gönderildi. Paylaşan kişinin onayını bekle.',
+        REMOTE_REQUEST_LIMIT: 'Çok fazla kontrol isteği var. Biraz sonra yeniden dene.',
+        REMOTE_REQUEST_STALE: 'Kontrol isteği sona erdi veya ekran değişti. Yeniden kontrol iste.',
+        REMOTE_SOURCE_STALE: 'Bu ekran paylaşımı değişti. Paylaşımı yenileyip tekrar kontrol iste.',
+        REMOTE_SCREEN_REQUIRED: 'Ekran yayını henüz hazır değil. Biraz sonra yeniden dene.',
         PRESENTER_BUSY: 'Bu odada başka biri ekran paylaşıyor.',
         PRESENT_PERMISSION_REQUIRED: 'Oda rolün ekran paylaşma izni vermiyor.',
         VOICE_CHANNEL_REQUIRED: 'Önce bir ses odası seç.',
@@ -1110,12 +1125,43 @@ export async function setupCommunity(
       .strict()
       .parse(result);
   });
-  handle('rooms:media-grant', (channelId) => broker('grant', { channelId: id.parse(channelId) }));
-  handle('rooms:media-presenter', (channelId, action) =>
-    broker(`screens/${z.enum(['acquire', 'release']).parse(action)}`, {
+  const remote = setupRemoteControl({
+    handle: (name, fn) =>
+      handle(name, async (...args) => {
+        try {
+          return await fn(...args);
+        } catch (error) {
+          throw new SocialInputError(
+            error instanceof z.ZodError
+              ? 'Kontrol isteğinin bilgileri geçersiz.'
+              : error instanceof Error
+                ? error.message === 'REMOTE_CONTROL_INACTIVE' ||
+                  error.message === 'REMOTE_APPROVAL_STALE'
+                  ? 'Kontrol oturumu sona erdi. Yeniden kontrol iste.'
+                  : error.message
+                : 'Kontrol işlemi tamamlanamadı.',
+          );
+        }
+      }),
+    broker,
+    identity: () => ({ userId: user?.id ?? null, scope: client }),
+    capture: () => (activeCaptureScope === client ? activeCapture : null),
+    window: getWindow,
+  });
+  handle('rooms:media-grant', (channelId) => {
+    activeCapture = null;
+    remote.stop();
+    return broker('grant', { channelId: id.parse(channelId) });
+  });
+  handle('rooms:media-presenter', (channelId, action) => {
+    if (action === 'release') {
+      activeCapture = null;
+      remote.stop();
+    }
+    return broker(`screens/${z.enum(['acquire', 'release']).parse(action)}`, {
       channelId: id.parse(channelId),
-    }),
-  );
+    });
+  });
   handle('rooms:media-screen-state', async (channelId) =>
     screenPresenterState.parse(await broker('screen/state', { channelId: id.parse(channelId) })),
   );
@@ -1140,7 +1186,11 @@ export async function setupCommunity(
       .strict()
       .parse(await broker('screen/request/decide', body));
   });
-  handle('rooms:media-leave', (channelId) => broker('leave', { channelId: id.parse(channelId) }));
+  handle('rooms:media-leave', (channelId) => {
+    activeCapture = null;
+    remote.stop();
+    return broker('leave', { channelId: id.parse(channelId) });
+  });
   handle('rooms:capture-status', () => ({
     microphone:
       process.platform === 'darwin'
@@ -1180,12 +1230,16 @@ export async function setupCommunity(
       throw new Error('Refresh available sources.');
     const source = choices.find((s) => s.id === sourceId);
     if (!source) throw new Error('The selected source is unavailable.');
+    activeCapture = null;
+    remote.stop();
     selected = source;
     selectedAudio = preference.audio;
     selectedAt = Date.now();
     choices = [];
   });
   handle('rooms:capture-clear', () => {
+    activeCapture = null;
+    remote.stop();
     selected = null;
     selectedAudio = false;
     choices = [];
@@ -1207,6 +1261,11 @@ export async function setupCommunity(
         callback(null);
         return;
       }
+      activeCaptureScope = client;
+      activeCapture =
+        source.id.startsWith('screen:') && source.display_id
+          ? { epoch: randomUUID(), displayId: source.display_id }
+          : null;
       callback({
         video: source,
         ...(audio && supportsSystemAudio() ? { audio: 'loopback' as const } : {}),
@@ -1292,6 +1351,7 @@ export async function setupCommunity(
     close: async () => {
       recoveryEpoch++;
       hostOps.close();
+      remote.dispose();
       passwordReset.clear();
       await closeDmCall();
       clearInterval(presenceTimer);

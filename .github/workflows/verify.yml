@@ -48,6 +48,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      - run: node scripts/prepare-remote-input.mjs
       - run: pnpm test:desktop --grep 'desktop shell'
   # No signing, production credentials, real accounts, deployment or release publication.
   # A GitHub hosted native smoke is not physical two-Mac media acceptance.

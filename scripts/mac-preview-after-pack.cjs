@@ -13,6 +13,29 @@ module.exports = async (context) => {
           `${context.packager.appInfo.productFilename}.app/Contents/Resources`,
         )
       : join(context.appOutDir, 'resources');
+  if (context.packager?.config?.extraMetadata?.roomsRemoteInput === true) {
+    const metadata = JSON.parse(readFileSync('dist-native/remote-input-version.json', 'utf8'));
+    const arch = { 0: 'ia32', 1: 'x64', 2: 'armv7l', 3: 'arm64', 4: 'universal' }[context.arch];
+    const digest = require('node:crypto')
+      .createHash('sha256')
+      .update(readFileSync('apps/desktop/native/remote-input.cc'))
+      .digest('hex');
+    if (
+      metadata.platform !== context.electronPlatformName ||
+      metadata.arch !== arch ||
+      metadata.sourceSha256 !== digest
+    )
+      throw Error(
+        'Prepare the remote input module for this source/platform/architecture before packaging.',
+      );
+    const native = join(resources, 'native');
+    mkdirSync(native, { recursive: true });
+    copyFileSync('dist-native/rooms-remote-input.node', join(native, 'rooms-remote-input.node'));
+    copyFileSync(
+      'apps/desktop/native/remote-input.cc',
+      join(native, 'rooms-remote-input-source.cc'),
+    );
+  }
   if (process.env.ROOMS_VLC === '1') {
     const metadata = JSON.parse(readFileSync('dist-native/vlc-version.json', 'utf8'));
     if (metadata.platform !== process.platform || metadata.arch !== process.arch)

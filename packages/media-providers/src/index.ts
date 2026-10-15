@@ -77,6 +77,8 @@ export const screenProfiles = {
   '4k30': { width: 3840, height: 2160, frameRate: 30, bitrate: 24_000_000 },
 } as const;
 export interface RealtimeMediaProvider {
+  publishControl?(payload: string, destination: string, reliable: boolean): Promise<void>;
+  onControl?(listener: (payload: string, senderId: string) => void): () => void;
   readonly status: ConnectionStatus;
   connectRoom(roomId: string, shortLivedMembershipToken: string, serverUrl: string): Promise<void>;
   publishMic(deviceId?: string): Promise<void>;
@@ -108,6 +110,23 @@ function listenerGain(id: string, level: number) {
 const emptyDiagnostics = (): MediaDiagnostics => ({ bitrate: null, packetLoss: null, rtt: null });
 /** No auth credentials other than the in-memory, short-lived room token enter this adapter. */
 export class LiveKitMediaProvider implements RealtimeMediaProvider {
+  private controlListeners = new Set<(payload: string, senderId: string) => void>();
+  onControl(listener: (payload: string, senderId: string) => void) {
+    this.controlListeners.add(listener);
+    return () => {
+      this.controlListeners.delete(listener);
+    };
+  }
+  async publishControl(payload: string, destination: string, reliable: boolean) {
+    if (new TextEncoder().encode(payload).length > 4096 || !destination || destination.length > 128)
+      throw Error('Invalid control packet.');
+    const room = this.requireRoom();
+    await room.localParticipant.publishData(new TextEncoder().encode(payload), {
+      reliable,
+      topic: 'rooms-control-v1',
+      destinationIdentities: [destination],
+    });
+  }
   private room: Room | null = null;
   private grant: MediaGrant | null = null;
   private listeners = new Set<() => void>();
@@ -421,6 +440,30 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     this.grant = { roomId, token, url: parsed.href };
     const room = this.createRoom();
     this.room = room;
+    let controlSecond = 0,
+      controlCount = 0;
+    room.on(RoomEvent.DataReceived, (payload, participant, _kind, topic) => {
+      if (
+        this.room !== room ||
+        !participant ||
+        topic !== 'rooms-control-v1' ||
+        payload.length > 4096 ||
+        this.state.status !== 'connected'
+      )
+        return;
+      const second = Math.floor(Date.now() / 1000);
+      if (second !== controlSecond) {
+        controlSecond = second;
+        controlCount = 0;
+      }
+      if (++controlCount > 256) return;
+      try {
+        const data = new TextDecoder('utf-8', { fatal: true }).decode(payload);
+        for (const listener of this.controlListeners) listener(data, participant.identity);
+      } catch {
+        /* Malformed data is never input. */
+      }
+    });
     this.patch({ status: 'connecting', roomId, error: null });
     const sync = () => {
       if (this.room === room) this.sync();

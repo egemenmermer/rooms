@@ -42,6 +42,11 @@ const sparkle = spawnSync('node', ['scripts/prepare-sparkle.mjs'], {
 if (sparkle.status !== 0) process.exit(sparkle.status ?? 1);
 const build = spawnSync('pnpm', ['build'], { stdio: 'inherit', env: process.env });
 if (build.status !== 0) process.exit(build.status ?? 1);
+const remoteInput = spawnSync('node', ['scripts/prepare-remote-input.mjs'], {
+  stdio: 'inherit',
+  env: process.env,
+});
+if (remoteInput.status !== 0) process.exit(remoteInput.status ?? 1);
 if (!process.env.ROOMS_UPDATE_FEED) throw new Error('Set your own HTTPS ROOMS_UPDATE_FEED.');
 if (process.env.ROOMS_UPDATE_FEED) {
   if (!process.env.APPLE_TEAM_ID)

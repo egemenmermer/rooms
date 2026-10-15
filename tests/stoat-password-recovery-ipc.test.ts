@@ -22,6 +22,7 @@ vi.mock('electron', () => ({
   dialog: {},
   desktopCapturer: {},
   systemPreferences: {},
+  screen: { on: vi.fn(), removeListener: vi.fn() },
 }));
 vi.mock('node:fs', async () => ({
   ...(await vi.importActual<object>('node:fs')),

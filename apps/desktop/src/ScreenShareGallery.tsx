@@ -3,6 +3,7 @@ import { Maximize, Minimize, Monitor, ExternalLink } from 'lucide-react';
 import type { MediaTrack, MediaParticipant } from '@rooms/media';
 import { uiError } from './i18n';
 import './screen-share-gallery.css';
+import { RemoteControlActions, RemoteViewerInput } from './RemoteControl';
 export function ScreenShareGallery({
   tracks,
   people,
@@ -55,6 +56,7 @@ export function ScreenShareGallery({
     <div className="room-screen-gallery">
       <div ref={stage} className="room-screen-focus" data-screen-focus>
         {active && renderTrack(active.id, `${name(active)} ekranı`)}
+        <RemoteViewerInput track={active} videoRoot={stage} />
         <div className="room-screen-overlay">
           <span>
             <Monitor size={15} />
@@ -78,6 +80,7 @@ export function ScreenShareGallery({
           </div>
         </div>
       </div>
+      <RemoteControlActions track={active} />
       {tracks.length > 1 && (
         <div className="room-screen-thumbnails" aria-label="Paylaşılan ekranlar">
           {tracks.map((track) => (

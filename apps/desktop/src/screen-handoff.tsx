@@ -6,6 +6,7 @@ import { useCommunity } from './community';
 import { stopScreen, useRealtime, useVoiceContext } from './realtime';
 import { uiError } from './i18n';
 import type { ScreenPresenterState } from '@rooms/contracts';
+import { RemoteControlRuntime } from './RemoteControl';
 
 interface ScreenHandoffStore {
   channelId: string | null;
@@ -105,7 +106,7 @@ export function ScreenHandoffRuntime() {
   useEffect(() => {
     if (!value?.reservation) stoppedRequest.current = null;
   }, [value?.reservation]);
-  return null;
+  return <RemoteControlRuntime />;
 }
 
 async function runHandoffAction(

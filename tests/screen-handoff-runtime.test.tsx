@@ -9,7 +9,7 @@ const f = vi.hoisted(() => ({
 }));
 vi.mock('../apps/desktop/src/realtime', () => ({
   useVoiceContext: (selector: any) => selector(f.voice),
-  useRealtime: () => ({ status: f.status, sharing: false }),
+  useRealtime: () => ({ status: f.status, tracks: [], sharing: false }),
   stopScreen: vi.fn(),
 }));
 vi.mock('../apps/desktop/src/community', () => ({

@@ -23,12 +23,39 @@
   object-fit: contain;
 }
 .room-screen-overlay {
+  z-index: 6;
   position: absolute;
   inset: auto 10px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   pointer-events: none;
+}
+.remote-viewer-input {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  outline: none;
+  cursor: crosshair;
+  touch-action: none;
+}
+.remote-control-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+.remote-control-actions:empty {
+  display: none;
+}
+.remote-control-actions button {
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: inherit;
+  padding: 7px 10px;
+  border-radius: 7px;
 }
 .room-screen-overlay span,
 .room-screen-overlay button {

@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const media = vi.hoisted(() => ({
-  participants: new Map<string, { identity: string; tracks: { source: number }[] }>(),
+  participants: new Map<
+    string,
+    { identity: string; sid?: string; tracks: { source: number; sid?: string }[] }
+  >(),
   publish: new Map<string, unknown>(),
   revoked: new Set<string>(),
   update: vi.fn(),
@@ -119,6 +122,52 @@ afterEach(async () => {
   vi.clearAllMocks();
 });
 describe('screen handoff access lease', () => {
+  it('enables control data only after approval without clearing voice/screen permissions, and revokes on rejoin', async () => {
+    for (const [id, p] of media.participants) p.sid = `PA_${id}`;
+    expect((await post('screens/acquire', 'host')).statusCode).toBe(200);
+    media.participants.get('host')!.tracks = [
+      { source: TrackSource.SCREEN_SHARE, sid: 'TR_screen' },
+    ];
+    const epoch = randomUUID();
+    expect(
+      (await post('remote/register', 'host', { channelId: 'channel', trackId: 'TR_screen', epoch }))
+        .statusCode,
+    ).toBe(200);
+    const requestId = (
+      await post('remote/request', 'next', { channelId: 'channel', publisherId: 'host', epoch })
+    ).json().requestId;
+    expect((await post('remote/state', 'next')).json().lease).toBeNull();
+    expect(
+      (await post('remote/decide', 'other', { channelId: 'channel', requestId, approve: true }))
+        .statusCode,
+    ).not.toBe(200);
+    expect(
+      (await post('remote/decide', 'host', { channelId: 'channel', requestId, approve: true }))
+        .statusCode,
+    ).toBe(200);
+    const publish = media.publish.get('host') as {
+      permission: {
+        canPublish: boolean;
+        canSubscribe: boolean;
+        canPublishData: boolean;
+        canPublishSources: number[];
+      };
+    };
+    expect(publish.permission.canPublish).toBe(true);
+    expect(publish.permission.canSubscribe).toBe(true);
+    expect(publish.permission.canPublishData).toBe(true);
+    expect(publish.permission.canPublishSources).toContain(TrackSource.SCREEN_SHARE);
+    const calls = media.update.mock.calls.length;
+    expect((await post('remote/state', 'next')).json().lease.inputKey).toMatch(/^[a-f0-9]{64}$/);
+    expect(media.update.mock.calls.length).toBe(calls);
+    expect((await post('remote/state', 'other')).json().lease).toBeNull();
+    expect((await post('grant', 'next')).statusCode).toBe(200);
+    expect((await post('remote/state', 'host')).json().lease).toBeNull();
+    expect((media.publish.get('host') as any).permission.canPublishData).toBe(false);
+    expect((media.publish.get('host') as any).permission.canPublishSources).toContain(
+      TrackSource.SCREEN_SHARE,
+    );
+  });
   it('approval reserves but does not revoke the old presenter; release waits for old SFU tracks to disappear', async () => {
     const leaseId = await start(),
       context = await request(leaseId);

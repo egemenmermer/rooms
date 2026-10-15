@@ -15,8 +15,8 @@
     "test": "vitest run --config vitest.config.ts",
     "test:desktop": "playwright test",
     "start": "electron .",
-    "package:mac": "node scripts/release-preflight.mjs && pnpm build && electron-builder --mac dmg zip --arm64 && node scripts/verify-mac-signature.mjs",
-    "package:win": "pnpm build && electron-builder --win nsis --x64",
+    "package:mac": "node scripts/release-preflight.mjs && pnpm build && node scripts/prepare-remote-input.mjs && electron-builder --mac dmg zip --arm64 && node scripts/verify-mac-signature.mjs",
+    "package:win": "pnpm build && node scripts/prepare-remote-input.mjs && electron-builder --win nsis --x64",
     "services:build": "node scripts/build-services.mjs",
     "livekit:native": "node scripts/livekit-native.mjs",
     "verify:media": "node scripts/livekit-verify.mjs",
@@ -124,6 +124,9 @@
         ]
       }
     ],
-    "afterPack": "scripts/mac-preview-after-pack.cjs"
+    "afterPack": "scripts/mac-preview-after-pack.cjs",
+    "extraMetadata": {
+      "roomsRemoteInput": true
+    }
   }
 }

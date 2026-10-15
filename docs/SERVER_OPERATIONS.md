@@ -55,3 +55,14 @@ Focused admission/mount-boundary and existing Agent tests passed17tests. Actual 
 - OPS-013: Agent authority was independent of host operator grants. Added a private, membership-checked HostOps authority bridge, shared-mode startup requirements and ongoing task/detached-shell revocation checks. The renderer never receives the authority key or bot token.
 
 Stage3 source is in progress: rootless runtime, workspace takeover/stream/native bridge and task UI are now present; actual Linux runtime/PTY, UI acceptance and deployment remain pending. Stage4 native remote desktop input and host migration transport remain unimplemented. Preserve `agentAvailable:false` until actual acceptance passes.
+
+Stage4 issue recorded before implementation: OPS-014 — screen sharing has presentation handoff but no consented OS input. Implement per-source/per-track/per-participant consent, native permission/input boundaries and emergency revocation; never treat the existing presentation request as control approval. Native input must remain unavailable until its actual Mac/Windows checks pass.
+
+Stage3 actual acceptance evidence: hosted Verify run38738821243 passed baseline, Mac native smoke, host PTY and the new rootless native job. Actual rootless test covered identity/network/readonly boundaries, enforced container/ancestor quotas, ENOSPC, cancellation, persistent PTY Unicode/33×91/Ctrl+C, broker reconstruction/no replay and grant revocation. This remains isolated CI, not live Core coexistence or physical participant acceptance. Source d6720c4 is pushed; no release/deployment was performed.
+
+Stage4 source work: added ephemeral source/participant-bound human consent, a private native input gateway, Mac CoreGraphics/Windows SendInput adapter, local/emergency release, targeted signed data frames, independent reliable/lossy ordering, task/source/account fences, native confirmation and viewer controls. Measured data-channel round-trip uses signed ping/pong; no physical latency result is claimed. Details and the still-open physical matrix are in `docs/REMOTE_CONTROL.md`.
+
+- OPS-015: a partial LiveKit permission update can clear unrelated booleans. Control transport updates now rederive all current voice/video/source permissions; tests assert mic/listening/screen preservation and control-data revocation on rejoin. Normal media tokens do not grant data publication.
+- OPS-016: delayed UI input could otherwise target a newly approved lease. Main signing requires the originating lease ID, publisher approval is local/native, and dialog/source/account generations fence late results. Native tests use an injected adapter and never operate a real desktop.
+
+Mac native compile/load/unapproved-input smoke passed locally. Windows native compilation/package-resource checks, full final CI/UI verification and physical consent/input/coexistence are pending. No server update, installer, update feed or release was published by this checkpoint.
