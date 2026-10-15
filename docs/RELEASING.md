@@ -1,76 +1,80 @@
-# Build and distribute a release
+# Sürüm oluşturma ve dağıtma
 
-[← README](../README.md) · [Development](DEVELOPMENT.md) · [Self-hosting](SELF_HOSTING.md)
+[← README](../README.md) · [Geliştirme](DEVELOPMENT.md) · [Sunucu kurulumu](SELF_HOSTING.md)
 
-## Contents
+## İçindekiler
 
-- [Source versus installers](#source-versus-installers)
-- [Development packages](#development-packages)
-- [Trusted macOS releases](#trusted-macos-releases)
-- [Updates and publication](#updates-and-publication)
-- [Release checklist](#release-checklist)
+- [Kaynak kod ve kurulum dosyaları](#kaynak-kod-ve-kurulum-dosyaları)
+- [Geliştirme paketleri](#geliştirme-paketleri)
+- [Güvenilir Mac sürümü](#güvenilir-mac-sürümü)
+- [Güncelleme ve yayınlama](#güncelleme-ve-yayınlama)
+- [Yayın kontrol listesi](#yayın-kontrol-listesi)
 
-## Source versus installers
+## Kaynak kod ve kurulum dosyaları
 
-The repository is public and MIT licensed for original ROOMS code. Public source does not enroll users in a hosted community or provide a maintained public installer feed. Community operators distribute their own compatible builds and invitations.
+Depo herkese açıktır; özgün ROOMS kodu MIT lisanslıdır. Hazır masaüstü paketleri [GitHub sürümlerinde](https://github.com/egemenmermer/rooms/releases/latest) yayımlanır. Kaynağı veya paketi indirmek topluluğa üyelik ve hazır hesap sağlamaz; yöneticinin sunucu adresi ve daveti gerekir. Kendi topluluğunu dağıtan kişi kendi uyumlu paketini ve davetlerini yönetir.
 
-A Git tag identifies source. It does not prove a signed, notarized, or tested downloadable application. Do not redistribute private community archives or unreviewed historical artifacts as public release packages.
+Git etiketi kaynağı tanımlar. Tek başına indirilebilir uygulamanın imzalı, noter onaylı veya test edilmiş olduğunu kanıtlamaz. Özel topluluk arşivlerini ve incelenmemiş geçmiş dosyaları herkese açık paket olarak yeniden dağıtma.
 
-## Development packages
+## Geliştirme paketleri
 
-After [installing the development toolchain](DEVELOPMENT.md):
+[Geliştirme araçlarını](DEVELOPMENT.md) kurduktan sonra:
 
 ```sh
 pnpm package:mac
-# Or, in the target Windows packaging environment:
+# Veya uygun Windows paketleme ortamında:
 pnpm package:win
 ```
 
-These create ad-hoc macOS / unsigned Windows development packages, with output under `release/`. They do not need a maintainer's production credentials. The native build/preflight and platform tools still need to succeed.
+`release/` altında Mac için ad-hoc, Windows için imzasız geliştirme paketleri oluşur. Proje sahibinin üretim kimlik bilgileri gerekmez. Yerel derleme, ön kontroller ve platform araçları yine başarılı olmalıdır.
 
-## Trusted macOS releases
+## Güvenilir Mac sürümü
 
-A distributor supplies their own configuration:
+Dağıtıcı kendi yapılandırmasını sağlar:
 
-| Variable | Purpose |
+| Değişken | Amaç |
 | --- | --- |
-| `ROOMS_SIGNING_IDENTITY` | Developer ID Application identity |
-| `APPLE_TEAM_ID` | Your Apple developer team |
-| `ROOMS_NOTARY_KEYCHAIN_PROFILE` | Your configured notarization profile; supported explicit notarization credentials are an alternative |
-| `ROOMS_SPARKLE_PUBLIC_KEY` | Base64 public key corresponding to your private updater signing key |
-| `ROOMS_UPDATE_FEED` | Your HTTPS update-feed base URL, ending with `/` |
-| `ROOMS_RELEASE_OUTPUT` | Optional output directory; preflight checks available disk space |
+| `ROOMS_SIGNING_IDENTITY` | Developer ID Application kimliği |
+| `APPLE_TEAM_ID` | Apple geliştirici takımı |
+| `ROOMS_NOTARY_KEYCHAIN_PROFILE` | Yapılandırılmış noter profili; desteklenen açık noter kimlik bilgileri alternatif olabilir |
+| `ROOMS_SPARKLE_PUBLIC_KEY` | Özel güncelleme imza anahtarına karşılık gelen base64 açık anahtar |
+| `ROOMS_UPDATE_FEED` | Sonu `/` olan HTTPS güncelleme besleme tabanı |
+| `ROOMS_RELEASE_OUTPUT` | İsteğe bağlı çıktı yolu; ön kontrol disk alanını ölçer |
 
-Keep the Sparkle private signing key in the protected signing account used by `generate_appcast`. The public verification key is intended to be distributed; it is not the private key. Do not copy a maintainer Keychain or provider session.
+Sparkle özel anahtarını `generate_appcast` kullanan korumalı imzalama hesabında tut. Açık doğrulama anahtarı dağıtılmak içindir; özel anahtar değildir. Proje sahibinin Keychain'ini veya sağlayıcı oturumunu kopyalama.
 
 ```sh
 pnpm release:mac
 ```
 
-Builds/signs/notarizes a candidate without publishing it. Require Accepted notarization, stapled artifacts, and trusted Gatekeeper checks before distribution. Windows development packaging is configured separately; this guide does not assert a completed trusted Windows signing pipeline.
+Yayımlamadan aday oluşturur, imzalar ve noter sürecini çalıştırır. Dağıtımdan önce Apple sonucunun `Accepted` olması, biletlerin pakete eklenmesi ve Gatekeeper kontrolü gerekir. Paketleme aracının kendi noter adımını atlaması, ayrı `notarytool` adımının tamamlandığı anlamına gelmez; nihai sonucu kontrol et.
 
-## Updates and publication
+Windows geliştirme paketlemesi ayrıdır. Mevcut arkadaş EXE'leri imzasızdır; bu rehber tamamlanmış güvenilir Windows imza zinciri iddiası taşımaz. Yerel kaynak, lisans ekleri ve gerçek paket kontrolleri her platform için korunmalıdır.
 
-macOS in-app updates use Sparkle when the distributor supplies a compatible key/feed and correctly signed artifacts. A local source build has no automatic membership in someone else's update feed. Windows/native packaging and update acceptance must be checked separately for the target build.
+## Güncelleme ve yayınlama
+
+Mac uygulama içi güncellemesi, dağıtıcının uyumlu anahtarı ve beslemesi ve doğru imzalı dosyalarıyla Sparkle üzerinden çalışır. Kaynak derlemesi başkasının kanalına otomatik katılmaz. Windows/yerel paket ve güncelleme kabulü hedef derlemede ayrı incelenir; mevcut Windows dağıtımı yeni EXE'nin elle kurulmasını kullanır.
 
 ```sh
 pnpm release:mac:publish
 ```
 
-**This command publishes artifacts.** It is not a verification command. It additionally requires `ROOMS_DEPLOY_HOST`, `ROOMS_DEPLOY_KEY`, `ROOMS_DEPLOY_KNOWN_HOSTS`, and `ROOMS_UPDATE_REMOTE_DIR`. Use least-privilege deployment access; SSH host verification remains strict. Read the release/publish scripts before using your configuration.
+**Bu komut dosyaları yayımlar; doğrulama komutu değildir.** Ayrıca `ROOMS_DEPLOY_HOST`, `ROOMS_DEPLOY_KEY`, `ROOMS_DEPLOY_KNOWN_HOSTS` ve `ROOMS_UPDATE_REMOTE_DIR` ister. En az yetkili dağıtım hesabını kullan; SSH sunucu doğrulaması sıkı kalır. Kendi yapılandırmanla çalıştırmadan yayın betiklerini oku.
 
-Do not replace an archive beneath an already signed appcast entry with different bytes. Test an actual old-to-new update, profile preservation, and a compatible rollback before asking members to update.
+Besleme adresi ile arşiv indirme adresinin ömrünü ayır. Güncel besleme sabit bir adreste bulunabilir; arşivi sürüme özel, değişmeyen dosyaya yönlendir. Mevcut imzalı appcast kaydının altındaki arşivi farklı baytlarla değiştirme. Eski sürümden gerçek güncelleme, profilin korunması ve uyumlu geri dönüş denenmelidir. Beslemenin doğru görünmesi, eski istemcinin yeni sürümü gerçekten sunduğu kanıtı değildir.
 
-## Release checklist
+## Yayın kontrol listesi
 
-- Record version/build, source SHA, artifact hashes, and target platform/architecture.
-- Pass source checks and native startup checks for that source.
-- Exercise core login/chat/media on actual devices against your backend.
-- Review configuration/schema compatibility and restore a backup in isolation.
-- Inspect the packaged payload for private files, sessions, keys, and operator media; follow [package policy](publication/PACKAGE_POLICY.md).
-- Include license and third-party notices.
-- Verify signing/notarization/trust requirements for the actual distributed artifact.
-- Test a clean install, an update from the supported prior version, and recovery/rollback.
-- Publish only the reviewed bytes; make the version, supported platforms, limitations, and support contact clear.
+- Sürüm/build, kaynak SHA, dosya özetleri ve hedef platform/mimari kaydedilir.
+- Aynı kaynakta temel kontroller ve yerel açılış başarılıdır.
+- Temel giriş/sohbet/medya, kendi arka ucunda gerçek cihazlarla denenir; açık kabul konuları belirtilir.
+- Yapılandırma/veri biçimi uyumluluğu incelenir; yedek izole ortamda geri yüklenir.
+- Paket özel dosya, oturum, anahtar ve kişisel medya için incelenir; [paket politikası](publication/PACKAGE_POLICY.md) uygulanır.
+- Lisanslar, üçüncü taraf bildirimleri ve gereken karşılık gelen yerel kaynak ekleri eklenir.
+- Dağıtılan gerçek dosyanın imza/noter/güven kontrolleri tamamlanır.
+- Temiz kurulum, desteklenen önceki sürümden güncelleme ve kurtarma/geri dönüş denenir.
+- Yalnız incelenen baytlar yüklenir; uzaktaki boyut ve özet doğrulanır.
+- Dosyalar yerleşmeden katalog/feed etkinleştirilmez. Önceki kayıtlar ve geri dönüş paketi korunur.
+- Sürüm, platformlar, sınırlamalar ve destek yolu açıkça yazılır.
 
-Public source preparation and CI do not by themselves sign, deploy, or certify a release.
+Herkese açık kaynak hazırlığı ve CI tek başına yayın imzalamaz, dağıtım yapmaz veya fiziksel kabulü tamamlamaz. Arkadaş test sürümünün açık kontrollerini herkese açık V1 tamamlanmış gibi sunma.

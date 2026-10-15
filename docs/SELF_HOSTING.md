@@ -1,53 +1,53 @@
-# Host your own ROOMS community
+# Kendi ROOMS topluluğunu kur
 
-[← README](../README.md) · [User guide](USER_GUIDE.md) · [Troubleshooting](TROUBLESHOOTING.md)
+[← README](../README.md) · [Kullanım](USER_GUIDE.md) · [Sorun giderme](TROUBLESHOOTING.md)
 
-## Contents
+## İçindekiler
 
-- [What you are hosting](#what-you-are-hosting)
-- [Requirements](#requirements)
-- [1. Get the source](#1-get-the-source)
-- [2. Prepare the social backend](#2-prepare-the-social-backend)
-- [3. Configure LiveKit](#3-configure-livekit)
-- [4. Configure and start ROOMS services](#4-configure-and-start-rooms-services)
-- [5. Bootstrap accounts and invitations](#5-bootstrap-accounts-and-invitations)
-- [6. Connect a desktop client](#6-connect-a-desktop-client)
-- [7. Make the deployment reachable](#7-make-the-deployment-reachable)
-- [Optional services](#optional-services)
-- [Data and backups](#data-and-backups)
-- [Operational checks](#operational-checks)
-- [Before inviting other people](#before-inviting-other-people)
+- [Neyi çalıştırıyorsun?](#neyi-çalıştırıyorsun)
+- [Gereksinimler](#gereksinimler)
+- [1. Kaynak kodu al](#1-kaynak-kodu-al)
+- [2. Sosyal arka uç kurulumu](#2-sosyal-arka-uç-kurulumu)
+- [3. LiveKit yapılandırması](#3-livekit-yapılandırması)
+- [4. ROOMS servislerini yapılandır ve başlat](#4-rooms-servislerini-yapılandır-ve-başlat)
+- [5. İlk hesap ve davetler](#5-ilk-hesap-ve-davetler)
+- [6. Masaüstü istemcisini bağla](#6-masaüstü-istemcisini-bağla)
+- [7. Dış ağdan erişim](#7-dış-ağdan-erişim)
+- [İsteğe bağlı servisler](#isteğe-bağlı-servisler)
+- [Veriler ve yedekler](#veriler-ve-yedekler)
+- [Operasyon kontrolleri](#operasyon-kontrolleri)
+- [Başkalarını davet etmeden önce](#başkalarını-davet-etmeden-önce)
 
-## What you are hosting
+## Neyi çalıştırıyorsun?
 
-One operator hosts the backend; members run desktop clients. You do not need to give every member Docker, database access, or service secrets.
+Arka ucu bir yönetici çalıştırır; üyeler masaüstü uygulamasını kullanır. Her üyeye Docker, veritabanı erişimi veya servis sırları vermen gerekmez.
 
-| Component | Responsibility | Needed for |
+| Bileşen | Sorumluluk | Gereken özellik |
 | --- | --- | --- |
-| Stoat stack | Accounts, chat/events, uploads, and social data | Community login and chat |
-| ROOMS access | Membership checks, signup broker, short-lived media grants | ROOMS signup and voice authorization |
-| LiveKit | Realtime media signaling and transport | Voice, video, screen sharing |
-| ROOMS Activities | Authoritative shared activity state | Activities and games |
-| Music worker | Community queue/source handling | Optional DJ |
-| Agent host | Scoped workers and task state | Optional Agent |
-| Reverse proxy | Public HTTPS/WSS routes | Remote use |
+| Stoat servisleri | Hesap, sohbet/olaylar, dosyalar ve sosyal veriler | Topluluk girişi ve sohbet |
+| ROOMS erişim servisi | Üyelik, kayıt aracısı, kısa süreli medya izinleri | ROOMS kaydı ve ses yetkilendirmesi |
+| LiveKit | Gerçek zamanlı medya sinyali ve aktarımı | Ses, kamera ve ekran paylaşımı |
+| ROOMS Activities | Yetkili ortak etkinlik durumu | Etkinlikler ve oyunlar |
+| Müzik çalışanı | Ortak kuyruk ve kaynaklar | İsteğe bağlı DJ |
+| Agent makinesi | Sınırlandırılmış görevler ve kalıcı görev durumu | İsteğe bağlı Agent |
+| Ters vekil | Dışarıya açık HTTPS/WSS rotaları | Uzak üyeler |
 
-This guide describes the current source and setup boundaries. It is **not a one-command production deployment**. In particular, first-account/community provisioning is an upstream administration step; this repository does not automate it. Do not advertise an untested installation as ready for members.
+Bu rehber mevcut kaynağı ve kurulum sınırlarını anlatır; **tek komutla üretim kurulumu değildir**. İlk hesabı/topluluğu oluşturmak üst sistem yönetim işidir ve burada otomatikleştirilmez. Denenmemiş bir kurulumu üyeler için hazır diye sunma.
 
-The local walkthrough uses loopback addresses. Complete the public-network steps before connecting from another computer. Use a fresh machine or isolated environment first; do not run setup against an existing live volume without a backup and compatibility review.
+Yerel adımlar loopback adreslerini kullanır. Başka bilgisayardan bağlanmadan dış ağ adımlarını tamamla. Önce temiz veya izole ortam kullan. Mevcut canlı veri birimi üzerinde uyumlu yedek ve incelenmiş veri geçişi planı olmadan kurulum çalıştırma.
 
-## Requirements
+## Gereksinimler
 
-- A host you administer, with persistent storage and an appropriate firewall.
-- Git, Node.js **22.22.0**, and pnpm **11.25.0**.
-- Docker Engine with Docker Compose for the pinned Stoat stack.
-- A LiveKit server compatible with the client and server SDKs in the lockfile.
-- TLS/reverse-proxy and public media-network configuration for remote clients.
-- Capacity monitoring and an independent backup location.
+- Yönettiğin sunucu, kalıcı disk ve uygun güvenlik duvarı.
+- Git, Node.js **22.22.0**, pnpm **11.25.0**.
+- Sabitlenmiş Stoat kurulumu için Docker Engine ve Docker Compose.
+- Kilit dosyasındaki istemci/sunucu SDK'larıyla uyumlu LiveKit sunucusu.
+- Uzak erişim için TLS, reverse ters vekil ve medya ağı yapılandırması.
+- Kapasite izleme ve sunucudan bağımsız yedek konumu.
 
-No particular CPU/RAM tier or user count is certified here. Measure media bandwidth and server load with your intended number of publishers/viewers. Optional music and Agent workloads have separate resource needs.
+Bu depo belirli CPU/RAM paketini veya kişi sayısını sertifikalandırmaz. Hedef yayıncı/izleyici sayısıyla medya trafiğini ve yükü ölç. Müzik ve Agent için kaynak ihtiyacı ayrıca değerlendirilir.
 
-## 1. Get the source
+## 1. Kaynak kodu al
 
 ```sh
 git clone https://github.com/egemenmermer/rooms.git
@@ -56,46 +56,46 @@ pnpm install --frozen-lockfile
 pnpm services:build
 ```
 
-Keep commands in the repository root unless stated otherwise. `dist-services/` contains the built service entry points. Installing dependencies does not start any server.
+Aksi belirtilmedikçe depo kökünde çalış. Derlenmiş servisler `dist-services/` altındadır. Bağımlılık yüklemek bir sunucuyu başlatmaz.
 
-## 2. Prepare the social backend
+## 2. Sosyal arka uç kurulumu
 
-ROOMS uses an **unmodified** Stoat deployment pinned by [UPSTREAM.json](../infra/stoat/UPSTREAM.json). Do not silently substitute upstream `main` for that pin. The setup helper downloads the pinned deployment files and creates private configuration:
+ROOMS, [UPSTREAM.json](../infra/stoat/UPSTREAM.json) ile sabitlenmiş, **değiştirilmemiş** Stoat kullanır. Bu sürümü habersiz üst sistem `main` ile değiştirme. Yardımcı betik sabit dağıtım dosyalarını indirip özel yerel yapılandırma oluşturur:
 
 ```sh
 pnpm stoat:setup
 ```
 
-Generated files live in ignored `.local/stoat/`, including `compose.yml`, `Revolt.toml`, service environment files, and secrets. The helper enables invite-only registration and a public proxy that blocks direct upstream account creation. It preserves an existing `Revolt.toml`; rerunning it is not an upgrade or configuration migration.
+`compose.yml`, `Revolt.toml`, ortam dosyaları ve sırlar Git'in yok saydığı `.local/stoat/` altında oluşur. Davetli kayıt açılır; herkese açık ters vekil, doğrudan üst sistem hesap oluşturmayı kapatır. Mevcut `Revolt.toml` korunur; kurulumu tekrar çalıştırmak sürüm yükseltme veya yapılandırma geçişi değildir.
 
-Inspect the generated configuration locally without copying secrets to an issue. Then validate it:
+Üretilen dosyaları sırları issue'ya kopyalamadan yerelde incele. Ardından doğrula:
 
 ```sh
 docker info
-# Run from the repository root:
+# Depo kökünden:
 docker compose --project-directory .local/stoat config --quiet
 node scripts/stoat-start.mjs
 ```
 
-The start helper launches the selected social services, not ROOMS access, Activities, or an independent ROOMS LiveKit instance. Upstream web/native voice profiles are disabled by default. See [integration details](../infra/stoat/README.md).
+Başlatıcı seçilen sosyal servisleri açar; ROOMS erişim, Activities veya bağımsız ROOMS LiveKit servisini açmaz. Upstream web/native ses profilleri varsayılan olarak kapalıdır. [Entegrasyon ayrıntılarına](../infra/stoat/README.md) bak.
 
-### Local addresses
+### Yerel adresler
 
-| Address | Purpose | Exposure |
+| Adres | Amaç | Erişim |
 | --- | --- | --- |
-| `http://127.0.0.1:3021` | Public-facing local Stoat proxy; API `/api`, events `/ws` | Loopback during setup |
-| `http://127.0.0.1:3022` | Raw upstream API for the broker | Private only |
-| `127.0.0.1:3023` | Development MongoDB mapping | Private only |
-| `127.0.0.1:3002` | ROOMS access service | Behind proxy |
-| `127.0.0.1:3031` | Activities service | Behind proxy |
+| `http://127.0.0.1:3021` | Yerel herkese açık ters vekil; API `/api`, olaylar `/ws` | Kurulumda loopback |
+| `http://127.0.0.1:3022` | Aracının kullandığı ham üst sistem API | Yalnız özel ağ |
+| `127.0.0.1:3023` | Geliştirme MongoDB eşlemesi | Yalnız özel ağ |
+| `127.0.0.1:3002` | ROOMS erişim servisi | Proxy arkasında |
+| `127.0.0.1:3031` | Activities servisi | Proxy arkasında |
 
-For Docker-to-host proxying, generated `.env.web` uses `host.docker.internal`. Verify that this name and the host binding work in your Docker environment. If services move into containers, replace the upstreams with their actual internal service names and reachable bindings. A loopback-only listener may not be reachable from a Linux bridge container. Do not solve that by publicly exposing internal APIs or databases.
+Docker'dan ana makineye erişim için `.env.web`, `host.docker.internal` kullanır. Bu adın ve dinleme adresinin kendi Docker ortamında çalıştığını doğrula. Servisleri konteyner içine alırsan gerçek iç servis adlarını ve erişilebilir dinleme adreslerini kullan. Linux bridge konteyner, ana makinenin yalnız loopback dinleyen servisine ulaşamayabilir. Bunu ham API veya veritabanını internete açarak çözme.
 
-## 3. Configure LiveKit
+## 3. LiveKit yapılandırması
 
-Install/run the official LiveKit server using its [self-hosting documentation](https://docs.livekit.io/transport/self-hosting/). Supply your own configuration; a public client URL and an internal service URL have different purposes.
+Resmî LiveKit sunucusunu [kendi sunucunda çalıştırma belgesine](https://docs.livekit.io/transport/self-hosting/) göre kur. Yapılandırmayı sen sağlarsın; istemciye açık adres ile servislerin kullandığı iç adres farklı amaçlar taşır.
 
-For an isolated native local server, create an ignored `.local/livekit.yaml` like the example below. **Replace both placeholders with an independently generated key/secret before starting it.** This is an example, not a usable credential pair.
+İzole yerel yerel sunucu için Git'in yok saydığı `.local/livekit.yaml` oluştur. **Başlatmadan iki yer tutucuyu bağımsız üretilmiş anahtar/sır ile değiştir.** Aşağıdaki değerler kullanılabilir kimlik bilgileri değildir.
 
 ```yaml
 port: 7880
@@ -117,49 +117,48 @@ webhook:
 livekit-server --config .local/livekit.yaml
 ```
 
-Keep the file readable only by the service account. Use the **same** key/secret in ROOMS access. Configure the signed webhook to reach that service from the LiveKit runtime: container deployments cannot necessarily use the native-host loopback URL above.
+Dosyayı yalnız servis hesabı okuyabilsin. ROOMS erişim servisinde **aynı** anahtar/sırrı kullan. İmzalı webhook, LiveKit'in çalıştığı ortamdan erişim servisine ulaşmalıdır; konteyner'dan yukarıdaki yerel loopback adresine erişilemeyebilir.
 
-This loopback configuration is not suitable for remote callers. Public deployment needs a reachable advertised IP, WSS signaling, appropriate TCP/UDP ports, and a tested NAT/TURN design where required. LiveKit API secrets stay on the server; clients receive short-lived grants.
+Bu loopback örneği uzak üyeler için uygun değildir. Herkese açık kurulumda erişilebilir duyurulan IP, WSS sinyali, eşleşen TCP/UDP portları ve gereken NAT/TURN düzeni doğrulanır. LiveKit API sırları sunucuda kalır; istemciler kısa süreli yetki alır.
 
-Historical local helpers under `scripts/livekit-*` expect private files under `infra/local/`. They are verification conveniences, not the deployment recipe in this guide. Inspect their expected inputs before using them; the explicit configuration above avoids relying on historical generated files.
+Geçmişteki `scripts/livekit-*` yardımcıları `infra/local/` altında özel dosyalar bekler. Bunlar yerel doğrulama kolaylığıdır; bu rehberin üretim kurulum tarifi değildir. Önce beklenen girdilerini incele. Yukarıdaki açık yapılandırma, geçmişte üretilmiş dosyalara bağımlı değildir.
 
-## 4. Configure and start ROOMS services
+## 4. ROOMS servislerini yapılandır ve başlat
 
-Create an ignored directory and copy the environment checklist:
+Özel dizinleri oluşturup ortam kontrol listesini kopyala:
 
 ```sh
-mkdir -p .local/soundboard .local/activities .local/music-playlists
+mkdir -p .local/soundboard .local/activities
 cp infra/templates/core.env.example .local/core.env
 ```
 
-On PowerShell, use `New-Item -ItemType Directory -Force` and `Copy-Item` for the equivalent filesystem steps. Edit `.local/core.env` locally. Do not commit it.
+PowerShell'de eşdeğer dosya işlemleri için `New-Item -ItemType Directory -Force` ve `Copy-Item` kullan. `.local/core.env` dosyasını yerelde düzenle; commit etme.
 
-| Setting | Meaning |
+| Ayar | Anlamı |
 | --- | --- |
-| `SERVICE_HOST` | Bind address; keep services private and proxy only intended routes |
-| `PORT` / `ACTIVITY_PORT` | Access / Activities ports; defaults 3002 / 3031 |
-| `STOAT_INTERNAL_URL` | Private raw API origin; local setup uses `http://127.0.0.1:3022` |
-| `LIVEKIT_INTERNAL_URL` | LiveKit address reachable by access; local `http://127.0.0.1:7880` |
-| `LIVEKIT_PUBLIC_URL` | Client-reachable media URL; local `ws://127.0.0.1:7880`, remote `wss://…` |
-| `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | Your matching LiveKit credentials |
-| `ROOMS_SOUNDBOARD_DIRECTORY` | Writable persistent soundboard directory |
-| `ROOMS_MUSIC_PLAYLISTS_DIRECTORY` | Writable persistent community playlist directory; container default `/state/music-playlists` |
-| `ROOMS_ACTIVITY_DATA` | Writable file-backed activity directory when PostgreSQL is not configured |
-| `ROOMS_ACTIVITY_DATABASE_URL` | Optional Activities PostgreSQL connection string |
-| `ROOMS_REGISTRATION_INVITES_FILE` | Persistent signup ticket ledger |
-| `ROOMS_ACCOUNT_INVITE_MONGO_URL` | Scoped Mongo connection for account-invite provisioning |
-| `ROOMS_SOCIAL_READ_MONGO_URL` | Optional scoped social authorization reader connection |
+| `SERVICE_HOST` | Dinleme adresi; servisleri özel tut, yalnız gerekli rotaları ters vekil ile aç |
+| `PORT` / `ACTIVITY_PORT` | Erişim / Activities portları; varsayılan 3002 / 3031 |
+| `STOAT_INTERNAL_URL` | Özel ham API kaynak adresini; yerelde `http://127.0.0.1:3022` |
+| `LIVEKIT_INTERNAL_URL` | Erişim servisinden ulaşılan LiveKit adresi; yerelde `http://127.0.0.1:7880` |
+| `LIVEKIT_PUBLIC_URL` | İstemcinin ulaşacağı medya adresi; yerelde `ws://127.0.0.1:7880`, uzakta `wss://…` |
+| `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | Eşleşen kendi LiveKit kimlik bilgilerin |
+| `ROOMS_SOUNDBOARD_DIRECTORY` | Yazılabilir kalıcı soundboard dizini |
+| `ROOMS_ACTIVITY_DATA` | PostgreSQL yoksa dosya tabanlı etkinlik dizini |
+| `ROOMS_ACTIVITY_DATABASE_URL` | İsteğe bağlı Activities PostgreSQL bağlantısı |
+| `ROOMS_REGISTRATION_INVITES_FILE` | Kalıcı kayıt bileti işlem defteri |
+| `ROOMS_ACCOUNT_INVITE_MONGO_URL` | Hesap daveti oluşturma için kapsamlı Mongo bağlantısı |
+| `ROOMS_SOCIAL_READ_MONGO_URL` | İsteğe bağlı sınırlı sosyal yetki okuma bağlantısı |
 
-For local signup, add the following paths/settings to your private environment; the generated broker configuration in `.local/stoat/broker.env` is a reference for them. Node does not load it automatically:
+Yerel kayıt için özel ortam dosyana şunları ekle. `.local/stoat/broker.env` bunlar için referanstır; Node bu dosyayı kendiliğinden yüklemez:
 
 ```dotenv
 ROOMS_REGISTRATION_INVITES_FILE=.local/stoat/registration-invites.json
 ROOMS_ACCOUNT_INVITE_MONGO_URL=mongodb://127.0.0.1:3023/revolt
 ```
 
-The loopback development Mongo URL is not a production credential strategy. Provision scoped database service accounts for production; account-invite insertion does not require general administrator access. Keep existing encryption keys stable when optional services use encrypted stores.
+Loopback geliştirme Mongo adresi üretim kimlik bilgisi stratejisi değildir. Üretimde kapsamlı servis hesapları kur; davet eklemek genel veritabanı yöneticisi yetkisi gerektirmez. İsteğe bağlı şifreli depoların anahtarlarını veri geçişi olmadan değiştirme.
 
-Run each service in its own terminal, from the repository root:
+Her servisi depo kökünden ayrı terminalde çalıştır:
 
 ```sh
 node --env-file=.local/core.env dist-services/access.cjs
@@ -169,108 +168,108 @@ node --env-file=.local/core.env dist-services/access.cjs
 node --env-file=.local/core.env dist-services/activities.cjs
 ```
 
-The same environment can supply shared values, while each process uses its own port setting. Node does not implicitly load arbitrary `.env` files. For production, use supervised services with a dedicated OS user, explicit working directory/environment, writable data directories, and restart limits.
+Aynı ortam ortak değerleri sağlayabilir; süreçler kendi port ayarlarını kullanır. Node keyfî `.env` dosyalarını otomatik okumaz. Üretimde ayrı işletim sistemi kullanıcısı, açık çalışma dizini/ortamı, yazılabilir veri dizinleri ve yeniden başlatma sınırları olan denetimli servisler kullan.
 
-## 5. Bootstrap accounts and invitations
+<a id="5-ilk-hesap-ve-davetler"></a>
 
-**This is a required operator step, not an automatic result of setup.** The invitation-issuing script needs an existing authorized upstream community invitation. It does not create the first administrator or community.
+## 5. İlk hesap ve davetler
 
-1. Bootstrap your first account, community, and channels using the pinned upstream deployment's supported administrative/API process. Consult the pinned deployment's generated `.local/stoat/Guides.md` and upstream API documentation. Configure mail/recovery if your account flow needs it.
-2. Obtain a community invitation for the community you own. Keep it private. The public ROOMS proxy deliberately blocks raw account creation; do not leave a temporary bootstrap bypass exposed.
-3. Confirm the configured ROOMS access broker and persistent ticket ledger are available.
-4. Issue a ROOMS signup ticket:
+**Bu zorunlu yönetici adımı kurulumun otomatik sonucu değildir.** Davet üretme betiği, zaten var olan ve yetkili olduğun üst sistem topluluk davetini ister; ilk yöneticiyi veya topluluğu oluşturmaz.
+
+1. Sabit üst sistem kurulumun desteklediği yönetim/API yolu ile ilk hesabı, topluluğu ve kanalları oluştur. Üretilen `.local/stoat/Guides.md` ve üst sistem API belgelerine bak. Hesap akışın gerektiriyorsa posta/kurtarmayı yapılandır.
+2. Sahibi olduğun topluluk için üst sistem daveti edin ve özel tut. Herkese açık ROOMS ters vekil ham hesap oluşturmayı bilerek kapatır; geçici kurulum istisnasını açık bırakma.
+3. Erişim aracısının ve kalıcı bilet dosyasının hazır olduğunu doğrula.
+4. ROOMS kayıt bileti üret:
 
 ```sh
 node scripts/stoat-issue-invite.mjs --community-code=YOUR_AUTHORIZED_COMMUNITY_CODE --expires-in=86400
 ```
 
-Replace the placeholder with your authorized upstream invitation. The script uses the owned Docker Compose database runtime, inserts an upstream account invitation, and stores a digest-keyed ROOMS ticket. It writes a private `.local/stoat/signup-invite-*.json` delivery file instead of printing the signup code.
+Yer tutucuyu kendi yetkili üst sistem davetinle değiştir. Betik sahip olunan Docker Compose veritabanında üst sistem hesap daveti oluşturur, ROOMS biletini özet anahtarıyla saklar. Kodu konsola yazmak yerine özel `.local/stoat/signup-invite-*.json` teslim dosyası üretir.
 
-The delivery file has a local `serverUrl`; for remote delivery, use your actual public community URL. Send the intended member the correct server address and ROOMS ticket privately. Do not publish tickets or upstream invite codes in GitHub docs or screenshots.
+Teslim dosyasının `serverUrl` alanı yereldir; uzak üyeye kendi herkese açık topluluk adresini ver. Doğru sunucu adresini ve bileti hedef üyeyle özel paylaş. Biletleri veya üst sistem kodlarını GitHub belgelerinde/görüntülerinde yayımlama.
 
-A ticket is single-use and expiring. A crash or uncertain upstream result leaves `claiming`/`failed` state for inspection. Check whether an account was created before recovering a stale lock or replacing the invitation. Do not turn uncertain tickets back into available tickets blindly. Run one authoritative broker/ledger; independent replicas with separate ledgers are not a supported way to scale signup.
+Bilet tek kullanımlık ve sürelidir. Çökme veya belirsiz üst sistem sonucu `claiming`/`failed` bırakır. Eski kilidi kurtarmadan veya bileti değiştirmeden hesabın oluşturulup oluşturulmadığını incele. Belirsiz bileti gelişigüzel yeniden kullanılabilir yapma. Tek yetkili aracı/işlem defteri kullan; ayrı dosyalı bağımsız kopyalar güvenli kayıt ölçekleme yolu değildir.
 
-The detailed integration notes record upstream acceptance gaps. Do not treat documentation of the API path as proof that your first-account/registration flow has been tested.
+Ayrıntılı entegrasyon notları üst sistem kabul açıklarını kaydeder. API yolunun belgelenmesi, kendi ilk hesap/kayıt akışının denendiği anlamına gelmez.
 
-## 6. Connect a desktop client
+## 6. Masaüstü istemcisini bağla
 
-Run or install a compatible desktop build. Enter the local proxy URL for same-machine development, or your actual public HTTPS origin for remote members. Use the account/invitation from the previous step.
+Uyumlu masaüstü derlemesini aç veya kur. Aynı makinede yerel ters vekil adresini; uzak üyelerde gerçek herkese açık HTTPS kaynak adresini gir. Önceki adımın hesabını/davetini kullan.
 
-`VITE_ROOMS_DEFAULT_SERVER` can optionally prefill a server address at **build time**. It is not required and must not contain credentials. Saved server preferences and invitation links remain relevant. See [development](DEVELOPMENT.md) and [user guide](USER_GUIDE.md).
+`VITE_ROOMS_DEFAULT_SERVER`, **derleme sırasında** isteğe bağlı sunucu ön ayarıdır. Zorunlu değildir ve kimlik bilgisi içermez. Kayıtlı tercihler ve davetler de etkilidir. [Geliştirme](DEVELOPMENT.md) ve [kullanım](USER_GUIDE.md) rehberlerine bak.
 
-Test text messages with two accounts before testing voice. Then join a voice-enabled channel with proper membership, ViewChannel, Connect, and publishing permissions. An ordinary text channel without voice configuration is not enough for a voice grant.
+Sesten önce iki hesapla mesajlaşmayı dene. Ardından gerçek üyelik, ViewChannel, Connect ve yayın izinleri bulunan ses özellikli kanala katıl. Yalnız metin kanalı olması ses yetkisi almak için yeterli değildir.
 
-## 7. Make the deployment reachable
+## 7. Dış ağdan erişim
 
-Use your chosen public origin and configure matching advertised HTTPS/WSS URLs in the backend. A domain is a convenient option; if using an IP address, you still need a client-trusted TLS setup. Remote insecure WS is rejected by the client.
+Herkese açık kaynak adresini seç ve arka uçta buna uygun HTTPS/WSS adreslerini duyur. Alan adı kullanışlıdır; IP kullanıyorsan da istemcinin güveneceği TLS kurulumu gerekir. Uzak güvensiz WS bağlantıları istemci tarafından reddedilir.
 
-The public proxy must preserve the deployment's Stoat API/events/uploads routes and forward these ROOMS paths:
+Herkese açık ters vekil, Stoat API/olay/dosya rotalarını korumalı ve ROOMS yollarını yönlendirmelidir:
 
-| Public path | Internal target | Notes |
+| Herkese açık yol | İç hedef | Not |
 | --- | --- | --- |
-| `/api/*`, `/ws`, upload/proxy paths | Pinned upstream routes | Keep the direct-account-creation block |
-| `/rooms-access/*` | Access port 3002 | Strip `/rooms-access` before forwarding |
-| `/rooms-activities/*` | Activities port 3031 | Strip `/rooms-activities` before forwarding |
-| `/rooms-branding/*` | Your decorative static assets | Optional customization |
+| `/api/*`, `/ws`, dosya/proxy yolları | Sabit üst sistem rotaları | Doğrudan hesap oluşturma engeli korunur |
+| `/rooms-access/*` | Erişim 3002 | Ön ek kaldırılarak iletilir |
+| `/rooms-activities/*` | Activities 3031 | Ön ek kaldırılarak iletilir |
+| `/rooms-branding/*` | Dekoratif statik dosyaların | İsteğe bağlı |
 
-LiveKit signaling has its own configured client-reachable endpoint. Common local port values are 7880 for signaling, 7881 for media TCP, and 50000–50020 for the example UDP range. Production rules must match your actual configuration; an HTTPS proxy alone does not make UDP media reachable.
+LiveKit sinyali ayrıca yapılandırılmış, istemcinin ulaşabileceği adrestedir. Yerel örnekte sinyal 7880, medya TCP 7881, UDP 50000–50020'dir. Üretim kuralları gerçek yapılandırmayla eşleşmelidir; HTTPS ters vekil tek başına UDP medyayı erişilebilir yapmaz.
 
-Keep raw API, MongoDB, Redis, RabbitMQ, object-store administration, and service secrets private. Supply scoped service credentials and trusted internal networking. Pin and record container digests before relying on a production installation; the source pin file does not claim image digests were verified.
+Ham API'yi, MongoDB/Redis/RabbitMQ'yu, nesne deposu yönetimini ve sırları özel tut. Sınırlı kimlik bilgileri ve güvenilir iç ağ sağla. Üretimde güvenmeden önce konteyner özetlerini sabitle ve kaydet; kaynak pin dosyası bunların doğrulandığını iddia etmez.
 
-## Optional services
+<a id="isteğe-bağlı-servisler"></a>
 
-Add these only after core login, chat, permissions, and media work:
+## İsteğe bağlı servisler
 
-- **Music:** [native worker notes](../infra/music/README.md), [Compose fragment](../infra/music-compose.fragment.yml), and [Java source bridge](../apps/services/music/youtube-bridge/README.md). Configure an independent matching worker secret, approved sources, and Java 17/Maven or native artifacts where required. Compiling the bridge is not proof that a provider accepts playback.
-- **Agent:** follow [Agent deployment](AGENT_DEPLOYMENT.md). Use an isolated Linux host with explicit model/resource grants. The host does not need core database or personal provider vault access.
-- **Download portal:** the source is under `apps/distribution/`. Set `ROOMS_DISTRIBUTION_ORIGIN` and provision your own private invitation/release ledger. No maintainer download origin is supplied.
-- **Branding:** serve your own [community manifest](CUSTOMIZATION.md) for DJ name/poster/animation. Branding is decorative, not a playback integration.
+Temel giriş, sohbet, izinler ve medya çalıştıktan sonra ekle:
 
-## Data and backups
+- **Müzik:** [yerel çalışan](../infra/music/README.md), [Compose parçası](../infra/music-compose.fragment.yml), [Java köprüsü](../apps/services/music/youtube-bridge/README.md). Eşleşen bağımsız servis sırrı, izinli kaynaklar ve gereken Java 17/Maven/native dosyaları sağla. Derleme, sağlayıcının oynatmayı kabul ettiğini kanıtlamaz.
+- **Agent:** [ayrı sunucu kurulumu](AGENT_DEPLOYMENT.md) veya [ortak sunucuda rootless kurulum](../infra/agent/shared/README.md). İki yolun kullanıcı, ağ ve kaynak sınırlarını ayrı uygula; Core veritabanı veya kişisel sağlayıcı kasası Agent'a verilmez.
+- **Sunucu yönetimi:** [HostOps ve yönetim](SERVER_OPERATIONS.md). İzleme, terminal ve görev çalıştırmayı ayrı yetkilerle ele al; normal oda üyeliği sunucu erişimi vermez.
+- **İndirme portalı:** kaynak `apps/distribution/` altındadır. `ROOMS_DISTRIBUTION_ORIGIN` ve kendi özel davet/yayın işlem defterini kur. Proje sahibinin adresi hazır gelmez.
+- **Görseller:** [topluluk manifesti](CUSTOMIZATION.md) ile DJ adı/posteri/animasyonu sun. Bu bir görsel ayarıdır; oynatma entegrasyonu değildir.
 
-| Data | Where to look | Recovery requirement |
+## Veriler ve yedekler
+
+| Veri | Konum | Kurtarma gereksinimi |
 | --- | --- | --- |
-| Social accounts/messages | Stoat database volumes | Compatible upstream backup/restore |
-| Uploads | Stoat object-storage volumes | Back up together with relevant metadata/keys |
-| Signup state | `ROOMS_REGISTRATION_INVITES_FILE` and its operational lock state | Preserve consumed/uncertain states |
-| Activities | `ROOMS_ACTIVITY_DATA` or PostgreSQL | Restore a compatible serialized state |
-| Soundboard | `ROOMS_SOUNDBOARD_DIRECTORY` | Preserve assets and ownership |
-| Shared music playlists | `ROOMS_MUSIC_PLAYLISTS_DIRECTORY` | Preserve catalogs and revisions; one Access writer |
-| Optional Agent/configuration | Its configured data directory and encryption key | Preserve encrypted data and matching key separately |
+| Sosyal hesaplar/mesajlar | Stoat veritabanı veri birimi'leri | Uyumlu üst sistem yedek/geri yükleme |
+| Yüklenen dosyalar | Stoat nesne deposu veri birimi'leri | İlgili metadata ve anahtarlarla birlikte yedek |
+| Kayıt durumu | `ROOMS_REGISTRATION_INVITES_FILE` ve kilit durumu | Kullanılmış/belirsiz durumları koru |
+| Etkinlikler | `ROOMS_ACTIVITY_DATA` veya PostgreSQL | Uyumlu seri hale getirilmiş durum |
+| Soundboard | `ROOMS_SOUNDBOARD_DIRECTORY` | Dosyaları ve sahipliği koru |
+| Agent/yapılandırma | Yapılandırılmış veri dizini ve şifreleme anahtarı | Veri ile eşleşen anahtarı ayrı ve korumalı sakla |
 
-For Activities, PostgreSQL initialization creates the current `rooms_activity_state` table on startup. This is not a complete versioned migration/downgrade system. Use one authoritative Activities process; shared PostgreSQL does not by itself make independent command processors safe.
+Activities, başlangıçta PostgreSQL'de mevcut `rooms_activity_state` tablosunu oluşturur. Bu, tam sürümlü migration/geri dönüş sistemi değildir. Tek yetkili Activities süreci kullan; ortak PostgreSQL bağımsız komut işlemcilerini kendiliğinden güvenli yapmaz.
 
-Record source SHA, configuration version, upstream images, data paths, and backup timestamp. Restrict access to backups; they can contain credentials and personal data. Store copies away from the host and test restoration into an isolated environment. Never use `docker compose down -v` as routine troubleshooting.
+Kaynak SHA, yapılandırma sürümü, üst sistem imajları, veri yolları ve yedek zamanını kaydet. Yedekler sır ve kişisel veri içerebilir; erişimi sınırla, sunucudan ayrı kopyala ve izole geri yüklemeyi dene. Rutin çözüm olarak `docker compose down -v` kullanma.
 
-Before an upgrade, stop or quiesce writers as needed, take a consistent backup, and review serialized-state compatibility. Rolling back code without compatible data is not a complete rollback plan.
+Yükseltmeden önce gerektiği şekilde yazan süreçleri durdur/sakinleştir, tutarlı yedek al ve veri biçimi uyumluluğunu incele. Uyumlu verisi olmadan yalnız kodu geri almak tam kurtarma planı değildir.
 
-## Operational checks
+## Operasyon kontrolleri
 
-With services running locally:
+Servisler yerelde çalışırken:
 
 ```sh
 curl --fail http://127.0.0.1:3002/health
 curl --fail http://127.0.0.1:3031/health
 ```
 
-These are service probes, not full acceptance tests. Monitor process restarts, disk/backup age, database health, API errors, websocket disconnects, media bitrate/loss/latency, and network egress. Keep logs free of passwords, tokens, private message contents, and personal media URLs.
+Bunlar servis sağlık kontrolleridir; tam kabul testi değildir. Yeniden başlatma, disk, yedek yaşı, veritabanı, API hataları, websocket kopması, medya bitrate/kayıp/gecikme ve ağ çıkışını izle. Günlüklere parola, belirteç, özel mesaj veya kişisel medya adresi yazma.
 
-`pnpm stoat:verify` requires explicitly owned disposable accounts in a private JSON file; see [integration details](../infra/stoat/README.md). Verification harnesses may create data or need historical private inputs. Read their scope before running them and never point them at someone else's live community.
+`pnpm stoat:verify`, özel JSON dosyasında açıkça sahip olunan atılabilir hesaplar ister; [entegrasyon belgesine](../infra/stoat/README.md) bak. Doğrulama betikleri veri oluşturabilir veya eski özel girdiler bekleyebilir. Kapsamlarını oku; başkasının canlı topluluğuna yöneltme.
 
-## Before inviting other people
+## Başkalarını davet etmeden önce
 
-- Two actual accounts can register/sign in and exchange messages through the public origin.
-- Unauthorized outsiders cannot read channels or obtain media/activity access.
-- Two physical devices on different networks can hear each other and share a selected screen.
-- Mute/deafen, leave/rejoin, reconnect, and revoked membership behave correctly.
-- Optional music/activities work or clearly report why they are unavailable.
-- A backup has been restored successfully in an isolated environment.
-- Operators know how to stop/recover services and handle partial signup.
-- Retention, account recovery, export/deletion, abuse handling, and a support contact are defined.
-- Distributed installers, notices, signing, and updates meet [release requirements](RELEASING.md).
+- Herkese açık kaynak adresi üzerinden iki gerçek hesap kayıt/giriş yapıp mesajlaşabilir.
+- Yetkisiz dış hesap kanalları okuyamaz veya medya/etkinlik yetkisi alamaz.
+- Farklı ağdaki iki fiziksel cihaz birbirini duyabilir ve seçilen ekranı paylaşabilir.
+- Mikrofon/sağırlaştırma, ayrılma/katılma, yeniden bağlantı ve üyelik iptali çalışır.
+- İsteğe bağlı servisler çalışır veya neden kullanılamadığını açıklar.
+- Yedek izole ortamda başarıyla geri yüklenmiştir.
+- Yönetici servis durdurma/kurtarmayı ve yarım kayıtları yönetebilir.
+- Saklama, hesap kurtarma, dışa aktarma/silme, kötüye kullanım ve destek yolu tanımlıdır.
+- Dağıtılan paket, bildirim, imza ve güncelleme [yayın gereksinimlerini](RELEASING.md) karşılar.
 
-Record actual results for your deployment. Gallery images, successful compilation, and fixture tests are not substitutes for these checks.
-
-### Shared music playlists
-
-Run one Access writer for each shared playlist directory. Community members with current room access can edit the same catalog; revisions reject stale concurrent saves. Mount the Access directory persistently and include it in private backups. Do not share this mount with provider credentials. Set `ROOMS_MUSIC_PLAYLISTS_DIRECTORY` explicitly for native deployments. The worker and Access service must both support playlist references and `add-list` before enabling the new client. Lists store public YouTube IDs, titles and durations only; personal media URLs and provider sessions are not imported. Each community is limited to 50 lists of 100 tracks and a 4 MiB catalog. A failed import or stale edit is never retried as a write automatically.
+Kendi kurulumunun gerçek sonuçlarını kaydet. Galeri, başarılı derleme ve örnek testler bu kontrollerin yerine geçmez.

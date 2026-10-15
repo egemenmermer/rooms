@@ -1,16 +1,16 @@
-name: Bug
-description: Report a reproducible product problem
+name: Hata bildirimi
+description: Yeniden üretilebilir bir ürün sorununu bildirin
 body:
   - type: textarea
     id: behavior
     attributes:
-      label: Expected and actual behavior
-      description: Include version, platform and safe reproduction steps. No credentials or private messages.
+      label: Beklenen ve gerçekleşen davranış
+      description: Sürüm, platform ve güvenli yeniden üretim adımlarını yazın. Kimlik bilgisi veya özel mesaj eklemeyin.
     validations:
       required: true
   - type: textarea
     id: reproduction
     attributes:
-      label: Reproduction steps
+      label: Yeniden üretim adımları
     validations:
       required: true

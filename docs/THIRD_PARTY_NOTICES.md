@@ -1,40 +1,39 @@
-# Third-party notices and source references
+# Üçüncü taraf bildirimleri ve kaynakları
 
-Original ROOMS source and original project artwork are offered under the root MIT license. Generated default DJ artwork and the retained assets are described in docs/ASSETS.md. Community-provided media remains owned by its provider and is never relicensed by this repository. The bundled Inter font retains SIL OFL 1.1; complete font and embedded native notices are retained below.
+Özgün ROOMS kodu ve proje görselleri kökteki MIT lisansıyla sunulur. Varsayılan DJ çizimi ve korunan varlıklar [varlık kaydında](ASSETS.md) açıklanır. Topluluk medyası sağlayıcısına aittir; depo yeniden lisanslamaz. Inter fontu SIL OFL 1.1 lisansını korur. Font ve gömülü yerel bileşen bildirimleri korunur. Aşağıdaki hukuki lisans metinleri, değiştirilmeden dağıtılması için özgün dillerindedir; açıklamalar Türkçedir.
 
-Dependencies retain their own licenses. Consult the corresponding installed LICENSE files and lockfile for exact versions. The build generates dist/THIRD_PARTY_NOTICES.txt from installed production dependency metadata and LICENSE/NOTICE files; this is bundled in app.asar. Deployment images and official CLIs retain their upstream notices separately.
+Bağımlılıkların kendi lisansları geçerlidir. Tam sürümler için kurulu LICENSE dosyaları ve kilit dosyasına bakın. Derleme, kurulu üretim bağımlılık üstverisi ve LICENSE/NOTICE dosyalarından `dist/THIRD_PARTY_NOTICES.txt` üretip `app.asar` içine koyar. Dağıtım imajları ve resmî komut satırı araçları üst bildirimlerini ayrıca korur.
 
 - Electron / MIT: https://github.com/electron/electron
 - React / MIT: https://github.com/facebook/react
 - TypeScript / Apache-2.0: https://github.com/microsoft/TypeScript
-- LiveKit client/server SDKs / Apache-2.0: https://github.com/livekit/client-sdk-js and https://github.com/livekit/server-sdk-js
+- LiveKit istemci/sunucu SDK'leri / Apache-2.0: https://github.com/livekit/client-sdk-js ve https://github.com/livekit/server-sdk-js
 - hls.js / Apache-2.0: https://github.com/video-dev/hls.js
 - xterm.js / MIT: https://github.com/xtermjs/xterm.js
 - ws / MIT: https://github.com/websockets/ws
-- Optional Linux node-pty / MIT: https://github.com/microsoft/node-pty (server kit only; preserve installed LICENSE when distributing that kit).
-- tmux / ISC: https://github.com/tmux/tmux (system dependency; preserve its upstream notice).
+- İsteğe bağlı Linux node-pty / MIT: https://github.com/microsoft/node-pty (yalnız sunucu kiti; dağıtımda kurulu LICENSE korunur).
+- tmux / ISC: https://github.com/tmux/tmux (sistem bağımlılığı; üst bildirim korunur).
 - Fastify / MIT: https://github.com/fastify/fastify
-- PostgreSQL node driver / MIT: https://github.com/brianc/node-postgres
-- MongoDB Node driver / Apache-2.0: https://github.com/mongodb/node-mongodb-native
+- PostgreSQL Node sürücüsü / MIT: https://github.com/brianc/node-postgres
+- MongoDB Node sürücüsü / Apache-2.0: https://github.com/mongodb/node-mongodb-native
 - Lucide / ISC: https://github.com/lucide-icons/lucide
 - Playwright / Apache-2.0: https://github.com/microsoft/playwright
 
-Unmodified self-hosted Stoat and its official self-hosted configuration are separate upstream AGPL-3.0 components: https://github.com/stoatchat/stoatchat and https://github.com/stoatchat/self-hosted. See infra/stoat/README.md and local setup pin/evidence for the exact image/upstream revisions. Keep corresponding source and license links available to users. Review applicable source-distribution obligations before release; separation of processes is not itself a legal conclusion.
+Değiştirilmeden kendi sunucunda çalışan Stoat ve resmî kurulum ayarı ayrı AGPL-3.0 bileşenleridir: https://github.com/stoatchat/stoatchat ve https://github.com/stoatchat/self-hosted. Tam imaj/kaynak sürümü için [Stoat rehberine](../infra/stoat/README.md) ve yerel sabitleme kayıtlarına bakın. Karşılık gelen kaynak/lisans bağlantılarını kullanıcıya açık tutun. Yayın öncesi geçerli kaynak dağıtım yükümlülüklerini inceleyin; süreçleri ayırmak tek başına hukuki sonuç değildir.
 
-The legacy Spacebar integration remains source/evidence for rollback and is not the active new backend: https://github.com/spacebarchat/server (AGPL-3.0).
+Eski Spacebar entegrasyonu geri dönüş için kaynak/kanıt olarak tutulur, etkin yeni arka uç değildir: https://github.com/spacebarchat/server (AGPL-3.0).
 
-The remote worker installs unmodified official Codex and Claude Code CLIs. Their usage/authentication terms are independent of ROOMS; each initiating person uses their own eligible provider account. Do not distribute cached auth material. The optional official YouTube player and separate server audio adapters retain their own provider requirements. No provider credentials, account sessions or media streams are bundled. Functionality is not a grant of provider/content redistribution rights.
+Uzak çalışan değiştirilmemiş resmî Codex ve Claude Code araçlarını kurar. Kullanım/yetkilendirme koşulları ROOMS'tan bağımsızdır; görevi başlatan kişi kendi uygun sağlayıcı hesabını kullanır. Önbellek yetki malzemesi dağıtılmaz. İsteğe bağlı resmî YouTube oynatıcısı ve ayrı sunucu ses bağdaştırıcıları sağlayıcı şartlarını korur. Sağlayıcı bilgisi, hesap oturumu veya medya akışı paketlenmez. Özellik bulunması sağlayıcı/içerik yeniden dağıtım hakkı vermez.
 
-- Inter / SIL Open Font License 1.1: https://github.com/rsms/inter. Full license is bundled with the font and generated notices.
+- Inter / SIL Open Font License 1.1: https://github.com/rsms/inter. Tam lisans fontla ve üretilen bildirimlerle dağıtılır.
 
+## RNNoise prototipinin gömülü bileşenleri
 
-## RNNoise prototype bundled components
-
-- @sapphi-red/web-noise-suppressor 0.4.1 / MIT: https://github.com/sapphi-red/web-noise-suppressor . The installed package notice is included by the existing notice generator.
-- Embedded RNNoise WebAssembly uses Shiguredo rnnoise-wasm / Apache-2.0: https://github.com/shiguredo/rnnoise-wasm .
+- @sapphi-red/web-noise-suppressor 0.4.1 / MIT: https://github.com/sapphi-red/web-noise-suppressor . Kurulu paket bildirimi mevcut üreticiyle alınır.
+- Gömülü RNNoise WebAssembly, Shiguredo rnnoise-wasm / Apache-2.0 kullanır: https://github.com/shiguredo/rnnoise-wasm .
 - RNNoise / BSD-3-Clause: https://github.com/xiph/rnnoise .
 
-The following notices cover code embedded in the RNNoise worklet/Wasm rather than separately installed production packages.
+Aşağıdaki bildirimler ayrı kurulu üretim paketlerinden ziyade RNNoise worklet/Wasm içine gömülü kodu kapsar.
 
 ### RNNoise COPYING
 
@@ -255,14 +254,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ```
 
-
-## Strong noise suppression bundled components
+## Güçlü gürültü bastırmanın gömülü bileşenleri
 
 - @sapphi-red/gtcrn-wasm 0.0.3 / MIT: https://github.com/sapphi-red/gtcrn-wasm
-- Embedded GTCRN model / MIT: https://github.com/Xiaobin-Rong/gtcrn
-- Embedded pffft FFT / UCAR/FFTPACK: https://github.com/marton78/pffft
+- Gömülü GTCRN modeli / MIT: https://github.com/Xiaobin-Rong/gtcrn
+- Gömülü pffft FFT / UCAR/FFTPACK: https://github.com/marton78/pffft
 
-The installed package MIT license is collected by the notice generator. Embedded model and FFT notices are reproduced below; these originate from the pinned package distribution. No Discord or Krisp binary, model, or source is bundled.
+Kurulu paketin MIT lisansı bildirim üreticisiyle alınır. Sabit paket dağıtımından gelen model ve FFT bildirimleri aşağıda aynen korunur. Discord veya Krisp ikilisi, modeli ya da kaynağı paketlenmez.
 
 ```text
 

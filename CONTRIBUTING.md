@@ -1,16 +1,15 @@
-# Contributing
+# Katkıda bulunma
 
-Read [development](docs/DEVELOPMENT.md) and [architecture](docs/ARCHITECTURE.md). Use your own account, a separate ROOMS_PROFILE and an isolated backend when service changes require one. Client contributions do not require production credentials or Apple Developer membership.
+Önce [geliştirme rehberini](docs/DEVELOPMENT.md) ve [mimariyi](docs/ARCHITECTURE.md) oku. Kendi hesabını ve ayrı bir `ROOMS_PROFILE` kullan; servis değişikliği gerektiriyorsa izole bir arka uç hazırla. İstemciye katkı vermek için üretim kimlik bilgileri veya Apple Developer üyeliği gerekmez.
 
-1. Describe the observed defect or intended user journey before changing it.
-2. Keep changes scoped; separate behavior changes from broad formatting.
-3. Update the typed contract and relevant validation when crossing a runtime boundary.
-4. Run relevant regressions and the normal lint/type/test/build checks. State platform/provider/device limitations.
-5. Submit a PR with the problem, resulting behavior, verification and migration/configuration impact.
+1. Değişiklikten önce gözlenen sorunu veya hedeflenen kullanıcı akışını açıkla.
+2. Kapsamı sınırlı tut; davranış değişikliğini geniş biçimlendirme işlemlerinden ayır.
+3. Çalışma ortamları arasındaki bir sınırı değiştirirken tipli sözleşmeyi ve ilgili doğrulamayı birlikte güncelle.
+4. İlgili regresyon kontrollerini ve normal lint, tip, test ve derleme kontrollerini çalıştır. Platform, sağlayıcı ve cihaz sınırlarını belirt.
+5. PR'da sorunu, oluşan davranışı, doğrulamayı ve yapılandırma/veri geçişi etkisini anlat.
 
-Preserve route-independent voice, native credential storage, current authorization and account/channel invalidation. Never restore synthetic production data or weaken tests to manufacture success. Do not access or disrupt another community for development.
+Sayfa geçişlerinden bağımsız sesi, yerel kimlik bilgisi saklamasını, güncel yetki kontrollerini ve hesap/kanal değişimindeki geçersizleştirmeyi koru. Üretime sentetik veri geri getirme veya başarılı sonuç üretmek için testleri zayıflatma. Geliştirme amacıyla başkasının topluluğuna erişme veya işleyişini bozma.
 
-Use pnpm format for consistent formatting. Logical packages currently share one root toolchain and TypeScript alias map. Add a real workspace manifest only when an independently enforced/released boundary justifies it.
+Tutarlı biçimlendirme için `pnpm format` kullan. Mantıksal paketler şu anda kökteki tek araç zincirini ve TypeScript alias haritasını paylaşır. Bağımsız olarak uygulanan veya yayımlanan bir sınır gerçekten gerektirmedikçe ayrı workspace manifesti ekleme.
 
-Maintainers review and sign official releases separately. Never send Keychain exports, private SSH/signing keys, provider sessions or production environment files in a PR. Do not run release:mac:publish as a build check. Security concerns follow SECURITY.md.
-
+Resmî sürümler ayrıca incelenir ve imzalanır. PR'a Keychain dışa aktarımı, özel SSH/imza anahtarı, sağlayıcı oturumu veya üretim ortam dosyası ekleme. Derleme kontrolü olarak `release:mac:publish` çalıştırma. Güvenlik sorunlarında [SECURITY.md](SECURITY.md) yolunu izle.
