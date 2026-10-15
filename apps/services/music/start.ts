@@ -79,11 +79,9 @@ server.post('/v1/references', async (request, reply) => {
       );
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
-    return reply
-      .code(400)
-      .send({
-        error: /^MUSIC_[A-Z_]+$/.test(message) ? message : 'MUSIC_PLAYLIST_SOURCE_UNAVAILABLE',
-      });
+    return reply.code(400).send({
+      error: /^MUSIC_[A-Z_]+$/.test(message) ? message : 'MUSIC_PLAYLIST_SOURCE_UNAVAILABLE',
+    });
   } finally {
     importing = false;
   }
