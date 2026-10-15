@@ -107,9 +107,9 @@ try {
     await sha(join(installDir, 'resources/native/rooms-remote-input.node')),
     await sha(join(output, 'win-unpacked/resources/native/rooms-remote-input.node')),
   );
-  result.remoteInput = await app.evaluate(async ({ app }) => {
-    const { createRequire } = await import('node:module');
-    const { join } = await import('node:path');
+  result.remoteInput = await app.evaluate(({ app }) => {
+    const { createRequire } = process.getBuiltinModule('module');
+    const { join } = process.getBuiltinModule('path');
     const native = createRequire(join(app.getAppPath(), 'package.json'))(
       join(process.resourcesPath, 'native', 'rooms-remote-input.node'),
     );
