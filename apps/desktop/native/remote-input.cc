@@ -153,66 +153,68 @@ static BOOL CALLBACK matchMonitor(HMONITOR, HDC, LPRECT rect, LPARAM value) {
  auto *match=reinterpret_cast<MonitorMatch*>(value);if(EqualRect(rect,&match->wanted))match->matched=true;return TRUE;
 }
 #endif
-static napi_value boolean(napi_env env,bool value){napi_value out;napi_get_boolean(env,value,&out);return out;}
+static napi_value jsBoolean(napi_env env,bool value){napi_value out;napi_get_boolean(env,value,&out);return out;}
 static bool number(napi_env env,napi_value value,double &out){return napi_get_value_double(env,value,&out)==napi_ok&&std::isfinite(out);}
 static napi_value status(napi_env env,napi_callback_info) {
  napi_value out;napi_create_object(env,&out);
- napi_set_named_property(env,out,"supported",boolean(env,true));
+ napi_set_named_property(env,out,"supported",jsBoolean(env,true));
 #ifdef __APPLE__
  const bool permission=AXIsProcessTrusted()&&CGPreflightListenEventAccess();
 #else
  const bool permission=defaultDesktop();
 #endif
- napi_set_named_property(env,out,"permission",boolean(env,permission));
- napi_set_named_property(env,out,"active",boolean(env,active));return out;
+ napi_set_named_property(env,out,"permission",jsBoolean(env,permission));
+ napi_set_named_property(env,out,"active",jsBoolean(env,active));return out;
 }
 static napi_value begin(napi_env env,napi_callback_info info) {
  size_t n=5;napi_value args[5];napi_get_cb_info(env,info,&n,args,nullptr,nullptr);
  double display,x,y,w,h;
- if(n!=5||!number(env,args[0],display)||!number(env,args[1],x)||!number(env,args[2],y)||!number(env,args[3],w)||!number(env,args[4],h)||w<1||h<1||w>32768||h>32768||std::abs(x)>100000||std::abs(y)>100000)return boolean(env,false);
+ if(n!=5||!number(env,args[0],display)||!number(env,args[1],x)||!number(env,args[2],y)||!number(env,args[3],w)||!number(env,args[4],h)||w<1||h<1||w>32768||h>32768||std::abs(x)>100000||std::abs(y)>100000)return jsBoolean(env,false);
  stop();
 #ifdef __APPLE__
- if(display<1||display>UINT32_MAX||!AXIsProcessTrusted()||!CGPreflightListenEventAccess())return boolean(env,false);
+ if(display<1||display>UINT32_MAX||!AXIsProcessTrusted()||!CGPreflightListenEventAccess())return jsBoolean(env,false);
  const auto id=static_cast<CGDirectDisplayID>(display);const CGRect rect=CGDisplayBounds(id);
- if(!CGDisplayIsActive(id)||rect.origin.x!=x||rect.origin.y!=y||rect.size.width!=w||rect.size.height!=h||!hooks())return boolean(env,false);
+ if(!CGDisplayIsActive(id)||rect.origin.x!=x||rect.origin.y!=y||rect.size.width!=w||rect.size.height!=h||!hooks())return jsBoolean(env,false);
  CGEventRef clock=CGEventCreate(nullptr);armedAt=clock?CGEventGetTimestamp(clock):0;if(clock)CFRelease(clock);
 #else
- if(!defaultDesktop())return boolean(env,false);
+ if(!defaultDesktop())return jsBoolean(env,false);
  const auto old=SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
  MonitorMatch match{{static_cast<LONG>(x),static_cast<LONG>(y),static_cast<LONG>(x+w),static_cast<LONG>(y+h)}};
  EnumDisplayMonitors(nullptr,nullptr,matchMonitor,reinterpret_cast<LPARAM>(&match));SetThreadDpiAwarenessContext(old);
- if(!match.matched||!hooks())return boolean(env,false);armedAt=GetTickCount();
+ if(!match.matched||!hooks())return jsBoolean(env,false);armedAt=GetTickCount();
 #endif
- std::lock_guard<std::mutex> lock(guard);bx=x;by=y;bw=w;bh=h;px=x;py=y;active=true;return boolean(env,true);
+ std::lock_guard<std::mutex> lock(guard);bx=x;by=y;bw=w;bh=h;px=x;py=y;active=true;return jsBoolean(env,true);
 }
 static napi_value apply(napi_env env,napi_callback_info info) {
  size_t n=5;napi_value args[5];napi_get_cb_info(env,info,&n,args,nullptr,nullptr);
  double kind,a,b,code;bool down;
- if(n!=5||!number(env,args[0],kind)||!number(env,args[1],a)||!number(env,args[2],b)||!number(env,args[3],code)||napi_get_value_bool(env,args[4],&down)!=napi_ok)return boolean(env,false);
- std::lock_guard<std::mutex> lock(guard);if(!active)return boolean(env,false);
-#ifndef __APPLE__
- if(!defaultDesktop()){releaseLocked();return boolean(env,false);}
+ if(n!=5||!number(env,args[0],kind)||!number(env,args[1],a)||!number(env,args[2],b)||!number(env,args[3],code)||napi_get_value_bool(env,args[4],&down)!=napi_ok)return jsBoolean(env,false);
+ std::lock_guard<std::mutex> lock(guard);if(!active)return jsBoolean(env,false);
+#ifdef __APPLE__
+ if(!AXIsProcessTrusted()||!CGPreflightListenEventAccess()){releaseLocked();return jsBoolean(env,false);}
+#else
+ if(!defaultDesktop()){releaseLocked();return jsBoolean(env,false);}
 #endif
  bool ok=false;
  if(kind==0||kind==1) {
-  if(a<0||a>1||b<0||b>1||code<0||code>2)return boolean(env,false);
+  if(a<0||a>1||b<0||b>1||code<0||code>2)return jsBoolean(env,false);
   px=bx+std::floor(a*(bw-1));py=by+std::floor(b*(bh-1));
   ok=postMouse(static_cast<int>(code),down,true);
   if(kind==1){buttons[static_cast<int>(code)]=down;ok=postMouse(static_cast<int>(code),down,false)&&ok;}
  } else if(kind==2) {
-  if(code<0||code>255||std::floor(code)!=code)return boolean(env,false);
-  if(down&&!selectedFocus()){releaseLocked();return boolean(env,false);}
+  if(code<0||code>255||std::floor(code)!=code)return jsBoolean(env,false);
+  if(down&&!selectedFocus()){releaseLocked();return jsBoolean(env,false);}
   keys[static_cast<int>(code)]=down;ok=postKey(static_cast<int>(code),down);
  } else if(kind==3) {
-  if(std::abs(a)>1200||std::abs(b)>1200)return boolean(env,false);
+  if(std::abs(a)>1200||std::abs(b)>1200)return jsBoolean(env,false);
 #ifdef __APPLE__
   CGEventRef event=CGEventCreateScrollWheelEvent(nullptr,kCGScrollEventUnitPixel,2,static_cast<int>(-b),static_cast<int>(-a));
   if(event){CGEventSetIntegerValueField(event,kCGEventSourceUserData,marker);CGEventPost(kCGHIDEventTap,event);CFRelease(event);ok=true;}
 #else
   ok=true;for(int axis=0;axis<2;axis++){const double value=axis?a:b;if(value==0)continue;INPUT i{};i.type=INPUT_MOUSE;i.mi.dwExtraInfo=static_cast<ULONG_PTR>(marker);i.mi.dwFlags=axis?MOUSEEVENTF_HWHEEL:MOUSEEVENTF_WHEEL;i.mi.mouseData=static_cast<DWORD>(static_cast<LONG>(axis?value:-value));ok=send(i)&&ok;}
 #endif
- } else if(kind==4){releaseLocked();return boolean(env,true);}
- if(!ok)releaseLocked();return boolean(env,ok);
+ } else if(kind==4){releaseLocked();return jsBoolean(env,true);}
+ if(!ok)releaseLocked();return jsBoolean(env,ok);
 }
 static void shutdownHooks() {
 #ifdef __APPLE__
@@ -221,7 +223,7 @@ static void shutdownHooks() {
  if(hookThread.joinable()){PostThreadMessageW(hookThreadId,WM_QUIT,0,0);hookThread.join();}
 #endif
 }
-static napi_value end(napi_env env,napi_callback_info){stop();shutdownHooks();return boolean(env,true);}
+static napi_value end(napi_env env,napi_callback_info){stop();shutdownHooks();return jsBoolean(env,true);}
 static void cleanup(void*){stop();shutdownHooks();}
 NAPI_MODULE_INIT() {
  const napi_property_descriptor properties[]={{"status",nullptr,status,nullptr,nullptr,nullptr,napi_default,nullptr},{"begin",nullptr,begin,nullptr,nullptr,nullptr,napi_default,nullptr},{"apply",nullptr,apply,nullptr,nullptr,nullptr,napi_default,nullptr},{"end",nullptr,end,nullptr,nullptr,nullptr,napi_default,nullptr}};

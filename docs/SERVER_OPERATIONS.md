@@ -66,3 +66,7 @@ Stage4 source work: added ephemeral source/participant-bound human consent, a pr
 - OPS-016: delayed UI input could otherwise target a newly approved lease. Main signing requires the originating lease ID, publisher approval is local/native, and dialog/source/account generations fence late results. Native tests use an injected adapter and never operate a real desktop.
 
 Mac native compile/load/unapproved-input smoke passed locally. Windows native compilation/package-resource checks, full final CI/UI verification and physical consent/input/coexistence are pending. No server update, installer, update feed or release was published by this checkpoint.
+
+OPS-017 recorded: task execution showed resource ceilings but had no actual Agent utilization projection. Add cgroup/volume measurements with explicit aggregate scope, missing-data handling and measurement time; do not present limits as usage.
+
+OPS-018 recorded from actual Windows CI: native helper name `boolean` collides with Windows RPC SDK's typedef. Rename the N-API helper; retain the Windows compile/load gate. Also recheck OS input permission during an active lease, including secure-desktop changes; no elevation or permission bypass.

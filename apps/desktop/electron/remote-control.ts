@@ -265,7 +265,10 @@ export function setupRemoteControl(config: {
     if (gate.active()) {
       if (
         !gate.refresh(value.lease, value.serverAt) ||
-        (publisher && (!native?.status().active || config.capture()?.epoch !== epoch))
+        (publisher &&
+          (!native?.status().active ||
+            !native?.status().permission ||
+            config.capture()?.epoch !== epoch))
       )
         await stop();
     } else if (everActivated) {
@@ -457,7 +460,10 @@ export function setupRemoteControl(config: {
       (publisher || requested) &&
       (!sameIdentity() ||
         (!gate.active() && everActivated) ||
-        (publisher && (!native?.status().active || config.capture()?.epoch !== epoch)))
+        (publisher &&
+          (!native?.status().active ||
+            !native?.status().permission ||
+            config.capture()?.epoch !== epoch)))
     )
       void stop();
   }, 100);
