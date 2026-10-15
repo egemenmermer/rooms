@@ -51,7 +51,7 @@ test('desktop shell isolates native APIs and supports current signed-out onboard
     await expect(page.getByRole('region', { name: 'Kaydedilmemiş ayarlar' })).toHaveCount(0);
     await page.getByRole('button', { name: 'Ayarları kapat', exact: true }).click();
     await page.evaluate(() => (location.hash = '/cinema'));
-    await expect(page.getByRole('heading', { name: 'Cinema', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Birlikte izle', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Kaynağımı seç', exact: true })).toBeEnabled();
     await expect(
       page.getByRole('button', { name: 'Paylaşımı hazırla', exact: true }),
@@ -130,7 +130,7 @@ test('two real Stoat desktop accounts exchange events and join one authorized ro
     await other.evaluate((id) => (window as any).rooms.media.presenter(id, 'acquire'), channelId);
     await other.evaluate((id) => (window as any).rooms.media.presenter(id, 'release'), channelId);
     await owner.evaluate(() => (location.hash = '/cinema'));
-    await expect(owner.getByRole('heading', { name: 'Cinema', exact: true })).toBeVisible();
+    await expect(owner.getByRole('heading', { name: 'Birlikte izle', exact: true })).toBeVisible();
     await expect(
       owner.getByRole('button', { name: 'Sesten ayrıl', exact: true }).first(),
     ).toBeVisible();
