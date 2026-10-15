@@ -61,5 +61,20 @@ it('rejects untrusted sender and plaintext non-local origins before credentials 
       throw Error('BAD_SENDER');
     },
   );
-  expect(() => handlers.get('rooms:hostops-hosts')!({})).toThrow('BAD_SENDER');
+  await expect(handlers.get('rooms:hostops-hosts')!({})).rejects.toThrow('BAD_SENDER');
+});
+
+it('explains an unconfigured SPA fallback without exposing schema diagnostics', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response('<html>ROOMS</html>', { status: 200 })),
+  );
+  const client = { instanceUrl: 'https://qa.invalid', getToken: () => 'qa-token' };
+  const bridge = setupHostOps(
+    () => client,
+    () => null,
+    () => {},
+  );
+  await expect(handlers.get('rooms:hostops-hosts')!({})).rejects.toThrow('henüz yapılandırılmadı');
+  bridge.close();
 });

@@ -19,7 +19,10 @@ const bytes = (n: number | null | undefined) =>
       : n >= 1024 ** 2
         ? `${(n / 1024 ** 2).toFixed(0)} MB`
         : `${Math.round(n / 1024)} KB`;
-const errorText = (e: unknown) => (e instanceof Error ? e.message : 'Sunucu işlemi tamamlanamadı.');
+const errorText = (e: unknown) =>
+  e instanceof Error
+    ? e.message.replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/, '')
+    : 'Sunucu işlemi tamamlanamadı.';
 function Metric({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div className="ops-metric">

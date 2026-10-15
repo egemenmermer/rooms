@@ -408,7 +408,7 @@ export async function setupCommunity(
   app.on('browser-window-created', (_event, window) =>
     window.on('closed', () => {
       recoveryEpoch++;
-      hostOps.close();
+      if (!getWindow() || getWindow() === window) hostOps.close();
       passwordReset.clear();
     }),
   );

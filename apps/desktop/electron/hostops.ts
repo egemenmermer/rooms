@@ -98,13 +98,20 @@ export function setupHostOps(
             ? 'Sunucu yönetimi bu toplulukta henüz yapılandırılmadı.'
             : 'Sunucu işlemi tamamlanamadı. Yetkini ve bağlantını kontrol et.'),
       );
+    if (value === null) throw Error('Sunucu yönetimi bu toplulukta henüz yapılandırılmadı.');
     return value;
   }
   const handle = (name: string, fn: (...args: unknown[]) => unknown) =>
-    ipcMain.handle('rooms:hostops-' + name, (event, ...args) => {
+    ipcMain.handle('rooms:hostops-' + name, async (event, ...args) => {
       assertSender(event);
       getClient();
-      return fn(...args);
+      try {
+        return await fn(...args);
+      } catch (error) {
+        if (error instanceof z.ZodError)
+          throw Error('İşlem doğrulanamadı. Alanları ve sunucu sürümünü kontrol et.');
+        throw error;
+      }
     });
   const host = (id: unknown) => 'hosts/' + encodeURIComponent(opsId.parse(id));
   handle(
