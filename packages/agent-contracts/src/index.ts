@@ -24,6 +24,15 @@ export interface AgentArtifact {
   size: number;
 }
 export interface AgentTask {
+  execution?: {
+    hostId: string;
+    workspaceId: string;
+    terminalId: string | null;
+    backend: 'shared-rootless';
+    writer: 'ai' | 'human' | 'none';
+    modelProvider: AgentProvider;
+    limits: { cpu: number; memoryMiB: number; workspaceMiB: number; minutes: number };
+  };
   kind?: 'model' | 'reminder';
   uncertainOperation?: { operationId: string; description: string; tool: string; preview: string };
   pendingApproval?: { operationId: string; description: string; tool: string; preview: string };
@@ -59,6 +68,7 @@ export interface AgentMemory {
   createdAt: string;
 }
 export interface AgentBridge {
+  workspace?: AgentWorkspaceBridge;
   configure(input: { url: string; token: string }): Promise<void>;
   status(): Promise<AgentStatus>;
   authority(roomId: string): Promise<AgentAuthoritySnapshot>;
@@ -105,6 +115,17 @@ export interface AgentBridge {
   deleteMemory(id: string): Promise<void>;
   previewArtifact(taskId: string, artifactId: string): Promise<AgentArtifactPreview>;
   downloadArtifact(taskId: string, artifactId: string): Promise<boolean>;
+}
+import type { OpsTerminal, TerminalEvent, TerminalInput } from '../../shared-contracts/src/hostops';
+export interface AgentWorkspaceBridge {
+  terminals(taskId: string): Promise<OpsTerminal[]>;
+  take(taskId: string): Promise<OpsTerminal>;
+  close(taskId: string, sessionId: string): Promise<OpsTerminal>;
+  resume(taskId: string): Promise<AgentTask>;
+  attach(taskId: string, sessionId: string): Promise<void>;
+  send(input: TerminalInput): Promise<void>;
+  detach(): Promise<void>;
+  onTerminal(listener: (event: TerminalEvent) => void): () => void;
 }
 
 /** Read-only projection of the running server's actual grant and executor policy. */

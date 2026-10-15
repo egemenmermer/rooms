@@ -50,6 +50,10 @@ const configSchema = z
     helper: z.string().startsWith('/').optional(),
     nativeModules: z.string().startsWith('/').optional(),
     statusHelper: z.string().startsWith('/').optional(),
+    agentAuthority: z
+      .object({ key: z.string().regex(/^[a-f0-9]{64}$/), botToken: z.string().min(10).max(4096) })
+      .strict()
+      .optional(),
     livekit: z
       .object({ url: z.string().url(), key: z.string().min(5), secret: z.string().min(20) })
       .strict()
@@ -129,11 +133,41 @@ async function start() {
     string,
     { until: number; value: { userId: string; owner: boolean } }
   >();
+  const internalIdentities = new Map<
+    string,
+    { until: number; value: Promise<{ userId: string; owner: boolean }> }
+  >();
   const app = createHostOpsServer({
     hosts: [config.host],
     store,
     terminals: terminal,
     sample: () => collector.sample(),
+    ...(config.agentAuthority
+      ? {
+          internalAgent: {
+            key: config.agentAuthority.key,
+            identifyUser: async (userId: string, host: { communityId: string }) => {
+              const cacheKey = `${host.communityId}:${userId}`;
+              const cached = internalIdentities.get(cacheKey);
+              if (cached && cached.until > Date.now()) return cached.value;
+              const value = (async () => {
+                const client = new StoatClient(config.stoatUrl, config.agentAuthority!.botToken, {
+                  botToken: true,
+                  trustedInternalOrigin: true,
+                  apiRoot: !new URL(config.stoatUrl).pathname.startsWith('/api'),
+                });
+                const space = await client.getServer(host.communityId);
+                const owner = space.owner === userId;
+                if (!owner) await client.getMember(host.communityId, userId);
+                return { userId, owner };
+              })();
+              if (internalIdentities.size >= 500) internalIdentities.clear();
+              internalIdentities.set(cacheKey, { until: Date.now() + 1000, value });
+              return value;
+            },
+          },
+        }
+      : {}),
     identify: async (token, host) => {
       const known = identities.get(token);
       if (known && known.until > Date.now()) return known.value;

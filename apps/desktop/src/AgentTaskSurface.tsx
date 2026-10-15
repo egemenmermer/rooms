@@ -1,5 +1,6 @@
 import './reference-agent-task.css';
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+const AgentWorkspace = lazy(() => import('./AgentWorkspace'));
 import {
   ArrowDownToLine,
   ArrowLeft,
@@ -100,6 +101,7 @@ function TaskScope({
   );
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [verified, setVerified] = useState(''),
     [notApplied, setNotApplied] = useState(false);
   const [selected, setSelected] = useState<string | null>(
@@ -313,6 +315,23 @@ function TaskScope({
               </p>
             )}
             {task.error && <p className="rat-callout error">{uiError(task.error)}</p>}
+            {owner && connected && !demo && bridge.workspace && (
+              <>
+                <button className="rat-ghost" onClick={() => setWorkspaceOpen((open) => !open)}>
+                  {workspaceOpen ? 'Terminal panelini kapat' : 'Çalışma terminali'}
+                </button>
+                {workspaceOpen && (
+                  <Suspense fallback={<p>Terminal açılıyor…</p>}>
+                    <AgentWorkspace
+                      api={bridge.workspace}
+                      task={task}
+                      userId={userId}
+                      refresh={() => void onRefresh()}
+                    />
+                  </Suspense>
+                )}
+              </>
+            )}
             {task.state === 'cancelled' && (
               <p className="rat-callout">
                 Görev durduruldu. Tamamlanmış dış işlemler geri alınmaz.

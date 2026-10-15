@@ -135,7 +135,12 @@ export class TerminalHub {
       )
       .map((r) => this.view(r, user));
   }
-  create(host: string, user: string, profileId: string): OpsTerminal {
+  create(
+    host: string,
+    user: string,
+    profileId: string,
+    workspace?: { taskId: string },
+  ): OpsTerminal {
     if (this.stopped) throw Error('TERMINAL_BROKER_CLOSED');
     this.expire();
     const p = this.profile(profileId);
@@ -162,8 +167,8 @@ export class TerminalHub {
         ownerId: user,
         user: p.user,
         directory: p.directory,
-        kind: 'host',
-        taskId: null,
+        kind: workspace ? 'workspace' : 'host',
+        taskId: workspace?.taskId ?? null,
         state: 'detached',
         writer: null,
         createdAt: this.now(),

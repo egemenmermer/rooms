@@ -201,6 +201,23 @@ const bridge: DesktopBridge = {
     rdPlay: (id) => ipcRenderer.invoke('rooms:provider-rd-play', id),
   },
   agent: {
+    workspace: {
+      terminals: (id) => ipcRenderer.invoke('rooms:agent-workspace-terminals', id),
+      take: (id) => ipcRenderer.invoke('rooms:agent-workspace-take', id),
+      close: (id, session) => ipcRenderer.invoke('rooms:agent-workspace-close', id, session),
+      resume: (id) => ipcRenderer.invoke('rooms:agent-workspace-resume', id),
+      attach: (id, session) => ipcRenderer.invoke('rooms:agent-workspace-attach', id, session),
+      send: (value) => ipcRenderer.invoke('rooms:agent-workspace-send', value),
+      detach: () => ipcRenderer.invoke('rooms:agent-workspace-detach'),
+      onTerminal: (listener) => {
+        const handler = (
+          _event: Electron.IpcRendererEvent,
+          value: import('../../../packages/shared-contracts/src/hostops').TerminalEvent,
+        ) => listener(value);
+        ipcRenderer.on('rooms:agent-workspace-event', handler);
+        return () => ipcRenderer.removeListener('rooms:agent-workspace-event', handler);
+      },
+    },
     previewArtifact: (taskId, artifactId) =>
       ipcRenderer.invoke('rooms:agent-artifact-preview', taskId, artifactId),
     authority: (roomId) => ipcRenderer.invoke('rooms:agent-authority', roomId),

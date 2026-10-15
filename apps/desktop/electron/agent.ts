@@ -7,6 +7,7 @@ import { app, dialog, ipcMain, safeStorage } from 'electron';
 import { readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
+import { setupAgentWorkspace } from './agent-workspace';
 let connection: { url: string; token: string } | null = null;
 const path = () => join(app.getPath('userData'), 'agent-connection-v1.bin');
 export function setupAgent(
@@ -102,6 +103,12 @@ export function setupAgent(
         .regex(/^[a-zA-Z0-9_-]+$/)
         .parse(value),
     );
+  setupAgentWorkspace({
+    bind,
+    context: () => ({ connection, userId: getSocialUserId() }),
+    request,
+    window: getWindow,
+  });
   bind('configure', async (input) => {
     const b = z
       .object({ url: z.string().url().max(2048), token: z.string().min(16).max(4096) })

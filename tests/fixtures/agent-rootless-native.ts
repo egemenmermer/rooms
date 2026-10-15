@@ -4,6 +4,11 @@ import { mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { verifySharedHost, sharedWorker } from '../../apps/services/agent/shared-host';
+import {
+  rootlessTerminalDriver,
+  WorkspaceTerminals,
+} from '../../apps/services/agent/workspace-terminals';
+import type { AgentTask } from '../../packages/agent-contracts/src/index';
 async function main() {
   assert.equal(process.env.ROOMS_AGENT_ROOTLESS_QA, 'ephemeral-ci');
   const config = {
@@ -74,8 +79,76 @@ printf 'kalıcı Türkçe ✓' > /workspace/proof
     ),
   );
   await worker(args('rm /workspace/quota'), '', new AbortController().signal);
+  const terminalTask: AgentTask = {
+    id: randomUUID(),
+    ownerId: 'qa-operator',
+    roomId: 'qa-room',
+    prompt: 'QA',
+    modelConnectionId: randomUUID(),
+    state: 'interrupted',
+    progress: [],
+    result: null,
+    artifacts: [],
+    createdAt: new Date().toISOString(),
+    runAt: null,
+    error: null,
+  };
+  const driver = rootlessTerminalDriver(config, '/opt/rooms-agent-qa/native');
+  const file = '/var/lib/rooms-agent/workspace-terminal-qa.json';
+  let manager = new WorkspaceTerminals('qa-host', config, file, driver, [terminalTask]);
+  const terminal = await manager.take(terminalTask, async () => {});
+  let text = '';
+  let attached = manager.hub.attach('qa-host', terminal.id, terminalTask.ownerId, (event) => {
+    if (event.type === 'output') text += event.data;
+  });
+  let sequence = 0;
+  const write = (data: string) => attached.input({ type: 'input', sequence: sequence++, data });
+  const wait = async (marker: string) => {
+    const until = Date.now() + 15_000;
+    while (!text.includes(marker)) {
+      assert.ok(Date.now() < until, `Missing PTY marker: ${marker}`);
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  };
+  attached.input({ type: 'resize', cols: 91, rows: 33 });
+  write(
+    "printf '\\122\\117\\117\\115\\123\\137PTY Türkçe ✓\\n'; stty size; echo once >> /workspace/counter\r",
+  );
+  await wait('ROOMS_PTY Türkçe ✓');
+  await wait('33 91');
+  attached.detach();
+  manager.hub.shutdown();
+  manager = new WorkspaceTerminals('qa-host', config, file, driver, [terminalTask]);
+  assert.equal(manager.list(terminalTask)[0].id, terminal.id);
+  text = '';
+  sequence = 0;
+  attached = manager.hub.attach('qa-host', terminal.id, terminalTask.ownerId, (event) => {
+    if (event.type === 'output') text += event.data;
+  });
+  write('sleep 30\r');
+  await new Promise((r) => setTimeout(r, 500));
+  write('\x03');
+  write("printf '\\122\\105\\123\\125\\115\\105\\104\\n'\r");
+  await wait('RESUMED');
+  assert.equal(
+    readFileSync(join(config.workspaceRoot, terminalTask.id, 'counter'), 'utf8').trim(),
+    'once',
+  );
+  await manager.recheck([terminalTask], async () => {
+    throw Error('grant revoked');
+  });
+  assert.equal(manager.list(terminalTask).length, 0);
+  assert.equal(
+    driver.exists(terminal.id, {
+      id: terminalTask.id,
+      user: 'isolated-agent',
+      directory: join(config.workspaceRoot, terminalTask.id),
+    }),
+    false,
+  );
+  manager.hub.shutdown();
   console.log(
-    'Actual rootless identity, cgroup limits, readonly filesystem, offline workspace, persistence, cancellation and quota passed.',
+    'Actual rootless isolation, cgroup limits, quota, cancellation, PTY Unicode/resize/Ctrl+C, broker restart, no replay and revocation passed.',
   );
 }
 void main().catch((error) => {

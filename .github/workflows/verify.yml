@@ -105,10 +105,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: node scripts/build-agent-rootless-qa.mjs
+      - run: pnpm --dir infra/hostops install --frozen-lockfile
       - name: Provision disposable rootless identity and bounded persistent volume
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends podman uidmap crun dbus-user-session
+          sudo apt-get install -y --no-install-recommends podman uidmap crun catatonit dbus-user-session
           sudo useradd --create-home --shell /bin/bash rooms-ai
           qa_uid=$(id -u rooms-ai)
           sudo install -d -m 0755 /etc/systemd/system/user-${qa_uid}.slice.d
@@ -126,6 +127,9 @@ jobs:
           sudo install -d -o root -g root -m 0755 /opt/rooms-agent-qa
           sudo install -o root -g root -m 0644 .local/qa/agent-rootless-native.cjs /opt/rooms-agent-qa/test.cjs
           sudo install -o root -g root -m 0755 "$(command -v node)" /opt/rooms-agent-qa/node
+          sudo cp -a infra/hostops /opt/rooms-agent-qa/native
+          sudo chown -R root:root /opt/rooms-agent-qa/native
+          sudo chmod -R go-w /opt/rooms-agent-qa/native
       - name: Actual rootless worker and enforced limits
         run: |
           qa_uid=$(id -u rooms-ai)

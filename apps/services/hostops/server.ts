@@ -1,6 +1,6 @@
 import Fastify from 'fastify';
 import rateLimit from '@fastify/rate-limit';
-import { createHash } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import { z, ZodError } from 'zod';
 import {
@@ -35,6 +35,10 @@ export function createHostOpsServer(config: {
   sample?: () => Promise<HostSample>;
   now?: () => number;
   onAlert?: (input: { hostId: string; alertId: string; message: string }) => Promise<void>;
+  internalAgent?: {
+    key: string;
+    identifyUser(userId: string, host: HostSpec): Promise<OpsIdentity>;
+  };
 }) {
   const app = Fastify({ logger: false, bodyLimit: 16384 });
   void app.register(rateLimit, {
@@ -95,6 +99,27 @@ export function createHostOpsServer(config: {
     reply.code(e instanceof ZodError ? 400 : (e.statusCode ?? 503)).send({ error: code });
   });
   app.get('/health', async () => ({ ok: true }));
+  // Server-to-server only; the desktop never receives this key or a user-id impersonation API.
+  app.post('/internal/agent-authority', async (req) => {
+    const authority = config.internalAgent;
+    const provided = req.headers.authorization ?? '';
+    const expected = authority ? `Bearer ${authority.key}` : '';
+    if (
+      !authority ||
+      !expected ||
+      !timingSafeEqual(
+        createHash('sha256').update(provided).digest(),
+        createHash('sha256').update(expected).digest(),
+      )
+    )
+      throw failure('AUTHORITY_SERVICE_DENIED');
+    const body = z.object({ hostId: opsId, userId: opsId }).strict().parse(req.body);
+    const host = hostOf(body.hostId);
+    const person = await authority.identifyUser(body.userId, host);
+    if (person.userId !== body.userId) throw failure('IDENTITY_CHANGED');
+    const grant = config.store.grant(host.id, person.userId);
+    return { allowed: person.owner || !!grant?.permissions.includes('agent') };
+  });
   app.get('/v1/hosts', async (req) => {
     const hosts: OpsHost[] = [];
     for (const h of config.hosts) {

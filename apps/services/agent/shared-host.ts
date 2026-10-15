@@ -3,6 +3,8 @@ import { promisify } from 'node:util';
 import { randomUUID } from 'node:crypto';
 import { readFileSync, realpathSync, statfsSync, statSync } from 'node:fs';
 import { join, sep } from 'node:path';
+import { userInfo } from 'node:os';
+import { StringDecoder } from 'node:string_decoder';
 import { LinuxCollector } from '../hostops/collector';
 import type { HostSample } from '../../../packages/shared-contracts/src/hostops';
 import type { AgentExecutor } from './worker';
@@ -11,6 +13,19 @@ import { AgentUncertainEffect } from './authority';
 const exec = promisify(execFile);
 const MiB = 1024 * 1024;
 export class AgentInterrupted extends Error {}
+export function podmanEnvironment(): NodeJS.ProcessEnv {
+  const user = userInfo();
+  const runtime = `/run/user/${user.uid}`;
+  return {
+    HOME: user.homedir,
+    USER: user.username,
+    LOGNAME: user.username,
+    PATH: '/usr/bin:/bin',
+    LANG: 'C.UTF-8',
+    XDG_RUNTIME_DIR: runtime,
+    DBUS_SESSION_BUS_ADDRESS: `unix:path=${runtime}/bus`,
+  };
+}
 
 /** Missing/stale telemetry fails closed. Load average is never treated as CPU usage. */
 export class SharedHostAdmission {
@@ -107,6 +122,7 @@ export async function verifySharedHost(config: SharedHostConfig) {
   const { stdout } = await exec('/usr/bin/podman', ['info', '--format=json'], {
     timeout: 10_000,
     maxBuffer: 1_000_000,
+    env: podmanEnvironment(),
   });
   const info = JSON.parse(stdout);
   if (
@@ -119,7 +135,7 @@ export async function verifySharedHost(config: SharedHostConfig) {
   const stale = await exec(
     '/usr/bin/podman',
     ['ps', '-a', '--filter', 'name=^rooms-shared-', '--format', '{{.Names}}'],
-    { timeout: 10_000, maxBuffer: 16_384 },
+    { timeout: 10_000, maxBuffer: 16_384, env: podmanEnvironment() },
   );
   for (const name of stale.stdout.trim().split('\n').filter(Boolean)) {
     if (!/^rooms-shared-[a-f0-9-]{36}$/.test(name))
@@ -127,6 +143,7 @@ export async function verifySharedHost(config: SharedHostConfig) {
     await exec('/usr/bin/podman', ['rm', '--force', '--ignore', '--time=2', name], {
       timeout: 15_000,
       maxBuffer: 4096,
+      env: podmanEnvironment(),
     });
   }
 }
@@ -163,6 +180,8 @@ export function sharedWorkerArguments(config: SharedHostConfig, args: string[], 
     name,
     '--init',
     '--network=none',
+    '--http-proxy=false',
+    '--log-driver=none',
     '--cap-drop=ALL',
     '--security-opt=no-new-privileges',
     '--pids-limit=128',
@@ -193,15 +212,20 @@ export function sharedWorker(config: SharedHostConfig) {
     const name = `rooms-shared-${randomUUID()}`;
     const argv = sharedWorkerArguments(config, args, name);
     return new Promise((resolve, reject) => {
-      const child = spawn('/usr/bin/podman', argv, { stdio: ['pipe', 'pipe', 'pipe'] });
+      const child = spawn('/usr/bin/podman', argv, {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: podmanEnvironment(),
+      });
       let output = '',
         tooLarge = false;
+      const decoder = new StringDecoder('utf8');
       let stopping: Promise<unknown> | undefined;
       const stop = () => {
         // Do not resolve takeover/cancellation until the actual container has stopped.
         stopping ??= exec('/usr/bin/podman', ['rm', '--force', '--ignore', '--time=2', name], {
           timeout: 15_000,
           maxBuffer: 4096,
+          env: podmanEnvironment(),
         });
         void stopping.catch(() => {});
         child.kill('SIGTERM');
@@ -212,7 +236,7 @@ export function sharedWorker(config: SharedHostConfig) {
         if (output.length + chunk.length > 500_000) {
           tooLarge = true;
           stop();
-        } else output += chunk.toString();
+        } else output += decoder.write(chunk);
       });
       child.stderr.resume();
       child.on('error', () => {
@@ -220,6 +244,7 @@ export function sharedWorker(config: SharedHostConfig) {
         reject(Error('Rootless worker could not start.'));
       });
       child.on('close', (code) => {
+        output += decoder.end();
         signal.removeEventListener('abort', stop);
         void (async () => {
           try {
@@ -229,6 +254,7 @@ export function sharedWorker(config: SharedHostConfig) {
               await exec('/usr/bin/podman', ['rm', '--force', '--ignore', '--time=2', name], {
                 timeout: 15_000,
                 maxBuffer: 4096,
+                env: podmanEnvironment(),
               });
             }
             if (signal.aborted) throw new AgentInterrupted('AI durduruldu.');
@@ -298,6 +324,20 @@ export function sharedHostExecutor(
         abort();
       }
     }, 1000);
+    let checkingAuthority = false;
+    const authority = setInterval(() => {
+      if (checkingAuthority || controller.signal.aborted) return;
+      checkingAuthority = true;
+      void ctx
+        .ensureAuthorized?.()
+        .catch(() => {
+          interrupted = 'Agent yetkin veya topluluk erişimin değişti; AI durduruldu.';
+          abort();
+        })
+        .finally(() => {
+          checkingAuthority = false;
+        });
+    }, 2000);
     try {
       const result = await executor({ ...ctx, signal: controller.signal });
       if (controller.signal.aborted) throw new AgentInterrupted(interrupted ?? 'AI durduruldu.');
@@ -312,6 +352,7 @@ export function sharedHostExecutor(
     } finally {
       clearTimeout(deadline);
       clearInterval(pressure);
+      clearInterval(authority);
       ctx.signal.removeEventListener('abort', abort);
       active = false;
       activeController = null;

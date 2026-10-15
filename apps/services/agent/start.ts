@@ -10,6 +10,7 @@ import { AgentRepository, type AgentOutboxItem } from './repository';
 import { createAgentServer, type AgentPrincipal } from './server';
 import { createRemoteExecutor, executorCapabilities, type RemoteExecutorConfig } from './worker';
 import { sharedHostExecutor, sharedWorker, verifySharedHost } from './shared-host';
+import { WorkspaceTerminals, rootlessTerminalDriver } from './workspace-terminals';
 const subject = z
   .string()
   .min(1)
@@ -106,6 +107,36 @@ async function main() {
       (g) =>
         g.enabled && timingSafeEqual(Buffer.from(g.tokenSha256, 'hex'), Buffer.from(hash, 'hex')),
     );
+  const hostId = shared ? subject.parse(process.env.ROOMS_AGENT_HOST_ID) : undefined;
+  const authorityKey = shared
+    ? z
+        .string()
+        .regex(/^[a-f0-9]{64}$/)
+        .parse(process.env.ROOMS_AGENT_HOST_AUTHORITY_KEY)
+    : undefined;
+  const hostChecks = new Map<string, { until: number; pending: Promise<void> }>();
+  const hostAuthority = async (p: AgentPrincipal) => {
+    if (!shared) return p;
+    let check = hostChecks.get(p.userId);
+    if (!check || check.until <= Date.now()) {
+      const pending = (async () => {
+        const response = await fetch('http://127.0.0.1:3042/internal/agent-authority', {
+          method: 'POST',
+          redirect: 'error',
+          signal: AbortSignal.timeout(3000),
+          headers: { Authorization: `Bearer ${authorityKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hostId, userId: p.userId }),
+        });
+        if (!response.ok || ((await response.json()) as { allowed?: boolean }).allowed !== true)
+          throw new Error('Host Agent authority is unavailable or revoked.');
+      })();
+      if (hostChecks.size >= 500) hostChecks.clear();
+      check = { pending, until: Date.now() + 1000 };
+      hostChecks.set(p.userId, check);
+    }
+    await check.pending;
+    return p;
+  };
   const directory = process.env.ROOMS_AGENT_DATA ?? '/var/lib/rooms-agent';
   const modelHomes = join(directory, 'model-homes');
   const policy = process.env.ROOMS_AGENT_POLICY_FILE
@@ -246,17 +277,33 @@ async function main() {
       });
     }
   };
+  const repository = new AgentRepository(directory, Buffer.from(key, 'hex'));
+  const workspaceTerminals =
+    shared && process.env.ROOMS_AGENT_NATIVE_MODULES
+      ? new WorkspaceTerminals(
+          hostId!,
+          sharedConfig,
+          join(directory, 'workspace-terminals.json'),
+          rootlessTerminalDriver(sharedConfig, process.env.ROOMS_AGENT_NATIVE_MODULES),
+          repository.data.tasks,
+        )
+      : undefined;
+  let executor = createRemoteExecutor(executorConfig);
+  if (shared) executor = sharedHostExecutor(sharedConfig, executor);
+  if (workspaceTerminals) executor = workspaceTerminals.guard(executor);
   const { server, enqueueMention } = await createAgentServer({
-    repository: new AgentRepository(directory, Buffer.from(key, 'hex')),
+    repository,
+    workspaceTerminals,
+    executionHostId: hostId,
     authorize: async (token) => {
       const p = match(createHash('sha256').update(token).digest('hex'));
       if (!p) throw Object.assign(new Error('AUTH_DENIED'), { statusCode: 403 });
-      return p;
+      return hostAuthority(p);
     },
     reauthorize: async (userId) => {
       const p = grants().find((g) => g.enabled && g.userId === userId);
       if (!p) throw new Error('User authorization revoked.');
-      return p;
+      return hostAuthority(p);
     },
     capabilities: executorCapabilities(executorConfig),
     authority: async (p, roomId) => {
@@ -332,9 +379,7 @@ async function main() {
         : 'login-required';
     },
     executionHost: shared ? 'shared-rootless' : 'separate-server',
-    executor: shared
-      ? sharedHostExecutor(sharedConfig, createRemoteExecutor(executorConfig))
-      : createRemoteExecutor(executorConfig),
+    executor,
     deliverNotification,
     reminderTarget,
     remindersAvailable,
