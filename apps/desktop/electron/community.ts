@@ -55,7 +55,12 @@ import {
 import { join, basename, extname } from 'node:path';
 import { z } from 'zod';
 import { StoatClient, StoatError } from '@rooms/stoat';
-import { SOCIAL_ID_PATTERN, type SocialUser, type GatewayEvent } from '@rooms/social';
+import {
+  SOCIAL_ID_PATTERN,
+  SOCIAL_ROLE_PERMISSION_KEYS,
+  type SocialUser,
+  type GatewayEvent,
+} from '@rooms/social';
 import type { SocialSession } from '@rooms/contracts';
 import { postActivityCommand, getActivitySnapshot } from './activity-http';
 
@@ -580,6 +585,48 @@ export async function setupCommunity(
     const current = requireClient(),
       owner = user!.id,
       result = await current.communityManagement(id.parse(spaceId));
+    if (client !== current || user?.id !== owner)
+      throw new SocialInputError('The account changed. Open community management again.');
+    return result;
+  });
+  const roleName = z
+    .string()
+    .trim()
+    .min(1)
+    .max(32)
+    .regex(/^[^\x00-\x1f\x7f]+$/);
+  const rolePermissionValues = z.record(
+    z.enum(SOCIAL_ROLE_PERMISSION_KEYS),
+    z.enum(['inherit', 'allow', 'deny']),
+  );
+  const roleChange = z.discriminatedUnion('action', [
+    z.object({ action: z.literal('create'), spaceId: id, name: roleName }).strict(),
+    z
+      .object({
+        action: z.literal('appearance'),
+        spaceId: id,
+        roleId: id,
+        name: roleName,
+        color: z
+          .string()
+          .regex(/^#[0-9a-f]{6}$/i)
+          .nullable(),
+      })
+      .strict(),
+    z
+      .object({
+        action: z.literal('permissions'),
+        spaceId: id,
+        roleId: id,
+        values: rolePermissionValues,
+      })
+      .strict(),
+    z.object({ action: z.literal('delete'), spaceId: id, roleId: id }).strict(),
+  ]);
+  handle('rooms:social-change-community-role', async (input) => {
+    const current = requireClient(),
+      owner = user!.id;
+    const result = await current.changeCommunityRole(roleChange.parse(input));
     if (client !== current || user?.id !== owner)
       throw new SocialInputError('The account changed. Open community management again.');
     return result;

@@ -1,6 +1,11 @@
 /** Local pinned-protocol fixtures; no deployed account or remote mutations. */
 import { afterEach, expect, it, vi } from 'vitest';
 import { StoatClient } from '@rooms/stoat';
+import { SOCIAL_ROLE_PERMISSION_KEYS, type SocialRolePermissionValues } from '@rooms/social';
+const inherited = () =>
+  Object.fromEntries(
+    SOCIAL_ROLE_PERMISSION_KEYS.map((key) => [key, 'inherit']),
+  ) as SocialRolePermissionValues;
 afterEach(() => vi.unstubAllGlobals());
 function fixture(
   options: {
@@ -58,7 +63,17 @@ function fixture(
           value = { type: 'NotElevated' };
         } else {
           const user = path.split('/').at(-1);
-          if (method === 'PATCH') {
+          if (path.includes('/roles') || path.includes('/permissions/')) {
+            const roles = server.roles as Record<string, any>;
+            if (method === 'POST') {
+              roles.created = { name: body.name, rank: 100, permissions: { a: 0, d: 0 } };
+              return new Response(JSON.stringify({ id: 'created', role: roles.created }));
+            } else if (method === 'PATCH') {
+              Object.assign(roles[user!], { name: body.name, colour: body.colour });
+            } else if (method === 'PUT')
+              roles[user!].permissions = { a: body.permissions.allow, d: body.permissions.deny };
+            else delete roles[user!];
+          } else if (method === 'PATCH') {
             members.find((m) => m._id.user === user).roles = body.roles;
           } else
             members.splice(
@@ -230,3 +245,159 @@ it.each(['logout', 'gateway'] as const)(
     });
   },
 );
+
+it('creates, renames/colors and deletes a role using pinned upstream routes', async () => {
+  const { client, calls } = fixture({ self: 'owner' });
+  const created = await client.changeCommunityRole({
+    action: 'create',
+    spaceId: 'space',
+    name: 'Kanka',
+  });
+  expect(created.roleId).toBe('created');
+  expect(created.management.roles.find((r) => r.id === 'created')).toMatchObject({
+    name: 'Kanka',
+    editable: true,
+    permissionsEditable: true,
+  });
+  const edited = await client.changeCommunityRole({
+    action: 'appearance',
+    spaceId: 'space',
+    roleId: created.roleId,
+    name: 'Gece tayfası',
+    color: '#9b8afb',
+  });
+  expect(edited.management.roles.find((r) => r.id === 'created')).toMatchObject({
+    name: 'Gece tayfası',
+    color: '#9b8afb',
+  });
+  const deleted = await client.changeCommunityRole({
+    action: 'delete',
+    spaceId: 'space',
+    roleId: 'created',
+  });
+  expect(deleted.management.roles.some((r) => r.id === 'created')).toBe(false);
+  expect(calls.filter((c) => c.method !== 'GET')).toEqual([
+    { path: '/api/servers/space/roles', method: 'POST', body: { name: 'Kanka' } },
+    {
+      path: '/api/servers/space/roles/created',
+      method: 'PATCH',
+      body: { name: 'Gece tayfası', colour: '#9b8afb' },
+    },
+    { path: '/api/servers/space/roles/created', method: 'DELETE', body: null },
+  ]);
+});
+it('saves allow/deny/inherit without truncating video or overwriting unexposed permission bits', async () => {
+  const { client, server, calls } = fixture({ self: 'owner' });
+  const extra = 2 ** 36,
+    extraDeny = 2 ** 29;
+  (server.roles as any).member.permissions = { a: extra + 2 ** 22, d: extraDeny + 2 ** 27 };
+  const values = { ...inherited(), video: 'allow', send: 'deny' } as SocialRolePermissionValues;
+  const result = await client.changeCommunityRole({
+    action: 'permissions',
+    spaceId: 'space',
+    roleId: 'member',
+    values,
+  });
+  expect(calls.find((c) => c.method === 'PUT')).toEqual({
+    path: '/api/servers/space/permissions/member',
+    method: 'PUT',
+    body: { permissions: { allow: extra + 2 ** 32, deny: extraDeny + 2 ** 22 } },
+  });
+  expect(result.management.roles.find((r) => r.id === 'member')!.permissions).toEqual(values);
+});
+it('separates role appearance management from granting permissions and blocks rank escalation', async () => {
+  const { client, calls } = fixture({ bits: 8 });
+  await client.changeCommunityRole({ action: 'create', spaceId: 'space', name: 'Kanka' });
+  await client.changeCommunityRole({
+    action: 'appearance',
+    spaceId: 'space',
+    roleId: 'member',
+    name: 'Kanka',
+    color: null,
+  });
+  await expect(
+    client.changeCommunityRole({
+      action: 'permissions',
+      spaceId: 'space',
+      roleId: 'member',
+      values: inherited(),
+    }),
+  ).rejects.toMatchObject({ status: 403 });
+  await expect(
+    client.changeCommunityRole({ action: 'delete', spaceId: 'space', roleId: 'manager' }),
+  ).rejects.toMatchObject({ code: 'NotElevated' });
+  await expect(
+    client.changeCommunityRole({
+      action: 'appearance',
+      spaceId: 'space',
+      roleId: 'higher',
+      name: 'Owner',
+      color: null,
+    }),
+  ).rejects.toMatchObject({ code: 'NotElevated' });
+  expect(calls.filter((c) => c.method !== 'GET')).toHaveLength(2);
+});
+it('cannot grant an unowned permission or clear a denial it cannot manage', async () => {
+  const { client, calls, server } = fixture({ bits: 4 });
+  await expect(
+    client.changeCommunityRole({
+      action: 'permissions',
+      spaceId: 'space',
+      roleId: 'member',
+      values: { ...inherited(), manageRoles: 'allow' },
+    }),
+  ).rejects.toMatchObject({ code: 'CANNOT_GRANT_ROLE_PERMISSION' });
+  (server.roles as any).member.permissions = { a: 0, d: 8 };
+  await expect(
+    client.changeCommunityRole({
+      action: 'permissions',
+      spaceId: 'space',
+      roleId: 'member',
+      values: inherited(),
+    }),
+  ).rejects.toMatchObject({ code: 'CANNOT_GRANT_ROLE_PERMISSION' });
+  expect(calls.every((c) => c.method === 'GET')).toBe(true);
+});
+it.each([
+  { action: 'create', spaceId: 'space', name: ' ' },
+  { action: 'create', spaceId: 'space', name: 'x'.repeat(33) },
+  {
+    action: 'appearance',
+    spaceId: 'space',
+    roleId: 'member',
+    name: 'Kanka',
+    color: 'url(https://bad.example)',
+  },
+  {
+    action: 'permissions',
+    spaceId: 'space',
+    roleId: 'member',
+    values: { ...inherited(), invented: 'allow' },
+  },
+  { action: 'delete', spaceId: 'space', roleId: '../owner' },
+])('validates role inputs before any request: %j', async (change) => {
+  const { client, calls } = fixture({ self: 'owner' });
+  await expect(client.changeCommunityRole(change as any)).rejects.toMatchObject({ status: 400 });
+  expect(calls).toEqual([]);
+});
+it('preserves upstream refusal and does not report a role mutation as successful', async () => {
+  const { client } = fixture({ self: 'owner', writeDenied: true });
+  const events: unknown[] = [];
+  client.subscribe((event) => events.push(event));
+  await expect(
+    client.changeCommunityRole({ action: 'create', spaceId: 'space', name: 'Kanka' }),
+  ).rejects.toMatchObject({ status: 403 });
+  expect(events).toEqual([]);
+});
+it('reports a successful write followed by a failed refresh without repeating the write', async () => {
+  const { client, calls } = fixture({
+    self: 'owner',
+    pauseMembers: async () => {
+      throw new Error('Read interrupted');
+    },
+  });
+  await expect(
+    client.changeCommunityRole({ action: 'create', spaceId: 'space', name: 'Kanka' }),
+  ).rejects.toMatchObject({ code: 'ROLE_SAVED_REFRESH_FAILED' });
+  expect(calls.filter((call) => call.method === 'POST')).toHaveLength(1);
+});

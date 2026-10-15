@@ -15,3 +15,9 @@ The former private-community real-person poster/clip, private reference screensh
 `docs/images/home.png`, `chat.png`, and `voice.png` were captured on 2026-10-14 from the current ROOMS application renderer at source commit `f4e9e4f`, using isolated, deterministic sample community state (S08, S10, and S19). No account login, private server, provider session, or live call was used. The neutral landscape inside the chat activity card is original sample SVG artwork supplied only during capture. Avatars use the application's initial-letter fallbacks.
 
 The development indicator is omitted in the presentation captures; the application's development fixture marker and production boundaries remain unchanged. These are interface illustrations, not acceptance evidence for chat delivery, voice transport, or provider playback. The README and user guide identify sample community data. No private reference screenshot or real-person clip was reused.
+
+## Portal application icon
+
+On 2026-10-15 the owner selected the supplied `01.svg` portal concept as the application icon. `apps/desktop/public/reference-brand/app-icons/app-icon-master.svg` retains its geometry, gradients, and colors; only the descriptive metadata was updated for its selected use. The matching PNG sizes, macOS ICNS, and existing ICO resource are deterministic exports of this SVG. `icon.png` is used by the macOS Dock; `icon.icns` is the packaged macOS application icon; About uses the corresponding 128 px export.
+
+The iPhone companion uses the same portal with an opaque, full-bleed background so iOS supplies its own outer mask. This does not change account, media, permission, or update behavior. Updating source assets does not replace the icon inside already installed, signed applications; they need a newly built and distributed application.

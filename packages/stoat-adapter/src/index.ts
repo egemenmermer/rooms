@@ -2,6 +2,10 @@ import { restBucket, resetDelay } from './rate-limit';
 import type { ConnectionStatus } from '@rooms/contracts';
 import {
   SOCIAL_ID_PATTERN,
+  type SocialCommunityRoleChange,
+  type SocialCommunityRoleResult,
+  type SocialRolePermissionValues,
+  type SocialRolePermissionKey,
   type SocialUser,
   type SocialSpace,
   type SocialChannel,
@@ -54,39 +58,49 @@ function recoveryText(value: unknown, minimum: number, maximum: number): value i
     !/[\x00-\x1f\x7f]/.test(value)
   );
 }
+const roleErrorMessages: Record<string, string> = {
+  ROLE_MANAGEMENT_DENIED: 'You do not have permission to manage roles.',
+  CANNOT_GRANT_ROLE_PERMISSION: 'You cannot change a role permission you do not have.',
+  ROLE_SAVED_REFRESH_FAILED:
+    'The role change was saved, but the updated list could not be loaded. Refresh the roles before trying again.',
+  INVALID_ROLE_NAME: 'Role names must contain 1 to 32 characters.',
+  INVALID_ROLE_COLOR: 'Choose a valid role color.',
+  TooManyRoles: 'This community has reached its role limit.',
+};
 export class StoatError extends Error {
   constructor(
     public status: number,
     public code: string,
   ) {
     super(
-      code === 'REGISTRATION_REQUIRES_SIGN_IN'
-        ? 'Account creation could not be completed. If you already have an account, sign in instead. Contact the server administrator if you cannot sign in.'
-        : code === 'REGISTRATION_UNCERTAIN'
-          ? 'Account creation could not be confirmed. Try signing in before submitting another invitation.'
-          : code === 'INVITE_PROVISIONING_UNAVAILABLE'
-            ? 'Invitation provisioning is not configured on this server. Ask your administrator.'
-            : code === 'INVITE_ADMIN_REQUIRED'
-              ? 'Only the space owner can create account invitations.'
-              : code === 'EXPIRING_INVITES_UNAVAILABLE'
-                ? 'This Stoat release cannot enforce invitation expiry or one-time use. Ask your administrator to provide an invitation.'
-                : code === 'ACCOUNT_INVITE_REQUIRED'
-                  ? 'A separate account invitation is required. Ask your administrator.'
-                  : code === 'UnverifiedAccount'
-                    ? 'Verify your email before signing in.'
-                    : code === 'ADDITIONAL_AUTHENTICATION_REQUIRED'
-                      ? 'This account needs additional authentication. Complete the official Stoat sign-in flow.'
-                      : status === 401
-                        ? 'Your session expired. Sign in again.'
-                        : status === 403
-                          ? 'You do not have permission for this action.'
-                          : status === 404
-                            ? 'This room, message or invitation is unavailable.'
-                            : status === 429
-                              ? 'Too many requests. Please wait and retry.'
-                              : status >= 500
-                                ? 'The social server is unavailable. Retry shortly.'
-                                : 'The social server rejected this request. Check the supplied details.',
+      roleErrorMessages[code] ??
+        (code === 'REGISTRATION_REQUIRES_SIGN_IN'
+          ? 'Account creation could not be completed. If you already have an account, sign in instead. Contact the server administrator if you cannot sign in.'
+          : code === 'REGISTRATION_UNCERTAIN'
+            ? 'Account creation could not be confirmed. Try signing in before submitting another invitation.'
+            : code === 'INVITE_PROVISIONING_UNAVAILABLE'
+              ? 'Invitation provisioning is not configured on this server. Ask your administrator.'
+              : code === 'INVITE_ADMIN_REQUIRED'
+                ? 'Only the space owner can create account invitations.'
+                : code === 'EXPIRING_INVITES_UNAVAILABLE'
+                  ? 'This Stoat release cannot enforce invitation expiry or one-time use. Ask your administrator to provide an invitation.'
+                  : code === 'ACCOUNT_INVITE_REQUIRED'
+                    ? 'A separate account invitation is required. Ask your administrator.'
+                    : code === 'UnverifiedAccount'
+                      ? 'Verify your email before signing in.'
+                      : code === 'ADDITIONAL_AUTHENTICATION_REQUIRED'
+                        ? 'This account needs additional authentication. Complete the official Stoat sign-in flow.'
+                        : status === 401
+                          ? 'Your session expired. Sign in again.'
+                          : status === 403
+                            ? 'You do not have permission for this action.'
+                            : status === 404
+                              ? 'This room, message or invitation is unavailable.'
+                              : status === 429
+                                ? 'Too many requests. Please wait and retry.'
+                                : status >= 500
+                                  ? 'The social server is unavailable. Retry shortly.'
+                                  : 'The social server rejected this request. Check the supplied details.'),
     );
     this.name = 'StoatError';
   }
@@ -225,6 +239,31 @@ const managementBits = {
   assignRoles: 512n,
   kickMembers: 64n,
 } as const;
+const rolePermissionBits: Record<SocialRolePermissionKey, bigint> = {
+  view: 1n << 20n,
+  send: 1n << 22n,
+  files: 1n << 27n,
+  connect: 1n << 30n,
+  speak: 1n << 31n,
+  video: 1n << 32n,
+  manageMessages: 1n << 23n,
+  manageChannels: 1n,
+  assignRoles: 512n,
+  manageRoles: 8n,
+  managePermissions: 4n,
+  kickMembers: 64n,
+};
+function rolePermissionValues(raw: Raw | undefined): SocialRolePermissionValues {
+  const p = permissionOverride(raw);
+  return Object.fromEntries(
+    Object.entries(rolePermissionBits).map(([key, bit]) => [
+      key,
+      p.deny & bit ? 'deny' : p.allow & bit ? 'allow' : 'inherit',
+    ]),
+  ) as SocialRolePermissionValues;
+}
+const roleColor = (value: unknown): string | null =>
+  typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value : null;
 const managementUnavailable = (
   spaceId: string,
   access: SocialCommunityManagement['access'],
@@ -240,6 +279,7 @@ const managementUnavailable = (
     kickMembers: false,
   },
   roles: [],
+  grantablePermissions: [],
   members: [],
   invites: {
     source: 'rooms-broker',
@@ -1292,12 +1332,19 @@ export class StoatClient {
           },
         ];
       });
+      result.grantablePermissions = (
+        Object.keys(rolePermissionBits) as SocialRolePermissionKey[]
+      ).filter((key) => !!(context.bits & rolePermissionBits[key]));
       result.roles = context.roles
         .map((role) => ({
           id: role.id,
           name: role.name,
           rank: role.rank,
           assignable: result.capabilities.assignRoles && role.rank > context.rank,
+          color: roleColor(role.colour),
+          editable: result.capabilities.manageRoles && role.rank > context.rank,
+          permissionsEditable: result.capabilities.managePermissions && role.rank > context.rank,
+          permissions: rolePermissionValues(role.permissions),
         }))
         .sort((a, b) => a.rank - b.rank || a.id.localeCompare(b.id));
       this.assertManagementContext(context.epoch, context.session);
@@ -1307,6 +1354,86 @@ export class StoatClient {
       if (error instanceof StoatError && [403, 404].includes(error.status))
         return managementUnavailable(spaceId, error.status === 404 ? 'missing' : 'denied');
       throw error;
+    }
+  }
+  async changeCommunityRole(change: SocialCommunityRoleChange): Promise<SocialCommunityRoleResult> {
+    const { spaceId, action } = change;
+    checked(spaceId);
+    if (!['create', 'appearance', 'permissions', 'delete'].includes(action))
+      throw new StoatError(400, 'INVALID_ROLE_CHANGE');
+    if (
+      'name' in change &&
+      (typeof change.name !== 'string' ||
+        !change.name.trim() ||
+        [...change.name].length > 32 ||
+        /[\x00-\x1f\x7f]/.test(change.name))
+    )
+      throw new StoatError(400, 'INVALID_ROLE_NAME');
+    if (action === 'appearance' && change.color !== null && !roleColor(change.color))
+      throw new StoatError(400, 'INVALID_ROLE_COLOR');
+    if (
+      action === 'permissions' &&
+      (!change.values ||
+        Object.keys(change.values).length !== Object.keys(rolePermissionBits).length ||
+        Object.keys(rolePermissionBits).some(
+          (key) =>
+            !['allow', 'deny', 'inherit'].includes(change.values[key as SocialRolePermissionKey]),
+        ))
+    )
+      throw new StoatError(400, 'INVALID_ROLE_PERMISSIONS');
+    if ('roleId' in change) checked(change.roleId);
+    const c = await this.managementContext(spaceId);
+    const required =
+      action === 'permissions' ? managementBits.managePermissions : managementBits.manageRoles;
+    if (!(c.bits & required)) throw new StoatError(403, 'ROLE_MANAGEMENT_DENIED');
+    const role = 'roleId' in change ? c.roles.find((r) => r.id === change.roleId) : null;
+    if (action !== 'create' && !role) throw new StoatError(404, 'ROLE_NOT_FOUND');
+    if (role && role.rank <= c.rank) throw new StoatError(403, 'NotElevated');
+    let permissions: { allow: number; deny: number } | undefined;
+    if (action === 'permissions') {
+      const previous = permissionOverride(role!.permissions);
+      const next = { ...previous };
+      for (const [key, bit] of Object.entries(rolePermissionBits)) {
+        next.allow &= ~bit;
+        next.deny &= ~bit;
+        const value = change.values[key as SocialRolePermissionKey];
+        if (value === 'allow') next.allow |= bit;
+        if (value === 'deny') next.deny |= bit;
+        // A manager cannot change a permission they do not hold, even by clearing a denial.
+        if (((previous.allow ^ next.allow) | (previous.deny ^ next.deny)) & bit & ~c.bits)
+          throw new StoatError(403, 'CANNOT_GRANT_ROLE_PERMISSION');
+      }
+      permissions = { allow: Number(next.allow), deny: Number(next.deny) };
+    }
+    this.assertManagementContext(c.epoch, c.session);
+    let roleId = 'roleId' in change ? change.roleId : '';
+    if (action === 'create') {
+      const result = await this.request<Raw>(`/servers/${checked(spaceId)}/roles`, 'POST', {
+        name: change.name.trim(),
+      });
+      if (typeof result.id !== 'string' || !SOCIAL_ID_PATTERN.test(result.id))
+        throw new StoatError(502, 'INVALID_ROLE_RESPONSE');
+      roleId = result.id;
+    } else if (action === 'appearance') {
+      await this.request(`/servers/${checked(spaceId)}/roles/${checked(roleId)}`, 'PATCH', {
+        name: change.name.trim(),
+        ...(change.color ? { colour: change.color } : { remove: ['Colour'] }),
+      });
+    } else if (action === 'permissions') {
+      await this.request(`/servers/${checked(spaceId)}/permissions/${checked(roleId)}`, 'PUT', {
+        permissions,
+      });
+    } else {
+      await this.request(`/servers/${checked(spaceId)}/roles/${checked(roleId)}`, 'DELETE');
+    }
+    if (c.session !== this.sessionEpoch) throw new StoatError(401, 'SESSION_CHANGED');
+    this.managementChanged(spaceId);
+    try {
+      return { roleId, management: await this.communityManagement(spaceId) };
+    } catch (error) {
+      if (c.session !== this.sessionEpoch) throw error;
+      // Never retry the write or imply that creating another role is the recovery action.
+      throw new StoatError(502, 'ROLE_SAVED_REFRESH_FAILED');
     }
   }
   async setCommunityMemberRoles(

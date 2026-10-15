@@ -272,6 +272,9 @@ export interface SocialBridge {
     change: import('@rooms/social').SocialChannelPermissionChange,
   ): Promise<import('@rooms/social').SocialChannelPermissions>;
   communityManagement(spaceId: string): Promise<import('@rooms/social').SocialCommunityManagement>;
+  changeCommunityRole(
+    change: import('@rooms/social').SocialCommunityRoleChange,
+  ): Promise<import('@rooms/social').SocialCommunityRoleResult>;
   setMemberRoles(
     change: import('@rooms/social').SocialMemberRoleChange,
   ): Promise<import('@rooms/social').SocialCommunityManagement>;
