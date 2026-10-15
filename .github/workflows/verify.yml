@@ -129,6 +129,7 @@ jobs:
       - name: Actual rootless worker and enforced limits
         run: |
           qa_uid=$(id -u rooms-ai)
+          cd /
           qa_runtime=/run/user/${qa_uid}
           qa_bus=unix:path=${qa_runtime}/bus
           sudo -u rooms-ai env -i HOME=/home/rooms-ai USER=rooms-ai LOGNAME=rooms-ai PATH=/usr/bin:/bin XDG_RUNTIME_DIR="$qa_runtime" DBUS_SESSION_BUS_ADDRESS="$qa_bus" podman pull docker.io/library/busybox:1.37.0
