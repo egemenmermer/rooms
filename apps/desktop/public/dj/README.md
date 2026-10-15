@@ -1,6 +1,5 @@
-# Default music character
+# Varsayılan müzik karakteri
 
-default-dj.png is an original static generated illustration. See docs/ASSETS.md for the built-in ImageGen prompt/provenance and licensing.
+`default-dj.png`, proje için üretilmiş özgün ve statik bir çizimdir. Üretim istemi, varlık kaydı ve lisans bilgisi için [ASSETS.md](../../../../docs/ASSETS.md) belgesine bak.
 
-Communities can configure a different name/poster/animation without forking the music control logic; see docs/CUSTOMIZATION.md. No private-community clip is bundled.
-
+Topluluklar müzik kontrol mantığını çatallamadan farklı bir ad, poster veya animasyon yapılandırabilir: [özelleştirme rehberi](../../../../docs/CUSTOMIZATION.md). Özel bir topluluğa ait klip uygulamayla paketlenmez.

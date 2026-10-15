@@ -1,9 +1,9 @@
-# Optional native stereo publisher
+# İsteğe bağlı yerel stereo yayıncı
 
-The generic music runtime is built by infra/music.Dockerfile. Dockerfile.stereo is an optional derivative requiring an explicitly selected compatible immutable base image and verified-stereo build context. It is not a reference to a public maintainer image.
+Genel müzik çalışma ortamı `infra/music.Dockerfile` ile kurulur. `Dockerfile.stereo`, açıkça seçilen uyumlu ve değişmez taban imajı ile doğrulanmış stereo derleme bağlamı gerektiren isteğe bağlı türevdir; açık bir bakımcı imajına işaret etmez.
 
-The build-only music-stereo workflow pins the upstream LiveKit Rust SDK revision, submodules, toolchain, patch and collected native notices. Verify its source, patch and native hashes before use; retain LiveKit, libyuv and generated WebRTC notices. Do not copy a macOS module into Linux.
+Yalnızca derleme yapan `music-stereo` iş akışı üst LiveKit Rust SDK sürümünü, alt modülleri, araç zincirini, yamayı ve toplanan yerel lisans bildirimlerini sabitler. Kullanmadan önce kaynak, yama ve yerel bileşen özetlerini doğrulayın; LiveKit, libyuv ve üretilen WebRTC bildirimlerini koruyun. macOS modülünü Linux'a kopyalamayın.
 
-ROOMS changes the published audio feature declaration only for a two-channel source. This is independent of provider authorization and microphone consent. Validate actual native load, separate-channel transport, source cleanup and compatible rollback in an isolated environment before replacing a running service. A bitrate ceiling is not delivered bitrate or a lossless guarantee.
+ROOMS yalnızca iki kanallı kaynakta yayımlanan ses özelliği bildirimini değiştirir. Bu, sağlayıcı yetkisi ve mikrofon onayından bağımsızdır. Çalışan servisi değiştirmeden önce yalıtılmış ortamda gerçek yerel modül yükleme, ayrı kanal aktarımı, kaynak temizliği ve uyumlu geri dönüşü doğrulayın. Bit hızı tavanı gerçekleşen hız veya kayıpsızlık garantisi değildir.
 
-Build and physical/provider acceptance are different checks. Previous private deployment receipts are not part of this public source distribution.
+Derleme ve fiziksel/sağlayıcı kabulü ayrı kontrollerdir. Önceki özel dağıtım kayıtları bu açık kaynak dağıtımına dahil değildir.

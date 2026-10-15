@@ -1,23 +1,23 @@
-# Separate ROOMS agent host
+# Ayrı sunucuda ROOMS Agent kurulumu
 
-Run the agent exclusively on its separate Linux Hetzner host. The desktop sends authorized tasks and receives progress and results. This host must have no core database credentials, personal IPTV/Real-Debrid vault, desktop filesystem mount, or attachment to the core private network. No production host or external credentials were supplied for this implementation.
+Bu rehber ayrı Linux sunucusundaki Docker arka ucunu anlatır. Aynı fiziksel sunucuda çalıştırmak için bunun kurallarını gevşetmeyin; ayrı tasarlanmış [yetkisiz Podman arka ucunu](../infra/agent/shared/README.md) kullanın. Masaüstü yetkili görevleri gönderir, ilerleme ve sonuçları alır. Ayrı Agent sunucusunda Core veritabanı kimlik bilgileri, kişisel IPTV/Real-Debrid kasası, masaüstü dosya sistemi bağlantısı veya Core özel ağına bağlantı bulunmamalıdır. İlk uygulama sırasında üretim sunucusu veya harici kimlik bilgisi sağlanmamıştı; aşağıdaki test sınırları o kontrol noktasını anlatır.
 
-## Install and provision
+## Kurulum ve hazırlık
 
-Build with `pnpm services:build`. Install Node.js and Docker on the dedicated host, and run `dist-services/agent.cjs` as a dedicated service user with **UID 10001**. Provision `/var/lib/rooms-agent` owned by that user with mode 0700. Workspace, model-home and browser-profile bind mounts use UID 10001 in containers; root-owned mode-0700 directories will fail. The host service needs Docker access, which is a privileged host capability. Never mount the Docker socket into workers or expose the service to arbitrary clients.
+`pnpm services:build` ile derleyin. Ayrı sunucuya Node.js ve Docker kurun; `dist-services/agent.cjs` dosyasını UID 10001 olan ayrı servis kullanıcısıyla çalıştırın. `/var/lib/rooms-agent` bu kullanıcıya ait, 0700 izinli olmalıdır. Çalışma alanı, model evi ve tarayıcı profili bağları konteynerde UID 10001 kullanır; root'a ait 0700 dizinler çalışmaz. Sunucu servisi Docker erişimi ister; bu ayrıcalıklı bir sunucu yetkisidir. Docker soketini çalışanlara bağlamayın veya servisi rastgele istemcilere açmayın.
 
-Build the worker using `docker build -t rooms-agent-worker:local -f infra/agent/worker.Dockerfile infra/agent`. The image specifies official Codex 0.161.0, Claude Code 2.1.293 and Playwright 1.64.0. Resolve and pin approved base-image digests before production deployment. The image has not been built or exercised on the separate Linux host in this session.
+Çalışanı `docker build -t rooms-agent-worker:local -f infra/agent/worker.Dockerfile infra/agent` ile kurun. İmaj resmî Codex 0.161.0, Claude Code 2.1.293 ve Playwright 1.64.0 belirtir. Üretimden önce onaylı taban imaj özetlerini çözümleyip sabitleyin. İlk kontrol noktasında ayrı Linux sunucusunda bu imaj derlenip çalıştırılmamıştı.
 
-Use a TLS reverse proxy and leave the service on loopback port 3041. `SERVICE_HOST` and `AGENT_PORT` override those defaults. Supply these private values:
+TLS ters vekil kullanın; servis yerel 3041 portunda kalsın. `SERVICE_HOST` ve `AGENT_PORT` varsayılanları değiştirir. Şu özel değerleri sağlayın:
 
-- `ROOMS_AGENT_STORAGE_KEY`: persistent random 32-byte hex encryption key, outside source control.
-- `ROOMS_AGENT_AUTH_FILE`: mode-0600 JSON array of grants `{userId,roomIds,canManage,tokenSha256,enabled}`. Issue distinct random 256-bit bearer tokens privately; store SHA-256 hashes here. Grants are reread for HTTP authorization, execution and notification delivery.
-- `ROOMS_AGENT_DATA`: optional mode-0700 data directory, default `/var/lib/rooms-agent`. Its encrypted atomic store contains connections, tasks, checkpoints, memory, outbox and audit.
-- `ROOMS_AGENT_WORKER_IMAGE`: optional image, default `rooms-agent-worker:local`.
-- `ROOMS_AGENT_POLICY_FILE`: optional mode-0600 JSON policy, shown below. Missing policy disables worker networking and external connector scopes.
-- `ROOMS_AGENT_CONNECTORS_FILE`: optional mode-0600 JSON containing dedicated bot credentials and exact repository/folder allowlists. These tokens never enter prompts, renderer projections or worker mounts.
+- `ROOMS_AGENT_STORAGE_KEY`: kaynak dışında kalıcı, rastgele 32 baytlık onaltılık şifreleme anahtarı.
+- `ROOMS_AGENT_AUTH_FILE`: 0600 izinli `{userId,roomIds,canManage,tokenSha256,enabled}` yetki nesneleri içeren JSON dizisi. Kişiye ayrı rastgele 256 bit erişim belirteci verin; burada SHA-256 özetini saklayın. HTTP yetkisi, çalıştırma ve bildirim tesliminde yeniden okunur.
+- `ROOMS_AGENT_DATA`: isteğe bağlı 0700 veri dizini; varsayılan `/var/lib/rooms-agent`. Şifreli atomik depo bağlantı, görev, kontrol noktası, hafıza, giden kutusu ve denetim kayıtlarını içerir.
+- `ROOMS_AGENT_WORKER_IMAGE`: isteğe bağlı imaj; varsayılan `rooms-agent-worker:local`.
+- `ROOMS_AGENT_POLICY_FILE`: aşağıdaki gibi isteğe bağlı 0600 JSON politika. Yoksa çalışan ağı ve harici bağlayıcı kapsamları kapalıdır.
+- `ROOMS_AGENT_CONNECTORS_FILE`: ayrı bot kimlik bilgileri ve kesin depo/klasör izin listeleri içeren isteğe bağlı 0600 JSON. Belirteçler isteme, görünüm verisine veya çalışan bağlarına girmez.
 
-Example policy:
+Örnek politika:
 
 ```json
 {
@@ -30,7 +30,7 @@ Example policy:
 }
 ```
 
-Example connector configuration:
+Örnek bağlayıcı yapılandırması:
 
 ```json
 {
@@ -45,72 +45,72 @@ Example connector configuration:
 }
 ```
 
-These are examples, not supplied credentials. Drive can use dedicated `driveOAuth` credentials or a `driveToken` access-token fallback. OAuth refresh uses only `https://oauth2.googleapis.com/token`, refuses credential redirects, bounds response size and token expiry, and caches access tokens only in service memory until shortly before expiry. Refresh credentials never enter model arguments, projections or worker mounts. An API rejection invalidates the cache without automatically retrying a potentially mutating operation. Access-token-only configuration reports expiration/revocation precisely; replace that private token when required. GitHub supports scoped content reads, issues, file writes with expected commit SHA, and draft pull requests. Drive supports listing/reading in allowed folders and creating text files. Capability metadata reflects configured scopes, not live-provider verification.
+Bunlar gerçek kimlik bilgileri değil örneklerdir. Drive, ayrı `driveOAuth` veya yedek `driveToken` erişim belirteci kullanabilir. OAuth yenileme yalnızca `https://oauth2.googleapis.com/token` kullanır, kimlik bilgili yönlendirmeyi reddeder, yanıt boyutu/ömür sınırı koyar; erişim belirtecini sona ermeden kısa süre öncesine kadar yalnızca servis belleğinde tutar. Yenileme bilgileri model argümanlarına, görünüm verisine veya çalışan bağlarına girmez. API reddi önbelleği geçersizleştirir; değişiklik yapabilecek işlemi otomatik tekrarlamaz. Yalnız erişim belirteci ayarı süre bitimi/iptali açık bildirir; gerektiğinde özel belirteci yenileyin. GitHub sınırlı içerik okuma, issue, beklenen commit SHA ile dosya yazma ve taslak PR destekler. Drive izinli klasörde listeleme/okuma/metin oluşturmayı destekler. Yetenek üstverisi canlı sağlayıcı doğrulamasını değil yapılandırılan kapsamı gösterir.
 
-Follow [Google's official OAuth offline-access flow](https://developers.google.com/identity/protocols/oauth2/web-server#offline). Provision a Google OAuth client and authorize the dedicated bot account administratively using Google's supported consent flow with offline access and the minimum Drive scope suitable for its allowed folders. Put the resulting client ID, client secret and refresh token only in the mode-0600 connectors file; ROOMS does not provide a browser consent callback or collect these values from the renderer. Revoke or rotate them through the Google account/project when needed, then restart the service. Configured folder allowlists remain mandatory after refresh. OAuth consent, token refresh and Drive calls have not been tested against a live account.
+[Google'ın resmî çevrimdışı OAuth akışını](https://developers.google.com/identity/protocols/oauth2/web-server#offline) izleyin. Ayrı bot hesabı için uygun en düşük Drive kapsamını ve çevrimdışı erişimi kullanarak resmî onay akışını yönetsel olarak tamamlayın. İstemci kimliği/sırrı ve yenileme belirtecini yalnız 0600 bağlayıcı dosyasına koyun. ROOMS tarayıcı onay geri dönüşü sağlamaz veya bunları görünümden toplamaz. Gerektiğinde Google hesap/projesinden iptal edin veya döndürün, ardından servisi yeniden başlatın. Klasör izin listesi yenilemeden sonra da zorunludur. Canlı hesapla OAuth onayı, yenileme ve Drive çağrıları bu ilk uygulama kontrolünde denenmedi.
 
-## Restricted networking
+## Sınırlı ağ
 
-Code containers default to `--network none`. Official CLI login/execution and browser tasks require `ROOMS_AGENT_WORKER_NETWORK=enabled` plus `egressVerified:true`. Startup accepts only the internal `rooms-agent-egress` network with bridge name `br-rooms-agent`.
+Kod konteynerlerinde varsayılan `--network none` olur. Resmî CLI giriş/çalıştırma ve tarayıcı görevleri `ROOMS_AGENT_WORKER_NETWORK=enabled` ile `egressVerified:true` gerektirir. Başlangıç yalnızca köprü adı `br-rooms-agent` olan iç `rooms-agent-egress` ağını kabul eder.
 
-Set `ROOMS_EGRESS_HOSTS_FILE` to a mode-0600 JSON array of exact HTTPS hostnames, then run `docker compose -f infra/agent/compose.yml up -d --build`. This starts the restricted CONNECT proxy with an internal worker network and separate uplink. No host port is published. Include required provider/login, research and browser hosts; wildcards are unsupported. The proxy accepts port 443, pins DNS-resolved public IPs, rejects private/reserved destinations and limits connections/timeouts. Worker environment variables and Chromium use `http://rooms-egress:3128`.
+`ROOMS_EGRESS_HOSTS_FILE` değerini kesin HTTPS alan adları içeren 0600 JSON dizisine ayarlayın, sonra `docker compose -f infra/agent/compose.yml up -d --build` çalıştırın. Kısıtlı CONNECT vekili, iç çalışan ağı ve ayrı dış bağlantıyla başlar; sunucu portu açılmaz. Gerekli sağlayıcı/giriş/araştırma/tarayıcı alanlarını ekleyin; joker karakter yoktur. Vekil 443 portunu kabul eder, DNS'den çözülen açık IP'yi sabitler, özel/ayrılmış adresleri reddeder, bağlantı ve süre sınırı uygular. Çalışan ortamı ve Chromium `http://rooms-egress:3128` kullanır.
 
-**Docker's internal network is only part of the policy.** Configure the host firewall to drop INPUT from `br-rooms-agent` and deny worker forwarding/direct egress except established replies and TCP 3128 to the proxy's internal address. Cover IPv4, IPv6, bridge traffic and host gateways. Keep proxy uplink separate from worker membership. Verify from a worker that direct public-IP connections, host/private/link-local addresses, non-allowlisted hosts, non-443 tunnels, UDP and core addresses fail, while approved proxy HTTPS succeeds. Set `egressVerified:true` only after recording these checks. Startup validates topology; it cannot certify firewall rules. No live host firewall or egress test was performed here.
+Docker iç ağı politikanın yalnızca bir parçasıdır. Sunucu güvenlik duvarında `br-rooms-agent` kaynaklı INPUT'u ve kurulmuş yanıtlar ile vekilin iç adresine TCP 3128 dışındaki çalışan yönlendirmesini/doğrudan çıkışı reddedin. IPv4, IPv6, köprü trafiği ve sunucu ağ geçitlerini kapsayın. Vekilin dış bağlantısı çalışan üyeliğinden ayrı kalsın. Çalışan içinden doğrudan açık IP, sunucu/özel/link-local adres, izinsiz alan, 443 dışı tünel, UDP ve Core adreslerinin reddedildiğini; izinli vekil HTTPS'nin çalıştığını sınayın. Yalnız kayıtlı kontrol sonrası `egressVerified:true` yapın. Başlangıç topolojiyi denetler; güvenlik duvarını onaylayamaz. Bu ilk uygulamada canlı sunucu güvenlik duvarı/çıkış testi yapılmadı.
 
-Host-broker research uses exact host allowlists, DNS-pinned public-address checks, bounded reads and redirect checks. Connectors stay on provider API hosts with exact repository/folder scopes. Workers drop capabilities, prohibit privilege escalation, cap CPU/memory/processes, use read-only roots and bounded temporary storage, and mount only the task workspace and, for CLI tasks, the initiating model's private auth home.
+Aracının araştırması kesin alan listesi, DNS'ye sabitlenmiş açık adres, sınırlı okuma ve yönlendirme denetimi kullanır. Bağlayıcılar kesin depo/klasör kapsamıyla sağlayıcı API alanında kalır. Çalışanlar yetenekleri kaldırır, ayrıcalık yükseltmeyi yasaklar, CPU/bellek/süreç sınırı koyar, salt okunur kök ve sınırlı geçici depolama kullanır. Yalnız görev alanı ve CLI görevinde başlatan modelin özel yetki evi bağlanır.
 
-## Model accounts and tool availability
+## Model hesapları ve araçlar
 
-Each user owns their connection. OpenRouter keys are encrypted at rest. OpenRouter tasks use the durable broker tool loop for scoped files, isolated code, approved research, persistent bot-browser actions and configured GitHub/Drive operations. Every model/tool step rechecks current room/user access. Saved connection status indicates configuration; successful live invocation proves provider access.
+Her kullanıcı kendi bağlantısına sahiptir. OpenRouter anahtarları diskte şifrelidir. Görevleri sınırlı dosyalar, yalıtılmış kod, izinli araştırma, kalıcı bot tarayıcısı ve yapılandırılmış GitHub/Drive için kalıcı aracı araç döngüsünü kullanır. Her model/araç adımı güncel oda/kullanıcı erişimini yeniden denetler. Kayıtlı bağlantı yapılandırmayı, başarılı gerçek çağrı sağlayıcı erişimini kanıtlar.
 
-For Codex/Claude subscriptions, the account owner runs official login on the dedicated host as UID 10001:
+Codex/Claude aboneliklerinde hesap sahibi ayrı sunucuda UID 10001 olarak resmî giriş yapar:
 
 ```sh
 node scripts/agent-model-login.mjs codex OWNER_ID CONNECTION_ID
 node scripts/agent-model-login.mjs claude OWNER_ID CONNECTION_ID
 ```
 
-The helper uses the internal network and proxy, preserving separate official auth homes per owner/connection. ROOMS does not collect OAuth session tokens or account passwords. Check providers' supported login/subscription policies. Cached auth-file presence does not prove current authentication. Never pool subscriptions.
+Yardımcı iç ağ/vekili ve sahip/bağlantı başına ayrı resmî yetki evini kullanır. ROOMS OAuth oturum belirteci veya hesap parolası toplamaz. Sağlayıcının desteklenen giriş/abonelik kurallarını kontrol edin. Yetki dosyasının varlığı güncel oturumu kanıtlamaz. Abonelikleri ortak havuz yapmayın.
 
-**Official CLI tasks do not use the OpenRouter broker's GitHub/Drive or persistent bot-browser tools.** They execute the CLI's native code/research behavior within the isolated workspace and configured network. These are separate capabilities. Live provider login/execution remain unverified.
+Resmî CLI görevleri OpenRouter aracısının GitHub/Drive veya kalıcı bot tarayıcısını kullanmaz. Yalıtılmış alan ve yapılandırılmış ağda CLI'nin kendi kod/araştırma davranışını çalıştırır. Yetenekler ayrıdır. Canlı sağlayıcı giriş/çalıştırma kabulü ayrıca gerekir.
 
-## Approval, resume and memory
+## Onay, devam ve hafıza
 
-Authorized managers control global YOLO. It skips confirmations within configured scopes and cannot add connections, mounts or permissions. Normal tasks require initial approval and per-operation approval for mutations such as file writes, code, browser actions and external writes. Approval resumes the exact saved operation. Reads still recheck authorization.
+Yetkili yöneticiler genel YOLO ayarını yönetir. Yapılandırılmış kapsam içinde onayı atlar; bağlantı, bağ veya yetki ekleyemez. Normal görev başlangıç onayı ve dosya yazma, kod, tarayıcı eylemi, dış yazma gibi değişiklikler için işlem bazında onay ister. Onay tam kayıtlı işlemi sürdürür. Okumalar da yetkiyi yeniden kontrol eder.
 
-Encrypted checkpoints retain model messages and operation ledgers before side effects. Completed operations are reused on resume. Safe interrupted reads can resume; started or uncertain writes become interrupted and require `record-result` or `confirm-not-applied` reconciliation for the exact operation ID. Check the external system before confirming non-application. There is no blind retry. Official CLI invocations likewise use a durable ledger and manual reconciliation after uncertain execution. Cancellation aborts HTTP work and explicitly removes isolated workers.
+Şifreli kontrol noktaları yan etkiden önce model mesajlarını ve işlem defterini saklar. Tamamlanan işlem devamda tekrar kullanılmaz, sonucu kullanılır. Güvenli kesilmiş okumalar devam edebilir; başlamış/belirsiz yazmalar kesilmiş kalır ve tam işlem kimliği için `record-result` veya `confirm-not-applied` uzlaştırması ister. Uygulanmadığını onaylamadan dış sistemi kontrol edin. Kör tekrar yoktur. CLI çağrıları da kalıcı defter ve belirsiz çalışmada elle uzlaştırma kullanır. İptal HTTP işini keser ve yalıtılmış çalışanları açıkça kaldırır.
 
-Single-shot schedules persist and recheck room access and model ownership. Completed tasks stay completed. Prompts/results addressed to the bot enter room-scoped memory; ordinary messages require explicit manual save. Authorized room users can inspect/delete that room's memory.
+Tek seferlik zamanlamalar kalıcıdır; oda erişimi/model sahipliği yeniden denetlenir. Biten görev bitmiş kalır. Bota yöneltilen istem/sonuç oda hafızasına girer; sıradan mesaj için elle açık kaydetme gerekir. Yetkili oda kullanıcıları hafızayı inceleyebilir/silebilir.
 
-One persistent isolated bot-browser profile uses a serialized action queue. DOM/cookies can persist between actions/tasks; the profile is not mounted into code/CLI workers. Actions require configured HTTPS hosts; password/token-field fills are rejected. Provision bot authentication administratively: an interactive browser-login setup flow is not implemented. Real Linux browser behavior remains unverified.
+Kalıcı yalıtılmış bot tarayıcısı sıralı eylem kuyruğu kullanır. DOM/çerezler görevler arasında kalabilir; profil kod/CLI çalışanına bağlanmaz. Eylemler yapılandırılmış HTTPS alanları gerektirir; parola/belirteç alanı doldurma reddedilir. Bot oturumunu yönetsel kurun: etkileşimli tarayıcı giriş kurulum akışı uygulanmamıştır. Gerçek Linux tarayıcı davranışı ayrıca doğrulanmalıdır.
 
-## Mention-only bot delivery
+## Yalnızca bahsetmeyle bot teslimi
 
-Optional dedicated accounts use `ROOMS_STOAT_BOT_URL`, `ROOMS_STOAT_BOT_TOKEN`, `ROOMS_STOAT_BOT_MAPPING_FILE`, and/or `ROOMS_DISCORD_BOT_TOKEN`, `ROOMS_DISCORD_BOT_ID`, `ROOMS_DISCORD_MAPPING_FILE`. Mapping files are mode-0600 JSON arrays:
+İsteğe bağlı ayrı hesaplar `ROOMS_STOAT_BOT_URL`, `ROOMS_STOAT_BOT_TOKEN`, `ROOMS_STOAT_BOT_MAPPING_FILE` ve/veya `ROOMS_DISCORD_BOT_TOKEN`, `ROOMS_DISCORD_BOT_ID`, `ROOMS_DISCORD_MAPPING_FILE` kullanır. Eşleme dosyaları 0600 JSON dizileridir:
 
 - Stoat: `{authorId,channelId,userId,roomId,modelConnectionId}`.
 - Discord: `{discordAuthorId,channelId,userId,roomId,modelConnectionId}`.
 
-Only mapped authorized mentions enqueue work. Bots do not join voice or ingest ordinary messages. Adding author identities requires gateway restart; changes/revocations are reread for every mention and delivery. Immutable source author/channel/message are stored with the task and must still match the current mapping and grant for delivery.
+Yalnız eşlenmiş yetkili bahsetme işi kuyruğa alır. Bot sese katılmaz veya sıradan mesajları toplamaz. Yazar kimliği eklemek ağ geçidini yeniden başlatmayı gerektirir; değişiklik/iptaller her bahsetme ve teslimde yeniden okunur. Değişmez kaynak yazar/kanal/mesaj görevle saklanır; teslimde güncel eşleme ve yetkiyle hâlâ uyuşmalıdır.
 
-The durable outbox records approval requests, results and failures before official bot API replies. Stable nonce/identifiers help bounded provider deduplication but do not guarantee durable exactly-once delivery. Failure after send becomes uncertain and is not automatically retried; restarted sending entries likewise become uncertain. Inspect authorized `/v1/outbox?roomId=...` and reconcile manually. Production accounts and live delivery were not tested here.
+Kalıcı giden kutusu, resmî bot API yanıtından önce onay isteklerini/sonuç/hataları kaydeder. Sabit nonce/kimlikler sağlayıcıda sınırlı tekrar önlemeye yardım eder; kalıcı tam bir kez teslim garantisi vermez. Gönderim sonrası hata ve yeniden başlatmada gönderiliyor kalan kayıt belirsiz olur, otomatik tekrarlanmaz. Yetkili `/v1/outbox?roomId=...` üzerinden inceleyip elle uzlaştırın. Üretim hesabı/canlı teslim bu ilk uygulamada sınanmadı.
 
-## Ordinary-message reminders
+## Sıradan mesaj hatırlatmaları
 
-`POST /v1/reminders` accepts `{roomId,channelId,sourceMessageId,text,runAt}`. This explicit exact note/time/source submission authorizes a single reminder; it needs no model connection or model approval. Tasks have `kind:reminder` and an empty legacy model-connection field. The service verifies the current user's room grant and Stoat mapping, official bot identity, and exact source message before creation, due processing and delivery. Per-user status exposes `stoat-reminders` only when a current mapped bot configuration is available.
+`POST /v1/reminders`, `{roomId,channelId,sourceMessageId,text,runAt}` kabul eder. Açık not/zaman/kaynak gönderimi tek hatırlatmayı yetkilendirir; model bağlantısı/onayı gerekmez. Görevde `kind:reminder`, eski model bağlantısı alanında boş değer bulunur. Servis oluşturma, zamanı gelme ve teslimde güncel oda yetkisi, Stoat eşlemesi, resmî bot kimliği ve tam kaynak mesajı doğrular. Kullanıcı durumu yalnız güncel eşlenmiş bot varsa `stoat-reminders` gösterir.
 
-The reminder replies to the original message through the durable outbox. It does not invoke a model or save ordinary message contents or reminder text to bot memory. Scheduled and pending entries survive restart; sent entries stay completed. A pending cancelled reminder is never sent, and revoked mapping/access or deleted source stops delivery. Cancellation after transmission begins cannot recall a remote message. Sending/unknown outcomes remain interrupted without automatic retry; bounded upstream nonce deduplication does not imply network-level exactly-once delivery. Check the source chat before creating a replacement for an uncertain reminder. Real bot delivery remains a deployment acceptance gate.
+Hatırlatma giden kutusuyla özgün mesaja yanıt verir. Model çağırmaz; sıradan mesaj/hatırlatma metnini bot hafızasına koymaz. Zamanlanmış/bekleyen kayıtlar yeniden başlatmada korunur; gönderilen tamamlanmış kalır. Beklerken iptal edilen gönderilmez; yetki/eşleme iptali veya kaynak silinmesi teslimi durdurur. Gönderim başladıktan sonraki iptal uzak mesajı geri çağıramaz. Gönderiliyor/bilinmeyen sonuç kesilmiş kalır, otomatik tekrarlanmaz. Sınırlı nonce tekilleştirmesi ağ düzeyinde tam bir kez garantisi değildir. Belirsiz hatırlatmanın yerine yenisini oluşturmadan kaynak sohbeti kontrol edin. Canlı bot teslimi ayrı dağıtım kabulüdür.
 
-## Evidence and remaining deployment gates
+## Kanıt ve kalan dağıtım koşulları
 
-Actual local HTTP tests cover authority, room/user model ownership, encrypted persistence, approval/resume, uncertain-write reconciliation, YOLO scope limits, schedules, mentions and uncertain outbox handling. Tool-loop tests inject a named model transport; connector tests inject provider HTTP responses. They prove kernel behavior, not live OpenRouter, GitHub, Drive, CLI, bots, Docker or browser integration.
+Gerçek yerel HTTP testleri yetkiyi, oda/kullanıcı model sahipliğini, şifreli kalıcılığı, onay/devamı, belirsiz yazma uzlaştırmasını, YOLO kapsamını, zamanlama/bahsetme/belirsiz giden kutusunu kapsar. Araç döngüsü adlandırılmış test model aktarımı, bağlayıcı testleri sağlayıcı HTTP yanıtı kullanır. Çekirdek davranışı kanıtlar; canlı OpenRouter/GitHub/Drive/CLI/bot/Docker/tarayıcı entegrasyonunu değil.
 
-Before production acceptance, record the actual host image build, UID/mount permissions, firewall rejection matrix, each live model/tool invocation, bot mentions/replies, browser persistence, cancellation, uncertain-operation recovery and encrypted-backup restore. Back up encrypted data and its key separately. Local tests do not imply deployed Hetzner operation or verified external integration.
+Üretim kabulünden önce gerçek imaj derlemesi, UID/bağ izinleri, ağ reddetme matrisi, her canlı model/araç çağrısı, bot yanıtları, tarayıcı kalıcılığı, iptal, belirsiz işlem kurtarma ve şifreli yedekten dönüş kaydedilmelidir. Şifreli veri ve anahtarı ayrı yedekleyin. Yerel testler Hetzner'de çalışmayı veya dış entegrasyonu doğrulamış sayılmaz.
 
-## Versioned deployment kit
+## Sürümlü dağıtım kiti
 
-`node scripts/package-agent.mjs` compiles only the Agent service and packages an explicit allowlist of worker/proxy sources, official-login/access helpers, installed dependency notices, this runbook and a systemd service. Output is `.local/deployment/rooms-agent-VERSION.tar.gz` plus a SHA-256 file. The kit contains no credentials, private profiles, core configuration or datastore dumps. `MANIFEST.json` records source/bundle digests, not acceptance evidence. Packaging does not install or exercise Docker, CLIs or the separate host.
+`node scripts/package-agent.mjs` yalnız Agent servisini derler; açık izin listeli çalışan/vekil kaynakları, resmî giriş/erişim yardımcıları, kurulu bağımlılık bildirimleri, bu rehber ve systemd birimini paketler. Çıktı `.local/deployment/rooms-agent-VERSION.tar.gz` ve SHA-256 dosyasıdır. Kimlik bilgisi, özel profil, Core ayarı veya veri dökümü içermez. `MANIFEST.json` kaynak/paket özetini kaydeder; kabul kanıtı değildir. Paketleme Docker/CLI/ayrı sunucuyu kurup sınamaz.
 
-On the separately supplied Linux host, install Node.js 22+ at `/usr/bin/node` and Docker; create `rooms-agent` with UID/GID 10001 and Docker-group membership. Do not reuse a host whose existing UID 10001 belongs to somebody else. Extract the trusted kit into `/opt/rooms-agent` and retain root ownership of its executable code. Create `/var/lib/rooms-agent` owned by UID/GID 10001, mode 0700, and `/etc/rooms-agent` owned by root with group 10001, mode 0750. Provision its environment, auth and policy files as UID/GID 10001 mode 0600. The example auth grants nobody, the policy disables external scopes and networking, and the storage-key placeholder intentionally prevents startup until a real persistent key is supplied.
+Ayrı Linux sunucusunda Node.js 22+ `/usr/bin/node` yoluna ve Docker kurun. `rooms-agent` UID/GID 10001, Docker grubu üyesi olsun; bu UID başka kişiye aitse sunucuyu böyle kullanmayın. Güvenilir kiti `/opt/rooms-agent` altına açın, çalıştırılabilir kod root'a ait kalsın. `/var/lib/rooms-agent` UID/GID 10001, 0700; `/etc/rooms-agent` root, grup 10001, 0750 olsun. Ortam/yetki/politika dosyaları UID/GID 10001, 0600 olmalıdır. Örnek yetki kimseye izin vermez, politika dış kapsam/ağı kapatır; anahtar yer tutucusu gerçek kalıcı anahtar verilene kadar başlangıcı bilerek engeller.
 
-Install `infra/agent/rooms-agent.service` into `/etc/systemd/system`. Its loopback binding requires the TLS proxy described above; no public port is opened by this unit. Build the worker/proxy images on this separate host, preserve the encrypted-storage key off-host, issue distinct per-user access using the included helper, and only then enable the service. The host service's Docker access remains privileged even with systemd restrictions; worker containers must never receive the socket. Do not set `egressVerified:true` or enable worker networking until the owner completes the documented host-network acceptance. No real host setup or live provider verification is implied by the kit.
+`infra/agent/rooms-agent.service` dosyasını `/etc/systemd/system` altına kurun. Yerel bağ için yukarıdaki TLS vekili gerekir; birim açık port açmaz. Çalışan/vekil imajlarını ayrı sunucuda kurun, şifreleme anahtarını sunucu dışında koruyun, verilen yardımcıyla kişiye özel erişim verin; ardından servisi açın. systemd sınırlarına rağmen Docker erişimi ayrıcalıklıdır; çalışanlara soket verilmez. Sahip belgelenen ağ kabulünü tamamlamadan `egressVerified:true` veya çalışan ağı açılmamalıdır. Kit gerçek kurulum/canlı sağlayıcı doğrulaması yapmış sayılmaz.

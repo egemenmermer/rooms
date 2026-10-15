@@ -1,49 +1,64 @@
-# Publication review — existing ROOMS repository
+# Mevcut ROOMS deposunun yayın incelemesi
 
-Initial review date: 2026-10-14. The publication target is **egemenmermer/rooms**, under MIT. The private archive is a backup, not a replacement open-source project. Current visibility and unresolved retained views are recorded below.
+İlk inceleme: 14 Ekim 2026. MIT lisanslı yayın hedefi **egemenmermer/rooms** deposudur. Özel arşiv yedektir; yerine geçen başka açık kaynak proje değildir. Bu belge o günkü geçmiş temizliğini kaydeder. Sonraki açık masaüstü yayınları için [RC12 notlarına](../RC12_RELEASE.md) bakın.
 
-Status update, 2026-10-14: the owner independently changed visibility to public and declined sending the prepared Support request. The retained-view gate below has **not** passed: an anonymous metadata lookup still resolves a removed private artwork file at its old commit. Current releases and Actions artifacts are absent; one historical PR description's operator address was removed and reread. These checks do not certify that old refs/cached views are purged. This task did not change visibility or contact Support. Public package gates are documented in PACKAGE_POLICY.md.
+Sahibi daha sonra görünürlüğü kendisi herkese açtı. Saklanan eski görünüm koşulu tamamlanmış değildir: inceleme sırasındaki anonim üstveri sorgusu, kaldırılmış özel görseli eski commit'te hâlâ çözüyordu. O kontrol noktasında eski yayınlar ve Actions çıktıları kaldırılmıştı; bir eski PR açıklamasındaki işletmeci adresi silinip yeniden okundu. Bunlar eski referans/önbelleğin temizlendiğini kanıtlamaz. Sonradan Support talebi gönderme yetkisi verildi; fakat gönderim veya GitHub tarafından temizlik tamamlandığı doğrulanmış değildir. Açık paket koşulları [paket politikasındadır](PACKAGE_POLICY.md).
 
-## History preservation
+## Geçmişin korunması
 
-The frozen original review covered 240 reachable commits (including fetched PR merge refs), 25 tags and 50 local refs. All 240 commits are preserved unchanged in a verified local Git bundle and the independent PRIVATE `rooms-private-archive` backup. The archival GitHub branch/tag references and all three backup asset digests were checked. The public-history candidate also contains 240 mapped commits, with zero pruned commits; author names, timestamps and parent relationships are preserved. The maintainer email is replaced with the GitHub noreply address. Original and redacted commit IDs necessarily differ. The complete mapping remains in the private archive.
+Dondurulan inceleme, alınan PR birleştirme referansları dahil 240 erişilebilir commit, 25 etiket ve 50 yerel referansı kapsadı. 240 commit'in tamamı doğrulanmış yerel Git bundle ve bağımsız özel `rooms-private-archive` içinde değişmeden korunur. Arşiv GitHub dal/etiket referansları ve üç yedek çıktısının özetleri kontrol edildi. Açık geçmiş de 240 eşlenmiş commit içerir; budanan commit sıfırdır. Yazar adları, zamanlar ve ebeveyn ilişkileri korunur. Bakımcı e-postası GitHub noreply adresiyle değiştirilmiştir. Özgün/ayıklanmış commit kimlikleri zorunlu olarak farklıdır; tam eşleme özel arşivdedir.
 
-485 historical private/archive paths are excluded, with every path listed in HISTORY_FILE_DISPOSITIONS.csv. This includes private-community PNG/WebM, private operator records, screenshot/reference evidence and internal planning archives. These are publication-scope exclusions, not 484 asserted security vulnerabilities. Thirteen retained source paths have known private host/email/filesystem literals replaced. Twenty-one safe historical engineering documents and legacy tools were retained after review. Four historical artwork references are retained without redistributing the private binaries, preserving current legacy-title handling.
+485 eski özel/arşiv yolu çıkarılmıştır; her biri [dosya tablosunda](HISTORY_FILE_DISPOSITIONS.csv) listelenir. Özel topluluk PNG/WebM, işletmeci kayıtları, ekran/referans kanıtları ve iç plan arşivlerini kapsar. Bunlar yayın kapsamı dışına çıkarılan dosyalardır; 485 ayrı güvenlik açığı iddiası değildir. Korunan 13 kaynak yolunda bilinen özel sunucu/e-posta/dosya yolu değerleri değiştirildi. İncelenmiş 21 güvenli eski mühendislik belgesi/araç korundu. Dört eski görsel referansı özel ikililer yeniden dağıtılmadan korundu; eski başlık işleme sürer.
 
-The latest prepared application/source tree was byte-for-byte identical before and after history redaction. Final changes after that comparison are publication documentation only. Source work retains the Electron/React client, Stoat adapter, media transport, game rules and services.
+Hazırlanmış son uygulama/kaynak ağacı geçmiş ayıklamadan önce ve sonra bayt bazında aynıydı. Bu karşılaştırma sonrası son değişiklikler yayın belgesiydi. Electron/React istemci, Stoat bağdaştırıcısı, medya aktarımı, oyun kuralları ve servisler korundu.
 
-## Release inspection
+## Eski yayın incelemesi
 
-All 96 original GitHub release assets across 25 releases were downloaded and inspected: 8,063,147,400 bytes. Every downloaded asset matched GitHub's declared SHA-256 and size. ZIP/DMG/Windows installer application ASAR contents were inspected statically; DMGs were mounted read-only and no packaged application was executed. Small text receipts and agent archives were examined. Four release PNGs were viewed and show generic signed-out settings, with no visible personal account/chat.
+25 eski yayındaki 96 çıktı indirildi/incelendi: 8063147400 bayt. Her dosya GitHub'ın SHA-256/boyutuyla eşleşti. ZIP/DMG/Windows kurulum ASAR içerikleri statik incelendi; DMG salt okunur bağlandı, paketli uygulama çalıştırılmadı. Küçük metin kayıtları ve Agent arşivleri incelendi. Dört yayın PNG'si görüntülendi; genel hesapsız ayarlar gösteriyor, görünür kişisel hesap/sohbet içermiyordu.
 
-54 assets contain directly observed private-community material or maintainer infrastructure references. The remainder is not mislabeled as secret: it includes public checksums/notarization identifiers/technical receipts, generic settings captures and two early unflagged packages. The disposition of every asset is listed in RELEASE_ASSET_DISPOSITIONS.csv. Historical packaged distributions are separated from the source project; existing code version tags are retained after redaction.
+54 çıktıda doğrudan görülen özel topluluk malzemesi veya bakımcı altyapı referansı vardı. Diğerleri gizli diye etiketlenmedi; açık sağlama toplamı/noter kimliği/teknik kayıt, genel ayar görseli ve işaretlenmemiş iki erken paket içerir. Her çıktının kararı [yayın tablosundadır](RELEASE_ASSET_DISPOSITIONS.csv). Eski paketli dağıtımlar kaynaktan ayrıldı; sürüm etiketleri ayıklama sonrası korundu.
 
-RC8 (last published working community build) and RC7 (rollback) are retained privately with original filenames and digest verification. The initial archival copy detected two same-name metadata collisions between versions; these were corrected and reverified in the new private archive. No original published bytes were altered. Other superseded release files are removed from this repository's distribution surface after preservation of the complete original release metadata/inventory. No source-only alpha is falsely advertised as a new signed installer.
+O tarihte son çalışan RC8 ve geri dönüş RC7, özgün dosya adı/özet doğrulamasıyla özel saklandı. İlk arşivde sürümler arası aynı adlı iki üstveri çakışması bulundu, düzeltildi ve yeni özel arşivde yeniden doğrulandı. Hiçbir özgün yayın baytı değiştirilmedi. Diğer eski çıktılar tam özgün yayın üstverisi/envanteri korunduktan sonra bu deponun dağıtım yüzeyinden kaldırıldı. Yalnız kaynak alfa yeni imzalı kurulum gibi sunulmadı.
 
-## Other GitHub surfaces
+## Diğer GitHub yüzeyleri
 
-PR descriptions/comments/reviews were captured through 43 metadata endpoints and text-scanned with no confirmed secret detection. At the log snapshot, 111 available Actions runs were inspected and 10.76 MB of log text scanned without secret detections. This is bounded automated evidence, not proof that all privacy-sensitive data is recognizable by a detector. Private evidence copies are archived; historical execution artifacts are excluded from publication. Two Windows artifact archive downloads timed out, and are explicitly not claimed inspected; their matching release installers were inspected separately. One Linux native artifact's container/member hashes were inspected.
+PR açıklama/yorum/incelemeleri 43 üstveri adresinden alınıp tarandı; doğrulanmış sır bulunmadı. Günlük anında erişilebilir 111 Actions çalışması incelendi, 10,76 MB günlük metni sır bulgusu olmadan tarandı. Bu sınırlı otomatik kanıttır; tüm özel verinin algılayıcıyla tanınacağını kanıtlamaz. Özel kanıt kopyaları arşivlendi; eski yürütme çıktıları yayın dışına alındı. İki Windows çıktı arşivi indirmesi zaman aşımına uğradı, incelendi sayılmadı; karşılık gelen yayın kurulumları ayrı incelendi. Bir Linux yerel çıktı arşivinin kapsayıcı/üye özetleri kontrol edildi.
 
-The original all-ref scan produced 16 source-triaged non-secrets. The redacted-history scan retains three detector hits on the public Sparkle verification key; it is not a private signing key and is not rotated or erased as a supposed leak. Required third-party licenses, font notices and author attributions are retained.
+Özgün tüm referans taramasında 16 bulgu kaynak üzerinden sır olmayan değer olarak değerlendirildi. Ayıklanmış geçmişte üç algılayıcı eşleşmesi açık Sparkle doğrulama anahtarıdır; özel imza anahtarı değildir, sızıntı diye döndürülmedi/silinmedi. Üçüncü taraf lisansları, font bildirimleri ve yazar atıfları korundu.
 
-## Verification and production boundary
+## Doğrulama ve üretim sınırı
 
-The exact preceding runtime/source candidate passed 801 tests in 119 files, lint, typecheck, app/service builds, formatting and macOS onboarding shell smoke (GitHub run 38553988545). History redaction did not change its current source tree. No new signed release, installer acceptance, physical media test or production deployment is inferred from this audit.
+Önceki tam çalışma/kaynak adayı 119 dosyada 801 test, lint, tür, uygulama/servis derlemesi, biçim ve Mac ilk açılış kontrolünü geçti (GitHub 38553988545). Geçmiş ayıklaması güncel ağacı değiştirmedi. Bu denetimden yeni imzalı yayın, kurulum/fiziksel medya kabulü veya üretim dağıtımı sonucu çıkarılmaz.
 
-A read-only HTTPS check of the current community appcast found six enclosure URLs, all community-hosted and none GitHub-hosted. The community server, update feed, installed apps, live accounts and server-only private artwork are unchanged. The public source uses the original generated static DJ and optional per-community customization.
+O tarihteki salt okunur topluluk besleme kontrolü altı indirme adresinin hepsinin topluluk sunucusunda, hiçbirinin GitHub'da olmadığını gösterdi. Denetim topluluk sunucusunu, beslemeyi, kurulu uygulamaları, hesapları veya sunucudaki özel görselleri değiştirmedi. Sonraki yayınlar bu tarihsel durumu değiştirmiştir. Açık kaynak özgün üretilmiş statik DJ ve isteğe bağlı topluluk özelleştirmesi kullanır.
 
-## Publication checks and remaining gate
+## Yayın kontrolleri ve açık koşul
 
-1. GitHub-retained old PR refs, cached old commit/diff URLs and attachments need an explicit disposition. Replacing branches/tags does not guarantee GitHub purges them. Local cleaning cannot remove read-only PR refs. A maintainer support request is prepared privately and has not been sent. Do not make this repository public until those retained views are resolved or an informed publication decision covers their contents.
-2. Private vulnerability reporting is now enabled and its API state reread. Main branch protection requires current baseline, native-smoke and source-only checks through the GitHub Actions app, applies to administrators, requires PRs and resolved conversations, and prohibits force pushes/deletion. The API state was reread; documentation alone was not used as evidence.
-Dependency update PR creation is temporarily paused during the publication review; enable the intended limits after approval. A reachable-history privacy gate is added to prevent reviewed private paths being restored through old checkouts.
+1. GitHub'ın tuttuğu eski PR referansı, commit/diff önbelleği ve ekler ayrıca karara bağlanmalıdır. Dal/etiket değiştirmek GitHub temizliği garantisi değildir; yerel temizlik salt okunur PR referansını silemez. Özel hazırlanmış destek talebinin gönderildiği veya sonuçlandığı doğrulanmamıştır. Deponun açık olması bu koşulu kapatmaz.
+2. Özel güvenlik açığı bildirimi açılıp API'den yeniden okundu. Main koruması GitHub Actions üzerinden güncel baseline, native-smoke ve source-only kontrollerini; PR ve çözülmüş konuşmaları ister, yöneticilere uygulanır, zorla push/silmeyi yasaklar. Kanıt yalnız belge değil tekrar okunmuş API durumuydu. Yayın incelemesi sırasında bağımlılık PR oluşturma geçici durduruldu; istenen sınırlar ayrıca yönetilmelidir. Erişilebilir geçmiş gizlilik kontrolü, eski checkout'tan çıkarılmış yolların geri gelmesini önler.
+3. Sahibin bağımsız görünürlük kararı ve daha sonra destek talebi yetkisi, eski görünümün gerçekten kaldırıldığına dair kanıt yerine geçmez.
 
-3. The owner changed visibility independently and explicitly declined submitting the Support request. That decision does not close the old retained-view gate in item 1.
+GitHub'ın [resmî açıklaması](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository) eski referansların ayrı ele alınmasını anlatır.
 
-Official GitHub explanation: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository . A visibility change is not performed by this work.
+## Son temizlik kaydı
 
-## Final cleanup receipt
+25 eski yayın kaydı/96 çıktı depodan ayrılırken 25 ayıklanmış kod etiketi korundu. RC8/RC7 için 19 özel, özetle doğrulanmış kopya tutuldu. Geçici GitHub silme HTTP 502 hatası kaydedilip tekrarlandı; canlı topluluk dağıtımı değiştirilmedi. Son geçmiş kontrolü ilk nesne adı envanterinde olmayan alternatif özel ekran yolunu buldu. Her commit'in tam ağaç taraması bunu belirledi; tam dizin geçmiş temizliği alternatifleri de çözdü. Bulguyu gizlemek için kontrol kapatılmadı.
 
-All 25 historical release records / 96 assets have been separated from this repository, while all 25 redacted code tags remain. RC8/RC7 have 19 privately retained and checksum-verified asset copies. A transient GitHub deletion HTTP 502 was recorded and retried; no live community distribution was changed. The final history guard caught one alternate private screenshot path absent from the original object-name inventory. Full per-commit tree enumeration identified it; full-directory history removal resolves aliases as well as the listed paths. No gate was disabled to conceal this finding.
+Diğer checkout'lar yerel çalışmayı koruyup ayıklanmış deponun yeni klonundan devam etmelidir. Eski geçmişi tekrar birleştirmeyin/push etmeyin. Özgün geliştirme geçmişi özel arşiv ve commit eşlemesindedir.
 
-Other existing checkouts must preserve local work and restart from a fresh clone of the redacted repository. Do not merge/push the old history back. The original development history is available in the private archive and commit map.
+## Envanter kodlarını okuma
+
+CSV alan adları, yollar, sürümler, baytlar, özetler ve karar kodları denetim kayıtlarıyla karşılaştırılabilmesi için korunur. Dosya tablosundaki açıklamalar Türkçedir.
+
+| Kod | Anlamı |
+| --- | --- |
+| `exclude-path-history` | Yol geçmişten çıkarıldı |
+| `redact-known-private-literals` | Bilinen özel değerler ayıklandı |
+| `retain` | Korundu |
+| `retain-historical-reference-without-artwork` | Özel görsel olmadan tarihsel referans korundu |
+| `retain-historical-technical-content` | Tarihsel teknik içerik korundu |
+| `maintainer-host` | Bakımcının sunucu referansı |
+| `personal-filesystem` | Kişisel dosya sistemi yolu |
+| `private-community-artwork` | Özel topluluk görseli |
+| `private-community-name` | Özel topluluk adı |
+| `private distribution archive or removed historical distribution; retain code tag` | Özel dağıtım arşivine alındı veya eski dağıtımdan kaldırıldı; kod etiketi korundu |

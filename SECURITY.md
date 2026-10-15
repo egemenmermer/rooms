@@ -1,12 +1,11 @@
-# Security policy
+# Güvenlik politikası
 
-This project is under active development. Report suspected vulnerabilities through [GitHub private vulnerability reporting](https://github.com/egemenmermer/rooms/security/advisories/new). This route is enabled on the repository.
+Proje aktif geliştirme aşamasındadır. Şüpheli güvenlik açıklarını [GitHub'ın özel güvenlik bildirimi](https://github.com/egemenmermer/rooms/security/advisories/new) üzerinden bildir. Bu kanal depoda etkindir.
 
-Do not post credentials, private user content or exploit details in public issues. Include affected version/commit, impact, minimal safe reproduction and an appropriate contact route in the private report.
+Kimlik bilgilerini, kullanıcıların özel içeriklerini veya açığın kötüye kullanım ayrıntılarını herkese açık issue'larda paylaşma. Özel bildirimde etkilenen sürümü/commiti, etkiyi, güvenli ve küçük bir yeniden üretim örneğini ve uygun bir iletişim yolunu belirt.
 
-Only test systems/accounts you are authorized to use. Production disruption/load tests require separate authorization. Never use another operator's signing, deployment or provider credentials.
+Yalnızca kullanmaya yetkili olduğun sistem ve hesaplarda test yap. Üretimi etkileyen kesinti ve yük testleri ayrıca izin gerektirir. Başka bir operatörün imzalama, deploy veya sağlayıcı kimlik bilgilerini kullanma.
 
-The renderer is sandboxed; privileged operations remain in Electron main or a server authority. Keep IPC sender validation, strict schema checks, current membership checks, native encrypted credential storage and lifecycle cleanup intact. Source review is not a guarantee that all platform/provider journeys have been accepted.
+Renderer sandbox içinde çalışır; yetkili işlemler Electron main veya ilgili sunucu servisinde kalır. IPC gönderen doğrulamasını, şema kontrollerini, güncel üyelik kontrollerini, native şifreli kimlik bilgisi saklamasını ve yaşam döngüsü temizliğini koru. Kaynak incelemesi, tüm platform/sağlayıcı akışlarının kabul edildiği garantisini vermez.
 
-No end-to-end encryption against the server operator is claimed. Self-hosters are responsible for TLS, firewalling, protected backups, access control, retention and their community's privacy disclosures.
-
+Sunucu operatörüne karşı uçtan uca şifreleme iddiası yoktur. Kendi sunucusunu çalıştıran kişi TLS, güvenlik duvarı, korumalı yedekler, erişim kontrolü, saklama süreleri ve topluluğunun gizlilik açıklamalarından sorumludur.

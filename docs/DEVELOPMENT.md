@@ -1,32 +1,32 @@
-# Develop and build ROOMS
+# ROOMS geliştirme ve derleme rehberi
 
-[← README](../README.md) · [Architecture](ARCHITECTURE.md) · [Self-hosting](SELF_HOSTING.md)
+[← README](../README.md) · [Mimari](ARCHITECTURE.md) · [Sunucu kurulumu](SELF_HOSTING.md)
 
-## Contents
+## İçindekiler
 
-- [Toolchain](#toolchain)
-- [First run](#first-run)
-- [Commands](#commands)
-- [Build a desktop package](#build-a-desktop-package)
-- [Source layout](#source-layout)
-- [Working safely](#working-safely)
-- [Verification levels](#verification-levels)
+- [Araç zinciri](#araç-zinciri)
+- [İlk çalıştırma](#i̇lk-çalıştırma)
+- [Komutlar](#komutlar)
+- [Masaüstü paketi oluştur](#masaüstü-paketi-oluştur)
+- [Kaynak düzeni](#kaynak-düzeni)
+- [Güvenli geliştirme](#güvenli-geliştirme)
+- [Doğrulama seviyeleri](#doğrulama-seviyeleri)
 
-## Toolchain
+## Araç zinciri
 
-| Tool | Version / purpose |
+| Araç | Sürüm veya amaç |
 | --- | --- |
 | Node.js | 22.22.0 |
-| pnpm | 11.25.0, declared in `package.json` |
-| Git | Clone and track the source version |
-| Xcode Command Line Tools | Native macOS compilation; install with `xcode-select --install` if needed |
-| Docker Compose | Self-hosted Stoat development, not required merely to install client dependencies |
-| Java 17+ and Maven | Optional server YouTube bridge |
-| Playwright browser/runtime | Only for the specific tests/captures that use it |
+| pnpm | 11.25.0; `package.json` içinde sabit |
+| Git | Kaynak kodu almak ve sürümü izlemek |
+| Xcode Command Line Tools | Mac yerel derleme; gerekiyorsa `xcode-select --install` |
+| Docker Compose | Stoat geliştirme kurulumu; yalnızca istemci bağımlılıklarını yüklemek için şart değil |
+| Java 17+ ve Maven | İsteğe bağlı sunucu YouTube köprüsü |
+| Playwright tarayıcısı/runtime | Yalnızca ilgili testler ve ekran yakalama araçları |
 
-Use the pinned lockfile. Installation does not require the maintainer's API keys, signing certificates, or shared accounts. macOS 14+ Apple Silicon and Windows x64 are the configured desktop packaging targets; Linux desktop packaging is not advertised.
+Sabit kilit dosyasını kullan. Kurulum için proje sahibinin API anahtarına, imza sertifikasına veya ortak hesabına ihtiyaç yoktur. Yapılandırılmış masaüstü paket hedefleri macOS 14+ Apple Silicon ve Windows x64'tür; Linux masaüstü paketi vaat edilmez.
 
-## First run
+## İlk çalıştırma
 
 ```sh
 git clone https://github.com/egemenmermer/rooms.git
@@ -34,96 +34,99 @@ cd rooms
 pnpm install --frozen-lockfile
 ```
 
-macOS/Linux shell:
+macOS/Linux kabuğunda:
 
 ```sh
 ROOMS_PROFILE=dev-contributor pnpm dev
 ```
 
-Windows PowerShell:
+Windows PowerShell'de:
 
 ```powershell
 $env:ROOMS_PROFILE = 'dev-contributor'
 pnpm dev
 ```
 
-The development command builds Electron main/preload, starts Vite on loopback port 5173, and opens Electron. Use the separate profile to avoid changing an installed app's preferences. Stop your own development session with Ctrl+C.
+Geliştirme komutu Electron main/preload'u derler, Vite'ı loopback 5173 portunda başlatır ve Electron'ı açar. Kurulu uygulamanın tercihlerini değiştirmemek için ayrı profil kullan. Kendi geliştirme oturumunu Ctrl+C ile durdur.
 
-The client has no built-in production server address. Enter your own community URL or use its invitation. Client startup does not provision accounts, databases, or voice servers; follow [self-hosting](SELF_HOSTING.md) for that.
+İstemcinin hazır üretim sunucusu adresi yoktur. Kendi topluluk adresini gir veya davetini aç. İstemciyi başlatmak hesap, veritabanı veya ses sunucusu kurmaz; bunun için [sunucu rehberini](SELF_HOSTING.md) izle.
 
-An optional non-secret build-time `VITE_ROOMS_DEFAULT_SERVER` can prefill a server in a customized distribution. Keep local settings in ignored `.env.local`. Never put passwords or tokens in a `VITE_` variable: those values can enter the renderer bundle.
+İsteğe bağlı, gizli olmayan `VITE_ROOMS_DEFAULT_SERVER`, özelleştirilmiş dağıtımda sunucuyu **derleme sırasında** önceden doldurabilir. Yerel değerleri Git'in yok saydığı `.env.local` içinde tut. `VITE_` değişkenine parola veya belirteç koyma; değer görünüm süreci paketine girebilir.
 
-## Commands
+## Komutlar
 
-Run from the repository root:
+Depo kökünden çalıştır:
 
-| Command | Purpose |
+| Komut | Amaç |
 | --- | --- |
-| `pnpm dev` | Build/start native Electron development app plus Vite |
-| `pnpm dev:web` | Browser layout development; no native capture, credential storage, or verified voice session |
-| `pnpm lint` | ESLint checks |
-| `pnpm typecheck` | TypeScript checks |
-| `pnpm test` | Vitest suite |
-| `pnpm build` | Typecheck, renderer build, notices, and Electron build |
-| `pnpm services:build` | Access, Activities, Agent, and music service bundles |
-| `pnpm start` | Run the already-built desktop app; run `pnpm build` first |
-| `pnpm test:desktop --grep 'desktop shell'` | Scoped native shell smoke |
-| `pnpm verify:ci` | Source baseline: lint, typecheck, tests, client build, services build |
-| `pnpm format:check` | Existing code/tooling format check |
+| `pnpm dev` | Yerel Electron geliştirme uygulaması ve Vite |
+| `pnpm dev:web` | Tarayıcıda arayüz geliştirme; yerel yakalama, kimlik bilgisi deposu veya doğrulanmış ses sağlamaz |
+| `pnpm lint` | ESLint kontrolü |
+| `pnpm typecheck` | TypeScript kontrolü |
+| `pnpm test` | Vitest testleri |
+| `pnpm build` | Tip kontrolü, görünüm süreci, bildirimler ve Electron derlemesi |
+| `pnpm services:build` | Erişim, Activities, Agent, müzik ve mevcut sunucu servislerinin derlemesi |
+| `pnpm start` | Önceden derlenmiş uygulamayı çalıştır; önce `pnpm build` |
+| `pnpm test:desktop --grep 'desktop shell'` | Sınırlı yerel açılış kontrolü |
+| `pnpm verify:ci` | Lint, tip, test, istemci ve servis derleme temel kontrolü |
+| `pnpm format:check` | Mevcut kod/araç biçimlendirme kontrolü |
 
-Do not run every `verify-*` script indiscriminately. Some require owned accounts, running services, private files, platform capture permissions, or provider access. Read [script categories](../scripts/README.md) and the harness before executing it.
+Her `verify-*` betiğini gelişigüzel çalıştırma. Bazıları yetkili hesap, çalışan servis, özel dosya, platform izni veya sağlayıcı erişimi ister. [Araç kategorilerini](../scripts/README.md) ve ilgili betiği önce oku.
 
-## Build a desktop package
+## Masaüstü paketi oluştur
 
 ```sh
 pnpm package:mac
 ```
 
-Creates an ad-hoc macOS Apple Silicon development package on a suitable Mac. Native build tools and the release preflight must succeed. This is not Developer ID signing/notarization.
+Uygun Mac'te ad-hoc Apple Silicon geliştirme paketi oluşturur. Yerel araçlar ve yayın ön kontrolü başarılı olmalıdır. Bu işlem Developer ID imzası ve noter onayı değildir.
 
 ```sh
 pnpm package:win
 ```
 
-Creates an unsigned Windows x64 development installer; use a suitable Windows packaging environment for target-platform acceptance. Output defaults to ignored `release/`.
+İmzasız Windows x64 geliştirme kurulumu oluşturur. Hedef platform kabulü için uygun Windows paketleme ortamı kullan. Çıktı varsayılan olarak Git'in yok saydığı `release/` klasöründedir.
 
-Trusted distribution needs a separate [release process](RELEASING.md), the distributor's own signing identities, and accepted installation/update checks. Do not describe unsigned development artifacts as official trusted releases.
+VLC ve uzak giriş gibi yerel özelliklerde ilgili hazırlama komutları, Windows'ta Visual Studio x64 derleyicisi ve platforma uygun bağımlılıklar ayrıca gerekir. Genel kaynak derlemesi bu özelliklerin fiziksel kabulü değildir; ilgili özellik belgelerini oku.
 
-## Source layout
+Güvenilir dağıtım, ayrı [yayın sürecini](RELEASING.md), dağıtıcının kendi imza kimliğini ve gerçek kurulum/güncelleme kontrollerini gerektirir. İmzasız geliştirme dosyasını resmî güvenilir yayın olarak tanıtma.
 
-| Path | Responsibility |
+## Kaynak düzeni
+
+| Yol | Sorumluluk |
 | --- | --- |
-| `apps/desktop/src/` | React shell, feature views, renderer state |
-| `apps/desktop/electron/` | Native session, files, devices, capture, and update authority |
-| `apps/distribution/` | Optional invitation-gated download portal |
-| `apps/services/access/` | Signup, identity/permission checks, and media grants |
-| `apps/services/activities/` | Authoritative activity state and persistence |
-| `apps/services/music/` | Optional music worker and source bridges |
-| `apps/services/agent/` | Optional isolated task workers and grants |
-| `packages/` | Shared domain, protocols, schemas, adapters, and rules |
-| `infra/` | Generic deployment templates and upstream pins |
-| `scripts/` | Build, setup, release, and scoped verification helpers |
-| `tests/` | Component, protocol, loopback, and native regressions |
-| `tooling/aliases.ts` | Derives aliases from `tsconfig.json` |
-| `docs/` | Public user, operator, and contributor documentation |
+| `apps/desktop/src/` | React kabuğu, özellik ekranları, görünüm süreci durumu |
+| `apps/desktop/electron/` | Yerel oturum, dosya, cihaz, yakalama ve güncelleme yetkisi |
+| `apps/distribution/` | İsteğe bağlı davetli indirme portalı |
+| `apps/services/access/` | Kayıt, kimlik/izin kontrolü ve medya yetkileri |
+| `apps/services/activities/` | Yetkili etkinlik durumu ve kalıcılık |
+| `apps/services/music/` | İsteğe bağlı müzik servisi ve kaynak köprüleri |
+| `apps/services/agent/` | İsteğe bağlı izole görevler ve izinler |
+| `apps/services/hostops/` | Sunucu yönetiminin ilgili servis sınırı |
+| `packages/` | Ortak alan, protokol, şema, bağdaştırıcı ve kurallar |
+| `infra/` | Genel kurulum şablonları ve üst sistem sürüm sabitlemeleri |
+| `scripts/` | Derleme, kurulum, yayın ve kapsamlı olmayan doğrulama yardımcıları |
+| `tests/` | Bileşen, protokol, loopback ve yerel regresyonlar |
+| `tooling/aliases.ts` | `tsconfig.json` üzerinden alias üretimi |
+| `docs/` | Kullanıcı, yönetici ve katkıcı belgeleri |
 
-Packages are logical source modules in a shared toolchain, not independently published npm workspaces. Start a change in the owning module; preserve typed cross-process contracts. See [architecture](ARCHITECTURE.md).
+Paketler aynı araç zincirindeki mantıksal kaynak modülleridir; bağımsız npm paketleri olarak yayımlanmazlar. Değişikliği ilgili modülde başlat ve süreçler arasındaki tipli sözleşmeleri koru. [Mimariye](ARCHITECTURE.md) bak.
 
-Generated data stays in ignored `.local/`, `dist*`, `release/`, and test-output directories. `ROOMS_REFERENCE_ROOT` is optional for an external reference asset package you own; it is not a production dependency.
+Üretilen veriler Git'in yok saydığı `.local/`, `dist*`, `release/` ve test çıktı klasörlerinde kalır. `ROOMS_REFERENCE_ROOT`, sahibi olduğun haricî referans varlık paketi için isteğe bağlıdır; üretim bağımlılığı değildir.
 
-## Working safely
+## Güvenli geliştirme
 
-Use disposable accounts and isolated environments for authenticated development. Do not request a production session, provider account, or signing Keychain from an operator. Keep privileged credentials in Electron main/server boundaries, not renderer state or screenshots.
+Kimlik doğrulamalı geliştirmede atılabilir hesaplar ve izole ortamlar kullan. Operatörden üretim oturumu, sağlayıcı hesabı veya imzalama Keychain'i isteme. Yetkili kimlik bilgileri görünüm süreci veya ekran görüntüsünde değil, yerel/sunucu sınırında kalmalı.
 
-Development visual fixtures are excluded from production paths. README gallery captures use sample community data; their presentation does not establish a live backend result. Do not ship fixture bridge behavior or remove the runtime fixture marker as a product change.
+Geliştirme görsel örnekleri üretim yollarına dahil edilmez. README galerisi örnek topluluk verileri kullanır; sunumu canlı arka uç kanıtı sayılmaz. Örnek köprü davranışını paketleme veya çalışma anındaki geliştirme etiketini ürün değişikliği olarak kaldırma.
 
-Follow [CONTRIBUTING.md](../CONTRIBUTING.md), keep format-only edits separate, and do not commit local secrets, account fixtures, database snapshots, or operator evidence.
+[Katkı rehberini](../CONTRIBUTING.md) izle; yalnız biçimlendirme yapan değişiklikleri ayır. Yerel sırları, hesap örneklerini, veritabanı kopyalarını veya özel operasyon kanıtlarını commit etme. Proje belgeleri ve README Türkçe tutulur; komutlar, API/ayar adları ve kod tanımları çevrilmez.
 
-## Verification levels
+## Doğrulama seviyeleri
 
-1. **Static/source checks:** lint, types, unit/component tests, and builds.
-2. **Native shell smoke:** Electron starts and its scoped shell behavior works.
-3. **Service integration:** actual accounts, gateways, authorization, persistence, and recovery against the configured backend.
-4. **Physical-device acceptance:** two computers, actual microphone/camera/screen permissions, audibility, and update installation.
+1. **Kaynak kontrolleri:** lint, tip, birim/bileşen testleri ve derleme.
+2. **Yerel açılış kontrolü:** Electron açılır ve sınırlı kabuk davranışı çalışır.
+3. **Servis entegrasyonu:** yapılandırılmış arka uçta gerçek hesaplar, ağ geçidi, izinler, kalıcılık ve kurtarma.
+4. **Fiziksel cihaz kabulü:** iki bilgisayar, gerçek mikrofon/kamera/ekran izinleri, duyulan ses ve güncelleme kurulumu.
 
-Each level establishes different facts. Two mocked clients do not prove a real media session; a successful source build does not prove a signed installer. Name the environment/version and record unresolved checks honestly in a pull request.
+Her seviye farklı bir olguyu kanıtlar. İki taklit istemci gerçek medya oturumunu; başarılı kaynak derlemesi imzalı kurulumu kanıtlamaz. PR'da ortamı/sürümü ve açık kalan kontrolleri dürüstçe kaydet.
