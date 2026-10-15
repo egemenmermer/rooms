@@ -822,6 +822,15 @@ const errorMessages: Record<string, string> = {
   QUEUE_FULL: 'Ortak sıra dolu. Yeni içerik eklemek için bir öğeyi kaldır.',
   QUEUE_ITEM_NOT_FOUND: 'Bu öğe artık sırada değil. Güncel sıradan yeniden seç.',
   REQUEST_SEAT_RETURN_FIRST: 'Kontrolü geri almak için Masaya geri dön düğmesine bas.',
+  'You do not have permission to manage roles.': 'Bu işlem için rol yönetme yetkin yok.',
+  'You cannot change a role permission you do not have.':
+    'Sahip olmadığın bir yetkiyi değiştiremez veya başka bir role veremezsin.',
+  'The role change was saved, but the updated list could not be loaded. Refresh the roles before trying again.':
+    'Rol değişikliği kaydedildi ama güncel liste alınamadı. Tekrar rol oluşturmadan önce listeyi yenile.',
+  'Role names must contain 1 to 32 characters.': 'Rol adı 1–32 karakter olmalı.',
+  'Choose a valid role color.': 'Geçerli bir rol rengi seç.',
+  'This community has reached its role limit.':
+    'Bu topluluktaki rol sınırına ulaşıldı. Kullanılmayan bir rolü kaldırıp yeniden dene.',
   unauthorized: 'Oturum doğrulanamadı. Bağlantı ayarlarını kontrol edip yeniden giriş yap.',
   forbidden: 'Bu işlem için hesabının gerekli izni yok.',
   'fetch failed': 'Sunucuya ulaşılamadı. Ağ bağlantısını ve sunucu adresini kontrol et.',

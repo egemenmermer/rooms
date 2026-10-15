@@ -1,4 +1,5 @@
 import { queryClient } from './query-client';
+import { CommunityRoles } from './CommunityRoles';
 import './reference-community-management.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -17,6 +18,8 @@ import {
 import { Avatar, Modal } from '@rooms/design';
 import type {
   SocialCommunityManagement,
+  SocialCommunityRoleChange,
+  SocialCommunityRoleResult,
   SocialManagedMember,
   SocialMemberRemoval,
   SocialMemberRoleChange,
@@ -28,6 +31,7 @@ import { VoiceAvatar } from './VoiceAvatar';
 
 export interface CommunityManagementBridge {
   communityManagement(spaceId: string): Promise<SocialCommunityManagement>;
+  changeCommunityRole(change: SocialCommunityRoleChange): Promise<SocialCommunityRoleResult>;
   setMemberRoles(change: SocialMemberRoleChange): Promise<SocialCommunityManagement>;
   removeCommunityMember(change: SocialMemberRemoval): Promise<SocialCommunityManagement>;
   /** Root maps content-free gateway/session invalidation; never passes secrets or raw invitations. */
@@ -35,7 +39,7 @@ export interface CommunityManagementBridge {
 }
 export interface CommunityManagementFixture {
   snapshot: SocialCommunityManagement;
-  tab?: 'members' | 'invites';
+  tab?: 'members' | 'roles' | 'invites';
   dialog?: 'role' | 'remove';
   memberId?: string;
 }
@@ -81,10 +85,13 @@ function ManagementScope({
   bridgeRef.current = bridge;
   const fixtureMode = import.meta.env.DEV && new URLSearchParams(location.search).has('fixture');
   const [snapshot, setSnapshot] = useState<SocialCommunityManagement | null>(null);
+  const snapshotRef = useRef(snapshot);
+  snapshotRef.current = snapshot;
+  const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true),
     [working, setWorking] = useState(false),
     [error, setError] = useState('');
-  const [tab, setTab] = useState<'members' | 'invites'>('members'),
+  const [tab, setTab] = useState<'members' | 'roles' | 'invites'>('members'),
     [query, setQuery] = useState('');
   const [dialog, setDialog] = useState<{ kind: 'role' | 'remove'; userId: string } | null>(null),
     [menu, setMenu] = useState<string | null>(null);
@@ -114,7 +121,8 @@ function ManagementScope({
     setMenu(null);
     setRoleIds([]);
     setError('');
-    setLoading(!snapshot);
+    setLoading(!snapshotRef.current);
+    setRefreshing(true);
     // Explicit development projections never query a native account, even if no fixture was supplied.
     if (fixtureMode) {
       if (fixture?.snapshot.spaceId === spaceId && import.meta.env.DEV) {
@@ -129,15 +137,18 @@ function ManagementScope({
         }
       } else setError('Yerel örnek için topluluk yönetimi görünümü sağlanmadı.');
       setLoading(false);
+      setRefreshing(false);
       return;
     }
     if (!connected || !userId || !spaceId) {
       setLoading(false);
+      setRefreshing(false);
       return;
     }
     if (!bridgeRef.current?.communityManagement) {
       setError('Topluluk yönetimi için masaüstü bağlantısı gerekli.');
       setLoading(false);
+      setRefreshing(false);
       return;
     }
     try {
@@ -166,7 +177,10 @@ function ManagementScope({
     } catch (failure) {
       if (currentScope() && epoch === generation.current) setError(uiError(failure));
     } finally {
-      if (alive.current && epoch === generation.current) setLoading(false);
+      if (alive.current && epoch === generation.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [scope, fixtureMode, fixture, connected]);
   useEffect(() => {
@@ -182,7 +196,7 @@ function ManagementScope({
     const revoke = () => {
       queryClient.removeQueries({ queryKey: ['community-management', scope] });
       generation.current++;
-      setSnapshot(null);
+      if (lock.current) return;
       setDialog(null);
       setMenu(null);
       setRoleIds([]);
@@ -221,7 +235,7 @@ function ManagementScope({
   }, [menu]);
   const target = snapshot?.members.find((member) => member.user.id === dialog?.userId);
   const allowed = snapshot?.access === 'allowed',
-    busy = loading || working;
+    busy = loading || refreshing || working;
   const fixtureReason = 'Yerel görsel örnekte gerçek hesap işlemleri kapalı';
   const mutationReason = fixtureMode
     ? fixtureReason
@@ -290,6 +304,32 @@ function ManagementScope({
       }
     } catch (failure) {
       if (currentScope() && epoch === generation.current) setError(uiError(failure));
+    } finally {
+      lock.current = false;
+      if (alive.current) setWorking(false);
+    }
+  }
+  async function changeCommunityRole(change: SocialCommunityRoleChange) {
+    if (mutationReason || busy || lock.current || !currentScope() || change.spaceId !== spaceId)
+      throw new Error(mutationReason || 'İşlem sürüyor. Biraz bekleyip yeniden dene.');
+    const current = bridgeRef.current;
+    if (!current?.changeCommunityRole) throw new Error('Rol düzenleme için uygulamayı güncelle.');
+    lock.current = true;
+    setWorking(true);
+    try {
+      const result = await current.changeCommunityRole(change);
+      if (!currentScope()) throw new Error('Topluluk bağlantısı değişti. Rolleri yeniden aç.');
+      // A successful mutation is followed by an authoritative native read. Fence older reads,
+      // including our own gateway echo, without discarding the editor's unsaved other tab.
+      accept(result.management, ++generation.current);
+      setRefreshing(false);
+      return result;
+    } catch (failure) {
+      if (currentScope()) {
+        queryClient.removeQueries({ queryKey: ['community-management', scope] });
+        void reload();
+      }
+      throw failure;
     } finally {
       lock.current = false;
       if (alive.current) setWorking(false);
@@ -417,6 +457,16 @@ function ManagementScope({
         </button>
         <button
           role="tab"
+          aria-selected={tab === 'roles'}
+          onClick={() => {
+            setTab('roles');
+            setMenu(null);
+          }}
+        >
+          Roller · {snapshot.roles.length}
+        </button>
+        <button
+          role="tab"
           aria-selected={tab === 'invites'}
           onClick={() => {
             setTab('invites');
@@ -426,7 +476,14 @@ function ManagementScope({
           Davetler
         </button>
       </div>
-      {tab === 'invites' ? (
+      {tab === 'roles' ? (
+        <CommunityRoles
+          snapshot={snapshot}
+          busy={busy}
+          disabledReason={mutationReason}
+          mutate={changeCommunityRole}
+        />
+      ) : tab === 'invites' ? (
         <div className="rcm-invites">
           <h2>Aktif davetler</h2>
           <div className="rcm-unavailable">
@@ -507,7 +564,26 @@ function ManagementScope({
                           {isOwner ? (
                             <span className="owner">Topluluk sahibi</span>
                           ) : member.roles.length ? (
-                            roleNames(member).map((role, index) => <span key={index}>{role}</span>)
+                            member.roles.map((id) => {
+                              const role = snapshot.roles.find((item) => item.id === id);
+                              return (
+                                <span key={id}>
+                                  <i
+                                    aria-hidden="true"
+                                    style={{
+                                      backgroundColor: role?.color ?? '#9b8afb',
+                                      width: 7,
+                                      height: 7,
+                                      borderRadius: '50%',
+                                      display: 'inline-block',
+                                      marginRight: 6,
+                                      alignSelf: 'center',
+                                    }}
+                                  />
+                                  {role?.name ?? 'Tanımlı rol'}
+                                </span>
+                              );
+                            })
                           ) : (
                             <span>Üye</span>
                           )}
@@ -579,7 +655,10 @@ function ManagementScope({
           )}
           <section className="rcm-role-summary">
             <header>
-              <h2>Rol özeti</h2>
+              <h2>Roller</h2>
+              <button onClick={() => setTab('roles')}>
+                Rolleri düzenle <ArrowRight size={17} />
+              </button>
               <button
                 disabled={!onChannelPermissions}
                 title={!onChannelPermissions ? 'Önce izinlerini yöneteceğin kanalı seç' : undefined}
@@ -667,15 +746,24 @@ function ManagementScope({
                       </label>
                     );
                   })}
-                  {!snapshot.roles.length && <p>Atanabilecek tanımlı rol yok.</p>}
+                  {!snapshot.roles.length && <p>Henüz rol oluşturulmamış.</p>}
+                  {!snapshot.roles.length && snapshot.capabilities.manageRoles && (
+                    <button
+                      type="button"
+                      className="button secondary"
+                      onClick={() => {
+                        setDialog(null);
+                        setTab('roles');
+                      }}
+                    >
+                      Rolleri aç
+                    </button>
+                  )}
                 </fieldset>
-                <div className="rcm-impact">
-                  <strong>Erişim etkisi</strong>
-                  <p>
-                    Rol değişikliği kanal ve yönetim erişimini değiştirebilir. Kesin erişim etkisi
-                    bu görünümde sunulmuyor.
-                  </p>
-                </div>
+                <p className="rcm-note">
+                  Seçtiğin roller bu üyeye rolün izinlerini verir. Yetkileri Roller sekmesinden
+                  düzenleyebilirsin.
+                </p>
                 <p className="rcm-note">
                   Kanal bazında verilmiş ek izinleri Kanal izinleri bölümünden yönetebilirsin.
                 </p>

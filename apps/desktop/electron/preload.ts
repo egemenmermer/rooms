@@ -80,6 +80,8 @@ const bridge: DesktopBridge = {
       ipcRenderer.invoke('rooms:social-set-channel-permissions', change),
     communityManagement: (spaceId) =>
       ipcRenderer.invoke('rooms:social-community-management', spaceId),
+    changeCommunityRole: (change) =>
+      ipcRenderer.invoke('rooms:social-change-community-role', change),
     setMemberRoles: (change) => ipcRenderer.invoke('rooms:social-set-member-roles', change),
     removeCommunityMember: (change) =>
       ipcRenderer.invoke('rooms:social-remove-community-member', change),

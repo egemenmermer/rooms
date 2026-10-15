@@ -1,4 +1,9 @@
-import type { SocialCommunityManagement, SocialManagedMember } from '@rooms/social';
+import {
+  SOCIAL_ROLE_PERMISSION_KEYS,
+  type SocialCommunityManagement,
+  type SocialManagedMember,
+} from '@rooms/social';
+import { inheritedRolePermissions } from '../CommunityRoles';
 import type { CommunityManagementFixture } from '../CommunityManagementSurface';
 import { getReferenceAvatar } from './reference-fixtures';
 
@@ -107,11 +112,30 @@ function snapshot(permissionDenied: boolean): SocialCommunityManagement {
       assignRoles: !permissionDenied,
       kickMembers: !permissionDenied,
     },
+    grantablePermissions: permissionDenied ? [] : [...SOCIAL_ROLE_PERMISSION_KEYS],
     roles: permissionDenied
       ? []
       : [
-          { id: moderatorRole, name: 'Moderatör', rank: 10, assignable: true },
-          { id: memberRole, name: 'Üye', rank: 20, assignable: true },
+          {
+            id: moderatorRole,
+            name: 'Moderatör',
+            rank: 10,
+            assignable: true,
+            editable: true,
+            permissionsEditable: true,
+            color: '#e8aa63',
+            permissions: inheritedRolePermissions(),
+          },
+          {
+            id: memberRole,
+            name: 'Kanka',
+            rank: 20,
+            assignable: true,
+            editable: true,
+            permissionsEditable: true,
+            color: '#9b8afb',
+            permissions: inheritedRolePermissions(),
+          },
         ],
     members,
     invites: {

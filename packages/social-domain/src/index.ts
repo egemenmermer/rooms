@@ -111,12 +111,43 @@ export interface SocialChannelAccessInvalidation {
   reason: 'permissions-changed' | 'removed' | 'membership-changed';
 }
 
+/** A deliberately small subset of upstream permissions; all other bits are preserved. */
+export const SOCIAL_ROLE_PERMISSION_KEYS = [
+  'view',
+  'send',
+  'files',
+  'connect',
+  'speak',
+  'video',
+  'manageMessages',
+  'manageChannels',
+  'assignRoles',
+  'manageRoles',
+  'managePermissions',
+  'kickMembers',
+] as const;
+export type SocialRolePermissionKey = (typeof SOCIAL_ROLE_PERMISSION_KEYS)[number];
+export type SocialRolePermissionValues = Record<SocialRolePermissionKey, SocialPermissionValue>;
+export type SocialCommunityRoleChange =
+  | { action: 'create'; spaceId: string; name: string }
+  | { action: 'appearance'; spaceId: string; roleId: string; name: string; color: string | null }
+  | { action: 'permissions'; spaceId: string; roleId: string; values: SocialRolePermissionValues }
+  | { action: 'delete'; spaceId: string; roleId: string };
+export interface SocialCommunityRoleResult {
+  roleId: string;
+  management: SocialCommunityManagement;
+}
+
 /** Native projection only; upstream reauthorizes every member mutation. */
 export interface SocialCommunityRole {
   id: string;
   name: string;
   rank: number;
   assignable: boolean;
+  color: string | null;
+  editable: boolean;
+  permissionsEditable: boolean;
+  permissions: SocialRolePermissionValues;
 }
 export interface SocialManagedMember extends SocialMember {
   canAssignRoles: boolean;
@@ -134,6 +165,7 @@ export interface SocialCommunityManagement {
     kickMembers: boolean;
   };
   roles: SocialCommunityRole[];
+  grantablePermissions: SocialRolePermissionKey[];
   members: SocialManagedMember[];
   invites: {
     source: 'rooms-broker';

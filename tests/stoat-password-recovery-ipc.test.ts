@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SOCIAL_ROLE_PERMISSION_KEYS } from '@rooms/social';
 import type { BrowserWindow, IpcMainInvokeEvent } from 'electron';
 
 const mock = vi.hoisted(() => ({
@@ -9,6 +10,7 @@ const mock = vi.hoisted(() => ({
     captcha: { required: false, siteKey: null as string | null },
   },
   request: vi.fn(),
+  changeRole: vi.fn(),
   confirm: vi.fn(),
   clipboard: vi.fn(),
   exists: vi.fn(() => false),
@@ -39,6 +41,9 @@ vi.mock('@rooms/stoat', async () => ({
       this.instanceUrl = url;
       this.token = token;
       mock.instances.push({ url, token });
+    }
+    changeCommunityRole(input: unknown) {
+      return mock.changeRole(input);
     }
     passwordRecoveryCapabilities() {
       return Promise.resolve(mock.capabilities);
@@ -92,6 +97,9 @@ beforeEach(async () => {
   mock.handlers.clear();
   mock.instances.length = 0;
   mock.capabilities = { emailEnabled: true, captcha: { required: false, siteKey: null } };
+  mock.changeRole
+    .mockReset()
+    .mockResolvedValue({ roleId: 'role', management: { spaceId: 'space' } });
   mock.request.mockReset().mockResolvedValue({ accepted: true });
   mock.confirm.mockReset().mockResolvedValue({ completed: true });
   mock.clipboard
@@ -284,5 +292,77 @@ describe('native recovery IPC (fully mocked Stoat/Electron, no remote calls)', (
       }),
     ).resolves.toEqual({ state: 'selection-expired' });
     expect(mock.confirm).not.toHaveBeenCalled();
+  });
+});
+
+describe('native community role IPC input and account boundary', () => {
+  const login = () =>
+    invoke('rooms:social-login', {
+      serverUrl: 'https://current.example',
+      email: 'friend@example.com',
+      password: 'fixture-password',
+    });
+  it('passes validated changes only after authenticating and rejects extra raw permission masks', async () => {
+    await expect(
+      invoke('rooms:social-change-community-role', {
+        action: 'create',
+        spaceId: 'space',
+        name: 'Kanka',
+      }),
+    ).rejects.toThrow();
+    expect(mock.changeRole).not.toHaveBeenCalled();
+    await login();
+    await invoke('rooms:social-change-community-role', {
+      action: 'create',
+      spaceId: 'space',
+      name: ' Kanka ',
+    });
+    expect(mock.changeRole).toHaveBeenCalledWith({
+      action: 'create',
+      spaceId: 'space',
+      name: 'Kanka',
+    });
+    await expect(
+      invoke('rooms:social-change-community-role', {
+        action: 'create',
+        spaceId: 'space',
+        name: 'Kanka',
+        permissions: { a: 4503599627370495 },
+      }),
+    ).rejects.toThrow('Check the supplied fields');
+    expect(mock.changeRole).toHaveBeenCalledTimes(1);
+  });
+  it('requires every supported permission and rejects invented permissions and untrusted callers', async () => {
+    await login();
+    const values = Object.fromEntries(SOCIAL_ROLE_PERMISSION_KEYS.map((key) => [key, 'inherit']));
+    await invoke('rooms:social-change-community-role', {
+      action: 'permissions',
+      spaceId: 'space',
+      roleId: 'role',
+      values,
+    });
+    await expect(
+      invoke('rooms:social-change-community-role', {
+        action: 'permissions',
+        spaceId: 'space',
+        roleId: 'role',
+        values: { ...values, administrator: 'allow' },
+      }),
+    ).rejects.toThrow('Check the supplied fields');
+    await expect(
+      invoke('rooms:social-change-community-role', {
+        action: 'permissions',
+        spaceId: 'space',
+        roleId: 'role',
+        values: {},
+      }),
+    ).rejects.toThrow('Check the supplied fields');
+    await expect(
+      mock.handlers.get('rooms:social-change-community-role')!(
+        {},
+        { action: 'delete', spaceId: 'space', roleId: 'role' },
+      ),
+    ).rejects.toThrow('Untrusted sender');
+    expect(mock.changeRole).toHaveBeenCalledTimes(1);
   });
 });
