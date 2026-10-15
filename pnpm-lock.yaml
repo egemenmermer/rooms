@@ -30,9 +30,6 @@ importers:
       '@xterm/xterm':
         specifier: 6.0.0
         version: 6.0.0
-      amqplib:
-        specifier: 2.2.0
-        version: 2.2.0
       electron-updater:
         specifier: ^6.8.9
         version: 6.8.9(supports-color@7.2.0)
@@ -100,6 +97,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: 5.2.0
         version: 5.2.0(supports-color@7.2.0)(vite@7.3.7(@types/node@22.20.5)(jiti@2.7.0))
+      amqplib:
+        specifier: 2.2.0
+        version: 2.2.0
       electron:
         specifier: 44.7.0
         version: 44.7.0(supports-color@7.2.0)
