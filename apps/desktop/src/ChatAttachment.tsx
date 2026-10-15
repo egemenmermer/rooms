@@ -77,12 +77,12 @@ export function ChatAttachment({
       {source ? (
         <button
           className="chat-image-preview"
-          aria-label={`${file.name} fotoğrafını büyüt`}
+          aria-label="Fotoğrafı büyüt"
           onClick={() => setExpanded(true)}
         >
           <img
             src={source}
-            alt={file.name}
+            alt="Paylaşılan fotoğraf"
             onError={() => {
               setSource(null);
               setFailed(true);
@@ -102,8 +102,8 @@ export function ChatAttachment({
         </div>
       )}
       {expanded && source && (
-        <Modal title={file.name} onClose={() => setExpanded(false)} className="chat-image-modal">
-          <img src={source} alt={file.name} />
+        <Modal title="Fotoğraf" onClose={() => setExpanded(false)} className="chat-image-modal">
+          <img src={source} alt="Paylaşılan fotoğraf" />
         </Modal>
       )}
     </div>

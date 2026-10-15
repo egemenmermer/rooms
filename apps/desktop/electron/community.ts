@@ -1,3 +1,4 @@
+import { loadMusicLyrics } from './music-lyrics';
 import { setupHostOps } from './hostops';
 import {
   playlistCatalogSchema,
@@ -1161,6 +1162,28 @@ export async function setupCommunity(
   }
   handle('rooms:music-playlists', (channel) => playlistsRequest(channel));
   handle('rooms:music-playlist-change', (channel, change) => playlistsRequest(channel, change));
+  let lyricsPending = false;
+  handle('rooms:music-lyrics', async (channelId, trackId) => {
+    const current = requireClient(),
+      token = current.getToken(),
+      room = id.parse(channelId),
+      track = z.string().uuid().parse(trackId);
+    if (lyricsPending)
+      throw new SocialInputError('Şarkı sözleri yükleniyor. Biraz sonra yeniden dene.');
+    lyricsPending = true;
+    try {
+      const snapshot = musicSnapshotSchema.parse(await musicRequest(room));
+      if (snapshot.currentId !== track) throw new SocialInputError('Çalan parça değişti.');
+      const item = snapshot.queue.find((item) => item.id === track);
+      if (!item) throw new SocialInputError('Çalan parça bulunamadı.');
+      const result = await loadMusicLyrics(item.title, item.durationSec);
+      if (client !== current || current.getToken() !== token)
+        throw new SocialInputError('Oturum değişti.');
+      return result;
+    } finally {
+      lyricsPending = false;
+    }
+  });
   handle('rooms:music-history', async (channelId) => {
     const current = requireClient(),
       token = current.getToken()!,

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 const f = vi.hoisted(() => ({
   snapshot: {
     status: 'connected',
@@ -89,3 +89,36 @@ it('visible microphone toggle invokes the real command and disconnected capture 
   );
   expect(f.capture).not.toHaveBeenCalled();
 });
+
+function CurrentRoute() {
+  const route = useLocation();
+  return (
+    <output data-testid="capture-route">
+      {route.pathname}
+      {route.search}
+    </output>
+  );
+}
+it.each(['/media', '/cinema'])(
+  'keeps the personal player visible after explicit capture from %s',
+  async (path) => {
+    render(
+      <MemoryRouter initialEntries={[path]}>
+        <RealVoiceDock openLauncher={() => {}} notify={() => {}} />
+        <CurrentRoute />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Ekran paylaş' }));
+    fireEvent.click(await screen.findByRole('button', { name: /DEMO window/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Seçili kaynağı paylaş' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Seçili kaynağı paylaş' })).toBeNull(),
+    );
+    expect(f.start).toHaveBeenCalledOnce();
+    await waitFor(() =>
+      expect(screen.getByTestId('capture-route').textContent).toBe(
+        path === '/media' ? '/media' : '/cinema?view=screen',
+      ),
+    );
+  },
+);

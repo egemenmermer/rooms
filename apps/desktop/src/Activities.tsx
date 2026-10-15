@@ -25,7 +25,7 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
     kind === 'cinema'
       ? '/cinema'
       : kind === 'youtube'
-        ? '/youtube'
+        ? '/watch/youtube'
         : kind === 'screen'
           ? '/voice?view=share'
           : '/games';
@@ -38,9 +38,9 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
   const roomCount = activity.room?.participants.length;
   const catalog = [
     {
-      label: 'Cinema',
+      label: 'Birlikte izle',
       icon: 'film',
-      description: 'Kendi dosyanı seç veya ekran paylaş.',
+      description: 'YouTube, IPTV, Stremio veya kendi dosyan.',
       path: '/cinema',
     },
     {

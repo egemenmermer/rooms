@@ -46,7 +46,7 @@ export function Home({
     primary?.activity === 'cinema'
       ? '/cinema'
       : primary?.activity === 'youtube'
-        ? '/youtube'
+        ? '/watch/youtube'
         : primary?.activity === 'screen'
           ? '/voice?view=share'
           : '/games';

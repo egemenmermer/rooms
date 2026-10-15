@@ -504,3 +504,30 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.dj-lyrics {
+  display: grid;
+  gap: 8px;
+  margin-block: 12px;
+}
+.dj-lyrics > small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.dj-lyrics-lines {
+  max-height: 200px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px;
+  border-radius: 10px;
+  background: #17181e;
+}
+.dj-lyrics-lines p {
+  color: #a5a7b2;
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+.dj-lyrics-lines p[aria-current='true'] {
+  color: #d1c8ff;
+  font-weight: 700;
+}

@@ -257,7 +257,7 @@ export function VoiceSidebar({
                   onClick={() =>
                     openRoomActivity(
                       primary.activity === 'youtube'
-                        ? '/youtube'
+                        ? '/watch/youtube'
                         : primary.activity === 'cinema'
                           ? '/cinema'
                           : primary.activity === 'screen'

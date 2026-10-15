@@ -97,6 +97,7 @@ export interface DesktopBridge {
   };
   social: SocialBridge;
   music: {
+    lyrics(channelId: string, trackId: string): Promise<import('./music-lyrics').MusicLyrics>;
     playlists(channelId: string): Promise<import('./music-playlists').SharedPlaylist[]>;
     changePlaylist(
       channelId: string,

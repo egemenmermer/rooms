@@ -48,11 +48,13 @@ it('renders authorized inline image data and expands it instead of a broken remo
       messageId="message"
     />,
   );
-  const button = await screen.findByRole('button', { name: 'photo.png fotoğrafını büyüt' });
+  const button = await screen.findByRole('button', { name: 'Fotoğrafı büyüt' });
   expect(image).toHaveBeenCalledWith('room', 'message', 'file');
   expect(button.querySelector('img')?.getAttribute('src')).toBe('data:image/png;base64,AA==');
   fireEvent.click(button);
-  expect(screen.getByRole('dialog')).toBeTruthy();
+  expect(screen.getByRole('dialog', { name: 'Fotoğraf' })).toBeTruthy();
+  expect(screen.queryByText('photo.png')).toBeNull();
+  expect(screen.getAllByAltText('Paylaşılan fotoğraf')).toHaveLength(2);
 });
 it('shows retry for image lookup failure and never embeds an arbitrary remote attachment URL', async () => {
   window.rooms = {
