@@ -51,7 +51,7 @@ export function ChatAttachment({
             setDownloading(true);
             setDownloadError('');
             try {
-            if (!window.rooms) throw Error('Dosya indirmek için masaüstü uygulaması gerekiyor.');
+              if (!window.rooms) throw Error('Dosya indirmek için masaüstü uygulaması gerekiyor.');
               await window.rooms.social.downloadAttachment(channelId, messageId, file.id);
             } catch {
               setDownloadError(

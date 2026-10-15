@@ -1,11 +1,20 @@
 import { z } from 'zod';
+import { playlistTrackSchema } from './music-playlists';
 const id = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 export const musicCommandSchema = z.discriminatedUnion('type', [
+  z
+    .object({
+      type: z.literal('add-list'),
+      tracks: z.array(playlistTrackSchema).min(1).max(100),
+      playNow: z.boolean().optional(),
+    })
+    .strict(),
   z
     .object({
       type: z.literal('add'),
       url: z.string().url().max(2048),
       playNow: z.boolean().optional(),
+      offerCandidates: z.boolean().optional(),
     })
     .strict(),
   z.object({ type: z.literal('play') }).strict(),
@@ -78,6 +87,10 @@ export const musicSnapshotSchema = z
     currentId: z.string().uuid().nullable(),
     positionSec: z.number().finite().min(0).max(7200),
     error: z.string().max(240).nullable(),
+    matchCandidates: z
+      .object({ query: musicSearchQuerySchema, candidates: musicSearchResultsSchema })
+      .strict()
+      .optional(),
   })
   .strict();
 export type MusicSnapshot = z.infer<typeof musicSnapshotSchema>;

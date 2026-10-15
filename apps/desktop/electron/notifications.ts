@@ -134,7 +134,7 @@ export function setupNotifications(
   });
   return {
     voiceActive: () => voiceActiveUntil > Date.now(),
-    message: (scope?: ChannelNotificationScope, channelId?: string) => {
+    message: (scope?: ChannelNotificationScope, channelId?: string, mentioned = false) => {
       if (scope && channelId && mutedKeys.has(channelKey(scope, channelId))) return;
       const window = getWindow();
       if (
@@ -148,7 +148,7 @@ export function setupNotifications(
       lastShown = Date.now();
       const notification = new Notification({
         title: 'ROOMS',
-        body: 'Topluluğunda yeni bir mesaj var.',
+        body: mentioned ? 'Topluluğunda biri seni etiketledi.' : 'Topluluğunda yeni bir mesaj var.',
         silent: !sound,
       });
       notification.on('click', () => {

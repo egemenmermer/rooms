@@ -42,6 +42,8 @@ export function ScreenShareGallery({
     document.addEventListener('fullscreenchange', changed);
     return () => {
       document.removeEventListener('fullscreenchange', changed);
+      if (document.pictureInPictureElement && node?.contains(document.pictureInPictureElement))
+        void document.exitPictureInPicture().catch(() => {});
       if (document.fullscreenElement === node) void document.exitFullscreen().catch(() => {});
     };
   }, []);

@@ -1,3 +1,4 @@
+import { useMentionInput } from './MentionInput';
 import { ChatAttachment } from './ChatAttachment';
 import { ScreenShareGallery } from './ScreenShareGallery';
 import { VoiceRoomViewActions } from './VoiceRoomViewActions';
@@ -123,6 +124,7 @@ export function CommunityChat({
     return () => window.removeEventListener('focus', acknowledge);
   }, [c.activeChannelId]);
   const [draft, setDraft] = useState('');
+  const mentionInput = useMentionInput(draft, setDraft);
   const [attachments, setAttachments] = useState<SocialAttachment[]>([]),
     [uploading, setUploading] = useState(false);
   const attach = async () => {
@@ -293,7 +295,11 @@ export function CommunityChat({
   }, [c.activeChannelId, c.messages.length, c.messages.at(-1)?.id]);
   const send = () => {
     if (!draft.trim() && !attachments.length) return;
-    const content = draft.trim();
+    const content = mentionInput.serialize().trim();
+    if (content.length > 4000) {
+      notify('Mesaj çok uzun. Biraz kısaltıp yeniden dene.');
+      return;
+    }
     report(
       c.send(content, attachments).then(async () => {
         if (!/^@agent(?:\s|$)/i.test(content)) return;
@@ -403,9 +409,23 @@ export function CommunityChat({
       }) as Record<string, typeof Heart>
     )[key];
   const messageText = (value: string) =>
-    value
-      .split(/(@[\p{L}\p{N}_-]+)/u)
-      .map((part, i) => (part.startsWith('@') ? <mark key={i}>{part}</mark> : part));
+    value.split(/(<@[A-Za-z0-9_-]{1,128}>|@[\p{L}\p{N}_-]+)/u).map((part, i) => {
+      const id = part.match(/^<@([A-Za-z0-9_-]+)>$/)?.[1];
+      const person = id
+        ? [c.user, ...c.messages.map((m) => m.author), ...(channel?.recipients ?? [])].find(
+            (p) => p?.id === id,
+          )
+        : null;
+      return id ? (
+        <mark key={i}>
+          @{person?.displayName ?? mentionInput.name(id) ?? `kişi-${id.slice(-6)}`}
+        </mark>
+      ) : part.startsWith('@') ? (
+        <mark key={i}>{part}</mark>
+      ) : (
+        part
+      );
+    });
   return (
     <div className="chat-page reference-chat">
       <header className="chat-heading">
@@ -782,7 +802,14 @@ export function CommunityChat({
             >
               <Plus size={20} />
             </IconButton>
+            {mentionInput.menu}
             <textarea
+              ref={mentionInput.input}
+              aria-controls={mentionInput.open ? mentionInput.menuId : undefined}
+              aria-autocomplete="list"
+              aria-activedescendant={mentionInput.activeOptionId}
+              aria-expanded={mentionInput.open}
+              onSelect={mentionInput.onSelect}
               aria-label="Kanala mesaj yaz"
               rows={1}
               value={draft}
@@ -794,8 +821,9 @@ export function CommunityChat({
                   ? `${channel.type === 0 ? '#' : ''}${channel.name} kanalına mesaj yaz`
                   : 'Kanal seç')
               }
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => mentionInput.change(e.target.value, e.target.selectionStart)}
               onKeyDown={(e) => {
+                if (mentionInput.onKeyDown(e)) return;
                 if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault();
                   send();
@@ -2035,7 +2063,7 @@ export function RealVoiceDock({
                 className={r.deafened ? 'muted-control' : ''}
                 onClick={() => report(toggleDeafen(), notify)}
               >
-                <ReferenceIcon name="headphones" size={19} />
+                <ReferenceIcon name={r.deafened ? 'headphones-off' : 'headphones'} size={19} />
               </IconButton>
             )}
             <IconButton
@@ -2099,7 +2127,7 @@ export function RealVoiceDock({
                       report(toggleDeafen(), notify);
                     }}
                   >
-                    <ReferenceIcon name="headphones" size={16} />
+                    <ReferenceIcon name={r.deafened ? 'headphones-off' : 'headphones'} size={16} />
                     {r.deafened ? 'Oda sesini aç' : 'Oda sesini kapat'}
                   </button>
                   <button

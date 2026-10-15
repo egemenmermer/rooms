@@ -80,6 +80,7 @@ it('sends a room bot MP3 command without creating an iframe or local audio playe
     expect(command).toHaveBeenCalledWith('room', {
       type: 'add',
       url: 'https://audio.test/song.mp3',
+      offerCandidates: true,
     }),
   );
   await screen.findByRole('button', { name: 'Duraklat' });
@@ -160,7 +161,9 @@ it.each([
       target: { value: url },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Kuyruğa ekle' }));
-    await waitFor(() => expect(command).toHaveBeenCalledWith('room', { type: 'add', url }));
+    await waitFor(() =>
+      expect(command).toHaveBeenCalledWith('room', { type: 'add', url, offerCandidates: true }),
+    );
     expect(await screen.findAllByText('Matched song · YouTube')).not.toHaveLength(0);
     expect(view.container.querySelector('iframe,audio')).toBeNull();
   },
@@ -343,5 +346,31 @@ it('loads room history only when opened and replays through the same bot command
   fireEvent.click(screen.getByRole('button', { name: 'Kuyruğa ekle ve çal' }));
   await waitFor(() =>
     expect(command).toHaveBeenCalledWith('room', { type: 'restore', sessionId: id }),
+  );
+});
+it('offers uncertain match candidates without auto-enqueueing and requires an explicit choice', async () => {
+  const candidate = { id: 'abcdefghijk', title: 'Possible match', durationSec: 180 };
+  const command = vi
+    .fn()
+    .mockResolvedValueOnce({
+      ...empty,
+      matchCandidates: { query: 'Artist Song', candidates: [candidate] },
+    })
+    .mockResolvedValue(empty);
+  window.rooms = { music: { snapshot: async () => empty, command } } as unknown as DesktopBridge;
+  render(<MusicDJ />);
+  fireEvent.change(screen.getByLabelText('YouTube, Spotify, SoundCloud veya ses bağlantısı'), {
+    target: { value: 'https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Kuyruğa ekle' }));
+  await screen.findByText('Possible match');
+  expect(command).toHaveBeenCalledTimes(1);
+  expect(screen.getByText(/Seçmeden kuyruğa eklenmez/)).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Kuyruğa ekle: Possible match' }));
+  await waitFor(() =>
+    expect(command).toHaveBeenLastCalledWith('room', {
+      type: 'add',
+      url: 'https://www.youtube.com/watch?v=abcdefghijk',
+    }),
   );
 });

@@ -58,6 +58,23 @@ export class MusicWorker {
   async history(channelId: string) {
     return this.options.history?.list(channelId) ?? [];
   }
+  async references(channelId: string, sessionId?: string) {
+    if (sessionId) {
+      const old = await this.options.history?.replay(channelId, sessionId);
+      if (!old) throw Error('MUSIC_HISTORY_MISSING');
+      return old.sources.map((source, index) => ({
+        videoId: youtubeSource(source)!.id,
+        title: old.session.tracks[index].title,
+        durationSec: old.session.tracks[index].durationSec,
+      }));
+    }
+    return (this.sessions.get(channelId)?.queue ?? []).flatMap((item) => {
+      const source = youtubeSource(item.source);
+      return source?.kind === 'video'
+        ? [{ videoId: source.id, title: item.title, durationSec: item.durationSec }]
+        : [];
+    });
+  }
   private async archive(s: Session, ended = false) {
     if (!this.options.history) return;
     const generation = s.generation;
@@ -339,12 +356,19 @@ export class MusicWorker {
       if (this.sessions.get(channelId) !== s) throw new Error('MUSIC_LEASE_EXPIRED');
       await this.options.lease(channelId, s.leaseId);
       switch (command.type) {
-        case 'add': {
+        case 'add':
+        case 'add-list': {
           if (s.queue.length >= 100 || this.pending >= 1) throw new Error('MUSIC_QUEUE_FULL');
           this.pending++;
           try {
             let references: MusicReference[];
-            if (youtubeSource(command.url))
+            if (command.type === 'add-list')
+              references = command.tracks.map((t) => ({
+                source: `https://www.youtube.com/watch?v=${t.videoId}`,
+                title: t.title,
+                durationSec: t.durationSec,
+              }));
+            else if (youtubeSource(command.url))
               references = await (this.options.youtubeReferences ?? youtubeReferences)(command.url);
             else if (parseSongLink(command.url)) {
               const song = await (this.options.songMetadata ?? songMetadata)(command.url);

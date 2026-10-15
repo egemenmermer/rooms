@@ -1,5 +1,6 @@
 import { registerSoundboard } from './soundboard';
 import { registerMusicGateway } from './music-gateway';
+import { registerMusicPlaylists } from './music-playlists';
 import { registerDmCalls } from './dm-calls';
 import { registerRemoteControl, type RemoteConsent } from './remote-control';
 import Fastify, { type FastifyRequest } from 'fastify';
@@ -22,6 +23,7 @@ import {
 
 export interface AccessConfig {
   soundboardDirectory?: string;
+  musicPlaylistsDirectory?: string;
   musicName?: string;
   musicUrl?: string;
   musicSecret?: string;
@@ -215,6 +217,28 @@ export async function createAccessServer(config: AccessConfig) {
         canUpload: (value.permissions & Permissions.SPEAK) !== 0n,
         canManage: value.canManage,
       };
+    },
+  });
+  registerMusicPlaylists(server, {
+    directory: config.musicPlaylistsDirectory,
+    authorize: async (token, channelId) => {
+      const value = await authorize(token, channelId);
+      return { communityId: value.communityId, userId: value.user.id };
+    },
+    references: async (channelId, source) => {
+      if (!config.musicUrl || !config.musicSecret) throw Error('MUSIC_NOT_CONFIGURED');
+      const response = await fetch(`${config.musicUrl}/v1/references`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${config.musicSecret}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ channelId, ...source }),
+        redirect: 'error',
+        signal: AbortSignal.timeout(60000),
+      });
+      if (!response.ok) throw Error('MUSIC_PLAYLIST_SOURCE_UNAVAILABLE');
+      return response.json();
     },
   });
   const music = registerMusicGateway(server, {

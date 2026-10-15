@@ -1,4 +1,8 @@
 import { setupHostOps } from './hostops';
+import {
+  playlistCatalogSchema,
+  playlistChangeSchema,
+} from '../../../packages/shared-contracts/src/music-playlists';
 import { setupRemoteControl } from './remote-control';
 import { randomUUID } from 'node:crypto';
 import {
@@ -64,6 +68,7 @@ export async function setupCommunity(
   onIncomingMessage: (
     scope: { serverUrl: string; userId: string },
     channelId: string,
+    mentioned?: boolean,
   ) => void = () => {},
 ) {
   let dmNativeEpoch = 0;
@@ -157,6 +162,7 @@ export async function setupCommunity(
     if (client && client !== next) void closeDmCall();
     unsubscribe?.();
     client = next;
+    const deliveredMessages = new Set<string>();
     unsubscribe = client.subscribe((event) => {
       if (client !== next || generation !== sessionEpoch) return;
       if (event.type === 'AUTH_EXPIRED') {
@@ -178,16 +184,31 @@ export async function setupCommunity(
         conversationVault.deleteMessage(d.channel_id, d.id);
       }
       if (event.type === 'MESSAGE_CREATE') {
-        const message = event.data as { author?: { id?: unknown }; channelId?: unknown },
+        const message = event.data as {
+            id?: string;
+            author?: { id?: unknown };
+            channelId?: unknown;
+            mentions?: string[];
+          },
           authorId = message.author?.id;
         if (
           user &&
+          typeof message.id === 'string' &&
+          !deliveredMessages.has(message.id) &&
           typeof authorId === 'string' &&
           authorId !== user.id &&
           typeof message.channelId === 'string' &&
           SOCIAL_ID_PATTERN.test(message.channelId)
-        )
-          onIncomingMessage({ serverUrl: next.instanceUrl, userId: user.id }, message.channelId);
+        ) {
+          deliveredMessages.add(message.id);
+          if (deliveredMessages.size > 2000)
+            deliveredMessages.delete(deliveredMessages.values().next().value!);
+          onIncomingMessage(
+            { serverUrl: next.instanceUrl, userId: user.id },
+            message.channelId,
+            message.mentions?.includes(user.id) ?? false,
+          );
+        }
       }
       if (
         [
@@ -1036,6 +1057,47 @@ export async function setupCommunity(
       ? musicSearchResultsSchema.parse(value)
       : musicSnapshotSchema.parse(value);
   }
+  async function playlistsRequest(channelId: unknown, change?: unknown) {
+    const current = requireClient(),
+      token = current.getToken()!,
+      channel = id.parse(channelId);
+    const response = await fetch(
+      `${new URL(current.instanceUrl).origin}/rooms-access/v1/music/${encodeURIComponent(channel)}/playlists`,
+      {
+        method: change ? 'POST' : 'GET',
+        headers: { Authorization: token, 'Content-Type': 'application/json' },
+        body: change ? JSON.stringify(playlistChangeSchema.parse(change)) : undefined,
+        redirect: 'error',
+        signal: AbortSignal.timeout(70000),
+      },
+    );
+    const value = await response.json();
+    if (current !== client || current.getToken() !== token)
+      throw new SocialInputError('Oturum değişti.');
+    if (!response.ok) {
+      const errors: Record<string, string> = {
+        MUSIC_PLAYLIST_CHANGED: 'Liste başka biri tarafından değiştirildi. Yenileyip tekrar dene.',
+        MUSIC_PLAYLIST_EMPTY: 'Kaydedilebilecek YouTube parçası yok.',
+        MUSIC_PLAYLISTS_NOT_CONFIGURED: 'Ortak listeler sunucuda henüz açılmadı.',
+        MUSIC_NOT_CONFIGURED: 'Sunucunun DJ hizmeti henüz açılmadı.',
+        MUSIC_PERMISSION_DENIED: 'Bu odanın listelerine erişimin yok. Oda erişimini kontrol et.',
+        AUTH_REQUIRED: 'Oturum doğrulanamadı. Bağlantıyı yenileyip yeniden dene.',
+        MUSIC_PLAYLIST_LIMIT:
+          'Topluluğun liste sınırına ulaşıldı. Kullanılmayan listeleri veya parçaları kaldır.',
+        MUSIC_PLAYLIST_INVALID:
+          'Liste bilgisi geçersiz. Desteklenen YouTube bağlantılarını ve parça sınırını kontrol et.',
+        MUSIC_PLAYLIST_SOURCE_UNAVAILABLE:
+          'YouTube listesi veya DJ geçmişi alınamadı. Kaynak erişimini kontrol edip yeniden dene.',
+      };
+      throw new SocialInputError(
+        errors[value?.error] ??
+          'Liste işleminin sonucu doğrulanamadı. Yenileyip kaydı kontrol et; değişiklik otomatik tekrarlanmadı.',
+      );
+    }
+    return playlistCatalogSchema.parse(value);
+  }
+  handle('rooms:music-playlists', (channel) => playlistsRequest(channel));
+  handle('rooms:music-playlist-change', (channel, change) => playlistsRequest(channel, change));
   handle('rooms:music-history', async (channelId) => {
     const current = requireClient(),
       token = current.getToken()!,

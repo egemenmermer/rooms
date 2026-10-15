@@ -135,6 +135,9 @@ const bridge: DesktopBridge = {
     remove: (id, clip) => ipcRenderer.invoke('rooms:soundboard-remove', id, clip),
   },
   music: {
+    playlists: (channel) => ipcRenderer.invoke('rooms:music-playlists', channel),
+    changePlaylist: (channel, change) =>
+      ipcRenderer.invoke('rooms:music-playlist-change', channel, change),
     history: (channelId) => ipcRenderer.invoke('rooms:music-history', channelId),
     snapshot: (channelId) => ipcRenderer.invoke('rooms:music-snapshot', channelId),
     command: (channelId, command) => ipcRenderer.invoke('rooms:music-command', channelId, command),

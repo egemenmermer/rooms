@@ -325,14 +325,33 @@ export async function matchingYouTubeReference(song: SongMetadata): Promise<Musi
   let entries: YouTubeCandidate[];
   try {
     const value = JSON.parse(output);
-    entries = Array.isArray(value.entries) ? value.entries : [];
+    if (!Array.isArray(value?.entries)) throw new Error('MUSIC_SEARCH_UNAVAILABLE');
+    entries = value.entries.filter((entry: unknown) => entry !== null && typeof entry === 'object');
   } catch {
-    throw new Error('MUSIC_MIRROR_NOT_FOUND');
+    throw new Error('MUSIC_SEARCH_UNAVAILABLE');
   }
   const match = matchingSong(song, entries);
   if (!match)
     throw Object.assign(new Error('MUSIC_MIRROR_NOT_FOUND'), {
       song: { title: song.title, artists: song.artists },
+      candidates: entries
+        .filter(
+          (c) =>
+            /^[A-Za-z0-9_-]{11}$/.test(c.id) &&
+            typeof c.title === 'string' &&
+            c.title.replace(/[\x00-\x1f\x7f]/g, '').trim().length > 0 &&
+            Number.isFinite(c.duration) &&
+            c.duration > 0 &&
+            c.duration <= 7200 &&
+            !c.is_live &&
+            !c.has_drm,
+        )
+        .slice(0, 5)
+        .map((c) => ({
+          id: c.id,
+          title: c.title.replace(/[\x00-\x1f]/g, '').slice(0, 160),
+          durationSec: c.duration,
+        })),
     });
   return {
     source: `https://www.youtube.com/watch?v=${match.id}`,

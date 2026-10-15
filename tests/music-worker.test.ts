@@ -481,3 +481,27 @@ it('restarts a finished last track from zero and starts a newly added track afte
   expect(playYouTube.mock.calls.at(-1)?.[0]).toContain('M7lc1UVf-VE');
   expect(worker.snapshot('finished-room').status).toBe('playing');
 });
+it('appends shared list references atomically, preserves pause, and rejects overflow without truncating', async () => {
+  const { worker, lease } = await setup();
+  const first = await worker.command('room', lease, {
+    type: 'add',
+    url: 'https://audio.test/one.mp3',
+  });
+  await worker.command('room', lease, { type: 'pause' });
+  const tracks = [
+    { videoId: 'abcdefghijk', title: 'Shared One', durationSec: 120 },
+    { videoId: 'lmnopqrstuv', title: 'Shared Two', durationSec: 150 },
+  ];
+  const queued = await worker.command('room', lease, { type: 'add-list', tracks });
+  expect(queued.currentId).toBe(first.currentId);
+  expect(queued.status).toBe('paused');
+  expect(queued.queue.map((t) => t.title)).toEqual(['Song', 'Shared One', 'Shared Two']);
+  expect(await worker.references('room')).toEqual(tracks);
+  await expect(
+    worker.command('room', lease, {
+      type: 'add-list',
+      tracks: Array.from({ length: 98 }, () => tracks[0]),
+    }),
+  ).rejects.toThrow('MUSIC_QUEUE_FULL');
+  expect(worker.snapshot('room').queue).toHaveLength(3);
+});

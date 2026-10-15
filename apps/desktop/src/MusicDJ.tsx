@@ -1,4 +1,5 @@
 import { useCommunityBranding } from './use-community-branding';
+import { SharedPlaylists, playlistsKey } from './SharedPlaylists';
 import { musicPlaybackError } from './music-errors';
 import { DJCharacter } from './DJCharacter';
 import { useNavigate } from 'react-router-dom';
@@ -176,6 +177,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
     [busy, setBusy] = useState(false),
     [placement, setPlacement] = useState<{ x: number; y: number } | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [listsOpen, setListsOpen] = useState(false);
   const [results, setResults] = useState<MusicSearchResult[] | null>(null);
   const panel = useRef<HTMLElement>(null),
     alive = useRef(false),
@@ -244,8 +246,15 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
         queryClient.setQueryData(key, value);
         void queryClient.invalidateQueries({ queryKey: historyKey, exact: true });
         if (command.type === 'add') {
-          setInput('');
-          setResults(null);
+          if (value.matchCandidates) {
+            setResults(value.matchCandidates.candidates);
+            setError(
+              'Tam eşleşme bulunamadı. Doğru parça bunlardan biri mi? Seçmeden kuyruğa eklenmez.',
+            );
+          } else {
+            setInput('');
+            setResults(null);
+          }
         }
       }
     } catch (e) {
@@ -355,7 +364,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           className="dj-add"
           onSubmit={(e) => {
             e.preventDefault();
-            if (validLink()) void run({ type: 'add', url: input.trim() });
+            if (validLink()) void run({ type: 'add', url: input.trim(), offerCandidates: true });
             else void search();
           }}
         >
@@ -383,7 +392,9 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           <button
             className="dj-play-now"
             disabled={!available || busy}
-            onClick={() => void run({ type: 'add', url: input.trim(), playNow: true })}
+            onClick={() =>
+              void run({ type: 'add', url: input.trim(), playNow: true, offerCandidates: true })
+            }
           >
             <Play size={15} /> Şimdi çal
           </button>
@@ -505,6 +516,18 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
         </div>
         <div className="dj-queue-heading">
           <span>Kuyruk</span>
+          <button
+            aria-expanded={listsOpen}
+            onClick={() => setListsOpen((value) => !value)}
+            disabled={!window.rooms?.music.playlists || !window.rooms?.music.changePlaylist}
+            title={
+              !window.rooms?.music.playlists
+                ? 'Ortak listeler için güncel masaüstü uygulaması gerekiyor.'
+                : undefined
+            }
+          >
+            Listeler
+          </button>
           <button aria-expanded={historyOpen} onClick={() => setHistoryOpen((value) => !value)}>
             <History size={14} />
             Geçmiş
@@ -630,12 +653,50 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
                     <Play size={13} />
                     Kuyruğa ekle ve çal
                   </button>
+                  <button
+                    disabled={!available || busy || !window.rooms?.music.changePlaylist}
+                    onClick={() => {
+                      setBusy(true);
+                      setError('');
+                      void window
+                        .rooms!.music.changePlaylist(channelId!, {
+                          op: 'saveQueue',
+                          name: `Dinleme ${new Date(session.startedAt).toLocaleDateString('tr-TR')}`,
+                          sessionId: session.id,
+                        })
+                        .then((value) => {
+                          if (alive.current) {
+                            queryClient.setQueryData(
+                              playlistsKey(community.serverUrl, community.user?.id, channelId!),
+                              value,
+                            );
+                            setListsOpen(true);
+                          }
+                        })
+                        .catch((e) => {
+                          if (alive.current) setError(uiError(e));
+                        })
+                        .finally(() => {
+                          if (alive.current) setBusy(false);
+                        });
+                    }}
+                  >
+                    Ortak listeye kaydet
+                  </button>
                 </details>
               ))
             )}
           </div>
         )}
 
+        {listsOpen && channelId && (
+          <SharedPlaylists
+            key={`${community.serverUrl}:${community.user?.id}:${channelId}`}
+            channelId={channelId}
+            canPlay={available && !busy}
+            play={run}
+          />
+        )}
         {!channelId && (
           <p className="dj-error" role="status">
             Önce ses odasına katıl.

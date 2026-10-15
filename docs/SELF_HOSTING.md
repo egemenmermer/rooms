@@ -128,7 +128,7 @@ Historical local helpers under `scripts/livekit-*` expect private files under `i
 Create an ignored directory and copy the environment checklist:
 
 ```sh
-mkdir -p .local/soundboard .local/activities
+mkdir -p .local/soundboard .local/activities .local/music-playlists
 cp infra/templates/core.env.example .local/core.env
 ```
 
@@ -143,6 +143,7 @@ On PowerShell, use `New-Item -ItemType Directory -Force` and `Copy-Item` for the
 | `LIVEKIT_PUBLIC_URL` | Client-reachable media URL; local `ws://127.0.0.1:7880`, remote `wss://…` |
 | `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | Your matching LiveKit credentials |
 | `ROOMS_SOUNDBOARD_DIRECTORY` | Writable persistent soundboard directory |
+| `ROOMS_MUSIC_PLAYLISTS_DIRECTORY` | Writable persistent community playlist directory; container default `/state/music-playlists` |
 | `ROOMS_ACTIVITY_DATA` | Writable file-backed activity directory when PostgreSQL is not configured |
 | `ROOMS_ACTIVITY_DATABASE_URL` | Optional Activities PostgreSQL connection string |
 | `ROOMS_REGISTRATION_INVITES_FILE` | Persistent signup ticket ledger |
@@ -234,6 +235,7 @@ Add these only after core login, chat, permissions, and media work:
 | Signup state | `ROOMS_REGISTRATION_INVITES_FILE` and its operational lock state | Preserve consumed/uncertain states |
 | Activities | `ROOMS_ACTIVITY_DATA` or PostgreSQL | Restore a compatible serialized state |
 | Soundboard | `ROOMS_SOUNDBOARD_DIRECTORY` | Preserve assets and ownership |
+| Shared music playlists | `ROOMS_MUSIC_PLAYLISTS_DIRECTORY` | Preserve catalogs and revisions; one Access writer |
 | Optional Agent/configuration | Its configured data directory and encryption key | Preserve encrypted data and matching key separately |
 
 For Activities, PostgreSQL initialization creates the current `rooms_activity_state` table on startup. This is not a complete versioned migration/downgrade system. Use one authoritative Activities process; shared PostgreSQL does not by itself make independent command processors safe.
@@ -268,3 +270,7 @@ These are service probes, not full acceptance tests. Monitor process restarts, d
 - Distributed installers, notices, signing, and updates meet [release requirements](RELEASING.md).
 
 Record actual results for your deployment. Gallery images, successful compilation, and fixture tests are not substitutes for these checks.
+
+### Shared music playlists
+
+Run one Access writer for each shared playlist directory. Community members with current room access can edit the same catalog; revisions reject stale concurrent saves. Mount the Access directory persistently and include it in private backups. Do not share this mount with provider credentials. Set `ROOMS_MUSIC_PLAYLISTS_DIRECTORY` explicitly for native deployments. The worker and Access service must both support playlist references and `add-list` before enabling the new client. Lists store public YouTube IDs, titles and durations only; personal media URLs and provider sessions are not imported. Each community is limited to 50 lists of 100 tracks and a 4 MiB catalog. A failed import or stale edit is never retried as a write automatically.
