@@ -89,3 +89,40 @@ it('reorders without restarting audio, refuses stale membership, selects and rep
     await worker.close();
   }
 });
+it('reloads mixed Spotify and YouTube history without exposing metadata references in the public history', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'rooms-spotify-history-test-'));
+  try {
+    const path = join(dir, 'history.json'),
+      id = randomUUID();
+    const spotify = {
+      spotifyTrackId: 'a'.repeat(22),
+      title: 'Song',
+      artists: ['Artist'],
+      durationSec: 120,
+    };
+    const tracks = [
+      { id: randomUUID(), title: 'Song', durationSec: 120, played: true },
+      { id: randomUUID(), title: 'Next', durationSec: 180, played: false },
+    ];
+    await new MusicHistory(path).save(
+      'room',
+      { id, startedAt: new Date().toISOString(), endedAt: null, tracks },
+      [spotify, 'https://www.youtube.com/watch?v=abcdefghijk'],
+    );
+    const restored = new MusicHistory(path);
+    expect((await restored.replay('room', id))?.sources).toEqual([
+      spotify,
+      'https://www.youtube.com/watch?v=abcdefghijk',
+    ]);
+    expect(JSON.stringify(await restored.list('room'))).not.toMatch(/spotifyTrackId|youtube.com/);
+    await expect(
+      restored.save(
+        'room',
+        { id, startedAt: new Date().toISOString(), endedAt: null, tracks: [tracks[0]] },
+        [{ ...spotify, token: 'private' } as typeof spotify],
+      ),
+    ).rejects.toThrow();
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

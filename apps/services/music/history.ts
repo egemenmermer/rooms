@@ -5,17 +5,20 @@ import {
   musicHistorySchema,
   type MusicHistorySession,
 } from '../../../packages/shared-contracts/src/music';
+import { spotifyPlaylistTrackSchema } from '../../../packages/shared-contracts/src/music-playlists';
+const storedSource = z.union([
+  z.string().regex(/^https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}$/),
+  spotifyPlaylistTrackSchema,
+]);
 const stored = z
   .object({
     channelId: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/),
     session: musicHistorySchema.element,
-    sources: z
-      .array(z.string().regex(/^https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}$/))
-      .max(100),
+    sources: z.array(storedSource).max(100),
   })
   .strict();
 type Record = z.infer<typeof stored>;
-/** Public YouTube references only; provider tokens and private media URLs are never archived. */
+/** Public YouTube references and Spotify display metadata only; provider tokens and private media URLs are never archived. */
 export class MusicHistory {
   private records: Record[] = [];
   private ready: Promise<void>;
@@ -47,7 +50,11 @@ export class MusicHistory {
       this.records.find((r) => r.channelId === channelId && r.session.id === id) ?? null,
     );
   }
-  async save(channelId: string, session: MusicHistorySession, sources: string[]) {
+  async save(
+    channelId: string,
+    session: MusicHistorySession,
+    sources: z.infer<typeof storedSource>[],
+  ) {
     const record = stored.parse({ channelId, session, sources });
     if (record.sources.length !== record.session.tracks.length)
       throw Error('MUSIC_HISTORY_INVALID');

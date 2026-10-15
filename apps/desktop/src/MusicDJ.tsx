@@ -370,7 +370,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
         >
           <input
             aria-label="YouTube, Spotify, SoundCloud veya ses bağlantısı"
-            placeholder="Şarkı adı veya bağlantı"
+            placeholder="Şarkı adı veya şarkı/liste bağlantısı"
             maxLength={2048}
             value={input}
             onChange={(e) => {

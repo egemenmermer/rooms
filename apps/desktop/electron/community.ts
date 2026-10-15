@@ -1066,6 +1066,14 @@ export async function setupCommunity(
       throw new SocialInputError('Oturum değişti.');
     if (!response.ok) {
       const messages: Record<string, string> = {
+        MUSIC_SPOTIFY_PLAYLIST_UNAVAILABLE:
+          'Spotify listesi okunamadı. Listenin herkese açık olduğundan emin olup yeniden dene.',
+        MUSIC_SPOTIFY_PLAYLIST_EMPTY:
+          'Spotify listesinin herkese açık görünümünde şarkı bulunamadı. Özel veya boş bir liste olabilir.',
+        MUSIC_SPOTIFY_PLAYLIST_LIMIT:
+          'Spotify bu listenin tamamını göstermeyebilir. Eksik aktarmamak için 100 parçadan az bir liste kullan.',
+        MUSIC_SPOTIFY_PLAYLIST_INCOMPLETE:
+          'Spotify listesindeki bazı kayıtların şarkı bilgisi okunamadı. Liste eklenmedi; yerel dosya veya podcast içermeyen bir liste dene.',
         MUSIC_QUEUE_CHANGED: 'Kuyruk değişti. Güncel sırayla yeniden dene.',
         MUSIC_HISTORY_MISSING: 'Geçmiş liste bulunamadı.',
         MUSIC_HISTORY_UNAVAILABLE: 'DJ geçmişi kaydedilemedi. Müzik bağlantısı korunuyor.',
@@ -1081,7 +1089,7 @@ export async function setupCommunity(
         MUSIC_MIRROR_METADATA_UNAVAILABLE:
           'Şarkı bilgisi alınamadı. Herkese açık tek şarkı bağlantısını yeniden dene.',
         MUSIC_MIRROR_SINGLE_TRACK_ONLY:
-          'Spotify ve SoundCloud için tek şarkı bağlantısı gir. Albüm ve listeler henüz desteklenmiyor.',
+          'Spotify şarkısı veya herkese açık çalma listesi; SoundCloud için tek şarkı bağlantısı gir. Albümler desteklenmiyor.',
         MUSIC_MIRROR_NOT_FOUND:
           'Spotify/SoundCloud parçasıyla aynı sanatçı ve sürede bir YouTube kaydı bulunamadı. Şarkı adını arayıp uygun sonucu seçebilirsin.',
         MUSIC_JOIN_FIRST: 'Önce ses odasına katıl.',
@@ -1123,8 +1131,16 @@ export async function setupCommunity(
       throw new SocialInputError('Oturum değişti.');
     if (!response.ok) {
       const errors: Record<string, string> = {
+        MUSIC_SPOTIFY_PLAYLIST_UNAVAILABLE:
+          'Spotify listesi okunamadı. Listenin herkese açık olduğundan emin olup yeniden dene.',
+        MUSIC_SPOTIFY_PLAYLIST_EMPTY:
+          'Spotify listesinin herkese açık görünümünde şarkı bulunamadı. Özel veya boş bir liste olabilir.',
+        MUSIC_SPOTIFY_PLAYLIST_LIMIT:
+          'Spotify bu listenin tamamını göstermeyebilir. Eksik aktarmamak için 100 parçadan az bir liste kullan.',
+        MUSIC_SPOTIFY_PLAYLIST_INCOMPLETE:
+          'Spotify listesindeki bazı kayıtların şarkı bilgisi okunamadı. Liste eklenmedi; yerel dosya veya podcast içermeyen bir liste dene.',
         MUSIC_PLAYLIST_CHANGED: 'Liste başka biri tarafından değiştirildi. Yenileyip tekrar dene.',
-        MUSIC_PLAYLIST_EMPTY: 'Kaydedilebilecek YouTube parçası yok.',
+        MUSIC_PLAYLIST_EMPTY: 'Kaydedilebilecek parça yok.',
         MUSIC_PLAYLISTS_NOT_CONFIGURED: 'Ortak listeler sunucuda henüz açılmadı.',
         MUSIC_NOT_CONFIGURED: 'Sunucunun DJ hizmeti henüz açılmadı.',
         MUSIC_PERMISSION_DENIED: 'Bu odanın listelerine erişimin yok. Oda erişimini kontrol et.',
@@ -1132,9 +1148,9 @@ export async function setupCommunity(
         MUSIC_PLAYLIST_LIMIT:
           'Topluluğun liste sınırına ulaşıldı. Kullanılmayan listeleri veya parçaları kaldır.',
         MUSIC_PLAYLIST_INVALID:
-          'Liste bilgisi geçersiz. Desteklenen YouTube bağlantılarını ve parça sınırını kontrol et.',
+          'Liste bilgisi geçersiz. Desteklenen YouTube/Spotify bağlantılarını ve parça sınırını kontrol et.',
         MUSIC_PLAYLIST_SOURCE_UNAVAILABLE:
-          'YouTube listesi veya DJ geçmişi alınamadı. Kaynak erişimini kontrol edip yeniden dene.',
+          'Çalma listesi veya DJ geçmişi alınamadı. Kaynak erişimini kontrol edip yeniden dene.',
       };
       throw new SocialInputError(
         errors[value?.error] ??

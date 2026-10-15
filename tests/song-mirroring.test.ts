@@ -33,7 +33,7 @@ it('canonicalizes public track and share links, recognizes unsupported lists wit
     provider: 'soundcloud',
   });
   expect(parseSongLink('https://soundcloud.com/forss/sets/list')?.kind).toBe('unsupported');
-  expect(parseSongLink(`https://open.spotify.com/playlist/${id}`)?.kind).toBe('unsupported');
+  expect(parseSongLink(`https://open.spotify.com/playlist/${id}`)?.kind).toBe('playlist');
   expect(parseSongLink('https://soundcloud.com/forss/track?secret_token=private')?.kind).toBe(
     'unsupported',
   );

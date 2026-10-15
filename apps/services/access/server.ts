@@ -237,7 +237,16 @@ export async function createAccessServer(config: AccessConfig) {
         redirect: 'error',
         signal: AbortSignal.timeout(60000),
       });
-      if (!response.ok) throw Error('MUSIC_PLAYLIST_SOURCE_UNAVAILABLE');
+      if (!response.ok) {
+        const failure = (await response.json().catch(() => null)) as { error?: unknown } | null;
+        const code = failure?.error;
+        throw Error(
+          typeof code === 'string' &&
+            /^MUSIC_SPOTIFY_PLAYLIST_(UNAVAILABLE|EMPTY|LIMIT|INCOMPLETE)$/.test(code)
+            ? code
+            : 'MUSIC_PLAYLIST_SOURCE_UNAVAILABLE',
+        );
+      }
       return response.json();
     },
   });

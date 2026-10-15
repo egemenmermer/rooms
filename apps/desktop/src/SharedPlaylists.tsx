@@ -1,3 +1,4 @@
+import { isPlaylistLink } from '../../../packages/shared-contracts/src/music-playlists';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCommunity } from './community';
@@ -167,11 +168,14 @@ export function SharedPlaylists({
           </button>
         )}
       </div>
-      <p>Listeler topluluğa ortaktır. Yalnızca herkese açık YouTube parçaları saklanır.</p>
+      <p>
+        Listeler topluluğa ortaktır. YouTube ve herkese açık Spotify listelerini ekleyebilirsin.
+        Spotify parçaları YouTube’da eşleştirilerek çalınır. Spotify listesi 100 parçadan az olmalı.
+      </p>
       <label>
-        YouTube bağlantısı
+        YouTube veya Spotify liste bağlantısı
         <input
-          aria-label="Listeye eklenecek YouTube bağlantısı"
+          aria-label="Listeye eklenecek YouTube veya Spotify bağlantısı"
           value={url}
           maxLength={2048}
           onChange={(e) => setURL(e.target.value)}
@@ -193,15 +197,15 @@ export function SharedPlaylists({
           Parçayı ekle
         </button>
         <button
-          disabled={busy || !name.trim() || parseDJLink(url)?.kind !== 'playlist'}
+          disabled={busy || !name.trim() || !isPlaylistLink(url)}
           onClick={() => void save({ op: 'import', name, url })}
         >
-          YouTube listesini yeni liste olarak aktar
+          Listeyi yeni liste olarak aktar
         </button>
       </div>
       <ol>
         {tracks.map((track, index) => (
-          <li key={`${index}:${track.videoId}`}>
+          <li key={`${index}:${'videoId' in track ? track.videoId : track.spotifyTrackId}`}>
             <span>{track.title}</span>
             <button
               disabled={busy || index === 0}
