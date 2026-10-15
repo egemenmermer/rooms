@@ -121,6 +121,22 @@ describe('relay environment selection', () => {
     expect(relay.stats).toEqual({ delivered: 2, rejected: 0, skipped: 0 });
   });
 
+  it('falls back to sandbox when the provider key is restricted to sandbox', async () => {
+    const calls: string[] = [];
+    const relay = new ApnsRelay({
+      send: async (_token, _alert, environment) => {
+        calls.push(environment);
+        return environment === 'sandbox'
+          ? { ok: true }
+          : { ok: false, status: 403, reason: 'BadEnvironmentKeyInToken', unregistered: false };
+      },
+    });
+    await expect(
+      relay.handle(message({ channel_type: 'DirectMessage' }, 'selam')),
+    ).resolves.toEqual({ ok: true });
+    expect(calls).toEqual(['production', 'sandbox']);
+  });
+
   it('does not fall back to sandbox when the environment is fixed', async () => {
     const calls: string[] = [];
     const relay = new ApnsRelay(

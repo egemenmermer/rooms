@@ -64,10 +64,12 @@ export function messageAlert(raw: unknown): { token: string; alert: ApnsAlert } 
 }
 
 export type RelayMode = ApnsEnvironment | 'auto';
+/** Sandbox tokens fail on production, and keys can be restricted to one APNs environment. */
+const wrongEnvironment = new Set(['BadDeviceToken', 'BadEnvironmentKeyInToken']);
 
 /**
  * Development (Xcode) builds receive sandbox tokens and TestFlight/App Store builds receive
- * production tokens. In auto mode a BadDeviceToken from production is retried once on sandbox and
+ * production tokens. In auto mode a production environment mismatch is retried once on sandbox and
  * the working environment is remembered for that token.
  */
 export class ApnsRelay {
@@ -89,7 +91,7 @@ export class ApnsRelay {
     if (
       !result.ok &&
       this.mode === 'auto' &&
-      result.reason === 'BadDeviceToken' &&
+      wrongEnvironment.has(result.reason) &&
       first === 'production'
     ) {
       result = await this.client.send(message.token, message.alert, 'sandbox');
