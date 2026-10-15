@@ -8,6 +8,26 @@ afterEach(() => {
   cleanup();
   delete window.rooms;
 });
+it('downloads files through the native message-scoped save flow instead of opening their URL', async () => {
+  const download = vi.fn(async () => true);
+  window.rooms = { social: { downloadAttachment: download } } as unknown as DesktopBridge;
+  const view = render(
+    <ChatAttachment
+      file={{
+        id: 'file',
+        name: 'report.txt',
+        size: 10,
+        mime: 'text/plain',
+        url: 'https://qa.test/private',
+      }}
+      channelId="room"
+      messageId="message"
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: /report.txt/ }));
+  expect(download).toHaveBeenCalledWith('room', 'message', 'file');
+  expect(view.container.querySelector('a')).toBeNull();
+});
 it('renders authorized inline image data and expands it instead of a broken remote image', async () => {
   const image = vi.fn(async () => 'data:image/png;base64,AA==');
   window.rooms = { social: { attachmentImage: image } } as unknown as DesktopBridge;

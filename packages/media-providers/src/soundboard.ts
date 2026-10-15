@@ -111,6 +111,8 @@ export class SoundboardMixer implements TrackProcessor<Track.Kind.Audio, AudioPr
     gain.gain.value = volume;
     clip.connect(gain);
     gain.connect(this.destination);
+    // Monitor only the selected clip. Never route microphone input to the speakers.
+    gain.connect(this.context.destination);
     this.clip = clip;
     this.gain = gain;
     clip.onended = () => {

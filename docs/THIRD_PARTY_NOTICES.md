@@ -9,6 +9,10 @@ Dependencies retain their own licenses. Consult the corresponding installed LICE
 - TypeScript / Apache-2.0: https://github.com/microsoft/TypeScript
 - LiveKit client/server SDKs / Apache-2.0: https://github.com/livekit/client-sdk-js and https://github.com/livekit/server-sdk-js
 - hls.js / Apache-2.0: https://github.com/video-dev/hls.js
+- xterm.js / MIT: https://github.com/xtermjs/xterm.js
+- ws / MIT: https://github.com/websockets/ws
+- Optional Linux node-pty / MIT: https://github.com/microsoft/node-pty (server kit only; preserve installed LICENSE when distributing that kit).
+- tmux / ISC: https://github.com/tmux/tmux (system dependency; preserve its upstream notice).
 - Fastify / MIT: https://github.com/fastify/fastify
 - PostgreSQL node driver / MIT: https://github.com/brianc/node-postgres
 - MongoDB Node driver / Apache-2.0: https://github.com/mongodb/node-mongodb-native

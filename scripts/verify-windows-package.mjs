@@ -13,7 +13,7 @@ const output = resolve('release'),
   installer = join(output, `ROOMS-${version}-windows-x64-setup.exe`);
 const installDir = resolve(process.env.ROOMS_WINDOWS_INSTALL_DIR ?? '');
 assert(
-  process.env.ROOMS_WINDOWS_INSTALL_DIR && basename(installDir) === 'rooms-rc9-installed',
+  process.env.ROOMS_WINDOWS_INSTALL_DIR && basename(installDir) === 'rooms-candidate-installed',
   'Use a dedicated disposable CI install directory',
 );
 const result = {
@@ -103,6 +103,30 @@ try {
   result.checks.push(
     'Actual installed x64 packaged Electron app, file:// onboarding, sandboxed renderer',
   );
+  assert.equal(
+    await sha(join(installDir, 'resources/native/rooms-remote-input.node')),
+    await sha(join(output, 'win-unpacked/resources/native/rooms-remote-input.node')),
+  );
+  result.remoteInput = await app.evaluate(({ app }) => {
+    const { createRequire } = process.getBuiltinModule('module');
+    const { join } = process.getBuiltinModule('path');
+    const native = createRequire(join(app.getAppPath(), 'package.json'))(
+      join(process.resourcesPath, 'native', 'rooms-remote-input.node'),
+    );
+    const status = native.status();
+    if (!status.supported || status.active) throw Error('Installed native input must be inactive');
+    const refused = native.apply(2, 0, 0, 65, true) === false;
+    native.end();
+    return {
+      supported: status.supported,
+      inactive: !status.active,
+      unapprovedInputRefused: refused,
+    };
+  });
+  assert.equal(result.remoteInput.unapprovedInputRefused, true);
+  result.checks.push(
+    'Installed native input hash/load and unapproved-input refusal; no OS input armed',
+  );
   await assert.rejects(page.evaluate(() => window.rooms.windowAction('invalid')));
   result.checks.push('Invalid privileged window command refused');
   await page.getByRole('button', { name: 'Giriş yap', exact: true }).click();
@@ -124,7 +148,7 @@ try {
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
       'Horizontal overflow',
     );
-    await page.screenshot({ path: join(output, `windows-rc9-${width}.png`) });
+    await page.screenshot({ path: join(output, `windows-package-${width}.png`) });
   }
   result.checks.push(
     'Settings and 900x700 / 1440x900 Windows viewport screenshots, no horizontal overflow',
@@ -239,6 +263,9 @@ try {
   if (profile && resolve(profile).toLowerCase() === expectedProfile.toLowerCase())
     await rm(expectedProfile, { recursive: true, force: true });
   result.at = new Date().toISOString();
-  await writeFile(join(output, 'windows-rc9-results.json'), JSON.stringify(result, null, 2) + '\n');
+  await writeFile(
+    join(output, 'windows-package-results.json'),
+    JSON.stringify(result, null, 2) + '\n',
+  );
   console.log(JSON.stringify(result));
 }

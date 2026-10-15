@@ -128,10 +128,60 @@ export function SocialReferenceOverlay({ onClose }: { onClose(): void }) {
   return null;
 }
 
-/** Production deliberately shows the server capability boundary, not synthetic notifications. */
+/** Real mention records use the existing server read-state authority. */
 export function SocialNotificationsPage() {
   const navigate = useNavigate();
   const { enabled, fixture, error } = useSocialDetailFixture(['S16']);
+  const community = useCommunity();
+  const [opening, setOpening] = useState(false),
+    [openError, setOpenError] = useState('');
+  const nativeItems: CommunityNotification[] = [...community.channels, ...community.dms]
+    .flatMap((channel) =>
+      (community.readStates[channel.id]?.mentionMessageIds ?? []).map((id) => ({
+        id,
+        kind: 'mention' as const,
+        title: `${channel.name} kanalında etiketlendin`,
+        unread: true,
+        actionLabel: 'Mesaja git',
+        onOpen: () => {
+          if (opening) return;
+          setOpening(true);
+          setOpenError('');
+          const user = community.user?.id,
+            server = community.serverUrl;
+          void (async () => {
+            await community.openChannel(channel.id);
+            const current = () => {
+              const s = useCommunity.getState();
+              return s.user?.id === user &&
+                s.serverUrl === server &&
+                s.activeChannelId === channel.id
+                ? s
+                : null;
+            };
+            for (let page = 0; page < 10; page++) {
+              const s = current();
+              if (!s) return;
+              if (s.messages.some((m) => m.id === id)) {
+                navigate(`/chat?message=${encodeURIComponent(id)}`);
+                return;
+              }
+              if (!s.hasOlder) break;
+              await s.loadOlder();
+            }
+            if (current())
+              setOpenError(
+                'Etiketlendiğin mesaj bu geçmişte bulunamadı. Kanalı açıp geçmişi kontrol et.',
+              );
+          })()
+            .catch(() =>
+              setOpenError('Mesaj açılamadı. Kanala erişimini ve bağlantını kontrol et.'),
+            )
+            .finally(() => setOpening(false));
+        },
+      })),
+    )
+    .sort((a, b) => b.id.localeCompare(a.id));
   if (enabled && !fixture)
     return (
       <div className="social-detail-fixture-state" role={error ? 'alert' : 'status'}>
@@ -182,13 +232,36 @@ export function SocialNotificationsPage() {
               : undefined,
           };
         })
-      : [];
+      : nativeItems;
   return (
     <section className="social-notifications-page">
+      {opening && <p role="status">Mesaj açılıyor…</p>}
+      {openError && <p role="alert">{openError}</p>}
       <NotificationSurface
         items={items}
         fixture={enabled}
-        unavailableReason={enabled ? undefined : 'Bu sunucuda toplu bildirim akışı sağlanmıyor.'}
+        onMarkAllRead={
+          enabled
+            ? undefined
+            : async (ids) => {
+                for (const channel of [...community.channels, ...community.dms]) {
+                  const state = useCommunity.getState();
+                  if (
+                    state.user?.id !== community.user?.id ||
+                    state.serverUrl !== community.serverUrl
+                  )
+                    return;
+                  const mentions = (state.readStates[channel.id]?.mentionMessageIds ?? []).filter(
+                    (id) => ids.includes(id),
+                  );
+                  if (mentions.length)
+                    await state.markRead(
+                      channel.id,
+                      channel.lastMessageId ?? mentions.sort().at(-1)!,
+                    );
+                }
+              }
+        }
       />
     </section>
   );

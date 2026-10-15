@@ -25,6 +25,9 @@ import {
 } from './repository';
 import { readWorkspaceArtifact, safeWorkspacePath, type AgentExecutor } from './worker';
 import { AgentApprovalRequired, AgentUncertainEffect, projectAgentAudit } from './authority';
+import { AgentInterrupted } from './shared-host';
+import type { WorkspaceTerminals } from './workspace-terminals';
+import { registerWorkspaceTerminals } from './workspace-wire';
 export interface AgentPrincipal {
   userId: string;
   roomIds: string[];
@@ -36,6 +39,9 @@ export interface ReminderInput {
   sourceMessageId: string;
 }
 export interface AgentConfig {
+  executionHost?: AgentStatus['executionHost'];
+  workspaceTerminals?: WorkspaceTerminals;
+  executionHostId?: string;
   authority?: (
     principal: AgentPrincipal,
     roomId: string,
@@ -170,7 +176,9 @@ export async function createAgentServer(config: AgentConfig) {
   const app = Fastify({ logger: false, bodyLimit: 1024 * 1024 });
   await app.register(rateLimit, { max: 60, timeWindow: '1 minute' });
   const jobs = new Map<string, AbortController>();
+  const completions = new Map<string, Promise<void>>();
   let busy = false;
+  let closing = false;
   const cancelled = (t: AgentTask) => t.state === 'cancelled';
   const authenticate = async (header: string | undefined) => {
     if (!header?.startsWith('Bearer ') || header.length > 8192)
@@ -191,13 +199,9 @@ export async function createAgentServer(config: AgentConfig) {
     configured: true,
     connected: true,
     yolo: repo.data.yolo,
-    executionHost: 'separate-server',
-    capabilities: config.capabilities ?? [
-      'files',
-      'code',
-      'models',
-      'single-shot-schedules',
-      'memory',
+    executionHost: config.executionHost ?? 'separate-server',
+    capabilities: [
+      ...(config.capabilities ?? ['files', 'code', 'models', 'single-shot-schedules', 'memory']),
     ],
   });
   const publicModel = (m: SecretModel) => {
@@ -223,9 +227,68 @@ export async function createAgentServer(config: AgentConfig) {
     (request as any).principal = await authenticate(request.headers.authorization);
   });
   const principal = (request: any) => request.principal as AgentPrincipal;
+  if (config.workspaceTerminals)
+    registerWorkspaceTerminals(app, config.workspaceTerminals, {
+      authenticate,
+      task,
+      stop: async (t) => {
+        if (['running', 'queued', 'scheduled', 'awaiting-approval'].includes(t.state)) {
+          jobs.get(t.id)?.abort();
+          t.state = 'interrupted';
+          t.error = 'İnsan çalışma terminalinin kontrolünü aldı.';
+          await completions.get(t.id);
+          const uncertain = repo.data.checkpoints[t.id]?.operations.find((op) =>
+            ['started', 'uncertain'].includes(op.status),
+          );
+          if (uncertain)
+            t.uncertainOperation = {
+              operationId: uncertain.id,
+              description: uncertain.description,
+              tool: uncertain.tool,
+              preview: uncertain.preview,
+            };
+          repo.audit(t.ownerId, 'workspace-takeover', t.id, t.roomId);
+        }
+      },
+      changed: (t, terminal) => {
+        if (t.execution) {
+          t.execution.terminalId = terminal?.id ?? null;
+          t.execution.writer = terminal ? 'human' : 'none';
+        }
+        repo.audit(
+          t.ownerId,
+          terminal ? 'workspace-terminal-opened' : 'workspace-terminal-closed',
+          t.id,
+          t.roomId,
+        );
+      },
+    });
+  app.post<{ Params: { id: string } }>('/v1/tasks/:id/resume', async (request) => {
+    const p = principal(request),
+      t = task(p, request.params.id);
+    if (
+      !config.workspaceTerminals ||
+      t.ownerId !== p.userId ||
+      t.state !== 'interrupted' ||
+      t.uncertainOperation ||
+      config.workspaceTerminals.list(t).length
+    )
+      throw Object.assign(Error('WORKSPACE_RESUME_DENIED'), { statusCode: 409 });
+    if (
+      repo.data.checkpoints[t.id]?.operations.some((op) =>
+        ['started', 'uncertain'].includes(op.status),
+      )
+    )
+      throw Object.assign(Error('UNCERTAIN_OPERATION_REQUIRED'), { statusCode: 409 });
+    t.state = 'awaiting-approval';
+    t.error = null;
+    repo.audit(p.userId, 'workspace-resume-requested', t.id, t.roomId);
+    return t;
+  });
   app.get('/v1/status', async (request) => {
     const p = principal(request);
     const value = status();
+    if (config.workspaceTerminals) value.capabilities.push('workspace-terminal');
     if (
       config.reminderTarget &&
       config.deliverNotification &&
@@ -336,6 +399,9 @@ export async function createAgentServer(config: AgentConfig) {
         .filter((m) => m.ownerId === p.userId)
         .map(async (m) => ({
           ...publicModel(m),
+          ...(config.executionHost === 'shared-rootless' && m.provider !== 'openrouter'
+            ? { reason: 'SHARED_HOST_API_MODEL_REQUIRED' }
+            : {}),
           status: config.modelStatus
             ? await config.modelStatus(m)
             : m.provider === 'openrouter'
@@ -355,6 +421,8 @@ export async function createAgentServer(config: AgentConfig) {
       })
       .strict()
       .parse(request.body);
+    if (config.executionHost === 'shared-rootless' && b.provider !== 'openrouter')
+      throw Object.assign(new Error('SHARED_HOST_API_MODEL_REQUIRED'), { statusCode: 409 });
     if (b.provider === 'openrouter' && !b.apiKey)
       throw Object.assign(new Error('API_KEY_REQUIRED'), { statusCode: 400 });
     if (b.provider !== 'openrouter' && b.apiKey)
@@ -641,10 +709,11 @@ export async function createAgentServer(config: AgentConfig) {
     },
   );
   async function tick() {
-    if (busy) return;
+    if (busy || closing) return;
     busy = true;
     try {
       for (const t of repo.data.tasks) {
+        if (closing) break;
         if (t.state === 'scheduled' && Date.parse(t.runAt!) <= now()) {
           t.state = t.kind === 'reminder' || repo.data.yolo ? 'queued' : 'awaiting-approval';
           repo.save();
@@ -677,6 +746,13 @@ export async function createAgentServer(config: AgentConfig) {
           continue;
         }
         const controller = new AbortController();
+        let complete!: () => void;
+        completions.set(
+          t.id,
+          new Promise<void>((resolve) => {
+            complete = resolve;
+          }),
+        );
         jobs.set(t.id, controller);
         t.state = 'running';
         repo.save();
@@ -688,6 +764,20 @@ export async function createAgentServer(config: AgentConfig) {
             (m) => m.id === t.modelConnectionId && m.ownerId === t.ownerId,
           );
           if (!model) throw new Error('The initiating user model is no longer connected.');
+          if (config.executionHost === 'shared-rootless' && config.executionHostId) {
+            const terminal = config.workspaceTerminals?.list(t)[0];
+            t.execution = {
+              hostId: config.executionHostId,
+              workspaceId: t.id,
+              terminalId: terminal?.id ?? null,
+              backend: 'shared-rootless',
+              writer: terminal ? 'human' : 'ai',
+              modelProvider: model.provider,
+              limits: { cpu: 0.5, memoryMiB: 512, workspaceMiB: 2048, minutes: 15 },
+              startedAt: new Date(now()).toISOString(),
+            };
+            repo.save();
+          }
           const workspace = join(repo.directory, 'workspaces', t.id);
           mkdirSync(workspace, { recursive: true, mode: 0o700 });
           const output = await config.executor({
@@ -699,6 +789,17 @@ export async function createAgentServer(config: AgentConfig) {
               .slice(-20)
               .map((m) => m.text),
             signal: controller.signal,
+            usage: (value) => {
+              if (
+                !closing &&
+                jobs.get(t.id) === controller &&
+                t.state === 'running' &&
+                t.execution
+              ) {
+                t.execution.usage = value;
+                repo.save();
+              }
+            },
             progress: (text) => {
               if (t.state === 'running') {
                 t.progress.push(text.slice(0, 500));
@@ -776,6 +877,10 @@ export async function createAgentServer(config: AgentConfig) {
                 'interrupted',
                 'İşlem sonucu belirsiz. Tekrar çalıştırmadan önce dış uygulamadaki sonucu doğrulayın.',
               );
+            } else if (error instanceof AgentInterrupted) {
+              t.state = 'interrupted';
+              t.error = error.message;
+              queueNotification(t, 'interrupted', error.message);
             } else {
               t.state = 'failed';
               t.error = error instanceof Error ? error.message : 'Agent execution failed.';
@@ -784,6 +889,10 @@ export async function createAgentServer(config: AgentConfig) {
           }
         } finally {
           jobs.delete(t.id);
+          if (t.execution)
+            t.execution.writer = config.workspaceTerminals?.list(t).length ? 'human' : 'none';
+          completions.delete(t.id);
+          complete();
           if (['completed', 'failed', 'interrupted'].includes(t.state))
             repo.audit(t.ownerId, `task-${t.state}`, t.id, t.roomId);
           else repo.save();
@@ -878,8 +987,27 @@ export async function createAgentServer(config: AgentConfig) {
   }
   const timer = setInterval(() => void tick(), 1000);
   timer.unref();
+  let checkingWorkspaces = false;
+  const workspaceAuthority = setInterval(() => {
+    if (closing || checkingWorkspaces || !config.workspaceTerminals) return;
+    checkingWorkspaces = true;
+    void config.workspaceTerminals
+      .recheck(repo.data.tasks, async (t) => {
+        const p = await config.reauthorize(t.ownerId);
+        room(p, t.roomId);
+      })
+      .catch(() => {
+        /* Failed closes remain unavailable; retry rather than claiming revocation succeeded. */
+      })
+      .finally(() => {
+        checkingWorkspaces = false;
+      });
+  }, 2000);
+  workspaceAuthority.unref();
   app.addHook('onClose', async () => {
+    closing = true;
     clearInterval(timer);
+    clearInterval(workspaceAuthority);
     for (const controller of jobs.values()) controller.abort();
     await config.executor.close?.();
   });

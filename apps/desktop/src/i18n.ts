@@ -737,6 +737,8 @@ export function tr(key: string): string {
 }
 
 const errorMessages: Record<string, string> = {
+  SHARED_HOST_API_MODEL_REQUIRED:
+    'Bu sunucuda yalnızca OpenRouter API bağlantısı kullanılabiliyor. Codex ve Claude CLI bağlantıları etkin değil.',
   INVALID_COMMAND:
     'Sunucudaki etkinlik servisi bu işlemi desteklemiyor. Servisin güncellenmesi gerekiyor.',
   AUTH_REQUIRED: 'Önce giriş yap.',

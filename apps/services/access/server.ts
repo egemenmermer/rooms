@@ -1,6 +1,8 @@
 import { registerSoundboard } from './soundboard';
 import { registerMusicGateway } from './music-gateway';
+import { registerMusicPlaylists } from './music-playlists';
 import { registerDmCalls } from './dm-calls';
+import { registerRemoteControl, type RemoteConsent } from './remote-control';
 import Fastify, { type FastifyRequest } from 'fastify';
 import { RegistrationGate, issueRegistrationInvite } from './registration';
 import { MongoClient } from 'mongodb';
@@ -21,6 +23,7 @@ import {
 
 export interface AccessConfig {
   soundboardDirectory?: string;
+  musicPlaylistsDirectory?: string;
   musicName?: string;
   musicUrl?: string;
   musicSecret?: string;
@@ -99,6 +102,7 @@ export async function createAccessServer(config: AccessConfig) {
   };
   const screenRequests = new Map<string, PresenterRequest[]>();
   const screenReservations = new Map<string, PresenterReservation>();
+  let remoteControl: RemoteConsent | null = null;
   const pruneScreen = (channelId: string) => {
     const now = Date.now(),
       lease = screenLeases.get(channelId);
@@ -116,6 +120,7 @@ export async function createAccessServer(config: AccessConfig) {
       screenReservations.delete(channelId);
   };
   const invalidateScreenUser = (channelId: string, userId: string) => {
+    remoteControl?.revoke(channelId, userId, true);
     parallelScreens.delete(`${channelId}:${userId}`);
     const lease = screenLeases.get(channelId);
     if (lease?.userId === userId) {
@@ -214,6 +219,28 @@ export async function createAccessServer(config: AccessConfig) {
       };
     },
   });
+  registerMusicPlaylists(server, {
+    directory: config.musicPlaylistsDirectory,
+    authorize: async (token, channelId) => {
+      const value = await authorize(token, channelId);
+      return { communityId: value.communityId, userId: value.user.id };
+    },
+    references: async (channelId, source) => {
+      if (!config.musicUrl || !config.musicSecret) throw Error('MUSIC_NOT_CONFIGURED');
+      const response = await fetch(`${config.musicUrl}/v1/references`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${config.musicSecret}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ channelId, ...source }),
+        redirect: 'error',
+        signal: AbortSignal.timeout(60000),
+      });
+      if (!response.ok) throw Error('MUSIC_PLAYLIST_SOURCE_UNAVAILABLE');
+      return response.json();
+    },
+  });
   const music = registerMusicGateway(server, {
     displayName: config.musicName,
     url: config.musicUrl,
@@ -263,6 +290,58 @@ export async function createAccessServer(config: AccessConfig) {
     return result;
   };
   const leaseContext = z.object({ channelId: opaqueId, leaseId: z.string().uuid() }).strict();
+  const remoteMember = async (token: string, channelId: string) => {
+    const result = await authorize(token, channelId);
+    const grant = grants.get(`${channelId}:${result.user.id}`);
+    if (!grant || grant.token !== token || (result.permissions & Permissions.LISTEN) === 0n)
+      throw new StoatError(403, 'JOIN_VOICE_FIRST');
+    const person = await roomService.getParticipant(roomName(channelId), result.user.id);
+    if (person.identity !== result.user.id) throw new StoatError(403, 'JOIN_VOICE_FIRST');
+    return {
+      userId: result.user.id,
+      participantSid: person.sid,
+      label: result.user.displayName,
+      human: !result.user.bot && !person.identity.startsWith('rooms-music-'),
+      screens: person.tracks.filter((t) => t.source === TrackSource.SCREEN_SHARE).map((t) => t.sid),
+    };
+  };
+  remoteControl = registerRemoteControl(server, {
+    member: remoteMember,
+    peer: async (channelId, userId) => {
+      const grant = grants.get(`${channelId}:${userId}`);
+      if (!grant) throw new StoatError(403, 'JOIN_VOICE_FIRST');
+      return remoteMember(grant.token, channelId);
+    },
+    setData: async (channelId, userId, enabled) => {
+      const grant = grants.get(`${channelId}:${userId}`);
+      if (!grant) {
+        if (enabled) throw new StoatError(403, 'JOIN_VOICE_FIRST');
+        return;
+      }
+      const value = await authorize(grant.token, channelId).catch((error) => {
+        if (enabled) throw error;
+        return null;
+      });
+      if (!value) return;
+      const hasScreen =
+        (screenLeases.get(channelId)?.userId === userId ||
+          parallelScreens.has(`${channelId}:${userId}`)) &&
+        (value.permissions & Permissions.VIDEO) !== 0n;
+      await roomService
+        .updateParticipant(roomName(channelId), userId, {
+          permission: {
+            canPublish: sources(value.permissions).length > 0,
+            canSubscribe: (value.permissions & Permissions.LISTEN) !== 0n,
+            canPublishSources: sources(value.permissions, hasScreen),
+            canPublishData: enabled && !value.user.bot,
+            canUpdateMetadata: false,
+          },
+        })
+        .catch((error) => {
+          if (enabled) throw error;
+        });
+    },
+  });
   const requestContext = leaseContext.extend({ requestId: z.string().uuid() });
   const requireLease = (channelId: string, leaseId: string) => {
     pruneScreen(channelId);
@@ -338,12 +417,12 @@ export async function createAccessServer(config: AccessConfig) {
           invalidateScreenUser(channelId, identity);
           return { accepted: true, removed: true };
         }
-        const { permissions } = await authorize(grant!.token, channelId);
+        const { user, permissions } = await authorize(grant!.token, channelId);
         await roomService.updateParticipant(room, identity, {
           permission: {
             canPublish: sources(permissions).length > 0,
             canSubscribe: (permissions & Permissions.LISTEN) !== 0n,
-            canPublishData: false,
+            canPublishData: !user.bot && (remoteControl?.hasControl(channelId, user.id) ?? false),
             canPublishSources: sources(permissions),
           },
         });
@@ -559,6 +638,7 @@ export async function createAccessServer(config: AccessConfig) {
     const { channelId } = channelBody.parse(request.body);
     const token = tokenOf(request.headers.authorization);
     const { user, permissions } = await authorize(token, channelId);
+    remoteControl?.revoke(channelId, user.id, true);
     const access = new AccessToken(config.apiKey, config.apiSecret, {
       identity: user.id,
       name: user.displayName,
@@ -570,7 +650,7 @@ export async function createAccessServer(config: AccessConfig) {
       canSubscribe: (permissions & Permissions.LISTEN) !== 0n,
       canPublish: sources(permissions).length > 0,
       canPublishSources: sources(permissions),
-      canPublishData: false,
+      canPublishData: !user.bot && (remoteControl?.hasControl(channelId, user.id) ?? false),
       canUpdateOwnMetadata: false,
     });
     grants.set(`${channelId}:${user.id}`, {
@@ -614,7 +694,7 @@ export async function createAccessServer(config: AccessConfig) {
         permission: {
           canPublish: true,
           canSubscribe: (current.permissions & Permissions.LISTEN) !== 0n,
-          canPublishData: false,
+          canPublishData: !user.bot && (remoteControl?.hasControl(channelId, user.id) ?? false),
           canPublishSources: sources(current.permissions, true),
         },
       });
@@ -647,7 +727,7 @@ export async function createAccessServer(config: AccessConfig) {
       permission: {
         canPublish: sources(permissions).length > 0,
         canSubscribe: (permissions & Permissions.LISTEN) !== 0n,
-        canPublishData: false,
+        canPublishData: !user.bot && (remoteControl?.hasControl(channelId, user.id) ?? false),
         canPublishSources: sources(permissions),
       },
     });
@@ -808,7 +888,7 @@ export async function createAccessServer(config: AccessConfig) {
         permission: {
           canPublish: true,
           canSubscribe: (current.permissions & Permissions.LISTEN) !== 0n,
-          canPublishData: false,
+          canPublishData: !user.bot && (remoteControl?.hasControl(channelId, user.id) ?? false),
           canPublishSources: sources(current.permissions, true),
         },
       });
@@ -852,7 +932,7 @@ export async function createAccessServer(config: AccessConfig) {
       permission: {
         canPublish: sources(permissions).length > 0,
         canSubscribe: (permissions & Permissions.LISTEN) !== 0n,
-        canPublishData: false,
+        canPublishData: !user.bot && (remoteControl?.hasControl(channelId, user.id) ?? false),
         canPublishSources: sources(permissions),
       },
     });
@@ -921,6 +1001,7 @@ export async function createAccessServer(config: AccessConfig) {
               permission: {
                 canSubscribe: (permissions & Permissions.LISTEN) !== 0n,
                 canPublish: sources(permissions).length > 0,
+                canPublishData: remoteControl?.hasControl(grant.channelId, grant.userId) ?? false,
                 canPublishSources: sources(
                   permissions,
                   (lease?.userId === grant.userId || parallelScreens.has(key)) &&

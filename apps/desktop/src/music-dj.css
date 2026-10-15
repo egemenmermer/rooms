@@ -288,6 +288,20 @@
   padding: 8px;
   text-align: left;
 }
+.dj-search-result {
+  display: flex;
+  min-width: 0;
+}
+.dj-search-result > button:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.dj-play-now {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
 .dj-search-results span {
   flex: 1;
   min-width: 0;
@@ -436,4 +450,57 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   cursor: pointer;
+}
+.dj-playlists {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.dj-playlists input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px;
+  background: var(--bg-primary, #1b1b24);
+  color: inherit;
+  border: 1px solid #454453;
+  border-radius: 6px;
+}
+.dj-playlist-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dj-playlists button {
+  padding: 6px 8px;
+  border-radius: 5px;
+}
+.dj-playlist-choice {
+  display: flex;
+  justify-content: space-between;
+  text-align: left;
+}
+.dj-playlist-choice[aria-pressed='true'] {
+  background: #7970ae44;
+}
+.dj-playlists p {
+  font-size: 12px;
+  color: var(--text-secondary, #adb1bf);
+}
+.dj-playlists ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.dj-playlists li {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.dj-playlists li span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

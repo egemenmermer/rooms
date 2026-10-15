@@ -16,7 +16,11 @@ import { join, resolve, sep } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { privateFetch, limitedText } from '../../../packages/personal-media/src/network';
-import type { AgentTask, AgentArtifact } from '../../../packages/agent-contracts/src/index';
+import type {
+  AgentTask,
+  AgentArtifact,
+  AgentResourceUsage,
+} from '../../../packages/agent-contracts/src/index';
 import type { SecretModel, AgentCheckpoint, ToolOperation } from './repository';
 import { AgentApprovalRequired, AgentUncertainEffect, redactPreview } from './authority';
 import { PersistentBotBrowser } from './browser';
@@ -33,6 +37,7 @@ export interface ExecutionContext {
   memory: string[];
   signal: AbortSignal;
   progress(text: string): void;
+  usage?(value: AgentResourceUsage): void;
   checkpoint?: { read(): AgentCheckpoint | undefined; save(value: AgentCheckpoint): void };
   approveOperation?: (operation: ToolOperation) => Promise<void>;
   ensureAuthorized?: () => Promise<void>;

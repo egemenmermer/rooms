@@ -1,3 +1,4 @@
+import { HostOperations } from './HostOperations';
 import { mediaProvider } from './runtime-sources';
 import { NoiseComparison } from './NoiseComparison';
 import { createNoiseSuppressionNode } from '@rooms/media';
@@ -74,6 +75,7 @@ const tabs = [
   { id: 'room-memory', label: 'Oda hafızası', icon: Bookmark },
   { id: 'schedules', label: 'Tek seferlik görevler', icon: Clock3 },
   { id: 'services', label: 'ROOMS bağlantıları', icon: Globe },
+  { id: 'hostops', label: 'Sunucu', icon: Monitor },
   { id: 'shortcuts', label: 'Klavye', icon: Keyboard },
   { id: 'diagnostics', label: 'Tanılama', icon: SlidersHorizontal },
   { id: 'community-management', label: 'Üyeler ve roller', icon: Users },
@@ -932,6 +934,7 @@ export default function Settings({
                   'channel-permissions',
                   'assistant-permissions',
                   'automation',
+                  'hostops',
                 ],
               },
               { label: 'ROOMS', ids: ['about'] },
@@ -1383,6 +1386,7 @@ export default function Settings({
                 </div>
               </>
             )}
+            {tab === 'hostops' && <HostOperations />}
             {tab === 'connections' && <AgentReferenceSettingsContent view="connections" />}
             {tab === 'room-memory' && <AgentReferenceSettingsContent view="memory" />}
             {tab === 'schedules' && <AgentReferenceSettingsContent view="schedules" />}

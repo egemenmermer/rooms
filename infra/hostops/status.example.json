@@ -1,0 +1,4 @@
+{
+  "containers": [{ "name": "SET_EXACT_CONTAINER_NAME", "label": "Social API" }],
+  "backupReceipt": "/var/lib/rooms-backup/verified.json"
+}

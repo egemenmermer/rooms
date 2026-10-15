@@ -1,4 +1,8 @@
 import { MusicHistory } from './history';
+import { youtubeReferences } from './youtube-source';
+import { parseDJLink } from '../../../packages/shared-contracts/src/music-links';
+import { playlistTrackSchema } from '../../../packages/shared-contracts/src/music-playlists';
+import { matchingResponse } from './matching-response';
 import Fastify from 'fastify';
 import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
@@ -11,7 +15,7 @@ import { MusicWorker, type MusicLease } from './worker';
 import { LiveMusicPublisher } from './publisher';
 const secret = process.env.ROOMS_MUSIC_SECRET;
 if (!secret || secret.length < 32) throw new Error('Music service secret is required');
-const server = Fastify({ logger: false, bodyLimit: 4096 });
+const server = Fastify({ logger: false, bodyLimit: 65536 });
 server.addHook('onRequest', async (request, reply) => {
   if (request.url === '/health') return;
   const value = request.headers.authorization?.replace(/^Bearer /, '') ?? '';
@@ -42,6 +46,38 @@ const worker = new MusicWorker({
 const id = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 server.get('/health', async () => ({ service: 'music', status: 'ok' }));
 registerMusicSearch(server);
+let importing = false;
+server.post('/v1/references', async (request, reply) => {
+  const body = z
+    .object({
+      channelId: id,
+      sessionId: z.string().uuid().optional(),
+      url: z
+        .string()
+        .max(2048)
+        .refine((v) => parseDJLink(v)?.kind === 'playlist')
+        .optional(),
+    })
+    .strict()
+    .parse(request.body);
+  if (!body.url) return worker.references(body.channelId, body.sessionId);
+  if (importing) return reply.code(429).send({ error: 'MUSIC_SEARCH_BUSY' });
+  importing = true;
+  try {
+    return z
+      .array(playlistTrackSchema)
+      .max(100)
+      .parse(
+        (await youtubeReferences(body.url)).map((ref) => ({
+          videoId: parseDJLink(ref.source)?.id,
+          title: ref.title,
+          durationSec: ref.durationSec,
+        })),
+      );
+  } finally {
+    importing = false;
+  }
+});
 server.get('/v1/rooms/:channelId/history', async (request) =>
   worker.history(id.parse((request.params as { channelId: string }).channelId)),
 );
@@ -62,6 +98,12 @@ server.post('/v1/rooms/:channelId', async (request, reply) => {
   try {
     return await worker.command(channelId, body.lease, body.command);
   } catch (error) {
+    const matching = matchingResponse(
+      error,
+      worker.snapshot(channelId),
+      body.command.type === 'add' && body.command.offerCandidates === true,
+    );
+    if (matching) return matching;
     const value = error instanceof Error ? error.message : '';
     const code = /^MUSIC_[A-Z_]+$/.test(value) ? value : 'MUSIC_SOURCE_FAILED';
     const song = musicFailedSongSchema.safeParse((error as { song?: unknown })?.song);

@@ -7,9 +7,16 @@ const native = vi.hoisted(() => ({
   handlers: new Map<string, Function>(),
   directory: '',
   save: vi.fn(),
+  quitters: [] as (() => void)[],
 }));
 vi.mock('electron', () => ({
-  app: { isPackaged: false, getPath: () => native.directory },
+  app: {
+    isPackaged: false,
+    getPath: () => native.directory,
+    on: (_event: string, cb: () => void) => {
+      native.quitters.push(cb);
+    },
+  },
   ipcMain: { handle: (name: string, fn: Function) => native.handlers.set(name, fn) },
   safeStorage: {
     isEncryptionAvailable: () => true,
@@ -56,6 +63,7 @@ beforeEach(async () => {
   await invoke('configure', { url: 'https://agent.example', token: 'local-fixture-token-only' });
 });
 afterEach(() => {
+  for (const cb of native.quitters.splice(0)) cb();
   vi.unstubAllGlobals();
   rmSync(native.directory, { recursive: true, force: true });
 });

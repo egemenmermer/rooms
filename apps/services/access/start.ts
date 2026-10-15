@@ -7,6 +7,8 @@ const required = (name: string) => {
 async function start() {
   const server = await createAccessServer({
     soundboardDirectory: process.env.ROOMS_SOUNDBOARD_DIRECTORY ?? '/state/soundboard',
+    musicPlaylistsDirectory:
+      process.env.ROOMS_MUSIC_PLAYLISTS_DIRECTORY ?? '/state/music-playlists',
     musicName: process.env.ROOMS_MUSIC_NAME,
     musicUrl: process.env.ROOMS_MUSIC_URL,
     musicSecret: process.env.ROOMS_MUSIC_SECRET,

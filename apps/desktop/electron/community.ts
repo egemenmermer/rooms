@@ -1,3 +1,10 @@
+import { setupHostOps } from './hostops';
+import {
+  playlistCatalogSchema,
+  playlistChangeSchema,
+} from '../../../packages/shared-contracts/src/music-playlists';
+import { setupRemoteControl } from './remote-control';
+import { randomUUID } from 'node:crypto';
 import {
   soundboardCatalogSchema,
   soundboardClipSchema,
@@ -61,6 +68,7 @@ export async function setupCommunity(
   onIncomingMessage: (
     scope: { serverUrl: string; userId: string },
     channelId: string,
+    mentioned?: boolean,
   ) => void = () => {},
 ) {
   let dmNativeEpoch = 0;
@@ -105,6 +113,8 @@ export async function setupCommunity(
   let selectedAudio = false;
   let selected: DesktopCapturerSource | null = null;
   let selectedAt = 0;
+  let activeCapture: { epoch: string; displayId: string } | null = null;
+  let activeCaptureScope: StoatClient | null = null;
   let choices: DesktopCapturerSource[] = [];
   let choicesAt = 0;
   const conversationVault = new ConversationVault(app.getPath('userData'), safeStorage);
@@ -152,6 +162,7 @@ export async function setupCommunity(
     if (client && client !== next) void closeDmCall();
     unsubscribe?.();
     client = next;
+    const deliveredMessages = new Set<string>();
     unsubscribe = client.subscribe((event) => {
       if (client !== next || generation !== sessionEpoch) return;
       if (event.type === 'AUTH_EXPIRED') {
@@ -173,16 +184,31 @@ export async function setupCommunity(
         conversationVault.deleteMessage(d.channel_id, d.id);
       }
       if (event.type === 'MESSAGE_CREATE') {
-        const message = event.data as { author?: { id?: unknown }; channelId?: unknown },
+        const message = event.data as {
+            id?: string;
+            author?: { id?: unknown };
+            channelId?: unknown;
+            mentions?: string[];
+          },
           authorId = message.author?.id;
         if (
           user &&
+          typeof message.id === 'string' &&
+          !deliveredMessages.has(message.id) &&
           typeof authorId === 'string' &&
           authorId !== user.id &&
           typeof message.channelId === 'string' &&
           SOCIAL_ID_PATTERN.test(message.channelId)
-        )
-          onIncomingMessage({ serverUrl: next.instanceUrl, userId: user.id }, message.channelId);
+        ) {
+          deliveredMessages.add(message.id);
+          if (deliveredMessages.size > 2000)
+            deliveredMessages.delete(deliveredMessages.values().next().value!);
+          onIncomingMessage(
+            { serverUrl: next.instanceUrl, userId: user.id },
+            message.channelId,
+            message.mentions?.includes(user.id) ?? false,
+          );
+        }
       }
       if (
         [
@@ -253,6 +279,15 @@ export async function setupCommunity(
     if (!client || !user) throw new StoatError(401, 'SIGN_IN_REQUIRED');
     return client;
   };
+  const hostOps = setupHostOps(
+    () => {
+      if (fixtureWindow())
+        throw new SocialInputError('Native host access is disabled in development fixtures.');
+      return requireClient();
+    },
+    getWindow,
+    assertSender,
+  );
   const handle = (name: string, handler: (...args: unknown[]) => unknown) =>
     ipcMain.handle(name, async (event, ...args) => {
       assertSender(event);
@@ -398,6 +433,7 @@ export async function setupCommunity(
   app.on('browser-window-created', (_event, window) =>
     window.on('closed', () => {
       recoveryEpoch++;
+      if (!getWindow() || getWindow() === window) hostOps.close();
       passwordReset.clear();
     }),
   );
@@ -573,6 +609,32 @@ export async function setupCommunity(
   );
   handle('rooms:social-remove-friend', (userId) => requireClient().removeFriend(id.parse(userId)));
   const avatarRequests = new Map<string, Promise<string | null>>();
+  handle('rooms:social-download-attachment', async (channelId, messageId, fileId) => {
+    const current = requireClient(),
+      owner = user!.id,
+      window = getWindow();
+    if (!window) return false;
+    const channel = id.parse(channelId),
+      message = id.parse(messageId),
+      file = id.parse(fileId);
+    const result = await current.attachmentFile(channel, message, file);
+    if (client !== current || user?.id !== owner)
+      throw new SocialInputError('The conversation session changed.');
+    const save = await dialog.showSaveDialog(window, {
+      title: 'Dosyayı kaydet',
+      defaultPath: basename(result.name).replace(/[\x00-\x1f]/g, '') || 'Attachment',
+    });
+    if (save.canceled || !save.filePath) return false;
+    const fresh = await current.getMessage(channel, message);
+    if (
+      client !== current ||
+      user?.id !== owner ||
+      !fresh.attachments?.some((item) => item.id === file)
+    )
+      throw new SocialInputError('The conversation session changed.');
+    writeFileSync(save.filePath, result.bytes);
+    return true;
+  });
   handle('rooms:social-attachment-image', async (channelId, messageId, fileId) => {
     const current = requireClient(),
       owner = user!.id;
@@ -814,6 +876,17 @@ export async function setupCommunity(
       throw new SocialInputError('The conversation session changed. Join the voice room again.');
     if (!response.ok) {
       const reasons: Record<string, string> = {
+        REMOTE_SOURCE_LIMIT:
+          'Bu odada çok fazla ekran kontrolü kaydı var. Bir paylaşımı kapatıp yeniden dene.',
+        REMOTE_HUMAN_PEER_REQUIRED:
+          'Ekran kontrolü yalnızca odadaki insanlar arasında kullanılabilir.',
+        REMOTE_ALREADY_ACTIVE:
+          'Senin veya arkadaşının başka bir kontrol oturumu açık. Önce onu bırak.',
+        REMOTE_REQUEST_PENDING: 'Kontrol isteğin gönderildi. Paylaşan kişinin onayını bekle.',
+        REMOTE_REQUEST_LIMIT: 'Çok fazla kontrol isteği var. Biraz sonra yeniden dene.',
+        REMOTE_REQUEST_STALE: 'Kontrol isteği sona erdi veya ekran değişti. Yeniden kontrol iste.',
+        REMOTE_SOURCE_STALE: 'Bu ekran paylaşımı değişti. Paylaşımı yenileyip tekrar kontrol iste.',
+        REMOTE_SCREEN_REQUIRED: 'Ekran yayını henüz hazır değil. Biraz sonra yeniden dene.',
         PRESENTER_BUSY: 'Bu odada başka biri ekran paylaşıyor.',
         PRESENT_PERMISSION_REQUIRED: 'Oda rolün ekran paylaşma izni vermiyor.',
         VOICE_CHANNEL_REQUIRED: 'Önce bir ses odası seç.',
@@ -984,6 +1057,47 @@ export async function setupCommunity(
       ? musicSearchResultsSchema.parse(value)
       : musicSnapshotSchema.parse(value);
   }
+  async function playlistsRequest(channelId: unknown, change?: unknown) {
+    const current = requireClient(),
+      token = current.getToken()!,
+      channel = id.parse(channelId);
+    const response = await fetch(
+      `${new URL(current.instanceUrl).origin}/rooms-access/v1/music/${encodeURIComponent(channel)}/playlists`,
+      {
+        method: change ? 'POST' : 'GET',
+        headers: { Authorization: token, 'Content-Type': 'application/json' },
+        body: change ? JSON.stringify(playlistChangeSchema.parse(change)) : undefined,
+        redirect: 'error',
+        signal: AbortSignal.timeout(70000),
+      },
+    );
+    const value = await response.json();
+    if (current !== client || current.getToken() !== token)
+      throw new SocialInputError('Oturum değişti.');
+    if (!response.ok) {
+      const errors: Record<string, string> = {
+        MUSIC_PLAYLIST_CHANGED: 'Liste başka biri tarafından değiştirildi. Yenileyip tekrar dene.',
+        MUSIC_PLAYLIST_EMPTY: 'Kaydedilebilecek YouTube parçası yok.',
+        MUSIC_PLAYLISTS_NOT_CONFIGURED: 'Ortak listeler sunucuda henüz açılmadı.',
+        MUSIC_NOT_CONFIGURED: 'Sunucunun DJ hizmeti henüz açılmadı.',
+        MUSIC_PERMISSION_DENIED: 'Bu odanın listelerine erişimin yok. Oda erişimini kontrol et.',
+        AUTH_REQUIRED: 'Oturum doğrulanamadı. Bağlantıyı yenileyip yeniden dene.',
+        MUSIC_PLAYLIST_LIMIT:
+          'Topluluğun liste sınırına ulaşıldı. Kullanılmayan listeleri veya parçaları kaldır.',
+        MUSIC_PLAYLIST_INVALID:
+          'Liste bilgisi geçersiz. Desteklenen YouTube bağlantılarını ve parça sınırını kontrol et.',
+        MUSIC_PLAYLIST_SOURCE_UNAVAILABLE:
+          'YouTube listesi veya DJ geçmişi alınamadı. Kaynak erişimini kontrol edip yeniden dene.',
+      };
+      throw new SocialInputError(
+        errors[value?.error] ??
+          'Liste işleminin sonucu doğrulanamadı. Yenileyip kaydı kontrol et; değişiklik otomatik tekrarlanmadı.',
+      );
+    }
+    return playlistCatalogSchema.parse(value);
+  }
+  handle('rooms:music-playlists', (channel) => playlistsRequest(channel));
+  handle('rooms:music-playlist-change', (channel, change) => playlistsRequest(channel, change));
   handle('rooms:music-history', async (channelId) => {
     const current = requireClient(),
       token = current.getToken()!,
@@ -1099,12 +1213,43 @@ export async function setupCommunity(
       .strict()
       .parse(result);
   });
-  handle('rooms:media-grant', (channelId) => broker('grant', { channelId: id.parse(channelId) }));
-  handle('rooms:media-presenter', (channelId, action) =>
-    broker(`screens/${z.enum(['acquire', 'release']).parse(action)}`, {
+  const remote = setupRemoteControl({
+    handle: (name, fn) =>
+      handle(name, async (...args) => {
+        try {
+          return await fn(...args);
+        } catch (error) {
+          throw new SocialInputError(
+            error instanceof z.ZodError
+              ? 'Kontrol isteğinin bilgileri geçersiz.'
+              : error instanceof Error
+                ? error.message === 'REMOTE_CONTROL_INACTIVE' ||
+                  error.message === 'REMOTE_APPROVAL_STALE'
+                  ? 'Kontrol oturumu sona erdi. Yeniden kontrol iste.'
+                  : error.message
+                : 'Kontrol işlemi tamamlanamadı.',
+          );
+        }
+      }),
+    broker,
+    identity: () => ({ userId: user?.id ?? null, scope: client }),
+    capture: () => (activeCaptureScope === client ? activeCapture : null),
+    window: getWindow,
+  });
+  handle('rooms:media-grant', (channelId) => {
+    activeCapture = null;
+    remote.stop();
+    return broker('grant', { channelId: id.parse(channelId) });
+  });
+  handle('rooms:media-presenter', (channelId, action) => {
+    if (action === 'release') {
+      activeCapture = null;
+      remote.stop();
+    }
+    return broker(`screens/${z.enum(['acquire', 'release']).parse(action)}`, {
       channelId: id.parse(channelId),
-    }),
-  );
+    });
+  });
   handle('rooms:media-screen-state', async (channelId) =>
     screenPresenterState.parse(await broker('screen/state', { channelId: id.parse(channelId) })),
   );
@@ -1129,7 +1274,11 @@ export async function setupCommunity(
       .strict()
       .parse(await broker('screen/request/decide', body));
   });
-  handle('rooms:media-leave', (channelId) => broker('leave', { channelId: id.parse(channelId) }));
+  handle('rooms:media-leave', (channelId) => {
+    activeCapture = null;
+    remote.stop();
+    return broker('leave', { channelId: id.parse(channelId) });
+  });
   handle('rooms:capture-status', () => ({
     microphone:
       process.platform === 'darwin'
@@ -1169,12 +1318,16 @@ export async function setupCommunity(
       throw new Error('Refresh available sources.');
     const source = choices.find((s) => s.id === sourceId);
     if (!source) throw new Error('The selected source is unavailable.');
+    activeCapture = null;
+    remote.stop();
     selected = source;
     selectedAudio = preference.audio;
     selectedAt = Date.now();
     choices = [];
   });
   handle('rooms:capture-clear', () => {
+    activeCapture = null;
+    remote.stop();
     selected = null;
     selectedAudio = false;
     choices = [];
@@ -1196,6 +1349,11 @@ export async function setupCommunity(
         callback(null);
         return;
       }
+      activeCaptureScope = client;
+      activeCapture =
+        source.id.startsWith('screen:') && source.display_id
+          ? { epoch: randomUUID(), displayId: source.display_id }
+          : null;
       callback({
         video: source,
         ...(audio && supportsSystemAudio() ? { audio: 'loopback' as const } : {}),
@@ -1280,6 +1438,8 @@ export async function setupCommunity(
     activityRequest,
     close: async () => {
       recoveryEpoch++;
+      hostOps.close();
+      remote.dispose();
       passwordReset.clear();
       await closeDmCall();
       clearInterval(presenceTimer);

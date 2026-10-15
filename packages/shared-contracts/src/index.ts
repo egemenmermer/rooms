@@ -48,6 +48,8 @@ export interface DesktopWindowPreferences {
   trayAvailable: boolean;
 }
 export interface DesktopBridge {
+  remoteControl?: import('./remote-control').RemoteControlBridge;
+  hostOps?: import('./hostops').HostOpsBridge;
   soundboard?: import('./soundboard').SoundboardBridge;
   desktopWindow: {
     status(): Promise<DesktopWindowPreferences>;
@@ -95,6 +97,11 @@ export interface DesktopBridge {
   };
   social: SocialBridge;
   music: {
+    playlists(channelId: string): Promise<import('./music-playlists').SharedPlaylist[]>;
+    changePlaylist(
+      channelId: string,
+      change: import('./music-playlists').PlaylistChange,
+    ): Promise<import('./music-playlists').SharedPlaylist[]>;
     history(channelId: string): Promise<import('./music').MusicHistorySession[]>;
     snapshot(channelId: string): Promise<import('./music').MusicSnapshot>;
     command(
@@ -257,6 +264,7 @@ export interface SocialBridge {
   inspectInvite(serverUrl: string, code: string): Promise<import('@rooms/social').SocialInvite>;
   acceptInvite(code: string): Promise<import('@rooms/social').SocialInvite>;
   attachmentImage(channelId: string, messageId: string, fileId: string): Promise<string | null>;
+  downloadAttachment(channelId: string, messageId: string, fileId: string): Promise<boolean>;
   avatar(userId: string): Promise<string | null>;
   chooseAvatar(): Promise<import('@rooms/social').SocialUser | null>;
   channelPermissions(channelId: string): Promise<import('@rooms/social').SocialChannelPermissions>;

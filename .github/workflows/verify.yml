@@ -48,6 +48,102 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      - run: node scripts/prepare-remote-input.mjs
       - run: pnpm test:desktop --grep 'desktop shell'
-# No signing, production credentials, real accounts, deployment or release publication.
-# A GitHub hosted native smoke is not physical two-Mac media acceptance.
+  # No signing, production credentials, real accounts, deployment or release publication.
+  # A GitHub hosted native smoke is not physical two-Mac media acceptance.
+  hostops-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.22.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir infra/hostops install --frozen-lockfile
+      - name: Configure disposable unprivileged terminal profile
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends tmux
+          sudo useradd --create-home --shell /bin/bash rooms-operator
+          sudo install -d -o rooms-operator -g rooms-operator -m 0700 /srv/rooms-operator
+          sudo install -d -o root -g root -m 0755 /etc/rooms-hostops /usr/local/libexec
+          sudo install -o root -g root -m 0640 infra/hostops/profiles.example.json /etc/rooms-hostops/profiles.json
+          sudo python3 - <<'PY'
+          import json
+          path='/etc/rooms-hostops/profiles.json'
+          with open(path,'w') as file:
+              json.dump({'qa-operator': {'user':'rooms-operator','directory':'/srv/rooms-operator'}},file)
+          PY
+          sudo install -o root -g root -m 0755 infra/hostops/rooms-terminal-helper.py /usr/local/libexec/rooms-terminal-helper
+          sudo install -o root -g root -m 0644 infra/hostops/rooms-host-terminal@.service /etc/systemd/system/rooms-host-terminal@.service
+          sudo systemctl daemon-reload
+      - name: Actual Linux terminal lifecycle
+        run: node scripts/verify-hostops-native.mjs
+      - name: Clean up disposable terminal server
+        if: always()
+        run: sudo systemctl stop rooms-host-terminal@rooms-operator.service || true
+  agent-rootless-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.22.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/build-agent-rootless-qa.mjs
+      - run: pnpm --dir infra/hostops install --frozen-lockfile
+      - name: Provision disposable rootless identity and bounded persistent volume
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends podman uidmap crun catatonit dbus-user-session
+          sudo useradd --create-home --shell /bin/bash rooms-ai
+          qa_uid=$(id -u rooms-ai)
+          sudo install -d -m 0755 /etc/systemd/system/user-${qa_uid}.slice.d
+          sudo install -o root -g root -m 0644 infra/agent/shared/user-slice.conf /etc/systemd/system/user-${qa_uid}.slice.d/rooms-agent.conf
+          sudo systemctl daemon-reload
+          sudo loginctl enable-linger rooms-ai
+          sudo systemctl start user@${qa_uid}.service
+          sudo install -d -o rooms-ai -g rooms-ai -m 0700 /var/lib/rooms-agent
+          sudo install -d -m 0700 /var/lib/rooms-agent/workspaces
+          sudo truncate -s 2G /var/lib/rooms-agent-qa.ext4
+          sudo mkfs.ext4 -q /var/lib/rooms-agent-qa.ext4
+          sudo mount -o loop,nosuid,nodev /var/lib/rooms-agent-qa.ext4 /var/lib/rooms-agent/workspaces
+          sudo chown rooms-ai:rooms-ai /var/lib/rooms-agent/workspaces
+          sudo chmod 0700 /var/lib/rooms-agent/workspaces
+          sudo install -d -o root -g root -m 0755 /opt/rooms-agent-qa
+          sudo install -o root -g root -m 0644 .local/qa/agent-rootless-native.cjs /opt/rooms-agent-qa/test.cjs
+          sudo install -o root -g root -m 0755 "$(command -v node)" /opt/rooms-agent-qa/node
+          sudo cp -a infra/hostops /opt/rooms-agent-qa/native
+          sudo chown -R root:root /opt/rooms-agent-qa/native
+          sudo chmod -R go-w /opt/rooms-agent-qa/native
+      - name: Actual rootless worker and enforced limits
+        run: |
+          qa_uid=$(id -u rooms-ai)
+          cd /
+          qa_runtime=/run/user/${qa_uid}
+          qa_bus=unix:path=${qa_runtime}/bus
+          sudo -u rooms-ai env -i HOME=/home/rooms-ai USER=rooms-ai LOGNAME=rooms-ai PATH=/usr/bin:/bin XDG_RUNTIME_DIR="$qa_runtime" DBUS_SESSION_BUS_ADDRESS="$qa_bus" podman pull docker.io/library/busybox:1.37.0
+          qa_image=$(sudo -u rooms-ai env -i HOME=/home/rooms-ai USER=rooms-ai LOGNAME=rooms-ai PATH=/usr/bin:/bin XDG_RUNTIME_DIR="$qa_runtime" DBUS_SESSION_BUS_ADDRESS="$qa_bus" podman image inspect docker.io/library/busybox:1.37.0 --format '{{index .RepoDigests 0}}')
+          sudo -u rooms-ai env -i HOME=/home/rooms-ai USER=rooms-ai LOGNAME=rooms-ai PATH=/usr/bin:/bin XDG_RUNTIME_DIR="$qa_runtime" DBUS_SESSION_BUS_ADDRESS="$qa_bus" systemd-run --user --wait --pipe --unit=rooms-agent-qa --setenv=ROOMS_AGENT_ROOTLESS_QA=ephemeral-ci --setenv=ROOMS_AGENT_WORKER_IMAGE="$qa_image" /opt/rooms-agent-qa/node /opt/rooms-agent-qa/test.cjs
+      - name: Remove disposable identity services and volume
+        if: always()
+        run: |
+          qa_uid=$(id -u rooms-ai 2>/dev/null || true)
+          if [ -n "$qa_uid" ]; then sudo systemctl stop user@${qa_uid}.service; fi
+          sudo umount /var/lib/rooms-agent/workspaces || true
+          sudo rm -f /var/lib/rooms-agent-qa.ext4

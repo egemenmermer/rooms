@@ -1,6 +1,30 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopBridge } from '@rooms/contracts';
 const bridge: DesktopBridge = {
+  hostOps: {
+    hosts: () => ipcRenderer.invoke('rooms:hostops-hosts'),
+    snapshot: (id) => ipcRenderer.invoke('rooms:hostops-snapshot', id),
+    history: (id, range) => ipcRenderer.invoke('rooms:hostops-history', id, range),
+    operators: (id) => ipcRenderer.invoke('rooms:hostops-operators', id),
+    setOperator: (id, grant) => ipcRenderer.invoke('rooms:hostops-operator', id, grant),
+    thresholds: (id, value) => ipcRenderer.invoke('rooms:hostops-thresholds', id, value),
+    acknowledge: (id, ids) => ipcRenderer.invoke('rooms:hostops-ack', id, ids),
+    terminals: (id) => ipcRenderer.invoke('rooms:hostops-terminals', id),
+    createTerminal: (id) => ipcRenderer.invoke('rooms:hostops-create-terminal', id),
+    terminalAction: (id, session, action, target) =>
+      ipcRenderer.invoke('rooms:hostops-terminal-action', id, session, action, target),
+    attach: (id, session) => ipcRenderer.invoke('rooms:hostops-attach', id, session),
+    send: (input) => ipcRenderer.invoke('rooms:hostops-send', input),
+    detach: () => ipcRenderer.invoke('rooms:hostops-detach'),
+    onTerminal: (listener) => {
+      const handler = (
+        _event: Electron.IpcRendererEvent,
+        value: import('../../../packages/shared-contracts/src/hostops').TerminalEvent,
+      ) => listener(value);
+      ipcRenderer.on('rooms:hostops-terminal', handler);
+      return () => ipcRenderer.removeListener('rooms:hostops-terminal', handler);
+    },
+  },
   pendingInvite: () => ipcRenderer.invoke('rooms:pending-invite'),
   onInvite: (listener) => {
     const handler = (
@@ -71,6 +95,8 @@ const bridge: DesktopBridge = {
     acceptInvite: (code) => ipcRenderer.invoke('rooms:social-accept-invite', code),
     attachmentImage: (channel, message, file) =>
       ipcRenderer.invoke('rooms:social-attachment-image', channel, message, file),
+    downloadAttachment: (channel, message, file) =>
+      ipcRenderer.invoke('rooms:social-download-attachment', channel, message, file),
     avatar: (userId) => ipcRenderer.invoke('rooms:social-avatar', userId),
     chooseAvatar: () => ipcRenderer.invoke('rooms:social-choose-avatar'),
     readStates: () => ipcRenderer.invoke('rooms:social-read-states'),
@@ -109,6 +135,9 @@ const bridge: DesktopBridge = {
     remove: (id, clip) => ipcRenderer.invoke('rooms:soundboard-remove', id, clip),
   },
   music: {
+    playlists: (channel) => ipcRenderer.invoke('rooms:music-playlists', channel),
+    changePlaylist: (channel, change) =>
+      ipcRenderer.invoke('rooms:music-playlist-change', channel, change),
     history: (channelId) => ipcRenderer.invoke('rooms:music-history', channelId),
     snapshot: (channelId) => ipcRenderer.invoke('rooms:music-snapshot', channelId),
     command: (channelId, command) => ipcRenderer.invoke('rooms:music-command', channelId, command),
@@ -176,7 +205,33 @@ const bridge: DesktopBridge = {
     rdLibrary: () => ipcRenderer.invoke('rooms:provider-rd-library'),
     rdPlay: (id) => ipcRenderer.invoke('rooms:provider-rd-play', id),
   },
+  remoteControl: {
+    register: (room, track) => ipcRenderer.invoke('rooms:remote-register', room, track),
+    state: (room) => ipcRenderer.invoke('rooms:remote-state', room),
+    request: (room, peer, epoch) => ipcRenderer.invoke('rooms:remote-request', room, peer, epoch),
+    decide: (room, id, approve) => ipcRenderer.invoke('rooms:remote-decide', room, id, approve),
+    revoke: () => ipcRenderer.invoke('rooms:remote-revoke'),
+    frame: (value, leaseId) => ipcRenderer.invoke('rooms:remote-frame', value, leaseId),
+    receive: (value) => ipcRenderer.invoke('rooms:remote-receive', value),
+  },
   agent: {
+    workspace: {
+      terminals: (id) => ipcRenderer.invoke('rooms:agent-workspace-terminals', id),
+      take: (id) => ipcRenderer.invoke('rooms:agent-workspace-take', id),
+      close: (id, session) => ipcRenderer.invoke('rooms:agent-workspace-close', id, session),
+      resume: (id) => ipcRenderer.invoke('rooms:agent-workspace-resume', id),
+      attach: (id, session) => ipcRenderer.invoke('rooms:agent-workspace-attach', id, session),
+      send: (value) => ipcRenderer.invoke('rooms:agent-workspace-send', value),
+      detach: () => ipcRenderer.invoke('rooms:agent-workspace-detach'),
+      onTerminal: (listener) => {
+        const handler = (
+          _event: Electron.IpcRendererEvent,
+          value: import('../../../packages/shared-contracts/src/hostops').TerminalEvent,
+        ) => listener(value);
+        ipcRenderer.on('rooms:agent-workspace-event', handler);
+        return () => ipcRenderer.removeListener('rooms:agent-workspace-event', handler);
+      },
+    },
     previewArtifact: (taskId, artifactId) =>
       ipcRenderer.invoke('rooms:agent-artifact-preview', taskId, artifactId),
     authority: (roomId) => ipcRenderer.invoke('rooms:agent-authority', roomId),

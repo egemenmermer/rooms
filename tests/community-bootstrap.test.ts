@@ -150,3 +150,45 @@ it('ignores queued gateway events produced by a previous account session', async
   });
   expect(useCommunity.getState().messages.map((message) => message.id)).toEqual(['current']);
 });
+it('keeps mention acknowledgements cleared when a reconnect repeats a delivered message', async () => {
+  let listener!: (event: import('@rooms/social').GatewayEvent) => void;
+  window.rooms = {
+    social: {
+      session: async () => ({ status: 'not-configured', user: null }),
+      onEvent: (handler: typeof listener) => {
+        listener = handler;
+        return () => {};
+      },
+    },
+  } as unknown as DesktopBridge;
+  const { initializeCommunity, useCommunity } = await import('../apps/desktop/src/community');
+  await initializeCommunity();
+  const self = { id: 'self', username: 'self', displayName: 'Self', avatar: null };
+  useCommunity.setState({
+    user: self,
+    serverUrl: 'https://example.test',
+    activeChannelId: null,
+    readStates: {},
+    unread: {},
+  });
+  const event: import('@rooms/social').GatewayEvent = {
+    type: 'MESSAGE_CREATE',
+    data: {
+      id: 'mention-one',
+      channelId: 'chat',
+      author: { ...self, id: 'other' },
+      content: '<@self>',
+      mentions: ['self'],
+      timestamp: '2026-10-15T12:00:00Z',
+      editedTimestamp: null,
+    },
+  };
+  listener(event);
+  expect(useCommunity.getState().readStates.chat.mentionMessageIds).toEqual(['mention-one']);
+  listener({
+    type: 'READ_STATE_SYNC',
+    data: [{ channelId: 'chat', lastReadMessageId: 'mention-one', mentionMessageIds: [] }],
+  });
+  listener(event);
+  expect(useCommunity.getState().readStates.chat.mentionMessageIds).toEqual([]);
+});

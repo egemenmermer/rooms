@@ -1,5 +1,6 @@
 import './reference-agent-task.css';
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+const AgentWorkspace = lazy(() => import('./AgentWorkspace'));
 import {
   ArrowDownToLine,
   ArrowLeft,
@@ -100,6 +101,7 @@ function TaskScope({
   );
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [verified, setVerified] = useState(''),
     [notApplied, setNotApplied] = useState(false);
   const [selected, setSelected] = useState<string | null>(
@@ -302,6 +304,35 @@ function TaskScope({
               <div className="rat-status-line" />
               <small>Toplam aşama ve tamamlanma yüzdesi sunulmuyor.</small>
             </section>
+            {task.execution && (
+              <p className="rat-muted" style={{ overflowWrap: 'anywhere' }}>
+                {task.execution.hostId} · {task.execution.modelProvider} ·{' '}
+                {task.execution.writer === 'human'
+                  ? 'İnsan kontrolünde'
+                  : task.execution.writer === 'ai' && task.state === 'running'
+                    ? 'AI çalışıyor'
+                    : 'Yürütme bekliyor/durdu'}
+                {task.execution.usage && (
+                  <>
+                    {' '}
+                    · Agent toplamı: sunucu CPU’su{' '}
+                    {task.execution.usage.cpuPercent == null
+                      ? 'veri yok'
+                      : `%${task.execution.usage.cpuPercent.toFixed(1)}`}{' '}
+                    · RAM{' '}
+                    {task.execution.usage.memoryBytes == null
+                      ? 'veri yok'
+                      : `${Math.round(task.execution.usage.memoryBytes / 1024 ** 2)} MB`}{' '}
+                    · {task.execution.usage.pids ?? '?'} süreç/iş parçacığı · Çalışma diski{' '}
+                    {task.execution.usage.workspaceBytes == null
+                      ? 'veri yok'
+                      : `${Math.round(task.execution.usage.workspaceBytes / 1024 ** 2)} MB`}{' '}
+                    · Son ölçüm{' '}
+                    {new Date(task.execution.usage.measuredAt).toLocaleTimeString('tr-TR')}
+                  </>
+                )}
+              </p>
+            )}
             {!connected && (
               <p className="rat-callout">
                 Bağlantı kesildi. Görevin son durumu yeniden doğrulanmalı.
@@ -313,6 +344,23 @@ function TaskScope({
               </p>
             )}
             {task.error && <p className="rat-callout error">{uiError(task.error)}</p>}
+            {owner && connected && !demo && bridge.workspace && (
+              <>
+                <button className="rat-ghost" onClick={() => setWorkspaceOpen((open) => !open)}>
+                  {workspaceOpen ? 'Terminal panelini kapat' : 'Çalışma terminali'}
+                </button>
+                {workspaceOpen && (
+                  <Suspense fallback={<p>Terminal açılıyor…</p>}>
+                    <AgentWorkspace
+                      api={bridge.workspace}
+                      task={task}
+                      userId={userId}
+                      refresh={() => void onRefresh()}
+                    />
+                  </Suspense>
+                )}
+              </>
+            )}
             {task.state === 'cancelled' && (
               <p className="rat-callout">
                 Görev durduruldu. Tamamlanmış dış işlemler geri alınmaz.

@@ -1,0 +1,17 @@
+{
+  "host": {
+    "id": "core",
+    "label": "ROOMS",
+    "physicalHostId": "primary",
+    "mode": "shared",
+    "communityId": "SET_COMMUNITY_ID",
+    "ownerProfileId": null,
+    "agentAvailable": false
+  },
+  "stoatUrl": "http://127.0.0.1:14702",
+  "dataDirectory": "/var/lib/rooms-hostops",
+  "interfaces": [],
+  "blockDevices": [],
+  "terminalProfiles": [],
+  "statusHelper": "/usr/local/libexec/rooms-status-helper"
+}

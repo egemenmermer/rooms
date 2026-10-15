@@ -387,7 +387,7 @@ export function VoiceSidebar({
             disabled={r.status !== 'connected'}
             onClick={() => run(toggleDeafen())}
           >
-            <ReferenceIcon name="headphones" size={17} />
+            <ReferenceIcon name={r.deafened ? 'headphones-off' : 'headphones'} size={17} />
           </IconButton>
           <IconButton label="Ayarlar" onClick={() => navigate('/settings')}>
             <ReferenceIcon name="settings" size={17} />

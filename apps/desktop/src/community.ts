@@ -95,7 +95,9 @@ let nativeSessionEpoch: number | null = null;
 let initialization: Promise<void> | null = null;
 const conversations = new ConversationCache();
 const channelRequests = new Map<string, Promise<SocialMessage[]>>();
+const receivedMessages = new Set<string>();
 function clearConversations() {
+  receivedMessages.clear();
   queryClient.clear();
   conversations.clear();
   channelRequests.clear();
@@ -647,14 +649,36 @@ function onEvent(event: GatewayEvent) {
   } else if (event.type === 'MESSAGE_CREATE' || event.type === 'MESSAGE_UPDATE') {
     const message = event.data as SocialMessage;
     if (useChannelAccess.getState().checks[message.channelId]) return;
-    if (event.type === 'MESSAGE_CREATE')
+    const newlyReceived = event.type === 'MESSAGE_CREATE' && !receivedMessages.has(message.id);
+    if (newlyReceived) {
+      receivedMessages.add(message.id);
+      if (receivedMessages.size > 2000)
+        receivedMessages.delete(receivedMessages.values().next().value!);
+    }
+    if (newlyReceived)
       useCommunity.setState((s) => {
         const users = { ...s.typing[message.channelId] };
         delete users[message.author.id];
         return { typing: { ...s.typing, [message.channelId]: users } };
       });
-    if (event.type === 'MESSAGE_CREATE')
+    if (newlyReceived)
       useCommunity.setState((s) => ({
+        readStates:
+          message.author.id !== s.user?.id && s.user && message.mentions?.includes(s.user.id)
+            ? {
+                ...s.readStates,
+                [message.channelId]: {
+                  channelId: message.channelId,
+                  lastReadMessageId: s.readStates[message.channelId]?.lastReadMessageId ?? null,
+                  mentionMessageIds: [
+                    ...new Set([
+                      ...(s.readStates[message.channelId]?.mentionMessageIds ?? []),
+                      message.id,
+                    ]),
+                  ].slice(-200),
+                },
+              }
+            : s.readStates,
         channels: s.channels.map((ch) =>
           ch.id === message.channelId ? { ...ch, lastMessageId: message.id } : ch,
         ),
@@ -679,7 +703,7 @@ function onEvent(event: GatewayEvent) {
       }));
     }
     if (
-      event.type === 'MESSAGE_CREATE' &&
+      newlyReceived &&
       message.channelId === state.activeChannelId &&
       location.hash.startsWith('#/chat') &&
       document.hasFocus()

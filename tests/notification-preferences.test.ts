@@ -191,3 +191,17 @@ describe('native notification preferences', () => {
       expect(() => invoke('sound', value)).toThrow('Invalid notification preference');
   });
 });
+it('uses content-free mention copy while preserving opt-out and channel mute preferences', () => {
+  const service = setup();
+  service.message(scope, 'chat', true);
+  expect(mock.shown).toHaveLength(0);
+  invoke('opt-in', true);
+  invoke('channel-mute', { ...scope, channelId: 'chat', muted: true });
+  service.message(scope, 'chat', true);
+  expect(mock.shown).toHaveLength(0);
+  invoke('channel-mute', { ...scope, channelId: 'chat', muted: false });
+  service.message(scope, 'chat', true);
+  expect(mock.shown).toEqual([
+    { title: 'ROOMS', body: 'Topluluğunda biri seni etiketledi.', silent: true },
+  ]);
+});

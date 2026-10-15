@@ -1,0 +1,35 @@
+[Unit]
+Description=ROOMS host monitoring and operator terminals
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rooms-ops
+Group=rooms-ops
+Environment=ROOMS_HOSTOPS_CONFIG=/etc/rooms-hostops/service.json
+Environment=SERVICE_HOST=127.0.0.1
+Environment=PORT=3042
+ExecStart=/usr/bin/node /opt/rooms-hostops/hostops.cjs
+WorkingDirectory=/var/lib/rooms-hostops
+Restart=on-failure
+RestartSec=5
+UMask=0077
+# sudo can call only the two root-owned helpers through the exact sudoers rule.
+# NoNewPrivileges would disable that explicit privilege separation boundary.
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/rooms-hostops /tmp
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+LimitNOFILE=4096
+TasksMax=128
+MemoryMax=192M
+CPUQuota=20%
+
+[Install]
+WantedBy=multi-user.target

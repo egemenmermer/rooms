@@ -261,3 +261,42 @@ it('rechecks room access before returning history and never projects provider so
     await server.close();
   }
 });
+it('forwards a full shared playlist through fresh joined control without the global small-body limit', async () => {
+  const server = Fastify({ bodyLimit: 16384 });
+  const fetcher = vi
+    .spyOn(globalThis, 'fetch')
+    .mockResolvedValue(new Response(JSON.stringify(state)));
+  registerMusicGateway(server, {
+    url: 'http://worker',
+    secret,
+    apiKey: 'key',
+    apiSecret: 'development-secret-at-least-32-characters',
+    livekitUrl: 'ws://livekit',
+    roomService: {
+      getParticipant: async () => ({ identity: 'self' }),
+      listParticipants: async () => [{ identity: 'self' }],
+      removeParticipant: async () => {},
+      updateParticipant: async () => {},
+    } as any,
+    authorize: async () => ({ userId: 'self', canControl: true }),
+  });
+  try {
+    const tracks = Array.from({ length: 100 }, () => ({
+      videoId: 'abcdefghijk',
+      title: '曲'.repeat(160),
+      durationSec: 120,
+    }));
+    const result = await server.inject({
+      method: 'POST',
+      url: '/v1/music/room',
+      headers: { authorization: 'user-session' },
+      payload: { type: 'add-list', tracks },
+    });
+    expect(result.statusCode).toBe(200);
+    const command = JSON.parse(String(fetcher.mock.calls[0][1]?.body)).command;
+    expect(command).toEqual({ type: 'add-list', tracks });
+  } finally {
+    fetcher.mockRestore();
+    await server.close();
+  }
+});

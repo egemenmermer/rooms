@@ -7,7 +7,7 @@ import { AgentRepository } from '../apps/services/agent/repository';
 import { createAgentServer } from '../apps/services/agent/server';
 import { safeWorkspacePath } from '../apps/services/agent/worker';
 const principal = { userId: 'alice', roomIds: ['room-one'], canManage: true };
-async function fixture() {
+async function fixture(executionHost: 'separate-server' | 'shared-rootless' = 'separate-server') {
   const directory = mkdtempSync(join(tmpdir(), 'rooms-agent-'));
   const key = randomBytes(32);
   let enabled = true;
@@ -15,6 +15,7 @@ async function fixture() {
   const repository = new AgentRepository(directory, key);
   const app = await createAgentServer({
     repository,
+    executionHost,
     authorize: async (token) => {
       if (token !== 'test-alice' || !enabled)
         throw Object.assign(new Error('AUTH_DENIED'), { statusCode: 403 });
@@ -170,4 +171,20 @@ describe('separate agent service authority and persistence', () => {
       await f.close();
     }
   });
+});
+
+it('rejects unsupported shared-host CLI setup with an actionable reason', async () => {
+  const f = await fixture('shared-rootless');
+  try {
+    const response = await f.request('/v1/connections', 'POST', {
+      provider: 'codex',
+      label: 'Codex',
+      model: 'default',
+    });
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toBe('SHARED_HOST_API_MODEL_REQUIRED');
+    expect(f.repository.data.models).toHaveLength(0);
+  } finally {
+    await f.close();
+  }
 });

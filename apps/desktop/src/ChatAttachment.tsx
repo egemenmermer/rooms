@@ -16,7 +16,9 @@ export function ChatAttachment({
     [source, setSource] = useState<string | null>(null),
     [failed, setFailed] = useState(false),
     [retry, setRetry] = useState(0),
-    [expanded, setExpanded] = useState(false);
+    [expanded, setExpanded] = useState(false),
+    [downloading, setDownloading] = useState(false),
+    [downloadError, setDownloadError] = useState('');
   const image = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.mime);
   useEffect(() => {
     let alive = true;
@@ -41,14 +43,34 @@ export function ChatAttachment({
   }, [c.serverUrl, c.user?.id, channelId, messageId, file.id, image, retry]);
   if (!image)
     return (
-      <a className="message-attachment" href={file.url} target="_blank" rel="noreferrer">
-        <FileText size={27} />
-        <span>
-          <strong>{file.name}</strong>
-          <small>{Math.round(file.size / 1024)} KB</small>
-        </span>
-        <Download size={19} />
-      </a>
+      <div>
+        <button
+          className="message-attachment"
+          disabled={downloading}
+          onClick={async () => {
+            setDownloading(true);
+            setDownloadError('');
+            try {
+              if (!window.rooms) throw Error('Dosya indirmek için masaüstü uygulaması gerekiyor.');
+              await window.rooms.social.downloadAttachment(channelId, messageId, file.id);
+            } catch {
+              setDownloadError(
+                'Dosya indirilemedi. Mesaja erişimini ve bağlantını kontrol edip yeniden dene.',
+              );
+            } finally {
+              setDownloading(false);
+            }
+          }}
+        >
+          <FileText size={27} />
+          <span>
+            <strong>{file.name}</strong>
+            <small>{Math.round(file.size / 1024)} KB</small>
+          </span>
+          <Download size={19} />
+        </button>
+        {downloadError && <p role="alert">{downloadError}</p>}
+      </div>
     );
   return (
     <div className="chat-image-attachment">

@@ -11,14 +11,14 @@ export function setupWindowPolicy(
   isQuitting: () => boolean,
 ) {
   const file = join(app.getPath('userData'), 'desktop-window.json');
-  let keepOpenOnClose = false,
+  let keepOpenOnClose = true,
     warnOnVoiceClose = true;
   try {
     const saved = JSON.parse(readFileSync(file, 'utf8'));
-    keepOpenOnClose = saved.keepOpenOnClose === true;
+    keepOpenOnClose = saved.keepOpenOnClose !== false;
     warnOnVoiceClose = saved.warnOnVoiceClose !== false;
   } catch {
-    /* Preserve normal close behavior on first launch. */
+    /* New profiles keep calls alive; an explicit saved opt-out is preserved. */
   }
   const status = (): DesktopWindowPreferences => ({
     keepOpenOnClose,

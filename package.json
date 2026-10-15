@@ -1,6 +1,6 @@
 {
   "name": "rooms",
-  "version": "0.1.18-rc.9",
+  "version": "0.1.18-rc.11",
   "private": true,
   "description": "A private desktop clubhouse",
   "author": "ROOMS",
@@ -15,8 +15,8 @@
     "test": "vitest run --config vitest.config.ts",
     "test:desktop": "playwright test",
     "start": "electron .",
-    "package:mac": "node scripts/release-preflight.mjs && pnpm build && electron-builder --mac dmg zip --arm64 && node scripts/verify-mac-signature.mjs",
-    "package:win": "pnpm build && electron-builder --win nsis --x64",
+    "package:mac": "node scripts/release-preflight.mjs && pnpm build && node scripts/prepare-remote-input.mjs && electron-builder --mac dmg zip --arm64 && node scripts/verify-mac-signature.mjs",
+    "package:win": "pnpm build && node scripts/prepare-remote-input.mjs && electron-builder --win nsis --x64",
     "services:build": "node scripts/build-services.mjs",
     "livekit:native": "node scripts/livekit-native.mjs",
     "verify:media": "node scripts/livekit-verify.mjs",
@@ -39,6 +39,8 @@
     "@sapphi-red/gtcrn-wasm": "0.0.3",
     "@sapphi-red/web-noise-suppressor": "0.4.1",
     "@tanstack/react-query": "5.104.1",
+    "@xterm/addon-fit": "0.11.0",
+    "@xterm/xterm": "6.0.0",
     "electron-updater": "^6.8.9",
     "fastify": "5.12.5",
     "hls.js": "^1.7.3",
@@ -50,6 +52,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-router-dom": "7.18.4",
+    "ws": "8.22.0",
     "zod": "4.6.5",
     "zustand": "5.0.15"
   },
@@ -107,7 +110,8 @@
       "entitlementsInherit": "infra/release/entitlements.mac.plist"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "artifactName": "ROOMS-${version}-windows-${arch}-setup.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -121,6 +125,9 @@
         ]
       }
     ],
-    "afterPack": "scripts/mac-preview-after-pack.cjs"
+    "afterPack": "scripts/mac-preview-after-pack.cjs",
+    "extraMetadata": {
+      "roomsRemoteInput": true
+    }
   }
 }

@@ -1,0 +1,4 @@
+# Separate server-native kit. Approve only this pinned native dependency's build.
+packages: []
+allowBuilds:
+  node-pty: true

@@ -227,7 +227,7 @@ export function registerMusicGateway(
       }
     },
   );
-  server.post('/v1/music/:channelId', async (request, reply) => {
+  server.post('/v1/music/:channelId', { bodyLimit: 65536 }, async (request, reply) => {
     let id: string | undefined;
     try {
       id = channel.parse((request.params as { channelId: string }).channelId);
