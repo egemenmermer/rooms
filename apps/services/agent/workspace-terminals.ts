@@ -77,6 +77,7 @@ export function rootlessTerminalDriver(
     attach(id, _profile, onData, onExit) {
       const child = pty.spawn('/usr/bin/podman', ['attach', '--sig-proxy=false', name(id)], {
         name: 'xterm-256color',
+        cwd: '/',
         cols: 100,
         rows: 30,
         env: { ...podmanEnvironment(), TERM: 'xterm-256color' },

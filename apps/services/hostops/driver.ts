@@ -49,6 +49,7 @@ export function nativeTerminalDriver(moduleRoot: string, helper: string): Termin
     attach: (id, p, onData, onExit) => {
       const child = pty.spawn('/usr/bin/sudo', args('attach', id, p), {
         name: 'xterm-256color',
+        cwd: '/',
         cols: 100,
         rows: 30,
         env: { PATH: '/usr/bin:/bin', LANG: 'C.UTF-8', TERM: 'xterm-256color' },
