@@ -9,6 +9,7 @@ import {
   WorkspaceTerminals,
 } from '../../apps/services/agent/workspace-terminals';
 import type { AgentTask } from '../../packages/agent-contracts/src/index';
+import { SharedHostUsage } from '../../apps/services/agent/shared-host-usage';
 async function main() {
   assert.equal(process.env.ROOMS_AGENT_ROOTLESS_QA, 'ephemeral-ci');
   const config = {
@@ -16,6 +17,11 @@ async function main() {
     workspaceRoot: '/var/lib/rooms-agent/workspaces',
   };
   await verifySharedHost(config);
+  const usage = await new SharedHostUsage(config.workspaceRoot).sample(2);
+  assert.equal(usage.cpuPercent, null);
+  assert.ok(usage.memoryBytes !== null && usage.memoryBytes > 0);
+  assert.ok(usage.pids !== null && usage.pids > 0);
+  assert.ok(usage.workspaceBytes !== null && usage.workspaceBytes >= 0);
   const task = join(config.workspaceRoot, randomUUID());
   mkdirSync(task, { mode: 0o700 });
   const worker = sharedWorker(config);

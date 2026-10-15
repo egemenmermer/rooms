@@ -70,3 +70,5 @@ Mac native compile/load/unapproved-input smoke passed locally. Windows native co
 OPS-017 recorded: task execution showed resource ceilings but had no actual Agent utilization projection. Add cgroup/volume measurements with explicit aggregate scope, missing-data handling and measurement time; do not present limits as usage.
 
 OPS-018 recorded from actual Windows CI: native helper name `boolean` collides with Windows RPC SDK's typedef. Rename the N-API helper; retain the Windows compile/load gate. Also recheck OS input permission during an active lease, including secure-desktop changes; no elevation or permission bypass.
+
+OPS-017 source fix: task execution now reports the dedicated Agent-user cgroup's measured CPU (normalized to host cores), memory and PID count plus bounded workspace-volume usage every5seconds. The scope is explicitly aggregate and timestamps/missing/reset/stale counters are shown honestly. Late reports are fenced to the running task/controller. Unit cases cover startup/reset/staleness/unavailable data; the actual rootless CI also reads real cgroup/volume counters.

@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { SharedHostAdmission, sharedWorkerArguments } from '../apps/services/agent/shared-host';
 import { emptySupplement } from '../apps/services/hostops/collector';
 import type { HostSample } from '../packages/shared-contracts/src/hostops';
+import { SharedHostUsage } from '../apps/services/agent/shared-host-usage';
 const dirs: string[] = [];
 afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
@@ -22,6 +23,57 @@ const sample = (at: number, cpuPercent = 10): HostSample => ({
   network: { receivedBytes: null, sentBytes: null, receiveBps: null, sendBps: null },
   temperatureC: null,
   ...emptySupplement(),
+});
+it('projects actual aggregate counters without claiming CPU at startup or after reset/stale samples', async () => {
+  let at = 0,
+    cpu = 1000;
+  const reader = new SharedHostUsage('/bounded', {
+    cgroup: '/qa',
+    now: () => at,
+    read: async (path) =>
+      path.endsWith('cpu.stat')
+        ? `usage_usec ${cpu}\nuser_usec 1\n`
+        : path.endsWith('memory.current')
+          ? '123456\n'
+          : '8\n',
+    filesystem: async () => ({ bsize: 4096, blocks: 100, bfree: 75 }),
+  });
+  const first = await reader.sample(2);
+  expect(first).toMatchObject({
+    scope: 'agent-aggregate',
+    cpuPercent: null,
+    memoryBytes: 123456,
+    pids: 8,
+    workspaceBytes: 25 * 4096,
+  });
+  at = 1000;
+  cpu += 1_000_000;
+  expect((await reader.sample(2)).cpuPercent).toBe(50);
+  at = 2000;
+  cpu = 100;
+  expect((await reader.sample(2)).cpuPercent).toBeNull();
+  at = 20_000;
+  cpu += 1_000_000;
+  expect((await reader.sample(2)).cpuPercent).toBeNull();
+});
+it('preserves missing cgroup/volume usage as unavailable rather than zero', async () => {
+  const reader = new SharedHostUsage('/missing', {
+    read: async () => {
+      throw Error('unsupported');
+    },
+    filesystem: async () => {
+      throw Error('unsupported');
+    },
+    now: () => 42,
+  });
+  expect(await reader.sample(2)).toEqual({
+    scope: 'agent-aggregate',
+    measuredAt: 42,
+    cpuPercent: null,
+    memoryBytes: null,
+    pids: null,
+    workspaceBytes: null,
+  });
 });
 describe('shared host admission', () => {
   it('requires a continuous actual CPU window and rejects stale or backwards time', () => {

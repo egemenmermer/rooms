@@ -9,6 +9,7 @@ import { LinuxCollector } from '../hostops/collector';
 import type { HostSample } from '../../../packages/shared-contracts/src/hostops';
 import type { AgentExecutor } from './worker';
 import { AgentUncertainEffect } from './authority';
+import { SharedHostUsage } from './shared-host-usage';
 
 const exec = promisify(execFile);
 const MiB = 1024 * 1024;
@@ -279,6 +280,8 @@ export function sharedHostExecutor(
 ): AgentExecutor {
   const collector = new LinuxCollector('agent-shared');
   const admission = new SharedHostAdmission();
+  const usage = new SharedHostUsage(config.workspaceRoot);
+  let cores = 0;
   let sampling = false,
     active = false,
     stopped = false;
@@ -288,7 +291,9 @@ export function sharedHostExecutor(
     if (sampling || stopped) return;
     sampling = true;
     try {
-      admission.add(await collector.sample());
+      const sample = await collector.sample();
+      cores = sample.cores;
+      admission.add(sample);
     } catch {
       /* Stale telemetry fails closed. */
     } finally {
@@ -310,6 +315,22 @@ export function sharedHostExecutor(
       complete = resolve;
     });
     let interrupted: string | null = null;
+    let finished = false,
+      measuring = false;
+    const report = async () => {
+      if (finished || measuring || controller.signal.aborted) return;
+      measuring = true;
+      try {
+        const value = await usage.sample(cores);
+        if (!finished && !controller.signal.aborted) ctx.usage?.(value);
+      } catch {
+        /* Missing metrics never become fabricated usage. */
+      } finally {
+        measuring = false;
+      }
+    };
+    const resourceTimer = setInterval(() => void report(), 5000);
+    void report();
     const abort = () => controller.abort();
     ctx.signal.addEventListener('abort', abort, { once: true });
     if (ctx.signal.aborted) abort();
@@ -350,6 +371,8 @@ export function sharedHostExecutor(
       if (interrupted) throw new AgentInterrupted(interrupted);
       throw error;
     } finally {
+      finished = true;
+      clearInterval(resourceTimer);
       clearTimeout(deadline);
       clearInterval(pressure);
       clearInterval(authority);

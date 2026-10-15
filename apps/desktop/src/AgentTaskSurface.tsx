@@ -304,6 +304,35 @@ function TaskScope({
               <div className="rat-status-line" />
               <small>Toplam aşama ve tamamlanma yüzdesi sunulmuyor.</small>
             </section>
+            {task.execution && (
+              <p className="rat-muted" style={{ overflowWrap: 'anywhere' }}>
+                {task.execution.hostId} · {task.execution.modelProvider} ·{' '}
+                {task.execution.writer === 'human'
+                  ? 'İnsan kontrolünde'
+                  : task.execution.writer === 'ai' && task.state === 'running'
+                    ? 'AI çalışıyor'
+                    : 'Yürütme bekliyor/durdu'}
+                {task.execution.usage && (
+                  <>
+                    {' '}
+                    · Agent toplamı: sunucu CPU’su{' '}
+                    {task.execution.usage.cpuPercent == null
+                      ? 'veri yok'
+                      : `%${task.execution.usage.cpuPercent.toFixed(1)}`}{' '}
+                    · RAM{' '}
+                    {task.execution.usage.memoryBytes == null
+                      ? 'veri yok'
+                      : `${Math.round(task.execution.usage.memoryBytes / 1024 ** 2)} MB`}{' '}
+                    · {task.execution.usage.pids ?? '?'} süreç/iş parçacığı · Çalışma diski{' '}
+                    {task.execution.usage.workspaceBytes == null
+                      ? 'veri yok'
+                      : `${Math.round(task.execution.usage.workspaceBytes / 1024 ** 2)} MB`}{' '}
+                    · Son ölçüm{' '}
+                    {new Date(task.execution.usage.measuredAt).toLocaleTimeString('tr-TR')}
+                  </>
+                )}
+              </p>
+            )}
             {!connected && (
               <p className="rat-callout">
                 Bağlantı kesildi. Görevin son durumu yeniden doğrulanmalı.

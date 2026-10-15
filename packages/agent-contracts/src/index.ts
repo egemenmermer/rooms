@@ -32,6 +32,8 @@ export interface AgentTask {
     writer: 'ai' | 'human' | 'none';
     modelProvider: AgentProvider;
     limits: { cpu: number; memoryMiB: number; workspaceMiB: number; minutes: number };
+    startedAt?: string;
+    usage?: AgentResourceUsage;
   };
   kind?: 'model' | 'reminder';
   uncertainOperation?: { operationId: string; description: string; tool: string; preview: string };
@@ -48,6 +50,14 @@ export interface AgentTask {
   createdAt: string;
   runAt: string | null;
   error: string | null;
+}
+export interface AgentResourceUsage {
+  scope: 'agent-aggregate';
+  measuredAt: number;
+  cpuPercent: number | null;
+  memoryBytes: number | null;
+  pids: number | null;
+  workspaceBytes: number | null;
 }
 export interface AgentStatus {
   canManage?: boolean;

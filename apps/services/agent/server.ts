@@ -769,6 +769,7 @@ export async function createAgentServer(config: AgentConfig) {
               writer: terminal ? 'human' : 'ai',
               modelProvider: model.provider,
               limits: { cpu: 0.5, memoryMiB: 512, workspaceMiB: 2048, minutes: 15 },
+              startedAt: new Date(now()).toISOString(),
             };
             repo.save();
           }
@@ -783,6 +784,17 @@ export async function createAgentServer(config: AgentConfig) {
               .slice(-20)
               .map((m) => m.text),
             signal: controller.signal,
+            usage: (value) => {
+              if (
+                !closing &&
+                jobs.get(t.id) === controller &&
+                t.state === 'running' &&
+                t.execution
+              ) {
+                t.execution.usage = value;
+                repo.save();
+              }
+            },
             progress: (text) => {
               if (t.state === 'running') {
                 t.progress.push(text.slice(0, 500));
