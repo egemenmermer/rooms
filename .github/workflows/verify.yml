@@ -131,9 +131,9 @@ jobs:
           qa_uid=$(id -u rooms-ai)
           qa_runtime=/run/user/${qa_uid}
           qa_bus=unix:path=${qa_runtime}/bus
-          sudo -u rooms-ai env XDG_RUNTIME_DIR="$qa_runtime" DBUS_SESSION_BUS_ADDRESS="$qa_bus" podman pull docker.io/library/busybox:1.37.0
-          qa_image=$(sudo -u rooms-ai env XDG_RUNTIME_DIR="$qa_runtime" DBUS_SESSION_BUS_ADDRESS="$qa_bus" podman image inspect docker.io/library/busybox:1.37.0 --format '{{index .RepoDigests 0}}')
-          sudo -u rooms-ai env XDG_RUNTIME_DIR="$qa_runtime" DBUS_SESSION_BUS_ADDRESS="$qa_bus" systemd-run --user --wait --pipe --unit=rooms-agent-qa --setenv=ROOMS_AGENT_ROOTLESS_QA=ephemeral-ci --setenv=ROOMS_AGENT_WORKER_IMAGE="$qa_image" /opt/rooms-agent-qa/node /opt/rooms-agent-qa/test.cjs
+          sudo -u rooms-ai env -i HOME=/home/rooms-ai USER=rooms-ai LOGNAME=rooms-ai PATH=/usr/bin:/bin XDG_RUNTIME_DIR="$qa_runtime" DBUS_SESSION_BUS_ADDRESS="$qa_bus" podman pull docker.io/library/busybox:1.37.0
+          qa_image=$(sudo -u rooms-ai env -i HOME=/home/rooms-ai USER=rooms-ai LOGNAME=rooms-ai PATH=/usr/bin:/bin XDG_RUNTIME_DIR="$qa_runtime" DBUS_SESSION_BUS_ADDRESS="$qa_bus" podman image inspect docker.io/library/busybox:1.37.0 --format '{{index .RepoDigests 0}}')
+          sudo -u rooms-ai env -i HOME=/home/rooms-ai USER=rooms-ai LOGNAME=rooms-ai PATH=/usr/bin:/bin XDG_RUNTIME_DIR="$qa_runtime" DBUS_SESSION_BUS_ADDRESS="$qa_bus" systemd-run --user --wait --pipe --unit=rooms-agent-qa --setenv=ROOMS_AGENT_ROOTLESS_QA=ephemeral-ci --setenv=ROOMS_AGENT_WORKER_IMAGE="$qa_image" /opt/rooms-agent-qa/node /opt/rooms-agent-qa/test.cjs
       - name: Remove disposable identity services and volume
         if: always()
         run: |
