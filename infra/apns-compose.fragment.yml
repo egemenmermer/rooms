@@ -1,0 +1,31 @@
+# Merge into the private deployment Compose config. Keep pushd's APNs settings empty so only this
+# relay consumes the `notifications.outbound.apn` routing key.
+services:
+  apns:
+    image: rooms-apns:${ROOMS_APNS_IMAGE_TAG:?Set the built image tag}
+    restart: unless-stopped
+    init: true
+    read_only: true
+    mem_limit: 128m
+    cpus: 0.2
+    pids_limit: 32
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      ROOMS_APNS_KEY_FILE: /run/secrets/apns.p8
+      ROOMS_APNS_TOPIC: com.egemenmermer.rooms.mobile
+      # auto: production first, sandbox for Xcode-installed development builds.
+      ROOMS_APNS_ENVIRONMENT: auto
+    # ROOMS_APNS_KEY_ID, ROOMS_APNS_TEAM_ID and ROOMS_AMQP_URL (rabbit user/password) live here.
+    env_file:
+      - ./apns.env
+    volumes:
+      # Owner-provided Apple .p8 key, mode 0400, readable by UID 10002 only.
+      - ./private/apns.p8:/run/secrets/apns.p8:ro
+    depends_on:
+      rabbit:
+        condition: service_healthy
+      pushd:
+        condition: service_started
