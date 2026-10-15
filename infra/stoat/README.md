@@ -1,82 +1,82 @@
-# ROOMS Stoat integration
+# ROOMS Stoat entegrasyonu
 
-Status: IMPLEMENTED / actual upstream acceptance BLOCKED. This document records implementation and commands; fixture tests are not transport verification.
+Bu belge ilk uygulamayı ve 8 Ekim 2026'da yerel gerçek üst sistem kabulünün engellendiği kontrol noktasını kaydeder. Örnek testler aktarım kabulü değildir. Sonraki üretim/yayın durumu için [kurulum](../../docs/SELF_HOSTING.md) ve [RC12](../../docs/RC12_RELEASE.md) belgelerine bakın; aşağıdaki tarihsel engelleri güncel sunucu durumu olarak yorumlamayın.
 
-## Architecture
+## Mimari
 
-The existing React/Electron desktop remains the ROOMS client. `packages/social-domain` supplies opaque provider-independent identities. `packages/stoat-adapter` translates official Stoat REST and events to the existing normalized social contract; `community.ts` is the native credential boundary. The old Spacebar package and encrypted session are retained for inspection/rollback, but the active native adapter never restores or sends those credentials to Stoat.
+Mevcut React/Electron masaüstü ROOMS istemcisidir. `packages/social-domain` sağlayıcıdan bağımsız opak kimlikler sağlar. `packages/stoat-adapter`, resmî Stoat REST/olaylarını mevcut normalleştirilmiş sözleşmeye çevirir; `community.ts` yerel kimlik bilgisi sınırıdır. Eski Spacebar paketi ve şifreli oturumu inceleme/geri dönüş için korunur; etkin bağdaştırıcı bu bilgileri Stoat'a yüklemez veya göndermez.
 
-The current official self-host deployment is pinned in UPSTREAM.json. Upstream application source is unmodified. Deployment-only proxy/configuration changes live in an ignored, private `.local/stoat` directory. The official native Stoat voice and web clients are opt-in disabled profiles; ROOMS grants use the existing independent LiveKit transport. Social identity uses ULIDs, not Discord snowflakes. Chat time is decoded from actual message ULIDs.
+Resmî kendi sunucunda kurulum sürümü `UPSTREAM.json` içinde sabittir. Üst uygulama kaynağı değiştirilmez. Yalnız dağıtıma ait vekil/ayar değişiklikleri yok sayılan özel `.local/stoat` dizinindedir. Resmî yerel Stoat ses/web istemcileri varsayılan kapalı, isteğe bağlı profillerdir; ROOMS ayrı LiveKit kullanır. Sosyal kimlikler Discord snowflake değil ULID'dir. Sohbet zamanı gerçek mesaj ULID'sinden çözülür.
 
-## Durable invite-only registration
+## Kalıcı, yalnız davetle kayıt
 
-ROOMS signup invitations are different from official Stoat account and community invitations. The public proxy rejects direct `/api/auth/account/create`. A private loopback raw API port (3022) lets the broker perform the official account/create, login, onboarding and community-join calls.
+ROOMS kayıt daveti, resmî Stoat hesap/topluluk davetinden farklıdır. Açık vekil doğrudan `/api/auth/account/create` yolunu reddeder. Özel yerel ham API portu 3022, aracının resmî hesap oluşturma/giriş/ilk kurulum/topluluğa katılma çağrılarını yapmasını sağlar.
 
-The administrator provisions an upstream account ticket and maps it to an owned signup ticket with an expiry and a community invitation. Only the digest of the owned ticket is stored as its lookup key. The official account and community codes remain private server data. The native client submits the owned code to `/rooms-access/v1/auth/register`; it never needs official account-ticket secrets.
+Yönetici üst hesap biletini hazırlar; süreli, sahip olunan kayıt bileti ve topluluk davetiyle eşler. Kendi biletinin yalnız özeti arama anahtarı olarak saklanır. Resmî hesap/topluluk kodları sunucuda özel kalır. Yerel istemci kendi kodunu `/rooms-access/v1/auth/register` yoluna verir; resmî hesap bileti sırrını almaz.
 
-The gate obtains an exclusive file lock and atomically fsyncs `claiming` before any external creation call. Successful use becomes `used`; unsuccessful or uncertain use becomes `failed`. A retry cannot create another account. A process crash preserves claiming/lock state and requires administrator inspection before recovering the lock or issuing a new invitation. Do not reset failed tickets: an upstream account may already exist. This conservative behavior is intentional. The single broker process uses one shared ledger on persistent disk; do not scale independent ledgers.
+Kapı, harici hesap çağrısından önce özel dosya kilidi alıp `claiming` durumunu atomik fsync eder. Başarı `used`, başarısız/belirsiz sonuç `failed` olur. Tekrar başka hesap oluşturamaz. Çökme claiming/kilidi korur; kilit kurtarma/yeni davet öncesi yönetici incelemesi gerekir. Başarısız bileti sıfırlamayın; üst hesap zaten oluşmuş olabilir. Bu temkinli davranış bilinçlidir. Tek aracı kalıcı diskte tek ortak defter kullanır; bağımsız defterlerle çoğaltmayın.
 
-Public previews resolve only still-available owned tickets and include their actual configured expiry. Rate limits apply to signup and all service routes. An administrator CLI writes a private delivery file instead of printing signup codes.
+Açık önizleme yalnız kullanılabilir kendi biletini çözer, gerçek ayarlı bitişi gösterir. Kayıt ve tüm servis yolları hız sınırlıdır. Yönetici CLI kodu yazdırmak yerine özel teslim dosyası yazar.
 
-The v0.15.5 upstream community-invite model has no expiry/max-use fields. Upstream main contains newer fields, but those capabilities are not asserted against v0.15.5. In-app invitation creation uses an owner-authorized broker route, creates the official community invitation privately, provisions a separate account ticket through MongoDB, and returns only an expiring single-use ROOMS ticket. Existing signed-in users can also consume a ROOMS ticket to join. Provisioning requires ROOMS_ACCOUNT_INVITE_MONGO_URL; without it the UI receives a precise unavailable reason. Existing upstream invitations remain inspectable/joinable. None of these paths has yet been exercised against live Stoat.
+v0.15.5 üst topluluk davetinde süre/azami kullanım alanı yoktur. Üst main'de yeni alanlar olsa da v0.15.5'te var sayılmaz. Uygulama daveti sahip yetkili aracı yoluyla resmî daveti özel oluşturur, MongoDB üzerinden ayrı hesap bileti hazırlar ve yalnız süreli tek kullanımlık ROOMS bileti döndürür. Girişli kullanıcı da biletle katılabilir. Hazırlık `ROOMS_ACCOUNT_INVITE_MONGO_URL` ister; yoksa arayüz açık kullanılamama nedeni alır. Mevcut üst davetler incelenip kullanılabilir. İlk kontrol noktasında bu yollar canlı Stoat'ta çalıştırılmamıştı.
 
-## Commands
+## Komutlar
 
-```
+```sh
 node scripts/stoat-setup.mjs
 node scripts/stoat-start.mjs
 node scripts/stoat-issue-invite.mjs --community-code=YOUR_AUTHORIZED_COMMUNITY_CODE --expires-in=86400
 node scripts/stoat-integration.mjs
 ```
 
-Setup is idempotent and preserves existing keys/configuration. It generates private secrets, replaces upstream example RabbitMQ/MinIO passwords and enables upstream invite_only. All generated files are mode 0600 in a mode 0700 directory. No VM restart, seccomp changes or unrelated Docker changes are performed.
+Kurulum tekrar çalıştırılabilir; mevcut anahtar/ayarı korur. Özel sır üretir, örnek RabbitMQ/MinIO parolalarını değiştirir, `invite_only` açar. Dosyalar 0600, dizin 0700 olur. Sanal makine yeniden başlatma, seccomp değişimi veya ilgisiz Docker değişimi yapmaz.
 
-Native LiveKit webhook configuration: `node scripts/stoat-configure-media.mjs`, then restart only the owned SFU process to apply. The script was run, but the existing SFU was not restarted. Container deployments must use their reachable internal broker webhook URL with the same SDK API key.
+Yerel LiveKit webhook ayarı: `node scripts/stoat-configure-media.mjs`; uygulamak için yalnız sahip olunan SFU yeniden başlatılır. İlk kayıtta betik çalıştı fakat SFU yeniden başlatılmadı. Konteynerler aynı SDK API anahtarıyla erişilebilir iç aracı webhook URL'sini kullanmalıdır.
 
-Public development server: `http://127.0.0.1:3021` (REST /api; websocket /ws; native auth vault provider version 1). Private raw API: `http://127.0.0.1:3022`. Development-only Mongo loopback port:3023. `.local/stoat/broker.env` contains broker configuration. Production provisioning must use a MongoDB service account scoped to insert account_invites, not a general database administrator. Broker uses STOAT_INTERNAL_URL=that private raw origin; deployed container setups use the internal API origin. Public proxy forwards /rooms-access to port3002 and /rooms-activities to port3031. Production hostnames, HTTPS/WSS, Mongo access controls, immutable image digests and deployment credentials must be supplied and verified before release.
+Açık geliştirme `http://127.0.0.1:3021` (REST `/api`, websocket `/ws`, yerel yetki kasası sağlayıcı sürümü 1); özel ham API `http://127.0.0.1:3022`; yalnız geliştirme Mongo yerel portu 3023. `.local/stoat/broker.env` aracı ayarını içerir. Üretimde genel veritabanı yöneticisi yerine yalnız account_invites ekleyebilen Mongo hesabı kullanın. `STOAT_INTERNAL_URL` özel ham kaynaktır; konteynerde iç API kaynağı kullanılır. Açık vekil `/rooms-access` yolunu 3002, `/rooms-activities` yolunu 3031'e iletir. Üretim alan adı, HTTPS/WSS, Mongo erişimi, değişmez imaj özeti ve dağıtım bilgileri yayından önce sağlanıp doğrulanmalıdır.
 
-Actual verification requires `.local/stoat/test-accounts.json` (private, 0600): base public origin, owner/guest/outsider objects with email/password, spaceId, textId and voiceId. `ROOMS_STOAT_TEST_ACCOUNTS` can select another owned private file. The script verifies actual Ready, memberships, message send/edit/delete events, presence, restore and unauthorized third-user access. It writes only sanitized results. Fixtures are not substituted when the file/runtime is absent.
+Gerçek doğrulama özel 0600 `.local/stoat/test-accounts.json` ister: açık temel adres, e-posta/parolalı owner/guest/outsider nesneleri, spaceId/textId/voiceId. `ROOMS_STOAT_TEST_ACCOUNTS` başka sahip olunan özel dosya seçebilir. Betik gerçek Ready, üyelik, mesaj gönder/düzenle/sil olayları, çevrimiçi durum, oturum geri yükleme ve yetkisiz üçüncü kullanıcıyı sınar; yalnız temizlenmiş sonuç yazar. Dosya/çalışma ortamı yokken örnekle başarı üretilmez.
 
-## Permission enforcement
+## İzin uygulaması
 
-Media grants fetch actual current user, channel, server and member through official REST. They require a server TextChannel with actual voice configuration, exact membership identity, ViewChannel and Connect. Stoat's ranked role overrides, channel overrides, timeout, moderator can_publish/can_receive and native Speak/Video/Listen flags determine track/source and subscribe permissions. Owners still require correct membership/channel/server identity. Every active grant is rechecked every 10 seconds and permissions updated; lost membership/access removes the participant.
+Medya yetkisi resmî REST'ten gerçek güncel kullanıcı/kanal/sunucu/üyeyi alır. Gerçek ses yapılandırmalı sunucu TextChannel, tam üyelik kimliği, ViewChannel ve Connect gerekir. Stoat rol sırası, kanal istisnası, zaman aşımı, moderatör can_publish/can_receive ve Speak/Video/Listen bayrakları iz/kaynak/abonelik iznini belirler. Sahip için de üyelik/kanal/sunucu kimliği gerekir. Her etkin yetki 10 saniyede yeniden denetlenip güncellenir; kayıp üyelik/erişim katılımcıyı çıkarır.
 
-The broker validates LiveKit participant_joined webhooks using the official SDK signature and SHA256 of the exact raw body. Unknown/revoked grants are removed through the SFU API, including old JWT arrivals after a broker restart. Allowed participants receive fresh current permission settings. A reused five-minute JWT can still briefly connect before its webhook is processed; this is bounded asynchronous removal, not instantaneous cryptographic revocation. Ten-second sweeps provide another check. Real two-client media revocation is unverified for Stoat.
+Aracı `participant_joined` webhook'unu resmî SDK imzası ve tam ham gövdenin SHA-256'sıyla doğrular. Bilinmeyen/iptal edilmiş yetki, aracı yeniden başlatmadan önceki JWT gelişi dahil SFU API'siyle çıkarılır. İzinli katılımcı güncel izin alır. Yeniden kullanılan beş dakikalık JWT webhook işlenene kadar kısa bağlanabilir; bu sınırlı eşzamansız çıkarma, anlık kriptografik iptal değildir. On saniyelik tarama ek kontroldür. Gerçek iki istemcili Stoat medya iptali ayrıca kabul gerektirir.
 
-## Evidence on 2026-10-08
+## 8 Ekim 2026 kanıtları
 
-- Read master brief in full and both reference files before changes.
-- Official API/model/protocol source researched on upstream main and specifically v0.15.5; permission precedence compared with pinned tag.
-- `docker info --format '{{.ServerVersion}}'`: FAILED, OrbStack Docker socket absent. No runtime changed.
-- `node scripts/stoat-setup.mjs`: PASS; created owned private generated configuration, secrets not output.
-- `docker compose config --quiet` from `.local/stoat`: PASS; actual containers were not launched.
-- `node scripts/stoat-start.mjs`: BLOCKED, Docker unavailable.
-- `node scripts/stoat-issue-invite.mjs --community-code=fixture-unverified-only`: BLOCKED, no database runtime; no invitation issued.
-- `node scripts/stoat-integration.mjs`: BLOCKED, no actual test account configuration; no fixture treated as success.
-- `pnpm typecheck`: PASS during integration; concurrent project changes may require a final rerun.
-- `node scripts/build-access.mjs` and `node scripts/build-electron.mjs`: PASS.
-- 8 Stoat permission/origin tests + 11 adapter protocol fixture tests + 4 durable registration fixture tests: PASS. Adapter tests include multipart same-origin upload bytes and stable bot reply delivery headers. Signed webhook and unknown arrival removal tests use SDK signatures and a clearly labeled HTTP SFU fixture. Bot mention filtering fixture also passes. These are separate from upstream acceptance.
+- Ana istek ve iki referans değişiklikten önce tam okundu.
+- Resmî API/model/protokol main ve v0.15.5 üzerinde incelendi; izin önceliği sabit etiketle karşılaştırıldı.
+- `docker info --format '{{.ServerVersion}}'`: başarısız, OrbStack soketi yoktu; çalışma ortamı değiştirilmedi.
+- `node scripts/stoat-setup.mjs`: başarılı; özel ayar üretildi, sır yazdırılmadı.
+- `.local/stoat` içinde `docker compose config --quiet`: başarılı; konteyner başlatılmadı.
+- `node scripts/stoat-start.mjs`: Docker olmadığı için engelli.
+- `node scripts/stoat-issue-invite.mjs --community-code=fixture-unverified-only`: veritabanı olmadığı için engelli; davet üretilmedi.
+- `node scripts/stoat-integration.mjs`: gerçek test hesabı ayarı olmadığından engelli; örnek başarı sayılmadı.
+- `pnpm typecheck`: entegrasyonda başarılı; eşzamanlı değişiklik sonrası son tekrar ayrıca gerekiyordu.
+- `node scripts/build-access.mjs` ve `node scripts/build-electron.mjs`: başarılı.
+- 8 Stoat izin/kaynak, 11 bağdaştırıcı protokol, 4 kalıcı kayıt örnek testi başarılı. Aynı kaynaklı multipart baytları ve sabit bot yanıt başlıkları kapsandı. İmzalı webhook/bilinmeyen katılımcı testleri SDK imzası ve işaretli HTTP SFU örneği kullanır. Bot bahsetme süzgeci de geçti. Bunlar üst sistem kabulünden ayrıdır.
 
-## Unverified acceptance
+## Ayrı doğrulanacak kabul
 
-Actual account registration/email verification/partial-signup recovery; invite expiry/one-use through the running proxy; two actual account messaging/DM/friends/presence/moderation; attachments/reactions/profile UI; websocket reconnect/Ready refresh and read-state; actual Stoat membership media grants/moderator mute/deafen/revocation; two physical macOS clients; production deployment/signing/restore. No actual Stoat integration or screenshot is claimed.
+Gerçek hesap kaydı/e-posta/kısmi kayıt kurtarması; çalışan vekilde davet süresi/tek kullanım; iki hesapla mesaj/DM/arkadaş/çevrimiçi/moderasyon; ek/tepki/profil arayüzü; websocket yeniden bağlanma/Ready/okundu; Stoat üyelik medya yetkisi/moderatör susturma/sağırlaştırma/iptal; iki fiziksel Mac; üretim imza/dağıtım/geri dönüş. İlk kayıt gerçek Stoat entegrasyonu veya ekran görüntüsü iddia etmez; sonraki testler ayrıca kaydedilmelidir.
 
-## Official bot connection
+## Resmî bot bağlantısı
 
-The agent-side Stoat bot connector uses verified official x-bot-token REST authentication and gateway token authentication. It checks that /users/@me identifies a bot, ignores bots/self/ordinary messages, requires actual mention metadata plus an authorized human author, and hands mentions to the agent job boundary. It does not join voice. Upstream v0.15.5 users/rocket.rs and bonfire/websocket.rs were inspected for bot auth behavior; live bot credentials and end-to-end results remain unverified.
+Agent Stoat botu resmî `x-bot-token` REST ve ağ geçidi belirteci kullanır. `/users/@me` sonucunun bot olduğunu denetler; bot/kendi/sıradan mesajları yok sayar, gerçek bahsetme üstverisi ve yetkili insan yazar ister, göreve aktarır. Sese katılmaz. v0.15.5 users/rocket.rs ve bonfire/websocket.rs bot yetkisi için incelendi; canlı bot bilgileri/uçtan uca sonuç ayrıca doğrulanmalıdır.
 
-## Social capabilities added
+## Eklenen sosyal yetenekler
 
-Native APIs now support authoritative friends/incoming/outgoing/blocked relationships, official username#discriminator friend requests/removal, self display-name/bio/status edits, message reaction add/remove with gateway refresh, attachment metadata and controlled uploads. Attachment choice uses an explicit native file dialog, supported media/document extensions, a 25MiB nonempty limit and a bounded descriptor read that rejects changing files. Uploaded IDs are scoped to the selected conversation and cleared when switching accounts; raw paths never cross preload. Discarding a selected attachment releases its native send capability; upstream owns cleanup of unused uploaded bytes. Attachment-only messages are allowed. Autumn's discovered URL must have the exact configured Stoat origin, no credentials/query/fragment, before receiving session headers or bytes. Renderer download metadata contains only same-origin public attachment paths from upstream, never a bearer token.
+Yerel API gerçek arkadaş/gelen/giden/engelli ilişkileri, resmî username#discriminator istek/kaldırma, kendi ad/biyografi/durum değişimi, ağ geçidi yenilemeli tepki ekle/kaldır, ek üstverisi ve kontrollü yüklemeyi destekler. Dosya seçimi açık yerel iletişim kutusu, destekli medya/belge uzantısı, boş olmayan en fazla 25 MiB ve değişen dosyayı reddeden sınırlı tanıtıcı okuması kullanır. Yüklenen kimlikler seçilen konuşmaya bağlı, hesap değişiminde temizlenir; ham yol preload'dan geçmez. Seçimi kaldırmak yerel gönderme yeteneğini bırakır; kullanılmayan üst baytların temizliği üst sisteme aittir. Yalnız ekli mesaj mümkündür. Keşfedilen Autumn adresi oturum başlığı/bayt almadan önce tam yapılandırılmış Stoat kaynağına eşit olmalı, kimlik bilgisi/sorgu/parça içermemelidir. Görünüm indirme üstverisi yalnız aynı kaynaklı açık ek yolu taşır, belirteç taşımaz.
 
-Presence starts from actual Ready online flags and official UserUpdate events. Native presence subscriptions are sent only while the main window is focused, renew at most once per 10minutes and enforce upstream's 5active/15minute limits. This implementation does not prove live presence without actual two-client tests.
+Çevrimiçi durum gerçek Ready bayrağı ve UserUpdate olayından başlar. Yerel abonelik yalnız ana pencere odaklıyken gönderilir, en sık 10 dakikada yenilenir; üst sistem 5 etkin/15 dakika sınırları uygulanır. Gerçek iki istemci olmadan canlı durum kanıtlanmaz.
 
-Permission role precedence follows pinned upstream for distinct ranks. Equal-ranked conflicting overrides have ambiguous upstream HashMap order, so the broker conservatively treats denies as winning within that rank rather than risk granting excess voice permissions. Fixture tests cover both member role orders.
+Ayrı sıralarda rol önceliği sabit üst sürümü izler. Aynı sıradaki çelişkili istisnalarda üst HashMap sırası belirsiz olduğundan aracı o sırada reddi öncelikli alır; fazla ses izni verme riskini önler. İki üye rol sırası da örnek testlidir.
 
-Social/profile/reaction/upload happy paths have protocol fixtures and native compile/build checks, but no actual Stoat server was available. Do not mark these features VERIFIED until the live integration script and actual desktop UI exercise them.
+Sosyal/profil/tepki/yükleme başarılı yolları protokol örneği ve yerel derleme kontrolüne sahiptir. İlk kontrolde gerçek sunucu yoktu; canlı entegrasyon ve masaüstü sınanmadan doğrulanmış sayılmaz.
 
-## Authoritative read restoration
+## Yetkili okundu geri yüklemesi
 
-Pinned v0.15.5 [sync route](https://github.com/stoatchat/stoatchat/blob/v0.15.5/crates/delta/src/routes/sync/get_unreads.rs) returns authenticated own channel records through `/sync/unreads`. The [ChannelUnread model](https://github.com/stoatchat/stoatchat/blob/v0.15.5/crates/core/models/src/v0/channel_unreads.rs) contains `last_id` and mention message IDs, not a total unread count. Native `readStates()` returns normalized `SocialReadState` records. Every actual Ready/reconnect fetches these records and emits `READ_STATE_SYNC`; current-user ChannelAck and successful native acknowledgement refetch them. Other users' acknowledgements do not overwrite own read state. Channels expose their actual `last_message_id` as `lastMessageId`.
+Sabit v0.15.5 [eşzamanlama yolu](https://github.com/stoatchat/stoatchat/blob/v0.15.5/crates/delta/src/routes/sync/get_unreads.rs), `/sync/unreads` üzerinden kullanıcının kendi kanal kayıtlarını verir. [ChannelUnread](https://github.com/stoatchat/stoatchat/blob/v0.15.5/crates/core/models/src/v0/channel_unreads.rs), toplam okunmamış sayısı değil `last_id` ve bahsetme mesaj kimlikleri içerir. Yerel `readStates()`, normalleştirilmiş `SocialReadState` döndürür. Her gerçek Ready/yeniden bağlantı bunları çekip `READ_STATE_SYNC` üretir; güncel kullanıcı ChannelAck ve başarılı yerel onay yeniden çeker. Başkasının onayı kendi durumu ezmez. Kanallar gerçek `last_message_id` değerini `lastMessageId` olarak verir.
 
-A missing record or failed/unsupported sync is unknown, never an invented zero count. Failure emits `READ_STATE_UNAVAILABLE`. No local storage is used to claim upstream restored unread state. Protocol fixtures cover own-user filtering, the official acknowledgement route, post-ack authoritative refetch and invalid-response failure. Actual reconnect/read synchronization still requires the unavailable live Stoat runtime. Native incoming-message notification checks an existing signed-in user and normalized string `author.id`, excluding own messages; it does not inspect raw provider author fields.
+Eksik kayıt veya başarısız/desteksiz eşzamanlama bilinmiyor demektir; sıfır uydurulmaz. Hata `READ_STATE_UNAVAILABLE` üretir. Yerel depoyla üst okundu geri geldiği iddia edilmez. Kendi kullanıcı süzme, resmî onay yolu, onay sonrası yetkili yeniden çekme ve geçersiz yanıt örnek testlidir. Gerçek yeniden bağlantı/okundu ayrı canlı kabul ister. Yerel mesaj bildirimi girişli kullanıcıyı ve normalleştirilmiş metin `author.id` değerini denetler, kendi mesajını dışlar; ham sağlayıcı yazar alanına bakmaz.

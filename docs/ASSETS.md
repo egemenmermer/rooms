@@ -1,23 +1,21 @@
-# Asset provenance and licensing
+# Görsellerin kaynağı ve lisansı
 
-Original ROOMS source and project-owned brand/vector artwork are offered under MIT by the owner. InterVariable.woff2 retains SIL Open Font License1.1 and its adjacent OFL notice. Dependency and embedded native notices remain in THIRD_PARTY_NOTICES.md and generated binary notices.
+ROOMS'un özgün kaynak kodu ve projeye ait marka/vektör görselleri sahibi tarafından MIT ile sunulur. `InterVariable.woff2`, SIL Open Font License 1.1 ve yanındaki OFL bildirimini korur. Bağımlılık ve gömülü yerel bileşen bildirimleri [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) ile üretilen ikili bildirimlerinde kalır.
 
-dj/default-dj.png was generated for this publication candidate on2026-10-14 with the built-in OpenAI ImageGen tool, without input/reference images. It depicts an original abstract robot, not a real person or existing branded character. It is supplied as part of the owner's MIT-licensed original project assets, to the extent the owner can grant rights. No third-party exclusivity claim is made.
+`dj/default-dj.png`, 14 Ekim 2026'da yerleşik OpenAI ImageGen aracıyla girdi/referans görsel kullanılmadan üretildi. Gerçek kişi veya mevcut markalı karakter yerine özgün soyut robot gösterir. Sahibinin verebildiği haklar ölçüsünde projenin MIT lisanslı özgün varlıklarıyla sunulur; üçüncü taraflara karşı münhasırlık iddiası yoktur.
 
-Final generation prompt:
-“Use case: character-design. Create one original static mascot illustration for a customizable open-source desktop voice-room music bot. A small friendly abstract midnight-blue robot wearing over-ear headphones, with a simple rounded head, two calm pearl-blue illuminated eyes, and a compact torso behind a subtle miniature DJ mixing deck. Sophisticated quiet dark desktop application aesthetic, restrained lavender accents and softly shaded matte materials, clean readable silhouette at small sizes. Centered composition, entire character and deck visible with generous transparent margins. Actual transparent background. No real person, no celebrity resemblance, no recognizable existing cartoon or brand, no logos, no letters or text, no watermark. This is a single production UI asset, not a screenshot or mockup.”
+Son üretim isteminin Türkçe açıklaması: Özelleştirilebilir açık kaynak masaüstü ses odası müzik botu için tek, özgün, statik maskot; kulak üstü kulaklık takan gece mavisi küçük robot, yuvarlak baş, inci mavisi iki sakin ışıklı göz, küçük DJ mikseri arkasında gövde. Koyu uygulama estetiği, ölçülü lavanta vurgular, mat yüzeyler, küçük boyutta okunur siluet. Ortalanmış, tamamı görünür karakter ve mikser; geniş saydam kenarlar ve gerçekten saydam arka plan. Gerçek kişi, ünlü benzerliği, bilinen çizgi karakter, marka, logo, yazı veya filigran yok. Ekran görüntüsü yerine tek üretim arayüz varlığı. Üretimde kullanılan İngilizce istem işletmecinin özgün kayıtlarında korunur.
 
-The former private-community real-person poster/clip, private reference screenshots and operator evidence are excluded from this source distribution and are not relicensed by the MIT file. Community-supplied customization remains the community operator's material; loading a manifest does not transfer ownership or redistribute it in the repository.
+Eski özel topluluk kişi posteri/klibi, özel referans ekran görüntüleri ve işletmeci kanıtları bu kaynak dağıtımından çıkarılmıştır; MIT dosyasıyla yeniden lisanslanmaz. Topluluğun özelleştirmeleri işletmecisinin malzemesidir; manifest yüklemek mülkiyeti devretmez veya malzemeyi depoda dağıtmaz.
 
+## Belge galerisi
 
-## Documentation gallery
+`docs/images/home.png`, `chat.png` ve `voice.png`, 14 Ekim 2026'da `f4e9e4f` kaynak commit'inin güncel ROOMS görünümünden, yalıtılmış ve belirli örnek topluluk durumlarıyla (S08, S10, S19) alındı. Hesap girişi, özel sunucu, sağlayıcı oturumu veya canlı görüşme kullanılmadı. Sohbet etkinlik kartındaki nötr manzara yalnızca çekimde verilen özgün örnek SVG'dir. Avatarlar uygulamanın baş harf yedeğini kullanır.
 
-`docs/images/home.png`, `chat.png`, and `voice.png` were captured on 2026-10-14 from the current ROOMS application renderer at source commit `f4e9e4f`, using isolated, deterministic sample community state (S08, S10, and S19). No account login, private server, provider session, or live call was used. The neutral landscape inside the chat activity card is original sample SVG artwork supplied only during capture. Avatars use the application's initial-letter fallbacks.
+Sunum çekimlerinde geliştirme göstergesi gösterilmez; uygulamanın geliştirme örneği işareti ve üretim sınırları korunur. Bu görseller arayüz anlatımıdır; mesaj teslimi, ses aktarımı veya sağlayıcı oynatma kabul kanıtı değildir. README ve kullanıcı rehberi örnek topluluk verisini belirtir. Özel referans görüntüsü veya kişi klibi yeniden kullanılmadı.
 
-The development indicator is omitted in the presentation captures; the application's development fixture marker and production boundaries remain unchanged. These are interface illustrations, not acceptance evidence for chat delivery, voice transport, or provider playback. The README and user guide identify sample community data. No private reference screenshot or real-person clip was reused.
+## Portal uygulama ikonu
 
-## Portal application icon
+15 Ekim 2026'da sahibi gönderdiği `01.svg` portal fikrini uygulama ikonu olarak seçti. `apps/desktop/public/reference-brand/app-icons/app-icon-master.svg` geometriyi, geçişleri ve renkleri korur; yalnızca açıklayıcı üstveri güncellendi. PNG boyutları, macOS ICNS ve mevcut ICO aynı SVG'nin belirli dışa aktarımlarıdır. `icon.png` Mac Dock'ta, `icon.icns` paketlenmiş Mac uygulamasında, karşılık gelen 128 piksel görsel Hakkında bölümünde kullanılır.
 
-On 2026-10-15 the owner selected the supplied `01.svg` portal concept as the application icon. `apps/desktop/public/reference-brand/app-icons/app-icon-master.svg` retains its geometry, gradients, and colors; only the descriptive metadata was updated for its selected use. The matching PNG sizes, macOS ICNS, and existing ICO resource are deterministic exports of this SVG. `icon.png` is used by the macOS Dock; `icon.icns` is the packaged macOS application icon; About uses the corresponding 128 px export.
-
-The iPhone companion uses the same portal with an opaque, full-bleed background so iOS supplies its own outer mask. This does not change account, media, permission, or update behavior. Updating source assets does not replace the icon inside already installed, signed applications; they need a newly built and distributed application.
+iPhone eşlikçisi aynı portalı opak, kenara kadar uzanan arka planla kullanır; dış maskeyi iOS uygular. Hesap, medya, izin veya güncelleme davranışı değişmez. Kaynak görselleri değiştirmek kurulu, imzalı uygulamanın ikonunu değiştirmez; yeniden derlenip dağıtılması gerekir.

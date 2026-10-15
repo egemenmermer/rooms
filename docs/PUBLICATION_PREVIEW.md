@@ -1,28 +1,30 @@
-# Open-source publication candidate
+# Açık kaynak yayın hazırlığı: tarihsel kontrol noktası
 
-Prepared 2026-10-14 from the RC8 owner-trial source (59dee89), including the latest committed DJ completion/seek/search implementation. The maintainer selected MIT. This candidate remains private and has not been installed, deployed, merged into the live product or published as a release.
+Bu belge 14 Ekim 2026'da RC8 deneme kaynağı (`59dee89`) ve o tarihte commit edilmiş DJ tamamlama/arama/sarma çalışmasından hazırlanan adayın kaydıdır. Sahibi MIT seçti. Aday o tarihte özel tutuluyordu; canlı ürüne kurulmamış, dağıtılmamış, birleştirilmemiş veya yayın olarak sunulmamıştı. Depo sonradan sahibi tarafından herkese açıldı; güncel masaüstü yayını [RC12](RC12_RELEASE.md)'dir. Aşağıdaki kayıt güncel durumla karıştırılmamalıdır.
 
-## Changes
-- MIT license and discoverable contribution/security/release/development/self-hosting docs.
-- Original static ImageGen music character; no private-community poster/clip in the source or build. Per-server name/poster/optional animation configuration, with bounded same-origin, no-credential asset loading and safe fallback.
-- Existing music identity, queue commands, seek/search contracts, volume controls and transport lifecycle retained. Optional participant display name is operator-configured.
-- Personal deployment defaults, private readiness receipts, screenshots, reference packages, historical personal-host/legacy setup commands and one-off release-upload workflows separated from the candidate. The original private repository/history and an external private archive retain them.
-- Empty default community URL; saved preferences/invitations still work. Explicit fork signing/updater/feed/deployment settings; ordinary signed packaging no longer implicitly publishes.
-- Shared alias map derived from TypeScript configuration, consistent Prettier formatting in separate commits, dependency maintenance and a checksum-pinned source secret-scan gate.
+## Yapılanlar
 
-## Verification
-- Frozen-lockfile installation in an independent dependency directory.
--119test files /801tests PASS in the complete local suite.
--Lint, typecheck, renderer/native build,128production dependency notices and all service bundles PASS.
--Format check and publication-tree policy PASS.
--Current Electron signed-out onboarding shell smoke PASS after selecting a test community explicitly. Invalid invite validation remains local; no real account invitation was consumed.
--Actual sandboxed Electron component fixture captured at1440x900 and900x700: generated static image decoded, no renderer errors, no real room/account/media transport. Temporary fixture source and profile removed.
--Source-only Gitleaks scan PASS with exact fixture-value exclusions, not blanket test/path exclusions. Existing private history is a separate publication boundary.
+- MIT lisansı; katkı, güvenlik, yayın, geliştirme ve kendi sunucunda kurulum belgeleri.
+- Özgün statik ImageGen müzik karakteri. Özel topluluk posteri/klibi kaynakta veya derlemede yok. Sunucuya göre ad/poster/isteğe bağlı animasyon; sınırlı, aynı kaynaklı, kimlik bilgisi göndermeyen yükleme ve güvenli yedek.
+- Müzik kimliği, kuyruk komutları, arama/sarma sözleşmeleri, ses kontrolleri ve aktarım yaşam döngüsü korundu. Katılımcı görünen adı işletmeci tarafından ayarlanabilir.
+- Kişisel dağıtım varsayılanları, özel hazırlık kayıtları/görseller/referans paketleri, eski kişisel sunucu kurulum komutları ve tek seferlik yayın yükleme iş akışları ayrıldı. Özgün özel depo/geçmiş ve harici özel arşiv bunları korur.
+- Varsayılan topluluk adresi boş; kayıtlı tercihler ve davetler çalışır. Çatallara özgü açık imza/güncelleme/besleme/dağıtım ayarları; normal imzalı paketleme artık örtük yayın yapmaz.
+- TypeScript yapılandırmasından ortak takma ad haritası, ayrı commit'lerde tutarlı Prettier düzeni, bağımlılık bakımı ve sağlama toplamıyla sabitlenmiş kaynak gizli bilgi taraması.
 
-Initial checks caught two old unit expectations and a native smoke assumption that depended on the removed production default. They were updated to exercise explicit community selection; empty-server recovery now fails closed. A17-file second formatting pass stabilized the formatter's output. The final build was rerun on stable source, rather than using a concurrent formatting/build artifact.
+## O tarihte doğrulananlar
 
-The existing large-chunk/dependency-comment warnings remain visible. No physical Mac/Windows media session, provider permission, remote load, recovery or new signed release acceptance is inferred from these checks. No server credentials, signing keys, user data or live Hoppers/ROOMS services were changed.
+- Bağımsız bağımlılık dizininde kilit dosyası değiştirilmeden kurulum.
+- Tam yerel pakette 119 test dosyası / 801 test başarılı.
+- Lint, tür kontrolü, görünüm/yerel modül derlemesi, 128 üretim bağımlılığı bildirimi ve tüm servis paketleri başarılı.
+- Biçim ve yayın ağacı politikası başarılı.
+- Açıkça test topluluğu seçildikten sonra hesapsız Electron ilk açılışı başarılı. Geçersiz davet yerel doğrulandı; gerçek davet tüketilmedi.
+- Gerçek korumalı Electron örnek bileşeni 1440×900 ve 900×700 çekildi; üretilen statik görsel çözüldü, görünüm hatası yok; gerçek oda/hesap/medya kullanılmadı. Geçici kaynak ve profil kaldırıldı.
+- Yalnızca kaynak Gitleaks taraması, geniş klasör istisnaları yerine tam örnek değer istisnalarıyla başarılı. Eski özel geçmiş ayrı yayın sınırıdır.
 
-## Publication boundary and final review
+İlk kontroller, kaldırılan üretim varsayılanına bağlı iki eski birim beklentisini ve bir yerel modül varsayımını buldu. Açık topluluk seçimini sınayacak şekilde güncellendiler; boş sunucudan kurtarma güvenli biçimde reddeder. İkinci, 17 dosyalık biçim geçişi çıktıyı sabitledi. Son derleme eşzamanlı biçimleme sırasında üretilen çıktıdan değil, kararlı kaynaktan yeniden alındı.
 
-The existing `egemenmermer/rooms` repository remains the publication target. Original history is retained unchanged in a PRIVATE archive; the reviewed redacted history preserves development commits and graph structure with changed IDs. See [publication/README.md](publication/README.md) and its complete file/release tables. The earlier fresh snapshot is not the authoritative continuation. Visibility remains private pending retained GitHub-view cleanup and owner approval. No live application or server deployment is included.
+Büyük parça ve bağımlılık yorum uyarıları görünür kaldı. Bu kontroller fiziksel Mac/Windows medya oturumu, sağlayıcı izni, uzaktan yük, kurtarma veya yeni imzalı yayın kabulü anlamına gelmez. Sunucu kimlik bilgileri, imza anahtarları, kullanıcı verisi ve canlı Hoppers/ROOMS servisleri değiştirilmedi.
+
+## Geçmiş ve son inceleme sınırı
+
+Yayın hedefi mevcut `egemenmermer/rooms` deposudur. Özgün geçmiş değişmeden özel arşivde tutulur; incelenen ayıklanmış geçmiş, kimlikleri değişmekle birlikte geliştirme commit'lerini ve grafiği korur. Dosya/yayın tabloları için [yayın incelemesine](publication/README.md) bakın. Eski taze anlık görüntü yetkili devam noktası değildir. Kaynak/geçmiş temizliği, GitHub'ın tuttuğu eski PR veya önbellek görünümlerinin silindiği anlamına gelmez. Görünürlük değişimi bu kayıtların kaldırıldığını kanıtlamaz; destek talebi sonuçlanmış gibi gösterilmemelidir.

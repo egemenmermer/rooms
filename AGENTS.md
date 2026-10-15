@@ -1,13 +1,12 @@
-# ROOMS engineering instructions
+# ROOMS geliştirme talimatları
 
-- Communicate with the current owner in their preferred language; write code and technical docs in English.
-- Root implements/reviews work; do not delegate without explicit user authorization.
-- Preserve the existing Electron/React client, typed Stoat adapter, replaceable media transport and route-independent voice.
-- Every visible control must work or explain why it is unavailable. DEV fixtures must remain labeled and excluded from production paths.
-- Privileged operations and persistent credentials stay outside the renderer. Validate IPC, source/network permissions and server membership.
-- Keep personal media connections private. No provider-token distribution, unauthorized rebroadcasting or DRM bypass.
-- Prefer scoped fixes and meaningful regression checks. Do not equate unit/mock/native shell checks with physical two-client transport.
-- Do not deploy, sign, publish or run disruptive remote tests unless the user authorizes that operation.
-- Never commit generated secrets, account files, private assets, signing keys, database snapshots or private operator evidence.
-- Read docs/ARCHITECTURE.md and the relevant module before changing behavior. Keep format-only changes separate from functional changes.
-
+- Proje sahibiyle tercih ettiği dilde iletişim kur. README, proje belgeleri ve katkı şablonlarını Türkçe yaz; kod, API adları ve kod yorumlarında İngilizceyi koru.
+- Uygulamayı ve incelemeyi ana agent yürütür. Kullanıcının açık izni olmadan işi başka agentlara devretme.
+- Mevcut Electron/React istemcisini, tipli Stoat adapterini, değiştirilebilir medya katmanını ve sayfa geçişlerinden bağımsız ses bağlantısını koru.
+- Görünür her kontrol çalışmalı veya neden kullanılamadığını açıklamalı. Geliştirme örnekleri etiketli kalmalı ve üretim akışlarına girmemeli.
+- Yetkili işlemler ve kalıcı kimlik bilgileri görünüm süreci dışında kalır. IPC gönderenini, kaynak/ağ izinlerini ve topluluk üyeliğini doğrula.
+- Kişisel medya bağlantılarını özel tut. Sağlayıcı belirteci dağıtımı, izinsiz yeniden yayın veya DRM aşma ekleme.
+- Sınırlı kapsamlı düzeltmeleri ve anlamlı regresyon kontrollerini tercih et. Birim, taklit servis veya yerel açılış kontrollerini iki fiziksel istemcinin medya kabulüyle eş tutma.
+- Kullanıcı ilgili işleme izin vermedikçe dağıtım, imzalama, yayınlama veya uzaktaki sistemi etkileyen test yapma.
+- Üretilmiş sırları, hesap dosyalarını, özel varlıkları, imza anahtarlarını, veritabanı kopyalarını veya özel operasyon kanıtlarını commit etme.
+- Davranışı değiştirmeden önce docs/ARCHITECTURE.md belgesini ve ilgili modülü oku. Yalnızca biçimlendirme yapan değişiklikleri işlevsel değişikliklerden ayrı tut.

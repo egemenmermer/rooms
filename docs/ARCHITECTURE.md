@@ -1,55 +1,55 @@
-# Architecture
+# Mimari
 
-[← README](../README.md) · [Development](DEVELOPMENT.md) · [Self-hosting](SELF_HOSTING.md)
+[← README](../README.md) · [Geliştirme](DEVELOPMENT.md) · [Sunucu kurulumu](SELF_HOSTING.md)
 
-## Contents
+## İçindekiler
 
-- [Process and trust boundaries](#process-and-trust-boundaries)
-- [Account and media flow](#account-and-media-flow)
-- [State and persistence](#state-and-persistence)
-- [Change boundaries](#change-boundaries)
+- [Süreçler ve güven sınırları](#süreçler-ve-güven-sınırları)
+- [Hesap ve medya akışı](#hesap-ve-medya-akışı)
+- [Durum ve kalıcılık](#durum-ve-kalıcılık)
+- [Değişiklik sınırları](#değişiklik-sınırları)
 
-## Process and trust boundaries
+## Süreçler ve güven sınırları
 
-ROOMS uses one Electron/React desktop shell and separate service authorities.
+ROOMS, tek bir Electron/React masaüstü kabuğu ve ayrı servis yetkilerinden oluşur.
 
-The renderer consumes a typed preload bridge. Electron main owns native session storage, files/capture, provider credentials and network capabilities. Renderer Node integration stays disabled; IPC checks the trusted sender/window/frame/origin and validates input. Native authentication is scoped to the selected server/account.
+Görünüm süreci tipli preload köprüsünü kullanır. Yerel oturum saklama, dosyalar/yakalama, sağlayıcı kimlik bilgileri ve ağ yetenekleri Electron main'e aittir. Görünüm sürecinde Node entegrasyonu kapalıdır. IPC; güvenilir göndereni, pencereyi, çerçeveyi, kaynak adresini ve girdiyi doğrular. Yerel kimlik doğrulama seçilen sunucu ve hesapla sınırlıdır.
 
-Social domain types and the Stoat adapter normalize official upstream API/events. Do not fork the upstream social server to implement UI features. The legacy Spacebar adapter remains a compatibility module, not the active setup path.
+Sosyal alan tipleri ve Stoat bağdaştırıcısı, resmî üst sistem API/olaylarını ortak sözleşmeye dönüştürür. Arayüz özelliği için sosyal arka uç çatallanmaz. Eski Spacebar bağdaştırıcısı bir uyumluluk modülüdür; etkin kurulum yolu değildir.
 
-Voice/media state lives outside route components. LiveKit is behind the media-provider boundary; navigating or closing a DJ panel must not stop voice or the server-owned queue. Participant gain is listener-local. Shared Activities use authoritative commands, revisions and per-user projections; hidden game state is never projected to other users.
+Ses/medya durumu sayfa bileşenlerinin dışında yaşar. LiveKit medya sağlayıcısı sınırının arkasındadır; sayfa değiştirmek veya DJ panelini kapatmak görüşmeyi ya da sunucu kuyruğunu durdurmamalıdır. Katılımcı ses seviyesi dinleyiciye özeldir. Ortak etkinlikler yetkili komutlar, sürümler ve kullanıcıya özel görünümler kullanır; gizli oyun durumu diğer kullanıcılara gönderilmez.
 
-The access service validates current identity/membership and issues bounded media grants. Activities own serialized room state and compatible persistence. The music worker owns bounded queue/source cleanup and publishes through a short-lived lease. The optional Agent belongs on a separately scoped Linux host.
+Erişim servisi güncel kimliği/üyeliği doğrular ve süreli medya izinleri verir. Activities sıralı oda durumu ile uyumlu kalıcılığı yönetir. Müzik çalışanı sınırlı kuyruk/kaynak temizliğini yönetir ve kısa süreli kira ile yayın yapar. İsteğe bağlı Agent, ayrı Linux sunucusunda Docker ile veya aynı fiziksel sunucuda ayrı kullanıcı ve sıkı kaynak sınırlarıyla rootless Podman üzerinden çalışır. Kurulum yolları ve yetkileri ayrı tutulur.
 
-Community branding is decorative, versioned, bounded and same-origin. Failed/absent branding falls back to the bundled original static image. Branding fetches send no account cookies or provider tokens and never modify the music control contract.
+Topluluk görselleri dekoratif, sürümlü, boyutu sınırlı ve aynı kaynaktandır. Yükleme başarısızsa paketli özgün statik görsel kullanılır. Görsel istekleri hesap çerezi veya sağlayıcı belirteci göndermez ve müzik komut sözleşmesini değiştirmez.
 
-## Account and media flow
+## Hesap ve medya akışı
 
-1. The user selects a community origin or opens an invitation.
-2. Electron's native social boundary authenticates against that community and retains credentials outside the renderer.
-3. The typed adapter maps upstream REST/events to the application's social domain.
-4. For voice, the access service checks the actual account, channel, membership, and permissions, then issues a short-lived LiveKit grant.
-5. The client connects to LiveKit and publishes devices only after the corresponding explicit action/permission flow.
-6. Activities independently authorize commands and return per-user projections. Optional music and Agent services have their own authority and lifecycle.
+1. Kullanıcı topluluk kaynak adresini seçer veya davet açar.
+2. Electron'ın yerel sosyal sınırı o toplulukta oturum açar; kimlik bilgilerini görünüm süreci dışında tutar.
+3. Tipli bağdaştırıcı, üst sistem REST/olaylarını uygulamanın sosyal alanına eşler.
+4. Seste erişim servisi gerçek hesabı, kanalı, üyeliği ve izinleri kontrol edip kısa süreli LiveKit yetkisi verir.
+5. İstemci LiveKit'e bağlanır. Cihaz yayını, ilgili açık kullanıcı işlemi ve izin akışından sonra başlar.
+6. Activities komutları ayrıca yetkilendirir ve kullanıcıya özel görünüm döndürür. İsteğe bağlı müzik ve Agent servislerinin kendi yetkileri ve yaşam döngüleri vardır.
 
-These are distinct systems: a successful social websocket does not prove media reachability, and a visible activity page does not provision its service. See [self-hosting](SELF_HOSTING.md) for routes, ports, and the actual setup sequence.
+Bunlar farklı sistemlerdir. Sosyal websocket'in çalışması medyanın erişilebilir olduğunu kanıtlamaz; etkinlik sayfasının görünmesi o servisi kurmaz. Rotalar, portlar ve gerçek kurulum sırası [sunucu rehberindedir](SELF_HOSTING.md).
 
-## State and persistence
+## Durum ve kalıcılık
 
-| State | Owner |
+| Durum | Sorumlu bileşen |
 | --- | --- |
-| Account identity, messages, social membership | Stoat and its database/object storage |
-| Native account/session and local preferences | The selected desktop profile and native credential boundary |
-| Active media session | Route-independent realtime client store plus LiveKit and access grants |
-| Signup invitation consumption | Persistent access-service ledger and upstream account creation |
-| Activity/game state | One authoritative Activities process with file or PostgreSQL persistence |
-| Music queue/source lifecycle | Optional music service; listener gain remains local |
-| Agent tasks/grants/encrypted configuration | Optional separate Agent host |
+| Hesap, mesajlar ve sosyal üyelik | Stoat, veritabanı ve nesne deposu |
+| Yerel hesap/oturum ve yerel tercihler | Seçilen masaüstü profili ve yerel kimlik bilgisi sınırı |
+| Aktif medya oturumu | Sayfalardan bağımsız gerçek zamanlı istemci durumu, LiveKit ve erişim izinleri |
+| Kayıt davetinin tüketimi | Kalıcı erişim servisi işlem defteri ve üst sistem hesap oluşturma |
+| Etkinlik/oyun durumu | Dosya veya PostgreSQL kullanan tek yetkili Activities süreci |
+| Müzik kuyruğu/kaynak yaşam döngüsü | İsteğe bağlı müzik servisi; dinleyici ses seviyesi yereldir |
+| Agent görevleri/izinleri/şifreli yapılandırma | İsteğe bağlı yalıtılmış Agent servisi |
 
-A repository checkout is not a database backup. Back up each persistence owner with compatible configuration and encryption keys, and validate restores before upgrading. Media encryption in transit does not mean E2EE; end-to-end encryption is not configured.
+Kaynak kod kopyası veritabanı yedeği değildir. Her kalıcı depoyu uyumlu yapılandırma ve şifreleme anahtarlarıyla yedekle; sürüm yükseltmeden geri yüklemeyi doğrula. Aktarım şifrelemesi E2EE değildir; uçtan uca şifreleme yapılandırılmamıştır.
 
-## Change boundaries
-Change schemas alongside cross-runtime operations. Preserve account epochs, stale-response fencing, revocation, explicit consent and shutdown cleanup. Prefer small cohesive feature modules over moving all code for cosmetic folder symmetry. Root aliases have one source of truth in tsconfig.json.
+## Değişiklik sınırları
 
-The source can be shared as an evolving project without claiming every feature is production-certified. Signing, provider access, physical-device acceptance and server recovery require their own evidence.
+Çalışma ortamları arasındaki işlemleri değiştirirken şemaları birlikte güncelle. Hesap nesillerini, eski yanıtların engellenmesini, izin iptalini, açık kullanıcı onayını ve kapanış temizliğini koru. Yalnızca klasör simetrisi için her şeyi taşımak yerine küçük, kendi içinde tutarlı özellik modüllerini tercih et. Kök takma adlarının tek kaynağı `tsconfig.json` dosyasıdır.
 
+Kaynak açık bir geliştirme projesi olarak paylaşılabilir; bu, her özelliğin üretim için sertifikalandığı iddiası değildir. İmza, sağlayıcı erişimi, fiziksel cihaz kabulü ve sunucu kurtarma için ayrı kanıt gerekir.

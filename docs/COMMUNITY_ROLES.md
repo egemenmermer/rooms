@@ -1,27 +1,9 @@
-# Community roles
+# Topluluk rolleri
 
-Settings → Members and roles → Roles exposes a compact role editor. Names and
-hex colors are independent from permissions; each tab has an explicit save.
-Kanka, Yayıncı and Moderatör are editable draft presets, never automatic grants
-or member assignments. Members can hold multiple roles.
+Ayarlar → Üyeler ve roller → Roller bölümünde rol oluşturabilir, adını ve onaltılık rengini değiştirebilirsiniz. Görünüm ve izinler ayrı sekmelerde, ayrı kaydetme düğmeleriyle düzenlenir. Kanka, Yayıncı ve Moderatör düzenlenebilir taslak şablonlardır; kendiliğinden izin vermez veya üyeye atanmaz. Bir üye birden çok rol taşıyabilir.
 
-The editor supports twelve upstream permissions: view, send, files, connect,
-speak, video, manage messages, manage channels, assign roles, manage roles,
-manage permissions and kick members. Each value is inherit, allow or deny.
-Unexposed permission bits survive edits. Server defaults and channel overrides
-continue to apply; this is not a replacement permission engine.
+Düzenleyici üst sistemin on iki iznini destekler: görüntüleme, mesaj gönderme, dosyalar, bağlanma, konuşma, video, mesaj yönetimi, kanal yönetimi, rol atama, rol yönetimi, izin yönetimi ve üye çıkarma. Her izin devral, izin ver veya reddet olabilir. Arayüzde gösterilmeyen izin bitleri korunur. Sunucu varsayılanları ve kanal istisnaları geçerliliğini sürdürür; yeni bir izin motoru kurulmaz.
 
-Electron validates each mutation and the typed Stoat adapter reads current
-membership, role hierarchy and grantable permissions before sending it to the
-upstream API. Appearance/create/delete use ManageRole; permission changes use
-ManagePermissions. The upstream server reauthorizes every write. Credentials
-remain in the main process. A saved write with a failed refresh has a separate
-error and is never automatically repeated.
+Electron her değişiklik isteğini doğrular. Türlendirilmiş Stoat bağdaştırıcısı isteği üst API'ye göndermeden önce güncel üyeliği, rol hiyerarşisini ve verilebilecek izinleri okur. Görünüm, oluşturma ve silme `ManageRole`; izin değişiklikleri `ManagePermissions` gerektirir. Üst sunucu her yazmayı yeniden yetkilendirir. Kimlik bilgileri ana süreçte kalır. Yazma başarılı olup yenileme başarısız olursa ayrı hata gösterilir; yazma otomatik tekrarlanmaz.
 
-Regression coverage includes exact pinned API payloads, high permission bits,
-hierarchy and grant escalation rejection, strict IPC/trusted-sender validation,
-save failures, unsaved drafts, role presets, and gateway invalidation during
-save. Development projections remain labeled and cannot mutate an account.
-Mock tests and isolated packaged-app checks do not establish live multi-user
-acceptance; verify create, edit, reopen and assignment against a real community
-before reporting that acceptance.
+Regresyon testleri sabitlenen API yüklerini, yüksek izin bitlerini, hiyerarşi ve yetki yükseltme reddini, IPC/güvenilir gönderici doğrulamasını, kaydetme hatalarını, kaydedilmemiş taslakları, şablonları ve kayıt sırasında ağ geçidi geçersizleştirmesini kapsar. İşaretli geliştirme görünümleri bir hesabı değiştiremez. Taklit testler ve yalıtılmış paket kontrolleri canlı çok kullanıcılı kabul yerine geçmez. Bu kabulü tamamlandı saymadan önce gerçek toplulukta oluşturma, düzenleme, yeniden açma ve üye atamasını doğrulayın.

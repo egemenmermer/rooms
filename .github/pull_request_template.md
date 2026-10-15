@@ -1,11 +1,11 @@
-## Problem and resulting behavior
+## Sorun ve değişiklikten sonraki davranış
 
-## Validation
+## Doğrulama
 
-- Commands/platforms:
-- Actual results:
-- Device/provider checks still open:
+- Komutlar ve platformlar:
+- Gerçek sonuçlar:
+- Açık kalan cihaz/sağlayıcı kontrolleri:
 
-## Configuration/data impact
+## Yapılandırma ve veri etkisi
 
-Mention migrations, credentials, permissions and rollback only when relevant. Do not include private data.
+İlgiliyse veri geçişini, kimlik bilgilerini, izinleri ve geri dönüşü açıkla. Özel veri ekleme.

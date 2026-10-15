@@ -1,5 +1,5 @@
-# Community conduct
+# Topluluk davranış kuralları
 
-Be respectful and constructive. Discuss code and user needs without harassment, discrimination or personal attacks. Respect other people's privacy and never post credentials, private messages or personal account data in issues or PRs.
+Saygılı ve yapıcı ol. Kodu ve kullanıcı ihtiyaçlarını; taciz, ayrımcılık veya kişisel saldırı olmadan tartış. Başkalarının gizliliğine saygı göster; issue ve PR'larda kimlik bilgisi, özel mesaj veya kişisel hesap verisi paylaşma.
 
-Maintainers may moderate contributions, close abusive discussions and restrict participation. Request a private maintainer contact channel for sensitive conduct concerns without publishing private details. Security vulnerabilities follow SECURITY.md.
+Proje sorumluları katkıları denetleyebilir, kötüye kullanım içeren tartışmaları kapatabilir ve katılımı sınırlandırabilir. Hassas davranış sorunları için özel ayrıntıları yayımlamadan proje sorumlularından özel bir iletişim kanalı iste. Güvenlik açıkları için [SECURITY.md](SECURITY.md) yolunu izle.

@@ -1,3 +1,3 @@
-# History publication review
+# Geçmişin yayıma hazırlık incelemesi
 
-The completed existing-repository source/history/release review is in [publication/README.md](publication/README.md), with complete file and release asset disposition tables. Original history is preserved privately; publication remains gated by retained GitHub views and owner review.
+Mevcut deponun kaynak, geçmiş ve yayın dosyaları için tamamlanan inceleme [yayım incelemesi](publication/README.md) belgesindedir. Dosyaların ve yayın varlıklarının ne yapıldığını gösteren tam tablolar da oradadır. Orijinal geçmiş özel yedekte korunur. GitHub'ın tuttuğu eski görünümler ile sahibin incelemesi ayrı konulardır; depoyu herkese açık yapmak bu eski kayıtların silindiği anlamına gelmez.

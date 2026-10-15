@@ -1,19 +1,19 @@
-# Chat and DJ controls
+# Sohbet ve DJ kontrolleri
 
-Text and voice creation controls are visible in the compact sidebar. Channel management uses current upstream capabilities; successful text creation navigates to the new conversation. Private-message creation selects a friend or an authorized community member through the existing upstream DM path.
+Dar kenar çubuğunda metin ve ses kanalı oluşturma kontrolleri görünür. Kanal yönetimi üst sistemin güncel yetkilerini kullanır; metin kanalı oluşturulduğunda yeni konuşmaya geçilir. Özel mesaj oluşturmak, mevcut üst sistem DM yolu üzerinden bir arkadaş veya yetkili topluluk üyesi seçer.
 
-Raster photo previews load through native IPC: authoritative message/attachment lookup, same-origin configured file service, bounded MIME/bytes, channel and account rechecks. No arbitrary renderer URL fetch or image CSP expansion. Photos open larger on click; failures have retry.
+Fotoğraf önizlemeleri yerel IPC üzerinden yüklenir: yetkili mesaj/ek sorgusu, yapılandırılmış aynı kaynaklı dosya servisi, MIME ve boyut sınırları, kanal ve hesap kontrolleri uygulanır. Görünüm süreci rastgele URL çekemez; görsel CSP'si genişletilmez. Fotoğraf tıklanınca büyür; hata durumunda yeniden deneme vardır.
 
-DJ commands include UUID-based track selection and complete queue reordering. Reordering preserves the current playing track without restarting it; stale/duplicate membership is refused. Keyboard move controls accompany drag-and-drop. A completed final track restarts from zero; adding to a finished queue starts the new entry.
+DJ komutları UUID ile parça seçimini ve kuyruğun tamamını yeniden sıralamayı içerir. Sıralama çalan parçayı yeniden başlatmaz; eski veya yinelenmiş üyelik reddedilir. Sürüklemeye ek olarak klavyeyle taşıma kontrolleri bulunur. Bitmiş son parça sıfırdan başlar; bitmiş kuyruğa eklenen yeni kayıt çalmaya başlar.
 
-Room listening sessions are stored by the music service in a private state volume with atomic synchronized writes. Public YouTube references only; provider credentials and private media URLs are not archived. Spotify/SoundCloud references already resolve to these public recordings. Authorized clients receive only bounded metadata and played indicators, with access rechecked after reads. Restoring a session or an individual historical track requires the existing joined DJ-control grant; it adds the recording(s) to the queue and starts the chosen entry. Thirty sessions per room and two hundred total bound retention. Sessions from before this feature cannot be reconstructed automatically.
+Oda dinleme oturumları müzik servisinin özel veri biriminde eşzamanlı, atomik yazmalarla saklanır. Yalnızca herkese açık YouTube referansları tutulur; sağlayıcı kimlik bilgileri ve özel medya URL'leri arşivlenmez. Spotify/SoundCloud referansları da bu açık kayıtlara çözümlenir. Yetkili istemcilere yalnızca sınırlı üstveri ve çalındı göstergeleri verilir; okuma sonrasında erişim yeniden denetlenir. Oturum veya tek geçmiş parça geri yükleme, mevcut katılım ve DJ kontrol iznini gerektirir; kayıtları kuyruğa ekleyip seçileni başlatır. Saklama oda başına 30, toplam 200 oturumla sınırlıdır. Özellikten önceki oturumlar otomatik yeniden oluşturulamaz.
 
-Provider matching retains artist, title, version and duration checks. Flat Topic metadata can omit featured artists: a fallback requires exact primary Topic artist/title, a duration difference of at most two seconds, and a single unambiguous candidate. Shorter music-video edits, wrong artists and ambiguous results are rejected. Failures distinguish metadata matching, provider refusal, loading timeout, audio decoding, transport and history persistence.
+Sağlayıcı eşleştirmesi sanatçı, başlık, sürüm ve süre kontrollerini korur. Düz Topic üstverisinde konuk sanatçılar eksik olabilir: yedek eşleştirme ancak ana Topic sanatçısı/başlığı tam uyarsa, süre farkı en fazla iki saniyeyse ve tek açık aday varsa yapılır. Kısaltılmış klipler, yanlış sanatçılar ve belirsiz sonuçlar reddedilir. Hatalar üstveri eşleşmesi, sağlayıcı reddi, yükleme süresi, ses çözme, aktarım ve geçmiş kaydı olarak ayrılır.
 
-## Distribution boundary
+## Dağıtım sınırı
 
-Source and public packages must exclude community addresses/configuration, private artwork, account data, listening history, signing/private keys, private receipts and real-user screenshots. Community runtime configuration and custom branding stay outside source. Public source branding fallback and explicit-server onboarding remain intact. Publication tree/history checks are required; current community binaries, feed and accounts are not changed by a source commit. Private signing/update configuration must be audited separately before any public binary publication.
+Kaynak ve açık paketler topluluk adreslerini/yapılandırmasını, özel görselleri, hesap verisini, dinleme geçmişini, imzalama/özel anahtarları, özel doğrulama kayıtlarını ve gerçek kullanıcı ekran görüntülerini içeremez. Çalışma zamanı topluluk ayarları ve özel marka kaynak dışında kalır. Genel marka yedeği ve açık sunucu seçimi korunur. Kaynak ağacı/geçmiş yayın kontrolleri zorunludur; kaynak commit'i mevcut topluluk paketlerini, beslemesini ve hesaplarını değiştirmez. Açık ikili yayınından önce özel imzalama/güncelleme ayarları ayrıca incelenmelidir.
 
-## Validation boundary
+## Doğrulamanın sınırı
 
-Scoped automated and local fixture/native checks are recorded privately by the operator. They do not close physical-device acceptance or certify every provider recording. No release is authorized by this implementation document.
+Kapsamlı otomatik testlerin ve yerel örnek/yerel modül kontrollerinin kayıtları işletmecide özel tutulur. Fiziksel cihaz kabulünü kapatmaz veya her sağlayıcı kaydını onaylamaz. Bu uygulama belgesi yayın yetkisi vermez.

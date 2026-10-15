@@ -1,41 +1,43 @@
-# Realtime media transport
+# Gerçek zamanlı medya aktarımı
 
-## Implementation
+Bu belge ilk aktarım uygulamasını ve 8 Ekim 2026 doğrulamasını kaydeder. Sonraki ekran sesi ve masaüstü davranışları [hata/özellik tesliminde](BUGS_FEATURES_DELIVERY.md), güncel yayın [RC12 notlarında](RC12_RELEASE.md) anlatılır.
 
-`LiveKitMediaProvider` implements the replaceable `RealtimeMediaProvider` contract using pinned `livekit-client` 2.22.3. `liveKitMediaProvider` is the singleton owned by the renderer realtime store, outside route components. Navigation does not destroy the voice session.
+## Uygulama
 
-The privileged access broker validates the Spacebar account and channel membership and returns an ephemeral grant `{ roomId, url, token }`. The adapter retains the token only in memory. It never receives the LiveKit service signing secret. Remote servers require WSS; insecure WS is accepted only for loopback development. Token-bearing URLs are rejected.
+`LiveKitMediaProvider`, değiştirilebilir `RealtimeMediaProvider` sözleşmesini sabitlenmiş `livekit-client` 2.22.3 ile uygular. `liveKitMediaProvider`, rota bileşenleri dışında, görünümün gerçek zamanlı deposuna ait tek örnektir. Gezinme ses oturumunu yok etmez.
 
-Connect establishes signaling and auto-subscription, but never starts microphone, camera, or screen capture. Explicit actions publish devices. Microphone capture requests echo cancellation and noise suppression. Camera starts at 640×360/24fps; screen at 1280×720/30fps, with adaptive delivery. Screen audio is deliberately disabled until platform-specific capture support is separately verified. Native source selection is handled by Electron's main process; this adapter invokes the SDK's browser display capture request.
+Ayrıcalıklı erişim aracısı hesap ve kanal üyeliğini doğrulayıp geçici `{ roomId, url, token }` yetkisi döndürür. İlk bağdaştırıcı Spacebar hesabını kullanıyordu; güncel sosyal bağdaştırıcı [mimaride](ARCHITECTURE.md) açıklanan Stoat'tır. Belirteç yalnızca bellekte tutulur; bağdaştırıcı LiveKit servis imza sırrını almaz. Uzak sunucular WSS gerektirir; güvensiz WS yalnızca yerel geliştirmede kabul edilir. Belirteç içeren URL reddedilir.
 
-Remote audio attaches to managed hidden audio elements. Deafen actually silences these elements and mutes the microphone; undeafen restores hearing without automatically unmuting capture. Individual volume ranges from 0–100%. UI owns video elements through `attachTrack`, whose cleanup detaches without deleting UI DOM. Disconnect stops local tracks, removes managed audio elements and event handlers, clears diagnostics and secrets, and disposes the previous room. The adapter reports transient SDK reconnect states without reporting a successful connection before SDK completion. A complete reconnect requires a freshly authorized broker grant; it does not silently reuse expired credentials.
+Bağlanma sinyalleşme ve otomatik aboneliği kurar; mikrofon, kamera veya ekran yakalamayı başlatmaz. Aygıtlar açık kullanıcı eylemiyle yayımlanır. Mikrofon yankı giderme ve gürültü bastırma ister. Kamera 640×360/24 fps, ekran uyarlanabilir dağıtımla 1280×720/30 fps başlar. İlk uygulamada ekran sesi, platform kabulü beklenerek kapalıydı; sonraki sürümlerde bağımsız ekran sesi kontrolleri eklendi, fiziksel kabul ayrıca izleniyor. Yerel kaynak seçimini Electron ana süreci yönetir; bağdaştırıcı SDK'nin tarayıcı ekran yakalama isteğini çağırır.
 
-## Authorization boundary
+Uzak ses yönetilen gizli ses öğelerine bağlanır. Sağırlaştırma bu öğeleri gerçekten susturur ve mikrofonu kapatır; sağırlaştırmayı kaldırmak duymayı geri getirir, mikrofonu otomatik açmaz. Kişisel ses düzeyi %0–100'dür. Arayüz, `attachTrack` ile video öğelerine sahip olur; temizleme arayüz DOM'unu silmeden bağlantıyı ayırır. Ayrılma yerel izleri durdurur, yönetilen ses öğelerini/olay işleyicilerini kaldırır, tanı ve sırları temizler, eski odayı kapatır. SDK tamamlanmadan başarılı bağlantı bildirilmez; geçici yeniden bağlanma durumları gösterilir. Tam yeniden bağlantı yeni yetkili aracı izni gerektirir; süresi dolmuş bilgiler sessizce kullanılmaz.
 
-The client rejects an already-observed competing presenter before asking for capture. This is a UX check, **not a race-safe authorization guarantee**. The broker must reserve presenter ownership and issue LiveKit publish-source grants accordingly. Grant microphone/camera by default and grant `screen_share` only to the reserved presenter. Revoke presenter publish permission at stop/disconnect/host transfer. Client-only checks do not complete one-presenter acceptance.
+## Yetki sınırı
 
-Transport is encrypted in transit using WebRTC DTLS-SRTP. End-to-end encryption is not configured and must not be claimed.
+İstemci yakalama istemeden önce gördüğü başka sunucuyu reddeder. Bu bir kullanım kontrolüdür; yarış durumuna dayanıklı yetki garantisi değildir. Aracı sunum sahipliğini ayırmalı ve LiveKit yayın kaynak izinlerini buna göre vermelidir. Varsayılan mikrofon/kamera, yalnızca ayrılmış sunucuya `screen_share` verin. Durdurma/ayrılma/ev sahibi devrinde sunum iznini geri alın. Yalnızca istemci kontrolü tek sunumcu kabulünü tamamlamaz.
 
-## Diagnostics
+Aktarım WebRTC DTLS-SRTP ile yolda şifrelenir. Uçtan uca şifreleme yapılandırılmamıştır; varmış gibi belirtilmemelidir.
 
-Every five seconds, the adapter reads RTC reports from current tracks and deduplicates report IDs. It reports received bitrate (bits/second, derived from byte-counter deltas), cumulative receive packet loss fraction, and nominated candidate-pair round-trip latency in milliseconds. No invented defaults replace unavailable metrics; missing values remain null. This is a received-media aggregate, not total network egress billing.
+## Tanı
 
-## Verification
+Bağdaştırıcı beş saniyede bir güncel izlerin RTC raporlarını okur, rapor kimliklerini tekilleştirir. Alınan bit hızı (bayt sayacı farkından bit/saniye), birikmiş alınan paket kaybı oranı ve seçilen aday çiftinin gidiş-dönüş gecikmesi (ms) bildirilir. Eksik ölçümler uydurma varsayılanlarla doldurulmaz; `null` kalır. Bu alınan medya toplamıdır; toplam ağ çıkış faturası değildir.
 
-- `pnpm exec vitest run --root . tests/media-provider.test.ts`: **9 tests passed** on 2026-10-08. Tests cover transport URL validation, explicit capture lifecycle, actual microphone deafen semantics, capture denial, secret-safe error state, competing presenter preflight, reconnect state, and deafen on existing/later remote audio subscriptions, and immediate capture stop during failed reconnect unpublication.
-- These tests inject SDK doubles; they are **not** two-client transport verification.
-- Initial full typecheck found only a pre-existing `Youtube` icon export error in Activities.tsx; no media-provider type errors.
-- Physical microphone/camera capture, macOS screen permission/source picker, remote audio audibility, Windows capture/system audio, and two physical computer testing require runtime acceptance. Do not mark these verified based on unit tests.
-- `node scripts/livekit-verify.mjs`: **BLOCKED**, 2026-10-08. The verifier launched two actual Electron renderer clients, but the media server at `127.0.0.1:7880` refused connections. SDK connect failed; no received-media result is claimed. The script reads ignored `infra/local/.env` without printing credentials, generates distinct short-lived identities, and will verify synthetic audio/video RTP receipt, remote publication mute/unmute, and screen unpublication when a real server is available. Synthetic media verifies transport only, not native device capture or the source picker.
+## Doğrulama
 
-### Native fallback and actual transport result
+- `pnpm exec vitest run --root . tests/media-provider.test.ts`: 8 Ekim 2026'da 9 test başarılı. URL, açık yakalama yaşam döngüsü, mikrofon sağırlaştırma, yakalama reddi, sır sızdırmayan hata, rakip sunucu ön kontrolü, yeniden bağlanma, mevcut/sonraki uzak seslerde sağırlaştırma ve başarısız yeniden bağlanmada yakalamanın hemen durması kapsandı.
+- Bu testler SDK taklitleri kullanır; iki gerçek istemcili aktarım doğrulaması değildir.
+- İlk tam tür kontrolünde yalnızca Activities.tsx içindeki önceden var olan `Youtube` ikon dışa aktarım hatası bulundu; medya sağlayıcısı tür hatası yoktu.
+- Fiziksel mikrofon/kamera, macOS ekran izni/seçici, uzak sesin duyulması, Windows yakalama/sistem sesi ve iki fiziksel bilgisayar çalışma zamanı kabulü gerektirir.
+- `node scripts/livekit-verify.mjs`, 8 Ekim'deki ilk denemede engellendi: iki gerçek Electron görünümü açıldı fakat `127.0.0.1:7880` bağlantıyı reddetti. SDK bağlanmadı; alınan medya sonucu yoktu. Araç yok sayılan `infra/local/.env` dosyasını kimlik bilgilerini yazmadan okur, ayrı kısa ömürlü kimlikler üretir. Gerçek sunucuda sentetik ses/video RTP alımı, uzak yayın susturma/açma ve ekran yayınını kaldırmayı sınar. Sentetik medya aygıt/seçici değil aktarımı doğrular.
 
-Docker was unavailable because the local VM runtime stalled. Following the [official local self-hosting instructions](https://docs.livekit.io/transport/self-hosting/local/), `HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install livekit` installed **LiveKit Server 1.13.9** on macOS ARM64. No unrelated Homebrew dependency repair or global Docker restart was performed.
+### Yerel alternatif ve gerçek aktarım sonucu
 
-`node scripts/livekit-native.mjs` starts the official server using the generated local keys, with signaling bound to `127.0.0.1`. This is a local development fallback, not deployment or remote access. Stop with Ctrl+C. It derives a mode-0600 ignored native config from `infra/local/livekit.yaml` and removes it when the process exits.
+Yerel sanal makine çalışma ortamı takıldığı için Docker kullanılamadı. [Resmî yerel kurulum](https://docs.livekit.io/transport/self-hosting/local/) izlenerek `HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install livekit` ile macOS ARM64'e LiveKit Server 1.13.9 kuruldu. İlgisiz Homebrew onarımı veya genel Docker yeniden başlatması yapılmadı.
 
-`node scripts/livekit-verify.mjs` then **PASSED** against the actual server on 2026-10-08: two actual distinct Electron renderer clients joined with short-lived test identities; synthetic audio and canvas-video RTP packets reached the receiver; the receiver observed real microphone publication mute/unmute and screen unpublication. The initial refused-connection blocker was resolved by the native server.
+`node scripts/livekit-native.mjs`, üretilen yerel anahtarlarla resmî sunucuyu başlatır; sinyalleşme `127.0.0.1` adresine bağlıdır. Yerel geliştirme alternatifidir, uzak dağıtım değildir. Ctrl+C ile durur. `infra/local/livekit.yaml` üzerinden 0600 izinli, Git'in yok saydığı geçici yerel yapılandırma üretir ve çıkışta siler.
 
-This verifies WebRTC transport using actual SDK, signaling and media, not two tabs with fabricated signaling. It does **not** verify physical microphone audibility, camera permission, native screen/window selection, system audio, or two physical computers. Those acceptance cases remain IMPLEMENTED BUT UNVERIFIED.
+Ardından `node scripts/livekit-verify.mjs`, 8 Ekim'de gerçek sunucuda başarılı oldu: ayrı iki Electron görünümü kısa ömürlü kimliklerle katıldı; sentetik ses ve tuval video RTP paketleri alıcıya ulaştı; alıcı gerçek mikrofon yayınını susturma/açma ve ekran yayınının kaldırılmasını gördü. İlk bağlantı engeli yerel sunucuyla çözüldü.
 
-A follow-up verifier run also **PASSED** actual signaling interruption: LiveKit's `signal-reconnect` test scenario closes the real signaling connection, the adapter observes `reconnecting` then `connected`, and received RTP packet counts continue increasing afterward. This exercises actual socket reconnection; it does not substitute for an OS/network outage or SFU restart test.
+Bu sonuç gerçek SDK, sinyalleşme ve medya ile WebRTC aktarımını doğrular. Fiziksel mikrofon duyulabilirliği, kamera izni, yerel ekran/pencere seçimi, sistem sesi veya iki fiziksel bilgisayarı doğrulamaz; bunlar uygulanmış fakat doğrulanmamış kabul durumlarıdır.
+
+Sonraki denemede gerçek sinyal kesintisi de başarılı oldu: LiveKit `signal-reconnect` senaryosu gerçek bağlantıyı kapattı, bağdaştırıcı `reconnecting` sonra `connected` gördü ve alınan RTP sayısı artmayı sürdürdü. Bu gerçek soket yeniden bağlantısıdır; işletim sistemi/ağ kesintisi veya SFU yeniden başlatma testinin yerine geçmez.

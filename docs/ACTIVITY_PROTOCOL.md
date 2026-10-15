@@ -1,40 +1,41 @@
-# Shared Activity protocol v1
+# Ortak etkinlik protokolü v1
 
-The Activity server owns room revisions, participants, the playback clock, queues, polls and whiteboard elements. It does not own voice sessions or media transport. Ending an Activity never calls a LiveKit leave API.
+Activity sunucusu oda sürümlerini, katılımcıları, oynatma saatini, kuyrukları, anketleri ve beyaz tahta öğelerini yönetir. Ses oturumları veya medya aktarımı ona ait değildir. Etkinliği bitirmek hiçbir zaman LiveKit'ten ayrılma API'sini çağırmaz.
 
 ## API
 
-`GET /v1/rooms/:roomId/activity?afterRevision=0&waitMs=25000` returns `ActivityResponse`. Subscribe before taking the first snapshot to avoid a lost-update race. The server rechecks authorization after a long poll wakes. Requests without an injected authorization resolver fail closed with `AUTHORIZATION_NOT_CONFIGURED`.
+`GET /v1/rooms/:roomId/activity?afterRevision=0&waitMs=25000`, `ActivityResponse` döndürür. Güncelleme kaybını önlemek için ilk anlık görüntüyü almadan önce abone olun. Uzun sorgu uyandığında sunucu yetkiyi yeniden kontrol eder. Yetkilendirme çözümleyicisi verilmemiş istekler `AUTHORIZATION_NOT_CONFIGURED` ile reddedilir.
 
-`POST /v1/rooms/:roomId/activity/commands` accepts a strictly validated envelope:
+`POST /v1/rooms/:roomId/activity/commands` kesin kurallarla doğrulanan şu zarfı kabul eder:
 
 ```json
 {"protocolVersion":1,"commandId":"550e8400-e29b-41d4-a716-446655440000","expectedRevision":0,"command":{"type":"join"}}
 ```
 
-Every mutation validates current upstream membership through the caller-supplied `authorize(bearer, roomId)` adapter. That adapter must return the real upstream identity and effective create/control permissions. Bearer tokens are never stored in snapshots or repositories. The desktop renderer uses the native `rooms.activity` IPC bridge rather than receiving the bearer.
+Her değişiklik, çağıranın sağladığı `authorize(bearer, roomId)` bağdaştırıcısıyla güncel üst sistem üyeliğini doğrular. Bağdaştırıcı gerçek üst sistem kimliğini ve etkin oluşturma/kontrol izinlerini döndürmelidir. Erişim belirteçleri anlık görüntü veya depolarda saklanmaz. Masaüstü görünümü belirteci almak yerine yerel `rooms.activity` IPC köprüsünü kullanır.
 
-Commands are serialized within each room. A mismatched expected revision returns HTTP 409 `REVISION_CONFLICT`. Read the current snapshot and ask the user to retry the intended mutation. Repeating the identical command ID returns the current snapshot without applying it again. Reusing an ID with changed content fails. Receipts retain the most recent 2048 operations and events retain the most recent 256 revisions; older commands fail their stale revision rather than being applied twice. `replayRequired` means the client should replace its local state from the included full snapshot.
+Komutlar oda içinde sırayla uygulanır. Beklenen sürüm uyuşmazsa HTTP 409 `REVISION_CONFLICT` gelir. Güncel durumu okuyup kullanıcıdan amaçlanan değişikliği yeniden denemesini isteyin. Aynı komut kimliğinin birebir tekrarı işlemi yeniden uygulamadan güncel durumu döndürür. Kimliği farklı içerikle kullanmak reddedilir. İşlem kayıtları son 2048 işlemi, olaylar son 256 sürümü tutar; eski komutlar iki kez uygulanmak yerine eski sürümden dolayı reddedilir. `replayRequired`, istemcinin yerel durumunu yanıttaki tam anlık görüntüyle değiştirmesi gerektiğini belirtir.
 
-## Playback and source privacy
+## Oynatma ve kaynak gizliliği
 
-Timeline position is `positionSec + (serverNow - effectiveServerTimeMs) * rate / 1000` while playing, otherwise `positionSec`. Media selection increments a playback epoch. Clients must not treat a previous epoch's end event as completion of the new media item. All authorized controllers may play, pause, seek and manage the queue.
+Çalarken konum `positionSec + (serverNow - effectiveServerTimeMs) * rate / 1000`, dururken `positionSec` değeridir. Medya seçimi oynatma neslini artırır. İstemci önceki neslin bitiş olayını yeni kaydın bitişi saymamalıdır. Yetkili tüm denetleyiciler oynatabilir, duraklatabilir, sarabilir ve kuyruğu yönetebilir.
 
-Shared queue media contains either an official YouTube video ID or an opaque independent-source reference plus a display title. Private files, provider URLs, credentials and personal media connections are not accepted by the strict schema. This is metadata synchronization, not a media streaming origin. A participant must independently resolve its permitted source. Actual YouTube IFrame playback and two-player drift correction require separate desktop acceptance tests.
+Ortak kuyruk medyası resmî YouTube video kimliği veya bağımsız kaynağa ait opak referans ve görünen başlık içerir. Kesin şema özel dosyaları, sağlayıcı URL'lerini, kimlik bilgilerini ve kişisel medya bağlantılarını kabul etmez. Bu sistem üstveri eşzamanlaması yapar; medya kaynağı değildir. Katılımcı izinli kaynağını bağımsız çözmelidir. Gerçek YouTube IFrame oynatımı ve iki oynatıcı arasındaki kayma düzeltmesi ayrı masaüstü kabul testleri gerektirir.
 
-One primary Cinema, YouTube or Screen Activity is allowed per room. Polls and the whiteboard coexist. The oldest connected eligible participant becomes host when a host leaves or its 30-second Activity lease expires. Screen source ownership does not transfer: the new host sees `awaiting-source`. With no eligible participant, the primary ends. Viewing is not voice presence.
+Oda başına bir ana Sinema, YouTube veya Ekran etkinliği bulunabilir. Anketler ve beyaz tahta birlikte kullanılabilir. Ev sahibi ayrılırsa veya 30 saniyelik etkinlik kirası biterse bağlı uygun katılımcıların en eskisi ev sahibi olur. Ekran kaynağının sahipliği devrolmaz; yeni ev sahibi `awaiting-source` görür. Uygun katılımcı kalmazsa ana etkinlik biter. İzleme, ses odasında bulunmak anlamına gelmez.
 
-## Persistence and deployment
+## Kalıcılık ve dağıtım
 
-`ActivityRepository` exposes load/save/list. `MemoryActivityRepository` is test-only. `FileActivityRepository` persists the local development server using mode-0600 files and atomic replacement. It supports one writer process only; it does not claim database-grade crash durability or distributed locking. A production PostgreSQL transaction implementation and multi-process revision lock must replace it before deploying multiple replicas. The existing interface makes this replaceable without changing the protocol.
+`ActivityRepository`, load/save/list sağlar. `MemoryActivityRepository` yalnızca test içindir. `FileActivityRepository` yerel geliştirme sunucusunu 0600 izinli dosyalar ve atomik değiştirmeyle kalıcı tutar. Tek yazıcı süreç destekler; veritabanı düzeyinde çökme dayanıklılığı veya dağıtık kilit iddiası yoktur. Birden çok kopya dağıtmadan önce PostgreSQL işlem uygulaması ve çok süreçli sürüm kilidiyle değiştirilmelidir. Mevcut arayüz protokol değişmeden bunu mümkün kılar.
 
-## Verification
+## Doğrulama
 
-`pnpm test` runs `tests/activity-realtime.test.ts`: an actual loopback TCP Fastify server and two separately authenticated HTTP clients prove playback synchronization, long-poll updates, stale revision rejection, command idempotency, host transfer, persisted poll votes, denied outsider access and strict rejection of a credential-bearing media URL. Separate checks prove fail-closed authorization and cross-author whiteboard deletion rejection. `node scripts/activities-build.mjs` builds the service module.
+`pnpm test` içindeki `tests/activity-realtime.test.ts`, gerçek yerel TCP Fastify sunucusu ve ayrı yetkilendirilmiş iki HTTP istemcisiyle oynatma eşzamanlamasını, uzun sorgu güncellemelerini, eski sürüm reddini, komut tekilliğini, ev sahibi devrini, kalıcı anket oylarını, dış kullanıcı reddini ve kimlik bilgili medya URL'sinin kesin reddini sınar. Ayrı kontroller yetki yapılandırılmadığında reddi ve başka yazarın tahta öğesini silme reddini kanıtlar. `node scripts/activities-build.mjs` servis modülünü derler.
 
-Status: service and protocol verified locally using an injected test membership resolver. Production Stoat authorization, deployed service, actual two desktop players, native playback synchronization and physical-computer reconnect remain separate integration acceptance checks. Use `game.create` and the typed game commands for playable authoritative tables. The generic media `start` command deliberately rejects game IDs to require explicit game-rule configuration. Game snapshots are projected per authenticated user and never expose the private deck/stock or other players’ unrevealed hands. See `GAME_RULES.md` for tested rule profiles and remaining desktop acceptance checks.
+Durum: servis ve protokol, test üyelik çözümleyicisi verilerek yerelde doğrulandı. Üretim Stoat yetkisi, dağıtılmış servis, iki gerçek masaüstü oynatıcısı, yerel oynatma eşzamanlaması ve fiziksel bilgisayarın yeniden bağlanması ayrı entegrasyon kabul kontrolleridir. Oynanabilir sunucu yetkili masalar için `game.create` ve türlendirilmiş oyun komutlarını kullanın. Genel medya `start` komutu, oyun kurallarının açık seçilmesini sağlamak için oyun kimliklerini reddeder. Oyun durumları her yetkili kullanıcıya ayrı yansıtılır; özel deste/stok veya diğer oyuncuların açılmamış elleri gösterilmez. Sınanan kural profilleri ve kalan kabul için [oyun kurallarına](GAME_RULES.md) bakın.
 
-## Actual desktop fixture acceptance
-`node scripts/verify-activity-desktop.mjs` launches two distinct Electron profiles talking to an actual Activity HTTP server. Social authentication is replaced only through Playwright inspector handlers in the test harness, with an always-visible QA footer and QA identities. This is not a production bypass or a Stoat integration result.
+## Gerçek masaüstü örnek kabulü
 
-Verified UI actions: create Holdem table, second user seat, start hand, each own private cards, fold/results history, second-user poll vote, shared whiteboard text, Cinema play/pause/seek propagating to the second actual HTML video. Screenshots under docs/screenshots/tr/*-service.png. Renderer page errors: zero on the recorded run. Deployed Stoat authorization and official YouTube provider acceptance remain separate gates.
+`node scripts/verify-activity-desktop.mjs`, gerçek Activity HTTP sunucusuna bağlanan iki ayrı Electron profili açar. Sosyal yetkilendirme yalnızca test düzeneğindeki Playwright inceleyici işleyicileriyle değiştirilir; QA alt bilgisi ve QA kimlikleri sürekli görünür. Bu, üretim yetkisini aşan bir yol veya Stoat entegrasyon sonucu değildir.
+
+Doğrulanan arayüz işlemleri: Holdem masası oluşturma, ikinci kullanıcının oturması, el başlatma, herkesin kendi özel kartları, pas/sonuç geçmişi, ikinci kullanıcının anket oyu, ortak tahta yazısı ve Sinema oynat/duraklat/sarma işlemlerinin ikinci gerçek HTML videoya ulaşması. Özel kabul ekran görüntüleri açık depoya dahil değildir. Kayıtlı çalışmada görünüm sayfası hatası sıfırdır. Dağıtılmış Stoat yetkisi ve resmî YouTube sağlayıcı kabulü ayrı koşullardır.
