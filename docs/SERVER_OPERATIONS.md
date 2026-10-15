@@ -36,3 +36,7 @@ Open gates before stage1/2 rollout: install/verify the optional Linux native kit
 Stages3–4 remain unimplemented: rootless shared-host runner and aggregate quotas/admission, human–AI workspace takeover/checkpoint integration, host migration transport, and consented native Mac/Windows desktop input with emergency release. Keep `agentAvailable:false`; preserve the existing dedicated Agent backend guards. Those stages cannot be marked complete from the monitoring/terminal tests.
 
 Validation checkpoint: `pnpm verify:ci` passed lint, strict TypeScript,135test files/875tests, desktop build/notices and all service bundles. Subsequent terminal hardening passed14focused tests plus TypeScript/lint/service build. No signature, installation, update feed, tag or release artifact was changed.
+
+- OPS-007: two windows from the same account could previously submit input under one user-level writer. The broker now binds writes to one connection; read-only state is projected per connection. Late terminal actions are fenced when the host/panel/account changes.
+
+A separate ephemeral Linux CI job now installs the pinned node-pty kit with a narrowly scoped build approval and tests the real root-owned helper/unprivileged tmux chain: Unicode, resize, Ctrl+C, detach, broker reconstruction, once-only counter and explicit termination. Its result must be checked before treating that gate as passed. It never uses production profiles or credentials.

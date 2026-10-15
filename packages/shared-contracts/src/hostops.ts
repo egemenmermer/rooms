@@ -140,6 +140,7 @@ export const terminalInfoSchema = z
     createdAt: nonnegative,
     detachedAt: nonnegative.nullable(),
     access: z.enum(['owner', 'control', 'view']),
+    writable: z.boolean().optional(),
   })
   .strict();
 export type OpsTerminal = z.infer<typeof terminalInfoSchema>;

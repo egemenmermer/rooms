@@ -80,6 +80,15 @@ function HostTerminal({
   const [target, setTarget] = useState(''),
     [shareAccess, setShareAccess] = useState<'view' | 'control' | 'none'>('view');
   const userId = useCommunity((s) => s.user?.id);
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  const actionIdentity = useRef('');
+  actionIdentity.current = `${host.id}:${session.id}:${userId}`;
   const sessionRef = useRef(session);
   sessionRef.current = session;
   useEffect(() => {
@@ -112,7 +121,7 @@ function HostTerminal({
       const resize = () => {
         try {
           fit.fit();
-          if (sessionRef.current.writer === userId)
+          if (sessionRef.current.writer === userId && sessionRef.current.writable !== false)
             void api
               .send({
                 type: 'resize',
@@ -127,10 +136,10 @@ function HostTerminal({
       const observer = new ResizeObserver(resize);
       observer.observe(root.current);
       const input = term.onData((data) => {
-        if (sessionRef.current.writer !== userId) return;
-        void api
-          .send({ type: 'input', sequence: sequence.current++, data })
-          .catch((e) => setError(errorText(e)));
+        if (sessionRef.current.writer !== userId || sessionRef.current.writable === false) return;
+        void api.send({ type: 'input', sequence: sequence.current++, data }).catch((e) => {
+          if (!stopped) setError(errorText(e));
+        });
       });
       unsubscribe = api.onTerminal((event) => {
         if (stopped) return;
@@ -141,7 +150,8 @@ function HostTerminal({
         if (event.type === 'state') {
           onSession(event.session);
           sessionRef.current = event.session;
-          term.options.disableStdin = event.session.writer !== userId;
+          term.options.disableStdin =
+            event.session.writer !== userId || event.session.writable === false;
         }
         if (event.type === 'error') {
           setError(event.message);
@@ -172,6 +182,7 @@ function HostTerminal({
     };
   }, [api, host.id, session.id, userId, reconnect]);
   const action = async (value: 'close' | 'take' | 'release' | 'share') => {
+    const identity = actionIdentity.current;
     try {
       setError('');
       const next = await api.terminalAction(
@@ -180,10 +191,11 @@ function HostTerminal({
         value,
         value === 'share' ? { userId: target.trim(), access: shareAccess } : undefined,
       );
+      if (!alive.current || identity !== actionIdentity.current) return;
       onSession(next);
       if (value === 'close') onClose();
     } catch (e) {
-      setError(errorText(e));
+      if (alive.current && identity === actionIdentity.current) setError(errorText(e));
     }
   };
   return (
@@ -196,7 +208,9 @@ function HostTerminal({
           <small>
             {session.directory} · {connected ? 'Bağlı' : 'Bağlantı bekleniyor'} ·{' '}
             {session.writer === userId
-              ? 'Kontrol sende'
+              ? session.writable === false
+                ? 'Kontrol başka pencerende'
+                : 'Kontrol sende'
               : session.writer
                 ? 'Başka operatör yazıyor'
                 : 'Kontrol bırakıldı'}
@@ -393,7 +407,11 @@ function HostOperationsScope() {
   const sample = snapshot?.sample,
     stale = !!error || !sample || !!snapshot?.stale || Date.now() - sample.at > 15000;
   const changeSession = (next: OpsTerminal) => {
-    setActive(next);
+    setActive((previous) =>
+      previous?.id === next.id && next.writable === undefined
+        ? { ...next, writable: previous.writable }
+        : next,
+    );
     setSessions((list) => list.map((s) => (s.id === next.id ? next : s)));
   };
   return (

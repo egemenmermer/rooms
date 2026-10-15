@@ -239,6 +239,10 @@ describe('operator terminal lifecycle', () => {
       'TERMINAL_ACCESS_DENIED',
     );
     const a = f.hub.attach('core', t.id, 'owner', () => {});
+    const second = f.hub.attach('core', t.id, 'owner', () => {});
+    expect(() => second.input({ type: 'input', data: 'second window', sequence: 0 })).toThrow(
+      'TERMINAL_VIEW_ONLY',
+    );
     a.input({ type: 'input', data: 'one', sequence: 1 });
     expect(() => a.input({ type: 'input', data: 'replay', sequence: 1 })).toThrow(
       'TERMINAL_STALE_INPUT',

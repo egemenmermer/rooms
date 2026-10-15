@@ -25,7 +25,7 @@ export interface TerminalDriver {
   close(id: string, profile: TerminalProfile): void;
 }
 interface RecordEntry {
-  info: Omit<OpsTerminal, 'access'>;
+  info: Omit<OpsTerminal, 'access' | 'writable'>;
   profileId: string;
   shares: Record<string, 'view' | 'control'>;
 }
@@ -38,6 +38,7 @@ export class TerminalHub {
       driver: ReturnType<TerminalDriver['attach']>;
       output: string;
       sequence: number;
+      writerKey: string | null;
       listeners: Map<string, (event: TerminalEvent) => void>;
       inputs: Map<string, number>;
     }
@@ -57,7 +58,7 @@ export class TerminalHub {
             .array(
               z
                 .object({
-                  info: terminalInfoSchema.omit({ access: true }),
+                  info: terminalInfoSchema.omit({ access: true, writable: true }),
                   profileId: opsId,
                   shares: z.record(opsId, z.enum(['view', 'control'])),
                 })
@@ -111,10 +112,16 @@ export class TerminalHub {
   hasProfile(id: string) {
     return !!this.profile(id);
   }
-  private view(r: RecordEntry, user: string): OpsTerminal {
+  private view(r: RecordEntry, user: string, connection?: string): OpsTerminal {
     return {
       ...r.info,
       access: r.info.ownerId === user ? 'owner' : r.shares[user] === 'control' ? 'control' : 'view',
+      ...(connection
+        ? {
+            writable:
+              this.runtime.get(r.info.id)?.writerKey === connection && r.info.writer === user,
+          }
+        : {}),
     };
   }
   list(host: string, user: string) {
@@ -170,7 +177,7 @@ export class TerminalHub {
   private broadcast(r: RecordEntry) {
     const rt = this.runtime.get(r.info.id);
     for (const [u, cb] of rt?.listeners ?? [])
-      cb({ type: 'state', session: this.view(r, u.split(':')[0]) });
+      cb({ type: 'state', session: this.view(r, u.split(':')[0], u) });
   }
   attach(host: string, id: string, user: string, cb: (event: TerminalEvent) => void) {
     const r = this.get(id, host, user);
@@ -180,6 +187,7 @@ export class TerminalHub {
       const created = {
         output: '',
         sequence: 0,
+        writerKey: null as string | null,
         listeners: new Map<string, (event: TerminalEvent) => void>(),
         inputs: new Map<string, number>(),
       };
@@ -219,6 +227,7 @@ export class TerminalHub {
     r.info.state = 'active';
     r.info.detachedAt = null;
     if (!r.info.writer && r.info.ownerId === user) r.info.writer = user;
+    if (r.info.writer === user && !rt.writerKey) rt.writerKey = key;
     cb({ type: 'output', sequence: rt.sequence, data: rt.output, reset: true });
     this.broadcast(r);
     this.save();
@@ -228,6 +237,8 @@ export class TerminalHub {
       detached = true;
       rt!.listeners.delete(key);
       rt!.inputs.delete(key);
+      if (rt!.writerKey === key)
+        rt!.writerKey = [...rt!.listeners.keys()].find((k) => k.startsWith(user + ':')) ?? null;
       if (
         ![...rt!.listeners.keys()].some((k) => k.startsWith(user + ':')) &&
         r.info.writer === user
@@ -250,6 +261,7 @@ export class TerminalHub {
           return;
         }
         if (
+          rt!.writerKey !== key ||
           current.info.writer !== user ||
           (current.info.ownerId !== user && current.shares[user] !== 'control')
         )
@@ -278,7 +290,10 @@ export class TerminalHub {
             rt?.listeners.delete(key);
             rt?.inputs.delete(key);
           }
-        if (r.info.writer === user) r.info.writer = null;
+        if (r.info.writer === user) {
+          r.info.writer = null;
+          if (rt) rt.writerKey = null;
+        }
         if (rt && !rt.listeners.size) {
           r.info.state = 'detached';
           r.info.detachedAt = this.now();
@@ -332,8 +347,14 @@ export class TerminalHub {
       if (r.info.writer && r.info.writer !== user && !owner)
         throw Object.assign(Error('TERMINAL_WRITER_BUSY'), { statusCode: 409 });
       r.info.writer = user;
+      const rt = this.runtime.get(id);
+      if (rt) rt.writerKey = [...rt.listeners.keys()].find((k) => k.startsWith(user + ':')) ?? null;
     }
-    if (action === 'release' && r.info.writer === user) r.info.writer = null;
+    if (action === 'release' && r.info.writer === user) {
+      r.info.writer = null;
+      const rt = this.runtime.get(id);
+      if (rt) rt.writerKey = null;
+    }
     this.save();
     this.broadcast(r);
     return this.view(r, user);
