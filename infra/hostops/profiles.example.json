@@ -1,0 +1,6 @@
+{
+  "operator": {
+    "user": "rooms-operator",
+    "directory": "/srv/rooms-operator"
+  }
+}

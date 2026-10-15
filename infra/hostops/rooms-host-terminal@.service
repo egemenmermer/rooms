@@ -1,0 +1,28 @@
+[Unit]
+Description=ROOMS persistent host terminal for %i
+
+[Service]
+Type=simple
+User=%i
+Group=%i
+RuntimeDirectory=rooms-host-terminal-%i
+RuntimeDirectoryMode=0700
+ExecStart=/usr/bin/tmux -D -S /run/rooms-host-terminal-%i/socket -f /dev/null
+Restart=on-failure
+RestartSec=2
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/srv/rooms-operator
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+TasksMax=128
+MemoryMax=256M
+CPUQuota=25%
+# This unit is independent of the broker. Broker restarts do not kill shells.
+# Reboot interrupts sessions; no command is replayed.

@@ -48,6 +48,7 @@ export interface DesktopWindowPreferences {
   trayAvailable: boolean;
 }
 export interface DesktopBridge {
+  hostOps?: import('./hostops').HostOpsBridge;
   soundboard?: import('./soundboard').SoundboardBridge;
   desktopWindow: {
     status(): Promise<DesktopWindowPreferences>;

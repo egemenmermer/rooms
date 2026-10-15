@@ -1,0 +1,4 @@
+# Install root:root 0440 as /etc/sudoers.d/rooms-hostops after visudo -cf validation.
+# The helpers validate every argument and drop uid before running terminal commands.
+rooms-ops ALL=(root) NOPASSWD: /usr/local/libexec/rooms-terminal-helper, /usr/local/libexec/rooms-status-helper
+Defaults:rooms-ops env_reset, !setenv
