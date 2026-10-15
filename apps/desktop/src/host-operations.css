@@ -1,0 +1,145 @@
+.ops-surface {
+  max-width: 1100px;
+  margin: auto;
+  color: var(--text, #e4e2eb);
+}
+.ops-heading,
+.ops-terminal header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.ops-heading h1,
+.ops-surface h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.ops-heading p,
+.ops-surface small,
+.ops-metric > span {
+  color: var(--muted, #aaa9b6);
+}
+.ops-surface button,
+.ops-surface select,
+.ops-surface input:not([type='checkbox']) {
+  background: #23252f;
+  border: 1px solid #454653;
+  border-radius: 6px;
+  color: inherit;
+  padding: 8px 10px;
+  font: inherit;
+  min-width: 0;
+  max-width: 100%;
+}
+.ops-surface button {
+  cursor: pointer;
+}
+.ops-surface button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ops-surface button[aria-pressed='true'] {
+  border-color: #9787ff;
+}
+.ops-surface :focus-visible {
+  outline: 2px solid #9787ff;
+  outline-offset: 3px;
+}
+.ops-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+.ops-actions label {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+.ops-actions input[type='number'] {
+  width: 85px;
+}
+.ops-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+  padding: 20px 0;
+}
+.ops-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.ops-metric strong {
+  font-size: 20px;
+  font-weight: 600;
+}
+.ops-metric small {
+  font-size: 13px;
+}
+.ops-surface section,
+.ops-surface details {
+  margin: 20px 0;
+}
+.ops-surface details > summary {
+  cursor: pointer;
+}
+.ops-alerts,
+.ops-error {
+  color: #f1b1b7;
+}
+.ops-surface li {
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.ops-history {
+  width: 100%;
+  min-height: 90px;
+}
+.ops-history svg {
+  width: 100%;
+  max-height: 150px;
+}
+.ops-history small {
+  display: block;
+}
+.ops-terminal {
+  border: 1px solid #454653;
+  border-radius: 8px;
+  padding: 14px;
+  min-width: 0;
+  max-width: 100%;
+}
+.ops-terminal header small {
+  display: block;
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+}
+.ops-terminal-output {
+  height: 380px;
+  min-width: 0;
+  margin: 14px 0;
+  background: #101116;
+}
+.ops-terminal-output .xterm {
+  height: 100%;
+  padding: 5px;
+}
+.ops-surface form {
+  max-width: 100%;
+}
+@media (max-width: 800px) {
+  .ops-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .ops-terminal-output {
+    height: 300px;
+  }
+  .ops-metric strong {
+    font-size: 18px;
+  }
+}

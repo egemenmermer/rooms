@@ -1,3 +1,4 @@
+import { setupHostOps } from './hostops';
 import {
   soundboardCatalogSchema,
   soundboardClipSchema,
@@ -253,6 +254,15 @@ export async function setupCommunity(
     if (!client || !user) throw new StoatError(401, 'SIGN_IN_REQUIRED');
     return client;
   };
+  const hostOps = setupHostOps(
+    () => {
+      if (fixtureWindow())
+        throw new SocialInputError('Native host access is disabled in development fixtures.');
+      return requireClient();
+    },
+    getWindow,
+    assertSender,
+  );
   const handle = (name: string, handler: (...args: unknown[]) => unknown) =>
     ipcMain.handle(name, async (event, ...args) => {
       assertSender(event);
@@ -398,6 +408,7 @@ export async function setupCommunity(
   app.on('browser-window-created', (_event, window) =>
     window.on('closed', () => {
       recoveryEpoch++;
+      hostOps.close();
       passwordReset.clear();
     }),
   );
@@ -1280,6 +1291,7 @@ export async function setupCommunity(
     activityRequest,
     close: async () => {
       recoveryEpoch++;
+      hostOps.close();
       passwordReset.clear();
       await closeDmCall();
       clearInterval(presenceTimer);

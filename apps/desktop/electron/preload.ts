@@ -1,6 +1,30 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopBridge } from '@rooms/contracts';
 const bridge: DesktopBridge = {
+  hostOps: {
+    hosts: () => ipcRenderer.invoke('rooms:hostops-hosts'),
+    snapshot: (id) => ipcRenderer.invoke('rooms:hostops-snapshot', id),
+    history: (id, range) => ipcRenderer.invoke('rooms:hostops-history', id, range),
+    operators: (id) => ipcRenderer.invoke('rooms:hostops-operators', id),
+    setOperator: (id, grant) => ipcRenderer.invoke('rooms:hostops-operator', id, grant),
+    thresholds: (id, value) => ipcRenderer.invoke('rooms:hostops-thresholds', id, value),
+    acknowledge: (id, ids) => ipcRenderer.invoke('rooms:hostops-ack', id, ids),
+    terminals: (id) => ipcRenderer.invoke('rooms:hostops-terminals', id),
+    createTerminal: (id) => ipcRenderer.invoke('rooms:hostops-create-terminal', id),
+    terminalAction: (id, session, action, target) =>
+      ipcRenderer.invoke('rooms:hostops-terminal-action', id, session, action, target),
+    attach: (id, session) => ipcRenderer.invoke('rooms:hostops-attach', id, session),
+    send: (input) => ipcRenderer.invoke('rooms:hostops-send', input),
+    detach: () => ipcRenderer.invoke('rooms:hostops-detach'),
+    onTerminal: (listener) => {
+      const handler = (
+        _event: Electron.IpcRendererEvent,
+        value: import('../../../packages/shared-contracts/src/hostops').TerminalEvent,
+      ) => listener(value);
+      ipcRenderer.on('rooms:hostops-terminal', handler);
+      return () => ipcRenderer.removeListener('rooms:hostops-terminal', handler);
+    },
+  },
   pendingInvite: () => ipcRenderer.invoke('rooms:pending-invite'),
   onInvite: (listener) => {
     const handler = (
