@@ -5,7 +5,7 @@
 ## İçindekiler
 
 - [Araç zinciri](#araç-zinciri)
-- [İlk çalıştırma](#ilk-çalıştırma)
+- [İlk çalıştırma](#i̇lk-çalıştırma)
 - [Komutlar](#komutlar)
 - [Masaüstü paketi oluştur](#masaüstü-paketi-oluştur)
 - [Kaynak düzeni](#kaynak-düzeni)
@@ -25,8 +25,6 @@
 | Playwright tarayıcısı/runtime | Yalnızca ilgili testler ve ekran yakalama araçları |
 
 Sabit kilit dosyasını kullan. Kurulum için proje sahibinin API anahtarına, imza sertifikasına veya ortak hesabına ihtiyaç yoktur. Yapılandırılmış masaüstü paket hedefleri macOS 14+ Apple Silicon ve Windows x64'tür; Linux masaüstü paketi vaat edilmez.
-
-<a id="ilk-çalıştırma"></a>
 
 ## İlk çalıştırma
 

@@ -10,10 +10,10 @@
 - [2. Sosyal arka uç kurulumu](#2-sosyal-arka-uç-kurulumu)
 - [3. LiveKit yapılandırması](#3-livekit-yapılandırması)
 - [4. ROOMS servislerini yapılandır ve başlat](#4-rooms-servislerini-yapılandır-ve-başlat)
-- [5. İlk hesap ve davetler](#5-ilk-hesap-ve-davetler)
+- [5. İlk hesap ve davetler](#5-i̇lk-hesap-ve-davetler)
 - [6. Masaüstü istemcisini bağla](#6-masaüstü-istemcisini-bağla)
 - [7. Dış ağdan erişim](#7-dış-ağdan-erişim)
-- [İsteğe bağlı servisler](#isteğe-bağlı-servisler)
+- [İsteğe bağlı servisler](#i̇steğe-bağlı-servisler)
 - [Veriler ve yedekler](#veriler-ve-yedekler)
 - [Operasyon kontrolleri](#operasyon-kontrolleri)
 - [Başkalarını davet etmeden önce](#başkalarını-davet-etmeden-önce)
@@ -170,8 +170,6 @@ node --env-file=.local/core.env dist-services/activities.cjs
 
 Aynı ortam ortak değerleri sağlayabilir; süreçler kendi port ayarlarını kullanır. Node keyfî `.env` dosyalarını otomatik okumaz. Üretimde ayrı işletim sistemi kullanıcısı, açık çalışma dizini/ortamı, yazılabilir veri dizinleri ve yeniden başlatma sınırları olan denetimli servisler kullan.
 
-<a id="5-ilk-hesap-ve-davetler"></a>
-
 ## 5. İlk hesap ve davetler
 
 **Bu zorunlu yönetici adımı kurulumun otomatik sonucu değildir.** Davet üretme betiği, zaten var olan ve yetkili olduğun üst sistem topluluk davetini ister; ilk yöneticiyi veya topluluğu oluşturmaz.
@@ -217,8 +215,6 @@ Herkese açık ters vekil, Stoat API/olay/dosya rotalarını korumalı ve ROOMS 
 LiveKit sinyali ayrıca yapılandırılmış, istemcinin ulaşabileceği adrestedir. Yerel örnekte sinyal 7880, medya TCP 7881, UDP 50000–50020'dir. Üretim kuralları gerçek yapılandırmayla eşleşmelidir; HTTPS ters vekil tek başına UDP medyayı erişilebilir yapmaz.
 
 Ham API'yi, MongoDB/Redis/RabbitMQ'yu, nesne deposu yönetimini ve sırları özel tut. Sınırlı kimlik bilgileri ve güvenilir iç ağ sağla. Üretimde güvenmeden önce konteyner özetlerini sabitle ve kaydet; kaynak pin dosyası bunların doğrulandığını iddia etmez.
-
-<a id="isteğe-bağlı-servisler"></a>
 
 ## İsteğe bağlı servisler
 

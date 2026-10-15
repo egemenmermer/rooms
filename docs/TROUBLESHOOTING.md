@@ -63,7 +63,7 @@ Sunucunun CPU/RAM'i tek başına yeterli kapasiteyi kanıtlamaz. Yayın bit hız
 
 Activities ayrı servis ve kalıcı depolama ister. Yetkilendirme hatası veritabanından değil, üyelik veya rolden kaynaklanabilir. Herkese açık ters vekil, Activities ön ekini doğru servise yönlendirmelidir.
 
-Müzik için çalışan müzik servisi, eşleşen bağımsız servis sırrı ve izinli kaynak yapılandırması gerekir. Java/yerel sağlayıcı bileşenlerinin ek ön koşulları vardır; [isteğe bağlı servisler](SELF_HOSTING.md#isteğe-bağlı-servisler) bölümüne bak. VLC'de oynayan bir kanal, uygulamanın oynatma yolunun da çalıştığını kanıtlamaz. Kullanılabilir motorlar ve açık kabul konuları [kişisel oynatma rehberindedir](PERSONAL_PLAYBACK_ENGINES.md).
+Müzik için çalışan müzik servisi, eşleşen bağımsız servis sırrı ve izinli kaynak yapılandırması gerekir. Java/yerel sağlayıcı bileşenlerinin ek ön koşulları vardır; [isteğe bağlı servisler](SELF_HOSTING.md#i̇steğe-bağlı-servisler) bölümüne bak. VLC'de oynayan bir kanal, uygulamanın oynatma yolunun da çalıştığını kanıtlamaz. Kullanılabilir motorlar ve açık kabul konuları [kişisel oynatma rehberindedir](PERSONAL_PLAYBACK_ENGINES.md).
 
 İsteğe bağlı servisler kapalı bırakılabilir. Normal sohbet için gerekmezler; Agent da ses için zorunlu değildir.
 

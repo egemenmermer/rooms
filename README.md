@@ -20,7 +20,7 @@ Sesli sohbet, ekran paylaşımı, mesajlar, müzik ve ortak etkinlikler — tek 
 
 - [ROOMS nedir?](#rooms-nedir)
 - [Başlangıç](#başlangıç)
-- [İndir ve topluluğa katıl](#indir-ve-topluluğa-katıl)
+- [İndir ve topluluğa katıl](#i̇ndir-ve-topluluğa-katıl)
 - [Uygulamadan görüntüler](#uygulamadan-görüntüler)
 - [Neler yapabilirsin?](#neler-yapabilirsin)
 - [Kaynak koddan çalıştır](#kaynak-koddan-çalıştır)
@@ -50,8 +50,6 @@ ROOMS, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında 
 | Topluluğun DJ görselini değiştirmek | [Özelleştirme rehberi](docs/CUSTOMIZATION.md) | Kendi sunucunun herkese açık görsel dosyalarını yönetebilmek |
 
 **Herkesin sunucu kurması gerekiyor mu?** Hayır. Bir yönetici topluluğun sunucusunu kurar; diğer üyeler masaüstü uygulamasını açıp o sunucuya bağlanır.
-
-<a id="indir-ve-topluluğa-katıl"></a>
 
 ## İndir ve topluluğa katıl
 
