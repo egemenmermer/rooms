@@ -2,6 +2,7 @@ import { SoundboardButton } from './Soundboard';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
+  HeadphoneOff,
   Headphones,
   Mic,
   MicOff,
@@ -320,10 +321,12 @@ export function MinimalSidebar({
               </IconButton>
               <IconButton
                 label={r.deafened ? 'Sesi aç' : 'Sağırlaştır'}
+                aria-pressed={r.deafened}
+                className={r.deafened ? 'muted-control' : ''}
                 disabled={r.status !== 'connected' || r.busy}
                 onClick={() => run(toggleDeafen())}
               >
-                <Headphones size={17} />
+                {r.deafened ? <HeadphoneOff size={17} /> : <Headphones size={17} />}
               </IconButton>
               <IconButton label="Sesten ayrıl" onClick={() => run(leaveVoice())}>
                 <PhoneOff size={17} />
