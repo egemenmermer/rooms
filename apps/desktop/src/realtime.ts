@@ -224,6 +224,16 @@ export async function stopScreen() {
 }
 export const setParticipantVolume = (id: string, volume: number) =>
   mediaProvider().setParticipantVolume(id, volume);
+export function watchScreen(id: string | null) {
+  const provider = mediaProvider();
+  if (!provider.watchScreen) throw Error('Yayın izleme kontrolü kullanılamıyor.');
+  provider.watchScreen(id);
+}
+export function setScreenVolume(id: string, volume: number) {
+  const provider = mediaProvider();
+  if (!provider.setScreenVolume) throw Error('Yayın sesi kontrolü kullanılamıyor.');
+  provider.setScreenVolume(id, volume);
+}
 export const startRoomAudio = () => run(() => mediaProvider().startAudio());
 export const attachMediaTrack = (id: string, element: HTMLMediaElement) =>
   mediaProvider().attachTrack(id, element);

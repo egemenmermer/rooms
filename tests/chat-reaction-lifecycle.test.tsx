@@ -41,6 +41,29 @@ afterEach(() => {
   cleanup();
   delete window.rooms;
 });
+it('opens equal-length channel histories at the bottom but preserves an intentional scroll-up', async () => {
+  render(
+    <MemoryRouter>
+      <CommunityChat notify={vi.fn()} />
+    </MemoryRouter>,
+  );
+  const log = screen.getByRole('log', { name: 'Kanal mesajları' });
+  Object.defineProperties(log, {
+    scrollHeight: { value: 1500, configurable: true },
+    clientHeight: { value: 300, configurable: true },
+  });
+  log.scrollTop = 0;
+  fireEvent.scroll(log);
+  await act(async () => useCommunity.setState({ messages: [message('old'), message('arrived')] }));
+  expect(log.scrollTop).toBe(0);
+  await act(async () =>
+    useCommunity.setState({
+      activeChannelId: 'next',
+      messages: [message('next-a'), message('next-b')],
+    }),
+  );
+  expect(log.scrollTop).toBe(1500);
+});
 it('does not replace the next account conversation with a delayed reaction history', async () => {
   let finish!: (items: ReturnType<typeof message>[]) => void;
   const messages = vi.fn(

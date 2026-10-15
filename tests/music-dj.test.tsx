@@ -253,7 +253,9 @@ it('searches a title without changing playback and adds only the selected result
     target: { value: 'Diyar Pala Bensiz Yapama' },
   });
   fireEvent.click(screen.getByRole('button', { name: 'Şarkı ara' }));
-  const selected = await screen.findByRole('button', { name: /Diyar Pala - Bensiz Yapama/ });
+  const selected = await screen.findByRole('button', {
+    name: /^Kuyruğa ekle: Diyar Pala - Bensiz Yapama/,
+  });
   expect(search).toHaveBeenCalledWith('room', 'Diyar Pala Bensiz Yapama');
   expect(command).not.toHaveBeenCalled();
   fireEvent.click(selected);

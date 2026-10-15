@@ -288,6 +288,20 @@
   padding: 8px;
   text-align: left;
 }
+.dj-search-result {
+  display: flex;
+  min-width: 0;
+}
+.dj-search-result > button:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.dj-play-now {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
 .dj-search-results span {
   flex: 1;
   min-width: 0;

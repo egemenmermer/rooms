@@ -46,6 +46,24 @@ it('reauthorizes the exact message before returning raster data and sends no ses
     ),
   ).toHaveLength(2);
 });
+it('downloads exact attachment bytes only while current message access remains valid', async () => {
+  network();
+  const client = new StoatClient('https://rooms.example/api', 'fixture-session');
+  const file = await client.attachmentFile('channel', message._id, 'file');
+  expect(file.name).toBe('photo.png');
+  expect(file.bytes.length).toBe(12);
+});
+it('rejects revoked file access and missing attachments rather than exposing a download URL', async () => {
+  network(true);
+  const client = new StoatClient('https://rooms.example/api', 'fixture-session');
+  await expect(client.attachmentFile('channel', message._id, 'file')).rejects.toMatchObject({
+    status: 403,
+  });
+  const fresh = new StoatClient('https://rooms.example/api', 'fixture-session');
+  await expect(fresh.attachmentFile('channel', message._id, 'missing')).rejects.toMatchObject({
+    status: 404,
+  });
+});
 it('rejects an access revocation during the image download', async () => {
   network(true);
   const client = new StoatClient('https://rooms.example/api', 'fixture-session');

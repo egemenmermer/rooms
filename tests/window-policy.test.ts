@@ -52,7 +52,7 @@ function setup() {
 }
 beforeEach(() => {
   mock.handlers.clear();
-  mock.saved = '{}';
+  mock.saved = '{"keepOpenOnClose":false}';
   mock.fail = false;
   mock.dialog.mockReset();
   mock.dialog.mockResolvedValue({ response: 0 });
@@ -62,14 +62,16 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 describe('desktop close policy', () => {
-  it('defaults to ordinary window close while idle', () => {
-    const { service, close } = setup();
+  it('keeps a new profile alive by default without overriding a saved opt-out', () => {
+    mock.saved = '{}';
+    const { service, window, close } = setup();
     expect(service.status()).toEqual({
-      keepOpenOnClose: false,
+      keepOpenOnClose: true,
       warnOnVoiceClose: true,
       trayAvailable: true,
     });
-    expect(close().preventDefault).not.toHaveBeenCalled();
+    expect(close().preventDefault).toHaveBeenCalledOnce();
+    expect(window.hide).toHaveBeenCalledOnce();
   });
   it('hides an opted-in window without ending its active call or showing a leave confirmation', () => {
     const { window, close } = setup();

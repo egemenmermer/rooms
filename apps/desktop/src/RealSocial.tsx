@@ -5,6 +5,7 @@ import { QuietMenu } from './QuietMenu';
 import { openRoomActivity } from './MusicDJ';
 import { FriendRequestButton } from './FriendRequestButton';
 import { MediaStage } from './MediaStage';
+import { watchScreen, setScreenVolume } from './realtime';
 export { MediaStage } from './MediaStage';
 import './reference-chat.css';
 import './reference-voice.css';
@@ -282,14 +283,14 @@ export function CommunityChat({
     setQuery('');
   }, [c.activeChannelId]);
   useEffect(() => {
-    if (nearBottom.current && log.current) log.current.scrollTop = log.current.scrollHeight;
-    else setUnseen(true);
-  }, [c.messages.length]);
-  useEffect(() => {
     nearBottom.current = true;
     setUnseen(false);
     setAttachments([]);
   }, [c.activeChannelId]);
+  useEffect(() => {
+    if (nearBottom.current && log.current) log.current.scrollTop = log.current.scrollHeight;
+    else setUnseen(true);
+  }, [c.activeChannelId, c.messages.length, c.messages.at(-1)?.id]);
   const send = () => {
     if (!draft.trim() && !attachments.length) return;
     const content = draft.trim();
@@ -497,6 +498,9 @@ export function CommunityChat({
         className="chat-transcript"
         role="log"
         aria-label="Kanal mesajları"
+        onLoadCapture={() => {
+          if (nearBottom.current && log.current) log.current.scrollTop = log.current.scrollHeight;
+        }}
         onScroll={() => {
           const el = log.current;
           if (el) {
@@ -1590,6 +1594,12 @@ export function CommunityVoice({
                 )}
               </div>
               <ScreenShareGallery
+                onWatch={watchScreen}
+                onVolume={setScreenVolume}
+                onClose={() => {
+                  watchScreen(null);
+                  navigate('/voice');
+                }}
                 initialTrackId={new URLSearchParams(location.search).get('screen') ?? undefined}
                 tracks={screens}
                 people={r.participants}

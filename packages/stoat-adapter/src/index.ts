@@ -765,6 +765,37 @@ export class StoatClient {
   async removeFriend(userId: string) {
     await this.request(`/users/${checked(userId)}/friend`, 'DELETE');
   }
+  async attachmentFile(channelId: string, messageId: string, fileId: string) {
+    const epoch = this.aclEpoch;
+    if (!this.fileOrigin) this.configureFileOrigin(await this.request<Raw>(''));
+    const message = await this.getMessage(channelId, messageId);
+    const file = message.attachments?.find((item) => item.id === fileId);
+    if (!file?.url) throw new StoatError(404, 'ATTACHMENT_UNAVAILABLE');
+    const response = await fetch(file.url, {
+      redirect: 'error',
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!response.ok) throw new StoatError(response.status, 'ATTACHMENT_UNAVAILABLE');
+    const reader = response.body?.getReader();
+    if (!reader) throw new StoatError(502, 'ATTACHMENT_UNAVAILABLE');
+    const parts: Uint8Array[] = [];
+    let size = 0;
+    try {
+      while (true) {
+        const next = await reader.read();
+        if (next.done) break;
+        size += next.value.length;
+        if (size > 25 * 1024 * 1024) throw new StoatError(413, 'ATTACHMENT_TOO_LARGE');
+        parts.push(next.value);
+      }
+    } finally {
+      await reader.cancel();
+    }
+    const fresh = await this.getMessage(channelId, messageId);
+    if (epoch !== this.aclEpoch || !fresh.attachments?.some((item) => item.id === fileId))
+      throw new StoatError(409, 'ACCESS_CHANGED');
+    return { name: file.name, bytes: Buffer.concat(parts) };
+  }
   async attachmentImage(
     channelId: string,
     messageId: string,

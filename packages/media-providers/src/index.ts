@@ -21,6 +21,7 @@ export interface MediaParticipant {
   camera: boolean;
   screen: boolean;
   volume: number;
+  screenVolume?: number;
   quality: string;
 }
 export interface MediaTrack {
@@ -99,6 +100,8 @@ export interface RealtimeMediaProvider {
   deafen(value: boolean): Promise<void>;
   setListenerScope?(scope: string): void;
   setParticipantVolume(participantId: string, volume: number): void;
+  setScreenVolume?(participantId: string, volume: number): void;
+  watchScreen?(participantId: string | null): void;
   startAudio(): Promise<void>;
   disconnect(): Promise<void>;
   reconnect(): Promise<void>;
@@ -132,7 +135,10 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   private listeners = new Set<() => void>();
   private audio = new Map<string, HTMLMediaElement>();
   private volumes = new Map<string, number>();
+  private watchedScreen: string | null = null;
+  private screenAudio = new Set<string>();
   private listenerScope = '';
+  private outputDeviceId = '';
   setListenerScope(scope: string) {
     if (scope === this.listenerScope) return;
     this.listenerScope = scope;
@@ -152,8 +158,11 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     } catch {
       /* Missing or damaged settings do not prevent joining. */
     }
-    for (const [id, person] of this.room?.remoteParticipants ?? [])
-      person.setVolume(listenerGain(id, this.volumes.get(id) ?? 1));
+    for (const [id, person] of this.room?.remoteParticipants ?? []) {
+      person.setVolume(listenerGain(id, this.volumes.get(id) ?? 1), Track.Source.Microphone);
+      if (person.getTrackPublication?.(Track.Source.ScreenShareAudio))
+        person.setVolume(this.volumes.get(`screen:${id}`) ?? 1, Track.Source.ScreenShareAudio);
+    }
     if (this.room) this.sync();
   }
   private attachments = new Set<() => void>();
@@ -269,6 +278,9 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     });
     this.pendingMixer = mixer;
     try {
+      await (context as AudioContext & { setSinkId?(id: string): Promise<void> }).setSinkId?.(
+        this.outputDeviceId,
+      );
       await track.setProcessor(mixer);
       await context.resume();
       if (epoch !== this.epoch || serial !== this.microphoneSerial)
@@ -406,6 +418,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
           camera: p.isCameraEnabled,
           screen: p.isScreenShareEnabled,
           volume: this.volumes.get(p.identity) ?? 1,
+          screenVolume: this.volumes.get(`screen:${p.identity}`) ?? 1,
           quality: p.connectionQuality,
         })),
       tracks: people.flatMap((p) =>
@@ -519,9 +532,15 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
         element.hidden = true;
         document.body.append(element);
         this.audio.set(publication.trackSid, element);
-        element.muted = this.state.deafened;
+        const screen = publication.source === Track.Source.ScreenShareAudio;
+        if (screen) this.screenAudio.add(publication.trackSid);
+        element.muted =
+          this.state.deafened || (screen && this.watchedScreen !== participant.identity);
         participant.setVolume(
-          listenerGain(participant.identity, this.volumes.get(participant.identity) ?? 1),
+          screen
+            ? (this.volumes.get(`screen:${participant.identity}`) ?? 1)
+            : listenerGain(participant.identity, this.volumes.get(participant.identity) ?? 1),
+          screen ? Track.Source.ScreenShareAudio : Track.Source.Microphone,
         );
         void element.play().catch(() => this.patch({ audioBlocked: true }));
       }
@@ -535,6 +554,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
         element.remove();
       }
       this.audio.delete(publication.trackSid);
+      this.screenAudio.delete(publication.trackSid);
       sync();
     });
     room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
@@ -768,9 +788,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     if (!room) throw new Error('Join a voice room first.');
     // Deafen mutes playback without changing subscriptions: no audio can leak during resubscription.
     this.patch({ deafened: value });
-    this.audio.forEach((e) => {
-      e.muted = value;
-    });
+    this.refreshScreenPlayback();
     if (value) {
       ++this.microphoneSerial;
       this.pendingMic?.stop();
@@ -793,7 +811,40 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       } catch {
         /* Playback remains usable when local storage is unavailable. */
       }
-    this.room?.remoteParticipants.get(id)?.setVolume(listenerGain(id, volume));
+    this.room?.remoteParticipants
+      .get(id)
+      ?.setVolume(listenerGain(id, volume), Track.Source.Microphone);
+    this.sync();
+  }
+  watchScreen(id: string | null) {
+    this.watchedScreen = id;
+    this.refreshScreenPlayback();
+  }
+  private refreshScreenPlayback() {
+    const allowed = new Set<string>();
+    const person = this.watchedScreen
+      ? this.room?.remoteParticipants.get(this.watchedScreen)
+      : undefined;
+    for (const pub of person?.trackPublications.values() ?? [])
+      if (pub.source === Track.Source.ScreenShareAudio) allowed.add(pub.trackSid);
+    for (const [id, element] of this.audio)
+      element.muted = this.state.deafened || (this.screenAudio.has(id) && !allowed.has(id));
+  }
+  setScreenVolume(id: string, volume: number) {
+    if (!Number.isFinite(volume) || volume < 0 || volume > 1)
+      throw Error('Volume must be between 0 and 1.');
+    this.volumes.set(`screen:${id}`, volume);
+    if (this.listenerScope) {
+      try {
+        localStorage.setItem(
+          `rooms-listener-levels-v1:${this.listenerScope}`,
+          JSON.stringify(Object.fromEntries([...this.volumes].slice(-512))),
+        );
+      } catch {
+        /* Storage is optional. */
+      }
+    }
+    this.room?.remoteParticipants.get(id)?.setVolume(volume, Track.Source.ScreenShareAudio);
     this.sync();
   }
   async startAudio() {
@@ -812,6 +863,10 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
         throw new Error('Input unavailable.');
       if (!(await room.switchActiveDevice('audiooutput', outputId || 'default')))
         throw new Error('Output unavailable.');
+      await (
+        this.soundContext as (AudioContext & { setSinkId?(id: string): Promise<void> }) | null
+      )?.setSinkId?.(outputId || '');
+      this.outputDeviceId = outputId || '';
       this.inputDeviceId = inputId || undefined;
       this.patch({ error: null, inputDeviceFallback: false });
       this.sync();
@@ -923,6 +978,8 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     });
   }
   private cleanupPlayback() {
+    this.watchedScreen = null;
+    this.screenAudio.clear();
     this.speakingMeter.stop();
     if (this.timer) clearInterval(this.timer);
     this.timer = undefined;

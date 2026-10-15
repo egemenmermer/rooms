@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { IconButton } from '@rooms/design';
 import { MediaStage } from './RealSocial';
 import { ReferenceIcon } from './ReferenceIcon';
-import { setParticipantVolume, useRealtime } from './realtime';
+import { setScreenVolume, watchScreen, useRealtime } from './realtime';
 import { uiError } from './i18n';
 
 /** A captured stream has no independent room playhead. Control only the local view/mix. */
@@ -21,8 +21,12 @@ export function CinemaScreenStage({
   const idle = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [fullscreen, setFullscreen] = useState(false),
     [visible, setVisible] = useState(true);
-  const volume = participant?.volume ?? 1;
+  const volume = participant?.screenVolume ?? 1;
   const local = participant?.local ?? false;
+  useEffect(() => {
+    watchScreen(local ? null : participantId);
+    return () => watchScreen(null);
+  }, [participantId, local]);
   const reveal = useCallback(() => {
     setVisible(true);
     if (idle.current) clearTimeout(idle.current);
@@ -48,7 +52,7 @@ export function CinemaScreenStage({
   };
   const changeVolume = (next: number) => {
     try {
-      setParticipantVolume(participantId, next);
+      setScreenVolume(participantId, next);
     } catch (error) {
       notify(uiError(error));
     }
@@ -85,12 +89,12 @@ export function CinemaScreenStage({
         </span>
         <div className="cinema-share-volume">
           <IconButton
-            label={volume ? 'Kaynak sahibinin sesini kapat' : 'Kaynak sahibinin sesini aç'}
+            label={volume ? 'Yayın sesini kapat' : 'Yayın sesini aç'}
             disabled={local}
             title={
               local
                 ? 'Kendi paylaşımının sesi bu cihazda geri çalınmaz.'
-                : 'Kaynak sahibinin sesi yalnızca senin miksinde değişir.'
+                : 'Yalnızca izlediğin yayının sesini değiştirir.'
             }
             onClick={() => changeVolume(volume ? 0 : 0.8)}
           >
@@ -98,7 +102,7 @@ export function CinemaScreenStage({
           </IconButton>
           <input
             type="range"
-            aria-label="Kaynak sahibinin ses düzeyi"
+            aria-label="Yayın ses düzeyi"
             min={0}
             max={1}
             step={0.01}
@@ -107,7 +111,7 @@ export function CinemaScreenStage({
             title={
               local
                 ? 'Kendi paylaşımın yerel geri çalma yapmaz.'
-                : 'Kaynak sahibinin mikrofon ve paylaşım sesini etkiler.'
+                : 'Konuşma ve DJ sesini değiştirmez.'
             }
             onChange={(event) => changeVolume(Number(event.target.value))}
           />

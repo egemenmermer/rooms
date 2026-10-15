@@ -346,6 +346,37 @@ it('does not retry capture after a permission denial', async () => {
   expect(room.switchActiveDevice).not.toHaveBeenCalled();
   await provider.disconnect();
 });
+it('separates watched screen audio from speech and keeps it closed after undeafen or replacement', async () => {
+  const { provider, room, emit } = fixture();
+  await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+  const publication = { trackSid: 'screen-audio', source: Track.Source.ScreenShareAudio };
+  const bob = {
+    identity: 'bob',
+    setVolume: vi.fn(),
+    trackPublications: new Map([['screen', publication]]),
+  };
+  room.remoteParticipants.set('bob', bob);
+  const element = document.createElement('audio');
+  element.play = vi.fn(async () => {});
+  element.pause = vi.fn();
+  emit(RoomEvent.TrackSubscribed, { kind: 'audio', attach: () => element }, publication, bob);
+  expect(element.muted).toBe(true);
+  provider.watchScreen('bob');
+  expect(element.muted).toBe(false);
+  provider.setScreenVolume('bob', 0.2);
+  expect(bob.setVolume).toHaveBeenLastCalledWith(0.2, Track.Source.ScreenShareAudio);
+  provider.setParticipantVolume('bob', 0.8);
+  expect(bob.setVolume).toHaveBeenLastCalledWith(0.8, Track.Source.Microphone);
+  await provider.deafen(true);
+  expect(element.muted).toBe(true);
+  provider.watchScreen(null);
+  await provider.deafen(false);
+  expect(element.muted).toBe(true);
+  emit(RoomEvent.TrackSubscribed, { kind: 'audio', attach: () => element }, publication, bob);
+  expect(element.muted).toBe(true);
+  expect(bob.setVolume).toHaveBeenLastCalledWith(0.2, Track.Source.ScreenShareAudio);
+  await provider.disconnect();
+});
 it('local volume is applied again when a muted participant publishes a replacement track', async () => {
   const { provider, room, emit } = fixture();
   await provider.connectRoom('room', 'token', 'ws://localhost:7880');
@@ -361,7 +392,7 @@ it('local volume is applied again when a muted participant publishes a replaceme
     { trackSid: 'replacement' },
     bob,
   );
-  expect(bob.setVolume).toHaveBeenLastCalledWith(0);
+  expect(bob.setVolume).toHaveBeenLastCalledWith(0, Track.Source.Microphone);
   await provider.disconnect();
 });
 
@@ -445,10 +476,10 @@ it('bot listener gain reaches very quiet levels, remains local, and survives rep
   room.remoteParticipants.set(bot.identity, bot);
   room.remoteParticipants.set(human.identity, human);
   provider.setParticipantVolume(bot.identity, 0.01);
-  expect(bot.setVolume).toHaveBeenLastCalledWith(0.0001);
+  expect(bot.setVolume).toHaveBeenLastCalledWith(0.0001, Track.Source.Microphone);
   expect(provider.snapshot().participants.find((p) => p.id === bot.identity)?.volume).toBe(0.01);
   provider.setParticipantVolume(human.identity, 0.01);
-  expect(human.setVolume).toHaveBeenLastCalledWith(0.01);
+  expect(human.setVolume).toHaveBeenLastCalledWith(0.01, Track.Source.Microphone);
   const element = document.createElement('audio');
   element.play = vi.fn(async () => {});
   element.pause = vi.fn();
@@ -458,11 +489,11 @@ it('bot listener gain reaches very quiet levels, remains local, and survives rep
     { trackSid: 'new-bot-track' },
     bot,
   );
-  expect(bot.setVolume).toHaveBeenLastCalledWith(0.0001);
+  expect(bot.setVolume).toHaveBeenLastCalledWith(0.0001, Track.Source.Microphone);
   provider.setParticipantVolume(bot.identity, 0);
-  expect(bot.setVolume).toHaveBeenLastCalledWith(0);
+  expect(bot.setVolume).toHaveBeenLastCalledWith(0, Track.Source.Microphone);
   provider.setParticipantVolume(bot.identity, 1);
-  expect(bot.setVolume).toHaveBeenLastCalledWith(1);
+  expect(bot.setVolume).toHaveBeenLastCalledWith(1, Track.Source.Microphone);
   await provider.disconnect();
 });
 
@@ -486,7 +517,7 @@ it('listener settings survive reconnect and a new provider while remaining accou
     { trackSid: 'bot' },
     bot,
   );
-  expect(bot.setVolume).toHaveBeenLastCalledWith(0.0081);
+  expect(bot.setVolume).toHaveBeenLastCalledWith(0.0081, Track.Source.Microphone);
   await first.provider.disconnect();
   const second = fixture();
   second.provider.setListenerScope('DEMO-server:alice');
@@ -498,7 +529,7 @@ it('listener settings survive reconnect and a new provider while remaining accou
     { trackSid: 'bot2' },
     bot,
   );
-  expect(bot.setVolume).toHaveBeenLastCalledWith(0.0081);
+  expect(bot.setVolume).toHaveBeenLastCalledWith(0.0081, Track.Source.Microphone);
   second.provider.setListenerScope('DEMO-server:bob');
   expect(second.provider.snapshot().participants.find((p) => p.id === bot.identity)?.volume).toBe(
     1,

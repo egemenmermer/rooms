@@ -588,6 +588,32 @@ export async function setupCommunity(
   );
   handle('rooms:social-remove-friend', (userId) => requireClient().removeFriend(id.parse(userId)));
   const avatarRequests = new Map<string, Promise<string | null>>();
+  handle('rooms:social-download-attachment', async (channelId, messageId, fileId) => {
+    const current = requireClient(),
+      owner = user!.id,
+      window = getWindow();
+    if (!window) return false;
+    const channel = id.parse(channelId),
+      message = id.parse(messageId),
+      file = id.parse(fileId);
+    const result = await current.attachmentFile(channel, message, file);
+    if (client !== current || user?.id !== owner)
+      throw new SocialInputError('The conversation session changed.');
+    const save = await dialog.showSaveDialog(window, {
+      title: 'Dosyayı kaydet',
+      defaultPath: basename(result.name).replace(/[\x00-\x1f]/g, '') || 'Attachment',
+    });
+    if (save.canceled || !save.filePath) return false;
+    const fresh = await current.getMessage(channel, message);
+    if (
+      client !== current ||
+      user?.id !== owner ||
+      !fresh.attachments?.some((item) => item.id === file)
+    )
+      throw new SocialInputError('The conversation session changed.');
+    writeFileSync(save.filePath, result.bytes);
+    return true;
+  });
   handle('rooms:social-attachment-image', async (channelId, messageId, fileId) => {
     const current = requireClient(),
       owner = user!.id;

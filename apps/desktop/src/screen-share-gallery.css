@@ -167,3 +167,12 @@
   gap: 6px;
   pointer-events: auto;
 }
+.room-screen-volume {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.room-screen-volume input {
+  width: clamp(60px, 12vw, 150px);
+  accent-color: #9c8bff;
+}

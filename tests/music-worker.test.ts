@@ -50,6 +50,27 @@ it('publishes separately, shares a source-free snapshot and keeps control indepe
   await worker.command('room', lease, { type: 'play' });
   expect(publisher.play).toHaveBeenCalledTimes(2);
 });
+it('enqueue preserves playing or paused music while explicit play-now selects the first new item atomically', async () => {
+  const { worker, publisher, lease } = await setup();
+  const first = await worker.command('room', lease, {
+    type: 'add',
+    url: 'https://audio.test/one.mp3',
+  });
+  await worker.command('room', lease, { type: 'add', url: 'https://audio.test/two.mp3' });
+  expect(worker.snapshot('room').currentId).toBe(first.currentId);
+  expect(publisher.play).toHaveBeenCalledTimes(1);
+  await worker.command('room', lease, { type: 'pause' });
+  await worker.command('room', lease, { type: 'add', url: 'https://audio.test/three.mp3' });
+  expect(worker.snapshot('room').status).toBe('paused');
+  const now = await worker.command('room', lease, {
+    type: 'add',
+    url: 'https://audio.test/four.mp3',
+    playNow: true,
+  });
+  expect(now.currentId).toBe(now.queue[3].id);
+  expect(now.status).toBe('playing');
+  expect(publisher.play).toHaveBeenCalledTimes(2);
+});
 it('next and previous use the server publisher and stop removes cached files', async () => {
   const { worker, publisher, lease, directories } = await setup();
   await worker.command('room', lease, { type: 'add', url: 'https://audio.test/one.mp3' });

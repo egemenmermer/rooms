@@ -379,23 +379,47 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
             {busy ? '…' : validSearch() ? <Search size={18} /> : <Plus size={18} />}
           </button>
         </form>
+        {validLink() && (
+          <button
+            className="dj-play-now"
+            disabled={!available || busy}
+            onClick={() => void run({ type: 'add', url: input.trim(), playNow: true })}
+          >
+            <Play size={15} /> Şimdi çal
+          </button>
+        )}
         {results && (
           <div className="dj-search-results" role="region" aria-label="YouTube arama sonuçları">
             {results.length === 0 ? (
               <p>Parça bulunamadı.</p>
             ) : (
               results.map((item) => (
-                <button
-                  key={item.id}
-                  disabled={!available || busy}
-                  onClick={() =>
-                    void run({ type: 'add', url: `https://www.youtube.com/watch?v=${item.id}` })
-                  }
-                >
-                  <span>{item.title}</span>
-                  <small>{item.durationSec > 0 ? clock(item.durationSec) : 'YouTube'}</small>
-                  <Plus size={14} />
-                </button>
+                <div key={item.id} className="dj-search-result">
+                  <button
+                    aria-label={`Kuyruğa ekle: ${item.title}`}
+                    disabled={!available || busy}
+                    onClick={() =>
+                      void run({ type: 'add', url: `https://www.youtube.com/watch?v=${item.id}` })
+                    }
+                  >
+                    <span>{item.title}</span>
+                    <small>{item.durationSec > 0 ? clock(item.durationSec) : 'YouTube'}</small>
+                    <Plus size={14} />
+                  </button>
+                  <button
+                    aria-label={`${item.title} — Şimdi çal`}
+                    disabled={!available || busy}
+                    onClick={() =>
+                      void run({
+                        type: 'add',
+                        url: `https://www.youtube.com/watch?v=${item.id}`,
+                        playNow: true,
+                      })
+                    }
+                  >
+                    <Play size={15} />
+                  </button>
+                </div>
               ))
             )}
           </div>

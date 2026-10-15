@@ -1,7 +1,13 @@
 import { z } from 'zod';
 const id = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 export const musicCommandSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('add'), url: z.string().url().max(2048) }).strict(),
+  z
+    .object({
+      type: z.literal('add'),
+      url: z.string().url().max(2048),
+      playNow: z.boolean().optional(),
+    })
+    .strict(),
   z.object({ type: z.literal('play') }).strict(),
   z.object({ type: z.literal('pause') }).strict(),
   z.object({ type: z.literal('next') }).strict(),

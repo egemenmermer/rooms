@@ -367,7 +367,7 @@ export class MusicWorker {
                 current.durationSec > 0 &&
                 (s.resumePosition ?? 0) >= current.durationSec;
             s.queue.push(...references.map((ref) => ({ ...ref, id: randomUUID() })));
-            if (finished) {
+            if (command.playNow || finished) {
               s.index = firstNew;
               await this.play(s);
             } else if (s.index === -1) {
