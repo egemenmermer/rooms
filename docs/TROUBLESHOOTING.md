@@ -28,13 +28,13 @@ Hayır. Bir yönetici topluluğun arka ucunu çalıştırır. Üyeler masaüstü
 
 **Yönetici:** Stoat'ın duyurduğu herkese açık API/websocket adresini, ters vekil rotalarını, TLS sertifikasını ve erişim servisini doğrula. Tek bir servisten başarılı `/health` yanıtı almak hesapların, izinlerin ve medyanın uçtan uca çalıştığını kanıtlamaz. Loopback adresi, üyenin kendi bilgisayarını gösterir; uzaktaki sunucu adresi olarak kullanılmaz.
 
-Docker kurulumunda hata varsa önce engine'in gerçekten çalıştığını ve Compose yapılandırmasının doğrulandığını kontrol et. İlk çözüm olarak ilgisiz konteyner'ları yeniden başlatma veya veri birimi'leri silme.
+Docker kurulumunda hata varsa önce Docker motorunun gerçekten çalıştığını ve Compose yapılandırmasının doğrulandığını kontrol et. İlk çözüm olarak ilgisiz konteynerleri yeniden başlatma veya veri birimlerini silme.
 
 ## Davet çalışmıyor
 
 Davetin seçilen sunucuya ait olduğunu, süresinin dolmadığını ve kullanılmadığını kontrol et. ROOMS'un tek kullanımlık kayıt bileti ile üst sistem topluluk daveti farklıdır.
 
-Yarıda kalan kayıt, bileti `claiming` veya `failed` durumunda bırakabilir. Yönetici, yeni bilet vermeden veya eski kilidi kurtarmadan önce üst sistem'de hesabın oluşup oluşmadığını incelemelidir. Bileti körlemesine `available` durumuna çevirme; hesap zaten oluşmuş olabilir.
+Yarıda kalan kayıt, bileti `claiming` veya `failed` durumunda bırakabilir. Yönetici, yeni bilet vermeden veya eski kilidi kurtarmadan önce üst sistemde hesabın oluşup oluşmadığını incelemelidir. Bileti körlemesine `available` durumuna çevirme; hesap zaten oluşmuş olabilir.
 
 Parola kurtarma, üst sistem kurulumunun posta/kurtarma yapılandırmasına bağlıdır. Bu hizmet kurulmadıysa uygulama kendi başına hesabı kurtaramaz.
 
@@ -57,13 +57,13 @@ Parola kurtarma, üst sistem kurulumunun posta/kurtarma yapılandırmasına bağ
 5. İmzalı LiveKit webhook'u erişim servisindeki `/v1/media/webhook` adresine ulaşmalı.
 6. Ayrı ağlardaki iki fiziksel cihazla ayrılma/yeniden katılma ve izin iptali dahil denenmeli.
 
-Sunucunun CPU/RAM'i tek başına yeterli kapasiteyi kanıtlamaz. Yayın bit hızı'i, izleyici sayısı, ağ çıkışı, paket kaybı ve RTT önemlidir. Kaynak deposu belirli bir sunucu boyutunu veya katılımcı sayısını sertifikalandırmaz.
+Sunucunun CPU/RAM'i tek başına yeterli kapasiteyi kanıtlamaz. Yayın bit hızı, izleyici sayısı, ağ çıkışı, paket kaybı ve RTT önemlidir. Kaynak deposu belirli bir sunucu boyutunu veya katılımcı sayısını sertifikalandırmaz.
 
 ## Etkinlikler veya müzik kullanılamıyor
 
 Activities ayrı servis ve kalıcı depolama ister. Yetkilendirme hatası veritabanından değil, üyelik veya rolden kaynaklanabilir. Herkese açık ters vekil, Activities ön ekini doğru servise yönlendirmelidir.
 
-Müzik için çalışan çalışan, eşleşen bağımsız servis sırrı ve izinli kaynak yapılandırması gerekir. Java/native sağlayıcı bileşenlerinin ek ön koşulları vardır; [isteğe bağlı servisler](SELF_HOSTING.md#isteğe-bağlı-servisler) bölümüne bak. VLC'de oynayan bir kanal, uygulamanın oynatma yolunun da çalıştığını kanıtlamaz. Kullanılabilir motorlar ve açık kabul konuları [kişisel oynatma rehberindedir](PERSONAL_PLAYBACK_ENGINES.md).
+Müzik için çalışan müzik servisi, eşleşen bağımsız servis sırrı ve izinli kaynak yapılandırması gerekir. Java/yerel sağlayıcı bileşenlerinin ek ön koşulları vardır; [isteğe bağlı servisler](SELF_HOSTING.md#isteğe-bağlı-servisler) bölümüne bak. VLC'de oynayan bir kanal, uygulamanın oynatma yolunun da çalıştığını kanıtlamaz. Kullanılabilir motorlar ve açık kabul konuları [kişisel oynatma rehberindedir](PERSONAL_PLAYBACK_ENGINES.md).
 
 İsteğe bağlı servisler kapalı bırakılabilir. Normal sohbet için gerekmezler; Agent da ses için zorunlu değildir.
 
@@ -80,7 +80,7 @@ Daha eski bir sürüm öneriliyorsa önbellekte veya çalışan güncelleyicide 
 - **Mac yerel derleme hatası:** Xcode Command Line Tools ve desteklenen mimariyi kontrol et. Paketleme ve imzalama ayrıca ön koşullar ister.
 - **Port kullanımda:** kendi geliştirme sürecini durdur veya izole ortam seç. Bilmediğin servisi sonlandırma.
 - **Eksik `infra/local` dosyaları:** geçmiş yerel doğrulama yardımcıları özel üretilmiş dosyalar bekler; otomatik üretim kurulumu değildir. [Açık kurulum adımlarını](SELF_HOSTING.md) izle.
-- **Veritabanı migration komutu yok:** Activities mevcut PostgreSQL tablosunu açılışta oluşturur; bu, genel bir sürüm yükseltme/düşürme sistemi sağlamaz. Sürüm değiştirmeden veri biçimi uyumluluğunu incele.
+- **Veritabanı geçiş komutu yok:** Activities mevcut PostgreSQL tablosunu açılışta oluşturur; bu, genel bir sürüm yükseltme/düşürme sistemi sağlamaz. Sürüm değiştirmeden veri biçimi uyumluluğunu incele.
 
 ## Yararlı hata bildirimi
 

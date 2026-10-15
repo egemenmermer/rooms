@@ -117,7 +117,7 @@ webhook:
 livekit-server --config .local/livekit.yaml
 ```
 
-Dosyayı yalnız servis hesabı okuyabilsin. ROOMS erişim servisinde **aynı** anahtar/sırrı kullan. İmzalı webhook, LiveKit'in çalıştığı ortamdan erişim servisine ulaşmalıdır; konteyner'dan yukarıdaki yerel loopback adresine erişilemeyebilir.
+Dosyayı yalnız servis hesabı okuyabilsin. ROOMS erişim servisinde **aynı** anahtar/sırrı kullan. İmzalı webhook, LiveKit'in çalıştığı ortamdan erişim servisine ulaşmalıdır; konteynerden yukarıdaki yerel loopback adresine erişilemeyebilir.
 
 Bu loopback örneği uzak üyeler için uygun değildir. Herkese açık kurulumda erişilebilir duyurulan IP, WSS sinyali, eşleşen TCP/UDP portları ve gereken NAT/TURN düzeni doğrulanır. LiveKit API sırları sunucuda kalır; istemciler kısa süreli yetki alır.
 
@@ -234,8 +234,8 @@ Temel giriş, sohbet, izinler ve medya çalıştıktan sonra ekle:
 
 | Veri | Konum | Kurtarma gereksinimi |
 | --- | --- | --- |
-| Sosyal hesaplar/mesajlar | Stoat veritabanı veri birimi'leri | Uyumlu üst sistem yedek/geri yükleme |
-| Yüklenen dosyalar | Stoat nesne deposu veri birimi'leri | İlgili metadata ve anahtarlarla birlikte yedek |
+| Sosyal hesaplar/mesajlar | Stoat veritabanı veri birimleri | Uyumlu üst sistem yedek/geri yükleme |
+| Yüklenen dosyalar | Stoat nesne deposu veri birimleri | İlgili üstveri ve anahtarlarla birlikte yedek |
 | Kayıt durumu | `ROOMS_REGISTRATION_INVITES_FILE` ve kilit durumu | Kullanılmış/belirsiz durumları koru |
 | Etkinlikler | `ROOMS_ACTIVITY_DATA` veya PostgreSQL | Uyumlu seri hale getirilmiş durum |
 | Soundboard | `ROOMS_SOUNDBOARD_DIRECTORY` | Dosyaları ve sahipliği koru |
