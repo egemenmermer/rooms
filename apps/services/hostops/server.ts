@@ -38,6 +38,7 @@ export function createHostOpsServer(config: {
   internalAgent?: {
     key: string;
     identifyUser(userId: string, host: HostSpec): Promise<OpsIdentity>;
+    visibleRooms?(userId: string, host: HostSpec, roomIds: string[]): Promise<string[]>;
   };
 }) {
   const app = Fastify({ logger: false, bodyLimit: 16384 });
@@ -113,12 +114,20 @@ export function createHostOpsServer(config: {
       )
     )
       throw failure('AUTHORITY_SERVICE_DENIED');
-    const body = z.object({ hostId: opsId, userId: opsId }).strict().parse(req.body);
+    const body = z
+      .object({ hostId: opsId, userId: opsId, roomIds: z.array(opsId).max(100).default([]) })
+      .strict()
+      .parse(req.body);
     const host = hostOf(body.hostId);
     const person = await authority.identifyUser(body.userId, host);
     if (person.userId !== body.userId) throw failure('IDENTITY_CHANGED');
     const grant = config.store.grant(host.id, person.userId);
-    return { allowed: person.owner || !!grant?.permissions.includes('agent') };
+    const allowed = person.owner || !!grant?.permissions.includes('agent');
+    const visible =
+      allowed && authority.visibleRooms
+        ? await authority.visibleRooms(person.userId, host, body.roomIds)
+        : [];
+    return { allowed, roomIds: [...new Set(body.roomIds.filter((id) => visible.includes(id)))] };
   });
   app.get('/v1/hosts', async (req) => {
     const hosts: OpsHost[] = [];

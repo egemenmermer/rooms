@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { StoatClient } from '@rooms/stoat';
 import { RoomServiceClient, TrackType } from 'livekit-server-sdk';
+import { StoatAuthorizationReader } from '../access/stoat-authorization';
+import { visibleHostRooms } from './authorization';
 import { createHostOpsServer } from './server';
 import { HostOpsStore } from './store';
 import { LinuxCollector, emptySupplement, type HostSupplement } from './collector';
@@ -50,8 +52,9 @@ const configSchema = z
     helper: z.string().startsWith('/').optional(),
     nativeModules: z.string().startsWith('/').optional(),
     statusHelper: z.string().startsWith('/').optional(),
+    socialReadMongoUrl: z.string().startsWith('mongodb://').optional(),
     agentAuthority: z
-      .object({ key: z.string().regex(/^[a-f0-9]{64}$/), botToken: z.string().min(10).max(4096) })
+      .object({ key: z.string().regex(/^[a-f0-9]{64}$/) })
       .strict()
       .optional(),
     livekit: z
@@ -133,10 +136,10 @@ async function start() {
     string,
     { until: number; value: { userId: string; owner: boolean } }
   >();
-  const internalIdentities = new Map<
-    string,
-    { until: number; value: Promise<{ userId: string; owner: boolean }> }
-  >();
+  const reader = config.socialReadMongoUrl
+    ? new StoatAuthorizationReader(config.socialReadMongoUrl)
+    : null;
+  if (config.agentAuthority && !reader) throw Error('CURRENT_ROOM_AUTHORIZATION_REQUIRED');
   const app = createHostOpsServer({
     hosts: [config.host],
     store,
@@ -146,24 +149,11 @@ async function start() {
       ? {
           internalAgent: {
             key: config.agentAuthority.key,
+            visibleRooms: (userId, host, roomIds) =>
+              visibleHostRooms(reader!, host.communityId, userId, roomIds),
             identifyUser: async (userId: string, host: { communityId: string }) => {
-              const cacheKey = `${host.communityId}:${userId}`;
-              const cached = internalIdentities.get(cacheKey);
-              if (cached && cached.until > Date.now()) return cached.value;
-              const value = (async () => {
-                const client = new StoatClient(config.stoatUrl, config.agentAuthority!.botToken, {
-                  botToken: true,
-                  trustedInternalOrigin: true,
-                  apiRoot: !new URL(config.stoatUrl).pathname.startsWith('/api'),
-                });
-                const space = await client.getServer(host.communityId);
-                const owner = space.owner === userId;
-                if (!owner) await client.getMember(host.communityId, userId);
-                return { userId, owner };
-              })();
-              if (internalIdentities.size >= 500) internalIdentities.clear();
-              internalIdentities.set(cacheKey, { until: Date.now() + 1000, value });
-              return value;
+              const { server } = await reader!.community(host.communityId, userId);
+              return { userId, owner: server.owner === userId };
             },
           },
         }
@@ -175,15 +165,20 @@ async function start() {
         trustedInternalOrigin: true,
         apiRoot: !new URL(config.stoatUrl).pathname.startsWith('/api'),
       });
-      const user = await client.getCurrentUser(),
-        space = await client.getServer(host.communityId);
+      const user = await client.getCurrentUser();
+      const space = reader
+        ? (await reader.community(host.communityId, user.id)).server
+        : await client.getServer(host.communityId);
       const owner = space.owner === user.id;
-      if (!owner) await client.getMember(host.communityId, user.id);
+      if (!reader && !owner) await client.getMember(host.communityId, user.id);
       if (identities.size >= 500) identities.clear();
       const value = { userId: user.id, owner };
       identities.set(token, { value, until: Date.now() + 1000 });
       return value;
     },
+  });
+  app.addHook('onClose', async () => {
+    await reader?.close();
   });
   await app.listen({
     host: process.env.SERVICE_HOST ?? '127.0.0.1',

@@ -114,10 +114,10 @@ async function main() {
         .regex(/^[a-f0-9]{64}$/)
         .parse(process.env.ROOMS_AGENT_HOST_AUTHORITY_KEY)
     : undefined;
-  const hostChecks = new Map<string, { until: number; pending: Promise<void> }>();
+  const hostChecks = new Map<string, { until: number; pending: Promise<string[]> }>();
   const hostAuthority = async (p: AgentPrincipal) => {
     if (!shared) return p;
-    let check = hostChecks.get(p.userId);
+    let check = hostChecks.get(JSON.stringify([p.userId, [...p.roomIds].sort()]));
     if (!check || check.until <= Date.now()) {
       const pending = (async () => {
         const response = await fetch('http://127.0.0.1:3042/internal/agent-authority', {
@@ -125,17 +125,22 @@ async function main() {
           redirect: 'error',
           signal: AbortSignal.timeout(3000),
           headers: { Authorization: `Bearer ${authorityKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ hostId, userId: p.userId }),
+          body: JSON.stringify({ hostId, userId: p.userId, roomIds: p.roomIds }),
         });
-        if (!response.ok || ((await response.json()) as { allowed?: boolean }).allowed !== true)
-          throw new Error('Host Agent authority is unavailable or revoked.');
+        if (!response.ok) throw new Error('Host Agent authority is unavailable or revoked.');
+        const current = z
+          .object({ allowed: z.boolean(), roomIds: z.array(subject).max(100) })
+          .strict()
+          .parse(await response.json());
+        if (!current.allowed) throw new Error('Host Agent authority is revoked.');
+        return current.roomIds;
       })();
       if (hostChecks.size >= 500) hostChecks.clear();
       check = { pending, until: Date.now() + 1000 };
-      hostChecks.set(p.userId, check);
+      hostChecks.set(JSON.stringify([p.userId, [...p.roomIds].sort()]), check);
     }
-    await check.pending;
-    return p;
+    const visible = await check.pending;
+    return { ...p, roomIds: p.roomIds.filter((id) => visible.includes(id)) };
   };
   const directory = process.env.ROOMS_AGENT_DATA ?? '/var/lib/rooms-agent';
   const modelHomes = join(directory, 'model-homes');

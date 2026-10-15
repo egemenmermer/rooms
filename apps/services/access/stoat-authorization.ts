@@ -17,6 +17,24 @@ export class StoatAuthorizationReader {
       maxPoolSize: 5,
     });
   }
+  async community(
+    serverId: string,
+    userId: string,
+  ): Promise<{ server: StoatServer; member: StoatMember }> {
+    if (!SOCIAL_ID_PATTERN.test(serverId) || !SOCIAL_ID_PATTERN.test(userId))
+      throw new StoatError(400, 'INVALID_ID');
+    const db = this.mongo.db('revolt');
+    const [server, member] = await Promise.all([
+      db.collection('servers').findOne({ _id: serverId } as any),
+      db.collection('server_members').findOne({
+        '_id.server': serverId,
+        '_id.user': userId,
+        pending_deletion_at: { $exists: false },
+      }),
+    ]);
+    if (!server || !member) throw new StoatError(403, 'ROOM_ACCESS_DENIED');
+    return { server: server as unknown as StoatServer, member: member as unknown as StoatMember };
+  }
   async read(
     channelId: string,
     userId: string,
