@@ -40,6 +40,7 @@ async function main() {
   const output = await worker(
     args(`set -eu
 test "$(id -u)" = 10001
+test "$(ls /sys/class/net)" = lo
 test ! -e /var/run/docker.sock
 test ! -e /etc/rooms-agent/shared.env
 if touch /etc/rooms-must-not-write 2>/dev/null; then exit 40; fi

@@ -298,6 +298,12 @@ function LegacyAgentSettings({
                   type="button"
                   key={p}
                   className={provider === p ? 'selected' : ''}
+                  disabled={status?.executionHost === 'shared-rootless' && p !== 'openrouter'}
+                  title={
+                    status?.executionHost === 'shared-rootless' && p !== 'openrouter'
+                      ? uiError('SHARED_HOST_API_MODEL_REQUIRED')
+                      : undefined
+                  }
                   onClick={() => {
                     setProvider(p);
                     setKey('');
@@ -1811,6 +1817,7 @@ const providerName = (provider: AgentProvider) =>
   provider === 'codex' ? 'Codex' : provider === 'claude' ? 'Claude Code' : 'OpenRouter';
 const referenceFixtureReason = 'Yerel demo önizlemesi hesap işlemi yapamaz.';
 export interface AgentModelsProps {
+  executionHost?: AgentStatus['executionHost'];
   models: ModelConnection[];
   userId: string;
   ready: boolean;
@@ -1942,7 +1949,9 @@ export function AgentModelsSurface(props: AgentModelsProps) {
       )}
       {(['openrouter', 'codex', 'claude'] as const).map((provider) => {
         const items = models.filter((item) => item.provider === provider),
-          primary = items[0];
+          primary = items[0],
+          providerUnavailable =
+            props.executionHost === 'shared-rootless' && provider !== 'openrouter';
         return (
           <article className="s59-provider-row" key={provider}>
             <span className={`s59-provider-symbol ${provider}`}>
@@ -1972,7 +1981,9 @@ export function AgentModelsSurface(props: AgentModelsProps) {
               <p>
                 {provider === 'openrouter'
                   ? 'Kendi API anahtarın. Diğer üyelerle paylaşılmaz.'
-                  : 'Ayrı sunucudaki kişisel resmî CLI oturumu kullanılır.'}
+                  : providerUnavailable
+                    ? uiError('SHARED_HOST_API_MODEL_REQUIRED')
+                    : 'Ayrı sunucudaki kişisel resmî CLI oturumu kullanılır.'}
               </p>
               {provider === 'openrouter' ? (
                 <form
@@ -2043,8 +2054,14 @@ export function AgentModelsSurface(props: AgentModelsProps) {
                   </span>
                   <button
                     className="button secondary"
-                    disabled={!ready}
-                    title={!ready ? disabledReason : undefined}
+                    disabled={!ready || providerUnavailable}
+                    title={
+                      providerUnavailable
+                        ? uiError('SHARED_HOST_API_MODEL_REQUIRED')
+                        : !ready
+                          ? disabledReason
+                          : undefined
+                    }
                     onClick={() => {
                       setLogin(provider);
                       setModel('');
@@ -2299,6 +2316,7 @@ function AgentModelsContainer() {
         userId={community.user?.id || ''}
         ready={!!status?.connected && status.userId === community.user?.id && !scope.invalidated}
         models={models}
+        executionHost={status?.executionHost}
         bridge={window.rooms?.agent}
         onRefresh={refresh}
         loading={loading}

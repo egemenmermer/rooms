@@ -1,6 +1,6 @@
 {
   "name": "rooms",
-  "version": "0.1.18-rc.9",
+  "version": "0.1.18-rc.10",
   "private": true,
   "description": "A private desktop clubhouse",
   "author": "ROOMS",
@@ -110,7 +110,8 @@
       "entitlementsInherit": "infra/release/entitlements.mac.plist"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "artifactName": "ROOMS-${version}-windows-${arch}-setup.${ext}"
     },
     "nsis": {
       "oneClick": false,

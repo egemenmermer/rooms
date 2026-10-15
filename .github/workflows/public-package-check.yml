@@ -102,10 +102,10 @@ jobs:
       - name: Verify actual personal-player UI and native IPC
         run: node scripts/verify-vlc-ui.mjs
       - name: Build unsigned NSIS installer with public resource guard
-        run: pnpm exec electron-builder --win nsis --x64 --publish never --config.win.artifactName=ROOMS-0.1.18-rc.9-windows-x64-setup.exe
+        run: pnpm exec electron-builder --win nsis --x64 --publish never
       - name: Install and verify actual packaged application
         env:
-          ROOMS_WINDOWS_INSTALL_DIR: ${{ runner.temp }}\ROOMS-Çığ\rooms-rc9-installed
+          ROOMS_WINDOWS_INSTALL_DIR: ${{ runner.temp }}\ROOMS-Çığ\rooms-candidate-installed
         run: node scripts/verify-windows-package.mjs
       - name: Record native crash diagnostics
         if: failure()
@@ -116,13 +116,13 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: windows-rc9-candidate
+          name: windows-test-candidate
           retention-days: 7
           if-no-files-found: error
           path: |
             release/*setup.exe
-            release/windows-rc9-*.json
-            release/windows-rc9-*.png
+            release/windows-package-*.json
+            release/windows-package-*.png
             .local/vlc-native-check/result.json
             .local/vlc-native-check/stages.log
             .local/vlc-native-check/crashes/**

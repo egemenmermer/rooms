@@ -49,7 +49,7 @@ export function createReleaseManifest(output, buildNumber, expectedSourceSha) {
     throw new Error('Candidate bundle version/build does not match source.');
   execFileSync('/usr/bin/codesign', ['--verify', '--deep', '--strict', bundle]);
   const services = Object.fromEntries(
-    ['access', 'activities', 'agent', 'music'].map((name) => [
+    ['access', 'activities', 'agent', 'music', 'hostops'].map((name) => [
       name,
       hash(`dist-services/${name}.cjs`),
     ]),

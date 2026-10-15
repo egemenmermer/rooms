@@ -399,6 +399,9 @@ export async function createAgentServer(config: AgentConfig) {
         .filter((m) => m.ownerId === p.userId)
         .map(async (m) => ({
           ...publicModel(m),
+          ...(config.executionHost === 'shared-rootless' && m.provider !== 'openrouter'
+            ? { reason: 'SHARED_HOST_API_MODEL_REQUIRED' }
+            : {}),
           status: config.modelStatus
             ? await config.modelStatus(m)
             : m.provider === 'openrouter'
@@ -418,6 +421,8 @@ export async function createAgentServer(config: AgentConfig) {
       })
       .strict()
       .parse(request.body);
+    if (config.executionHost === 'shared-rootless' && b.provider !== 'openrouter')
+      throw Object.assign(new Error('SHARED_HOST_API_MODEL_REQUIRED'), { statusCode: 409 });
     if (b.provider === 'openrouter' && !b.apiKey)
       throw Object.assign(new Error('API_KEY_REQUIRED'), { statusCode: 400 });
     if (b.provider !== 'openrouter' && b.apiKey)
