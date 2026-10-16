@@ -5,7 +5,11 @@ import type {
   CommandEnvelope,
   RoomSnapshot,
 } from '../../../packages/activity-protocol/src/index';
-import { playbackPosition } from '../../../packages/activity-protocol/src/index';
+import {
+  directsSession,
+  endsActivity,
+  playbackPosition,
+} from '../../../packages/activity-protocol/src/index';
 import type { StoredRoom } from './repository';
 import { advanceGameBots, createGame, disconnectGame, gameCommand, gameView } from './games';
 
@@ -72,15 +76,24 @@ export function response(
 function transferHost(state: RoomSnapshot, now: number) {
   if (!state.primary || state.participants.some((p) => p.userId === state.primary!.hostUserId))
     return;
+  // People the host trusted with the remote come first, then the longest-seated participant.
+  const trusted = new Set(state.primary.controllers ?? []);
   const next = [...state.participants]
     .filter((p) => p.canControl)
-    .sort((a, b) => a.joinedAt - b.joinedAt || a.userId.localeCompare(b.userId))[0];
+    .sort(
+      (a, b) =>
+        Number(trusted.has(b.userId)) - Number(trusted.has(a.userId)) ||
+        a.joinedAt - b.joinedAt ||
+        a.userId.localeCompare(b.userId),
+    )[0];
   if (!next) {
     state.primary = null;
     state.timeline.playing = false;
     return;
   }
   state.primary.hostUserId = next.userId;
+  if (state.primary.controllers)
+    state.primary.controllers = state.primary.controllers.filter((id) => id !== next.userId);
   if (state.primary.activity === 'screen') {
     state.primary.state = 'awaiting-source';
     state.timeline.playing = false;
@@ -161,10 +174,48 @@ export function applyCommand(
       fail(409, 'CINEMA_SOURCE_STALE');
     return source;
   };
-  const media = () => {
+  // Role permission plus the host's session setting ("only the host and invited people steer").
+  const direct = () => {
     control();
+    if (!directsSession(state.primary, identity.userId, true)) fail(403, 'SESSION_HOST_CONTROL');
+  };
+  const shared = () => {
     if (!state.primary || !['cinema', 'youtube'].includes(state.primary.activity))
       fail(409, 'SHARED_PLAYER_REQUIRED');
+  };
+  const media = () => {
+    direct();
+    shared();
+  };
+  const host = () => {
+    if (!state.primary || !['cinema', 'youtube', 'screen'].includes(state.primary.activity))
+      fail(409, 'SHARED_PLAYER_REQUIRED');
+    if (state.primary.hostUserId !== identity.userId) fail(403, 'SESSION_HOST_REQUIRED');
+    return state.primary;
+  };
+  const select = (itemId: string, play: boolean) => {
+    const selected = state.queue.find((item) => item.id === itemId)!;
+    const cinemaItem =
+      state.primary?.activity === 'cinema' && selected.media.kind === 'independent-source';
+    state.timeline = {
+      // Independent sources need every viewer's own file first, so they never autoplay.
+      playing: play && !cinemaItem && selected.media.kind === 'youtube',
+      positionSec: 0,
+      rate: 1,
+      effectiveServerTimeMs: now,
+      epoch: state.timeline.epoch + 1,
+      itemId,
+    };
+    state.cinema =
+      cinemaItem && selected.media.kind === 'independent-source'
+        ? {
+            itemId,
+            timelineEpoch: state.timeline.epoch,
+            referenceId: selected.media.referenceId,
+            durationSec: null,
+            sources: [],
+          }
+        : null;
   };
   switch (command.type) {
     case 'join':
@@ -215,6 +266,7 @@ export function applyCommand(
       break;
     case 'end':
       control();
+      if (!endsActivity(state.primary, identity.userId, true)) fail(403, 'SESSION_HOST_REQUIRED');
       state.cinema = null;
       state.primary = null;
       state.timeline.playing = false;
@@ -273,7 +325,7 @@ export function applyCommand(
       break;
     }
     case 'cinema.playback': {
-      control();
+      direct();
       const context = cinema(command.itemId, command.timelineEpoch);
       const source = context.sources.find((value) => value.userId === identity.userId);
       if (!source || source.sourceVersion !== command.sourceVersion)
@@ -291,19 +343,27 @@ export function applyCommand(
       break;
     }
     case 'queue.add':
-      media();
+      // Anyone in the room may suggest; starting it now is a playback decision.
+      control();
+      shared();
+      if (command.start) direct();
       if ((state.primary?.activity === 'cinema') !== (command.media.kind === 'independent-source'))
         fail(409, 'MEDIA_KIND_MISMATCH');
       if (state.queue.length >= 100) fail(409, 'QUEUE_FULL');
       if (state.queue.some((i) => i.id === command.itemId)) fail(409, 'QUEUE_ITEM_EXISTS');
       state.queue.push({ id: command.itemId, media: command.media, addedBy: identity.userId });
+      if (command.start) select(command.itemId, true);
       break;
-    case 'queue.remove':
-      media();
-      if (!state.queue.some((i) => i.id === command.itemId)) fail(404, 'QUEUE_ITEM_NOT_FOUND');
+    case 'queue.remove': {
+      control();
+      shared();
+      const item = state.queue.find((i) => i.id === command.itemId);
+      if (!item) fail(404, 'QUEUE_ITEM_NOT_FOUND');
+      if (item.addedBy !== identity.userId) direct();
       if (state.timeline.itemId === command.itemId) fail(409, 'QUEUE_ACTIVE_ITEM_FIXED');
       state.queue = state.queue.filter((i) => i.id !== command.itemId);
       break;
+    }
     case 'queue.reorder':
       media();
       if (
@@ -322,28 +382,59 @@ export function applyCommand(
     case 'queue.select':
       media();
       if (!state.queue.some((i) => i.id === command.itemId)) fail(404, 'QUEUE_ITEM_NOT_FOUND');
-      state.timeline = {
-        playing: false,
-        positionSec: 0,
-        rate: 1,
-        effectiveServerTimeMs: now,
-        epoch: state.timeline.epoch + 1,
-        itemId: command.itemId,
-      };
-      {
-        const selected = state.queue.find((item) => item.id === command.itemId)!;
-        state.cinema =
-          state.primary?.activity === 'cinema' && selected.media.kind === 'independent-source'
-            ? {
-                itemId: command.itemId,
-                timelineEpoch: state.timeline.epoch,
-                referenceId: selected.media.referenceId,
-                durationSec: null,
-                sources: [],
-              }
-            : null;
-      }
+      select(command.itemId, command.play ?? false);
       break;
+    case 'queue.next': {
+      // Several viewers report the same end; only the first one moves the room.
+      if (state.timeline.itemId !== command.fromItemId) return false;
+      if (command.reason === 'skip') media();
+      else {
+        control();
+        shared();
+      }
+      const index = state.queue.findIndex((item) => item.id === command.fromItemId);
+      const next = index >= 0 ? state.queue[index + 1] : undefined;
+      if (next) select(next.id, true);
+      else if (command.reason === 'skip') fail(409, 'QUEUE_END');
+      else
+        state.timeline = {
+          ...state.timeline,
+          playing: false,
+          positionSec: playbackPosition(state.timeline, now),
+          effectiveServerTimeMs: now,
+        };
+      break;
+    }
+    case 'session.control': {
+      const primary = host();
+      primary.controlMode = command.mode;
+      break;
+    }
+    case 'session.permit': {
+      const primary = host();
+      if (command.userId === primary.hostUserId) fail(409, 'SESSION_HOST_ALREADY');
+      if (!state.participants.some((p) => p.userId === command.userId))
+        fail(404, 'SESSION_PARTICIPANT_NOT_FOUND');
+      const others = (primary.controllers ?? []).filter((id) => id !== command.userId);
+      primary.controllers = command.allowed ? [...others, command.userId].slice(-100) : others;
+      break;
+    }
+    case 'session.host': {
+      const primary = host();
+      const target = state.participants.find((p) => p.userId === command.userId);
+      if (!target) fail(404, 'SESSION_PARTICIPANT_NOT_FOUND');
+      if (!target.canControl) fail(409, 'SESSION_HOST_TARGET_DENIED');
+      if (target.userId === primary.hostUserId) break;
+      // The previous host keeps the remote; the new host no longer needs an explicit grant.
+      primary.controllers = [
+        ...(primary.controllers ?? []).filter(
+          (id) => id !== target.userId && id !== identity.userId,
+        ),
+        identity.userId,
+      ].slice(-100);
+      primary.hostUserId = target.userId;
+      break;
+    }
     case 'poll.create':
       if (!identity.canCreate) fail(403, 'ACTIVITY_CREATE_DENIED');
       if (state.polls.length >= 50) fail(409, 'POLL_LIMIT');

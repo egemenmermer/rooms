@@ -1,4 +1,3 @@
-import { useCommunityBranding } from './use-community-branding';
 import { openRoomActivity } from './MusicDJ';
 import './reference-voice.css';
 import { useState } from 'react';
@@ -9,26 +8,30 @@ import { useCommunity } from './community';
 import { useRealtime, stopScreen } from './realtime';
 import { useActivityRoom } from './activity';
 import { uiError } from './i18n';
+import { endsActivity, type RoomSnapshot } from '../../../packages/activity-protocol/src/index';
+
+/** Where a running primary activity is shown in this client. */
+export function activityRoute(kind: NonNullable<RoomSnapshot['primary']>['activity']) {
+  return kind === 'cinema' || kind === 'youtube'
+    ? '/cinema'
+    : kind === 'screen'
+      ? '/voice?view=share'
+      : '/games';
+}
 
 export function ActivityLauncher({ onClose }: { onClose(): void }) {
   const community = useCommunity(),
     voice = useRealtime(),
     navigate = useNavigate();
-  const branding = useCommunityBranding();
   const roomId = voice.channelId ?? community.activeChannelId;
   const activity = useActivityRoom(roomId);
   const [error, setError] = useState('');
   const primary = activity.room?.primary;
   const self = activity.room?.participants.find((p) => p.userId === community.user?.id);
-  const forbidden = self?.canControl === false;
-  const routeFor = (kind: string) =>
-    kind === 'cinema'
-      ? '/cinema'
-      : kind === 'youtube'
-        ? '/watch/youtube'
-        : kind === 'screen'
-          ? '/voice?view=share'
-          : '/games';
+  const forbidden = !primary && self?.canControl === false;
+  // Anyone may join; only the host ends a shared player for everyone.
+  const canEnd =
+    !!primary && endsActivity(primary, community.user?.id, self ? self.canControl : true);
   const open = (path: string) => {
     openRoomActivity(path, navigate);
     onClose();
@@ -44,12 +47,6 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
       path: '/cinema',
     },
     {
-      label: branding.name,
-      icon: 'play',
-      description: 'Ses odasına müzik botu çağır.',
-      path: '/youtube',
-    },
-    {
       label: 'Kıraathane',
       icon: 'cards',
       description: 'Hold’em, Blackjack, Batak ve 101 Okey.',
@@ -59,38 +56,12 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
   return (
     <Modal
       title={
-        forbidden
-          ? 'Etkinlik başlatılamıyor'
-          : primary
-            ? primary.activity === 'cinema'
-              ? 'Salonda Cinema devam ediyor'
-              : 'Devam eden etkinlik'
-            : 'Etkinlikler'
+        primary ? 'Devam eden etkinlik' : forbidden ? 'Etkinlik başlatılamıyor' : 'Etkinlikler'
       }
       onClose={onClose}
       className={`launcher-modal reference-launcher-modal ${primary ? 'has-active-activity' : ''} ${forbidden ? 'is-forbidden' : ''}`}
     >
-      {forbidden ? (
-        <>
-          <div className="reference-media-notice" role="alert">
-            <ReferenceIcon name="lock" size={18} />
-            <span>
-              Bu odada etkinlik başlatma yetkin yok. Devam eden etkinliğe katılabilir veya bir oda
-              yöneticisinden yardım isteyebilirsin.
-            </span>
-          </div>
-          <p className="modal-description">
-            Sesli sohbetin ve erişebildiğin kanallar çalışmaya devam eder.
-          </p>
-          {primary && (
-            <div className="button-row">
-              <button className="button primary" onClick={() => open('/voice')}>
-                Salona dön
-              </button>
-            </div>
-          )}
-        </>
-      ) : primary ? (
+      {primary ? (
         <>
           <div className="reference-active-activity">
             <span className="reference-activity-mark">
@@ -113,7 +84,7 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
                 {primary.activity === 'cinema'
                   ? `Cinema · ${roomCount ?? 0} kişi odada · ${positionLabel}`
                   : primary.activity === 'youtube'
-                    ? 'YouTube Together'
+                    ? `YouTube · ${roomCount ?? 0} kişi izliyor`
                     : primary.activity === 'screen'
                       ? 'Ekran paylaşımı'
                       : 'Oyun masası'}
@@ -121,37 +92,42 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
             </div>
             <span className="reference-live-pill">Etkin</span>
           </div>
-          <div className="reference-media-notice">
-            <ReferenceIcon name="alert-triangle" size={18} />
+          <div className="button-row">
+            {canEnd && (
+              <button
+                className="button secondary"
+                disabled={activity.busy}
+                onClick={() => {
+                  setError('');
+                  void (async () => {
+                    if (primary.activity === 'screen' && voice.sharing) await stopScreen();
+                    await activity.send({ type: 'end' });
+                  })().catch((e) => setError(uiError(e)));
+                }}
+              >
+                {activity.busy ? 'Bitiriliyor…' : 'Etkinliği bitir'}
+              </button>
+            )}
+            <button
+              className="button primary"
+              onClick={() => open(activityRoute(primary.activity))}
+            >
+              {self ? 'Aç' : 'Katıl'}
+            </button>
+          </div>
+        </>
+      ) : forbidden ? (
+        <>
+          <div className="reference-media-notice" role="alert">
+            <ReferenceIcon name="lock" size={18} />
             <span>
-              Yeni bir ana etkinlik için mevcut etkinliği herkes adına bitir. Sesli sohbet ve yan
-              etkinlikler devam eder.
+              Bu odada etkinlik başlatma yetkin yok. Biri etkinlik açınca buradan katılabilir veya
+              bir oda yöneticisinden yardım isteyebilirsin.
             </span>
           </div>
           <p className="modal-description">
-            İstersen mevcut etkinliğe dön. Etkinliği kapatmak için tüm katılımcılara gösterilen açık
-            aksiyonu kullan.
+            Sesli sohbetin ve erişebildiğin kanallar çalışmaya devam eder.
           </p>
-          <div className="button-row">
-            <button className="button secondary" onClick={() => open(routeFor(primary.activity))}>
-              {primary.activity === 'cinema' && <ReferenceIcon name="film" size={16} />}
-              {primary.activity === 'cinema' ? 'Cinema’ya dön' : 'Etkinliğe dön'}
-            </button>
-            <button
-              className="button danger"
-              disabled={activity.busy}
-              onClick={() => {
-                setError('');
-                void (async () => {
-                  if (primary.activity === 'screen' && voice.sharing) await stopScreen();
-                  await activity.send({ type: 'end' });
-                })().catch((e) => setError(uiError(e)));
-              }}
-            >
-              <ReferenceIcon name="plus" size={16} />
-              {activity.busy ? 'Bitiriliyor…' : 'Bitir ve etkinlik seç'}
-            </button>
-          </div>
         </>
       ) : (
         <>
@@ -194,7 +170,7 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
           </div>
         </>
       )}
-      {(primary || forbidden) && (
+      {forbidden && (
         <button className="button secondary" onClick={() => open('/games')}>
           <ReferenceIcon name="cards" size={16} />
           Kıraathane

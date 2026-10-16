@@ -829,6 +829,15 @@ const errorMessages: Record<string, string> = {
   ROOM_FULL: 'Bu oda dolu. Bir katılımcı ayrıldıktan sonra yeniden dene.',
   QUEUE_FULL: 'Ortak sıra dolu. Yeni içerik eklemek için bir öğeyi kaldır.',
   QUEUE_ITEM_NOT_FOUND: 'Bu öğe artık sırada değil. Güncel sıradan yeniden seç.',
+  QUEUE_END: 'Sırada başka video yok.',
+  QUEUE_ACTIVE_ITEM_FIXED: 'Şu an oynayan öğe kaldırılamaz veya taşınamaz.',
+  MEDIA_KIND_MISMATCH: 'Bu içerik açık olan oturuma eklenemez. Önce oturumu değiştir.',
+  SESSION_HOST_CONTROL:
+    'Kumanda hostta. Oynatmayı host ve izin verdiği kişiler yönetiyor; sıraya öneri ekleyebilirsin.',
+  SESSION_HOST_REQUIRED: 'Bunu yalnızca oturumun hostu yapabilir.',
+  SESSION_PARTICIPANT_NOT_FOUND: 'Bu kişi şu an sinemada değil.',
+  SESSION_HOST_TARGET_DENIED: 'Bu kişinin odada etkinlik yönetme izni yok; host yapılamaz.',
+  SESSION_HOST_ALREADY: 'Bu kişi zaten oturumun hostu.',
   REQUEST_SEAT_RETURN_FIRST: 'Kontrolü geri almak için Masaya geri dön düğmesine bas.',
   'You do not have permission to manage roles.': 'Bu işlem için rol yönetme yetkin yok.',
   'You cannot change a role permission you do not have.':

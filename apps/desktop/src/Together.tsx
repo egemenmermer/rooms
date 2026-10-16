@@ -117,7 +117,7 @@ export default function Together() {
     primary?.activity === 'cinema'
       ? '/cinema'
       : primary?.activity === 'youtube'
-        ? '/watch/youtube'
+        ? '/cinema'
         : primary?.activity === 'screen'
           ? '/voice'
           : '/games';

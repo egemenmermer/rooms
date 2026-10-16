@@ -51,12 +51,21 @@ test('desktop shell isolates native APIs and supports current signed-out onboard
     await expect(page.getByRole('region', { name: 'Kaydedilmemiş ayarlar' })).toHaveCount(0);
     await page.getByRole('button', { name: 'Ayarları kapat', exact: true }).click();
     await page.evaluate(() => (location.hash = '/cinema'));
-    await expect(page.getByRole('heading', { name: 'Birlikte izle', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Kaynağımı seç', exact: true })).toBeEnabled();
+    await expect(page.locator('.cozy-heading h2')).toHaveText('Sinema');
+    // Signed out there is no room: the closed curtain explains it and sources stay unavailable.
     await expect(
-      page.getByRole('button', { name: 'Paylaşımı hazırla', exact: true }),
+      page.getByRole('heading', { name: 'Önce bir odaya gir', exact: true }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Bir şey aç', exact: true }).click();
+    const picker = page.getByRole('dialog', { name: 'Bir şey aç' });
+    await expect(
+      picker.getByRole('button', { name: /Ekranı ya da pencereyi paylaş/ }),
     ).toBeDisabled();
-    await expect(page.locator('video')).toHaveCount(0);
+    await expect(
+      picker.getByRole('textbox', { name: 'YouTube bağlantısı veya arama' }),
+    ).toBeDisabled();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('video, iframe')).toHaveCount(0);
     await page.evaluate(() => (location.hash = '/chat'));
     await expect(page.locator('.chat-transcript')).toHaveCount(0);
     await expect(page.locator('body')).not.toContainText('Maya');
@@ -130,7 +139,7 @@ test('two real Stoat desktop accounts exchange events and join one authorized ro
     await other.evaluate((id) => (window as any).rooms.media.presenter(id, 'acquire'), channelId);
     await other.evaluate((id) => (window as any).rooms.media.presenter(id, 'release'), channelId);
     await owner.evaluate(() => (location.hash = '/cinema'));
-    await expect(owner.getByRole('heading', { name: 'Birlikte izle', exact: true })).toBeVisible();
+    await expect(owner.locator('.cozy-heading h2')).toHaveText('Sinema');
     await expect(
       owner.getByRole('button', { name: 'Sesten ayrıl', exact: true }).first(),
     ).toBeVisible();
