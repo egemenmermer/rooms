@@ -15,6 +15,7 @@ import { ReferenceIcon } from './ReferenceIcon';
 import { mediaBridge } from './runtime-sources';
 import { SoundboardButton } from './Soundboard';
 import { tr, uiError } from './i18n';
+import { directMessageFailed } from './FriendRequiredDialog';
 import { VoiceAvatar } from './VoiceAvatar';
 import { ScreenHandoffControls, cancelScreenHandoff, decideScreenHandoff } from './screen-handoff';
 import { MessageReminder } from './Reminder';
@@ -1124,7 +1125,9 @@ export function CommunityChat({
                   void c
                     .createDM(selectedAuthor.id)
                     .then(closeAuthor)
-                    .catch((e) => setMemberError(uiError(e)))
+                    .catch((e) => {
+                      if (directMessageFailed(e, selectedAuthor, setMemberError)) closeAuthor();
+                    })
                     .finally(() => setMemberBusy(false));
                 }}
               >
@@ -1942,13 +1945,21 @@ export function CommunityVoice({
                 <button
                   className="button secondary"
                   onClick={() =>
-                    report(
-                      c.createDM(person.id).then(() => {
+                    void c
+                      .createDM(person.id)
+                      .then(() => {
                         close();
                         navigate('/chat');
-                      }),
-                      notify,
-                    )
+                      })
+                      .catch((e) => {
+                        const user = {
+                          id: person.id,
+                          username: person.name,
+                          displayName: person.name,
+                          avatar: null,
+                        };
+                        if (directMessageFailed(e, user, notify)) close();
+                      })
                   }
                 >
                   <MessageCircle size={16} />
