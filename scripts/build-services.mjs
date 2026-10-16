@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 const version = JSON.parse(readFileSync('package.json', 'utf8')).version;
 const sourceSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-for (const service of ['access', 'activities', 'agent', 'music', 'hostops', 'apns'])
+for (const service of ['access', 'activities', 'agent', 'music', 'hostops', 'apns', 'claude-bot'])
   await build({
     entryPoints: [`apps/services/${service}/start.ts`],
     outfile: `dist-services/${service}.cjs`,

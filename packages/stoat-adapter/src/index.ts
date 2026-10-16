@@ -713,6 +713,9 @@ export class StoatClient {
       ...(Array.isArray(m.mentions)
         ? { mentions: m.mentions.filter((id: unknown) => typeof id === 'string') }
         : {}),
+      ...(Array.isArray(m.replies)
+        ? { replies: m.replies.filter((id: unknown) => typeof id === 'string') }
+        : {}),
     };
   }
   private configureFileOrigin(root: Raw) {
