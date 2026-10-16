@@ -23,6 +23,7 @@ import { setupCommunity } from './community';
 import { setupNotifications } from './notifications';
 import { setupWindowPolicy } from './window-policy';
 import { readWindowState, showRestored, trackWindowState } from './window-state';
+import { parseWatchPage } from './browser-video';
 import { setupUpdates } from './updates';
 import { setupProviders } from './providers';
 import { parseInviteLink, type InviteLink } from './native-links';
@@ -219,8 +220,9 @@ app.whenReady().then(async () => {
     assertSender(event);
     if (typeof videoId !== 'string' || !/^[a-zA-Z0-9_-]{11}$/.test(videoId))
       throw new Error('Invalid YouTube video identifier.');
+    const watch = `https://www.youtube.com/watch?v=${videoId}`;
     const endpoint = new URL('https://www.youtube.com/oembed');
-    endpoint.searchParams.set('url', `https://www.youtube.com/watch?v=${videoId}`);
+    endpoint.searchParams.set('url', watch);
     endpoint.searchParams.set('format', 'json');
     try {
       const response = await fetch(endpoint, {
@@ -228,15 +230,35 @@ app.whenReady().then(async () => {
         redirect: 'error',
         signal: AbortSignal.timeout(6000),
       });
-      // oEmbed answers 401 when the owner disallows embedding and 404 for private/removed videos.
-      if (response.status === 401 || response.status === 403 || response.status === 404)
-        return { playable: false };
-      if (!response.ok) return null;
-      const value = (await response.json()) as { title?: unknown; author_name?: unknown };
-      const title = typeof value.title === 'string' ? value.title.trim().slice(0, 240) : '';
-      const author =
-        typeof value.author_name === 'string' ? value.author_name.trim().slice(0, 120) : '';
-      return title ? { title, author, playable: true } : null;
+      if (response.ok) {
+        const value = (await response.json()) as { title?: unknown; author_name?: unknown };
+        const title = typeof value.title === 'string' ? value.title.trim().slice(0, 240) : '';
+        const author =
+          typeof value.author_name === 'string' ? value.author_name.trim().slice(0, 120) : '';
+        return title
+          ? { playable: true, embeddable: true, title, author, durationSec: null }
+          : null;
+      }
+      if (response.status === 404) return { playable: false };
+      if (response.status !== 401 && response.status !== 403) return null;
+      // Embedding is off: the public watch page says whether it still plays on youtube.com.
+      const page = await fetch(`${watch}&hl=tr`, {
+        headers: { 'Accept-Language': 'tr,en;q=0.8' },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!page.ok || new URL(page.url).hostname !== 'www.youtube.com') return null;
+      const facts = parseWatchPage((await page.text()).slice(0, 4_000_000));
+      if (facts.status && facts.status !== 'OK') return { playable: false };
+      return facts.title
+        ? {
+            playable: true,
+            embeddable: false,
+            title: facts.title,
+            author: facts.author,
+            durationSec: facts.durationSec,
+          }
+        : null;
     } catch {
       return null;
     }

@@ -130,37 +130,39 @@ export default function Together() {
   };
   return (
     <div className={`rt-page ${board ? 'rt-board-page' : ''}`}>
-      <header className="rt-heading">
-        <div>
-          <h1>{board ? 'Whiteboard' : 'Oda anketi'}</h1>
-          <p>
-            {roomName} · {board ? 'Ortak tahta' : 'Yan etkinlik'}
-          </p>
-        </div>
-        <div>
-          <button
-            className="button secondary"
-            onClick={() => setParams(board ? {} : { tab: 'board' })}
-          >
-            {board ? 'Anketler' : 'Whiteboard'}
-          </button>
-          {!board && (
+      {!board && (
+        <header className="rt-heading">
+          <div>
+            <h1>{board ? 'Whiteboard' : 'Oda anketi'}</h1>
+            <p>
+              {roomName} · {board ? 'Ortak tahta' : 'Yan etkinlik'}
+            </p>
+          </div>
+          <div>
             <button
               className="button secondary"
-              disabled={busy || !!createReason}
-              title={createReason || undefined}
-              onClick={() => setCreate(true)}
+              onClick={() => setParams(board ? {} : { tab: 'board' })}
             >
-              <Plus size={16} />
-              Yeni anket
+              {board ? 'Anketler' : 'Whiteboard'}
             </button>
-          )}
-          <IconButton label="Odayı yenile" onClick={() => void activity.refresh()}>
-            <RefreshCw size={17} />
-          </IconButton>
-        </div>
-      </header>
-      {!connected && (
+            {!board && (
+              <button
+                className="button secondary"
+                disabled={busy || !!createReason}
+                title={createReason || undefined}
+                onClick={() => setCreate(true)}
+              >
+                <Plus size={16} />
+                Yeni anket
+              </button>
+            )}
+            <IconButton label="Odayı yenile" onClick={() => void activity.refresh()}>
+              <RefreshCw size={17} />
+            </IconButton>
+          </div>
+        </header>
+      )}
+      {!connected && !(board && roomId) && (
         <div className="rt-banner warning" role="status">
           {activity.status === 'loading'
             ? 'Oda getiriliyor…'
@@ -182,7 +184,9 @@ export default function Together() {
             key={`${roomId}:${community.user?.id}`}
             roomId={roomId}
             userId={community.user?.id ?? ''}
+            roomName={roomName}
             activity={guardedActivity}
+            onPolls={() => setParams({})}
           />
         ) : (
           <section className="rt-empty">

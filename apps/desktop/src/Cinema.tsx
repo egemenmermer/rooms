@@ -18,6 +18,7 @@ import {
   Play,
   Plus,
   Popcorn,
+  SkipForward,
   Tv,
   UserRoundCheck,
   UserRoundX,
@@ -43,6 +44,12 @@ import { silencedHere } from './participant-audio';
 import { activityBridge } from './runtime-sources';
 import { CinemaYouTubeStage } from './CinemaYouTubeStage';
 import { CinemaShareView } from './CinemaShareView';
+import {
+  CinemaBrowserCard,
+  remainingLabel,
+  useBrowserVideoShare,
+  useYouTubeDetails,
+} from './CinemaBrowserVideo';
 import { CinemaQueue, YouTubeAddBox, type YouTubeChoice } from './CinemaQueue';
 import { queueProgress, youtubeThumbnail } from './cinema-youtube';
 
@@ -423,11 +430,51 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
     primary?.activity === 'youtube' && current?.media.kind === 'youtube'
       ? (current as YouTubeItem)
       : null;
+  // Videos the owner keeps off other sites play in the adder's browser and arrive as a share.
+  const details = useYouTubeDetails(youtubeItem?.media.videoId ?? null);
+  const [blockedEmbeds, setBlockedEmbeds] = useState<Record<string, true>>({});
+  const markUnembeddable = useCallback(
+    (videoId: string) =>
+      setBlockedEmbeds((value) => (value[videoId] ? value : { ...value, [videoId]: true })),
+    [],
+  );
+  const browserVideo =
+    !!youtubeItem &&
+    ((details?.playable === true && !details.embeddable) ||
+      !!blockedEmbeds[youtubeItem.media.videoId]);
+  const inVoice = (id: string) =>
+    realtime.status === 'connected' && realtime.participants.some((p) => p.id === id);
+  const sharerId =
+    browserVideo && youtubeItem
+      ? inVoice(youtubeItem.addedBy)
+        ? youtubeItem.addedBy
+        : primary && inVoice(primary.hostUserId)
+          ? primary.hostUserId
+          : null
+      : null;
+  const browserShare = useBrowserVideoShare({
+    item: youtubeItem,
+    browser: browserVideo,
+    auto: browserVideo && !!me && youtubeItem?.addedBy === me,
+    title: (details?.playable ? details.title : null) ?? youtubeItem?.media.title ?? '',
+    durationSec: details?.playable ? details.durationSec : null,
+    quiet,
+    notify,
+  });
+  const sharerTrack = sharerId
+    ? screens.find((track) => track.participantId === sharerId)
+    : undefined;
   const sources = [
-    ...(youtubeItem ? [{ key: 'youtube', label: 'YouTube' }] : []),
+    ...(youtubeItem && !browserVideo ? [{ key: 'youtube', label: 'YouTube' }] : []),
+    ...(browserVideo && !sharerTrack ? [{ key: 'browser', label: 'YouTube' }] : []),
     ...screens.map((track) => ({
       key: `screen:${track.id}`,
-      label: track.local ? 'Senin ekranın' : `${nameOf(track.participantId)} ekranı`,
+      label:
+        browserVideo && track.participantId === sharerId
+          ? 'YouTube'
+          : track.local
+            ? 'Senin ekranın'
+            : `${nameOf(track.participantId)} ekranı`,
     })),
   ];
   const [pick, setPick] = useState<string | null>(view === 'screen' ? 'screen' : null),
@@ -444,14 +491,15 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
   }, [screenIds]);
   useEffect(() => {
     if (!youtubeItem) return;
-    setLatest('youtube');
+    setLatest(browserVideo ? 'browser' : 'youtube');
     setPick(null);
-  }, [youtubeItem?.id]);
+  }, [youtubeItem?.id, browserVideo]);
   const keys = sources.map((source) => source.key);
+  const latestKey = latest === 'browser' && sharerTrack ? `screen:${sharerTrack.id}` : latest;
   const shown =
     (pick === 'screen' ? keys.find((key) => key.startsWith('screen:')) : null) ??
     (pick && keys.includes(pick) ? pick : null) ??
-    (latest && keys.includes(latest) ? latest : null) ??
+    (latestKey && keys.includes(latestKey) ? latestKey : null) ??
     keys[0] ??
     null;
   const shownScreen = shown?.startsWith('screen:')
@@ -671,7 +719,10 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
   // The personal player owns /cinema while a private file is bound (queue/status/screen stay here).
   if (media && !['queue', 'status', 'screen'].includes(view ?? '')) return null;
 
-  const playing = !!room?.timeline.playing && shown === 'youtube';
+  const playing =
+    !!room?.timeline.playing &&
+    (shown === 'youtube' ||
+      (browserVideo && !!sharerTrack && shown === `screen:${sharerTrack.id}`));
   const ambient = youtubeItem ? youtubeThumbnail(youtubeItem.media.videoId, 'hq') : null;
   const sharedQueue = primary?.activity === 'youtube' || primary?.activity === 'cinema' || !primary;
   const queueCount = sharedQueue ? (room?.queue.length ?? 0) : 0;
@@ -723,9 +774,26 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
         onToggleFullscreen={toggle}
         onEnded={setEndedItem}
         onOpenSource={() => setPicker(true)}
+        onUnembeddable={markUnembeddable}
       />
     );
-  else if (shownScreen)
+  else if (shown === 'browser' && youtubeItem)
+    screen = (
+      <CinemaBrowserCard
+        item={youtubeItem}
+        phase={browserShare.phase}
+        error={browserShare.error}
+        sharerName={sharerId && sharerId !== me ? nameOf(sharerId) : null}
+        mine={sharerId === me || browserShare.phase !== 'idle'}
+        canShare={realtime.status === 'connected'}
+        canSkip={canDirect && !!next}
+        skipReason={!next ? 'Sırada başka video yok.' : directReason}
+        onShare={() => void browserShare.share()}
+        onSkip={() => run({ type: 'queue.next', fromItemId: youtubeItem.id, reason: 'skip' })}
+      />
+    );
+  else if (shownScreen) {
+    const browserFeed = browserVideo && !!youtubeItem && shownScreen.participantId === sharerId;
     screen = (
       <CinemaShareView
         key={shownScreen.id}
@@ -734,9 +802,36 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
         fullscreen={filled}
         notify={notify}
         onToggleFullscreen={toggle}
+        caption={
+          browserFeed
+            ? `${youtubeItem!.media.title} · ${sharerId === me ? 'senin' : nameOf(sharerId!)} tarayıcısından`
+            : undefined
+        }
+        actions={
+          browserFeed ? (
+            <>
+              {browserShare.remaining !== null && (
+                <span className="cozy-time" title="Video süresine göre">
+                  {remainingLabel(browserShare.remaining)}
+                </span>
+              )}
+              <button
+                className="cozy-control wide"
+                disabled={!canDirect || !next}
+                title={!next ? 'Sırada başka video yok.' : canDirect ? undefined : directReason}
+                onClick={() =>
+                  run({ type: 'queue.next', fromItemId: youtubeItem!.id, reason: 'skip' })
+                }
+              >
+                <SkipForward size={15} />
+                Sıradakine geç
+              </button>
+            </>
+          ) : undefined
+        }
       />
     );
-  else if (primary?.activity === 'youtube')
+  } else if (primary?.activity === 'youtube')
     screen = (
       <div className="cozy-curtain">
         <Popcorn size={34} />

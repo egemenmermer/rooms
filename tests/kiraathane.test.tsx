@@ -7,43 +7,71 @@ afterEach(cleanup);
 const callbacks = () => ({
   onCreate: vi.fn(),
   onOpen: vi.fn(),
-  onChat: vi.fn(),
   onHistory: vi.fn(),
   onRetry: vi.fn(),
 });
-it('unknown connection never invents occupancy and never opens a new game', () => {
+const base = { error: null, blocked: '', busy: false, otherActivity: null };
+const gameButton = (name: string) =>
+  screen
+    .getByRole('heading', { name })
+    .closest('article')!
+    .querySelector('button') as HTMLButtonElement;
+
+it('waits for the table service instead of inventing tables', () => {
   const f = callbacks();
-  render(<Kiraathane {...f} game={null} ready={false} error={null} blocked="" busy={false} />);
-  expect(screen.getByRole('img').getAttribute('src')).toBe('./kiraathane/interior.jpg');
-  const button = screen.getByRole('button', { name: /Masa 2/ });
-  expect((button as HTMLButtonElement).disabled).toBe(true);
-  expect(screen.queryByText('0/4')).toBeNull();
+  render(<Kiraathane {...f} {...base} game={null} ready={false} />);
+  expect(screen.getByRole('status').textContent).toContain('Masalar yükleniyor');
+  const button = gameButton('Batak');
+  expect(button.disabled).toBe(true);
+  expect(button.title).toBe('Masa bağlantısı bekleniyor.');
   fireEvent.click(button);
   expect(f.onCreate).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button', { name: /Masa 1 / }));
-  expect(f.onChat).toHaveBeenCalled();
 });
-it('only the matching table shows server seats and opening it does not create or leave a game', () => {
+
+it('lists only playable games and opens their table setup', () => {
+  const f = callbacks();
+  render(<Kiraathane {...f} {...base} game={null} ready />);
+  expect(screen.queryByText(/Tavla|Satranç/)).toBeNull();
+  for (const [name, kind] of [
+    ['Texas Hold’em', 'holdem'],
+    ['Blackjack', 'blackjack'],
+    ['Batak', 'batak'],
+    ['101 Okey', '101'],
+  ] as const) {
+    fireEvent.click(gameButton(name));
+    expect(f.onCreate).toHaveBeenLastCalledWith(kind);
+  }
+});
+
+it('shows the open table with its seats and takes people straight to it', () => {
   const f = callbacks();
   const game = {
     kind: 'holdem',
     status: 'waiting',
-    seats: [{ userId: 'demo-test-owner' }],
-    view: { rules: { capacity: 6 } },
+    seats: [
+      { seat: 0, userId: 'ece', name: 'Ece', bot: false },
+      { seat: 1, userId: 'bot-1', name: 'Bot', bot: true },
+    ],
+    view: { rules: { capacity: 6 }, tableName: 'Akşam eli' },
   } as unknown as GamePublicState;
-  render(<Kiraathane {...f} game={game} ready error={null} blocked="" busy={false} />);
-  expect(screen.getByText('1/6')).toBeTruthy();
-  expect(screen.queryByText('3/4')).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: /Masa 7/ }));
+  render(<Kiraathane {...f} {...base} game={game} ready />);
+  expect(screen.getByText('Akşam eli')).toBeTruthy();
+  expect(screen.getByText('2/6')).toBeTruthy();
+  fireEvent.click(screen.getAllByRole('button', { name: /Masaya geç/ })[0]!);
   expect(f.onOpen).toHaveBeenCalledOnce();
-  expect(f.onCreate).not.toHaveBeenCalled();
-  expect((screen.getByRole('button', { name: /Masa 2/ }) as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(gameButton('Blackjack'));
+  expect(f.onCreate).toHaveBeenCalledWith('blackjack');
 });
-it('routes supported games into existing creation and explicitly disables unimplemented games', () => {
+
+it('lets people open a table over another activity, and explains a missing permission', () => {
   const f = callbacks();
-  render(<Kiraathane {...f} game={null} ready error={null} blocked="" busy={false} />);
-  fireEvent.click(screen.getByRole('button', { name: /Masa 2/ }));
-  expect(f.onCreate).toHaveBeenCalledWith('batak');
-  expect((screen.getByRole('button', { name: /Masa 3/ }) as HTMLButtonElement).disabled).toBe(true);
-  expect((screen.getByRole('button', { name: /Masa 5/ }) as HTMLButtonElement).disabled).toBe(true);
+  const view = render(<Kiraathane {...f} {...base} otherActivity="Sinema" game={null} ready />);
+  expect(screen.getByText(/Odada Sinema açık/)).toBeTruthy();
+  expect(gameButton('Batak').disabled).toBe(false);
+  view.unmount();
+  render(
+    <Kiraathane {...f} {...base} blocked="Bu odada masa açma yetkin yok." game={null} ready />,
+  );
+  expect(gameButton('Batak').disabled).toBe(true);
+  expect(gameButton('Batak').title).toBe('Bu odada masa açma yetkin yok.');
 });

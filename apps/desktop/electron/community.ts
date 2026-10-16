@@ -20,6 +20,7 @@ import {
 } from '../../../packages/shared-contracts/src/music';
 import { release } from 'node:os';
 import { enumerateCaptureSources, CaptureSourcesError } from './capture-sources';
+import { findBrowserWindow } from './browser-video';
 import { ConversationVault } from './conversation-vault';
 import { PasswordRecoveryBroker } from './password-recovery';
 import { requestDmCall } from './dm-call-http';
@@ -37,8 +38,9 @@ import {
   ipcMain,
   safeStorage,
   session,
+  shell,
   systemPreferences,
-  type BrowserWindow,
+  BrowserWindow,
   type IpcMainInvokeEvent,
   type DesktopCapturerSource,
 } from 'electron';
@@ -1498,6 +1500,43 @@ export async function setupCommunity(
     selectedAudio = preference.audio;
     selectedAt = Date.now();
     choices = [];
+  });
+  // Opens a video the owner keeps off other sites on youtube.com in the user's browser, then offers
+  // that window as the next capture source. The user still starts sharing through startScreen.
+  handle('rooms:capture-browser-video', async (videoId, title) => {
+    const video = z
+      .string()
+      .regex(/^[a-zA-Z0-9_-]{11}$/)
+      .parse(videoId);
+    const expected = z.string().trim().min(1).max(240).parse(title);
+    await enumerateCaptureSources(
+      (options) => desktopCapturer.getSources({ ...options, types: ['window'] }),
+      () =>
+        process.platform === 'darwin'
+          ? systemPreferences.getMediaAccessStatus('screen')
+          : 'unknown',
+    );
+    await shell.openExternal(`https://www.youtube.com/watch?v=${video}`);
+    const own = new Set(BrowserWindow.getAllWindows().map((window) => window.getMediaSourceId()));
+    const deadline = Date.now() + 20000;
+    while (Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      const windows = await desktopCapturer.getSources({
+        types: ['window'],
+        thumbnailSize: { width: 0, height: 0 },
+        fetchWindowIcons: false,
+      });
+      const match = findBrowserWindow(
+        windows.filter((source) => !own.has(source.id)),
+        expected,
+      );
+      if (match) {
+        choices = [match];
+        choicesAt = Date.now();
+        return { id: match.id, name: match.name };
+      }
+    }
+    return null;
   });
   handle('rooms:capture-clear', () => {
     activeCapture = null;

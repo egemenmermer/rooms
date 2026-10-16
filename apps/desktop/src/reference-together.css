@@ -634,3 +634,251 @@
 .rt-board-export .modal-heading h2 {
   margin: 0;
 }
+
+/* Whiteboard: the board fills the view, tools float above it, everyone's pointer is visible. */
+.main-view:has(> .rt-board-page) {
+  overflow: hidden;
+}
+.rt-page.rt-board-page {
+  display: flex;
+  flex-direction: column;
+  max-width: none;
+  height: 100%;
+  padding: 0;
+}
+.wb {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background:
+    radial-gradient(80% 50% at 50% 0%, #8b83ff12, transparent 70%), var(--color-background-canvas);
+  color: var(--color-text-primary);
+}
+.wb:fullscreen,
+.wb.is-fullscreen {
+  width: 100vw;
+  height: 100vh;
+}
+.wb-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px 10px;
+}
+.wb-title {
+  min-width: 0;
+}
+.wb-title strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 650;
+}
+.wb-title span {
+  display: block;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.wb-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  background: var(--color-background-raised);
+  box-shadow: 0 10px 28px #0006;
+}
+.wb-toolbar > button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.wb-toolbar > button:hover:not(:disabled) {
+  background: var(--color-background-hover);
+  color: var(--color-text-primary);
+}
+.wb-toolbar > button[aria-pressed='true'] {
+  background: #8b83ff2e;
+  color: var(--color-action-focus);
+}
+.wb-toolbar > button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.wb-toolbar > .wb-color {
+  width: 22px;
+  height: 22px;
+  margin: 0 3px;
+  border-radius: 50%;
+  background: var(--swatch);
+  color: #11131a;
+  box-shadow: inset 0 0 0 1px #0005;
+}
+.wb-toolbar > .wb-color:hover:not(:disabled) {
+  background: var(--swatch);
+  color: #11131a;
+}
+.wb-toolbar > .wb-color[aria-pressed='true'] {
+  background: var(--swatch);
+  color: #11131a;
+  box-shadow:
+    0 0 0 2px var(--color-background-raised),
+    0 0 0 4px var(--swatch);
+}
+.wb-divider {
+  width: 1px;
+  height: 22px;
+  margin: 0 6px;
+  background: var(--color-border-subtle);
+}
+.wb-side {
+  display: flex;
+  justify-content: flex-end;
+}
+.wb-stage {
+  position: relative;
+  display: grid;
+  flex: 1;
+  place-items: center;
+  min-height: 0;
+  padding: 0 16px;
+  container-type: size;
+}
+.wb-canvas-box {
+  position: relative;
+  width: min(100cqw, calc(100cqh * 1000 / 620));
+  aspect-ratio: 1000 / 620;
+  container-type: inline-size;
+}
+.rt-board-page .wb .wb-board,
+.wb .wb-board {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: #11151e;
+  box-shadow:
+    0 0 0 1px #ffffff12,
+    0 24px 60px #0007;
+  touch-action: none;
+}
+.wb .wb-board.tool-pen,
+.wb .wb-board.tool-rectangle,
+.wb .wb-board.tool-ellipse {
+  cursor: crosshair;
+}
+.wb .wb-board.tool-text {
+  cursor: text;
+}
+.wb .wb-board.readonly {
+  cursor: default;
+}
+.wb .wb-board .erasable {
+  cursor: pointer;
+}
+.wb .wb-board .erasable:hover {
+  opacity: 0.55;
+}
+.wb .wb-board .locked {
+  cursor: not-allowed;
+}
+.wb .wb-board g.selected {
+  filter: drop-shadow(0 0 5px #8b83ff);
+}
+.wb-text-input {
+  position: absolute;
+  /* Same scale as the board's 20-unit text: 20 / 1000 of the board width. */
+  width: 40cqw;
+  height: 3.4cqw;
+  margin-left: -0.4cqw;
+  padding: 0 0.4cqw;
+  font-size: 2cqw !important;
+  border: 0;
+  border-radius: 4px;
+  outline: 1px dashed #ffffff55;
+  background: #00000080;
+  font-family: var(--font-family);
+}
+.wb-cursor {
+  pointer-events: none;
+  transition: transform 90ms linear;
+}
+.wb-cursor path {
+  fill: var(--cursor);
+  stroke: #0b0d12;
+  stroke-width: 1.2;
+}
+.wb-cursor text {
+  fill: var(--cursor);
+  font-size: 13px;
+  font-weight: 650;
+  paint-order: stroke;
+  stroke: #0b0d12;
+  stroke-width: 3px;
+}
+.wb .board-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-muted);
+  text-align: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.wb .board-empty span {
+  color: var(--color-text-secondary);
+  font-size: 15px;
+}
+.wb .board-empty small {
+  max-width: 300px;
+  font-size: 12px;
+}
+.wb-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 8px 16px 10px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+.wb-selection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wb-message {
+  margin-left: auto;
+  color: var(--color-status-warning);
+}
+.wb-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+@media (max-width: 900px) {
+  .wb-top {
+    grid-template-columns: 1fr;
+  }
+  .wb-toolbar {
+    flex-wrap: wrap;
+  }
+}

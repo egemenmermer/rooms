@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Maximize,
   Minimize,
@@ -19,12 +19,17 @@ export function CinemaShareView({
   fullscreen,
   notify,
   onToggleFullscreen,
+  caption,
+  actions,
 }: {
   trackId: string;
   participantId: string;
   fullscreen: boolean;
   notify(message: string): void;
   onToggleFullscreen(): void;
+  /** Replaces the default "Canlı paylaşım" line, e.g. for a video shared from a browser. */
+  caption?: string;
+  actions?: ReactNode;
 }) {
   const realtime = useRealtime();
   const participant = realtime.participants.find((person) => person.id === participantId);
@@ -90,7 +95,7 @@ export function CinemaShareView({
         <div>
           <strong>{local ? 'Senin ekranın' : `${name} ekranı`}</strong>
           <small>
-            <span className="cozy-live-dot" /> Canlı paylaşım
+            <span className="cozy-live-dot" /> {caption ?? 'Canlı paylaşım'}
           </small>
         </div>
       </div>
@@ -142,6 +147,7 @@ export function CinemaShareView({
               />
             </div>
           )}
+          {actions}
           <span className="cozy-grow" />
           <button
             className="cozy-control"

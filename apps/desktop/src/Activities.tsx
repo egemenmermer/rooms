@@ -8,6 +8,7 @@ import { useCommunity } from './community';
 import { useRealtime, stopScreen } from './realtime';
 import { useActivityRoom } from './activity';
 import { uiError } from './i18n';
+import { gameNames } from './Kiraathane';
 import { endsActivity, type RoomSnapshot } from '../../../packages/activity-protocol/src/index';
 
 /** Where a running primary activity is shown in this client. */
@@ -79,7 +80,9 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
               />
             </span>
             <div>
-              <strong>{primary.title}</strong>
+              <strong>
+                {(gameNames as Record<string, string>)[primary.title] ?? primary.title}
+              </strong>
               <small>
                 {primary.activity === 'cinema'
                   ? `Cinema · ${roomCount ?? 0} kişi odada · ${positionLabel}`
@@ -149,9 +152,6 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
               </button>
             ))}
           </div>
-          <button className="button secondary" onClick={() => open('/media')}>
-            Medyam
-          </button>
           <div className="reference-launcher-divider" />
           <h3 className="reference-launcher-label">Sohbetin yanında</h3>
           <div className="reference-side-activities">

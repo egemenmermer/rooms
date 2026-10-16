@@ -1345,3 +1345,13 @@
     animation: none;
   }
 }
+
+/* A video kept off other sites: it is shared from the adder's browser. */
+.cozy-curtain.browser-video h3 {
+  max-width: 80%;
+}
+.cozy-browser-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

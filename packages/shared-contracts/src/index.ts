@@ -47,6 +47,13 @@ export interface DesktopWindowPreferences {
   warnOnVoiceClose: boolean;
   trayAvailable: boolean;
 }
+export interface YouTubeDetails {
+  playable: true;
+  embeddable: boolean;
+  title: string;
+  author: string;
+  durationSec: number | null;
+}
 export interface DesktopBridge {
   remoteControl?: import('./remote-control').RemoteControlBridge;
   hostOps?: import('./hostops').HostOpsBridge;
@@ -127,10 +134,11 @@ export interface DesktopBridge {
   activity: {
     exportBoard(roomId: string, format?: 'svg' | 'png'): Promise<boolean>;
     youtubePlaylist(playlistId: string): Promise<{ url: string; nonce: string }>;
-    /** Public oEmbed title; `playable: false` when the owner disabled embedding. */
-    youtubeDetails?(
-      videoId: string,
-    ): Promise<{ title: string; author: string; playable: true } | { playable: false } | null>;
+    /**
+     * Public title and whether the official embedded player may show it. `embeddable: false`
+     * videos still play on youtube.com; `playable: false` ones are private or removed.
+     */
+    youtubeDetails?(videoId: string): Promise<YouTubeDetails | { playable: false } | null>;
     /** `minimal` hides YouTube's own controls; ROOMS draws the shared ones. */
     youtubePlayer(
       videoId: string,
@@ -188,6 +196,8 @@ export interface DesktopBridge {
     captureSources(): Promise<{ id: string; name: string; thumbnail: string }[]>;
     selectCaptureSource(id: string, options?: { audio: boolean }): Promise<void>;
     clearCaptureSource(): Promise<void>;
+    /** Opens youtube.com in the user's browser and offers that window as the next source. */
+    openBrowserVideo?(videoId: string, title: string): Promise<{ id: string; name: string } | null>;
     captureStatus(): Promise<{
       microphone: string;
       camera: string;

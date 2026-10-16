@@ -86,6 +86,9 @@ export const screenProfiles = {
 export interface RealtimeMediaProvider {
   publishControl?(payload: string, destination: string, reliable: boolean): Promise<void>;
   onControl?(listener: (payload: string, senderId: string) => void): () => void;
+  /** Lossy, room-wide pointer positions for shared surfaces such as the whiteboard. */
+  publishCursor?(payload: string): Promise<void>;
+  onCursor?(listener: (payload: string, senderId: string) => void): () => void;
   readonly status: ConnectionStatus;
   connectRoom(roomId: string, shortLivedMembershipToken: string, serverUrl: string): Promise<void>;
   publishMic(deviceId?: string): Promise<void>;
@@ -113,6 +116,7 @@ export interface RealtimeMediaProvider {
   reconnect(): Promise<void>;
 }
 const WATCH_TOPIC = 'rooms-watch-v1';
+const CURSOR_TOPIC = 'rooms-cursor-v1';
 const isScreenSource = (source: Track.Source) =>
   source === Track.Source.ScreenShare || source === Track.Source.ScreenShareAudio;
 /** `{ watching: identity | null }`; anything else is ignored. */
@@ -141,6 +145,22 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     return () => {
       this.controlListeners.delete(listener);
     };
+  }
+  private cursorListeners = new Set<(payload: string, senderId: string) => void>();
+  onCursor(listener: (payload: string, senderId: string) => void) {
+    this.cursorListeners.add(listener);
+    return () => {
+      this.cursorListeners.delete(listener);
+    };
+  }
+  async publishCursor(payload: string) {
+    if (new TextEncoder().encode(payload).length > 512) throw Error('Invalid cursor packet.');
+    const room = this.room;
+    if (!room || this.state.status !== 'connected') return;
+    await room.localParticipant.publishData(new TextEncoder().encode(payload), {
+      reliable: false,
+      topic: CURSOR_TOPIC,
+    });
   }
   async publishControl(payload: string, destination: string, reliable: boolean) {
     if (new TextEncoder().encode(payload).length > 4096 || !destination || destination.length > 128)
@@ -491,16 +511,28 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     const room = this.createRoom();
     this.room = room;
     let controlSecond = 0,
-      controlCount = 0;
+      controlCount = 0,
+      cursorSecond = 0,
+      cursorCount = 0;
     room.on(RoomEvent.DataReceived, (payload, participant, _kind, topic) => {
-      if (
-        this.room !== room ||
-        !participant ||
-        (topic !== 'rooms-control-v1' && topic !== WATCH_TOPIC) ||
-        payload.length > 4096 ||
-        this.state.status !== 'connected'
-      )
+      if (this.room !== room || !participant || this.state.status !== 'connected') return;
+      if (topic === CURSOR_TOPIC) {
+        // Cursors are frequent and disposable: their own budget, never mixed with control input.
+        const second = Math.floor(Date.now() / 1000);
+        if (second !== cursorSecond) {
+          cursorSecond = second;
+          cursorCount = 0;
+        }
+        if (payload.length > 512 || ++cursorCount > 600) return;
+        try {
+          const data = new TextDecoder('utf-8', { fatal: true }).decode(payload);
+          for (const listener of this.cursorListeners) listener(data, participant.identity);
+        } catch {
+          /* Malformed data is never input. */
+        }
         return;
+      }
+      if ((topic !== 'rooms-control-v1' && topic !== WATCH_TOPIC) || payload.length > 4096) return;
       const second = Math.floor(Date.now() / 1000);
       if (second !== controlSecond) {
         controlSecond = second;
