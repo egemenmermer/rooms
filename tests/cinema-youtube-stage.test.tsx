@@ -25,25 +25,29 @@ async function mount(timeline: Timeline, canDirect = true) {
   const quiet = vi.fn(),
     send = vi.fn(),
     onEnded = vi.fn();
-  render(
-    <CinemaYouTubeStage
-      item={item}
-      timeline={timeline}
-      serverOffsetMs={0}
-      next={next}
-      canDirect={canDirect}
-      directReason="Kumanda hostta."
-      connected
-      addedBy="Ece"
-      fullscreen={false}
-      send={send}
-      quiet={quiet}
-      onToggleFullscreen={vi.fn()}
-      onEnded={onEnded}
-      onOpenSource={vi.fn()}
-    />,
-  );
-  const frame = (await screen.findByTitle('YouTube: İlk video')) as HTMLIFrameElement;
+  // The player URL resolves asynchronously. Mounting inside an async act flushes that render and the
+  // message listener effect before any player message is posted, so a slow CI worker cannot drop one.
+  await act(async () => {
+    render(
+      <CinemaYouTubeStage
+        item={item}
+        timeline={timeline}
+        serverOffsetMs={0}
+        next={next}
+        canDirect={canDirect}
+        directReason="Kumanda hostta."
+        connected
+        addedBy="Ece"
+        fullscreen={false}
+        send={send}
+        quiet={quiet}
+        onToggleFullscreen={vi.fn()}
+        onEnded={onEnded}
+        onOpenSource={vi.fn()}
+      />,
+    );
+  });
+  const frame = screen.getByTitle('YouTube: İlk video') as HTMLIFrameElement;
   const emit = (event: string, data: Record<string, unknown> = {}) =>
     act(() => {
       window.dispatchEvent(
