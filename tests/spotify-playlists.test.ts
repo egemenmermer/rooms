@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { spotifyPlaylist } from '../apps/services/music/spotify-playlist';
+import { resolveSpotifyShortLink, spotifyPlaylist } from '../apps/services/music/spotify-playlist';
 import type { matchingYouTubeReference } from '../apps/services/music/youtube-source';
 import { MusicWorker } from '../apps/services/music/worker';
 import { MusicHistory } from '../apps/services/music/history';
@@ -170,12 +170,151 @@ it('does not publish after stop while a Spotify match is pending', async () => {
   expect(publisher.playYouTube).not.toHaveBeenCalled();
   expect(worker.snapshot('room').status).toBe('disconnected');
 });
-it('rejects queue overflow before resolving or inserting Spotify tracks', async () => {
-  const { worker, matcher } = setup();
+it('adds only what fits when played and current tracks already occupy the queue', async () => {
+  const { worker } = setup();
   await worker.command('room', lease, { type: 'add-list', tracks: Array(99).fill(track) });
+  const result = await worker.command('room', lease, { type: 'add', url });
+  expect(result.queue).toHaveLength(100);
+  expect(result.importNotice).toEqual({ added: 1, skipped: 0, truncated: false, queueFull: true });
   await expect(worker.command('room', lease, { type: 'add', url })).rejects.toThrow(
     'MUSIC_QUEUE_FULL',
   );
-  expect(worker.snapshot('room').queue).toHaveLength(99);
-  expect(matcher).toHaveBeenCalledTimes(1);
+  expect(worker.snapshot('room').queue).toHaveLength(100);
+});
+it('fills the room left by a 100-track playlist after one song was added', async () => {
+  const hundred = Array.from({ length: 100 }, (_, i) => ({ ...track, title: `Song ${i}` }));
+  const publisher = {
+    connect: async () => {},
+    pause: () => {},
+    close: async () => {},
+    position: () => 0,
+    play: async () => {},
+    playYouTube: async () => {},
+  };
+  const worker = new MusicWorker({
+    publisher: () => publisher,
+    lease: async () => lease,
+    history: new MusicHistory(),
+    matchingYouTubeReference: async () => ({
+      source: 'https://www.youtube.com/watch?v=abcdefghijk',
+      title: 'Matched',
+      durationSec: 123,
+      requestedProvider: 'spotify' as const,
+    }),
+    spotifyPlaylist: async () => ({ name: 'Big', tracks: hundred, truncated: true, skipped: 0 }),
+  });
+  workers.push(worker);
+  await worker.command('room', lease, { type: 'add-list', tracks: [track] });
+  const result = await worker.command('room', lease, { type: 'add', url });
+  expect(result.queue).toHaveLength(100);
+  expect(result.importNotice).toEqual({ added: 99, skipped: 0, truncated: true, queueFull: true });
+});
+it('resolves spotify.link short links to playlists and keeps tracks on the song path', async () => {
+  const resolve = vi.fn(async (raw: string) =>
+    raw.endsWith('/list') ? url : `https://open.spotify.com/track/${'c'.repeat(22)}`,
+  );
+  const metadata = vi.fn(async () => ({
+    provider: 'spotify' as const,
+    title: 'One',
+    artists: ['A'],
+    durationSec: 100,
+  }));
+  const playlist = vi.fn(async () => ({ name: 'Mix', tracks: [track] }));
+  const make = () => {
+    const w = new MusicWorker({
+      publisher: () => ({
+        connect: async () => {},
+        pause: () => {},
+        close: async () => {},
+        position: () => 0,
+        play: async () => {},
+        playYouTube: async () => {},
+      }),
+      lease: async () => lease,
+      history: new MusicHistory(),
+      resolveSpotifyShortLink: resolve,
+      songMetadata: metadata,
+      spotifyPlaylist: playlist,
+      matchingYouTubeReference: async () => ({
+        source: 'https://www.youtube.com/watch?v=abcdefghijk',
+        title: 'Matched',
+        durationSec: 123,
+        requestedProvider: 'spotify' as const,
+      }),
+    });
+    workers.push(w);
+    return w;
+  };
+  const a = make();
+  expect(
+    (await a.command('r1', lease, { type: 'add', url: 'https://spotify.link/list' })).queue,
+  ).toHaveLength(1);
+  expect(playlist).toHaveBeenCalledWith(url, undefined, { partial: true });
+  expect(metadata).not.toHaveBeenCalled();
+  await make().command('r2', lease, { type: 'add', url: 'https://spotify.link/song' });
+  expect(metadata).toHaveBeenCalledWith(`https://open.spotify.com/track/${'c'.repeat(22)}`);
+});
+it('follows spotify.link only to Spotify tracks or playlists on the allowed hosts', async () => {
+  const redirect = (to: string, ok = true) =>
+    vi.fn(async () =>
+      Object.defineProperty(new Response('', { status: ok ? 200 : 404 }), 'url', { value: to }),
+    );
+  const request = redirect(url + '?si=x');
+  expect(await resolveSpotifyShortLink('https://spotify.link/abc', request)).toBe(url);
+  expect(request).toHaveBeenCalledWith(
+    'https://spotify.link/abc',
+    expect.objectContaining({
+      allowedHosts: ['open.spotify.com', 'spotify.link'],
+      allowedProtocols: ['https:'],
+    }),
+  );
+  for (const bad of [
+    redirect(`https://open.spotify.com/album/${id}`),
+    redirect('https://evil.test/x'),
+    redirect(url, false),
+  ])
+    await expect(resolveSpotifyShortLink('https://spotify.link/abc', bad)).rejects.toThrow(
+      'MUSIC_MIRROR_SINGLE_TRACK_ONLY',
+    );
+  await expect(resolveSpotifyShortLink('https://on.soundcloud.com/abc', request)).rejects.toThrow(
+    'MUSIC_SOURCE_FAILED',
+  );
+});
+it('reports the Spotify cap and queue room as separate causes', async () => {
+  const make = (list: { truncated: boolean; skipped: number }) => {
+    const worker = new MusicWorker({
+      publisher: () => ({
+        connect: async () => {},
+        pause: () => {},
+        close: async () => {},
+        position: () => 0,
+        play: async () => {},
+        playYouTube: async () => {},
+      }),
+      lease: async () => lease,
+      history: new MusicHistory(),
+      matchingYouTubeReference: async () => ({
+        source: 'https://www.youtube.com/watch?v=abcdefghijk',
+        title: 'Matched',
+        durationSec: 123,
+        requestedProvider: 'spotify' as const,
+      }),
+      spotifyPlaylist: async () => ({ name: 'Mix', tracks: [track, track], ...list }),
+    });
+    workers.push(worker);
+    return worker;
+  };
+  const capOnly = await make({ truncated: true, skipped: 1 }).command('room', lease, {
+    type: 'add',
+    url,
+  });
+  expect(capOnly.importNotice).toEqual({ added: 2, skipped: 1, truncated: true, queueFull: false });
+  const roomOnly = make({ truncated: false, skipped: 0 });
+  await roomOnly.command('room', lease, { type: 'add-list', tracks: Array(99).fill(track) });
+  expect((await roomOnly.command('room', lease, { type: 'add', url })).importNotice).toEqual({
+    added: 1,
+    skipped: 0,
+    truncated: false,
+    queueFull: true,
+  });
 });

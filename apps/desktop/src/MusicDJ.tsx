@@ -175,6 +175,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
     legacy = useActivityRoom(channelId);
   const [input, setInput] = useState(''),
     [error, setError] = useState(''),
+    [info, setInfo] = useState(''),
     [busy, setBusy] = useState(false),
     [placement, setPlacement] = useState<{ x: number; y: number } | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -232,6 +233,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
     if (busy || !available) return;
     setBusy(true);
     setError('');
+    setInfo('');
     try {
       await queryClient.cancelQueries({ queryKey: key, exact: true });
       if (!alive.current) return;
@@ -256,6 +258,16 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           } else {
             setInput('');
             setResults(null);
+            const n = value.importNotice;
+            if (n)
+              setInfo(
+                `${n.added} şarkı eklendi.` +
+                  (n.truncated
+                    ? ' Spotify herkese açık görünümde en fazla 100 parça gösterir; listenin devamı eklenmedi.'
+                    : '') +
+                  (n.queueFull ? ' Kuyrukta yer kalmadığı için listenin kalanı eklenmedi.' : '') +
+                  (n.skipped ? ` ${n.skipped} kayıt (bölüm/yerel dosya) atlandı.` : ''),
+              );
           }
         }
       }
@@ -300,6 +312,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
     if (busy || !available || !validSearch()) return;
     setBusy(true);
     setError('');
+    setInfo('');
     setResults(null);
     try {
       const found = await window.rooms!.music.search(channelId!, input.trim());
@@ -717,6 +730,11 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
         {fixture && (
           <p className="dj-error" role="status">
             Yerel görünüm örneği; bot bağlantısı yok.
+          </p>
+        )}
+        {info && !error && (
+          <p className="dj-info" role="status">
+            {info}
           </p>
         )}
         {(error || query.error || snapshot?.error) && (
