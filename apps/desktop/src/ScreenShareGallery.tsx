@@ -69,7 +69,14 @@ export function ScreenShareGallery({
   return (
     <div className="room-screen-gallery">
       <div ref={stage} className="room-screen-focus" data-screen-focus>
-        {active && renderTrack(active.id, `${name(active)} ekranı`)}
+        {active &&
+          (active.subscribed === false ? (
+            <p className="room-screen-waiting" role="status">
+              Yayın açılıyor…
+            </p>
+          ) : (
+            renderTrack(active.id, `${name(active)} ekranı`)
+          ))}
         <RemoteViewerInput track={active} videoRoot={stage} />
         <div className="room-screen-overlay">
           <span>
@@ -123,7 +130,11 @@ export function ScreenShareGallery({
               aria-label={`${name(track)} ekranını büyüt`}
               onClick={() => setSelected(track.id)}
             >
-              {renderTrack(track.id, `${name(track)} küçük önizleme`)}
+              {track.subscribed === false ? (
+                <Monitor size={22} aria-hidden="true" />
+              ) : (
+                renderTrack(track.id, `${name(track)} küçük önizleme`)
+              )}
               <span>
                 <Monitor size={13} />
                 {name(track)}

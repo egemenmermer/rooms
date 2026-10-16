@@ -176,3 +176,30 @@
   width: clamp(60px, 12vw, 150px);
   accent-color: #9c8bff;
 }
+/* A remote stream is only advertised until the listener chooses to watch it. */
+.room-share-preview .room-share-invite {
+  inset: 0;
+  bottom: auto;
+  left: auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  background: none;
+  color: #c9c3f5;
+}
+.room-share-preview:hover .room-share-invite,
+.room-share-preview:focus-visible .room-share-invite {
+  color: #fff;
+}
+.room-share-preview span small,
+.reference-share-viewers {
+  color: #a9abb8;
+  font-size: 11px;
+}
+.room-screen-waiting {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  margin: 0;
+  color: #a9abb8;
+}

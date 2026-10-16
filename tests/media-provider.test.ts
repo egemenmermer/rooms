@@ -71,6 +71,7 @@ function fixture() {
       local.isMicrophoneEnabled = enabled;
     }),
     setCameraEnabled: vi.fn(),
+    publishData: vi.fn(async (_payload: Uint8Array, _options?: Record<string, unknown>) => {}),
     setScreenShareEnabled: vi.fn(async (enabled: boolean) => {
       local.isScreenShareEnabled = enabled;
     }),
@@ -346,10 +347,23 @@ it('does not retry capture after a permission denial', async () => {
   expect(room.switchActiveDevice).not.toHaveBeenCalled();
   await provider.disconnect();
 });
-it('separates watched screen audio from speech and keeps it closed after undeafen or replacement', async () => {
+function screenPublication(trackSid: string, source: Track.Source) {
+  const publication = {
+    trackSid,
+    source,
+    kind: source === Track.Source.ScreenShare ? 'video' : 'audio',
+    isMuted: false,
+    isDesired: true,
+    setSubscribed: vi.fn((value: boolean) => {
+      publication.isDesired = value;
+    }),
+  };
+  return publication;
+}
+it('streams screen audio only to a listener who watches it and keeps it apart from speech', async () => {
   const { provider, room, emit } = fixture();
   await provider.connectRoom('room', 'token', 'ws://localhost:7880');
-  const publication = { trackSid: 'screen-audio', source: Track.Source.ScreenShareAudio };
+  const publication = screenPublication('screen-audio', Track.Source.ScreenShareAudio);
   const bob = {
     identity: 'bob',
     setVolume: vi.fn(),
@@ -359,9 +373,14 @@ it('separates watched screen audio from speech and keeps it closed after undeafe
   const element = document.createElement('audio');
   element.play = vi.fn(async () => {});
   element.pause = vi.fn();
-  emit(RoomEvent.TrackSubscribed, { kind: 'audio', attach: () => element }, publication, bob);
-  expect(element.muted).toBe(true);
+  const track = { kind: 'audio', attach: () => element, detach: vi.fn() };
+  // Auto-subscription of a screen nobody here watches is undone at once.
+  emit(RoomEvent.TrackSubscribed, track, publication, bob);
+  expect(publication.setSubscribed).toHaveBeenLastCalledWith(false);
+  expect(element.isConnected).toBe(false);
   provider.watchScreen('bob');
+  expect(publication.setSubscribed).toHaveBeenLastCalledWith(true);
+  emit(RoomEvent.TrackSubscribed, track, publication, bob);
   expect(element.muted).toBe(false);
   provider.setScreenVolume('bob', 0.2);
   expect(bob.setVolume).toHaveBeenLastCalledWith(0.2, Track.Source.ScreenShareAudio);
@@ -369,12 +388,58 @@ it('separates watched screen audio from speech and keeps it closed after undeafe
   expect(bob.setVolume).toHaveBeenLastCalledWith(0.8, Track.Source.Microphone);
   await provider.deafen(true);
   expect(element.muted).toBe(true);
-  provider.watchScreen(null);
   await provider.deafen(false);
+  expect(element.muted).toBe(false);
+  provider.watchScreen(null);
+  expect(publication.setSubscribed).toHaveBeenLastCalledWith(false);
   expect(element.muted).toBe(true);
-  emit(RoomEvent.TrackSubscribed, { kind: 'audio', attach: () => element }, publication, bob);
-  expect(element.muted).toBe(true);
-  expect(bob.setVolume).toHaveBeenLastCalledWith(0.2, Track.Source.ScreenShareAudio);
+  await provider.disconnect();
+});
+it('advertises a remote screen share without downloading it until the listener watches', async () => {
+  const { provider, room, emit } = fixture();
+  await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+  const video = screenPublication('screen-video', Track.Source.ScreenShare);
+  room.remoteParticipants.set('bob', {
+    identity: 'bob',
+    name: 'Bob',
+    setVolume: vi.fn(),
+    trackPublications: new Map([['screen', video]]),
+  });
+  emit(RoomEvent.TrackPublished, video, room.remoteParticipants.get('bob'));
+  expect(video.setSubscribed).toHaveBeenLastCalledWith(false);
+  expect(provider.snapshot().tracks).toContainEqual(
+    expect.objectContaining({ id: 'screen-video', source: 'screen_share', subscribed: false }),
+  );
+  await provider.disconnect();
+});
+it('announces the watched screen and lists viewers from their own authenticated packets', async () => {
+  const { provider, room, local, emit } = fixture();
+  await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+  const carol = { identity: 'carol', name: 'Carol', trackPublications: new Map() };
+  room.remoteParticipants.set('carol', carol);
+  provider.watchScreen('bob');
+  const [payload, options] = vi.mocked(local.publishData).mock.calls.at(-1)!;
+  expect(JSON.parse(new TextDecoder().decode(payload))).toEqual({ watching: 'bob' });
+  expect(options).toMatchObject({ reliable: true, topic: 'rooms-watch-v1' });
+  const packet = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
+  emit(
+    RoomEvent.DataReceived,
+    packet({ watching: 'alice', viewer: 'dave' }),
+    carol,
+    0,
+    'rooms-watch-v1',
+  );
+  emit(RoomEvent.DataReceived, packet({ watching: 42 }), carol, 0, 'rooms-watch-v1');
+  const people = provider.snapshot().participants;
+  expect(people.find((p) => p.id === 'carol')?.watching).toBe('alice');
+  expect(people.find((p) => p.id === 'alice')?.watching).toBe('bob');
+  expect(people.some((p) => p.id === 'dave')).toBe(false);
+  room.remoteParticipants.delete('carol');
+  emit(RoomEvent.ParticipantDisconnected, carol);
+  emit(RoomEvent.ParticipantConnected, carol);
+  expect(vi.mocked(local.publishData).mock.calls.at(-1)?.[1]).toMatchObject({
+    destinationIdentities: ['carol'],
+  });
   await provider.disconnect();
 });
 it('local volume is applied again when a muted participant publishes a replacement track', async () => {

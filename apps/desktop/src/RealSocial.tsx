@@ -93,6 +93,17 @@ import {
   setParticipantVolume,
   startRoomAudio,
 } from './realtime';
+/** Who watches a screen share, from each viewer's own announcement. */
+export function viewerSummary(
+  people: { id: string; name: string; local: boolean; watching?: string | null }[],
+  broadcaster: string | null | undefined,
+  named = false,
+) {
+  const viewers = broadcaster ? people.filter((p) => p.watching === broadcaster) : [];
+  if (!viewers.length) return 'Henüz izleyen yok';
+  if (!named) return `${viewers.length} kişi izliyor`;
+  return `İzleyenler: ${viewers.map((p) => (p.local ? 'Sen' : p.name)).join(', ')}`;
+}
 const report = (operation: Promise<unknown>, notify: (message: string) => void) => {
   void operation.catch((e) => notify(uiError(e)));
 };
@@ -1741,6 +1752,26 @@ export function CommunityVoice({
                 <ReferenceIcon name="monitor" size={17} />
                 <span>{r.sharing ? 'Ekran paylaşımın açık' : 'Ekran paylaşımını izliyorsun'}</span>
                 {!r.sharing && <span className="reference-watching-pill">İzliyorsun</span>}
+                <small className="reference-share-viewers">
+                  {viewerSummary(
+                    r.participants,
+                    r.sharing
+                      ? r.participants.find((p) => p.local)?.id
+                      : r.participants.find((p) => p.local)?.watching,
+                    true,
+                  )}
+                </small>
+                {!r.sharing && (
+                  <button
+                    className="button secondary small"
+                    onClick={() => {
+                      watchScreen(null);
+                      navigate('/voice');
+                    }}
+                  >
+                    İzlemeyi bırak
+                  </button>
+                )}
                 {r.sharing && (
                   <button
                     className="button danger small"
@@ -1824,11 +1855,20 @@ export function CommunityVoice({
                 aria-label={`${r.participants.find((p) => p.id === track.participantId)?.name ?? 'Katılımcı'} ekranını izle`}
                 onClick={() => navigate(`/voice?view=share&screen=${encodeURIComponent(track.id)}`)}
               >
-                <MediaStage id={track.id} label="Ekran paylaşımı önizlemesi" />
+                {track.local ? (
+                  <MediaStage id={track.id} label="Ekran paylaşımı önizlemesi" />
+                ) : (
+                  // Remote streams are not downloaded until this listener chooses to watch.
+                  <span className="room-share-invite">
+                    <MonitorUp size={30} />
+                    <strong>Yayını izle</strong>
+                  </span>
+                )}
                 <span>
                   <MonitorUp size={14} />
                   {r.participants.find((p) => p.id === track.participantId)?.name ?? 'Katılımcı'}
                   {track.local ? ' (sen)' : ''}
+                  <small>{viewerSummary(r.participants, track.participantId)}</small>
                 </span>
               </button>
             ))}
