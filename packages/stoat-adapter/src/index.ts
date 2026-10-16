@@ -67,6 +67,12 @@ const roleErrorMessages: Record<string, string> = {
   INVALID_ROLE_COLOR: 'Choose a valid role color.',
   TooManyRoles: 'This community has reached its role limit.',
 };
+const directMessageErrors: Record<string, string> = {
+  DM_FRIEND_REQUIRED: 'You need to be friends before sending a private message.',
+  DM_FRIEND_PENDING: 'Your friend request has not been accepted yet.',
+  DM_FRIEND_INCOMING: 'This person sent you a friend request. Accept it to send a private message.',
+  DM_BLOCKED: 'You cannot send private messages to a blocked user.',
+};
 export class StoatError extends Error {
   constructor(
     public status: number,
@@ -74,6 +80,7 @@ export class StoatError extends Error {
   ) {
     super(
       roleErrorMessages[code] ??
+        directMessageErrors[code] ??
         (code === 'REGISTRATION_REQUIRES_SIGN_IN'
           ? 'Account creation could not be completed. If you already have an account, sign in instead. Contact the server administrator if you cannot sign in.'
           : code === 'REGISTRATION_UNCERTAIN'
@@ -1647,7 +1654,25 @@ export class StoatClient {
     return channels.map((c) => this.normalizeChannel(c));
   }
   async createDM(recipientId: string) {
-    return this.normalizeChannel(await this.request<Raw>(`/users/${checked(recipientId)}/dm`));
+    try {
+      return this.normalizeChannel(await this.request<Raw>(`/users/${checked(recipientId)}/dm`));
+    } catch (error) {
+      if (!(error instanceof StoatError) || error.status !== 403) throw error;
+      // Upstream opens private messages only between friends; say which step is missing.
+      const self = await this.request<Raw>('/users/@me').catch(() => null);
+      const status = (self?.relations ?? []).find((r: Raw) => r._id === recipientId)?.status;
+      if (status === 'Friend') throw error;
+      throw new StoatError(
+        403,
+        status === 'Outgoing'
+          ? 'DM_FRIEND_PENDING'
+          : status === 'Incoming'
+            ? 'DM_FRIEND_INCOMING'
+            : status === 'Blocked' || status === 'BlockedOther'
+              ? 'DM_BLOCKED'
+              : 'DM_FRIEND_REQUIRED',
+      );
+    }
   }
   async listMessages(channelId: string, before?: string) {
     const result = await this.request<Raw | Raw[]>(

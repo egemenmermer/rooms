@@ -21,6 +21,7 @@ import { VoiceContext } from './VoiceContext';
 import { ReferenceIcon } from './ReferenceIcon';
 import { RoomMembers } from './RoomMembers';
 import { FriendsPage } from './FriendsPage';
+import { FriendRequiredDialog } from './FriendRequiredDialog';
 import { PersonalSidebar } from './PersonalSidebar';
 import CinemaPlayback from './CinemaPlayback';
 import DmCallRuntime from './DmCallRuntime';
@@ -533,6 +534,7 @@ export default function App() {
         {nativeInvite && (
           <InviteLanding invite={nativeInvite} onClose={closeInvite} notify={notify} />
         )}
+        <FriendRequiredDialog notify={notify} />
         {toast && (
           <div role="status" className="toast">
             {toast}
@@ -1011,6 +1013,7 @@ export default function App() {
       )}
       {overlay === 'invite' && <CommunityInvite onClose={close} notify={notify} />}
 
+      <FriendRequiredDialog notify={notify} />
       {toast && (
         <div role="status" className="toast glass">
           <span>{toast}</span>

@@ -7,6 +7,7 @@ import { useRealtime } from './realtime';
 import { VoiceAvatar } from './VoiceAvatar';
 import { ReferenceIcon } from './ReferenceIcon';
 import { uiError } from './i18n';
+import { directMessageFailed } from './FriendRequiredDialog';
 
 export function RoomMembers({
   onClose,
@@ -86,7 +87,7 @@ export function RoomMembers({
                   void c
                     .createDM(member.user.id)
                     .then(() => navigate('/chat'))
-                    .catch((e) => notify(uiError(e)));
+                    .catch((e) => directMessageFailed(e, member.user, notify));
               }}
             >
               <span className="room-member-photo">
