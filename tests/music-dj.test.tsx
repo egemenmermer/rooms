@@ -374,3 +374,30 @@ it('offers uncertain match candidates without auto-enqueueing and requires an ex
     }),
   );
 });
+it('keeps a single seek control while playback snapshots refresh', async () => {
+  // The seek control and lyrics once shared the track id as a sibling key, so each refresh
+  // leaked another seek slider into the panel.
+  let position = 0;
+  const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const snapshot = vi.fn(async () => ({
+    ...empty,
+    status: 'playing' as const,
+    currentId: id,
+    positionSec: (position += 3),
+    queue: [{ id, title: 'Song', durationSec: 257 }],
+  }));
+  window.rooms = {
+    music: {
+      snapshot,
+      command: vi.fn(),
+      lyrics: vi.fn(async () => ({ status: 'unavailable' })),
+    },
+  } as unknown as DesktopBridge;
+  const view = render(<MusicDJ />);
+  for (let i = 0; i < 6; i++) {
+    await queryClient.refetchQueries();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  expect(snapshot.mock.calls.length).toBeGreaterThanOrEqual(6);
+  expect(view.container.querySelectorAll('.dj-seek')).toHaveLength(1);
+});

@@ -452,7 +452,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
         </div>
         {active && (
           <MusicSeekControl
-            key={active.id}
+            key={`seek:${active.id}`}
             id={active.id}
             position={snapshot?.positionSec ?? 0}
             duration={active.durationSec}
@@ -517,7 +517,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
         </div>
         {active && channelId && !fixture && (
           <MusicLyrics
-            key={active.id}
+            key={`lyrics:${active.id}`}
             channelId={channelId}
             trackId={active.id}
             position={snapshot?.positionSec ?? 0}
