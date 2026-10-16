@@ -1,0 +1,278 @@
+# ROOMS self-hosted stack. Generated values live in ./.env and ./config (never commit them).
+# Use the `rooms` command (deploy/rooms) instead of calling docker compose directly.
+name: rooms
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '3'
+
+x-stoat: &stoat
+  env_file: ./config/stoat.env
+  restart: always
+  logging: *logging
+  volumes:
+    - type: bind
+      source: ./config/Revolt.toml
+      target: /Revolt.toml
+      read_only: true
+
+x-rooms-server: &rooms-server
+  image: ${ROOMS_SERVER_IMAGE:-rooms-server:local}
+  build:
+    context: ..
+    dockerfile: deploy/server.Dockerfile
+  user: '1000:1000'
+  restart: always
+  logging: *logging
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ['no-new-privileges:true']
+  tmpfs: ['/tmp:size=16m']
+
+services:
+  # --- Stoat social backend (unmodified upstream images, pinned) ---
+  database:
+    # mongo:7
+    image: mongo@sha256:1f995ad6fdb93244a1addab1b58f934a0bc2f5643c38e02f5e9d7f0c7d227a7b
+    restart: always
+    logging: *logging
+    command: [mongod, --wiredTigerCacheSizeGB, '0.25']
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: rooms_admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?run rooms setup first}
+      ROOMS_MONGO_STOAT_PASSWORD: ${MONGO_STOAT_PASSWORD:?}
+      ROOMS_MONGO_INVITER_PASSWORD: ${MONGO_INVITER_PASSWORD:?}
+      ROOMS_MONGO_READER_PASSWORD: ${MONGO_READER_PASSWORD:?}
+    volumes:
+      - ./data/db:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/rooms.js:ro
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 6
+      start_period: 60s
+    mem_limit: 768m
+
+  redis:
+    # valkey/valkey:9-alpine
+    image: valkey/valkey@sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11
+    restart: always
+    logging: *logging
+    command: [valkey-server, --maxmemory, 128mb, --maxmemory-policy, noeviction]
+    mem_limit: 192m
+
+  rabbit:
+    # rabbitmq:4
+    image: rabbitmq@sha256:42b190dffdd0cdb656f989f5404c30e1049d6b7d9c987089669b1905e5e3a1a6
+    restart: always
+    logging: *logging
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbituser
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD:?}
+    volumes:
+      - ./data/rabbit:/var/lib/rabbitmq
+    # First boot on a small server can take a minute.
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 10s
+      retries: 6
+      start_period: 90s
+    mem_limit: 512m
+
+  minio:
+    # pgsty/silo (MinIO build used by upstream Stoat)
+    image: pgsty/silo@sha256:635197cb9f36d01bee221d34d1c7d7960f6a95c48b0b6c01d99cd13bdae51a46
+    command: server /data
+    restart: always
+    logging: *logging
+    environment:
+      MINIO_ROOT_USER: roomsuploads
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:?}
+      MINIO_DOMAIN: minio
+    volumes:
+      - ./data/minio:/data
+    networks:
+      default:
+        aliases:
+          - revolt-uploads.minio
+          - attachments.minio
+          - avatars.minio
+          - backgrounds.minio
+          - icons.minio
+          - banners.minio
+          - emojis.minio
+    mem_limit: 384m
+
+  createbuckets:
+    # pgsty/mc
+    image: pgsty/mc@sha256:cfc83108c3abb371f8fb84d99c1fdc88f8c237e022409b0081fb7c0a3be634dd
+    depends_on: [minio]
+    logging: *logging
+    environment:
+      MINIO_PASSWORD: ${MINIO_PASSWORD:?}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        until /usr/bin/mc alias set minio http://minio:9000 roomsuploads "$$MINIO_PASSWORD" >/dev/null 2>&1; do
+          echo 'Waiting for minio...'; sleep 1
+        done
+        /usr/bin/mc mb --ignore-existing minio/revolt-uploads
+
+  api:
+    <<: *stoat
+    image: ghcr.io/stoatchat/api:v0.15.5@sha256:35d3c03f0fc4aad4a7b23eb73af88b38fd134a274f991435fb23b32724619b52
+    depends_on:
+      database: { condition: service_healthy }
+      redis: { condition: service_started }
+      rabbit: { condition: service_healthy }
+    mem_limit: 512m
+
+  events:
+    <<: *stoat
+    image: ghcr.io/stoatchat/events:v0.15.5@sha256:e80d621d13560233b26d55cdc2a6ac2eb953ef54335912a23e27ce5e2b238990
+    depends_on:
+      database: { condition: service_healthy }
+      redis: { condition: service_started }
+    mem_limit: 192m
+
+  autumn:
+    <<: *stoat
+    image: ghcr.io/stoatchat/file-server:v0.15.5@sha256:5fd3354f5e0adf866a9875dd1cb7d15d45adbd5c49ba0ba96c65dbead1e175b3
+    depends_on:
+      database: { condition: service_healthy }
+      createbuckets: { condition: service_started }
+    mem_limit: 192m
+
+  january:
+    <<: *stoat
+    image: ghcr.io/stoatchat/proxy:v0.15.5@sha256:338a01081d89a519c2588836e70abf43449306ab169ab746fd141abb25c4d302
+    mem_limit: 128m
+
+  gifbox:
+    <<: *stoat
+    image: ghcr.io/stoatchat/gifbox:v0.15.5@sha256:de0e531e1412ee60941c1f3efcae099007e2eac2a2ad7359e8b5af98c8e56dee
+    mem_limit: 64m
+
+  crond:
+    <<: *stoat
+    image: ghcr.io/stoatchat/crond:v0.15.5@sha256:9a07f9414fbcea7f0161e140e12969aac41fd6655b61869cfa8916dce319c81a
+    depends_on:
+      database: { condition: service_healthy }
+      minio: { condition: service_started }
+    mem_limit: 128m
+
+  pushd:
+    <<: *stoat
+    image: ghcr.io/stoatchat/pushd:v0.15.5@sha256:c2661c5cea6bb679dfc085cb3d2902ab1b3b34e14c89915630144342bdd1c7f3
+    depends_on:
+      database: { condition: service_healthy }
+      redis: { condition: service_started }
+      rabbit: { condition: service_healthy }
+    mem_limit: 128m
+
+  # --- Media ---
+  media:
+    image: livekit/livekit-server:v1.9.12@sha256:2c13cbf2edcbf13ea7b20d05c10b394d04d8fb3fe358269cff845a90b4de9576
+    command: [--config, /etc/livekit.yaml]
+    restart: always
+    logging: *logging
+    volumes:
+      - ./config/livekit.yaml:/etc/livekit.yaml:ro
+    ports:
+      - '7881:7881/tcp'
+      - '7882:7882/udp'
+    mem_limit: 512m
+
+  # --- ROOMS services ---
+  access:
+    <<: *rooms-server
+    command: [node, access.cjs]
+    environment:
+      STOAT_INTERNAL_URL: http://api:14702
+      LIVEKIT_INTERNAL_URL: http://media:7880
+      LIVEKIT_PUBLIC_URL: wss://${ROOMS_DOMAIN:?}/livekit
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:?}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?}
+      ROOMS_REGISTRATION_INVITES_FILE: /state/registration-invites.json
+      ROOMS_SOUNDBOARD_DIRECTORY: /state/soundboard
+      ROOMS_MUSIC_PLAYLISTS_DIRECTORY: /state/music-playlists
+      ROOMS_ACCOUNT_INVITE_MONGO_URL: mongodb://rooms_inviter:${MONGO_INVITER_PASSWORD}@database:27017/revolt?authSource=revolt
+      ROOMS_SOCIAL_READ_MONGO_URL: mongodb://rooms_reader:${MONGO_READER_PASSWORD}@database:27017/revolt?authSource=revolt
+    volumes:
+      - ./data/access:/state
+    depends_on:
+      api: { condition: service_started }
+    mem_limit: 192m
+
+  activities:
+    <<: *rooms-server
+    command: [node, activities.cjs]
+    environment:
+      STOAT_INTERNAL_URL: http://api:14702
+      ACTIVITY_PORT: '3031'
+      ROOMS_ACTIVITY_DATABASE_URL: postgresql://rooms_activity:${POSTGRES_PASSWORD}@postgres:5432/rooms
+      ROOMS_SOCIAL_READ_MONGO_URL: mongodb://rooms_reader:${MONGO_READER_PASSWORD}@database:27017/revolt?authSource=revolt
+    depends_on:
+      postgres: { condition: service_healthy }
+      api: { condition: service_started }
+    mem_limit: 256m
+
+  postgres:
+    # postgres:17-alpine
+    image: postgres@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    restart: always
+    logging: *logging
+    environment:
+      POSTGRES_USER: rooms_activity
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: rooms
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U rooms_activity -d rooms]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 256m
+
+  # One-off administrator tasks: `rooms bootstrap`, `rooms invite`.
+  admin:
+    <<: *rooms-server
+    profiles: [tools]
+    restart: 'no'
+    command: [node, admin.cjs, status]
+    environment:
+      STOAT_INTERNAL_URL: http://api:14702
+      ROOMS_PUBLIC_URL: https://${ROOMS_DOMAIN:?}
+      ROOMS_REGISTRATION_INVITES_FILE: /state/registration-invites.json
+      ROOMS_ADMIN_STATE_FILE: /state/admin-state.json
+      ROOMS_ACCOUNT_INVITE_MONGO_URL: mongodb://rooms_inviter:${MONGO_INVITER_PASSWORD}@database:27017/revolt?authSource=revolt
+    volumes:
+      - ./data/access:/state
+
+  # --- Public HTTPS entry point ---
+  caddy:
+    # caddy:2
+    image: caddy@sha256:f2a1290d0463aad60660d4ec134943f183ee2a5f6c3eb7bf32dd984f2f020772
+    restart: always
+    logging: *logging
+    environment:
+      ROOMS_DOMAIN: ${ROOMS_DOMAIN:?}
+      ROOMS_ACME_EMAIL: ${ROOMS_ACME_EMAIL:?}
+      # Testing only: `local_certs` makes Caddy use its own CA instead of Let's Encrypt.
+      ROOMS_CADDY_GLOBAL_OPTIONS: ${ROOMS_CADDY_GLOBAL_OPTIONS:-}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./config/stoat.json:/srv/stoat.json:ro
+      - ./data/caddy-data:/data
+      - ./data/caddy-config:/config
+    depends_on: [api, events, access, activities, media]
+    mem_limit: 128m
