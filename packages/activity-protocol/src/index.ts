@@ -109,10 +109,33 @@ export const commandSchema = z
           rate: z.number().min(0.25).max(2),
         })
         .strict(),
-      z.object({ type: z.literal('queue.add'), itemId: opaqueId, media }).strict(),
+      z
+        .object({
+          type: z.literal('queue.add'),
+          itemId: opaqueId,
+          media,
+          // Select and start the new item right away instead of only queueing it.
+          start: z.boolean().optional(),
+        })
+        .strict(),
       z.object({ type: z.literal('queue.remove'), itemId: opaqueId }).strict(),
       z.object({ type: z.literal('queue.reorder'), itemIds: z.array(opaqueId).max(100) }).strict(),
-      z.object({ type: z.literal('queue.select'), itemId: opaqueId }).strict(),
+      z
+        .object({ type: z.literal('queue.select'), itemId: opaqueId, play: z.boolean().optional() })
+        .strict(),
+      // Advances only while `fromItemId` is still current, so every viewer may report the end once.
+      z
+        .object({
+          type: z.literal('queue.next'),
+          fromItemId: opaqueId,
+          reason: z.enum(['ended', 'skip']),
+        })
+        .strict(),
+      z.object({ type: z.literal('session.control'), mode: z.enum(['everyone', 'host']) }).strict(),
+      z
+        .object({ type: z.literal('session.permit'), userId: opaqueId, allowed: z.boolean() })
+        .strict(),
+      z.object({ type: z.literal('session.host'), userId: opaqueId }).strict(),
       z
         .object({
           type: z.literal('poll.create'),
@@ -273,6 +296,9 @@ export interface RoomSnapshot {
     hostUserId: string;
     startedAt: number;
     state: 'live' | 'awaiting-source';
+    /** `host`: only the host and `controllers` steer playback. Missing means `everyone`. */
+    controlMode?: SessionControlMode;
+    controllers?: string[];
   };
   timeline: Timeline;
   queue: QueueItem[];
@@ -377,6 +403,17 @@ export interface ActivityResponse {
   room: RoomSnapshot;
   events: ActivityEvent[];
   replayRequired: boolean;
+}
+export type SessionControlMode = 'everyone' | 'host';
+/** Whether a participant may steer the shared player under the host's session setting. */
+export function directsSession(
+  primary: RoomSnapshot['primary'],
+  userId: string | null | undefined,
+  canControl: boolean,
+): boolean {
+  if (!canControl || !userId) return false;
+  if (!primary || primary.controlMode !== 'host') return true;
+  return primary.hostUserId === userId || (primary.controllers ?? []).includes(userId);
 }
 export function playbackPosition(timeline: Timeline, serverTimeMs: number): number {
   return Math.max(
