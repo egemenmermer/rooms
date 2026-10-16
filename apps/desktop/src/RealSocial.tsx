@@ -19,7 +19,14 @@ import { VoiceAvatar } from './VoiceAvatar';
 import { ScreenHandoffControls, cancelScreenHandoff, decideScreenHandoff } from './screen-handoff';
 import { MessageReminder } from './Reminder';
 import { ChatAgentRequest } from './ChatAgent';
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type DragEvent as ReactDragEvent,
+} from 'react';
 import { useRooms } from './store';
 import { useActivityRoom } from './activity';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -142,6 +149,41 @@ export function CommunityChat({
       setUploading(false);
     }
   };
+  const [dropping, setDropping] = useState(false);
+  /** Uploads files dragged or pasted into the conversation through the same validated path. */
+  const addFiles = async (files: File[]) => {
+    if (!c.activeChannelId || !window.rooms || !files.length) return;
+    const channelId = c.activeChannelId;
+    const room = 5 - attachments.length;
+    if (room <= 0) {
+      notify('Bir mesaja en fazla 5 dosya ekleyebilirsin.');
+      return;
+    }
+    if (files.length > room)
+      notify(`Yalnızca ilk ${room} dosya eklendi; bir mesajda en fazla 5 dosya olur.`);
+    setUploading(true);
+    try {
+      for (const file of files.slice(0, room)) {
+        if (file.size > 25 * 1024 * 1024) {
+          notify(`${file.name} 25 MB sınırını aşıyor.`);
+          continue;
+        }
+        const item = await window.rooms.social.dropAttachment(
+          channelId,
+          file.name || 'yapistirilan-gorsel.png',
+          new Uint8Array(await file.arrayBuffer()),
+        );
+        if (useCommunity.getState().activeChannelId === channelId)
+          setAttachments((items) => [...items, item].slice(0, 5));
+        else await window.rooms.social.discardAttachment(item.id);
+      }
+    } catch (error) {
+      notify(uiError(error));
+    } finally {
+      setUploading(false);
+    }
+  };
+  const hasFiles = (event: ReactDragEvent) => event.dataTransfer.types.includes('Files');
   const react = async (message: CommunityMessage, emoji = '1f44d') => {
     if (!c.activeChannelId || !window.rooms) return;
     try {
@@ -220,11 +262,16 @@ export function CommunityChat({
     setActionError('');
   }, []);
   const saveEdit = async () => {
-    if (!editing || !edit.trim() || actionBusy) return;
+    const content = mentionInput.serialize().trim();
+    if (!editing || !content || actionBusy) return;
+    if (content.length > 4000) {
+      notify('Mesaj çok uzun. Biraz kısaltıp yeniden dene.');
+      return;
+    }
     setActionBusy(true);
     setActionError('');
     try {
-      await c.editMessage(editing.id, edit.trim());
+      if (content !== editing.content) await c.editMessage(editing.id, content);
       closeEdit();
     } catch (error) {
       setActionError(uiError(error));
@@ -265,7 +312,8 @@ export function CommunityChat({
     );
   };
   const [editing, setEditing] = useState<CommunityMessage | null>(null);
-  const [edit, setEdit] = useState('');
+  // The unsent draft waits here while the composer edits an existing message.
+  const draftBeforeEdit = useRef('');
   const [deleting, setDeleting] = useState<string | null>(null);
   const log = useRef<HTMLDivElement>(null);
   const nearBottom = useRef(true);
@@ -273,13 +321,29 @@ export function CommunityChat({
   const channel =
     c.channels.find((ch) => ch.id === c.activeChannelId) ??
     c.dms.find((ch) => ch.id === c.activeChannelId);
-  const closeEdit = useCallback(() => setEditing(null), []);
+  const startEdit = (message: CommunityMessage) => {
+    if (message.author.id !== c.user?.id) return;
+    if (!editing) draftBeforeEdit.current = draft;
+    setEditing(message);
+    setActionError('');
+    mentionInput.load(message.content);
+  };
+  const closeEdit = () => {
+    setEditing(null);
+    setActionError('');
+    mentionInput.load(draftBeforeEdit.current);
+    draftBeforeEdit.current = '';
+  };
   const closeDelete = useCallback(() => setDeleting(null), []);
   useEffect(() => {
     setOptions(null);
     setReactionTarget(null);
     setReply(null);
-    setEditing(null);
+    setEditing((current) => {
+      if (current) setDraft(draftBeforeEdit.current);
+      draftBeforeEdit.current = '';
+      return null;
+    });
     setDeleting(null);
     setActionError('');
     setQuery('');
@@ -294,6 +358,10 @@ export function CommunityChat({
     else setUnseen(true);
   }, [c.activeChannelId, c.messages.length, c.messages.at(-1)?.id]);
   const send = () => {
+    if (editing) {
+      void saveEdit();
+      return;
+    }
     if (!draft.trim() && !attachments.length) return;
     const content = mentionInput.serialize().trim();
     if (content.length > 4000) {
@@ -409,25 +477,60 @@ export function CommunityChat({
       }) as Record<string, typeof Heart>
     )[key];
   const messageText = (value: string) =>
-    value.split(/(<@[A-Za-z0-9_-]{1,128}>|@[\p{L}\p{N}_-]+)/u).map((part, i) => {
-      const id = part.match(/^<@([A-Za-z0-9_-]+)>$/)?.[1];
-      const person = id
-        ? [c.user, ...c.messages.map((m) => m.author), ...(channel?.recipients ?? [])].find(
-            (p) => p?.id === id,
-          )
-        : null;
-      return id ? (
-        <mark key={i}>
-          @{person?.displayName ?? mentionInput.name(id) ?? `kişi-${id.slice(-6)}`}
-        </mark>
-      ) : part.startsWith('@') ? (
-        <mark key={i}>{part}</mark>
-      ) : (
-        part
-      );
-    });
+    value
+      .split(/(https?:\/\/[^\s<>]+|<@[A-Za-z0-9_-]{1,128}>|@[\p{L}\p{N}_-]+)/u)
+      .map((part, i) => {
+        if (/^https?:\/\//i.test(part)) {
+          // Trailing sentence punctuation is not part of the link.
+          const link = part.replace(/[.,!?;:)\]}'"]+$/, '');
+          return (
+            <Fragment key={i}>
+              <a href={link} target="_blank" rel="noreferrer noopener" className="message-link">
+                {link}
+              </a>
+              {part.slice(link.length)}
+            </Fragment>
+          );
+        }
+        const id = part.match(/^<@([A-Za-z0-9_-]+)>$/)?.[1];
+        const person = id
+          ? [c.user, ...c.messages.map((m) => m.author), ...(channel?.recipients ?? [])].find(
+              (p) => p?.id === id,
+            )
+          : null;
+        return id ? (
+          <mark key={i}>
+            @{person?.displayName ?? mentionInput.name(id) ?? `kişi-${id.slice(-6)}`}
+          </mark>
+        ) : part.startsWith('@') ? (
+          <mark key={i}>{part}</mark>
+        ) : (
+          part
+        );
+      });
   return (
-    <div className="chat-page reference-chat">
+    <div
+      className={`chat-page reference-chat${dropping ? ' is-dropping' : ''}`}
+      onDragOver={(e) => {
+        if (!hasFiles(e) || !c.activeChannelId) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = editing ? 'none' : 'copy';
+        if (!dropping) setDropping(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropping(false);
+      }}
+      onDrop={(e) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        setDropping(false);
+        if (editing) {
+          notify('Düzenlemeyi bitirince dosya ekleyebilirsin.');
+          return;
+        }
+        void addFiles([...e.dataTransfer.files]);
+      }}
+    >
       <header className="chat-heading">
         <Hash size={24} />
         <h2>{channel?.name ?? 'Sohbet'}</h2>
@@ -765,6 +868,16 @@ export function CommunityChat({
       )}
       {c.activeChannelId && (
         <div className="composer-wrap">
+          {editing && (
+            <div className="composer-editing" role="status">
+              <Edit3 size={14} />
+              <span>Mesajı düzenliyorsun · Enter kaydeder · Esc vazgeçer</span>
+              {actionError && <span className="composer-editing-error">{actionError}</span>}
+              <button type="button" disabled={actionBusy} onClick={closeEdit}>
+                Vazgeç
+              </button>
+            </div>
+          )}
           {attachments.length > 0 && (
             <div className="pending-attachments">
               {attachments.map((file) => (
@@ -796,8 +909,14 @@ export function CommunityChat({
             }}
           >
             <IconButton
-              label={uploading ? 'Dosya yükleniyor' : 'Dosya ekle'}
-              disabled={!c.activeChannelId || uploading || attachments.length >= 5}
+              label={
+                editing
+                  ? 'Düzenlerken dosya eklenemez'
+                  : uploading
+                    ? 'Dosya yükleniyor'
+                    : 'Dosya ekle'
+              }
+              disabled={!c.activeChannelId || uploading || attachments.length >= 5 || !!editing}
               onClick={() => void attach()}
             >
               <Plus size={20} />
@@ -810,7 +929,7 @@ export function CommunityChat({
               aria-activedescendant={mentionInput.activeOptionId}
               aria-expanded={mentionInput.open}
               onSelect={mentionInput.onSelect}
-              aria-label="Kanala mesaj yaz"
+              aria-label={editing ? 'Mesajı düzenle' : 'Kanala mesaj yaz'}
               rows={1}
               value={draft}
               maxLength={4000}
@@ -822,8 +941,31 @@ export function CommunityChat({
                   : 'Kanal seç')
               }
               onChange={(e) => mentionInput.change(e.target.value, e.target.selectionStart)}
+              onPaste={(e) => {
+                if (editing) return;
+                const files = [...e.clipboardData.files];
+                if (!files.length) return;
+                e.preventDefault();
+                void addFiles(files);
+              }}
               onKeyDown={(e) => {
                 if (mentionInput.onKeyDown(e)) return;
+                if (e.key === 'Escape' && editing) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  closeEdit();
+                  return;
+                }
+                if (e.key === 'ArrowUp' && !draft && !editing && !e.nativeEvent.isComposing) {
+                  const own = [...c.messages]
+                    .reverse()
+                    .find((m) => m.author.id === c.user?.id && m.delivery !== 'failed');
+                  if (own) {
+                    e.preventDefault();
+                    startEdit(own);
+                  }
+                  return;
+                }
                 if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault();
                   send();
@@ -851,8 +993,12 @@ export function CommunityChat({
             <button
               type="submit"
               className="send-button"
-              aria-label="Mesajı gönder"
-              disabled={(!draft.trim() && !attachments.length) || !c.activeChannelId || uploading}
+              aria-label={editing ? 'Değişiklikleri kaydet' : 'Mesajı gönder'}
+              disabled={
+                editing
+                  ? actionBusy || !draft.trim()
+                  : (!draft.trim() && !attachments.length) || !c.activeChannelId || uploading
+              }
             >
               <Send size={20} />
             </button>
@@ -1035,9 +1181,7 @@ export function CommunityChat({
                   : undefined
               }
               onClick={() => {
-                setEditing(options);
-                setEdit(options.content);
-                setActionError('');
+                startEdit(options);
                 closeOptions();
               }}
             >
@@ -1173,47 +1317,6 @@ export function CommunityChat({
             >
               <Send size={18} />
               Yanıt gönder
-            </button>
-          </footer>
-        </Modal>
-      )}
-      {editing && (
-        <Modal
-          title="Mesajı düzenle"
-          className="chat-message-modal chat-edit-modal"
-          onClose={closeEdit}
-        >
-          <div className="chat-modal-body">
-            <textarea
-              className="edit-textarea"
-              aria-label="Mesaj metni"
-              value={edit}
-              onChange={(e) => setEdit(e.target.value)}
-              maxLength={4000}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-                  e.preventDefault();
-                  void saveEdit();
-                }
-              }}
-            />
-            <p>Enter ile kaydet · Esc ile vazgeç</p>
-            {actionError && (
-              <div className="error-pane" role="alert">
-                {actionError}
-              </div>
-            )}
-          </div>
-          <footer className="chat-modal-footer">
-            <button className="button secondary" disabled={actionBusy} onClick={closeEdit}>
-              Vazgeç
-            </button>
-            <button
-              className="button primary"
-              disabled={actionBusy || !edit.trim()}
-              onClick={() => void saveEdit()}
-            >
-              Değişiklikleri kaydet
             </button>
           </footer>
         </Modal>

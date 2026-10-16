@@ -155,7 +155,18 @@ function createWindow() {
       webSecurity: true,
     },
   });
-  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    // Chat links open in the user's browser; the app window never hosts external pages.
+    if (/^https?:\/\//i.test(url) && url.length <= 2048) {
+      try {
+        const parsed = new URL(url);
+        if (!parsed.username && !parsed.password) void shell.openExternal(parsed.href);
+      } catch {
+        /* Malformed links are ignored. */
+      }
+    }
+    return { action: 'deny' };
+  });
   win.webContents.on('will-navigate', (event, url) => {
     if (!isTrusted(url)) event.preventDefault();
   });

@@ -111,6 +111,8 @@ const bridge: DesktopBridge = {
       ipcRenderer.invoke('rooms:social-react', channel, message, emoji, remove),
     discardAttachment: (id) => ipcRenderer.invoke('rooms:social-discard-attachment', id),
     chooseAttachment: (channel) => ipcRenderer.invoke('rooms:social-choose-attachment', channel),
+    dropAttachment: (channel, name, data) =>
+      ipcRenderer.invoke('rooms:social-drop-attachment', channel, name, data),
     dms: () => ipcRenderer.invoke('rooms:social-dms'),
     createDM: (id) => ipcRenderer.invoke('rooms:social-create-dm', id),
     blockUser: (id) => ipcRenderer.invoke('rooms:social-block', id),
