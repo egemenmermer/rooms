@@ -189,7 +189,11 @@ export function MinimalSidebar({
                     {'screen' in p && p.screen === true && (
                       <MonitorUp size={13} aria-label="Ekran paylaşıyor" />
                     )}
-                    {p.muted && <MicOff size={12} />}
+                    {'deafened' in p && p.deafened ? (
+                      <HeadphoneOff size={12} aria-label="Sağırlaştırdı" />
+                    ) : (
+                      p.muted && <MicOff size={12} />
+                    )}
                   </button>
                 ))}
                 {!(r.channelId === ch.id && r.status === 'connected') &&

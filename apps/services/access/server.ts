@@ -50,6 +50,8 @@ const registrationBody = credentialBody.extend({
     .regex(/^[\p{L}\d_.-]+$/u),
   inviteCode: z.string().regex(/^[a-zA-Z0-9_-]{2,128}$/),
 });
+/** Server-owned LiveKit participant attribute; clients cannot edit their own metadata. */
+export const DEAFENED_ATTRIBUTE = 'rooms.deafened';
 export async function createAccessServer(config: AccessConfig) {
   const server = Fastify({ logger: false, bodyLimit: 16384 });
   // Media polling and room changes share this ingress budget, including proxied peers.
@@ -555,6 +557,38 @@ export async function createAccessServer(config: AccessConfig) {
       });
     },
   );
+  // Deafen is local playback state. The service publishes it as a server-owned participant attribute
+  // so rooms and the directory can show it without granting clients canUpdateOwnMetadata.
+  server.post(
+    '/v1/media/deafen',
+    {
+      config: {
+        rateLimit: {
+          max: 60,
+          timeWindow: '1 minute',
+          keyGenerator: (request: FastifyRequest) =>
+            'voice-deafen:' +
+            createHash('sha256')
+              .update(request.headers.authorization ?? request.ip)
+              .digest('hex'),
+        },
+      },
+    },
+    async (request) => {
+      const { channelId, deafened } = z
+        .object({ channelId: opaqueId, deafened: z.boolean() })
+        .strict()
+        .parse(request.body);
+      const token = tokenOf(request.headers.authorization);
+      const { user } = await authorize(token, channelId);
+      const grant = grants.get(`${channelId}:${user.id}`);
+      if (!grant || grant.token !== token) throw new StoatError(403, 'JOIN_VOICE_FIRST');
+      await roomService.updateParticipant(roomName(channelId), user.id, {
+        attributes: { [DEAFENED_ATTRIBUTE]: deafened ? '1' : '' },
+      });
+      return { deafened };
+    },
+  );
   // Reject legacy Discord-shaped auth endpoints; clients must use Stoat's official account/session flow.
   server.post('/api/v9/auth/register', async (_request, reply) =>
     reply.code(400).send({ error: 'STOAT_AUTH_REQUIRED' }),
@@ -636,6 +670,7 @@ export async function createAccessServer(config: AccessConfig) {
               ...(p.tracks.some((t) => t.source === TrackSource.SCREEN_SHARE && !t.muted)
                 ? { screen: true }
                 : {}),
+              ...(p.attributes?.[DEAFENED_ATTRIBUTE] === '1' ? { deafened: true } : {}),
             })),
           };
         }),

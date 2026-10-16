@@ -114,6 +114,7 @@ export function joinVoice(channelId: string, roomName: string): Promise<void> {
         throw new Error('Önce özel görüşmeyi bitir.');
       activeChannel = channelId;
       await mediaProvider().connectRoom(grant.roomName, grant.token, grant.serverUrl);
+      if (mediaProvider().snapshot().deafened) announceDeafen(channelId, true);
       if (!current()) {
         await disconnectActive();
         return;
@@ -189,8 +190,19 @@ export async function toggleMic() {
       useRooms.getState().setPreference('inputId', '');
   });
 }
+/** Best effort: the room learns about deafen through the access service; failure stays local. */
+function announceDeafen(channelId: string | null, deafened: boolean) {
+  if (!channelId || !window.rooms) return;
+  void bridge()
+    .deafen?.(channelId, deafened)
+    .catch(() => {});
+}
 export async function toggleDeafen() {
-  await run(() => mediaProvider().deafen(!mediaProvider().snapshot().deafened));
+  await run(async () => {
+    const deafened = !mediaProvider().snapshot().deafened;
+    await mediaProvider().deafen(deafened);
+    announceDeafen(activeChannel, deafened);
+  });
 }
 export async function toggleCamera() {
   await run(() => mediaProvider().publishCamera(!mediaProvider().snapshot().camera));

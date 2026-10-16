@@ -17,6 +17,8 @@ export interface MediaParticipant {
   name: string;
   local: boolean;
   muted: boolean;
+  /** Not hearing the room; shared by the access service as the rooms.deafened attribute. */
+  deafened?: boolean;
   speaking: boolean;
   camera: boolean;
   screen: boolean;
@@ -411,6 +413,10 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
           name: p.name || p.identity,
           local: p === room.localParticipant,
           muted: !p.isMicrophoneEnabled,
+          deafened:
+            p === room.localParticipant
+              ? this.state.deafened
+              : p.attributes?.['rooms.deafened'] === '1',
           speaking:
             this.status === 'connected' &&
             p.isMicrophoneEnabled &&
@@ -493,6 +499,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       RoomEvent.ActiveSpeakersChanged,
       RoomEvent.ConnectionQualityChanged,
       RoomEvent.ParticipantNameChanged,
+      RoomEvent.ParticipantAttributesChanged,
       RoomEvent.MediaDevicesChanged,
       RoomEvent.ActiveDeviceChanged,
     ])
