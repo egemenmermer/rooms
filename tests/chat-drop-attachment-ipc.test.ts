@@ -11,6 +11,9 @@ const mock = vi.hoisted(() => ({
   request: vi.fn(),
   getChannel: vi.fn(),
   upload: vi.fn(),
+  clipboardItems: vi.fn(
+    async () => [] as { types: string[]; getType: (type: string) => Promise<Blob> }[],
+  ),
   confirm: vi.fn(),
   clipboard: vi.fn(),
   exists: vi.fn(() => false),
@@ -19,7 +22,7 @@ vi.mock('electron', () => ({
   app: { isPackaged: true, getPath: () => '/tmp/rooms-local-recovery-ipc-fixture', on: vi.fn() },
   ipcMain: { handle: (name: string, handler: Function) => mock.handlers.set(name, handler) },
   safeStorage: { isEncryptionAvailable: () => false },
-  clipboard: { readText: () => mock.clipboard() },
+  clipboard: { readText: () => mock.clipboard(), read: () => mock.clipboardItems() },
   session: { defaultSession: { setDisplayMediaRequestHandler: vi.fn() } },
   dialog: {},
   desktopCapturer: {},
@@ -166,5 +169,24 @@ describe('dropped attachment IPC (fully mocked Stoat/Electron)', () => {
         new Uint8Array([1]),
       ),
     ).rejects.toThrow('Untrusted sender');
+  });
+  it('attaches a screenshot copied to the clipboard as image data', async () => {
+    mock.clipboardItems.mockResolvedValueOnce([
+      {
+        types: ['image/png', 'electron application/osclipboard;format="Apple PNG pasteboard type"'],
+        getType: async () => new Blob([new Uint8Array([9, 8, 7])], { type: 'image/png' }),
+      },
+    ]);
+    const result = await invoke('rooms:social-paste-attachment', channel);
+    expect(result).toMatchObject({ id: 'uploaded', size: 3, mime: 'image/png' });
+    expect(result.name).toMatch(/^pano-\d{14}\.png$/);
+    expect(mock.getChannel).toHaveBeenCalledWith(channel);
+  });
+  it('returns nothing when the clipboard has no image or file', async () => {
+    mock.clipboardItems.mockResolvedValueOnce([
+      { types: ['text/plain'], getType: async () => new Blob(['selam']) },
+    ]);
+    await expect(invoke('rooms:social-paste-attachment', channel)).resolves.toBeNull();
+    expect(mock.upload).not.toHaveBeenCalled();
   });
 });

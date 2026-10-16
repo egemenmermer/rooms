@@ -42,6 +42,7 @@ import {
   type IpcMainInvokeEvent,
   type DesktopCapturerSource,
 } from 'electron';
+import { fileURLToPath } from 'node:url';
 import {
   readFileSync,
   writeFileSync,
@@ -810,6 +811,60 @@ export async function setupCommunity(
       );
     return mime;
   }
+  /** Finder file copies arrive as a file URI list; screenshots as image data. */
+  async function clipboardAttachment(): Promise<
+    { path: string } | { bytes: Uint8Array; name: string } | null
+  > {
+    const extensions: Record<string, string> = {
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+      'image/gif': 'gif',
+      'image/webp': 'webp',
+    };
+    for (const item of await clipboard.read()) {
+      const uriType =
+        item.types.find((value) => value === 'text/uri-list') ??
+        item.types.find((value) => value.includes('format="public.file-url"'));
+      if (uriType) {
+        const list = await ((await item.getType(uriType)) as Blob).text();
+        const uri = list.split(/\r?\n/).find((line) => line.startsWith('file://'));
+        if (uri) return { path: fileURLToPath(uri) };
+      }
+      const type = item.types.find((value) => value in extensions);
+      if (type) {
+        const bytes = new Uint8Array(await ((await item.getType(type)) as Blob).arrayBuffer());
+        if (!bytes.byteLength || bytes.byteLength > 25 * 1024 * 1024)
+          throw new SocialInputError('Select a nonempty attachment up to 25 MB.');
+        const stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '');
+        return { bytes, name: `pano-${stamp}.${extensions[type]}` };
+      }
+    }
+    return null;
+  }
+  function readAttachmentFile(path: string) {
+    const fileStat = statSync(path);
+    if (!fileStat.isFile() || !fileStat.size || fileStat.size > 25 * 1024 * 1024)
+      throw new SocialInputError('Select a nonempty attachment up to 25 MB.');
+    attachmentMime(basename(path));
+    const descriptor = openSync(path, 'r');
+    try {
+      const initial = fstatSync(descriptor);
+      if (!initial.isFile() || initial.size !== fileStat.size)
+        throw new SocialInputError('The selected attachment changed. Select it again.');
+      const buffer = Buffer.alloc(initial.size + 1);
+      let count = 0;
+      while (count < buffer.length) {
+        const read = readSync(descriptor, buffer, count, buffer.length - count, null);
+        if (read === 0) break;
+        count += read;
+      }
+      if (count !== initial.size)
+        throw new SocialInputError('The selected attachment changed. Select it again.');
+      return new Uint8Array(buffer.subarray(0, count));
+    } finally {
+      closeSync(descriptor);
+    }
+  }
   async function stageAttachment(
     current: StoatClient,
     channel: string,
@@ -861,30 +916,22 @@ export async function setupCommunity(
     });
     if (chosen.canceled || !chosen.filePaths[0]) return null;
     const path = chosen.filePaths[0];
-    const fileStat = statSync(path);
-    if (!fileStat.isFile() || !fileStat.size || fileStat.size > 25 * 1024 * 1024)
-      throw new SocialInputError('Select a nonempty attachment up to 25 MB.');
-    attachmentMime(basename(path));
-    const descriptor = openSync(path, 'r');
-    let bytes: Uint8Array;
-    try {
-      const initial = fstatSync(descriptor);
-      if (!initial.isFile() || initial.size !== fileStat.size)
-        throw new SocialInputError('The selected attachment changed. Select it again.');
-      const buffer = Buffer.alloc(initial.size + 1);
-      let count = 0;
-      while (count < buffer.length) {
-        const read = readSync(descriptor, buffer, count, buffer.length - count, null);
-        if (read === 0) break;
-        count += read;
-      }
-      if (count !== initial.size)
-        throw new SocialInputError('The selected attachment changed. Select it again.');
-      bytes = new Uint8Array(buffer.subarray(0, count));
-    } finally {
-      closeSync(descriptor);
-    }
-    return stageAttachment(current, channel, bytes, basename(path));
+    return stageAttachment(current, channel, readAttachmentFile(path), basename(path));
+  });
+  // Clipboard contents the renderer's paste event cannot expose as files: screenshots copied as
+  // image data and files copied in Finder. Reads only on an explicit paste in the composer.
+  handle('rooms:social-paste-attachment', async (channelId) => {
+    const channel = id.parse(channelId);
+    const current = requireClient();
+    await current.getChannel(channel);
+    const pasted = await clipboardAttachment();
+    if (!pasted) return null;
+    return stageAttachment(
+      current,
+      channel,
+      'path' in pasted ? readAttachmentFile(pasted.path) : pasted.bytes,
+      'path' in pasted ? basename(pasted.path) : pasted.name,
+    );
   });
   // Files dragged or pasted into the composer arrive as bytes; the renderer never learns a path.
   handle('rooms:social-drop-attachment', async (channelId, fileName, data) => {

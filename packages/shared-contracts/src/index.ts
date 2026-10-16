@@ -301,6 +301,9 @@ export interface SocialBridge {
     name: string,
     data: Uint8Array,
   ): Promise<{ id: string; name: string; size: number; mime: string }>;
+  pasteAttachment(
+    channelId: string,
+  ): Promise<{ id: string; name: string; size: number; mime: string } | null>;
   dms(): Promise<import('@rooms/social').SocialChannel[]>;
   createDM(recipientId: string): Promise<import('@rooms/social').SocialChannel>;
   blockUser(userId: string): Promise<void>;

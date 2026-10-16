@@ -134,3 +134,46 @@ it('round-trips canonical mentions through readable labels', () => {
   expect(loaded.text).toBe('selam @Bob Builder ve <@ghost>');
   expect(serializeMentions(loaded.text, loaded.bindings)).toBe('selam <@bob> ve <@ghost>');
 });
+
+it('attaches pasted image files and asks the native clipboard when the paste carries none', async () => {
+  const dropAttachment = vi.fn(async (_channel: string, name: string, data: Uint8Array) => ({
+    id: 'pasted-file',
+    name,
+    size: data.byteLength,
+    mime: 'image/png',
+  }));
+  const pasteAttachment = vi.fn(async () => ({
+    id: 'native',
+    name: 'pano-20261016.png',
+    size: 4,
+    mime: 'image/png',
+  }));
+  window.rooms = {
+    social: { dropAttachment, pasteAttachment, discardAttachment: vi.fn() },
+  } as unknown as DesktopBridge;
+  renderChat();
+  const box = screen.getByRole('textbox', { name: 'Kanala mesaj yaz' });
+  const file = Object.assign(new File([new Uint8Array([5])], 'image.png', { type: 'image/png' }), {
+    arrayBuffer: async () => new Uint8Array([5]).buffer,
+  });
+  await act(async () => {
+    fireEvent.paste(box, {
+      clipboardData: {
+        items: [{ kind: 'file', getAsFile: () => file }],
+        files: [],
+        types: ['Files'],
+      },
+    });
+  });
+  await waitFor(() => expect(dropAttachment).toHaveBeenCalled());
+  expect(pasteAttachment).not.toHaveBeenCalled();
+  await act(async () => {
+    fireEvent.paste(box, { clipboardData: { items: [], files: [], types: ['Files'] } });
+  });
+  await waitFor(() => expect(pasteAttachment).toHaveBeenCalledWith('channel'));
+  expect(await screen.findByText('pano-20261016.png')).toBeTruthy();
+  await act(async () => {
+    fireEvent.paste(box, { clipboardData: { items: [], files: [], types: ['text/plain'] } });
+  });
+  expect(pasteAttachment).toHaveBeenCalledTimes(1);
+});
