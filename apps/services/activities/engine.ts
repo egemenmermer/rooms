@@ -5,7 +5,11 @@ import type {
   CommandEnvelope,
   RoomSnapshot,
 } from '../../../packages/activity-protocol/src/index';
-import { directsSession, playbackPosition } from '../../../packages/activity-protocol/src/index';
+import {
+  directsSession,
+  endsActivity,
+  playbackPosition,
+} from '../../../packages/activity-protocol/src/index';
 import type { StoredRoom } from './repository';
 import { advanceGameBots, createGame, disconnectGame, gameCommand, gameView } from './games';
 
@@ -262,8 +266,7 @@ export function applyCommand(
       break;
     case 'end':
       control();
-      if (state.primary && ['cinema', 'youtube', 'screen'].includes(state.primary.activity))
-        direct();
+      if (!endsActivity(state.primary, identity.userId, true)) fail(403, 'SESSION_HOST_REQUIRED');
       state.cinema = null;
       state.primary = null;
       state.timeline.playing = false;

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   commandSchema,
   directsSession,
+  endsActivity,
   type ActivityCommand,
 } from '../packages/activity-protocol/src/index';
 import { applyCommand, emptyRoom, pruneDisconnected } from '../apps/services/activities/engine';
@@ -148,7 +149,24 @@ describe('host-granted control', () => {
       'SESSION_HOST_REQUIRED',
     );
     send('host', { type: 'playback', playing: false, positionSec: 1, rate: 1 });
-    expect(() => send('can', { type: 'end' })).toThrow('SESSION_HOST_CONTROL');
+    expect(() => send('can', { type: 'end' })).toThrow('SESSION_HOST_REQUIRED');
+  });
+  it('lets only the host end the shared player for everyone, even when everyone steers', () => {
+    const { send, state } = setup();
+    expect(state.primary?.controlMode ?? 'everyone').toBe('everyone');
+    send('ece', { type: 'playback', playing: false, positionSec: 2, rate: 1 });
+    expect(() => send('ece', { type: 'end' })).toThrow('SESSION_HOST_REQUIRED');
+    expect(state.primary).not.toBeNull();
+    send('host', { type: 'end' });
+    expect(state.primary).toBeNull();
+  });
+  it('keeps games endable by anyone with room control', () => {
+    const table = { title: 'Masa', hostUserId: 'host', startedAt: 1, state: 'live' as const };
+    expect(endsActivity({ ...table, activity: 'holdem' }, 'ece', true)).toBe(true);
+    expect(endsActivity({ ...table, activity: 'youtube' }, 'ece', true)).toBe(false);
+    expect(endsActivity({ ...table, activity: 'screen' }, 'host', true)).toBe(true);
+    expect(endsActivity({ ...table, activity: 'holdem' }, 'ece', false)).toBe(false);
+    expect(endsActivity(null, 'ece', true)).toBe(true);
   });
   it('gives the remote to an invited person first when the host disappears', () => {
     const { room, send, state } = setup();

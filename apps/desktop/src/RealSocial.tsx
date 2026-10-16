@@ -29,6 +29,7 @@ import {
   type DragEvent as ReactDragEvent,
 } from 'react';
 import { useRooms } from './store';
+import { PushToTalkNotice } from './PushToTalk';
 import { useActivityRoom } from './activity';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -74,6 +75,7 @@ import {
   Video,
   VideoOff,
   Volume2,
+  VolumeX,
   X,
   Trophy,
   Gem,
@@ -94,6 +96,7 @@ import {
   setParticipantVolume,
   startRoomAudio,
 } from './realtime';
+import { silencedHere } from './participant-audio';
 /** Who watches a screen share, from each viewer's own announcement. */
 export function viewerSummary(
   people: { id: string; name: string; local: boolean; watching?: string | null }[],
@@ -1553,14 +1556,15 @@ export function CommunityVoice({
   const chooseSource = () => window.dispatchEvent(new Event('rooms:choose-capture'));
   const tile = (p: (typeof r.participants)[number]) => {
     const camera = cameras.find((t) => t.participantId === p.id),
-      speaking = connected && p.speaking && !p.muted;
+      silenced = silencedHere(p),
+      speaking = connected && p.speaking && !p.muted && !silenced;
     return (
       <button
         key={p.id}
         data-voice-participant-id={p.id}
         className={`reference-participant ${video ? 'video-tile' : ''} ${speaking ? 'speaking' : ''} ${camera ? 'with-camera' : ''} ${layout === 'focus' && focused?.id === p.id ? 'focused' : ''}`}
         onClick={() => (video && layout === 'focus' ? setFocus(p.id) : setMember(p.id))}
-        aria-label={`${p.name}${speaking ? ', konuşuyor' : ''}${p.muted ? ', mikrofon kapalı' : ''}`}
+        aria-label={`${p.name}${speaking ? ', konuşuyor' : ''}${p.muted ? ', mikrofon kapalı' : ''}${silenced ? ', sesini kapattın' : ''}`}
       >
         {camera ? (
           <MediaStage id={camera.id} label={`${p.name} kamerası`} className="voice-camera" />
@@ -1571,6 +1575,7 @@ export function CommunityVoice({
         )}
         <span className="reference-participant-status">
           {p.screen && <MonitorUp size={15} aria-label="Ekran paylaşıyor" />}
+          {silenced && <VolumeX size={15} aria-label="Sesini kapattın, yalnızca sende" />}
           {video ? (
             <ReferenceIcon name={camera ? 'video' : 'video-off'} size={15} />
           ) : speaking ? (
@@ -1923,7 +1928,7 @@ export function CommunityVoice({
       {pushToTalk && !video && !share && r.channelId && (
         <div className="reference-media-notice reference-ptt-notice">
           <ReferenceIcon name="mic" size={17} />
-          <span>Bas konuş açık · Ctrl + Shift + Space</span>
+          <PushToTalkNotice />
         </div>
       )}
       {r.channelId && !video && !share && (

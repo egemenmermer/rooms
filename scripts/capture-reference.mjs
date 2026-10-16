@@ -315,8 +315,7 @@ try {
   }
   if (id === 'S19' && variant === 'empty')
     await page.locator('.reference-voice-empty-stage').waitFor();
-  if (id === 'S19' && variant === 'ptt')
-    await page.getByText('Bas konuş açık · Ctrl + Shift + Space').waitFor();
+  if (id === 'S19' && variant === 'ptt') await page.getByText(/^Bas konuş açık · /).waitFor();
   if (id === 'S20' && variant === 'focus')
     await page.locator('.reference-participant-grid.focus-grid').waitFor();
   if (id === 'S22') {
