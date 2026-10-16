@@ -784,6 +784,49 @@ export async function setupCommunity(
   handle('rooms:social-discard-attachment', (fileId) => {
     uploadedAttachments.delete(id.parse(fileId));
   });
+  function attachmentMime(name: string) {
+    const types: Record<string, string> = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.webp': 'image/webp',
+      '.gif': 'image/gif',
+      '.mp4': 'video/mp4',
+      '.webm': 'video/webm',
+      '.mp3': 'audio/mpeg',
+      '.wav': 'audio/wav',
+      '.ogg': 'audio/ogg',
+      '.pdf': 'application/pdf',
+      '.txt': 'text/plain',
+      '.md': 'text/markdown',
+      '.json': 'application/json',
+      '.zip': 'application/zip',
+    };
+    const mime = types[extname(name).toLowerCase()];
+    if (!mime) throw new SocialInputError('This attachment file type is not supported.');
+    if (uploadedAttachments.size >= 20)
+      throw new SocialInputError(
+        'Send or discard selected attachments before uploading more files.',
+      );
+    return mime;
+  }
+  async function stageAttachment(
+    current: StoatClient,
+    channel: string,
+    bytes: Uint8Array,
+    name: string,
+  ) {
+    const result = await current.uploadAttachment(bytes, name, attachmentMime(name));
+    if (current !== client)
+      throw new SocialInputError('The conversation session changed. Select the attachment again.');
+    uploadedAttachments.set(result.id, {
+      channelId: channel,
+      name: result.name,
+      size: result.size,
+      mime: result.mime,
+    });
+    return result;
+  }
   handle('rooms:social-choose-attachment', async (channelId) => {
     const channel = id.parse(channelId);
     const current = requireClient();
@@ -821,29 +864,7 @@ export async function setupCommunity(
     const fileStat = statSync(path);
     if (!fileStat.isFile() || !fileStat.size || fileStat.size > 25 * 1024 * 1024)
       throw new SocialInputError('Select a nonempty attachment up to 25 MB.');
-    const types: Record<string, string> = {
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.webp': 'image/webp',
-      '.gif': 'image/gif',
-      '.mp4': 'video/mp4',
-      '.webm': 'video/webm',
-      '.mp3': 'audio/mpeg',
-      '.wav': 'audio/wav',
-      '.ogg': 'audio/ogg',
-      '.pdf': 'application/pdf',
-      '.txt': 'text/plain',
-      '.md': 'text/markdown',
-      '.json': 'application/json',
-      '.zip': 'application/zip',
-    };
-    const mime = types[extname(path).toLowerCase()];
-    if (!mime) throw new SocialInputError('This attachment file type is not supported.');
-    if (uploadedAttachments.size >= 20)
-      throw new SocialInputError(
-        'Send or discard selected attachments before uploading more files.',
-      );
+    attachmentMime(basename(path));
     const descriptor = openSync(path, 'r');
     let bytes: Uint8Array;
     try {
@@ -863,16 +884,22 @@ export async function setupCommunity(
     } finally {
       closeSync(descriptor);
     }
-    const result = await current.uploadAttachment(bytes, basename(path), mime);
-    if (current !== client)
-      throw new SocialInputError('The conversation session changed. Select the attachment again.');
-    uploadedAttachments.set(result.id, {
-      channelId: channel,
-      name: result.name,
-      size: result.size,
-      mime: result.mime,
-    });
-    return result;
+    return stageAttachment(current, channel, bytes, basename(path));
+  });
+  // Files dragged or pasted into the composer arrive as bytes; the renderer never learns a path.
+  handle('rooms:social-drop-attachment', async (channelId, fileName, data) => {
+    const channel = id.parse(channelId);
+    const name = z
+      .string()
+      .min(1)
+      .max(255)
+      .refine((value) => !/[\\/\0]/.test(value))
+      .parse(fileName);
+    if (!(data instanceof Uint8Array) || !data.byteLength || data.byteLength > 25 * 1024 * 1024)
+      throw new SocialInputError('Select a nonempty attachment up to 25 MB.');
+    const current = requireClient();
+    await current.getChannel(channel);
+    return stageAttachment(current, channel, new Uint8Array(data), name);
   });
   handle('rooms:social-edit', (channelId, messageId, text) =>
     requireClient().editMessage(id.parse(channelId), id.parse(messageId), content.parse(text)),

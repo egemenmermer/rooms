@@ -333,6 +333,62 @@
   padding: 7px 0 10px;
   flex-shrink: 0;
 }
+.reference-chat .composer-editing {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+  padding: 5px 6px 5px 10px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--color-action-primary) 14%, transparent);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-metadata);
+  line-height: var(--line-height-metadata);
+}
+.reference-chat .composer-editing > svg {
+  color: var(--color-action-primary);
+  flex-shrink: 0;
+}
+.reference-chat .composer-editing > span:first-of-type {
+  flex: 1;
+  min-width: 0;
+}
+.reference-chat .composer-editing-error {
+  color: var(--color-status-error);
+}
+.reference-chat .composer-editing > button {
+  border: 0;
+  border-radius: 6px;
+  padding: 3px 9px;
+  background: var(--color-background-hover);
+  color: var(--color-text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+.reference-chat .message-link {
+  color: var(--color-action-focus);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+.reference-chat.is-dropping {
+  position: relative;
+}
+.reference-chat.is-dropping::after {
+  content: 'Dosyaları buraya bırak';
+  position: absolute;
+  inset: 12px;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--color-action-primary);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-background-canvas) 82%, transparent);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-ui);
+  font-weight: var(--font-weight-semibold);
+  pointer-events: none;
+  z-index: 20;
+}
 .reference-chat .chat-composer {
   display: flex;
   align-items: center;

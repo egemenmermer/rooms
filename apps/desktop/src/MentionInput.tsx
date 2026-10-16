@@ -3,7 +3,12 @@ import { useQuery } from '@tanstack/react-query';
 import type { SocialUser } from '@rooms/social';
 import { useCommunity } from './community';
 import { queryClient } from './query-client';
-import { editMentionBindings, serializeMentions, type MentionBinding } from './mentions';
+import {
+  deserializeMentions,
+  editMentionBindings,
+  serializeMentions,
+  type MentionBinding,
+} from './mentions';
 export function useMentionInput(value: string, setValue: (value: string) => void) {
   const c = useCommunity(),
     input = useRef<HTMLTextAreaElement>(null),
@@ -134,7 +139,28 @@ export function useMentionInput(value: string, setValue: (value: string) => void
       )}
     </div>
   ) : null;
+  const nameOf = (id: string) =>
+    [
+      ...(members.data?.map((m) => m.user) ?? []),
+      ...(channel?.recipients ?? []),
+      ...c.messages.map((m) => m.author),
+      ...(c.user ? [c.user] : []),
+    ].find((p) => p.id === id)?.displayName;
+  /** Replaces the draft with existing message text, keeping its mentions bound. */
+  const load = (text: string) => {
+    const loaded = deserializeMentions(text, nameOf);
+    bindings.current = loaded.bindings;
+    previous.current = loaded.text;
+    setValue(loaded.text);
+    setCaret(loaded.text.length);
+    setDismissed(`${loaded.text}:${loaded.text.length}`);
+    requestAnimationFrame(() => {
+      input.current?.focus();
+      input.current?.setSelectionRange(loaded.text.length, loaded.text.length);
+    });
+  };
   return {
+    load,
     name: (id: string) => members.data?.find((m) => m.user.id === id)?.user.displayName,
     input,
     menuId: pickerId,

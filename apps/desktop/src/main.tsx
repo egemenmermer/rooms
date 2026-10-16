@@ -10,6 +10,11 @@ import './reference-shell.css';
 import './interaction-quality.css';
 import { installInputModality } from './input-modality';
 import { queryClient as client } from './query-client';
+// A file dropped outside a drop target must never navigate the app window to that file.
+for (const type of ['dragover', 'drop'] as const)
+  window.addEventListener(type, (event) => {
+    if (event.dataTransfer?.types.includes('Files')) event.preventDefault();
+  });
 class Boundary extends React.Component<
   {
     children: React.ReactNode;

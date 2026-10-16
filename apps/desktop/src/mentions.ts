@@ -31,3 +31,25 @@ export function serializeMentions(text: string, bindings: MentionBinding[]) {
       text = text.slice(0, b.start) + `<@${b.userId}>` + text.slice(b.end);
   return text;
 }
+/** Turns canonical `<@id>` mentions back into readable labels bound to the same identities. */
+export function deserializeMentions(text: string, nameOf: (userId: string) => string | undefined) {
+  const bindings: MentionBinding[] = [];
+  let output = '';
+  let last = 0;
+  for (const match of text.matchAll(/<@([A-Za-z0-9_-]{1,128})>/g)) {
+    const name = nameOf(match[1])?.replace(/\s+/g, ' ').trim().slice(0, 80);
+    output += text.slice(last, match.index);
+    if (name) {
+      const label = `@${name}`;
+      bindings.push({
+        start: output.length,
+        end: output.length + label.length,
+        text: label,
+        userId: match[1],
+      });
+      output += label;
+    } else output += match[0];
+    last = match.index + match[0].length;
+  }
+  return { text: output + text.slice(last), bindings };
+}
