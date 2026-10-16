@@ -97,7 +97,6 @@ const Settings = lazy(() => import('./Settings'));
 const AgentWorkspace = lazy(() => import('./Agent'));
 const Together = lazy(() => import('./Together'));
 const Games = lazy(() => import('./Games'));
-const YouTube = lazy(() => import('./YouTube'));
 export type Overlay =
   | 'launcher'
   | 'command'
@@ -808,10 +807,15 @@ export default function App() {
                   <Route
                     path="/youtube"
                     element={
-                      localFixture ? <YouTube /> : <MusicDJEntry returnTo={lastNonDJPath.current} />
+                      localFixture ? (
+                        <Navigate to="/cinema" replace />
+                      ) : (
+                        <MusicDJEntry returnTo={lastNonDJPath.current} />
+                      )
                     }
                   />
-                  <Route path="/watch/youtube" element={<YouTube />} />
+                  {/* The cinema room replaced the separate YouTube page; keep old links working. */}
+                  <Route path="/watch/youtube" element={<Navigate to="/cinema" replace />} />
                   <Route path="*" element={<Navigate to="/home" replace />} />
                 </Routes>
               </Suspense>

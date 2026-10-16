@@ -152,7 +152,8 @@ const bridge: DesktopBridge = {
   activity: {
     exportBoard: (roomId, format) => ipcRenderer.invoke('rooms:export-board', roomId, format),
     youtubePlaylist: (playlistId) => ipcRenderer.invoke('rooms:youtube-playlist', playlistId),
-    youtubePlayer: (videoId) => ipcRenderer.invoke('rooms:youtube-player', videoId),
+    youtubeDetails: (videoId) => ipcRenderer.invoke('rooms:youtube-details', videoId),
+    youtubePlayer: (videoId, chrome) => ipcRenderer.invoke('rooms:youtube-player', videoId, chrome),
     snapshot: (roomId, afterRevision) =>
       ipcRenderer.invoke('rooms:activity-snapshot', roomId, afterRevision),
     command: (roomId, envelope) => ipcRenderer.invoke('rooms:activity-command', roomId, envelope),

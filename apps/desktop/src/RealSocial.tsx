@@ -260,7 +260,7 @@ export function CommunityChat({
   }, []);
   const activityPath =
     primary?.activity === 'youtube'
-      ? '/watch/youtube'
+      ? '/cinema'
       : primary?.activity === 'screen'
         ? '/voice'
         : primary?.activity === 'cinema'
