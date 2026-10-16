@@ -178,7 +178,8 @@ export function Kiraathane({
       {otherActivity && !game && (
         <div className="kh-note">
           <Info size={15} />
-          Odada {otherActivity} açık. Masa açarsan o etkinlik kapanır; sesli sohbet devam eder.
+          Odada {otherActivity} açık. Masa açınca o etkinlik herkes için kapanır; bunu etkinliğin
+          hostu yapabilir.
         </div>
       )}
       <div className="kh-grid">

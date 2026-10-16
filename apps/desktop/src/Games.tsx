@@ -41,6 +41,7 @@ import type {
   GamePublicState,
   HoldemTableRules,
 } from '../../../packages/activity-protocol/src';
+import { endsActivity } from '../../../packages/activity-protocol/src';
 import type { GamesFixtureMetadata } from './dev/games-fixture';
 type GameKind = GamePublicState['kind'];
 type Card = {
@@ -318,7 +319,10 @@ function ReferenceGames({
     useState<Extract<ActivityCommand, { type: 'game.create' }>['replacePrimary']>();
   const currentPrimary = activity.room?.primary;
   const ownParticipant = activity.room?.participants.find((person) => person.userId === c.user?.id);
-  const canReplace = ownParticipant?.canCreate === true && ownParticipant.canControl;
+  const canReplace =
+    ownParticipant?.canCreate === true &&
+    ownParticipant.canControl &&
+    endsActivity(currentPrimary ?? null, c.user?.id, true);
   const replacementMatches =
     !!replaceConsent &&
     !!currentPrimary &&
@@ -602,7 +606,7 @@ function ReferenceGames({
             : !ready
               ? 'Etkinlik bağlantısı gerekli'
               : currentPrimary && !canReplace
-                ? 'Odada açık bir etkinlik var; değiştirmek için başlatma ve kontrol yetkisi gerekli.'
+                ? 'Açık etkinliği yalnızca hostu kapatabilir. Kapatıldığında masa açabilirsin.'
                 : ''
         }
         consent={
@@ -1581,7 +1585,7 @@ function ReferenceGames({
                   </span>
                 </label>
                 {!canReplace && (
-                  <p>Etkinliği değiştirmek için başlatma ve kontrol yetkisi gerekli.</p>
+                  <p>Açık etkinliği yalnızca hostu kapatabilir. Kapatıldığında masa açabilirsin.</p>
                 )}
                 <p>Ses bağlantısı devam eder. Mevcut kuyruk korunur.</p>
               </div>

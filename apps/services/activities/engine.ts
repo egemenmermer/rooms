@@ -494,6 +494,8 @@ export function applyCommand(
       if (!identity.canCreate) fail(403, 'ACTIVITY_CREATE_DENIED');
       if (command.replacePrimary) {
         control();
+        // Replacing a shared player ends it for everyone, which is the host's call.
+        if (!endsActivity(state.primary, identity.userId, true)) fail(403, 'SESSION_HOST_REQUIRED');
         if (
           !state.primary ||
           state.primary.activity !== command.replacePrimary.activity ||

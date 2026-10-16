@@ -211,3 +211,16 @@ describe('cinema link helpers', () => {
     expect(progress.watched.map((item) => item.id)).toEqual(['a']);
   });
 });
+
+describe('tables over a shared player', () => {
+  it('lets only the shared player’s host replace it with a game table', () => {
+    const { send, state } = setup();
+    const replacePrimary = { activity: 'youtube' as const, startedAt: state.primary!.startedAt };
+    expect(() => send('ece', { type: 'game.create', game: 'blackjack', replacePrimary })).toThrow(
+      'SESSION_HOST_REQUIRED',
+    );
+    expect(state.primary?.activity).toBe('youtube');
+    send('host', { type: 'game.create', game: 'blackjack', replacePrimary });
+    expect(state.primary).toMatchObject({ activity: 'blackjack', title: 'Blackjack' });
+  });
+});
