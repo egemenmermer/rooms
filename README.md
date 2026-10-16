@@ -58,7 +58,7 @@ ROOMS, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında 
 
 ## İndir ve topluluğa katıl
 
-Güncel paketler [GitHub sürümleri](https://github.com/egemenmermer/rooms/releases/latest) sayfasındadır. Son yayımlanan arkadaş test sürümü **RC12**:
+Güncel paketler [GitHub sürümleri](https://github.com/egemenmermer/rooms/releases/latest) sayfasındadır. Son yayımlanan arkadaş test sürümü **RC14**:
 
 | Platform | Paket | Durum |
 | --- | --- | --- |
@@ -190,7 +190,7 @@ Açık istemcide özgün bir statik DJ çizimi bulunur. Her topluluk kendi adın
 
 ## Belgeler
 
-[Tüm belgeler ve okuma sırası](docs/README.md) · [RC12 yayın ve doğrulama kaydı](docs/RC12_RELEASE.md)
+[Tüm belgeler ve okuma sırası](docs/README.md) · [RC14 yayın ve doğrulama kaydı](docs/RC14_RELEASE.md)
 
 | Rehber | İçeriği |
 | --- | --- |
