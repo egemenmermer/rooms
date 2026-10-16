@@ -2,6 +2,7 @@ import { restBucket, resetDelay } from './rate-limit';
 import type { ConnectionStatus } from '@rooms/contracts';
 import {
   SOCIAL_ID_PATTERN,
+  SOCIAL_REACTION_PATTERN,
   type SocialCommunityRoleChange,
   type SocialCommunityRoleResult,
   type SocialRolePermissionValues,
@@ -1166,9 +1167,9 @@ export class StoatClient {
     return this.currentUser;
   }
   async react(channelId: string, messageId: string, emoji: string, remove = false) {
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(emoji)) throw new StoatError(400, 'INVALID_EMOJI');
+    if (!SOCIAL_REACTION_PATTERN.test(emoji)) throw new StoatError(400, 'INVALID_EMOJI');
     await this.request(
-      `/channels/${checked(channelId)}/messages/${checked(messageId)}/reactions/${checked(emoji)}`,
+      `/channels/${checked(channelId)}/messages/${checked(messageId)}/reactions/${encodeURIComponent(emoji)}`,
       remove ? 'DELETE' : 'PUT',
     );
     const message = await this.request<Raw>(
@@ -1213,7 +1214,12 @@ export class StoatClient {
   }
   async listChannels(spaceId: string) {
     const epoch = this.aclEpoch,
-      raw = await this.getServer(spaceId);
+      // Upstream allows five server-bucket calls per ten seconds and every social refresh lists
+      // channels, so re-reading the server here starves channel writes. While the gateway is
+      // connected, Ready/ServerUpdate keep the channel order current; each channel is still
+      // fetched below, which is where access is enforced.
+      cached = this.status === 'connected' ? this.servers.get(checked(spaceId)) : undefined,
+      raw = Array.isArray(cached?.channels) ? cached : await this.getServer(spaceId);
     const channels = await Promise.all(
       (raw.channels ?? []).map(async (id: string) => {
         try {
@@ -1236,6 +1242,10 @@ export class StoatClient {
       ...(type === 'voice' ? { voice: {} } : {}),
     });
     this.channels.set(raw._id, raw);
+    // The gateway's ServerUpdate may arrive after the caller's refresh.
+    const server = this.servers.get(spaceId);
+    if (Array.isArray(server?.channels) && !server.channels.includes(raw._id))
+      this.servers.set(spaceId, { ...server, channels: [...server.channels, raw._id] });
     return this.normalizeChannel(raw);
   }
   async renameChannel(channelId: string, name: string) {
@@ -1245,6 +1255,13 @@ export class StoatClient {
   }
   async deleteChannel(channelId: string) {
     await this.request(`/channels/${checked(channelId)}`, 'DELETE');
+    const spaceId = this.channels.get(channelId)?.server,
+      server = typeof spaceId === 'string' ? this.servers.get(spaceId) : undefined;
+    if (Array.isArray(server?.channels))
+      this.servers.set(spaceId, {
+        ...server,
+        channels: server.channels.filter((id: string) => id !== channelId),
+      });
     this.channels.delete(channelId);
   }
   async getServer(spaceId: string) {
@@ -2298,7 +2315,23 @@ export class StoatClient {
       typeof memberUser === 'string' &&
       typeof this.currentUser?.id === 'string' &&
       memberUser !== this.currentUser.id;
-    if (otherMember) ++this.managementEpoch;
+    // Channel create/delete sends ServerUpdate { channels }; like presentation fields, the
+    // channel list does not change this user's access to existing channels.
+    const serverPresentation =
+      p.type === 'ServerUpdate' &&
+      [...Object.keys(p.data ?? {}), ...(Array.isArray(p.clear) ? p.clear : [])].every((key) =>
+        [
+          'channels',
+          'name',
+          'description',
+          'icon',
+          'banner',
+          'Description',
+          'Icon',
+          'Banner',
+        ].includes(key),
+      );
+    if (otherMember || serverPresentation) ++this.managementEpoch;
     else if (
       [
         'ServerUpdate',

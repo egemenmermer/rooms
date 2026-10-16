@@ -61,6 +61,7 @@ import { z } from 'zod';
 import { StoatClient, StoatError } from '@rooms/stoat';
 import {
   SOCIAL_ID_PATTERN,
+  SOCIAL_REACTION_PATTERN,
   SOCIAL_ROLE_PERMISSION_KEYS,
   type SocialUser,
   type GatewayEvent,
@@ -868,10 +869,7 @@ export async function setupCommunity(
     requireClient().react(
       id.parse(channelId),
       id.parse(messageId),
-      z
-        .string()
-        .regex(/^[A-Za-z0-9_-]{1,128}$/)
-        .parse(emoji),
+      z.string().regex(SOCIAL_REACTION_PATTERN).parse(emoji),
       remove === undefined ? false : z.boolean().parse(remove),
     ),
   );

@@ -3,31 +3,13 @@ import type { RoomsClient } from '../support/client';
 import { VoiceView } from '../support/pages/voice';
 import { createChannel, uniqueText } from '../support/seed';
 
-// The first snapshot of a room at revision 0 is a 20 s long-poll (see the known-defect test).
-const firstLoad = { timeout: 40000 };
+// First loads are immediate; this only absorbs Electron and upstream jitter.
+const firstLoad = { timeout: 10000 };
 
 async function openPolls(client: RoomsClient, room: string) {
   await new VoiceView(client).join(room);
   await client.goto('/together');
   await expect(client.page.getByRole('heading', { name: 'Oda anketi' })).toBeVisible();
-}
-
-/**
- * Workaround for a known defect (see the `test.fail` below): the poll button requires an
- * activity participant, but the client only joins when it sends its first command. This
- * sends the same `join` envelope the client itself would send, through the preload bridge.
- */
-async function joinActivityRoom(client: RoomsClient, roomId: string) {
-  await client.page.evaluate(async (id) => {
-    const bridge = (window as any).rooms.activity;
-    const snapshot = await bridge.snapshot(id);
-    await bridge.command(id, {
-      protocolVersion: 1,
-      commandId: crypto.randomUUID(),
-      expectedRevision: snapshot.room.revision,
-      command: { type: 'join' },
-    });
-  }, roomId);
 }
 
 test.describe('shared room activities', () => {
@@ -48,7 +30,6 @@ test.describe('shared room activities', () => {
     await openPolls(guest, room.name);
 
     const question = `Akşam ne yapalım ${run.runId}?`;
-    await joinActivityRoom(owner, room.id);
     await owner.page.getByRole('button', { name: 'Yeni anket' }).first().click(firstLoad);
     const form = owner.page.getByRole('dialog');
     await form.getByLabel('Soru').fill(question);
@@ -66,10 +47,8 @@ test.describe('shared room activities', () => {
   });
 
   test('the activity view of a new room loads promptly', async ({ owner, run }) => {
-    // Known defect found by this suite: the first observe() call long-polls with
-    // afterRevision=0, so a never-used room (revision 0) waits the full waitMs=20000
-    // before anything renders. Remove `test.fail` once the first load is immediate.
-    test.fail(true, 'First activity snapshot of a revision-0 room waits 20 s.');
+    // Regression: the first observe() call used to long-poll with afterRevision=0, so a
+    // never-used room (revision 0) showed "Oda getiriliyor…" for the full 20 s window.
     const room = await createChannel(
       run.owner,
       run.space.id,
@@ -82,12 +61,9 @@ test.describe('shared room activities', () => {
   });
 
   test('a member can start a poll in a fresh voice room', async ({ owner, run }) => {
-    // Known defect found by this suite: "Yeni anket" stays disabled with "Bu odada anket
-    // oluşturma yetkin yok." because createReason needs an activity participant, the client
-    // only joins inside send(), and the service drops participants after 30 s idle. Nobody,
-    // not even the owner, can open the poll form in a fresh or idle room.
-    test.fail(true, 'Poll creation requires a prior activity join that the UI never sends.');
-    test.setTimeout(90000);
+    // Regression: "Yeni anket" used to require an existing activity participant record, but the
+    // client joins only inside send() and the service prunes participants idle for 30 s, so
+    // nobody (not even the owner) could open the poll form in a fresh or idle room.
     const room = await createChannel(
       run.owner,
       run.space.id,

@@ -101,9 +101,11 @@ function refreshEntry(entry: Entry, immediate = false): Promise<void> {
     try {
       accept(
         entry,
+        // Without a known revision there is nothing to wait for: a never-used room is at
+        // revision 0, so `afterRevision=0` would hold the first load for the whole long poll.
         await activityBridge().snapshot(
           entry.roomId,
-          immediate ? undefined : (entry.view.room?.revision ?? 0),
+          immediate || !entry.view.room ? undefined : entry.view.room.revision,
         ),
         generation,
       );

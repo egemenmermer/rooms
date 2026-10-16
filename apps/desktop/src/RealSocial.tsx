@@ -32,6 +32,7 @@ import {
 } from 'react';
 import { useRooms } from './store';
 import { PushToTalkNotice } from './PushToTalk';
+import { reactionCodepoints, reactionEmoji } from './reactions';
 import { useActivityRoom } from './activity';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -219,10 +220,11 @@ export function CommunityChat({
     }
   };
   const hasFiles = (event: ReactDragEvent) => event.dataTransfer.types.includes('Files');
-  const react = async (message: CommunityMessage, emoji = '1f44d') => {
+  const react = async (message: CommunityMessage, key: string) => {
     if (!c.activeChannelId || !window.rooms) return;
     try {
-      await c.reactMessage(message.id, emoji);
+      // Stoat only accepts the emoji itself, never a codepoint id such as `2764`.
+      await c.reactMessage(message.id, reactionEmoji(key));
     } catch (error) {
       notify(uiError(error));
     }
@@ -517,30 +519,29 @@ export function CommunityChat({
         .toLocaleLowerCase('tr')
         .includes(query.toLocaleLowerCase('tr')),
   );
+  // `id` is the codepoint key used for display; `emoji` is what the picker sends upstream.
   const reactionOptions = [
-    { id: '2764', label: 'Kalp', icon: Heart },
-    { id: '2714', label: 'Onay', icon: Check },
-    { id: '2b50', label: 'Yıldız', icon: Star },
-    { id: '1f642', label: 'Gülümseme', icon: Smile },
-    { id: '1f3ae', label: 'Oyun', icon: Gamepad2 },
-    { id: '1f3ac', label: 'Film', icon: Film },
+    { id: '2764', emoji: '\u2764\ufe0f', label: 'Kalp', icon: Heart },
+    { id: '2714', emoji: '\u2714\ufe0f', label: 'Onay', icon: Check },
+    { id: '2b50', emoji: '\u2b50', label: 'Yıldız', icon: Star },
+    { id: '1f642', emoji: '\u{1f642}', label: 'Gülümseme', icon: Smile },
+    { id: '1f3ae', emoji: '\u{1f3ae}', label: 'Oyun', icon: Gamepad2 },
+    { id: '1f3ac', emoji: '\u{1f3ac}', label: 'Film', icon: Film },
   ];
-  const reactionIcon = (key: string) =>
-    (
-      ({
-        heart: Heart,
-        '2764': Heart,
-        '2764-fe0f': Heart,
-        check: Check,
-        '2714': Check,
-        '2714-fe0f': Check,
-        '1f44d': ThumbsUp,
-        '2b50': Star,
-        '1f642': Smile,
-        '1f3ae': Gamepad2,
-        '1f3ac': Film,
-      }) as Record<string, typeof Heart>
-    )[key];
+  // Named reactions that other clients or older keys may use but the picker does not offer.
+  const otherReactions: Record<string, { label: string; icon: typeof Heart }> = {
+    heart: { label: 'Kalp', icon: Heart },
+    check: { label: 'Onay', icon: Check },
+    '1f44d': { label: 'Beğeni', icon: ThumbsUp },
+  };
+  const reactionOption = (key: string) => {
+    const id = reactionCodepoints(key);
+    return reactionOptions.find((item) => item.id === id) ?? otherReactions[id];
+  };
+  const reactionOrder = (key: string) => {
+    const index = reactionOptions.findIndex((item) => item.id === reactionCodepoints(key));
+    return index < 0 ? 99 : index;
+  };
   const messageText = (value: string) =>
     value
       .split(/(https?:\/\/[^\s<>]+|<@[A-Za-z0-9_-]{1,128}>|@[\p{L}\p{N}_-]+)/u)
@@ -824,41 +825,22 @@ export function CommunityChat({
                   <div className="message-reactions">
                     {Object.entries(m.reactions ?? {})
                       .filter(([, people]) => people.length)
-                      .sort(
-                        ([left], [right]) =>
-                          (reactionOptions.findIndex((item) => item.id === left) < 0
-                            ? 99
-                            : reactionOptions.findIndex((item) => item.id === left)) -
-                          (reactionOptions.findIndex((item) => item.id === right) < 0
-                            ? 99
-                            : reactionOptions.findIndex((item) => item.id === right)),
-                      )
+                      .sort(([left], [right]) => reactionOrder(left) - reactionOrder(right))
                       .map(([emoji, people]) => {
-                        const Reaction = reactionIcon(emoji);
+                        const option = reactionOption(emoji),
+                          Reaction = option?.icon;
                         return (
                           <button
                             key={emoji}
                             className={`message-reaction ${people.includes(c.user?.id ?? '') ? 'selected' : ''}`}
-                            aria-label={`${emoji} reaksiyonu · ${people.length}`}
+                            aria-label={`${option?.label ?? reactionEmoji(emoji)} reaksiyonu · ${people.length}`}
                             aria-pressed={people.includes(c.user?.id ?? '')}
                             onClick={() => void react(m, emoji)}
                           >
                             {Reaction ? (
                               <Reaction size={14} />
                             ) : (
-                              <span>
-                                {/^[a-f0-9]+(?:-[a-f0-9]+)*$/i.test(emoji)
-                                  ? (() => {
-                                      try {
-                                        return String.fromCodePoint(
-                                          ...emoji.split('-').map((x) => parseInt(x, 16)),
-                                        );
-                                      } catch {
-                                        return emoji;
-                                      }
-                                    })()
-                                  : emoji}
-                              </span>
+                              <span>{reactionEmoji(emoji)}</span>
                             )}
                             {people.length}
                           </button>
@@ -1387,7 +1369,7 @@ export function CommunityChat({
                 key={option.id}
                 aria-label={`${option.label} reaksiyonunu ekle`}
                 onClick={() => {
-                  void react(reactionTarget, option.id);
+                  void react(reactionTarget, option.emoji);
                   closeReactions();
                 }}
               >

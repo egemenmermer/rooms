@@ -71,8 +71,8 @@ export class ChatView {
       .click();
   }
 
-  /** Reaction chip on a message, e.g. `2764` (heart) with its count. */
-  reaction(text: string, emojiId: string, count: number) {
-    return this.message(text).getByRole('button', { name: `${emojiId} reaksiyonu · ${count}` });
+  /** Reaction chip on a message by picker name (e.g. "Kalp") or emoji, with its count. */
+  reaction(text: string, label: string, count: number) {
+    return this.message(text).getByRole('button', { name: `${label} reaksiyonu · ${count}` });
   }
 }

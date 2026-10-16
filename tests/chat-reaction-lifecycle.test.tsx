@@ -78,7 +78,7 @@ it('does not replace the next account conversation with a delayed reaction histo
       <CommunityChat notify={vi.fn()} />
     </MemoryRouter>,
   );
-  fireEvent.click(screen.getByRole('button', { name: '1f44d reaksiyonu · 1' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Beğeni reaksiyonu · 1' }));
   await waitFor(() => expect(messages).toHaveBeenCalledTimes(1));
   await act(async () => {
     useCommunity.setState({
@@ -104,7 +104,7 @@ it('keeps gateway messages received during reaction refresh', async () => {
       <CommunityChat notify={vi.fn()} />
     </MemoryRouter>,
   );
-  fireEvent.click(screen.getByRole('button', { name: '1f44d reaksiyonu · 1' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Beğeni reaksiyonu · 1' }));
   await waitFor(() => expect(messages).toHaveBeenCalledTimes(1));
   await act(async () => {
     useCommunity.setState({

@@ -82,3 +82,48 @@ it('keeps a channel when one message is gone but hides it when the channel is un
     expect(events.some((e) => e.type === 'CHANNEL_ACCESS_INVALIDATED')).toBe(hidden);
   }
 });
+it('does not recheck channel access when a server only changes its channel list or presentation', async () => {
+  // Creating or deleting a channel sends ServerUpdate { channels }. Rechecking every channel then
+  // spends the 5/10 s server bucket that the next channel write needs.
+  for (const packet of [
+    { data: { channels: ['channel', 'created'] } },
+    { data: { name: 'Yeni ad' } },
+    { data: { description: 'Arkadaşlar' }, clear: ['Description'] },
+    { data: {}, clear: ['Icon', 'Banner'] },
+  ]) {
+    const client = new StoatClient('http://localhost', 'fixture');
+    const events: any[] = [];
+    client.subscribe((e) => events.push(e));
+    const internal = client as any;
+    internal.channels.set('channel', {
+      _id: 'channel',
+      server: 'space',
+      channel_type: 'TextChannel',
+    });
+    const epoch = internal.managementEpoch;
+    await internal.processPacket({ type: 'ServerUpdate', id: 'space', ...packet });
+    expect(events.filter((e) => e.type === 'CHANNEL_ACCESS_INVALIDATED')).toEqual([]);
+    expect(internal.managementEpoch).toBe(epoch + 1);
+  }
+});
+it('still rechecks channel access for server authority changes and unknown fields', async () => {
+  for (const packet of [
+    { data: { default_permissions: 0 } },
+    { data: { owner: 'someone' } },
+    { data: { channels: ['channel'], roles: {} } },
+    { data: { new_authority_field: true } },
+    { data: {}, clear: ['DefaultPermissions'] },
+  ]) {
+    const client = new StoatClient('http://localhost', 'fixture');
+    const events: any[] = [];
+    client.subscribe((e) => events.push(e));
+    const internal = client as any;
+    internal.channels.set('channel', {
+      _id: 'channel',
+      server: 'space',
+      channel_type: 'TextChannel',
+    });
+    await internal.processPacket({ type: 'ServerUpdate', id: 'space', ...packet });
+    expect(events.some((e) => e.type === 'CHANNEL_ACCESS_INVALIDATED')).toBe(true);
+  }
+});
