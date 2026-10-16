@@ -4,6 +4,7 @@
 
 ## İçindekiler
 
+- [Hızlı kurulum (tek komut)](#hızlı-kurulum-tek-komut)
 - [Neyi çalıştırıyorsun?](#neyi-çalıştırıyorsun)
 - [Gereksinimler](#gereksinimler)
 - [1. Kaynak kodu al](#1-kaynak-kodu-al)
@@ -18,7 +19,77 @@
 - [Operasyon kontrolleri](#operasyon-kontrolleri)
 - [Başkalarını davet etmeden önce](#başkalarını-davet-etmeden-önce)
 
+## Hızlı kurulum (tek komut)
+
+Kendi arkadaş grubun için ROOMS sunucusunu yaklaşık 15 dakikada kurabilirsin. Sohbet, ses, ekran paylaşımı ve ortak etkinlikler bu kurulumla gelir; müzik (DJ), Agent ve sunucu yönetim paneli isteğe bağlıdır ve dahil değildir.
+
+### Gerekenler
+
+| Gereken | Not |
+| --- | --- |
+| Linux sunucu (VPS) | Ubuntu 22.04/24.04 veya Debian 12, **en az 2 GB RAM (4 GB önerilir)**, 2 vCPU, 20 GB disk. x86_64 ve ARM64 desteklenir. |
+| Alan adı | Örnek: `sohbet.ornek.com`. Alan adın yoksa [DuckDNS](https://www.duckdns.org) üzerinden ücretsiz bir ad alabilirsin (`arkadaslar.duckdns.org`). |
+| Açık portlar | `80/tcp`, `443/tcp` (HTTPS) ve `7881/tcp`, `7882/udp` (ses/görüntü). Sağlayıcının güvenlik duvarında bunları aç. |
+
+Evdeki bilgisayarda da çalışır, ancak modemde bu portları yönlendirmen ve sabit bir genel IP'ye sahip olman gerekir. Başlamak için kiralık bir VPS daha kolaydır.
+
+### 1. Alan adını sunucuya yönlendir
+
+Alan adının **A kaydını** sunucunun genel IPv4 adresine ayarla. DuckDNS kullanıyorsan bu adımı kurulum betiği senin için yapar; yalnızca alt adını ve DuckDNS token'ını hazır tut.
+
+### 2. Kurulum komutunu çalıştır
+
+Sunucuya SSH ile bağlan ve şunu çalıştır:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/egemenmermer/rooms/main/deploy/install.sh | sudo bash
+```
+
+Betik sırasıyla şunları yapar:
+
+1. Docker yoksa kurar ve ROOMS'u `/opt/rooms` altına indirir.
+2. Alan adını ve sertifika e-postasını sorar; tüm parolaları ve anahtarları sunucuda rastgele üretir.
+3. Servisleri başlatır. HTTPS sertifikası Let's Encrypt'ten otomatik alınır ve yenilenir.
+4. **Topluluk sahibi** hesabını (e-posta, kullanıcı adı, parola) ve ilk topluluğu, ses kanalıyla birlikte oluşturur.
+5. Tek kullanımlık ilk davet bağlantını yazdırır.
+
+### 3. Uygulamadan bağlan
+
+1. [ROOMS uygulamasını indir](https://github.com/egemenmermer/rooms/releases/latest) ve aç.
+2. Sunucu adresi olarak `https://alan-adin` gir ve sahip hesabınla giriş yap.
+3. Arkadaşlarını uygulamanın içinden davet et veya sunucuda yeni bağlantı üret:
+
+```sh
+sudo rooms invite              # bir bağlantı
+sudo rooms invite --count=5    # beş bağlantı, her biri tek kullanımlık ve 7 gün geçerli
+```
+
+Bağlantı `rooms://invite?...` biçimindedir. Arkadaşın uygulamayı kurduktan sonra bağlantıyı açınca ROOMS kayıt ekranına gider. Bağlantı açılmazsa uygulamada sunucu adresini girip davet kodunu yapıştırabilir.
+
+### Günlük yönetim
+
+| Komut | Ne yapar? |
+| --- | --- |
+| `sudo rooms status` | Servisleri ve sunucunun dışarıdan erişilebilir olup olmadığını gösterir |
+| `sudo rooms invite` | Yeni tek kullanımlık davet bağlantısı üretir |
+| `sudo rooms logs [servis]` | Günlükleri izler (örnek: `rooms logs access`) |
+| `sudo rooms backup` | Veritabanı, dosyalar ve yapılandırmanın yedeğini `/opt/rooms/deploy/backups` altına alır |
+| `sudo rooms update` | Önce yedek alır, sonra en son sürüme günceller |
+| `sudo rooms restart` / `stop` | Servisleri yeniden başlatır / durdurur (veriler korunur) |
+
+Yedek dosyası parolaları ve mesajları içerir. Onu sunucunun dışında güvenli bir yere kopyala ve ara sıra geri yüklemeyi dene.
+
+### Sorun çıkarsa
+
+- **Sertifika alınamıyor:** Alan adının A kaydı sunucu IP'sini göstermeli ve 80/443 portları açık olmalı. Düzelttikten sonra `sudo rooms restart` çalıştır.
+- **Mesajlar çalışıyor, ses bağlanmıyor:** `7881/tcp` ve `7882/udp` portlarını sağlayıcının güvenlik duvarında aç. Sunucuda `ufw` etkinse `sudo rooms firewall` çalıştır.
+- **Başka bir sorun:** `sudo rooms status` ve `sudo rooms logs` çıktısıyla [sorun giderme rehberine](TROUBLESHOOTING.md) bak veya GitHub'da issue aç. Parola, token veya davet kodu paylaşma.
+
+Hızlı kurulum tek sunucu ve küçük-orta bir arkadaş grubu içindir. Yüzlerce eşzamanlı kullanıcı, ayrı medya sunucusu veya müzik/Agent gibi isteğe bağlı servisler için aşağıdaki ayrıntılı kurulumu kullan.
+
 ## Neyi çalıştırıyorsun?
+
+Aşağıdaki bölümler hızlı kurulumun arkasındaki parçaları ve elle kurulumu anlatır.
 
 Arka ucu bir yönetici çalıştırır; üyeler masaüstü uygulamasını kullanır. Her üyeye Docker, veritabanı erişimi veya servis sırları vermen gerekmez.
 

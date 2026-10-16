@@ -50,7 +50,7 @@ ROOMS, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında 
 | İstediğin | Başlangıç noktası | Gerekenler |
 | --- | --- | --- |
 | Var olan topluluğa katılmak | [Kullanım rehberi](docs/USER_GUIDE.md) | Uyumlu uygulama, sunucu adresi ve davet veya mevcut hesap |
-| Kendi topluluğunu kurmak | [Sunucu kurulum rehberi](docs/SELF_HOSTING.md) | Sunucu, Docker Compose, Node.js ve ağ/TLS/arka uç yönetimi |
+| Kendi topluluğunu kurmak | [Tek komutla kurulum](docs/SELF_HOSTING.md#hızlı-kurulum-tek-komut) | Linux sunucu (VPS) ve alan adı; gerisini kurulum betiği yapar |
 | Uygulamayı geliştirmek | [Geliştirme rehberi](docs/DEVELOPMENT.md) | Git, Node.js, pnpm ve kaynak kod |
 | Topluluğun DJ görselini değiştirmek | [Özelleştirme rehberi](docs/CUSTOMIZATION.md) | Kendi sunucunun herkese açık görsel dosyalarını yönetebilmek |
 
@@ -140,17 +140,15 @@ Derleme, doğrulama ve paket komutları için [geliştirme rehberine](docs/DEVEL
 
 ## Kendi topluluğunu kur
 
-Kendi sunucunda çalıştırmak, yalnızca masaüstü dosyalarını web'den sunmak değildir:
+Bir Linux sunucu (2 GB RAM yeterli, 4 GB önerilir) ve bir alan adı ile kendi ROOMS sunucunu tek komutla kurabilirsin. Alan adın yoksa ücretsiz bir [DuckDNS](https://www.duckdns.org) adı da işe yarar.
 
-1. İzole bir sunucu ve kalıcı depolama hazırla.
-2. Hesaplar, sohbet ve dosyalar için sabitlenmiş Stoat arka ucunu yapılandır.
-3. Yetkili ses/medya için ROOMS erişim servisini ve LiveKit'i çalıştır.
-4. Ortak etkinlik ve oyun istiyorsan Activities servisini çalıştır.
-5. İlk hesabı ve topluluğu oluştur; ardından davetleri üret.
-6. Uzaktaki üyeler için HTTPS/WSS ve medya erişimini yapılandır.
-7. Başkalarını davet etmeden önce iki cihazla dene ve bir yedeğin geri yüklenebildiğini doğrula.
+```sh
+curl -fsSL https://raw.githubusercontent.com/egemenmermer/rooms/main/deploy/install.sh | sudo bash
+```
 
-[Sunucu rehberi](docs/SELF_HOSTING.md), dosyaları, komutları, portları, yapılandırmayı ve kabul kontrollerini anlatır. Mevcut kaynakta kurulum yardımcıları vardır; **tek komutla eksiksiz üretim kurulumu** yoktur. İlk hesap ve dış ağ yapılandırması hâlâ yöneticinin tamamlaması gereken işlerdir.
+Betik Docker'ı kurar, tüm parolaları sunucuda üretir, HTTPS sertifikasını otomatik alır, sahip hesabını ve ilk topluluğu ses kanalıyla oluşturur ve ilk davet bağlantını verir. Sonra arkadaşlarını uygulamadan veya `sudo rooms invite` ile davet edersin.
+
+Ayrıntılar, portlar, yedekleme ve güncelleme için [sunucu rehberine](docs/SELF_HOSTING.md#hızlı-kurulum-tek-komut) bak. Müzik (DJ), Agent ve sunucu yönetim paneli isteğe bağlıdır ve hızlı kuruluma dahil değildir.
 
 ## Nasıl çalışıyor?
 
