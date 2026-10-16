@@ -3,6 +3,35 @@ import { Download, FileText } from 'lucide-react';
 import { Modal } from '@rooms/design';
 import type { SocialAttachment } from '@rooms/social';
 import { useCommunity } from './community';
+
+/** Recently shown photos, per account and channel, so reopening a channel does not refetch them. */
+const imageCache = new Map<string, string>();
+const IMAGE_CACHE_BYTES = 64 * 1024 * 1024;
+let imageCacheBytes = 0;
+const imageKey = (server: string, user: string | undefined, ...ids: string[]) =>
+  [server, user ?? '', ...ids].join('|');
+function rememberImage(key: string, value: string) {
+  forgetImage(key);
+  imageCache.set(key, value);
+  imageCacheBytes += value.length;
+  for (const [oldest, data] of imageCache) {
+    if (imageCacheBytes <= IMAGE_CACHE_BYTES) break;
+    imageCache.delete(oldest);
+    imageCacheBytes -= data.length;
+  }
+}
+function forgetImage(key: string) {
+  const value = imageCache.get(key);
+  if (value === undefined) return;
+  imageCache.delete(key);
+  imageCacheBytes -= value.length;
+}
+if (typeof window !== 'undefined')
+  window.addEventListener('rooms:channel-access-invalidated', (event) => {
+    const ids = (event as CustomEvent<{ channelIds?: string[] }>).detail?.channelIds ?? [];
+    for (const key of [...imageCache.keys()])
+      if (ids.includes(key.split('|')[2]!)) forgetImage(key);
+  });
 export function ChatAttachment({
   file,
   channelId,
@@ -13,7 +42,8 @@ export function ChatAttachment({
   messageId: string;
 }) {
   const c = useCommunity(),
-    [source, setSource] = useState<string | null>(null),
+    key = imageKey(c.serverUrl, c.user?.id, channelId, messageId, file.id),
+    [source, setSource] = useState<string | null>(() => imageCache.get(key) ?? null),
     [failed, setFailed] = useState(false),
     [retry, setRetry] = useState(0),
     [expanded, setExpanded] = useState(false),
@@ -22,13 +52,15 @@ export function ChatAttachment({
   const image = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.mime);
   useEffect(() => {
     let alive = true;
-    setSource(null);
+    const cached = imageCache.get(key);
+    setSource(cached ?? null);
     setFailed(false);
     setExpanded(false);
-    if (image && window.rooms)
+    if (image && !cached && window.rooms)
       void window.rooms.social
         .attachmentImage(channelId, messageId, file.id)
         .then((value) => {
+          if (value) rememberImage(key, value);
           if (alive) {
             setSource(value);
             setFailed(!value);
@@ -40,7 +72,7 @@ export function ChatAttachment({
     return () => {
       alive = false;
     };
-  }, [c.serverUrl, c.user?.id, channelId, messageId, file.id, image, retry]);
+  }, [key, channelId, messageId, file.id, image, retry]);
   if (!image)
     return (
       <div>
