@@ -736,6 +736,7 @@ export function tr(key: string): string {
   return trMessages[key] ?? activityMessages[key] ?? key;
 }
 
+export const dmFriendRequired = 'Özel mesaj için önce arkadaş olmanız gerekiyor.';
 const errorMessages: Record<string, string> = {
   SHARED_HOST_API_MODEL_REQUIRED:
     'Bu sunucuda yalnızca OpenRouter API bağlantısı kullanılabiliyor. Codex ve Claude CLI bağlantıları etkin değil.',
@@ -763,6 +764,13 @@ const errorMessages: Record<string, string> = {
   'Your session expired. Sign in again.':
     'Oturumun doğrulanamadı. Hesap bilgilerini kontrol edip yeniden giriş yap.',
   'You do not have permission for this action.': 'Bu işlem için hesabının gerekli izni yok.',
+  'You need to be friends before sending a private message.': dmFriendRequired,
+  'Your friend request has not been accepted yet.':
+    'Arkadaşlık isteğin henüz kabul edilmedi. Kabul edilince özel mesaj gönderebilirsin.',
+  'This person sent you a friend request. Accept it to send a private message.':
+    'Bu kişi sana arkadaşlık isteği göndermiş. Arkadaşlar → İstekler bölümünden kabul edince özel mesaj gönderebilirsin.',
+  'You cannot send private messages to a blocked user.':
+    'Engellenmiş biriyle özel mesajlaşamazsın.',
   'This room, message or invitation is unavailable.':
     'Bu oda, mesaj veya davet artık kullanılamıyor. Davetle geliyorsan arkadaşından yeni bir davet iste.',
   'Too many requests. Please wait and retry.':

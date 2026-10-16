@@ -5,6 +5,7 @@ import type { SocialUser } from '@rooms/social';
 import { useCommunity } from './community';
 import { VoiceAvatar } from './VoiceAvatar';
 import { uiError } from './i18n';
+import { directMessageFailed } from './FriendRequiredDialog';
 export function Messages({ notify }: { notify(message: string): void }) {
   const c = useCommunity(),
     navigate = useNavigate(),
@@ -131,10 +132,11 @@ function NewMessage({ onClose, notify }: { onClose(): void; notify(message: stri
         useCommunity.getState().serverUrl === server &&
         useCommunity.getState().user?.id === owner
       ) {
-        if (alive.current) {
-          setError(uiError(e));
+        if (!alive.current) directMessageFailed(e, user, notify);
+        else {
           setBusy(false);
-        } else notify(uiError(e));
+          if (directMessageFailed(e, user, setError)) onClose();
+        }
       }
     }
   };
