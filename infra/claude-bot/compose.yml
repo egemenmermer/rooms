@@ -1,0 +1,42 @@
+# Run from the deployment directory that holds Dockerfile and claude-bot.cjs:
+#   docker compose -f compose.yml up -d --build
+name: rooms-claude
+services:
+  claude-bot:
+    build: .
+    image: rooms-claude-bot:local
+    restart: unless-stopped
+    # Secrets (mode 0600, root-owned): ROOMS_CLAUDE_BOT_TOKEN, optional GH_TOKEN, and ANTHROPIC_API_KEY
+    # for shared use. Without an API key the bot uses the container's own `claude auth login`
+    # and must be limited to its owner with ROOMS_CLAUDE_ALLOWED_USERS.
+    env_file: /etc/rooms-claude/secrets.env
+    environment:
+      ROOMS_CLAUDE_STOAT_URL: ${ROOMS_CLAUDE_STOAT_URL:?Set the community's HTTPS origin in .env}
+      ROOMS_CLAUDE_MODEL: ${ROOMS_CLAUDE_MODEL:-claude-sonnet-5-5}
+      ROOMS_CLAUDE_ALLOWED_USERS: ${ROOMS_CLAUDE_ALLOWED_USERS:-}
+      ROOMS_CLAUDE_MONTHLY_BUDGET_USD: ${ROOMS_CLAUDE_MONTHLY_BUDGET_USD:-200}
+      ROOMS_CLAUDE_PROD_OPS: ${ROOMS_CLAUDE_PROD_OPS:-enabled}
+      ROOMS_CLAUDE_TIMEOUT_MINUTES: ${ROOMS_CLAUDE_TIMEOUT_MINUTES:-30}
+      ROOMS_CLAUDE_MAX_CONCURRENT: ${ROOMS_CLAUDE_MAX_CONCURRENT:-1}
+    volumes:
+      - home:/home/claude
+      - workspace:/workspace
+      - data:/data
+      # SSH key, config and known_hosts for `ssh rooms-host` (production operations).
+      - /etc/rooms-claude/ssh:/home/claude/.ssh:ro
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    tmpfs:
+      - /tmp:size=1g,mode=1777
+    mem_limit: 1536m
+    cpus: 1.5
+    pids_limit: 512
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options: { max-size: 10m, max-file: '3' }
+volumes:
+  home:
+  workspace:
+  data:

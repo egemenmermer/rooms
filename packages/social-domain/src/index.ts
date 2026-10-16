@@ -30,6 +30,8 @@ export interface SocialMessage {
   timestamp: string;
   editedTimestamp: string | null;
   mentions?: string[];
+  /** IDs of messages this message natively replies to (Stoat `replies`). */
+  replies?: string[];
   attachments?: SocialAttachment[];
   reactions?: Record<string, string[]>;
 }
