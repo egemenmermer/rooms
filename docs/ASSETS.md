@@ -16,6 +16,6 @@ Sunum çekimlerinde geliştirme göstergesi gösterilmez; uygulamanın geliştir
 
 ## Portal uygulama ikonu
 
-15 Ekim 2026'da sahibi gönderdiği `01.svg` portal fikrini uygulama ikonu olarak seçti. `apps/desktop/public/reference-brand/app-icons/app-icon-master.svg` geometriyi, geçişleri ve renkleri korur; yalnızca açıklayıcı üstveri güncellendi. PNG boyutları, macOS ICNS ve mevcut ICO aynı SVG'nin belirli dışa aktarımlarıdır. `icon.png` Mac Dock'ta, `icon.icns` paketlenmiş Mac uygulamasında, karşılık gelen 128 piksel görsel Hakkında bölümünde kullanılır.
+16 Ekim 2026'da sahibi ışıklı kapı görselini yeni uygulama ikonu olarak seçti. Görsel, tüm dışa aktarımlar için vektör olarak yeniden çizildi: `apps/desktop/public/reference-brand/app-icons/app-icon-master.svg`. PNG boyutları, macOS ICNS ve ICO bu SVG'den Chromium ile işlenir. `icon.png` Mac Dock'ta, `icon.icns` paketlenmiş Mac uygulamasında, 128 piksel görsel Hakkında bölümünde kullanılır. Önceki portal ikonu Git geçmişinde durur.
 
 iPhone eşlikçisi aynı portalı opak, kenara kadar uzanan arka planla kullanır; dış maskeyi iOS uygular. Hesap, medya, izin veya güncelleme davranışı değişmez. Kaynak görselleri değiştirmek kurulu, imzalı uygulamanın ikonunu değiştirmez; yeniden derlenip dağıtılması gerekir.
