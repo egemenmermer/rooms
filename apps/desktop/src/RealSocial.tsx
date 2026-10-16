@@ -183,6 +183,23 @@ export function CommunityChat({
       setUploading(false);
     }
   };
+  /** Screenshots and Finder copies are not exposed to the paste event; main reads the clipboard. */
+  const pasteFromClipboard = async () => {
+    if (!c.activeChannelId || !window.rooms || attachments.length >= 5) return;
+    const channelId = c.activeChannelId;
+    setUploading(true);
+    try {
+      const item = await window.rooms.social.pasteAttachment(channelId);
+      if (!item) notify('Panoda eklenebilecek bir görsel veya dosya yok.');
+      else if (useCommunity.getState().activeChannelId === channelId)
+        setAttachments((items) => [...items, item].slice(0, 5));
+      else await window.rooms.social.discardAttachment(item.id);
+    } catch (error) {
+      notify(uiError(error));
+    } finally {
+      setUploading(false);
+    }
+  };
   const hasFiles = (event: ReactDragEvent) => event.dataTransfer.types.includes('Files');
   const react = async (message: CommunityMessage, emoji = '1f44d') => {
     if (!c.activeChannelId || !window.rooms) return;
@@ -943,10 +960,19 @@ export function CommunityChat({
               onChange={(e) => mentionInput.change(e.target.value, e.target.selectionStart)}
               onPaste={(e) => {
                 if (editing) return;
-                const files = [...e.clipboardData.files];
-                if (!files.length) return;
-                e.preventDefault();
-                void addFiles(files);
+                const data = e.clipboardData;
+                const items = [...data.items]
+                  .filter((item) => item.kind === 'file')
+                  .map((item) => item.getAsFile())
+                  .filter((file): file is File => !!file);
+                const files = items.length ? items : [...data.files];
+                if (files.length) {
+                  e.preventDefault();
+                  void addFiles(files);
+                } else if (data.types.includes('Files') || !data.types.includes('text/plain')) {
+                  e.preventDefault();
+                  void pasteFromClipboard();
+                }
               }}
               onKeyDown={(e) => {
                 if (mentionInput.onKeyDown(e)) return;

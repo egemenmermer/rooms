@@ -401,3 +401,40 @@ it('reports a successful write followed by a failed refresh without repeating th
   ).rejects.toMatchObject({ code: 'ROLE_SAVED_REFRESH_FAILED' });
   expect(calls.filter((call) => call.method === 'POST')).toHaveLength(1);
 });
+it('retries the post-write read when its own gateway echo arrives mid-refresh', async () => {
+  let client!: StoatClient;
+  let echoed = false;
+  const setup = fixture({
+    self: 'owner',
+    pauseMembers: async () => {
+      if (echoed) return;
+      echoed = true;
+      await (client as any).processPacket({
+        type: 'ServerRoleUpdate',
+        id: 'space',
+        role_id: 'member',
+        data: { permissions: { a: 1, d: 0 } },
+      });
+    },
+  });
+  client = setup.client;
+  const result = await client.changeCommunityRole({
+    action: 'permissions',
+    spaceId: 'space',
+    roleId: 'member',
+    values: { ...inherited(), view: 'allow' },
+  });
+  expect(result.management.access).toBe('allowed');
+  expect(setup.calls.filter((call) => call.method === 'PUT')).toHaveLength(1);
+});
+it('asks the app to refresh only after the post-write read completes', async () => {
+  const { client, calls } = fixture({ self: 'owner' });
+  const order: string[] = [];
+  client.subscribe((event) => {
+    if (event.type === 'SOCIAL_REFRESH') order.push(`refresh after ${calls.length} requests`);
+  });
+  await client.setCommunityMemberRoles({ spaceId: 'space', userId: 'member', roleIds: [] });
+  const lastMembersRead = calls.map((call) => call.path).lastIndexOf('/api/servers/space/members');
+  expect(order).toEqual([`refresh after ${calls.length} requests`]);
+  expect(lastMembersRead).toBe(calls.length - 1);
+});

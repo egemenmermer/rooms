@@ -1427,13 +1427,15 @@ export class StoatClient {
       await this.request(`/servers/${checked(spaceId)}/roles/${checked(roleId)}`, 'DELETE');
     }
     if (c.session !== this.sessionEpoch) throw new StoatError(401, 'SESSION_CHANGED');
-    this.managementChanged(spaceId);
+    ++this.managementEpoch;
     try {
-      return { roleId, management: await this.communityManagement(spaceId) };
+      return { roleId, management: await this.refreshAfterWrite(spaceId, c.session) };
     } catch (error) {
       if (c.session !== this.sessionEpoch) throw error;
       // Never retry the write or imply that creating another role is the recovery action.
       throw new StoatError(502, 'ROLE_SAVED_REFRESH_FAILED');
+    } finally {
+      this.managementChanged(spaceId);
     }
   }
   async setCommunityMemberRoles(
@@ -1467,8 +1469,12 @@ export class StoatClient {
       roles: roleIds,
     });
     if (c.session !== this.sessionEpoch) throw new StoatError(401, 'SESSION_CHANGED');
-    this.managementChanged(spaceId);
-    return this.communityManagement(spaceId);
+    ++this.managementEpoch;
+    try {
+      return await this.refreshAfterWrite(spaceId, c.session);
+    } finally {
+      this.managementChanged(spaceId);
+    }
   }
   async removeCommunityMember(change: SocialMemberRemoval): Promise<SocialCommunityManagement> {
     const { spaceId, userId } = change;
@@ -1486,9 +1492,38 @@ export class StoatClient {
     this.assertManagementContext(c.epoch, c.session);
     await this.removeMember(spaceId, userId);
     if (c.session !== this.sessionEpoch) throw new StoatError(401, 'SESSION_CHANGED');
-    this.managementChanged(spaceId);
-    return this.communityManagement(spaceId);
+    ++this.managementEpoch;
+    try {
+      return await this.refreshAfterWrite(spaceId, c.session);
+    } finally {
+      this.managementChanged(spaceId);
+    }
   }
+  /**
+   * Reads the result of this client's own write. Its gateway echo (ServerRoleUpdate,
+   * ServerMemberUpdate) bumps the management epoch mid-read, so a stale read is retried instead of
+   * being reported as a failed save.
+   */
+  private async refreshAfterWrite(spaceId: string, session: number) {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await this.communityManagement(spaceId);
+      } catch (error) {
+        if (
+          session === this.sessionEpoch &&
+          attempt < 2 &&
+          error instanceof StoatError &&
+          error.code === 'ACCESS_CHANGED'
+        )
+          continue;
+        throw error;
+      }
+    }
+  }
+  /**
+   * Invalidates access and asks the app to refresh only after the post-write read: those refreshes
+   * share the same rate-limited server bucket and would otherwise queue ahead of it.
+   */
   private managementChanged(spaceId: string) {
     ++this.managementEpoch;
     this.invalidateChannelAccess(
