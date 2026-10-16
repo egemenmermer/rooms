@@ -280,9 +280,9 @@ it('sends official bot replies with a stable delivery key and no reply ping (pro
     botToken: 'fixture-bot-token',
     sessionToken: undefined,
     key: 'delivery-001',
+    // Stoat rejects a body nonce sent alongside Idempotency-Key, so only the header carries it.
     body: {
       content: 'Done',
-      nonce: 'delivery-001',
       replies: [{ id: 'source-message', mention: false }],
     },
   });

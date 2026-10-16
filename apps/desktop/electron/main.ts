@@ -71,6 +71,9 @@ let tray: Tray | null = null;
 const selectedMedia = new Map<string, string>();
 const devUrl =
   process.env.ROOMS_DEV_URL === 'http://127.0.0.1:5173' ? process.env.ROOMS_DEV_URL : undefined;
+// `pnpm dev` serves the renderer from Vite and never builds dist/, so read static images from public/.
+const appImage = (name: string) =>
+  nativeImage.createFromPath(join(__dirname, devUrl ? '../apps/desktop/public' : '../dist', name));
 protocol.registerSchemesAsPrivileged([
   {
     scheme: 'rooms-provider',
@@ -536,8 +539,9 @@ app.whenReady().then(async () => {
     ]),
   );
   createWindow();
-  if (process.platform === 'darwin') app.dock?.setIcon(join(__dirname, '../dist/icon.png'));
-  const icon = nativeImage.createFromPath(join(__dirname, '../dist/tray.png'));
+  const dockIcon = appImage('icon.png');
+  if (process.platform === 'darwin' && !dockIcon.isEmpty()) app.dock?.setIcon(dockIcon);
+  const icon = appImage('tray.png');
   icon.setTemplateImage(true);
   if (!icon.isEmpty()) {
     tray = new Tray(icon);

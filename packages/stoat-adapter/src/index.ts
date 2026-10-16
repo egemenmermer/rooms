@@ -713,6 +713,9 @@ export class StoatClient {
       ...(Array.isArray(m.mentions)
         ? { mentions: m.mentions.filter((id: unknown) => typeof id === 'string') }
         : {}),
+      ...(Array.isArray(m.replies)
+        ? { replies: m.replies.filter((id: unknown) => typeof id === 'string') }
+        : {}),
     };
   }
   private configureFileOrigin(root: Raw) {
@@ -1729,7 +1732,9 @@ export class StoatClient {
       await this.request<Raw>(
         `/channels/${checked(channelId)}/messages`,
         'POST',
-        { content, nonce: deliveryId, replies: [{ id: messageId, mention: false }] },
+        // Stoat consumes the header as the nonce; also sending a body nonce makes it reject the
+        // first delivery as a duplicate (InvalidOperation).
+        { content, replies: [{ id: messageId, mention: false }] },
         { 'Idempotency-Key': deliveryId },
       ),
     );
