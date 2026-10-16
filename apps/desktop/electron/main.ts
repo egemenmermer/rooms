@@ -22,6 +22,7 @@ import { Readable } from 'node:stream';
 import { setupCommunity } from './community';
 import { setupNotifications } from './notifications';
 import { setupWindowPolicy } from './window-policy';
+import { readWindowState, showRestored, trackWindowState } from './window-state';
 import { setupUpdates } from './updates';
 import { setupProviders } from './providers';
 import { parseInviteLink, type InviteLink } from './native-links';
@@ -110,34 +111,13 @@ function assertSender(event: Electron.IpcMainInvokeEvent) {
     throw new Error('Untrusted IPC sender');
 }
 function createWindow() {
-  let bounds: { width: number; height: number; x?: number; y?: number } = {
-    width: 1440,
-    height: 900,
+  const stateFile = join(app.getPath('userData'), 'window.json');
+  const state = readWindowState(stateFile, (rect) => screen.getDisplayMatching(rect).workArea);
+  const bounds = {
+    width: state.width,
+    height: state.height,
+    ...(state.x !== undefined && state.y !== undefined ? { x: state.x, y: state.y } : {}),
   };
-  try {
-    const saved = JSON.parse(readFileSync(join(app.getPath('userData'), 'window.json'), 'utf8'));
-    if (Number.isFinite(saved.width) && Number.isFinite(saved.height)) {
-      const display = screen.getDisplayMatching({
-        x: Number.isFinite(saved.x) ? saved.x : 0,
-        y: Number.isFinite(saved.y) ? saved.y : 0,
-        width: saved.width,
-        height: saved.height,
-      }).workArea;
-      bounds = {
-        width: Math.min(display.width, Math.max(900, saved.width)),
-        height: Math.min(display.height, Math.max(700, saved.height)),
-      };
-      if (Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
-        bounds.x = Math.max(display.x, Math.min(saved.x, display.x + display.width - bounds.width));
-        bounds.y = Math.max(
-          display.y,
-          Math.min(saved.y, display.y + display.height - bounds.height),
-        );
-      }
-    }
-  } catch {
-    /* First launch. */
-  }
   win = new BrowserWindow({
     ...bounds,
     minWidth: 900,
@@ -174,17 +154,9 @@ function createWindow() {
     if (!isTrusted(url)) event.preventDefault();
   });
   win.webContents.on('will-attach-webview', (event) => event.preventDefault());
-  win.once('ready-to-show', () => win?.show());
+  win.once('ready-to-show', () => win && showRestored(win, state));
   windowPolicy?.attach(win);
-  win.on('close', () => {
-    if (win && !win.isFullScreen()) {
-      const { width, height, x, y } = win.getNormalBounds();
-      writeFileSync(
-        join(app.getPath('userData'), 'window.json'),
-        JSON.stringify({ width, height, x, y }),
-      );
-    }
-  });
+  trackWindowState(win, stateFile);
   win.on('closed', () => {
     win = null;
     selectedMedia.clear();
