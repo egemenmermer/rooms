@@ -385,27 +385,33 @@ export const useCommunity = create<CommunityState>((set, get) => ({
       attachments,
     };
     set((state) => ({ messages: [...state.messages, optimistic] }));
+    // Settle the optimistic copy wherever it lives now. Reselecting or refreshing the channel
+    // while sending carries it into the open list and the channel cache; leaving it there kept a
+    // stale "sending" copy next to the delivered message.
+    const settle = (update: (messages: CommunityMessage[]) => CommunityMessage[]) => {
+      if (!session.valid()) return;
+      if (get().activeChannelId === channelId)
+        set((state) => ({ messages: update(state.messages) }));
+      const cached = conversations.get(channelId);
+      if (cached) conversations.put(channelId, { ...cached, messages: update(cached.messages) });
+    };
     try {
       const sent = await bridge().send(
         channelId,
         optimistic.content,
         attachments.map((a) => a.id),
       );
-      if (current())
-        set((state) => ({
-          messages: state.messages
-            .filter((m) => m.id !== optimistic.id && m.id !== sent.id)
-            .concat({ ...sent, delivery: 'sent' })
-            .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp)),
-        }));
+      settle((messages) =>
+        messages
+          .filter((m) => m.id !== optimistic.id && m.id !== sent.id)
+          .concat({ ...sent, delivery: 'sent' })
+          .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp)),
+      );
     } catch (error) {
-      if (current())
-        set((state) => ({
-          messages: state.messages.map((m) =>
-            m.id === optimistic.id ? { ...m, delivery: 'failed' } : m,
-          ),
-          error: safeError(error),
-        }));
+      settle((messages) =>
+        messages.map((m) => (m.id === optimistic.id ? { ...m, delivery: 'failed' } : m)),
+      );
+      if (current()) set({ error: safeError(error) });
       throw error;
     }
   },
