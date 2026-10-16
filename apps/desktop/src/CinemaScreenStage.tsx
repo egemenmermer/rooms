@@ -67,11 +67,17 @@ export function CinemaScreenStage({
         if (!(event.target as HTMLElement).closest('button,input')) void expand();
       }}
     >
-      <MediaStage
-        id={trackId}
-        label={`${participant?.name ?? 'Katılımcı'} ekranı`}
-        className="reference-cinema-screen-video"
-      />
+      {realtime.tracks.find((track) => track.id === trackId)?.subscribed === false ? (
+        <p className="room-screen-waiting" role="status">
+          Yayın açılıyor…
+        </p>
+      ) : (
+        <MediaStage
+          id={trackId}
+          label={`${participant?.name ?? 'Katılımcı'} ekranı`}
+          className="reference-cinema-screen-video"
+        />
+      )}
       <div className="cinema-share-stage-top">
         <span>
           <ReferenceIcon name="monitor" size={15} />

@@ -25,6 +25,8 @@ export interface MediaParticipant {
   volume: number;
   screenVolume?: number;
   quality: string;
+  /** Screen share this person chose to watch, as they announced it; null when not watching. */
+  watching?: string | null;
 }
 export interface MediaTrack {
   id: string;
@@ -33,6 +35,8 @@ export interface MediaTrack {
   kind: string;
   local: boolean;
   muted: boolean;
+  /** False for a remote screen share that is only advertised until the listener watches it. */
+  subscribed?: boolean;
 }
 export interface MediaDiagnostics {
   bitrate: number | null;
@@ -108,6 +112,22 @@ export interface RealtimeMediaProvider {
   disconnect(): Promise<void>;
   reconnect(): Promise<void>;
 }
+const WATCH_TOPIC = 'rooms-watch-v1';
+const isScreenSource = (source: Track.Source) =>
+  source === Track.Source.ScreenShare || source === Track.Source.ScreenShareAudio;
+/** `{ watching: identity | null }`; anything else is ignored. */
+export function parseWatch(payload: Uint8Array): string | null | undefined {
+  try {
+    const value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(payload));
+    const watching = value?.watching;
+    if (watching === null) return null;
+    if (typeof watching === 'string' && watching.length > 0 && watching.length <= 128)
+      return watching;
+  } catch {
+    /* Malformed data is never input. */
+  }
+  return undefined;
+}
 /** Bot music needs finer attenuation than speech; the UI still stores a 0–1 level. */
 function listenerGain(id: string, level: number) {
   return id.startsWith('rooms-music-') ? level * level : level;
@@ -138,6 +158,8 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   private audio = new Map<string, HTMLMediaElement>();
   private volumes = new Map<string, number>();
   private watchedScreen: string | null = null;
+  /** Announced screen choice of each remote participant, keyed by their LiveKit identity. */
+  private watchers = new Map<string, string | null>();
   private screenAudio = new Set<string>();
   private listenerScope = '';
   private outputDeviceId = '';
@@ -426,10 +448,18 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
           volume: this.volumes.get(p.identity) ?? 1,
           screenVolume: this.volumes.get(`screen:${p.identity}`) ?? 1,
           quality: p.connectionQuality,
+          watching:
+            p === room.localParticipant
+              ? this.watchedScreen
+              : (this.watchers.get(p.identity) ?? null),
         })),
       tracks: people.flatMap((p) =>
         [...p.trackPublications.values()]
-          .filter((pub) => !!pub.track)
+          .filter(
+            (pub) =>
+              !!pub.track ||
+              (p !== room.localParticipant && pub.source === Track.Source.ScreenShare),
+          )
           .map((pub) => ({
             id: pub.trackSid,
             participantId: p.identity,
@@ -437,6 +467,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
             kind: pub.kind,
             local: p === room.localParticipant,
             muted: pub.isMuted,
+            subscribed: !!pub.track,
           })),
       ),
     });
@@ -465,7 +496,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       if (
         this.room !== room ||
         !participant ||
-        topic !== 'rooms-control-v1' ||
+        (topic !== 'rooms-control-v1' && topic !== WATCH_TOPIC) ||
         payload.length > 4096 ||
         this.state.status !== 'connected'
       )
@@ -476,6 +507,15 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
         controlCount = 0;
       }
       if (++controlCount > 256) return;
+      if (topic === WATCH_TOPIC) {
+        // The viewer is the authenticated sender, never a name inside the payload.
+        const watching = parseWatch(payload);
+        if (watching !== undefined) {
+          this.watchers.set(participant.identity, watching);
+          this.sync();
+        }
+        return;
+      }
       try {
         const data = new TextDecoder('utf-8', { fatal: true }).decode(payload);
         for (const listener of this.controlListeners) listener(data, participant.identity);
@@ -504,6 +544,17 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       RoomEvent.ActiveDeviceChanged,
     ])
       room.on(event, sync);
+    room.on(RoomEvent.TrackPublished, () => {
+      if (this.room === room) this.applyScreenSubscriptions();
+    });
+    room.on(RoomEvent.ParticipantConnected, (participant) => {
+      if (this.room === room) this.announceWatch(participant.identity);
+    });
+    room.on(RoomEvent.ParticipantDisconnected, (participant) => {
+      if (this.room !== room) return;
+      this.watchers.delete(participant.identity);
+      sync();
+    });
     room.on(RoomEvent.ConnectionStateChanged, (value) => {
       if (this.room !== room) return;
       const status: ConnectionStatus =
@@ -534,6 +585,11 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     });
     room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
       if (this.room !== room) return;
+      if (isScreenSource(publication.source) && participant.identity !== this.watchedScreen) {
+        // Auto-subscription delivered a screen nobody here chose to watch.
+        publication.setSubscribed(false);
+        return;
+      }
       if (track.kind === Track.Kind.Audio && typeof document !== 'undefined') {
         const element = track.attach();
         element.hidden = true;
@@ -577,6 +633,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
         return;
       }
       this.patch({ status: 'connected' });
+      this.applyScreenSubscriptions();
       sync();
       this.timer = setInterval(() => {
         void this.measure();
@@ -824,8 +881,35 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     this.sync();
   }
   watchScreen(id: string | null) {
+    const changed = id !== this.watchedScreen;
     this.watchedScreen = id;
+    this.applyScreenSubscriptions();
     this.refreshScreenPlayback();
+    if (changed) {
+      this.announceWatch();
+      this.sync();
+    }
+  }
+  /** Remote screen shares stream only to people who chose to watch them. */
+  private applyScreenSubscriptions() {
+    for (const person of this.room?.remoteParticipants.values() ?? [])
+      for (const pub of person.trackPublications.values()) {
+        if (!isScreenSource(pub.source)) continue;
+        const wanted = person.identity === this.watchedScreen;
+        if (pub.isDesired !== wanted) pub.setSubscribed(wanted);
+      }
+  }
+  /** Tells the room (or one newcomer) which screen this listener watches. */
+  private announceWatch(destination?: string) {
+    const room = this.room;
+    if (!room || this.state.status !== 'connected') return;
+    void room.localParticipant
+      .publishData(new TextEncoder().encode(JSON.stringify({ watching: this.watchedScreen })), {
+        reliable: true,
+        topic: WATCH_TOPIC,
+        ...(destination ? { destinationIdentities: [destination] } : {}),
+      })
+      .catch(() => {});
   }
   private refreshScreenPlayback() {
     const allowed = new Set<string>();
@@ -986,6 +1070,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   }
   private cleanupPlayback() {
     this.watchedScreen = null;
+    this.watchers.clear();
     this.screenAudio.clear();
     this.speakingMeter.stop();
     if (this.timer) clearInterval(this.timer);
