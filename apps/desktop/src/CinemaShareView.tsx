@@ -78,7 +78,14 @@ export function CinemaShareView({
         if (!(event.target as HTMLElement).closest('button,input')) onToggleFullscreen();
       }}
     >
-      <MediaStage id={trackId} label={`${name} ekranı`} className="cozy-share-video" />
+      {realtime.tracks.find((track) => track.id === trackId)?.subscribed === false ? (
+        // Remote shares stream only after this viewer asks for them (watchScreen above).
+        <p className="cozy-share-waiting" role="status">
+          Yayın açılıyor…
+        </p>
+      ) : (
+        <MediaStage id={trackId} label={`${name} ekranı`} className="cozy-share-video" />
+      )}
       <div className="cozy-yt-top">
         <div>
           <strong>{local ? 'Senin ekranın' : `${name} ekranı`}</strong>

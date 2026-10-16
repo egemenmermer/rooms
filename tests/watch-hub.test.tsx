@@ -132,6 +132,7 @@ it('puts the playing YouTube item on the screen and lets the host lock the remot
       itemId: 'a',
     },
   });
+  localStorage.setItem('rooms.cinema.queue-open', 'true');
   mount();
   expect(screen.getByTestId('youtube-stage').textContent).toBe('İlk');
   expect(screen.getByText('İkinci')).toBeTruthy();
@@ -165,4 +166,12 @@ it('shows a locked remote to viewers and lets the host hand it to a seat', () =>
     userId: 'ece',
     allowed: true,
   });
+});
+it('keeps the queue beside the screen only where it fits, unless the viewer chose otherwise', () => {
+  activity.room = room();
+  mount();
+  expect(screen.queryByRole('complementary', { name: 'Ortak sıra' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: /Sıra/ }));
+  expect(screen.getByRole('complementary', { name: 'Ortak sıra' })).toBeTruthy();
+  expect(localStorage.getItem('rooms.cinema.queue-open')).toBe('true');
 });
