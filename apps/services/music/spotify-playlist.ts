@@ -11,6 +11,34 @@ const clean = (value: unknown) =>
         .trim()
         .slice(0, 160)
     : '';
+/** Follows a spotify.link share link (same host allow-list as song metadata) to its canonical open.spotify.com link. */
+export async function resolveSpotifyShortLink(
+  raw: string,
+  request: typeof privateFetch = privateFetch,
+): Promise<string> {
+  const link = parseSongLink(raw);
+  if (link?.provider !== 'spotify' || link.kind !== 'short') throw Error('MUSIC_SOURCE_FAILED');
+  try {
+    const response = await request(link.url, {
+      allowedHosts: ['open.spotify.com', 'spotify.link'],
+      allowedProtocols: ['https:'],
+      signal: AbortSignal.timeout(12000),
+      headers: { 'User-Agent': 'ROOMS/1.0 Public song metadata' },
+    });
+    await response.body?.cancel();
+    const next = parseSongLink(response.url);
+    if (
+      !response.ok ||
+      next?.provider !== 'spotify' ||
+      (next.kind !== 'track' && next.kind !== 'playlist')
+    )
+      throw Error('MUSIC_MIRROR_SINGLE_TRACK_ONLY');
+    return next.url;
+  } catch (error) {
+    if (error instanceof Error && /^MUSIC_[A-Z_]+$/.test(error.message)) throw error;
+    throw Error('MUSIC_SOURCE_FAILED');
+  }
+}
 /** Public display metadata only. No Spotify audio, previews, cookies or account credentials. */
 export async function spotifyPlaylist(
   raw: string,

@@ -1,4 +1,4 @@
-import { spotifyPlaylist } from './spotify-playlist';
+import { resolveSpotifyShortLink, spotifyPlaylist } from './spotify-playlist';
 import type {
   PlaylistTrack,
   SpotifyPlaylistTrack,
@@ -72,6 +72,7 @@ export class MusicWorker {
       youtubeFile?: typeof fetchYouTubeMusic;
       songMetadata?: typeof songMetadata;
       spotifyPlaylist?: typeof spotifyPlaylist;
+      resolveSpotifyShortLink?: typeof resolveSpotifyShortLink;
       matchingYouTubeReference?: typeof matchingYouTubeReference;
       now?: () => number;
       history?: MusicHistory;
@@ -404,32 +405,38 @@ export class MusicWorker {
           this.pending++;
           try {
             let references: (MusicReference & { spotify?: SpotifyPlaylistTrack })[];
+            let url = command.type === 'add' ? command.url : '';
+            const shortLink = parseSongLink(url);
+            if (shortLink?.provider === 'spotify' && shortLink.kind === 'short')
+              url = await (this.options.resolveSpotifyShortLink ?? resolveSpotifyShortLink)(url);
             if (command.type === 'add-list') references = command.tracks.map(playlistReference);
-            else if (parseSongLink(command.url)?.kind === 'playlist') {
-              const list = await (this.options.spotifyPlaylist ?? spotifyPlaylist)(
-                command.url,
-                undefined,
-                { partial: true },
-              );
-              references = list.tracks.map(playlistReference);
-              if (list.truncated || list.skipped)
+            else if (parseSongLink(url)?.kind === 'playlist') {
+              const list = await (this.options.spotifyPlaylist ?? spotifyPlaylist)(url, undefined, {
+                partial: true,
+              });
+              // Played and current tracks stay in the queue, so only the remaining room is usable.
+              const fits = Math.min(list.tracks.length, 100 - s.queue.length);
+              if (fits < 1) throw new Error('MUSIC_QUEUE_FULL');
+              references = list.tracks.slice(0, fits).map(playlistReference);
+              const cut = fits < list.tracks.length;
+              if (list.truncated || list.skipped || cut)
                 importNotice = {
-                  added: list.tracks.length,
+                  added: fits,
                   skipped: list.skipped ?? 0,
-                  truncated: !!list.truncated,
+                  truncated: !!list.truncated || cut,
                 };
-            } else if (youtubeSource(command.url))
-              references = await (this.options.youtubeReferences ?? youtubeReferences)(command.url);
-            else if (parseSongLink(command.url)) {
-              const song = await (this.options.songMetadata ?? songMetadata)(command.url);
+            } else if (youtubeSource(url))
+              references = await (this.options.youtubeReferences ?? youtubeReferences)(url);
+            else if (parseSongLink(url)) {
+              const song = await (this.options.songMetadata ?? songMetadata)(url);
               references = [
                 await (this.options.matchingYouTubeReference ?? matchingYouTubeReference)(song),
               ];
             } else {
-              const url = new URL(command.url);
-              if (url.protocol !== 'https:' || url.username || url.password)
+              const target = new URL(url);
+              if (target.protocol !== 'https:' || target.username || target.password)
                 throw new Error('MUSIC_SOURCE_FAILED');
-              references = [{ source: command.url, title: 'Music', durationSec: 0 }];
+              references = [{ source: url, title: 'Music', durationSec: 0 }];
             }
             await this.options.lease(channelId, s.leaseId);
             if (s.queue.length + references.length > 100) throw new Error('MUSIC_QUEUE_FULL');
