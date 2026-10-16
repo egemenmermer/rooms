@@ -226,10 +226,12 @@ export function MinimalSidebar({
                       {silenced && (
                         <VolumeX size={12} aria-label="Sesini kapattın, yalnızca sende" />
                       )}
-                      {'deafened' in p && p.deafened ? (
+                      {/* Deafened people are also muted: show both, like Discord. */}
+                      {(p.muted || ('deafened' in p && p.deafened)) && (
+                        <MicOff size={12} aria-label="Mikrofon kapalı" />
+                      )}
+                      {'deafened' in p && p.deafened && (
                         <HeadphoneOff size={12} aria-label="Sağırlaştırdı" />
-                      ) : (
-                        p.muted && <MicOff size={12} />
                       )}
                     </button>
                   );

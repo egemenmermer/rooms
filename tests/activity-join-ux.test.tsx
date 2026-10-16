@@ -184,6 +184,21 @@ it('marks a person this listener silenced and drops their speaking ring', () => 
   expect(sems.querySelector('[aria-label="Sesini kapattın, yalnızca sende"]')).toBeNull();
 });
 
+it('shows both the muted and the deafened icon for a deafened person', () => {
+  f.voice.participants = [
+    person('me', 'Me'),
+    person('ece', 'Ece', { deafened: true, muted: true }),
+    person('can', 'Can', { muted: true }),
+  ];
+  sidebar();
+  const ece = document.querySelector('[data-voice-participant-id="ece"]')!;
+  const can = document.querySelector('[data-voice-participant-id="can"]')!;
+  expect(ece.querySelector('[aria-label="Mikrofon kapalı"]')).not.toBeNull();
+  expect(ece.querySelector('[aria-label="Sağırlaştırdı"]')).not.toBeNull();
+  expect(can.querySelector('[aria-label="Mikrofon kapalı"]')).not.toBeNull();
+  expect(can.querySelector('[aria-label="Sağırlaştırdı"]')).toBeNull();
+});
+
 it('names the chosen push-to-talk key in the room hint', () => {
   const previous = useRooms.getState().preferences;
   useRooms.setState({ preferences: { ...previous, pushToTalkKey: 'Alt+KeyV' } });
