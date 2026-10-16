@@ -805,6 +805,23 @@ export class StoatClient {
   async removeFriend(userId: string) {
     await this.request(`/users/${checked(userId)}/friend`, 'DELETE');
   }
+  /**
+   * Attachments of a message this session already loaded with authorization. The gateway keeps
+   * the cache current (deletes, access invalidation, reconnect), so only a miss asks upstream.
+   */
+  private async messageAttachments(channelId: string, messageId: string) {
+    const raw = this.messages.get(messageId);
+    if (
+      raw &&
+      raw.channel === channelId &&
+      this.status === 'connected' &&
+      !this.invalidChannels.has(channelId)
+    )
+      return Array.isArray(raw.attachments)
+        ? raw.attachments.map((file: Raw) => this.normalizeAttachment(file))
+        : [];
+    return (await this.getMessage(channelId, messageId)).attachments ?? [];
+  }
   async attachmentFile(channelId: string, messageId: string, fileId: string) {
     const epoch = this.aclEpoch;
     if (!this.fileOrigin) this.configureFileOrigin(await this.request<Raw>(''));
@@ -843,8 +860,9 @@ export class StoatClient {
   ): Promise<string | null> {
     const epoch = this.aclEpoch;
     if (!this.fileOrigin) this.configureFileOrigin(await this.request<Raw>(''));
-    const message = await this.getMessage(channelId, messageId);
-    const attachment = message.attachments?.find((file) => file.id === fileId);
+    const attachment = (await this.messageAttachments(channelId, messageId)).find(
+      (file) => file.id === fileId,
+    );
     if (
       !attachment?.url ||
       !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(attachment.mime)
@@ -873,9 +891,8 @@ export class StoatClient {
     } finally {
       await reader.cancel();
     }
-    const fresh = await this.getMessage(channelId, messageId);
-    if (!fresh.attachments?.some((file) => file.id === fileId))
-      throw new StoatError(409, 'ACCESS_CHANGED');
+    const fresh = await this.messageAttachments(channelId, messageId);
+    if (!fresh.some((file) => file.id === fileId)) throw new StoatError(409, 'ACCESS_CHANGED');
     if (epoch !== this.aclEpoch) throw new StoatError(409, 'ACCESS_CHANGED');
     return `data:${mime};base64,${Buffer.concat(parts).toString('base64')}`;
   }
@@ -1961,6 +1978,8 @@ export class StoatClient {
       this.users.clear();
       this.servers.clear();
       this.channels.clear();
+      // Deletes and edits during a gateway gap were not seen; do not trust cached messages.
+      this.messages.clear();
       for (const u of p.users ?? []) this.users.set(u._id, u);
       for (const s of p.servers ?? []) this.servers.set(s._id, s);
       for (const c of p.channels ?? []) this.channels.set(c._id, c);
