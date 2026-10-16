@@ -240,10 +240,38 @@ app.whenReady().then(async () => {
     return community.activityRequest(roomId, command);
   });
   app.on('before-quit', () => providers.clearPlayback());
-  ipcMain.handle('rooms:youtube-player', (event, videoId) => {
+  ipcMain.handle('rooms:youtube-details', async (event, videoId) => {
     assertSender(event);
     if (typeof videoId !== 'string' || !/^[a-zA-Z0-9_-]{11}$/.test(videoId))
       throw new Error('Invalid YouTube video identifier.');
+    const endpoint = new URL('https://www.youtube.com/oembed');
+    endpoint.searchParams.set('url', `https://www.youtube.com/watch?v=${videoId}`);
+    endpoint.searchParams.set('format', 'json');
+    try {
+      const response = await fetch(endpoint, {
+        headers: { Accept: 'application/json' },
+        redirect: 'error',
+        signal: AbortSignal.timeout(6000),
+      });
+      // oEmbed answers 401 when the owner disallows embedding and 404 for private/removed videos.
+      if (response.status === 401 || response.status === 403 || response.status === 404)
+        return { playable: false };
+      if (!response.ok) return null;
+      const value = (await response.json()) as { title?: unknown; author_name?: unknown };
+      const title = typeof value.title === 'string' ? value.title.trim().slice(0, 240) : '';
+      const author =
+        typeof value.author_name === 'string' ? value.author_name.trim().slice(0, 120) : '';
+      return title ? { title, author, playable: true } : null;
+    } catch {
+      return null;
+    }
+  });
+  ipcMain.handle('rooms:youtube-player', (event, videoId, chrome) => {
+    assertSender(event);
+    if (typeof videoId !== 'string' || !/^[a-zA-Z0-9_-]{11}$/.test(videoId))
+      throw new Error('Invalid YouTube video identifier.');
+    if (chrome !== undefined && chrome !== 'minimal' && chrome !== 'native')
+      throw new Error('Invalid YouTube player style.');
     const instance = community.snapshot().instanceUrl;
     if (!instance) throw new Error('Connect the community server first.');
     const origin = new URL(instance).origin;
@@ -253,7 +281,7 @@ app.whenReady().then(async () => {
       );
     const nonce = randomUUID();
     return {
-      url: `${origin}/rooms-activities/player/youtube?videoId=${videoId}&nonce=${nonce}`,
+      url: `${origin}/rooms-activities/player/youtube?videoId=${videoId}&nonce=${nonce}${chrome === 'minimal' ? '&chrome=minimal' : ''}`,
       nonce,
     };
   });

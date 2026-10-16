@@ -127,7 +127,15 @@ export interface DesktopBridge {
   activity: {
     exportBoard(roomId: string, format?: 'svg' | 'png'): Promise<boolean>;
     youtubePlaylist(playlistId: string): Promise<{ url: string; nonce: string }>;
-    youtubePlayer(videoId: string): Promise<{ url: string; nonce: string }>;
+    /** Public oEmbed title; `playable: false` when the owner disabled embedding. */
+    youtubeDetails?(
+      videoId: string,
+    ): Promise<{ title: string; author: string; playable: true } | { playable: false } | null>;
+    /** `minimal` hides YouTube's own controls; ROOMS draws the shared ones. */
+    youtubePlayer(
+      videoId: string,
+      chrome?: 'minimal' | 'native',
+    ): Promise<{ url: string; nonce: string }>;
     snapshot(
       roomId: string,
       afterRevision?: number,

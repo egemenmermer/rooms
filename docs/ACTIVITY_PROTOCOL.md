@@ -18,7 +18,20 @@ Komutlar oda içinde sırayla uygulanır. Beklenen sürüm uyuşmazsa HTTP 409 `
 
 ## Oynatma ve kaynak gizliliği
 
-Çalarken konum `positionSec + (serverNow - effectiveServerTimeMs) * rate / 1000`, dururken `positionSec` değeridir. Medya seçimi oynatma neslini artırır. İstemci önceki neslin bitiş olayını yeni kaydın bitişi saymamalıdır. Yetkili tüm denetleyiciler oynatabilir, duraklatabilir, sarabilir ve kuyruğu yönetebilir.
+Çalarken konum `positionSec + (serverNow - effectiveServerTimeMs) * rate / 1000`, dururken `positionSec` değeridir. Medya seçimi oynatma neslini artırır. İstemci önceki neslin bitiş olayını yeni kaydın bitişi saymamalıdır. Varsayılan olarak yetkili tüm denetleyiciler oynatabilir, duraklatabilir, sarabilir ve kuyruğu yönetebilir.
+
+## Kuyruk ilerlemesi ve ev sahibi kumandası
+
+- `queue.add` isteğe bağlı `start: true` alır: öğe eklenir, hemen seçilir ve YouTube öğesiyse oynatılır.
+- `queue.select` isteğe bağlı `play: true` alır. Alan yoksa eski davranış korunur (seçilir, duraklatılmış kalır).
+- `queue.next {fromItemId, reason}` yalnızca `fromItemId` hâlâ güncel öğeyse etkili olur. Aynı bitişi bildiren diğer izleyicilerin komutları hata vermeden değişiklik yapmaz. `reason: "ended"` oynatma kararı sayılmaz: odada kontrol izni olan her katılımcı bildirebilir. Sırada öğe yoksa oda bitiş konumunda duraklar. `reason: "skip"` kumanda ister; liste sonunda `QUEUE_END` döner.
+- Bağımsız kaynak (kişisel dosya) öğeleri hiçbir zaman kendiliğinden oynamaz; herkes önce kendi kaynağını hazırlar.
+- `session.control {mode}` yalnızca ev sahibinindir. `everyone` (varsayılan, alan yoksa da) herkese kumanda verir. `host` modunda oynatma, sarma, seçme, atlama, sıralama, başkasının öğesini kaldırma ve etkinliği bitirme yalnızca ev sahibine ve `primary.controllers` listesindekilere açıktır (`SESSION_HOST_CONTROL`). Diğerleri sıraya öneri ekleyebilir ve kendi eklediklerini kaldırabilir.
+- `session.permit {userId, allowed}` ev sahibinin bir katılımcıya kumanda vermesi ya da geri almasıdır; hedef etkinlikte olmalıdır.
+- `session.host {userId}` ev sahipliğini kontrol izni olan bir katılımcıya devreder. Önceki ev sahibi kumanda listesinde kalır.
+- Ev sahibi ayrılırsa önce kumanda verilmiş katılımcılar, sonra en eski katılımcı ev sahibi olur.
+
+`directsSession(primary, userId, canControl)` yardımcı işlevi istemci ve sunucuda aynı kuralı uygular. Eski istemciler yeni alanları yok sayar; `host` modunda yetkisiz komutları sunucu reddeder.
 
 Ortak kuyruk medyası resmî YouTube video kimliği veya bağımsız kaynağa ait opak referans ve görünen başlık içerir. Kesin şema özel dosyaları, sağlayıcı URL'lerini, kimlik bilgilerini ve kişisel medya bağlantılarını kabul etmez. Bu sistem üstveri eşzamanlaması yapar; medya kaynağı değildir. Katılımcı izinli kaynağını bağımsız çözmelidir. Gerçek YouTube IFrame oynatımı ve iki oynatıcı arasındaki kayma düzeltmesi ayrı masaüstü kabul testleri gerektirir.
 

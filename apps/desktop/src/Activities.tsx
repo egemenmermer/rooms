@@ -25,7 +25,7 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
     kind === 'cinema'
       ? '/cinema'
       : kind === 'youtube'
-        ? '/watch/youtube'
+        ? '/cinema'
         : kind === 'screen'
           ? '/voice?view=share'
           : '/games';
