@@ -147,3 +147,46 @@ it('keeps channels listed during a server-wide membership recheck and refreshes 
   await vi.waitFor(() => expect(channels.mock.calls.length).toBeGreaterThan(before));
   expect(useCommunity.getState().channels).toEqual([general]);
 });
+
+it('brings a channel back when a permission event leaves it visible', async () => {
+  let event!: (value: GatewayEvent) => void;
+  const self = { id: 'self', username: 'self', displayName: 'Self', avatar: null };
+  const session: SocialSession = {
+    instanceUrl: 'https://example.test',
+    user: self,
+    status: 'connected',
+    remembered: true,
+  };
+  const general = { id: 'general', spaceId: 'community', name: 'General', type: 0, topic: null };
+  const bugs = { id: 'bugs', spaceId: 'community', name: 'bugs & features', type: 0, topic: null };
+  const channelPermissions = vi.fn(async (id: string) => ({
+    channelId: id,
+    access: 'allowed',
+    effective: { view: true },
+  }));
+  window.rooms = {
+    social: {
+      session: async () => session,
+      onEvent: (listener: (event: GatewayEvent) => void) => {
+        event = listener;
+        return () => {};
+      },
+      spaces: async () => [{ id: 'community', name: 'Friends', ownerId: 'self' }],
+      channels: async () => [general, bugs],
+      dms: async () => [],
+      readStates: async () => [],
+      messages: async () => [],
+      channelPermissions,
+    },
+  } as unknown as DesktopBridge;
+  const { initializeCommunity, useCommunity } = await import('../apps/desktop/src/community');
+  await initializeCommunity();
+  await vi.waitFor(() => expect(useCommunity.getState().channels).toEqual([general, bugs]));
+  event({
+    type: 'CHANNEL_ACCESS_INVALIDATED',
+    data: { channelIds: ['bugs'], reason: 'permissions-changed' },
+  });
+  expect(useCommunity.getState().channels).toEqual([general]);
+  expect(channelPermissions).toHaveBeenCalledWith('bugs');
+  await vi.waitFor(() => expect(useCommunity.getState().channels).toEqual([general, bugs]));
+});

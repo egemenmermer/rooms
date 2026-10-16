@@ -553,7 +553,12 @@ export class StoatClient {
             method === 'GET' && [403, 404].includes(response.status)
               ? /^\/channels\/([A-Za-z0-9_-]{1,128})(?:[/?]|$)/.exec(path)?.[1]
               : undefined;
-          if (deniedChannel)
+          // A deleted message is not a deleted channel; upstream answers UnknownChannel for that.
+          const messageGone =
+            response.status === 404 &&
+            /^\/channels\/[^/?]+\/messages\/[^/?]+/.test(path) &&
+            data.type !== 'UnknownChannel';
+          if (deniedChannel && !messageGone)
             this.invalidateChannelAccess(
               [deniedChannel],
               response.status === 404 ? 'removed' : 'permissions-changed',
