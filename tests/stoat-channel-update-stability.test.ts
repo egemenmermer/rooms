@@ -1,5 +1,6 @@
-import { expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { StoatClient } from '@rooms/stoat';
+afterEach(() => vi.unstubAllGlobals());
 it('does not revoke conversation history for message pointer, channel name or icon changes', async () => {
   const client = new StoatClient('http://localhost', 'fixture');
   const events: any[] = [];
@@ -64,4 +65,20 @@ it('ignores other members role or nickname changes but rechecks the current user
     data: { roles: [] },
   });
   expect(events.filter((e) => e.type === 'CHANNEL_ACCESS_INVALIDATED')).toHaveLength(1);
+});
+it('keeps a channel when one message is gone but hides it when the channel is unknown', async () => {
+  for (const [type, hidden] of [
+    ['NotFound', false],
+    ['UnknownChannel', true],
+  ] as const) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ type }), { status: 404 })),
+    );
+    const client = new StoatClient('http://localhost', 'fixture');
+    const events: any[] = [];
+    client.subscribe((e) => events.push(e));
+    await expect(client.getMessage('channel', 'message')).rejects.toMatchObject({ status: 404 });
+    expect(events.some((e) => e.type === 'CHANNEL_ACCESS_INVALIDATED')).toBe(hidden);
+  }
 });

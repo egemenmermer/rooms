@@ -560,6 +560,19 @@ function scheduleChannelRecheck() {
   clearTimeout(channelRecheck);
   channelRecheck = setTimeout(() => void useCommunity.getState().refresh(), 400);
 }
+/** A channel permission event only means access may have changed; bring back channels still visible. */
+async function recheckChannelAccess(channelIds: string[]) {
+  const session = captureSession();
+  const results = await Promise.all(
+    channelIds.map((id) =>
+      bridge()
+        .channelPermissions(id)
+        .catch(() => null),
+    ),
+  );
+  if (session.valid() && results.some((r) => r?.access === 'allowed' && r.effective?.view))
+    scheduleChannelRecheck();
+}
 function onEvent(event: GatewayEvent) {
   if (typeof event.sessionEpoch === 'number' && event.sessionEpoch !== nativeSessionEpoch) return;
   const state = useCommunity.getState();
@@ -567,8 +580,10 @@ function onEvent(event: GatewayEvent) {
     const data = event.data as import('@rooms/social').SocialChannelAccessInvalidation;
     const affected = new Set(data.channelIds);
     // A server-wide membership change usually leaves channel access intact. Keep those channels
-    // listed while access is rechecked; a definite permission change or removal hides them now.
+    // listed while access is rechecked. A channel permission change or removal hides them now;
+    // permission changes are rechecked so channels the user can still see come back.
     const listed = (id: string) => data.reason === 'membership-changed' || !affected.has(id);
+    const hidden = state.channels.filter((ch) => !listed(ch.id)).map((ch) => ch.id);
     for (const id of affected) {
       conversations.remove(id);
       setChannelAccess(id, 'checking');
@@ -592,6 +607,8 @@ function onEvent(event: GatewayEvent) {
     if (state.activeChannelId && affected.has(state.activeChannelId))
       void state.openChannel(state.activeChannelId);
     if (data.reason === 'membership-changed') scheduleChannelRecheck();
+    else if (data.reason === 'permissions-changed' && hidden.length)
+      void recheckChannelAccess(hidden);
   } else if (event.type === 'READ_STATE_SYNC') {
     const records = event.data as SocialReadState[];
     const readStates = Object.fromEntries(records.map((r) => [r.channelId, r]));
