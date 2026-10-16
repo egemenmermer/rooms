@@ -554,20 +554,29 @@ useCommunity.subscribe((state, previous) => {
     });
   }
 });
+let channelRecheck: ReturnType<typeof setTimeout> | undefined;
+/** Coalesces bursts of membership events into one authoritative channel list refresh. */
+function scheduleChannelRecheck() {
+  clearTimeout(channelRecheck);
+  channelRecheck = setTimeout(() => void useCommunity.getState().refresh(), 400);
+}
 function onEvent(event: GatewayEvent) {
   if (typeof event.sessionEpoch === 'number' && event.sessionEpoch !== nativeSessionEpoch) return;
   const state = useCommunity.getState();
   if (event.type === 'CHANNEL_ACCESS_INVALIDATED') {
     const data = event.data as import('@rooms/social').SocialChannelAccessInvalidation;
     const affected = new Set(data.channelIds);
+    // A server-wide membership change usually leaves channel access intact. Keep those channels
+    // listed while access is rechecked; a definite permission change or removal hides them now.
+    const listed = (id: string) => data.reason === 'membership-changed' || !affected.has(id);
     for (const id of affected) {
       conversations.remove(id);
       setChannelAccess(id, 'checking');
     }
     if (state.activeChannelId && affected.has(state.activeChannelId)) selectionEpoch++;
     useCommunity.setState((s) => ({
-      channels: s.channels.filter((ch) => !affected.has(ch.id)),
-      dms: s.dms.filter((ch) => !affected.has(ch.id)),
+      channels: s.channels.filter((ch) => listed(ch.id)),
+      dms: s.dms.filter((ch) => listed(ch.id)),
       messages: s.activeChannelId && affected.has(s.activeChannelId) ? [] : s.messages,
       typing: Object.fromEntries(Object.entries(s.typing).filter(([id]) => !affected.has(id))),
       readStates: Object.fromEntries(
@@ -582,6 +591,7 @@ function onEvent(event: GatewayEvent) {
     );
     if (state.activeChannelId && affected.has(state.activeChannelId))
       void state.openChannel(state.activeChannelId);
+    if (data.reason === 'membership-changed') scheduleChannelRecheck();
   } else if (event.type === 'READ_STATE_SYNC') {
     const records = event.data as SocialReadState[];
     const readStates = Object.fromEntries(records.map((r) => [r.channelId, r]));

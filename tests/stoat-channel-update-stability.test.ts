@@ -40,3 +40,28 @@ it('still invalidates real authority changes, cleared permission fields and unkn
     expect(events.some((e) => e.type === 'CHANNEL_ACCESS_INVALIDATED')).toBe(true);
   }
 });
+it('ignores other members role or nickname changes but rechecks the current user', async () => {
+  const client = new StoatClient('http://localhost', 'fixture');
+  const events: any[] = [];
+  client.subscribe((e) => events.push(e));
+  const internal = client as any;
+  internal.currentUser = { id: 'self' };
+  internal.channels.set('channel', {
+    _id: 'channel',
+    server: 'space',
+    channel_type: 'TextChannel',
+  });
+  await internal.processPacket({
+    type: 'ServerMemberUpdate',
+    id: { server: 'space', user: 'friend' },
+    data: { nickname: 'yeni ad', roles: ['role'] },
+  });
+  await internal.processPacket({ type: 'ServerMemberLeave', id: 'space', user: 'friend' });
+  expect(events.filter((e) => e.type === 'CHANNEL_ACCESS_INVALIDATED')).toEqual([]);
+  await internal.processPacket({
+    type: 'ServerMemberUpdate',
+    id: { server: 'space', user: 'self' },
+    data: { roles: [] },
+  });
+  expect(events.filter((e) => e.type === 'CHANNEL_ACCESS_INVALIDATED')).toHaveLength(1);
+});

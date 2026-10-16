@@ -2021,7 +2021,20 @@ export class StoatClient {
         this.invalidateChannelAccess([p.id], 'permissions-changed', true);
     }
     if (p.type === 'ServerMemberJoin') ++this.managementEpoch;
-    if (
+    // Another member's roles, nickname or departure cannot change this user's channel access.
+    // ServerMemberUpdate carries { server, user } as id; ServerMemberLeave carries the user separately.
+    const memberUser =
+      p.type === 'ServerMemberUpdate'
+        ? p.id?.user
+        : p.type === 'ServerMemberLeave'
+          ? p.user
+          : undefined;
+    const otherMember =
+      typeof memberUser === 'string' &&
+      typeof this.currentUser?.id === 'string' &&
+      memberUser !== this.currentUser.id;
+    if (otherMember) ++this.managementEpoch;
+    else if (
       [
         'ServerUpdate',
         'ServerRoleUpdate',
