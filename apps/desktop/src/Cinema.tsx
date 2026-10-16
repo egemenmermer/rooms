@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import {
   directsSession,
+  endsActivity,
   type ActivityCommand,
   type QueueItem,
   type RoomSnapshot,
@@ -37,6 +38,7 @@ import { CommunityInvite } from './RealSocial';
 import { chooseCinemaMedia, useCinemaSession } from './cinema-session';
 import { uiError } from './i18n';
 import { stopScreen, useRealtime } from './realtime';
+import { silencedHere } from './participant-audio';
 import { activityBridge } from './runtime-sources';
 import { CinemaYouTubeStage } from './CinemaYouTubeStage';
 import { CinemaShareView } from './CinemaShareView';
@@ -194,7 +196,7 @@ function SeatRow({
           <div
             key={seat.id}
             role="listitem"
-            className={`cozy-seat ${person?.speaking ? 'speaking' : ''} ${seat.joined ? '' : 'away'}`}
+            className={`cozy-seat ${person?.speaking && !silencedHere(person) ? 'speaking' : ''} ${seat.joined ? '' : 'away'}`}
           >
             <button
               className="cozy-seat-button"
@@ -354,6 +356,8 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
   const roleControl = self ? self.canControl : true;
   const roleCreate = self ? self.canCreate !== false : true;
   const canDirect = connected && directsSession(primary, me, roleControl);
+  // Steering can be shared; ending the shared player for everyone stays with the host.
+  const canEnd = connected && endsActivity(primary, me, roleControl);
   const isHost = !!me && primary?.hostUserId === me;
   const { current, next } = queueProgress(room);
   const nameOf = useCallback(
@@ -516,7 +520,7 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
   const idle = !current || (endedItem === current.id && !next);
   const blocking = primary && primary.activity !== 'youtube' ? primary : null;
   const switchReason = blocking
-    ? canDirect
+    ? canEnd
       ? `Şu an ${activityName[blocking.activity]} açık; açtığında kapanır.`
       : `Şu an ${activityName[blocking.activity]} açık. Host kapattığında açabilirsin.`
     : undefined;
@@ -528,7 +532,7 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
 
   const endFor = async (target: Primary['activity']) => {
     if (!primary || primary.activity === target) return false;
-    if (!canDirect) throw new Error(switchReason ?? directReason);
+    if (!canEnd) throw new Error(switchReason ?? directReason);
     if (primary.activity === 'screen' && realtime.sharing) await stopScreen();
     await activity.send({ type: 'end' });
     return true;
@@ -552,7 +556,7 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
   const addBox = (autoFocus = false) => (
     <YouTubeAddBox
       channelId={realtime.channelId ?? roomId}
-      disabled={!connected || !!(blocking && !canDirect) || (!primary && !roleCreate)}
+      disabled={!connected || !!(blocking && !canEnd) || (!primary && !roleCreate)}
       disabledReason={
         !connected
           ? 'Etkinlik hizmeti bağlı değil.'
@@ -766,7 +770,7 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
             <FolderOpen size={16} />
             Dosyamı seç
           </button>
-          {canDirect && (
+          {canEnd && (
             <button className="button secondary" onClick={() => run({ type: 'end' })}>
               Oturumu kapat
             </button>
@@ -796,7 +800,7 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
           <button className="button primary" onClick={() => navigate('/games')}>
             Masaya git
           </button>
-          {canDirect && (
+          {canEnd && (
             <button className="button secondary" onClick={() => run({ type: 'end' })}>
               Masayı kapat
             </button>
@@ -1050,13 +1054,13 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
                 personalBusy ||
                 !connected ||
                 (primary?.activity !== 'cinema' && !personalTitle.trim()) ||
-                (!!primary && primary.activity !== 'cinema' && !canDirect)
+                (!!primary && primary.activity !== 'cinema' && !canEnd)
               }
               reason={
                 !connected
                   ? 'Etkinlik bağlantısı gerekli.'
-                  : primary && primary.activity !== 'cinema' && !canDirect
-                    ? switchReason
+                  : primary && primary.activity !== 'cinema' && !canEnd
+                    ? `Şu an ${activityName[primary.activity]} açık. Host kapattığında açabilirsin.`
                     : 'Önce içerik adını yaz.'
               }
               onClick={() => void choosePersonal(true)}

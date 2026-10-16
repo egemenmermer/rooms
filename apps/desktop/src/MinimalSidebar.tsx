@@ -16,6 +16,8 @@ import {
   MonitorUp,
   Gamepad2,
   PartyPopper,
+  Film,
+  VolumeX,
 } from 'lucide-react';
 import { IconButton, Modal } from '@rooms/design';
 import { useCommunity } from './community';
@@ -29,6 +31,10 @@ import {
   startRoomAudio,
   stopScreen,
 } from './realtime';
+import { silencedHere } from './participant-audio';
+import { useActivityRoom } from './activity';
+import { activityRoute } from './Activities';
+import { openRoomActivity } from './MusicDJ';
 import { useVoiceDirectory } from './voice-directory';
 import { VoiceAvatar } from './VoiceAvatar';
 import { QuietMenu } from './QuietMenu';
@@ -36,6 +42,32 @@ import { ChannelTools } from './ChannelTools';
 import { UserProfileDialog } from './SocialSurfaces';
 import type { SocialUser } from '@rooms/social';
 import { uiError } from './i18n';
+/** A running activity in the joined room, one click from the room list. */
+function RoomActivityRow({ roomId, onOpen }: { roomId: string; onOpen(path: string): void }) {
+  const activity = useActivityRoom(roomId),
+    me = useCommunity((s) => s.user?.id);
+  const room = activity.status === 'connected' ? activity.room : null;
+  const primary = room?.primary;
+  if (!room || !primary) return null;
+  const joined = room.participants.some((p) => p.userId === me);
+  const count = room.participants.length;
+  return (
+    <button
+      className="minimal-activity"
+      title={`${primary.title} · ${count} kişi`}
+      aria-label={`${primary.title} sürüyor, ${count} kişi. ${joined ? 'Aç' : 'Katıl'}`}
+      onClick={() => onOpen(activityRoute(primary.activity))}
+    >
+      {['cinema', 'youtube', 'screen'].includes(primary.activity) ? (
+        <Film size={13} />
+      ) : (
+        <Gamepad2 size={13} />
+      )}
+      <span>{primary.title}</span>
+      <small>{joined ? 'Aç' : 'Katıl'}</small>
+    </button>
+  );
+}
 export function MinimalSidebar({
   notify,
   invite,
@@ -175,27 +207,39 @@ export function MinimalSidebar({
                     <i className="room-connected-dot" />
                   )}
                 </button>
-                {occupants.map((p) => (
-                  <button
-                    data-voice-participant-id={p.id}
-                    key={p.id}
-                    className={`minimal-occupant ${'speaking' in p && p.speaking && !p.muted ? 'speaking' : ''}`}
-                    onClick={() =>
-                      setPerson({ id: p.id, username: p.name, displayName: p.name, avatar: null })
-                    }
-                  >
-                    <VoiceAvatar id={p.id} name={p.name} />
-                    <span>{p.name}</span>
-                    {'screen' in p && p.screen === true && (
-                      <MonitorUp size={13} aria-label="Ekran paylaşıyor" />
-                    )}
-                    {'deafened' in p && p.deafened ? (
-                      <HeadphoneOff size={12} aria-label="Sağırlaştırdı" />
-                    ) : (
-                      p.muted && <MicOff size={12} />
-                    )}
-                  </button>
-                ))}
+                {occupants.map((p) => {
+                  const silenced = 'volume' in p && silencedHere(p);
+                  return (
+                    <button
+                      data-voice-participant-id={p.id}
+                      key={p.id}
+                      className={`minimal-occupant ${'speaking' in p && p.speaking && !p.muted && !silenced ? 'speaking' : ''}`}
+                      onClick={() =>
+                        setPerson({ id: p.id, username: p.name, displayName: p.name, avatar: null })
+                      }
+                    >
+                      <VoiceAvatar id={p.id} name={p.name} />
+                      <span>{p.name}</span>
+                      {'screen' in p && p.screen === true && (
+                        <MonitorUp size={13} aria-label="Ekran paylaşıyor" />
+                      )}
+                      {silenced && (
+                        <VolumeX size={12} aria-label="Sesini kapattın, yalnızca sende" />
+                      )}
+                      {'deafened' in p && p.deafened ? (
+                        <HeadphoneOff size={12} aria-label="Sağırlaştırdı" />
+                      ) : (
+                        p.muted && <MicOff size={12} />
+                      )}
+                    </button>
+                  );
+                })}
+                {r.channelId === ch.id && r.status === 'connected' && (
+                  <RoomActivityRow
+                    roomId={ch.id}
+                    onOpen={(path) => openRoomActivity(path, navigate)}
+                  />
+                )}
                 {!(r.channelId === ch.id && r.status === 'connected') &&
                   (directory.error ||
                     directory.loading ||
