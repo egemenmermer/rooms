@@ -281,6 +281,8 @@ const bridge: DesktopBridge = {
     captureSources: () => ipcRenderer.invoke('rooms:capture-sources'),
     selectCaptureSource: (id, options) => ipcRenderer.invoke('rooms:capture-select', id, options),
     clearCaptureSource: () => ipcRenderer.invoke('rooms:capture-clear'),
+    openBrowserVideo: (videoId, title) =>
+      ipcRenderer.invoke('rooms:capture-browser-video', videoId, title),
     captureStatus: () => ipcRenderer.invoke('rooms:capture-status'),
   },
 };

@@ -49,6 +49,7 @@ export function CinemaYouTubeStage({
   onToggleFullscreen,
   onEnded,
   onOpenSource,
+  onUnembeddable,
 }: {
   item: QueueItem & { media: { kind: 'youtube' } };
   timeline: Timeline;
@@ -64,6 +65,8 @@ export function CinemaYouTubeStage({
   onToggleFullscreen(): void;
   onEnded(itemId: string): void;
   onOpenSource(): void;
+  /** The owner keeps this video off other sites; the cinema switches to a browser share. */
+  onUnembeddable?(videoId: string): void;
 }) {
   const videoId = item.media.videoId;
   const frame = useRef<HTMLIFrameElement>(null);
@@ -171,8 +174,10 @@ export function CinemaYouTubeStage({
         setReady(true);
         setError('');
       } else if (kind === 'error') {
+        const code = Number(data?.code);
+        if (code === 101 || code === 150) onUnembeddable?.(videoId);
         setReady(false);
-        setError(youtubeErrorText(Number(data?.code)));
+        setError(youtubeErrorText(code));
       } else if (kind === 'autoplay-blocked') {
         setChrome('native');
       } else if (kind === 'position' || kind === 'state') {
@@ -199,7 +204,7 @@ export function CinemaYouTubeStage({
     };
     window.addEventListener('message', listener);
     return () => window.removeEventListener('message', listener);
-  }, [player, ended, synchronize]);
+  }, [player, ended, synchronize, onUnembeddable, videoId]);
 
   useEffect(() => {
     synchronize();
