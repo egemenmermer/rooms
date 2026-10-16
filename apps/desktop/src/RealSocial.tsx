@@ -1564,7 +1564,7 @@ export function CommunityVoice({
         data-voice-participant-id={p.id}
         className={`reference-participant ${video ? 'video-tile' : ''} ${speaking ? 'speaking' : ''} ${camera ? 'with-camera' : ''} ${layout === 'focus' && focused?.id === p.id ? 'focused' : ''}`}
         onClick={() => (video && layout === 'focus' ? setFocus(p.id) : setMember(p.id))}
-        aria-label={`${p.name}${speaking ? ', konuşuyor' : ''}${p.muted ? ', mikrofon kapalı' : ''}${silenced ? ', sesini kapattın' : ''}`}
+        aria-label={`${p.name}${speaking ? ', konuşuyor' : ''}${p.muted ? ', mikrofon kapalı' : ''}${p.deafened ? ', sağırlaştırdı' : ''}${silenced ? ', sesini kapattın' : ''}`}
       >
         {camera ? (
           <MediaStage id={camera.id} label={`${p.name} kamerası`} className="voice-camera" />
@@ -1576,6 +1576,7 @@ export function CommunityVoice({
         <span className="reference-participant-status">
           {p.screen && <MonitorUp size={15} aria-label="Ekran paylaşıyor" />}
           {silenced && <VolumeX size={15} aria-label="Sesini kapattın, yalnızca sende" />}
+          {p.deafened && <ReferenceIcon name="headphones-off" size={15} />}
           {video ? (
             <ReferenceIcon name={camera ? 'video' : 'video-off'} size={15} />
           ) : speaking ? (
