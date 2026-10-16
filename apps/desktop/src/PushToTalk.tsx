@@ -3,13 +3,16 @@ import { useEffect } from 'react';
 import { useRooms } from './store';
 import { useRealtime } from './realtime';
 import { mediaProvider } from './runtime-sources';
+import { matchesPushToTalkKey, pushToTalkKey, releasesPushToTalkKey } from './push-to-talk-key';
 /** A held key owns only the microphone it enabled. Key release and focus loss always remute it. */
 export function PushToTalk({ notify }: { notify(message: string): void }) {
   const enabled = useRooms((s) => s.preferences.pushToTalk);
+  const shortcut = useRooms((s) => s.preferences.pushToTalkKey);
   const { channelId, status } = useRealtime();
   useEffect(() => {
     if (!enabled || !channelId || status !== 'connected') return;
     const provider = mediaProvider();
+    const key = pushToTalkKey(shortcut);
     let held = false;
     let disposed = false;
     const fail = (error: unknown) =>
@@ -25,14 +28,7 @@ export function PushToTalk({ notify }: { notify(message: string): void }) {
     };
     void provider.mute(true).catch(fail);
     const down = (event: KeyboardEvent) => {
-      if (
-        event.code !== 'Space' ||
-        !event.ctrlKey ||
-        !event.shiftKey ||
-        event.repeat ||
-        held ||
-        provider.snapshot().deafened
-      )
+      if (!matchesPushToTalkKey(event, key) || event.repeat || held || provider.snapshot().deafened)
         return;
       if (
         (event.target as HTMLElement).closest('input,textarea,select,[contenteditable="true"]') ||
@@ -51,14 +47,7 @@ export function PushToTalk({ notify }: { notify(message: string): void }) {
         .catch(fail);
     };
     const up = (event: KeyboardEvent) => {
-      if (
-        event.code === 'Space' ||
-        event.code === 'ControlLeft' ||
-        event.code === 'ControlRight' ||
-        event.code === 'ShiftLeft' ||
-        event.code === 'ShiftRight'
-      )
-        release();
+      if (releasesPushToTalkKey(event.code, key)) release();
     };
     const visibility = () => {
       if (document.hidden) release();
@@ -75,6 +64,6 @@ export function PushToTalk({ notify }: { notify(message: string): void }) {
       window.removeEventListener('blur', release);
       document.removeEventListener('visibilitychange', visibility);
     };
-  }, [enabled, channelId, status, notify]);
+  }, [enabled, shortcut, channelId, status, notify]);
   return null;
 }

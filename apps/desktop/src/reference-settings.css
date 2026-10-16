@@ -979,3 +979,14 @@
 .settings-reference-surface {
   left: 0 !important;
 }
+
+.reference-settings .ptt-key-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.reference-settings .ptt-key-field kbd {
+  white-space: nowrap;
+}

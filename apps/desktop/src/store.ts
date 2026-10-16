@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { DEFAULT_PUSH_TO_TALK_KEY, parsePushToTalkKey } from './push-to-talk-key';
 
 export interface Preferences {
   roomEventSounds: boolean;
@@ -7,6 +8,7 @@ export interface Preferences {
   noiseSuppression: boolean;
   noiseSuppressionMode: 'standard' | 'strong';
   pushToTalk: boolean;
+  pushToTalkKey: string;
   reduceMotion: boolean;
   reduceTransparency: boolean;
   compact: boolean;
@@ -24,6 +26,7 @@ const defaults: Preferences = {
   noiseSuppression: true,
   noiseSuppressionMode: 'strong',
   pushToTalk: false,
+  pushToTalkKey: DEFAULT_PUSH_TO_TALK_KEY,
   reduceMotion: false,
   reduceTransparency: false,
   compact: false,
@@ -54,6 +57,10 @@ function preferencesFrom(value: unknown): Preferences {
   for (const key of Object.keys(defaults) as (keyof Preferences)[]) {
     if (key === 'noiseSuppressionMode') {
       result.noiseSuppressionMode = previous[key] === 'standard' ? 'standard' : 'strong';
+      continue;
+    }
+    if (key === 'pushToTalkKey') {
+      if (parsePushToTalkKey(previous[key])) result.pushToTalkKey = previous[key] as string;
       continue;
     }
     if (key === 'chatFontSize') {

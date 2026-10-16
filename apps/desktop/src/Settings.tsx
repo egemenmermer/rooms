@@ -62,6 +62,7 @@ import {
 } from 'lucide-react';
 import { Avatar, IconButton, Modal, Toggle } from '@rooms/design';
 import { useRooms } from './store';
+import { PushToTalkKeyField } from './PushToTalkKeyField';
 import { ConnectionPane } from './ConnectionPane';
 import { useCommunity } from './community';
 import { useRealtime, setNoiseSuppression } from './realtime';
@@ -1268,8 +1269,14 @@ export default function Settings({
                         onChange={(v) => setPreference('pushToTalk', v)}
                       />
                     </Row>
-                    <Row title="Bas konuş tuşu" description="Sabit kısayol.">
-                      <kbd>Ctrl Shift Space</kbd>
+                    <Row
+                      title="Bas konuş tuşu"
+                      description="Basılı tuttuğun sürece mikrofonun açık kalır."
+                    >
+                      <PushToTalkKeyField
+                        value={p.pushToTalkKey}
+                        onChange={(value) => setPreference('pushToTalkKey', value)}
+                      />
                     </Row>
                     <Unsupported
                       title="Girişte mikrofonumu sessize al"
