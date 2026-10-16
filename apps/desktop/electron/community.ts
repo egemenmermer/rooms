@@ -1343,6 +1343,19 @@ export async function setupCommunity(
     callRequest('respond', dmCallActionSchema.parse(input)),
   );
   handle('rooms:dm-call-grant', (input) => callRequest('grant', dmCallIdSchema.parse(input)));
+  handle('rooms:media-deafen', async (channelId, deafened) => {
+    try {
+      await broker('deafen', {
+        channelId: id.parse(channelId),
+        deafened: z.boolean().parse(deafened),
+      });
+      return true;
+    } catch (error) {
+      // Servers without the endpoint keep deafen local; it never blocks the toggle.
+      if (error instanceof StoatError && error.status === 404) return false;
+      throw error;
+    }
+  });
   handle('rooms:media-directory', async (channelIds) => {
     const ids = z.array(id).min(1).max(32).parse(channelIds);
     const result = await broker('directory', { channelIds: ids });
@@ -1361,6 +1374,7 @@ export async function setupCommunity(
                         name: z.string().max(128),
                         muted: z.boolean(),
                         screen: z.boolean().optional(),
+                        deafened: z.boolean().optional(),
                       })
                       .strict(),
                   )

@@ -9,6 +9,7 @@ import {
   Hash,
   Headphones,
   Mic,
+  HeadphoneOff,
   MicOff,
   PhoneOff,
   Settings,
@@ -240,7 +241,9 @@ export function VoiceSidebar({
                 >
                   <VoiceAvatar id={p.id} name={p.name} />
                   <span title={p.name}>{p.name}</span>
-                  {p.muted ? (
+                  {p.deafened ? (
+                    <HeadphoneOff size={13} aria-label="Sağırlaştırdı" />
+                  ) : p.muted ? (
                     <ReferenceIcon name="mic-off" size={13} />
                   ) : p.speaking && r.status === 'connected' ? (
                     <span className="sidebar-speaking-bars">

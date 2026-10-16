@@ -141,9 +141,17 @@ export interface DesktopBridge {
     directory?(channelIds: string[]): Promise<{
       rooms: {
         channelId: string;
-        participants: { id: string; name: string; muted: boolean; screen?: boolean }[];
+        participants: {
+          id: string;
+          name: string;
+          muted: boolean;
+          screen?: boolean;
+          deafened?: boolean;
+        }[];
       }[];
     }>;
+    /** Shares this user's deafen state with the room; false when the server lacks support. */
+    deafen?(channelId: string, deafened: boolean): Promise<boolean>;
     grant(
       channelId: string,
     ): Promise<{ serverUrl: string; roomName: string; token: string; expiresAt: string }>;

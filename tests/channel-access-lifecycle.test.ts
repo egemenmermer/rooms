@@ -108,3 +108,42 @@ it('does not restore another account data from a stale refresh', async () => {
   expect(useCommunity.getState().spaces).toEqual([]);
   expect(useCommunity.getState().user?.id).toBe('new');
 });
+
+it('keeps channels listed during a server-wide membership recheck and refreshes the list', async () => {
+  let event!: (value: GatewayEvent) => void;
+  const self = { id: 'self', username: 'self', displayName: 'Self', avatar: null };
+  const session: SocialSession = {
+    instanceUrl: 'https://example.test',
+    user: self,
+    status: 'connected',
+    remembered: true,
+  };
+  const general = { id: 'general', spaceId: 'community', name: 'General', type: 0, topic: null };
+  const channels = vi.fn(async () => [general]);
+  window.rooms = {
+    social: {
+      session: async () => session,
+      onEvent: (listener: (event: GatewayEvent) => void) => {
+        event = listener;
+        return () => {};
+      },
+      spaces: async () => [{ id: 'community', name: 'Friends', ownerId: 'self' }],
+      channels,
+      dms: async () => [],
+      readStates: async () => [],
+      messages: async () => [],
+      channelPermissions: async () => ({ channelId: 'general', access: 'allowed' }),
+    },
+  } as unknown as DesktopBridge;
+  const { initializeCommunity, useCommunity } = await import('../apps/desktop/src/community');
+  await initializeCommunity();
+  await vi.waitFor(() => expect(useCommunity.getState().channels).toEqual([general]));
+  const before = channels.mock.calls.length;
+  event({
+    type: 'CHANNEL_ACCESS_INVALIDATED',
+    data: { channelIds: ['general'], reason: 'membership-changed' },
+  });
+  expect(useCommunity.getState().channels).toEqual([general]);
+  await vi.waitFor(() => expect(channels.mock.calls.length).toBeGreaterThan(before));
+  expect(useCommunity.getState().channels).toEqual([general]);
+});

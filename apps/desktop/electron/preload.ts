@@ -261,6 +261,7 @@ const bridge: DesktopBridge = {
   },
   media: {
     directory: (channelIds) => ipcRenderer.invoke('rooms:media-directory', channelIds),
+    deafen: (id, deafened) => ipcRenderer.invoke('rooms:media-deafen', id, deafened),
     grant: (id) => ipcRenderer.invoke('rooms:media-grant', id),
     presenter: (id, action) => ipcRenderer.invoke('rooms:media-presenter', id, action),
     screenState: (id) => ipcRenderer.invoke('rooms:media-screen-state', id),
