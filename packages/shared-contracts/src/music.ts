@@ -96,7 +96,10 @@ export const musicSnapshotSchema = z
       .object({
         added: z.number().int().min(1).max(100),
         skipped: z.number().int().min(0).max(100),
+        /** Spotify's public embed capped the list at 100 rows. */
         truncated: z.boolean(),
+        /** The rest of the list did not fit in the room queue. */
+        queueFull: z.boolean(),
       })
       .strict()
       .optional(),

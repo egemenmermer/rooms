@@ -423,7 +423,8 @@ export class MusicWorker {
                 importNotice = {
                   added: fits,
                   skipped: list.skipped ?? 0,
-                  truncated: !!list.truncated || cut,
+                  truncated: !!list.truncated,
+                  queueFull: cut,
                 };
             } else if (youtubeSource(url))
               references = await (this.options.youtubeReferences ?? youtubeReferences)(url);

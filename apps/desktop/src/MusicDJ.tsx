@@ -264,6 +264,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
                   (n.truncated
                     ? ' Spotify herkese açık görünümde en fazla 100 parça gösterir; listenin devamı eklenmedi.'
                     : '') +
+                  (n.queueFull ? ' Kuyrukta yer kalmadığı için listenin kalanı eklenmedi.' : '') +
                   (n.skipped ? ` ${n.skipped} kayıt (bölüm/yerel dosya) atlandı.` : ''),
               );
           }

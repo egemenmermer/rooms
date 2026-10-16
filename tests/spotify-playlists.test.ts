@@ -175,7 +175,7 @@ it('adds only what fits when played and current tracks already occupy the queue'
   await worker.command('room', lease, { type: 'add-list', tracks: Array(99).fill(track) });
   const result = await worker.command('room', lease, { type: 'add', url });
   expect(result.queue).toHaveLength(100);
-  expect(result.importNotice).toEqual({ added: 1, skipped: 0, truncated: true });
+  expect(result.importNotice).toEqual({ added: 1, skipped: 0, truncated: false, queueFull: true });
   await expect(worker.command('room', lease, { type: 'add', url })).rejects.toThrow(
     'MUSIC_QUEUE_FULL',
   );
@@ -207,7 +207,7 @@ it('fills the room left by a 100-track playlist after one song was added', async
   await worker.command('room', lease, { type: 'add-list', tracks: [track] });
   const result = await worker.command('room', lease, { type: 'add', url });
   expect(result.queue).toHaveLength(100);
-  expect(result.importNotice).toEqual({ added: 99, skipped: 0, truncated: true });
+  expect(result.importNotice).toEqual({ added: 99, skipped: 0, truncated: true, queueFull: true });
 });
 it('resolves spotify.link short links to playlists and keeps tracks on the song path', async () => {
   const resolve = vi.fn(async (raw: string) =>
@@ -279,4 +279,42 @@ it('follows spotify.link only to Spotify tracks or playlists on the allowed host
   await expect(resolveSpotifyShortLink('https://on.soundcloud.com/abc', request)).rejects.toThrow(
     'MUSIC_SOURCE_FAILED',
   );
+});
+it('reports the Spotify cap and queue room as separate causes', async () => {
+  const make = (list: { truncated: boolean; skipped: number }) => {
+    const worker = new MusicWorker({
+      publisher: () => ({
+        connect: async () => {},
+        pause: () => {},
+        close: async () => {},
+        position: () => 0,
+        play: async () => {},
+        playYouTube: async () => {},
+      }),
+      lease: async () => lease,
+      history: new MusicHistory(),
+      matchingYouTubeReference: async () => ({
+        source: 'https://www.youtube.com/watch?v=abcdefghijk',
+        title: 'Matched',
+        durationSec: 123,
+        requestedProvider: 'spotify' as const,
+      }),
+      spotifyPlaylist: async () => ({ name: 'Mix', tracks: [track, track], ...list }),
+    });
+    workers.push(worker);
+    return worker;
+  };
+  const capOnly = await make({ truncated: true, skipped: 1 }).command('room', lease, {
+    type: 'add',
+    url,
+  });
+  expect(capOnly.importNotice).toEqual({ added: 2, skipped: 1, truncated: true, queueFull: false });
+  const roomOnly = make({ truncated: false, skipped: 0 });
+  await roomOnly.command('room', lease, { type: 'add-list', tracks: Array(99).fill(track) });
+  expect((await roomOnly.command('room', lease, { type: 'add', url })).importNotice).toEqual({
+    added: 1,
+    skipped: 0,
+    truncated: false,
+    queueFull: true,
+  });
 });
