@@ -255,6 +255,15 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           } else {
             setInput('');
             setResults(null);
+            const n = value.importNotice;
+            if (n)
+              setError(
+                `${n.added} şarkı eklendi.` +
+                  (n.truncated
+                    ? ' Spotify herkese açık görünümde en fazla 100 parça gösterir; listenin devamı eklenmedi.'
+                    : '') +
+                  (n.skipped ? ` ${n.skipped} kayıt (bölüm/yerel dosya) atlandı.` : ''),
+              );
           }
         }
       }

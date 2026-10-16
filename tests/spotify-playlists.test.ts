@@ -179,3 +179,47 @@ it('rejects queue overflow before resolving or inserting Spotify tracks', async 
   expect(worker.snapshot('room').queue).toHaveLength(99);
   expect(matcher).toHaveBeenCalledTimes(1);
 });
+it('lets queue adds accept a capped embed or skip non-track rows only when the caller opts in', async () => {
+  const capped = () => response(Array(100).fill(row));
+  const result = await spotifyPlaylist(url, async () => capped(), { partial: true });
+  expect(result).toMatchObject({ truncated: true, skipped: 0 });
+  expect(result.tracks).toHaveLength(100);
+  const mixed = () =>
+    response([row, { ...row, uri: 'spotify:episode:bad' }, { ...row, duration: 0 }]);
+  const partial = await spotifyPlaylist(url, async () => mixed(), { partial: true });
+  expect(partial).toMatchObject({ truncated: false, skipped: 2 });
+  expect(partial.tracks).toEqual([track]);
+  await expect(spotifyPlaylist(url, async () => mixed())).rejects.toThrow('INCOMPLETE');
+  await expect(
+    spotifyPlaylist(url, async () => response([{ ...row, entityType: 'episode' }]), {
+      partial: true,
+    }),
+  ).rejects.toThrow('MUSIC_SPOTIFY_PLAYLIST_INCOMPLETE');
+});
+it('reports a partial playlist import on the add response only', async () => {
+  const { worker } = setup();
+  const partial = new MusicWorker({
+    publisher: () => ({
+      connect: async () => {},
+      pause: () => {},
+      close: async () => {},
+      position: () => 0,
+      play: async () => {},
+      playYouTube: async () => {},
+    }),
+    lease: async () => lease,
+    history: new MusicHistory(),
+    matchingYouTubeReference: async () => ({
+      source: 'https://www.youtube.com/watch?v=abcdefghijk',
+      title: 'Matched',
+      durationSec: 123,
+      requestedProvider: 'spotify' as const,
+    }),
+    spotifyPlaylist: async () => ({ name: 'Mix', tracks: [track], truncated: true, skipped: 1 }),
+  });
+  workers.push(partial);
+  const result = await partial.command('room', lease, { type: 'add', url });
+  expect(result.importNotice).toEqual({ added: 1, skipped: 1, truncated: true });
+  expect(partial.snapshot('room').importNotice).toBeUndefined();
+  expect((await worker.command('room', lease, { type: 'add', url })).importNotice).toBeUndefined();
+});

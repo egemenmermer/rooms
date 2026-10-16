@@ -91,6 +91,15 @@ export const musicSnapshotSchema = z
       .object({ query: musicSearchQuerySchema, candidates: musicSearchResultsSchema })
       .strict()
       .optional(),
+    /** Set on the add response only, when a Spotify playlist was imported partially. */
+    importNotice: z
+      .object({
+        added: z.number().int().min(1).max(100),
+        skipped: z.number().int().min(0).max(100),
+        truncated: z.boolean(),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 export type MusicSnapshot = z.infer<typeof musicSnapshotSchema>;

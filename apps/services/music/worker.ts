@@ -396,6 +396,7 @@ export class MusicWorker {
     return this.serial(s, async () => {
       if (this.sessions.get(channelId) !== s) throw new Error('MUSIC_LEASE_EXPIRED');
       await this.options.lease(channelId, s.leaseId);
+      let importNotice: MusicSnapshot['importNotice'];
       switch (command.type) {
         case 'add':
         case 'add-list': {
@@ -404,11 +405,20 @@ export class MusicWorker {
           try {
             let references: (MusicReference & { spotify?: SpotifyPlaylistTrack })[];
             if (command.type === 'add-list') references = command.tracks.map(playlistReference);
-            else if (parseSongLink(command.url)?.kind === 'playlist')
-              references = (
-                await (this.options.spotifyPlaylist ?? spotifyPlaylist)(command.url)
-              ).tracks.map(playlistReference);
-            else if (youtubeSource(command.url))
+            else if (parseSongLink(command.url)?.kind === 'playlist') {
+              const list = await (this.options.spotifyPlaylist ?? spotifyPlaylist)(
+                command.url,
+                undefined,
+                { partial: true },
+              );
+              references = list.tracks.map(playlistReference);
+              if (list.truncated || list.skipped)
+                importNotice = {
+                  added: list.tracks.length,
+                  skipped: list.skipped ?? 0,
+                  truncated: !!list.truncated,
+                };
+            } else if (youtubeSource(command.url))
               references = await (this.options.youtubeReferences ?? youtubeReferences)(command.url);
             else if (parseSongLink(command.url)) {
               const song = await (this.options.songMetadata ?? songMetadata)(command.url);
@@ -560,7 +570,7 @@ export class MusicWorker {
         }
       }
       await this.archive(s);
-      return this.snapshot(channelId);
+      return { ...this.snapshot(channelId), ...(importNotice ? { importNotice } : {}) };
     });
   }
 }

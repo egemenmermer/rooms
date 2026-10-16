@@ -15,7 +15,14 @@ const clean = (value: unknown) =>
 export async function spotifyPlaylist(
   raw: string,
   request: typeof privateFetch = privateFetch,
-): Promise<{ name: string; tracks: SpotifyPlaylistTrack[] }> {
+  /** `partial` lets queue adds accept a capped embed or skip non-track rows; the caller must report it. */
+  options: { partial?: boolean } = {},
+): Promise<{
+  name: string;
+  tracks: SpotifyPlaylistTrack[];
+  truncated?: boolean;
+  skipped?: number;
+}> {
   const link = parseSongLink(raw);
   if (link?.provider !== 'spotify' || link.kind !== 'playlist')
     throw Error('MUSIC_PLAYLIST_INVALID');
@@ -35,10 +42,12 @@ export async function spotifyPlaylist(
     const entity = data && JSON.parse(data[1]!).props?.pageProps?.state?.data?.entity;
     if (entity?.type !== 'playlist' || entity?.id !== link.id || !Array.isArray(entity.trackList))
       throw Error('MUSIC_SPOTIFY_PLAYLIST_UNAVAILABLE');
-    // The public embed can truncate at 100. Never silently import a truncated playlist.
-    if (entity.trackList.length >= 100) throw Error('MUSIC_SPOTIFY_PLAYLIST_LIMIT');
+    // The public embed can truncate at 100. Only a caller that reports it may accept a truncated list.
+    const truncated = entity.trackList.length >= 100;
+    if (truncated && !options.partial) throw Error('MUSIC_SPOTIFY_PLAYLIST_LIMIT');
     if (!entity.trackList.length) throw Error('MUSIC_SPOTIFY_PLAYLIST_EMPTY');
-    const tracks = entity.trackList.map(
+    let skipped = 0;
+    const tracks = entity.trackList.flatMap(
       (row: {
         uri?: unknown;
         entityType?: unknown;
@@ -46,21 +55,31 @@ export async function spotifyPlaylist(
         subtitle?: unknown;
         duration?: unknown;
       }) => {
+        // Episodes, local files and malformed rows fail the whole list unless the caller opted in.
+        const unreadable = () => {
+          if (!options.partial) throw Error('MUSIC_SPOTIFY_PLAYLIST_INCOMPLETE');
+          skipped++;
+          return [];
+        };
         const id =
           typeof row.uri === 'string' && row.uri.match(/^spotify:track:([A-Za-z0-9]{22})$/)?.[1];
-        if (!id || row.entityType !== 'track') throw Error('MUSIC_SPOTIFY_PLAYLIST_INCOMPLETE');
+        if (!id || row.entityType !== 'track') return unreadable();
         const parsed = spotifyPlaylistTrackSchema.safeParse({
           spotifyTrackId: id,
           title: clean(row.title),
           artists: typeof row.subtitle === 'string' ? row.subtitle.split(/,\s*/).map(clean) : [],
           durationSec: typeof row.duration === 'number' ? row.duration / 1000 : -1,
         });
-        if (!parsed.success || parsed.data.durationSec <= 0)
-          throw Error('MUSIC_SPOTIFY_PLAYLIST_INCOMPLETE');
-        return parsed.data;
+        if (!parsed.success || parsed.data.durationSec <= 0) return unreadable();
+        return [parsed.data];
       },
     );
-    return { name: clean(entity.name), tracks };
+    if (!tracks.length) throw Error('MUSIC_SPOTIFY_PLAYLIST_INCOMPLETE');
+    return {
+      name: clean(entity.name),
+      tracks,
+      ...(options.partial ? { truncated, skipped } : {}),
+    };
   } catch (error) {
     if (error instanceof Error && /^MUSIC_SPOTIFY_PLAYLIST_/.test(error.message)) throw error;
     throw Error('MUSIC_SPOTIFY_PLAYLIST_UNAVAILABLE');
