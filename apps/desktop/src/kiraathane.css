@@ -1,158 +1,336 @@
-.coffeehouse {
-  position: relative;
+/* Kıraathane lobby: the app's own surfaces, a little green felt, drawn pieces instead of photos. */
+.main-view:has(> .kh) {
+  overflow-y: auto;
+}
+.kh {
+  --kh-felt: #1f4a3b;
+  --kh-felt-deep: #163629;
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  height: 100%;
-  background: #17120f;
+  gap: 18px;
+  min-height: 100%;
+  padding: 28px 32px 36px;
+  background:
+    radial-gradient(70% 45% at 50% -10%, #2a3a3433 0%, transparent 70%),
+    var(--color-background-main);
+  color: var(--color-text-primary);
 }
-.coffeehouse-tools {
-  position: absolute;
-  z-index: 2;
-  top: 12px;
-  left: 18px;
-  right: 18px;
+.kh-head {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-start;
   justify-content: space-between;
-  color: #eee5dc;
-  text-shadow: 0 1px 4px #000;
-  pointer-events: none;
+  gap: 16px;
 }
-.coffeehouse-tools button,
-.coffeehouse-error button {
-  pointer-events: auto;
+.kh-head h1 {
+  margin: 0;
+  font-size: var(--font-size-h1);
+  line-height: var(--line-height-h1);
+  font-weight: 650;
+}
+.kh-head p {
+  margin: 4px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+.kh-note {
   display: flex;
   align-items: center;
-  gap: 7px;
-  border: 0;
-  background: #17131c66;
-  border-radius: 7px;
-  padding: 8px 12px;
-  color: #f0eaf3;
-  backdrop-filter: blur(3px);
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-12);
+  background: var(--color-background-raised);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-ui);
 }
-.coffeehouse-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
+.kh-note.error {
+  border-color: #f1798455;
+  color: var(--color-text-primary);
+}
+.kh-note .button {
+  margin-left: auto;
+}
+
+/* The table that is already open in this room. */
+.kh-open {
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
-  justify-items: center;
-  container-type: size;
+  gap: 18px;
+  padding: 14px 18px 14px 14px;
+  border: 1px solid #8b83ff55;
+  border-radius: var(--radius-16);
+  background: linear-gradient(90deg, #8b83ff1a, transparent 60%), var(--color-background-raised);
 }
-.coffeehouse-scene {
-  position: relative;
-  width: min(100%, 177.777cqh);
-  min-width: 760px;
-  aspect-ratio: 16/9;
+.kh-open .kh-art {
+  width: 120px;
+  height: 76px;
+  border-radius: var(--radius-12);
+  background: radial-gradient(circle at 50% 40%, var(--kh-felt), var(--kh-felt-deep));
+  transform: scale(0.9);
 }
-.coffeehouse-interior {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-.coffeehouse-table {
-  position: absolute;
-  transform: translate(-50%, -10%);
-  width: clamp(115px, 12.5vw, 172px);
+.kh-open-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  text-align: left;
-  padding: 7px 10px;
-  background: #15111930;
-  border: 1px solid transparent;
-  border-radius: 7px;
-  color: #fff4e9;
-  text-shadow:
-    0 1px 3px #000,
-    0 0 8px #000b;
-  box-shadow: none;
-  backdrop-filter: blur(1px);
+  min-width: 0;
 }
-/* The pictured tabletop and its caption share one accessible button. */
-.coffeehouse-table::before {
-  content: '';
-  position: absolute;
-  left: -6px;
-  right: -6px;
-  bottom: 0;
-  height: calc(100% + clamp(90px, 10vw, 145px));
-  border-radius: 14px;
-}
-.coffeehouse-table:hover:not(:disabled) {
-  background: #17111c68;
-}
-.coffeehouse-table:focus-visible {
-  outline: 2px solid #c8b2ff;
-  outline-offset: 3px;
-  background: #17111c68;
-}
-.coffeehouse-table.active .coffeehouse-count {
-  box-shadow: inset 0 0 0 1px #c2aaff80;
-}
-.coffeehouse-table:disabled {
-  cursor: default;
-  opacity: 0.82;
-}
-.coffeehouse-table strong {
-  font-size: 14px;
+.kh-open-text small {
+  color: var(--color-action-focus);
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
-.coffeehouse-table small {
-  font-size: 13px;
-  color: #f1e4d9;
+.kh-open-text strong {
+  overflow: hidden;
+  font-size: 17px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
-.coffeehouse-count {
+.kh-open-text span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-ui);
+}
+.kh-seats {
+  display: flex;
+  align-items: center;
+}
+.kh-seats span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-left: -6px;
+  border: 2px solid var(--color-background-raised);
+  border-radius: 50%;
+  background: #4c4f73;
+  font-size: 12px;
+  font-weight: 650;
+}
+.kh-seats span.bot {
+  background: #3a3f4b;
+  color: var(--color-text-muted);
+}
+.kh-seats em {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  width: fit-content;
-  padding: 3px 6px;
-  border-radius: 20px;
-  background: #100d165c;
-  font-size: 13px;
-  color: #f3eaff;
+  gap: 4px;
+  margin-left: 10px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-ui);
+  font-style: normal;
 }
-.coffeehouse-note {
+
+/* Game catalogue */
+.kh-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+}
+.kh-game {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-16);
+  background: var(--color-background-raised);
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+.kh-game:hover {
+  border-color: var(--color-border-default);
+  transform: translateY(-2px);
+}
+.kh-game.is-open {
+  border-color: #8b83ff88;
+}
+.kh-felt {
+  display: grid;
+  place-items: center;
+  height: 132px;
+  background: radial-gradient(
+    120% 90% at 50% 20%,
+    #2d6a52 0%,
+    var(--kh-felt) 45%,
+    var(--kh-felt-deep) 100%
+  );
+  box-shadow: inset 0 -12px 24px #0003;
+}
+.kh-game-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px 10px;
+}
+.kh-game-body h2 {
   margin: 0;
-  padding: 7px 18px;
-  font-size: 13px;
-  color: #bdb6b4;
-  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: 650;
 }
-.coffeehouse-error {
+.kh-game-body p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-ui);
+  line-height: 1.45;
+}
+.kh-tags {
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+.kh-tags span {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-background-hover);
+  color: var(--color-text-secondary);
+  font-size: 11.5px;
+}
+.kh-game > .button {
+  margin: 4px 16px 16px;
+}
+
+/* Drawn pieces */
+.kh-art {
   position: relative;
-  z-index: 3;
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 150px;
+  height: 96px;
+}
+.kh-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-  padding: 8px 18px;
-  background: #49272c;
-  color: #ffd9df;
+  width: 46px;
+  height: 66px;
+  margin: 0 -9px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  background: #f7f4ee;
+  box-shadow:
+    0 6px 14px #0006,
+    inset 0 0 0 1px #0000001a;
+  color: #1d1d24;
+  font-size: 15px;
+  font-style: normal;
+  line-height: 1;
 }
-@media (max-width: 1000px) {
-  .coffeehouse-scene {
-    min-width: 760px;
-  }
-  .coffeehouse-table {
-    width: 130px;
-  }
-  .coffeehouse-tools {
-    left: 12px;
-    right: 12px;
-  }
+.kh-card b {
+  font-size: 14px;
+  font-weight: 750;
 }
+.kh-card.red {
+  color: #c2283e;
+}
+.kh-art.holdem .kh-card:nth-child(1),
+.kh-art.blackjack .kh-card:nth-child(1) {
+  transform: rotate(-9deg) translateY(2px);
+}
+.kh-art.holdem .kh-card:nth-child(2),
+.kh-art.blackjack .kh-card:nth-child(2) {
+  transform: rotate(8deg) translateY(-2px);
+}
+.kh-art.batak .kh-card:nth-child(1) {
+  transform: rotate(-16deg) translateY(8px);
+}
+.kh-art.batak .kh-card:nth-child(2) {
+  transform: rotate(-5deg) translateY(1px);
+}
+.kh-art.batak .kh-card:nth-child(3) {
+  transform: rotate(5deg) translateY(1px);
+}
+.kh-art.batak .kh-card:nth-child(4) {
+  transform: rotate(16deg) translateY(8px);
+}
+.kh-chips {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: flex;
+  flex-direction: column-reverse;
+}
+.kh-chips i {
+  width: 26px;
+  height: 8px;
+  margin-top: -3px;
+  border: 2px dashed #ffffffb3;
+  border-radius: 50%;
+  background: #b23a48;
+  box-shadow: 0 2px 0 #7d2531;
+}
+.kh-chips i:nth-child(2) {
+  background: #2f5fb3;
+  box-shadow: 0 2px 0 #1f3f78;
+}
+.kh-chips i:nth-child(3) {
+  background: #2f8f5b;
+  box-shadow: 0 2px 0 #1e5d3b;
+}
+.kh-badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #f2bb67;
+  color: #2a1a05;
+  font-size: 12px;
+  font-weight: 750;
+}
+.kh-tile {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 44px;
+  margin: 0 3px;
+  border-radius: 5px;
+  background: linear-gradient(#fbf8f1, #e9e3d6);
+  box-shadow:
+    0 5px 0 #c9c0ae,
+    0 8px 14px #0005;
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 800;
+}
+.kh-tile.red {
+  color: #c2283e;
+}
+.kh-tile.black {
+  color: #23232b;
+}
+.kh-tile.blue {
+  color: #2459b8;
+}
+.kh-tile.joker {
+  color: #c7962b;
+}
+
+/* Back link shown above game tables. */
 .coffeehouse-return {
   display: block;
   margin: 10px 24px 0;
   padding: 7px 10px;
   border: 0;
   background: transparent;
-  color: #c8baff;
+  color: var(--color-action-focus);
   font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .kh {
+    padding: 20px 16px 28px;
+  }
+  .kh-open {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .kh-open .kh-art,
+  .kh-seats {
+    display: none;
+  }
 }

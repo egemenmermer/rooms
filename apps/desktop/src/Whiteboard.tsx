@@ -1,56 +1,73 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Check,
+  Circle,
   Download,
   Eraser,
+  Image,
+  Maximize,
+  Minimize,
+  MousePointer2,
   Pencil,
-  Plus,
+  Square,
   Trash2,
   Type,
-  Image,
   Undo2,
-  MousePointer2,
-  Square,
-  Circle,
-  FolderOpen,
+  Vote,
 } from 'lucide-react';
 import { Modal } from '@rooms/design';
 import type { ActivityCommand, BoardElement } from '@rooms/activity-protocol';
 import type { useActivityRoom } from './activity';
 import { uiError } from './i18n';
+import { onCursor, publishCursor, useRealtime } from './realtime';
 
 type Edit = { kind: 'add' | 'remove'; element: BoardElement };
+type Tool = 'select' | 'pen' | 'text' | 'erase' | 'rectangle' | 'ellipse';
 const colors = ['#B8CDFF', '#65BC94', '#E7B96F', '#E57B7B', '#F4F6F8'];
+const cursorColors = ['#8B83FF', '#53C793', '#F2BB67', '#F17984', '#6CC4F0', '#D58CF0'];
+// The shared drawing space; every viewer scales it to fit, so coordinates match everywhere.
+const W = 1000,
+  H = 620;
 const put = ({ authorId: _author, ...element }: BoardElement): ActivityCommand => ({
   type: 'whiteboard.put',
   element,
 });
+const clamp = (value: number, max: number) => Math.max(0, Math.min(max, value));
+const hue = (id: string) =>
+  cursorColors[[...id].reduce((sum, char) => sum + char.charCodeAt(0), 0) % cursorColors.length];
 
 /** Local undo history is bounded and keyed by the parent to room and identity. */
 export default function Whiteboard({
   roomId,
   userId,
+  roomName,
   activity,
+  onPolls,
 }: {
   roomId: string;
   userId: string;
+  roomName?: string;
   activity: ReturnType<typeof useActivityRoom>;
+  onPolls?(): void;
 }) {
-  const [tool, setTool] = useState<'select' | 'pen' | 'text' | 'erase' | 'rectangle' | 'ellipse'>(
-    'select',
-  );
+  const realtime = useRealtime();
+  const [tool, setTool] = useState<Tool>('pen');
   const [exportOpen, setExportOpen] = useState(false),
     [selected, setSelected] = useState<string | null>(null);
-  const [color, setColor] = useState(colors[0]),
-    [note, setNote] = useState('');
+  const [color, setColor] = useState(colors[0]!);
+  const [draft, setDraft] = useState<{ x: number; y: number; text: string } | null>(null);
   const [points, setPoints] = useState<[number, number][]>([]);
   const [history, setHistory] = useState<Edit[]>([]),
     [working, setWorking] = useState(false);
   const [message, setMessage] = useState('');
+  const [fullscreen, setFullscreen] = useState(false);
+  const [cursors, setCursors] = useState<Record<string, { x: number; y: number; at: number }>>({});
   const path = useRef<[number, number][]>([]),
     drawing = useRef(false),
     locked = useRef(false),
-    alive = useRef(true);
+    alive = useRef(true),
+    frame = useRef<HTMLDivElement>(null),
+    lastCursor = useRef(0);
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -61,6 +78,7 @@ export default function Whiteboard({
   const readOnly = fixture || !userId || activity.status !== 'connected';
   const busy = activity.busy || working || readOnly;
   const board = activity.room?.whiteboard ?? [];
+  const live = realtime.status === 'connected' && realtime.channelId === roomId;
   useEffect(() => {
     let active = true;
     if (import.meta.env.DEV) {
@@ -86,13 +104,62 @@ export default function Whiteboard({
       active = false;
     };
   }, [roomId, userId, activity.room?.roomId]);
+
+  /** Screen → board coordinates through the SVG's own transform (letterboxing included). */
   const point = (e: React.PointerEvent<SVGSVGElement>): [number, number] => {
-    const box = e.currentTarget.getBoundingClientRect();
-    return [
-      Math.max(0, Math.min(1000, ((e.clientX - box.left) / box.width) * 1000)),
-      Math.max(0, Math.min(620, ((e.clientY - box.top) / box.height) * 620)),
-    ];
+    const matrix = e.currentTarget.getScreenCTM();
+    if (!matrix) return [0, 0];
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(matrix.inverse());
+    return [clamp(Math.round(p.x * 10) / 10, W), clamp(Math.round(p.y * 10) / 10, H)];
   };
+
+  // Everyone in the voice room sees where the others point on this board.
+  useEffect(() => {
+    if (!live) return;
+    const stop = onCursor((payload, senderId) => {
+      try {
+        const value = JSON.parse(payload) as { b?: unknown; x?: unknown; y?: unknown };
+        if (value.b !== roomId || senderId === userId) return;
+        setCursors((current) => {
+          const next = { ...current };
+          if (typeof value.x === 'number' && typeof value.y === 'number')
+            next[senderId] = { x: clamp(value.x, W), y: clamp(value.y, H), at: Date.now() };
+          else delete next[senderId];
+          return next;
+        });
+      } catch {
+        /* Not a cursor update. */
+      }
+    });
+    const sweep = setInterval(
+      () =>
+        setCursors((current) => {
+          const fresh = Object.entries(current).filter(([, c]) => Date.now() - c.at < 5000);
+          return fresh.length === Object.keys(current).length ? current : Object.fromEntries(fresh);
+        }),
+      1000,
+    );
+    return () => {
+      stop();
+      clearInterval(sweep);
+      setCursors({});
+    };
+  }, [live, roomId, userId]);
+  const shareCursor = useCallback(
+    (at: [number, number] | null) => {
+      if (!live) return;
+      const now = Date.now();
+      if (at && now - lastCursor.current < 50) return;
+      lastCursor.current = now;
+      publishCursor(
+        JSON.stringify(
+          at ? { b: roomId, x: Math.round(at[0]), y: Math.round(at[1]) } : { b: roomId },
+        ),
+      );
+    },
+    [live, roomId],
+  );
+
   async function run(work: () => Promise<void>) {
     if (fixture || !userId || locked.current || activity.busy || activity.status !== 'connected')
       return;
@@ -108,14 +175,16 @@ export default function Whiteboard({
       if (alive.current) setWorking(false);
     }
   }
-  async function add(element: BoardElement, clearNote = false) {
+  async function add(element: BoardElement) {
     await activity.send(put(element));
     if (!alive.current) return;
     setHistory((h) => [...h.slice(-49), { kind: 'add', element }]);
-    if (clearNote) setNote('');
   }
   const remove = (element: BoardElement) => {
-    if (element.authorId !== userId) return;
+    if (element.authorId !== userId) {
+      setMessage('Yalnızca kendi çizimini veya notunu silebilirsin.');
+      return;
+    }
     void run(async () => {
       await activity.send({ type: 'whiteboard.remove', elementId: element.id });
       if (alive.current) setHistory((h) => [...h.slice(-49), { kind: 'remove', element }]);
@@ -158,6 +227,23 @@ export default function Whiteboard({
             ),
         );
     });
+  const commitDraft = () => {
+    const value = draft?.text.trim();
+    const at = draft;
+    setDraft(null);
+    if (!value || !at) return;
+    void run(() =>
+      add({
+        id: crypto.randomUUID(),
+        kind: 'text',
+        points: [[at.x, at.y]],
+        text: value.slice(0, 2000),
+        color,
+        width: 2,
+        authorId: userId,
+      }),
+    );
+  };
   const exportBoard = () =>
     void run(async () => {
       if (!window.rooms?.activity?.exportBoard)
@@ -168,6 +254,31 @@ export default function Whiteboard({
         if (saved) setExportOpen(false);
       }
     });
+
+  // Fullscreen covers the whole display; the app's drag regions are hidden meanwhile.
+  useEffect(() => {
+    const update = () => setFullscreen(document.fullscreenElement === frame.current);
+    document.addEventListener('fullscreenchange', update);
+    return () => {
+      document.removeEventListener('fullscreenchange', update);
+      if (document.fullscreenElement === frame.current)
+        void document.exitFullscreen().catch(() => {});
+    };
+  }, []);
+  useEffect(() => {
+    if (fullscreen) document.documentElement.dataset.roomPlayerFullscreen = 'true';
+    else delete document.documentElement.dataset.roomPlayerFullscreen;
+    return () => {
+      delete document.documentElement.dataset.roomPlayerFullscreen;
+    };
+  }, [fullscreen]);
+  const toggleFullscreen = () =>
+    void (
+      document.fullscreenElement
+        ? document.exitFullscreen()
+        : frame.current!.requestFullscreen({ navigationUI: 'hide' })
+    ).catch(() => setMessage('Tam ekran açılamadı.'));
+
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       const target = event.target;
@@ -178,26 +289,32 @@ export default function Whiteboard({
         (target instanceof HTMLElement &&
           (target.isContentEditable ||
             target.closest('input,textarea,select,button,[role=dialog]'))) ||
-        exportOpen ||
-        busy
+        exportOpen
       )
         return;
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') {
+        if (busy) return;
         event.preventDefault();
         undo();
         return;
       }
       if (event.metaKey || event.ctrlKey) return;
-      const keys: Record<string, typeof tool> = {
+      if (event.key.toLowerCase() === 'f') {
+        event.preventDefault();
+        toggleFullscreen();
+        return;
+      }
+      const keys: Record<string, Tool> = {
         v: 'select',
         p: 'pen',
         r: 'rectangle',
         o: 'ellipse',
         t: 'text',
+        e: 'erase',
       };
-      if (keys[event.key.toLowerCase()]) {
+      if (!busy && keys[event.key.toLowerCase()]) {
         event.preventDefault();
-        setTool(keys[event.key.toLowerCase()]);
+        setTool(keys[event.key.toLowerCase()]!);
       }
     };
     window.addEventListener('keydown', keydown);
@@ -210,72 +327,76 @@ export default function Whiteboard({
       setPoints([]);
     }
   }, [busy]);
+  useEffect(() => {
+    if (tool !== 'text') setDraft(null);
+    if (tool !== 'select') setSelected(null);
+  }, [tool]);
+
+  const nameOf = (id: string) =>
+    realtime.participants.find((person) => person.id === id)?.name ?? 'Katılımcı';
+  const others = Object.entries(cursors);
+  const selectedItem = selected ? board.find((item) => item.id === selected) : undefined;
+  const tools = [
+    ['pen', 'Kalem (P)', Pencil],
+    ['rectangle', 'Dikdörtgen (R)', Square],
+    ['ellipse', 'Daire (O)', Circle],
+    ['text', 'Metin: tahtaya tıkla ve yaz (T)', Type],
+    ['erase', 'Silgi: kendi öğene tıkla (E)', Eraser],
+    ['select', 'Seç (V)', MousePointer2],
+  ] as const;
   return (
-    <div className="whiteboard">
-      <div className="whiteboard-toolbar">
-        <div className="segmented small">
-          {(
-            [
-              ['select', 'Seç · V', MousePointer2],
-              ['pen', 'Kalem · P', Pencil],
-              ['rectangle', 'Dikdörtgen · R', Square],
-              ['ellipse', 'Daire · O', Circle],
-              ['text', 'Metin ekle · T', Type],
-              ['erase', 'Öğe sil', Eraser],
-            ] as const
-          ).map(([value, label, Icon]) => (
+    <div ref={frame} className={`wb ${fullscreen ? 'is-fullscreen' : ''}`}>
+      <div className="wb-top">
+        <div className="wb-title">
+          <strong>Whiteboard</strong>
+          <span>
+            {roomName ?? 'Oda'}
+            {others.length ? ` · ${others.length + 1} kişi burada` : ''}
+          </span>
+        </div>
+        <div className="wb-toolbar" role="toolbar" aria-label="Çizim araçları">
+          {tools.map(([value, label, Icon]) => (
             <button
               disabled={busy}
               key={value}
               aria-label={label}
+              title={label}
               aria-pressed={tool === value}
-              className={tool === value ? 'selected' : ''}
               onClick={() => setTool(value)}
             >
               <Icon size={17} />
             </button>
           ))}
-        </div>
-        <div className="board-colors">
+          <span className="wb-divider" />
           {colors.map((c) => (
             <button
+              className="wb-color"
               disabled={busy}
               key={c}
               aria-label={`Çizim rengi ${c}`}
               aria-pressed={color === c}
-              style={{ background: c }}
+              style={{ ['--swatch' as string]: c }}
               onClick={() => setColor(c)}
             >
-              {color === c && <Check size={12} />}
+              {color === c && <Check size={11} />}
             </button>
           ))}
-        </div>
-        <span>
-          {working || activity.busy
-            ? 'Gönderiliyor…'
-            : readOnly
-              ? fixture
-                ? 'Yerel örnek · Düzenleme kapalı'
-                : 'Bağlantı bekleniyor'
-              : 'Ortak tahta'}
-        </span>
-        <div className="board-actions">
+          <span className="wb-divider" />
           <button
-            className="button secondary small"
             disabled={busy || !history.length}
+            aria-label="Geri al (⌘Z)"
             title={
               history.length
-                ? 'Bu oturumdaki son kendi işlemini geri al'
+                ? 'Bu oturumdaki son kendi işlemini geri al (⌘Z)'
                 : 'Bu oturumda geri alınacak kendi işlemin yok'
             }
             onClick={undo}
           >
-            <Undo2 size={15} />
-            Geri al
+            <Undo2 size={17} />
           </button>
           <button
-            className="button secondary small"
             disabled={busy || !board.length || !window.rooms?.activity?.exportBoard}
+            aria-label="PNG olarak dışa aktar"
             title={
               !board.length
                 ? 'Önce tahtaya bir çizim veya not ekle'
@@ -283,202 +404,239 @@ export default function Whiteboard({
             }
             onClick={() => setExportOpen(true)}
           >
-            <Download size={15} />
-            Dışa aktar
+            <Download size={17} />
           </button>
-        </div>
-      </div>
-      {tool === 'text' && (
-        <form
-          className="board-note-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!note.trim()) return;
-            const element: BoardElement = {
-              id: crypto.randomUUID(),
-              kind: 'text',
-              points: [[60, 80 + (board.length % 8) * 55]],
-              text: note.trim(),
-              color,
-              width: 2,
-              authorId: userId,
-            };
-            void run(() => add(element, true));
-          }}
-        >
-          <input
-            value={note}
-            disabled={busy}
-            onChange={(e) => setNote(e.target.value)}
-            maxLength={2000}
-            placeholder="Tahtaya bir not bırak…"
-            aria-label="Beyaz tahta notu"
-          />
-          <button className="button primary small" disabled={busy || !note.trim()}>
-            <Plus size={15} />
-            Not ekle
-          </button>
-        </form>
-      )}
-      <svg
-        className={`board-canvas tool-${tool} ${readOnly ? 'readonly' : ''}`}
-        tabIndex={0}
-        viewBox="0 0 1000 620"
-        role="img"
-        aria-label="Ortak çizim tahtası"
-        onPointerDown={(e) => {
-          if (!['pen', 'rectangle', 'ellipse'].includes(tool) || busy || e.button !== 0) return;
-          e.currentTarget.setPointerCapture(e.pointerId);
-          drawing.current = true;
-          path.current = [point(e)];
-          setPoints([...path.current]);
-        }}
-        onPointerMove={(e) => {
-          if (!drawing.current || path.current.length >= 499) return;
-          if (tool === 'pen') path.current.push(point(e));
-          else path.current = [path.current[0], point(e)];
-          setPoints([...path.current]);
-        }}
-        onPointerUp={(e) => {
-          if (!drawing.current) return;
-          drawing.current = false;
-          const stroke =
-            tool === 'pen'
-              ? [...path.current, point(e)].slice(0, 500)
-              : [path.current[0], point(e)];
-          setPoints([]);
-          path.current = [];
-          void run(() =>
-            add({
-              id: crypto.randomUUID(),
-              kind: tool === 'rectangle' ? 'rectangle' : tool === 'ellipse' ? 'ellipse' : 'stroke',
-              points: stroke,
-              color,
-              width: 3,
-              authorId: userId,
-            }),
-          );
-        }}
-        onPointerCancel={() => {
-          drawing.current = false;
-          path.current = [];
-          setPoints([]);
-        }}
-      >
-        <defs>
-          <pattern id="board-dots" width="24" height="24" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="1" fill="#ffffff12" />
-          </pattern>
-        </defs>
-        <rect width="1000" height="620" fill="url(#board-dots)" />
-        {board.map((item) => (
-          <g
-            key={item.id}
-            className={`${tool === 'erase' && item.authorId === userId ? 'erasable' : ''} ${selected === item.id ? 'selected' : ''}`}
-            onClick={() => {
-              if (tool === 'select') setSelected(item.id);
-              if (tool === 'erase' && !busy) remove(item);
-            }}
-          >
-            {item.kind === 'text' ? (
-              <text x={item.points[0][0]} y={item.points[0][1]} fill={item.color} fontSize="20">
-                {item.text}
-              </text>
-            ) : item.kind === 'rectangle' || item.kind === 'ellipse' ? (
-              <BoardShape
-                kind={item.kind}
-                points={item.points}
-                color={item.color}
-                width={item.width}
-              />
-            ) : (
-              <polyline
-                points={item.points.map((p) => p.join(',')).join(' ')}
-                stroke={item.color}
-                strokeWidth={item.width}
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            )}
-          </g>
-        ))}
-        {points.length > 0 &&
-          (tool === 'rectangle' || tool === 'ellipse' ? (
-            <BoardShape kind={tool} points={points} color={color} width={3} />
-          ) : (
-            <polyline
-              points={points.map((p) => p.join(',')).join(' ')}
-              stroke={color}
-              strokeWidth="3"
-              fill="none"
-              strokeLinecap="round"
-            />
-          ))}
-      </svg>
-      {!board.length && (
-        <div className="board-empty">
-          <Pencil size={28} />
-          <span>İlk çizgi senden.</span>
-          <small>Kalemle çiz veya metin aracıyla bir not ekle.</small>
-        </div>
-      )}
-      <div className="board-status">
-        <span>{readOnly ? 'Düzenleme kapalı' : 'Değişiklikler sunucu yanıtıyla paylaşılır'}</span>
-        <span>⌘Z yalnızca kendi işlemini geri alır.</span>
-        <span>{board.length} öğe</span>
-      </div>
-      {selected && (
-        <div className="board-selected-actions">
           <button
-            className="button secondary small"
-            disabled={busy || board.find((item) => item.id === selected)?.authorId !== userId}
-            onClick={() => {
-              const element = board.find((item) => item.id === selected);
-              if (element) remove(element);
-            }}
+            aria-label={fullscreen ? 'Tam ekrandan çık (F)' : 'Tam ekran (F)'}
+            title={fullscreen ? 'Tam ekrandan çık (F)' : 'Tam ekran (F)'}
+            onClick={toggleFullscreen}
           >
-            Seçili öğeyi sil
-          </button>
-          <button className="text-button" onClick={() => setSelected(null)}>
-            Seçimi kaldır
+            {fullscreen ? <Minimize size={17} /> : <Maximize size={17} />}
           </button>
         </div>
-      )}
-      <div className="board-accessible-list">
+        <div className="wb-side">
+          {onPolls && (
+            <button className="button ghost small" onClick={onPolls}>
+              <Vote size={15} />
+              Anketler
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="wb-stage">
+        <div className="wb-canvas-box">
+          <svg
+            className={`board-canvas wb-board tool-${tool} ${readOnly ? 'readonly' : ''}`}
+            tabIndex={0}
+            viewBox={`0 0 ${W} ${H}`}
+            role="img"
+            aria-label="Ortak çizim tahtası"
+            onPointerDown={(e) => {
+              if (busy || e.button !== 0) return;
+              if (tool === 'text') {
+                // Keep focus off the SVG so the new text field receives the typing.
+                e.preventDefault();
+                if (draft?.text.trim()) commitDraft();
+                const [x, y] = point(e);
+                setDraft({ x, y: Math.max(22, y), text: '' });
+                return;
+              }
+              if (!['pen', 'rectangle', 'ellipse'].includes(tool)) return;
+              e.currentTarget.setPointerCapture(e.pointerId);
+              drawing.current = true;
+              path.current = [point(e)];
+              setPoints([...path.current]);
+            }}
+            onPointerMove={(e) => {
+              const at = point(e);
+              shareCursor(at);
+              if (!drawing.current || path.current.length >= 499) return;
+              if (tool === 'pen') path.current.push(at);
+              else path.current = [path.current[0]!, at];
+              setPoints([...path.current]);
+            }}
+            onPointerLeave={() => shareCursor(null)}
+            onPointerUp={(e) => {
+              if (!drawing.current) return;
+              drawing.current = false;
+              const stroke =
+                tool === 'pen'
+                  ? [...path.current, point(e)].slice(0, 500)
+                  : [path.current[0]!, point(e)];
+              setPoints([]);
+              path.current = [];
+              void run(() =>
+                add({
+                  id: crypto.randomUUID(),
+                  kind:
+                    tool === 'rectangle' ? 'rectangle' : tool === 'ellipse' ? 'ellipse' : 'stroke',
+                  points: stroke,
+                  color,
+                  width: 3,
+                  authorId: userId,
+                }),
+              );
+            }}
+            onPointerCancel={() => {
+              drawing.current = false;
+              path.current = [];
+              setPoints([]);
+            }}
+          >
+            <defs>
+              <pattern id="board-dots" width="24" height="24" patternUnits="userSpaceOnUse">
+                <circle cx="1" cy="1" r="1" fill="#ffffff14" />
+              </pattern>
+            </defs>
+            <rect className="wb-paper" width={W} height={H} rx="10" fill="url(#board-dots)" />
+            {board.map((item) => (
+              <g
+                key={item.id}
+                className={`${tool === 'erase' ? (item.authorId === userId ? 'erasable' : 'locked') : ''} ${selected === item.id ? 'selected' : ''}`}
+                onClick={() => {
+                  if (tool === 'select') setSelected(item.id);
+                  if (tool === 'erase' && !busy) remove(item);
+                }}
+              >
+                {item.kind === 'text' ? (
+                  <text
+                    x={item.points[0]![0]}
+                    y={item.points[0]![1]}
+                    fill={item.color}
+                    fontSize="20"
+                  >
+                    {item.text}
+                  </text>
+                ) : item.kind === 'rectangle' || item.kind === 'ellipse' ? (
+                  <BoardShape
+                    kind={item.kind}
+                    points={item.points}
+                    color={item.color}
+                    width={item.width}
+                  />
+                ) : (
+                  <polyline
+                    points={item.points.map((p) => p.join(',')).join(' ')}
+                    stroke={item.color}
+                    strokeWidth={item.width}
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                )}
+              </g>
+            ))}
+            {points.length > 0 &&
+              (tool === 'rectangle' || tool === 'ellipse' ? (
+                <BoardShape kind={tool} points={points} color={color} width={3} />
+              ) : (
+                <polyline
+                  points={points.map((p) => p.join(',')).join(' ')}
+                  stroke={color}
+                  strokeWidth="3"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ))}
+            {others.map(([id, cursor]) => (
+              <g
+                key={id}
+                className="wb-cursor"
+                transform={`translate(${cursor.x} ${cursor.y})`}
+                style={{ ['--cursor' as string]: hue(id) }}
+              >
+                <path d="M0 0 L0 17 L4.6 12.6 L8 20 L11 18.6 L7.7 11.4 L13.5 11.4 Z" />
+                <text x="15" y="26">
+                  {nameOf(id)}
+                </text>
+              </g>
+            ))}
+          </svg>
+          {draft && (
+            <input
+              className="wb-text-input"
+              ref={(input) => {
+                if (input && document.activeElement !== input) input.focus({ preventScroll: true });
+              }}
+              value={draft.text}
+              maxLength={2000}
+              aria-label="Beyaz tahta notu"
+              placeholder="Yaz, Enter'a bas"
+              style={{
+                color,
+                left: `${(draft.x / W) * 100}%`,
+                top: `${((draft.y - 22) / H) * 100}%`,
+              }}
+              onChange={(event) => setDraft({ ...draft, text: event.target.value })}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') commitDraft();
+                if (event.key === 'Escape') setDraft(null);
+              }}
+              onBlur={commitDraft}
+            />
+          )}
+        </div>
+        {!board.length && !draft && (
+          <div className="board-empty">
+            <Pencil size={26} />
+            <span>İlk çizgi senden.</span>
+            <small>Kalemle çiz, şekil ekle ya da metin aracıyla tahtaya tıklayıp yaz.</small>
+          </div>
+        )}
+      </div>
+      <div className="wb-foot">
+        <span>
+          {working || activity.busy
+            ? 'Gönderiliyor…'
+            : readOnly
+              ? fixture
+                ? 'Yerel örnek · Düzenleme kapalı'
+                : 'Bağlantı bekleniyor; düzenleme kapalı'
+              : live
+                ? `${board.length} öğe · imleçler canlı`
+                : `${board.length} öğe · imleçler sesli odadayken görünür`}
+        </span>
+        {selectedItem && (
+          <span className="wb-selection">
+            <button
+              className="button secondary small"
+              disabled={busy || selectedItem.authorId !== userId}
+              title={
+                selectedItem.authorId !== userId
+                  ? 'Yalnızca kendi öğeni silebilirsin'
+                  : 'Seçili öğeyi sil'
+              }
+              onClick={() => remove(selectedItem)}
+            >
+              <Trash2 size={14} />
+              Seçili öğeyi sil
+            </button>
+            <button className="text-button" onClick={() => setSelected(null)}>
+              Seçimi kaldır
+            </button>
+          </span>
+        )}
+        {message && (
+          <span className="wb-message" role="status">
+            {message}
+          </span>
+        )}
+      </div>
+      <div className="wb-sr">
         {board.map((item, i) => (
           <button
             key={item.id}
             disabled={busy || item.authorId !== userId}
-            title={
-              item.authorId !== userId
-                ? 'Yalnızca kendi çizimini veya notunu silebilirsin'
-                : 'Öğeyi sil'
-            }
             onClick={() => remove(item)}
           >
-            <Trash2 size={12} />
             {item.kind === 'text' ? item.text : `Çizim ${i + 1}`} öğesini sil
           </button>
         ))}
       </div>
-      <div className="board-bottom">
-        <div>
-          <strong>{board.length ? 'Ortak tahta' : 'İlk fikri sen bırak.'}</strong>
-          <p>Çiz, bir şekil ekle veya kısa bir not bırak.</p>
-        </div>
-        <button
-          className="button secondary"
-          disabled
-          title="Kayıtlı tahta arşivi bu bağlantıda henüz uygulanmadı"
-        >
-          <FolderOpen size={15} />
-          Kayıtlı board’lar
-        </button>
-      </div>
       {exportOpen && (
         <Modal
-          title="Board’u PNG olarak indir"
+          title="Tahtayı PNG olarak indir"
           className="rt-modal rt-board-export"
           onClose={() => setExportOpen(false)}
         >
@@ -489,13 +647,8 @@ export default function Whiteboard({
               <p>2000 × 1240 px · Tahta içeriği</p>
             </div>
             <p>
-              Araç çubuğu ve katılımcı imleçleri dışa aktarılmaz. Çizimler ve metinler tek bir
-              görsel dosyada saklanır.
+              Araç çubuğu ve imleçler dışa aktarılmaz; çizimler ve notlar tek görselde saklanır.
             </p>
-            <div className="rt-export-background">
-              <span>Arka plan</span>
-              <strong>Koyu · Noktalı zemin</strong>
-            </div>
             {message && <p role="status">{message}</p>}
           </div>
           <footer>
@@ -513,11 +666,6 @@ export default function Whiteboard({
           </footer>
         </Modal>
       )}
-      {message && (
-        <p className="board-feedback" role="status">
-          {message}
-        </p>
-      )}
     </div>
   );
 }
@@ -534,7 +682,7 @@ function BoardShape({
   width: number;
 }) {
   if (points.length < 2) return null;
-  const [first, last] = [points[0], points[points.length - 1]],
+  const [first, last] = [points[0]!, points[points.length - 1]!],
     x = Math.min(first[0], last[0]),
     y = Math.min(first[1], last[1]),
     w = Math.abs(first[0] - last[0]),

@@ -1700,3 +1700,29 @@
     justify-content: flex-end;
   }
 }
+
+/* Activity launcher: what is open now, then the three activities. */
+.reference-launcher-modal .reference-active-activity small:first-child {
+  margin: 0 0 2px;
+  color: var(--color-action-focus);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.reference-launcher-modal .reference-active-activity strong {
+  display: block;
+  font-size: 14px;
+}
+.reference-launcher-modal .reference-activity-grid {
+  margin-bottom: 22px;
+}
+.reference-activity-card strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.reference-activity-card.is-active {
+  border-color: #8b83ff88;
+  background: linear-gradient(160deg, #8b83ff1f, transparent 70%), #252831;
+}

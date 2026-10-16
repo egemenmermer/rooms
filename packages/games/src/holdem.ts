@@ -277,6 +277,19 @@ export function holdemAction(
   progress(state, turn);
   return state;
 }
+/**
+ * While betting is open, a layer only one player can win is an uncalled bet (the big blind
+ * before anyone calls), not a side pot; it stays with the pot below it until settlement.
+ */
+function livePots(pots: { amount: number; eligible: string[] }[]) {
+  const merged: { amount: number; eligible: string[] }[] = [];
+  for (const pot of pots) {
+    const below = merged.at(-1);
+    if (below && pot.eligible.length < 2) below.amount += pot.amount;
+    else merged.push({ ...pot, eligible: [...pot.eligible] });
+  }
+  return merged;
+}
 export function holdemView(state: HoldemHand, userId: string) {
   const reveal = state.stage === 'ended' && state.seats.filter((s) => !s.folded).length > 1;
   const own = state.seats.find((seat) => seat.userId === userId);
@@ -290,12 +303,14 @@ export function holdemView(state: HoldemHand, userId: string) {
     settlementReason: state.settlement?.reason ?? null,
     pots:
       state.settlement?.pots ??
-      sidePots(
-        state.seats.map((seat) => ({
-          userId: seat.userId,
-          amount: seat.contribution,
-          folded: seat.folded,
-        })),
+      livePots(
+        sidePots(
+          state.seats.map((seat) => ({
+            userId: seat.userId,
+            amount: seat.contribution,
+            folded: seat.folded,
+          })),
+        ),
       ).map((pot, index) => ({
         kind: index === 0 ? ('main' as const) : ('side' as const),
         ...pot,

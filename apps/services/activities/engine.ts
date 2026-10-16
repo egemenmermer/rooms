@@ -13,6 +13,12 @@ import {
 import type { StoredRoom } from './repository';
 import { advanceGameBots, createGame, disconnectGame, gameCommand, gameView } from './games';
 
+const gameTitles = {
+  holdem: 'Texas Hold’em',
+  blackjack: 'Blackjack',
+  batak: 'Batak',
+  '101': '101 Okey',
+} as const;
 export interface ActivityIdentity {
   userId: string;
   displayName: string;
@@ -523,7 +529,7 @@ export function applyCommand(
       room.game = next;
       state.primary = {
         activity: command.game,
-        title: next.holdemRules?.name ?? (command.game === '101' ? '101 Okey' : command.game),
+        title: next.holdemRules?.name ?? gameTitles[command.game],
         hostUserId: identity.userId,
         startedAt: now,
         state: 'live',
@@ -554,7 +560,7 @@ export function applyCommand(
       if (adopting)
         state.primary = {
           activity: next.kind,
-          title: next.holdemRules?.name ?? next.kind,
+          title: next.holdemRules?.name ?? gameTitles[next.kind],
           hostUserId: identity.userId,
           startedAt: now,
           state: 'live',

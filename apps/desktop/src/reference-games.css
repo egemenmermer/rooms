@@ -437,7 +437,8 @@
 }
 .rg-board {
   position: relative;
-  min-height: 462px;
+  /* Room below the felt for your own seat, so your cards never cover the pot details. */
+  min-height: 548px;
   max-width: 1040px;
   width: 100%;
   margin: 0 auto;
@@ -447,7 +448,7 @@
   left: 17%;
   right: 17%;
   top: 81px;
-  bottom: 82px;
+  bottom: 158px;
   border-radius: 47%;
   background: radial-gradient(ellipse at center, #29433d 0, #243932 58%, #20332e 100%);
   border: 7px solid #35353c;
@@ -566,7 +567,7 @@
 }
 .rg-table-seat {
   position: absolute;
-  width: 148px;
+  width: 176px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1306,7 +1307,8 @@
   border-bottom: 1px solid #292b38;
   font-size: 12px;
 }
-.rx-bid-player span {
+/* Only the status sits at the far right; the avatar is a span too and must stay put. */
+.rx-bid-player > span:not(.avatar) {
   margin-left: auto;
   color: #9b94c8;
 }

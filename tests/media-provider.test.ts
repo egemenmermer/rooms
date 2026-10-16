@@ -442,6 +442,31 @@ it('announces the watched screen and lists viewers from their own authenticated 
   });
   await provider.disconnect();
 });
+it('shares whiteboard pointers lossily and keeps them apart from control input', async () => {
+  const { provider, room, local, emit } = fixture();
+  await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+  const carol = { identity: 'carol', name: 'Carol', trackPublications: new Map() };
+  room.remoteParticipants.set('carol', carol);
+  const cursors: [string, string][] = [],
+    controls: string[] = [];
+  provider.onCursor((payload, sender) => cursors.push([payload, sender]));
+  provider.onControl((payload) => controls.push(payload));
+  await provider.publishCursor(JSON.stringify({ b: 'room', x: 10, y: 20 }));
+  const [payload, options] = vi.mocked(local.publishData).mock.calls.at(-1)!;
+  expect(JSON.parse(new TextDecoder().decode(payload))).toEqual({ b: 'room', x: 10, y: 20 });
+  expect(options).toEqual({ reliable: false, topic: 'rooms-cursor-v1' });
+  await expect(provider.publishCursor('x'.repeat(513))).rejects.toThrow();
+  const packet = (value: string) => new TextEncoder().encode(value);
+  emit(RoomEvent.DataReceived, packet('{"b":"room","x":5,"y":6}'), carol, 0, 'rooms-cursor-v1');
+  emit(RoomEvent.DataReceived, packet('{"b":"room","x":5,"y":6}'), undefined, 0, 'rooms-cursor-v1');
+  emit(RoomEvent.DataReceived, new Uint8Array(600), carol, 0, 'rooms-cursor-v1');
+  expect(cursors).toEqual([['{"b":"room","x":5,"y":6}', 'carol']]);
+  expect(controls).toEqual([]);
+  for (let i = 0; i < 700; i++)
+    emit(RoomEvent.DataReceived, packet('{"b":"room"}'), carol, 0, 'rooms-cursor-v1');
+  expect(cursors.length).toBeLessThanOrEqual(600);
+  await provider.disconnect();
+});
 it('local volume is applied again when a muted participant publishes a replacement track', async () => {
   const { provider, room, emit } = fixture();
   await provider.connectRoom('room', 'token', 'ws://localhost:7880');

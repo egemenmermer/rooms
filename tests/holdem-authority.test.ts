@@ -340,3 +340,40 @@ describe('atomic authorized primary activity replacement', () => {
     expect(room.snapshot.cinema).toBeNull();
   });
 });
+
+describe('live pot display', () => {
+  const act = (hand: ReturnType<typeof startHoldem>, action: Parameters<typeof holdemAction>[3]) =>
+    holdemAction(hand, hand.seats[hand.turn!]!.userId, hand.revision, action);
+  it('shows the blinds as one pot until someone is all-in', () => {
+    const hand = startHoldem(
+      [
+        { userId: 'a', chips: 1000 },
+        { userId: 'b', chips: 1000 },
+      ],
+      0,
+      10,
+      20,
+    );
+    expect(holdemView(hand, 'a').pots).toEqual([
+      expect.objectContaining({ kind: 'main', amount: 30 }),
+    ]);
+  });
+  it('keeps a real side pot once a short stack is all-in', () => {
+    let hand = startHoldem(
+      [
+        { userId: 'a', chips: 100 },
+        { userId: 'b', chips: 500 },
+        { userId: 'c', chips: 500 },
+      ],
+      0,
+      10,
+      20,
+    );
+    hand = act(hand, { type: 'raise', to: 100 });
+    hand = act(hand, { type: 'raise', to: 300 });
+    hand = act(hand, { type: 'call' });
+    const pots = holdemView(hand, 'a').pots;
+    expect(pots.map((pot) => pot.amount)).toEqual([300, 400]);
+    expect(pots[1]!.eligible.sort()).toEqual(['b', 'c']);
+  });
+});

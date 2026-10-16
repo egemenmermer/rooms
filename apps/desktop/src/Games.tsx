@@ -1,4 +1,4 @@
-import { Kiraathane } from './Kiraathane';
+import { Kiraathane, gameNames } from './Kiraathane';
 import './reference-games.css';
 import {
   validate101Meld,
@@ -54,13 +54,29 @@ type Tile = {
   value: number;
   joker?: boolean;
 };
-const names: Record<GameKind, string> = {
-  holdem: 'Texas Hold’em',
-  blackjack: 'Blackjack',
-  batak: 'Batak',
-  '101': '101 Okey',
-};
+const names = gameNames;
+/** Older servers titled tables with the raw game id ("blackjack"); show the real name instead. */
+const tableTitle = (title: string | undefined, kind: GameKind | undefined) =>
+  !title || (kind && (title === kind || title === `${kind}`))
+    ? kind
+      ? names[kind]
+      : title
+    : title;
 const suits: Record<string, string> = { clubs: '♣', diamonds: '♦', hearts: '♥', spades: '♠' };
+// Spoken names: screen readers say "Kupa As", not "14 ♥".
+const suitNames: Record<string, string> = {
+  clubs: 'Sinek',
+  diamonds: 'Karo',
+  hearts: 'Kupa',
+  spades: 'Maça',
+};
+const rankNames: Record<number, string> = { 11: 'Vale', 12: 'Kız', 13: 'Papaz', 14: 'As' };
+const tileColors: Record<string, string> = {
+  red: 'Kırmızı',
+  black: 'Siyah',
+  blue: 'Mavi',
+  yellow: 'Sarı',
+};
 const array = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 const object = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
@@ -99,7 +115,11 @@ function PlayingCard({
       disabled={disabled || !onClick}
       className={`playing-card ${!card ? 'back' : ''} ${card && ['hearts', 'diamonds'].includes(card.suit) ? 'red' : ''} ${selected ? 'selected' : ''} ${winning ? 'winning' : ''}`}
       aria-pressed={onClick ? !!selected : undefined}
-      aria-label={card ? `${card.rank} ${suits[card.suit] ?? card.suit}` : tr('Kapal\u0131 kart')}
+      aria-label={
+        card
+          ? `${suitNames[card.suit] ?? card.suit} ${rankNames[card.rank] ?? card.rank}`
+          : tr('Kapal\u0131 kart')
+      }
       onClick={onClick}
     >
       {card ? (
@@ -153,14 +173,21 @@ export default function Games() {
         blocked={
           activity.room?.participants.find((p) => p.userId === community.user?.id)?.canCreate ===
           false
-            ? 'Masa açma yetkin yok'
-            : activity.room?.primary && !game
-              ? 'Önce açık etkinliği bitirin'
-              : ''
+            ? 'Bu odada masa açma yetkin yok.'
+            : ''
+        }
+        otherActivity={
+          activity.room?.primary && !game
+            ? activity.room.primary.activity === 'cinema' ||
+              activity.room.primary.activity === 'youtube'
+              ? 'Sinema'
+              : activity.room.primary.activity === 'screen'
+                ? 'ekran paylaşımı'
+                : (tableTitle(activity.room.primary.title, undefined) ?? 'bir etkinlik')
+            : null
         }
         onCreate={setCreate}
         onOpen={() => navigate('/games?tab=table')}
-        onChat={() => navigate('/voice')}
         onHistory={() => navigate('/games?tab=history')}
         onRetry={() => void activity.refresh()}
       />
@@ -297,8 +324,7 @@ function ReferenceGames({
     !!currentPrimary &&
     replaceConsent.activity === currentPrimary.activity &&
     replaceConsent.startedAt === currentPrimary.startedAt;
-  const createConflict =
-    !!currentPrimary && !(create === 'holdem' && canReplace && replacementMatches);
+  const createConflict = !!currentPrimary && !(canReplace && replacementMatches);
   const closeInvite = () => {
     inviteRequest.current++;
     setInviteOpen(false);
@@ -388,6 +414,21 @@ function ReferenceGames({
     setBuyIn(null);
     setConfigure(false);
   }, [roomId, c.user?.id, game?.status, activity.room?.primary?.startedAt]);
+  // Creating a table replaces the room's activity, which renews the command scope; go to the
+  // new table on success instead of treating the scope change as a stale answer.
+  const createTable = async (command: Extract<ActivityCommand, { type: 'game.create' }>) => {
+    if (fixture || !ready || activity.busy || commandLock.current) return;
+    commandLock.current = true;
+    try {
+      await activity.send(command);
+      onCreate(null);
+      navigate('/games?tab=table');
+    } catch {
+      /* The activity hook keeps and shows the real failure. */
+    } finally {
+      commandLock.current = false;
+    }
+  };
   const send = async (command: ActivityCommand) => {
     if (fixture || !ready || activity.busy || commandLock.current) return false;
     const scope = commandGeneration.current;
@@ -425,7 +466,9 @@ function ReferenceGames({
             : '';
   const roomName = c.channels.find((channel) => channel.id === roomId)?.name ?? 'Oda';
   const title =
-    view.tableName ?? activity.room?.primary?.title ?? (game ? names[game.kind] : 'Oyun alanı');
+    view.tableName ??
+    tableTitle(activity.room?.primary?.title, game?.kind) ??
+    (game ? names[game.kind] : 'Oyun alanı');
   const seatName = (id: string) => game?.seats.find((seat) => seat.userId === id)?.name ?? 'Oyuncu';
   const payouts = object(view.payouts),
     winners = Object.entries(payouts).filter(([, value]) => Number(value) > 0);
@@ -552,25 +595,38 @@ function ReferenceGames({
         setTeams={setTeams}
         participants={activity.room?.participants ?? []}
         busy={activity.busy}
-        disabled={fixture || !ready || !!activity.room?.primary}
+        disabled={fixture || !ready || createConflict}
         reason={
           fixture
             ? fixtureReason
             : !ready
               ? 'Etkinlik bağlantısı gerekli'
-              : activity.room?.primary
-                ? 'Önce açık etkinliği bitirin'
+              : currentPrimary && !canReplace
+                ? 'Odada açık bir etkinlik var; değiştirmek için başlatma ve kontrol yetkisi gerekli.'
                 : ''
+        }
+        consent={
+          currentPrimary && canReplace
+            ? {
+                label: `${tableTitle(currentPrimary.title, game?.kind)} etkinliğini bitir ve bu masayı kur`,
+                checked: replacementMatches,
+                onChange: (checked) =>
+                  setReplaceConsent(
+                    checked
+                      ? { activity: currentPrimary.activity, startedAt: currentPrimary.startedAt }
+                      : undefined,
+                  ),
+              }
+            : undefined
         }
         error={activity.error ?? ''}
         onCancel={() => onCreate(null)}
         onSubmit={() =>
-          void send({
+          void createTable({
             type: 'game.create',
             game: create,
             ...(create === 'batak' ? { variant } : { folding, teams }),
-          }).then((ok) => {
-            if (ok) onCreate(null);
+            ...(canReplace && replacementMatches ? { replacePrimary: replaceConsent } : {}),
           })
         }
       />
@@ -1488,42 +1544,43 @@ function ReferenceGames({
             <p>Yalnızca sanal fiş ve puan.</p>
             {activity.room?.primary && (
               <div className="rg-banner">
-                {activity.room.primary.title} etkinliği açık.
+                {tableTitle(activity.room.primary.title, game?.kind)} etkinliği açık.
                 <button
                   onClick={() => {
                     onCreate(null);
                     navigate(
-                      activity.room?.primary?.activity === 'cinema'
+                      ['cinema', 'youtube'].includes(activity.room?.primary?.activity ?? '')
                         ? '/cinema'
-                        : activity.room?.primary?.activity === 'youtube'
-                          ? '/cinema'
+                        : game
+                          ? '/games?tab=table'
                           : '/voice',
                     );
                   }}
                 >
                   Etkinliği aç
                 </button>
-                {create === 'holdem' && (
-                  <label className="rg-replace-consent">
-                    <input
-                      type="checkbox"
-                      checked={replacementMatches}
-                      disabled={fixture || !canReplace || activity.busy}
-                      onChange={(event) =>
-                        setReplaceConsent(
-                          event.target.checked && currentPrimary
-                            ? {
-                                activity: currentPrimary.activity,
-                                startedAt: currentPrimary.startedAt,
-                              }
-                            : undefined,
-                        )
-                      }
-                    />
-                    <span>{currentPrimary?.title} etkinliğini bitir ve yeni masayı kur</span>
-                  </label>
-                )}
-                {create === 'holdem' && !canReplace && (
+                <label className="rg-replace-consent">
+                  <input
+                    type="checkbox"
+                    checked={replacementMatches}
+                    disabled={fixture || !canReplace || activity.busy}
+                    onChange={(event) =>
+                      setReplaceConsent(
+                        event.target.checked && currentPrimary
+                          ? {
+                              activity: currentPrimary.activity,
+                              startedAt: currentPrimary.startedAt,
+                            }
+                          : undefined,
+                      )
+                    }
+                  />
+                  <span>
+                    {tableTitle(currentPrimary?.title, game?.kind)} etkinliğini bitir ve yeni masayı
+                    kur
+                  </span>
+                </label>
+                {!canReplace && (
                   <p>Etkinliği değiştirmek için başlatma ve kontrol yetkisi gerekli.</p>
                 )}
                 <p>Ses bağlantısı devam eder. Mevcut kuyruk korunur.</p>
@@ -1553,19 +1610,11 @@ function ReferenceGames({
                       : undefined
               }
               onClick={() =>
-                void send({
+                void createTable({
                   type: 'game.create',
                   game: create,
-                  ...(create === 'holdem'
-                    ? {
-                        holdem: holdemRules,
-                        ...(canReplace && replacementMatches
-                          ? { replacePrimary: replaceConsent }
-                          : {}),
-                      }
-                    : {}),
-                }).then((ok) => {
-                  if (ok) onCreate(null);
+                  ...(create === 'holdem' ? { holdem: holdemRules } : {}),
+                  ...(canReplace && replacementMatches ? { replacePrimary: replaceConsent } : {}),
                 })
               }
             >
@@ -2139,7 +2188,10 @@ function ReferenceBatak({ game, userId, can, action, timer }: TableUI) {
           )[variant] ?? 'Batak'}
         </span>
         <span>İhale {view.bid ? String(view.bid) : '—'}</span>
-        <span>Koz {suits[String(view.trump)] ?? '—'}</span>
+        <span>
+          Koz{' '}
+          {stage === 'bidding' && variant !== 'koz-maca' ? '—' : (suits[String(view.trump)] ?? '—')}
+        </span>
         <span>El {game.history.length + 1}</span>
       </div>
       {['bidding', 'trump', 'bury'].includes(stage) ? (
@@ -2356,7 +2408,9 @@ function OkeyTileView({
       disabled={disabled || !onClick}
       onClick={onClick}
       aria-pressed={onClick ? !!selected : undefined}
-      aria-label={`${tile.color} ${tile.joker ? 'Okey' : tile.value}`}
+      aria-label={
+        tile.joker ? 'Okey taşı' : `${tileColors[tile.color] ?? tile.color} ${tile.value}`
+      }
     >
       <strong>{tile.joker ? '★' : tile.value}</strong>
       <span>•</span>
@@ -2904,6 +2958,7 @@ function ReferenceCreateGame({
   disabled,
   reason,
   error,
+  consent,
   onCancel,
   onSubmit,
 }: {
@@ -2919,6 +2974,8 @@ function ReferenceCreateGame({
   disabled: boolean;
   reason: string;
   error: string;
+  /** Explicit "end the open activity and set up this table" choice. */
+  consent?: { label: string; checked: boolean; onChange(checked: boolean): void };
   onCancel(): void;
   onSubmit(): void;
 }) {
@@ -3062,6 +3119,17 @@ function ReferenceCreateGame({
         <div className="rg-banner" role="status">
           {reason}
         </div>
+      )}
+      {consent && (
+        <label className="rg-replace-consent">
+          <input
+            type="checkbox"
+            checked={consent.checked}
+            disabled={busy}
+            onChange={(event) => consent.onChange(event.target.checked)}
+          />
+          <span>{consent.label}</span>
+        </label>
       )}
       {error && (
         <div className="rg-banner error" role="alert">

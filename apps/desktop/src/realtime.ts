@@ -247,6 +247,13 @@ export function setScreenVolume(id: string, volume: number) {
   provider.setScreenVolume(id, volume);
 }
 export const startRoomAudio = () => run(() => mediaProvider().startAudio());
+/** Lossy pointer positions shared with everyone in the voice room; silently skipped offline. */
+export const publishCursor = (payload: string) =>
+  void mediaProvider()
+    .publishCursor?.(payload)
+    .catch(() => {});
+export const onCursor = (listener: (payload: string, senderId: string) => void) =>
+  mediaProvider().onCursor?.(listener) ?? (() => {});
 export const attachMediaTrack = (id: string, element: HTMLMediaElement) =>
   mediaProvider().attachTrack(id, element);
 
