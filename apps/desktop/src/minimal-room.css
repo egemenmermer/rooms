@@ -175,6 +175,36 @@
   background: #ffffff04;
   border-radius: 5px;
 }
+.minimal-activity {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 5px 12px 5px 34px;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: #c9b8ef;
+  font-size: 13px;
+}
+.minimal-activity > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.minimal-activity > small {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #8b6fd626;
+  color: #dcd0fb;
+  font-size: 11px;
+}
+.minimal-activity:hover {
+  background: #ffffff06;
+  border-radius: 5px;
+}
 .room-connected-dot {
   width: 5px;
   height: 5px;

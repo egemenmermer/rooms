@@ -415,6 +415,16 @@ export function directsSession(
   if (!primary || primary.controlMode !== 'host') return true;
   return primary.hostUserId === userId || (primary.controllers ?? []).includes(userId);
 }
+/** Ending a shared player (watch-together, cinema, screen) for everyone is the host's call. */
+export function endsActivity(
+  primary: RoomSnapshot['primary'],
+  userId: string | null | undefined,
+  canControl: boolean,
+): boolean {
+  if (!canControl || !userId) return false;
+  if (!primary || !['cinema', 'youtube', 'screen'].includes(primary.activity)) return true;
+  return primary.hostUserId === userId;
+}
 export function playbackPosition(timeline: Timeline, serverTimeMs: number): number {
   return Math.max(
     0,

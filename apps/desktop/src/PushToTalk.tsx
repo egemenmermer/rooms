@@ -3,7 +3,17 @@ import { useEffect } from 'react';
 import { useRooms } from './store';
 import { useRealtime } from './realtime';
 import { mediaProvider } from './runtime-sources';
-import { matchesPushToTalkKey, pushToTalkKey, releasesPushToTalkKey } from './push-to-talk-key';
+import {
+  formatPushToTalkKey,
+  matchesPushToTalkKey,
+  pushToTalkKey,
+  releasesPushToTalkKey,
+} from './push-to-talk-key';
+/** The room hint names the shortcut this listener chose, not the default. */
+export function PushToTalkNotice() {
+  const shortcut = useRooms((s) => s.preferences.pushToTalkKey);
+  return <span>Bas konuş açık · {formatPushToTalkKey(pushToTalkKey(shortcut))}</span>;
+}
 /** A held key owns only the microphone it enabled. Key release and focus loss always remute it. */
 export function PushToTalk({ notify }: { notify(message: string): void }) {
   const enabled = useRooms((s) => s.preferences.pushToTalk);

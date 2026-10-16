@@ -238,12 +238,13 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
       await queryClient.cancelQueries({ queryKey: key, exact: true });
       if (!alive.current) return;
       // Retire only the obsolete DJ-authored YouTube session on an explicit MP3 add action.
+      // Only its host may end it; for anyone else the DJ add still goes ahead.
       if (
         command.type === 'add' &&
         legacy.room?.primary?.activity === 'youtube' &&
         legacy.room.primary.title === 'DJ Recep'
       )
-        await legacy.send({ type: 'end' });
+        await legacy.send({ type: 'end' }).catch(() => legacy.clearError());
       const value = await window.rooms!.music.command(channelId!, command);
       if (alive.current) {
         queryClient.setQueryData(key, value);
