@@ -1,0 +1,44 @@
+# Same public routes as the production ingress, over loopback HTTP.
+{
+	auto_https off
+	admin off
+}
+
+:80 {
+	handle /.well-known/stoat {
+		rewrite * /stoat.json
+		root * /srv/rooms-e2e
+		file_server
+	}
+	handle_path /rooms-access/* {
+		reverse_proxy access:3002
+	}
+	handle_path /rooms-activities/* {
+		reverse_proxy activities:3031
+	}
+	handle_path /api/* {
+		@account_create path /auth/account/create /auth/account/create/*
+		respond @account_create "Use a ROOMS signup invitation." 403
+		reverse_proxy api:14702
+	}
+	handle /api {
+		rewrite * /
+		reverse_proxy api:14702
+	}
+	handle /ws {
+		rewrite * /
+		reverse_proxy events:14703
+	}
+	handle_path /autumn/* {
+		reverse_proxy autumn:14704
+	}
+	handle_path /january/* {
+		reverse_proxy january:14705
+	}
+	handle_path /livekit/* {
+		reverse_proxy livekit:7880
+	}
+	handle {
+		respond "ROOMS e2e stack. Use the ROOMS desktop client." 200
+	}
+}

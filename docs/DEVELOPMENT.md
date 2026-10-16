@@ -68,6 +68,7 @@ Depo kökünden çalıştır:
 | `pnpm services:build` | Erişim, Activities, Agent, müzik ve mevcut sunucu servislerinin derlemesi |
 | `pnpm start` | Önceden derlenmiş uygulamayı çalıştır; önce `pnpm build` |
 | `pnpm test:desktop --grep 'desktop shell'` | Sınırlı yerel açılış kontrolü |
+| `pnpm e2e:stack up` / `pnpm e2e` | Atılabilir yerel sunucuda gerçek istemcilerle uçtan uca test; [rehber](E2E_TESTING.md) |
 | `pnpm verify:ci` | Lint, tip, test, istemci ve servis derleme temel kontrolü |
 | `pnpm format:check` | Mevcut kod/araç biçimlendirme kontrolü |
 
@@ -126,7 +127,7 @@ Geliştirme görsel örnekleri üretim yollarına dahil edilmez. README galerisi
 
 1. **Kaynak kontrolleri:** lint, tip, birim/bileşen testleri ve derleme.
 2. **Yerel açılış kontrolü:** Electron açılır ve sınırlı kabuk davranışı çalışır.
-3. **Servis entegrasyonu:** yapılandırılmış arka uçta gerçek hesaplar, ağ geçidi, izinler, kalıcılık ve kurtarma.
+3. **Servis entegrasyonu:** yapılandırılmış arka uçta gerçek hesaplar, ağ geçidi, izinler, kalıcılık ve kurtarma. Yerelde [uçtan uca test paketi](E2E_TESTING.md) bu seviyeyi atılabilir bir yığında otomatik sınar.
 4. **Fiziksel cihaz kabulü:** iki bilgisayar, gerçek mikrofon/kamera/ekran izinleri, duyulan ses ve güncelleme kurulumu.
 
 Her seviye farklı bir olguyu kanıtlar. İki taklit istemci gerçek medya oturumunu; başarılı kaynak derlemesi imzalı kurulumu kanıtlamaz. PR'da ortamı/sürümü ve açık kalan kontrolleri dürüstçe kaydet.

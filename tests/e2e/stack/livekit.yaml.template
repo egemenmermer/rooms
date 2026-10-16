@@ -1,0 +1,16 @@
+# Rendered into .local/e2e/stack/livekit.yaml with generated credentials.
+port: 7880
+log_level: warn
+rtc:
+  tcp_port: {{E2E_RTC_TCP_PORT}}
+  port_range_start: {{E2E_RTC_UDP_START}}
+  port_range_end: {{E2E_RTC_UDP_END}}
+  use_external_ip: false
+  # Clients run on the Docker host and reach the published loopback ports.
+  node_ip: 127.0.0.1
+keys:
+  {{E2E_LIVEKIT_KEY}}: {{E2E_LIVEKIT_SECRET}}
+webhook:
+  api_key: {{E2E_LIVEKIT_KEY}}
+  urls:
+    - http://access:3002/v1/media/webhook
