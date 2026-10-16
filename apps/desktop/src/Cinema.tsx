@@ -7,6 +7,7 @@ import {
   Film,
   FolderOpen,
   Gamepad2,
+  HeadphoneOff,
   Headphones,
   ListVideo,
   LoaderCircle,
@@ -228,6 +229,11 @@ function SeatRow({
                 {person?.muted && (
                   <span className="cozy-seat-badge muted" aria-label="Mikrofon kapalı">
                     <MicOff size={10} />
+                  </span>
+                )}
+                {person?.deafened && (
+                  <span className="cozy-seat-badge deafened" aria-label="Sağırlaştırdı">
+                    <HeadphoneOff size={10} />
                   </span>
                 )}
               </span>
