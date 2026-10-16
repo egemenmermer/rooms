@@ -1,8 +1,7 @@
 import { existsSync, statSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { assertLoopback, repoRoot, runFile, stack } from './env';
-import { seedRun } from './seed';
+import { rm } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { assertLoopback, repoRoot, runsDir, stack } from './env';
 
 const health = {
   'Stoat API': `${stack.serverUrl}/api/`,
@@ -39,14 +38,10 @@ function requireBuild() {
     );
 }
 
-/** Verifies the target, then seeds a fresh community and accounts for this run. */
+/** Verifies the target and build once; each worker seeds its own community (fixtures.ts). */
 export default async function globalSetup() {
   assertLoopback();
   requireBuild();
   await requireHealthy();
-  const run = await seedRun(process.env.ROOMS_E2E_RUN_ID);
-  await mkdir(dirname(runFile), { recursive: true, mode: 0o700 });
-  // Contains disposable passwords and session tokens for the local stack only; ignored by Git.
-  await writeFile(runFile, JSON.stringify(run, null, 2) + '\n', { mode: 0o600 });
-  console.log(`[e2e] Seeded run ${run.runId}: community "${run.space.name}" at ${run.serverUrl}`);
+  await rm(runsDir, { recursive: true, force: true });
 }

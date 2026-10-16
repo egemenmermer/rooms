@@ -1,8 +1,9 @@
-import { readFileSync } from 'node:fs';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { test as base, expect } from '@playwright/test';
 import { ClientPool, type RoomsClient } from './client';
-import { runFile } from './env';
-import type { RunFixture } from './seed';
+import { runsDir } from './env';
+import { newRunId, seedRun, type RunFixture } from './seed';
 
 interface Fixtures {
   /** Opens additional real clients; all are closed and cleaned up after the test. */
@@ -14,9 +15,21 @@ interface Fixtures {
 }
 
 export const test = base.extend<Fixtures, { run: RunFixture }>({
+  // One community and account set per worker: parallel workers never share rooms, members,
+  // relationships or upstream rate-limit buckets, and every run starts from fresh data.
   run: [
-    async ({}, use) => {
-      await use(JSON.parse(readFileSync(runFile, 'utf8')) as RunFixture);
+    async ({}, use, workerInfo) => {
+      const run = await seedRun(
+        `${process.env.ROOMS_E2E_RUN_ID ?? newRunId()}${workerInfo.parallelIndex}`,
+      );
+      await mkdir(runsDir, { recursive: true, mode: 0o700 });
+      // Disposable passwords and session tokens for the local stack only; ignored by Git.
+      await writeFile(
+        resolve(runsDir, `worker-${workerInfo.parallelIndex}.json`),
+        JSON.stringify(run, null, 2) + '\n',
+        { mode: 0o600 },
+      );
+      await use(run);
     },
     { scope: 'worker' },
   ],

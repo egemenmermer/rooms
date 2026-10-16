@@ -4,7 +4,8 @@ import { resolve } from 'node:path';
 export const repoRoot = resolve(__dirname, '../../..');
 export const e2eRoot = resolve(repoRoot, '.local/e2e');
 export const stackState = resolve(e2eRoot, 'stack');
-export const runFile = resolve(e2eRoot, 'run.json');
+/** Per-worker seeded accounts and community ids (`worker-<n>.json`, mode 0600). */
+export const runsDir = resolve(e2eRoot, 'runs');
 
 const httpPort = process.env.ROOMS_E2E_HTTP_PORT ?? '4100';
 const apiPort = process.env.ROOMS_E2E_API_PORT ?? '4101';

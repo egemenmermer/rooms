@@ -69,13 +69,15 @@ Sık kullanılan komutlar:
 | `pnpm e2e:stack down` | Konteynerleri durdurur, veriyi korur |
 | `pnpm e2e:stack reset` | Konteynerleri, birimleri, sırları ve çalışma dosyalarını siler |
 
-Testler çalışırken ekranda ROOMS pencereleri açılıp kapanır. Bu normaldir; pencerelere tıklama. Her test kendi pencerelerini kapatır ve profil klasörlerini siler.
+İstemciler varsayılan olarak **görünmez (headless)** çalışır: pencere açılmaz, Dock'ta veya menü çubuğunda simge çıkmaz, odak çalınmaz ve fare olayları pencereye ulaşmaz. Böylece paket çalışırken bilgisayarı kullanmaya devam edebilirsin. Pencereleri izlemek için `ROOMS_E2E_HEADED=1 pnpm e2e` kullan. Her test kendi pencerelerini kapatır ve profil klasörlerini siler.
+
+Spec dosyaları **paralel işçilerde** çalışır (varsayılan 4). Sayıyı `ROOMS_E2E_WORKERS=2 pnpm e2e` ile değiştir. Bir test 1–4 Electron süreci açar; güçsüz makinede veya pil gücünde 2 işçi daha kararlıdır. Tam paket 4 işçiyle yaklaşık 1 dakika, tek işçiyle 2–4 dakika sürer.
 
 ## Klasör yapısı
 
 ```text
 tests/e2e/
-├── playwright.config.ts      # Tek işçi, raporlar .local/e2e/ altında
+├── playwright.config.ts      # Paralel işçiler, raporlar .local/e2e/ altında
 ├── stack/                    # Atılabilir yerel ROOMS sunucusu
 │   ├── compose.yml           # Stoat, Caddy, access, activities, LiveKit, PostgreSQL
 │   ├── Caddyfile.template    # Üretim vekiliyle aynı herkese açık rotalar
@@ -88,13 +90,14 @@ tests/e2e/
 │   ├── seed.ts               # Hesap, topluluk, kanal, davet ve kayıt bileti üretimi
 │   ├── global-setup.ts       # Derleme/yığın kontrolü ve çalışma başına tohumlama
 │   ├── client.ts             # RoomsClient: bir Electron süreci + izole profil
+│   ├── headless-main.cjs     # Yalnız testte yüklenen, pencereleri gizleyen main kancası
 │   ├── fixtures.ts           # Playwright fixture'ları: run, clients, owner, guest
 │   └── pages/                # Sayfa nesneleri: chat.ts, voice.ts
 └── specs/                    # Özellik bazlı testler
 
 .local/e2e/                   # Git'in yok saydığı üretilmiş dosyalar
 ├── stack/                    # Sırlar (0600), işlenmiş yapılandırma, erişim servisi durumu
-├── run.json                  # Son çalışmanın hesapları ve kimlikleri (0600)
+├── runs/worker-<n>.json      # Her işçinin hesapları ve topluluk kimlikleri (0600)
 ├── test-results/             # Başarısız testlerin ekleri ve izleri
 ├── report/                   # HTML raporu
 └── results.json              # Makine tarafından okunabilir sonuçlar
@@ -131,8 +134,8 @@ Kayıt üretimde olduğu gibi davetle sınırlıdır (`invite_only = true`). Tes
 
 ## Bir test çalışmasının yaşam döngüsü
 
-1. **Ön kontrol** (`global-setup.ts`): hedefin loopback olduğu, `dist/` ve `dist-electron/` derlemesinin bulunduğu ve dört sağlık ucunun (Stoat API, access, activities, LiveKit) yanıt verdiği doğrulanır. Biri eksikse test başlamadan anlaşılır bir hata verilir.
-2. **Tohumlama**: rastgele bir çalışma kimliğiyle (`runId`) üç hesap (`owner`, `guest`, `outsider`), `E2E <runId>` adlı topluluk, `General` metin kanalı, `Ses Odası` ses odası ve topluluk daveti oluşturulur. `guest` topluluğa katılır, `outsider` katılmaz. Sonuç `.local/e2e/run.json` dosyasına yazılır.
+1. **Ön kontrol** (`global-setup.ts`, bir kez): hedefin loopback olduğu, `dist/` ve `dist-electron/` derlemesinin bulunduğu ve dört sağlık ucunun (Stoat API, access, activities, LiveKit) yanıt verdiği doğrulanır. Biri eksikse test başlamadan anlaşılır bir hata verilir.
+2. **Tohumlama** (her işçi için ayrı, `fixtures.ts` içindeki işçi kapsamlı `run` fixture'ı): rastgele bir çalışma kimliğiyle (`runId`) üç hesap (`owner`, `guest`, `outsider`), `E2E <runId>` adlı topluluk, `General` metin kanalı, `Ses Odası` ses odası ve topluluk daveti oluşturulur. `guest` topluluğa katılır, `outsider` katılmaz. Sonuç `.local/e2e/runs/worker-<n>.json` dosyasına yazılır. Ayrı topluluklar sayesinde paralel işçiler oda, üye, ilişki veya Stoat'un sunucu başına hız sınırı kovasını paylaşmaz.
 3. **Testler**: her test `owner`/`guest` fixture'larıyla veya `clients.launch()` ile kendi Electron süreçlerini açar. Her süreç ayrı `ROOMS_PROFILE` ve ayrı kullanıcı verisi klasörü alır; oturum, tercih ve önbellek paylaşılmaz.
 4. **Temizlik**: test bitince her pencere kapanır ve profil klasörü silinir. Başarısız testte önce her pencerenin ekran görüntüsü, erişilebilirlik ağacı ve Playwright izi eklenir.
 
@@ -205,13 +208,13 @@ Kurallar:
 - **Rapor:** `pnpm e2e:report`. Başarısız testte her pencere için ekran görüntüsü (`<etiket> screenshot`), erişilebilirlik ağacı (`<etiket> aria snapshot`), görünüm süreci hataları ve Playwright izi bulunur.
 - **İz:** `pnpm exec playwright show-trace .local/e2e/test-results/<test>/attachments/<etiket>-trace-*.zip`. Her adımın DOM görüntüsü ve zaman çizelgesi açılır.
 - **Servis günlükleri:** `pnpm e2e:stack logs api`, `logs access`, `logs livekit`. Erişim servisi istek günlüğü tutmaz; LiveKit ayrıntısı için `.local/e2e/stack/livekit.yaml` içinde `log_level: debug` yapıp `docker restart rooms-e2e-livekit-1` çalıştır. Bir sonraki `up` dosyayı şablondan yeniden üretir.
-- **Elle inceleme:** `run.json` içindeki hesapla `pnpm dev` istemcisinde `http://127.0.0.1:4100` adresine giriş yapabilirsin. Dosya yalnız yerel atılabilir yığının şifrelerini içerir.
+- **Elle inceleme:** `runs/worker-<n>.json` içindeki hesapla `pnpm dev` istemcisinde `http://127.0.0.1:4100` adresine giriş yapabilirsin. Dosya yalnız yerel atılabilir yığının şifrelerini içerir.
 
 ## Güvenlik kuralları
 
 - Paket yalnız `127.0.0.1` hedefler. `env.ts` başka bir ana bilgisayarı reddeder; üretim sunucusuna veya başka bir topluluğa yöneltilmez. Uzak, sahip olunan atılabilir ortam desteği eklenecekse ayrı ve açık onaylı bir hedef olarak tasarlanmalıdır ([AGENTS.md](../AGENTS.md)).
-- `.local/e2e/` içindeki sırları, `run.json` dosyasını, raporları ve izleri commit etme veya paylaşma. İzler oturum belirteci içeren ağ isteklerini gösterebilir.
-- Testler ürün koduna test kancası eklemez. Sentetik medya yalnız Chromium komut satırı anahtarlarıyla ve test sürecinde açılır.
+- `.local/e2e/` içindeki sırları, `runs/` dosyalarını, raporları ve izleri commit etme veya paylaşma. İzler oturum belirteci içeren ağ isteklerini gösterebilir.
+- Testler ürün koduna test kancası eklemez. Sentetik medya yalnız Chromium komut satırı anahtarlarıyla, görünmez pencereler yalnız Electron'un `-r` ile test sürecine yüklenen `headless-main.cjs` kancasıyla sağlanır; paketlenmiş uygulamaya girmez.
 - Uygulama kodu değişmeden yalnız test eklemek bir kabul kaydı değildir. Sonucu ortam, sürüm ve atlanan kontrollerle birlikte bildir.
 
 ## Sorun giderme
@@ -223,5 +226,6 @@ Kurallar:
 | `Docker is not running` | Docker Desktop'ı başlat |
 | `port is already allocated` (7880 veya 4100) | Başka yerel LiveKit veya servis kapat; `lsof -nP -iTCP:7880 -sTCP:LISTEN` |
 | Ses testinde "Unable to connect to the media server" | LiveKit 7880'de dinlemiyor veya CSP dışı bir adres verilmiş; `pnpm e2e:stack status` |
-| Hesap oluşturmada `429` | Stoat hız sınırı; `StoatApi` bekleyip yeniden dener. Sürerse birkaç saniye sonra tekrar çalıştır |
+| Hesap oluşturmada veya girişte `429` / "Çok fazla işlem" | Stoat, vekil arkasındaki tüm oturumsuz istekler için tek bir giriş kovası kullanır (10 sn'de 15). `StoatApi` ve giriş yardımcısı bekleyip yeniden dener; sürerse `ROOMS_E2E_WORKERS=2` kullan |
+| Headless testte görünmeyen bir sorunu izlemek | `ROOMS_E2E_HEADED=1 pnpm e2e specs/<dosya>.spec.ts` |
 | Garip, kalıcı durum | `pnpm e2e:stack reset && pnpm e2e:stack up` |

@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { rm } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import {
   _electron as electron,
   expect,
@@ -15,6 +16,13 @@ import type { SeededAccount } from './stoat-api';
  * and auto-accepted capture prompts. Real hardware and macOS privacy prompts are never used.
  */
 const mediaSwitches = ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'];
+
+/**
+ * Clients run invisibly by default (see headless-main.cjs); ROOMS_E2E_HEADED=1 shows the windows
+ * for debugging. The hook only loads into the test process, never into the product build.
+ */
+export const headed = process.env.ROOMS_E2E_HEADED === '1';
+const headlessHook = resolve(__dirname, 'headless-main.cjs');
 
 /** ROOMS_PROFILE accepts [a-zA-Z0-9-]{1,40}; each client gets its own userData directory. */
 const profileName = (label: string) =>
@@ -40,7 +48,7 @@ export class RoomsClient {
     delete env.ROOMS_DEV_URL;
     env.ROOMS_PROFILE = profile;
     const app = await electron.launch({
-      args: ['.', ...mediaSwitches],
+      args: [...(headed ? [] : ['-r', headlessHook]), '.', ...mediaSwitches],
       cwd: repoRoot,
       env,
       timeout: 60000,
@@ -92,10 +100,17 @@ export class RoomsClient {
     await server.fill(stack.serverUrl);
     await page.getByLabel('E-posta adresi').fill(account.email);
     await page.getByPlaceholder('Şifren', { exact: true }).fill(account.password);
-    await page.getByRole('button', { name: 'Giriş yap', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Profil', exact: true })).toBeVisible({
-      timeout: 30000,
-    });
+    // Upstream sign-in shares one rate-limit bucket for all unauthenticated callers behind the
+    // proxy (15 per 10 s). Parallel workers can exhaust it; wait and resubmit like a person would.
+    const profile = page.getByRole('heading', { name: 'Profil', exact: true });
+    const limited = page.getByRole('alert').filter({ hasText: /Çok fazla|Too many/ });
+    for (let attempt = 0; ; attempt++) {
+      await page.getByRole('button', { name: /^Giriş yap/ }).click();
+      await expect(profile.or(limited).first()).toBeVisible({ timeout: 30000 });
+      if (await profile.isVisible()) return;
+      if (attempt >= 4) throw new Error('Sign-in stayed rate limited after 5 attempts.');
+      await page.waitForTimeout(3000 * (attempt + 1));
+    }
   }
 
   /** Native session snapshot from Electron main (no credentials are exposed to the page). */
