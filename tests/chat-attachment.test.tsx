@@ -74,10 +74,38 @@ it('shows retry for image lookup failure and never embeds an arbitrary remote at
         url: 'https://evil.test/image',
       }}
       channelId="room"
-      messageId="message"
+      messageId="failed-message"
     />,
   );
   await screen.findByText('Fotoğraf yüklenemedi.');
   expect(view.container.querySelector('img')).toBeNull();
   expect(screen.getByRole('button', { name: 'Yeniden dene' })).toBeTruthy();
+});
+it('reuses a shown photo when the channel is reopened until channel access changes', async () => {
+  const image = vi.fn(async () => 'data:image/png;base64,AQ==');
+  window.rooms = { social: { attachmentImage: image } } as unknown as DesktopBridge;
+  useCommunity.setState({
+    serverUrl: 'https://qa.test',
+    user: { id: 'owner', username: 'owner', displayName: 'Owner', avatar: null },
+  });
+  const photo = (
+    <ChatAttachment
+      file={{ id: 'cached-file', name: 'photo.png', size: 2, mime: 'image/png' }}
+      channelId="photos"
+      messageId="photo-message"
+    />
+  );
+  const first = render(photo);
+  await screen.findByRole('button', { name: 'Fotoğrafı büyüt' });
+  first.unmount();
+  render(photo);
+  expect(screen.getByRole('button', { name: 'Fotoğrafı büyüt' })).toBeTruthy();
+  expect(image).toHaveBeenCalledTimes(1);
+  cleanup();
+  window.dispatchEvent(
+    new CustomEvent('rooms:channel-access-invalidated', { detail: { channelIds: ['photos'] } }),
+  );
+  render(photo);
+  await screen.findByRole('button', { name: 'Fotoğrafı büyüt' });
+  expect(image).toHaveBeenCalledTimes(2);
 });

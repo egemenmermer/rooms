@@ -79,3 +79,21 @@ it('refuses a different attachment identity or executable image type', async () 
   ).toBeNull();
   expect(await client.attachmentImage('channel', '01ARZ3NDEKTSV4RRFFQ69G5FAV', 'file')).toBeNull();
 });
+it('serves photos of already loaded messages without re-reading each message while connected', async () => {
+  const fetcher = network();
+  const client = new StoatClient('https://rooms.example/api', 'fixture-session');
+  const internal = client as any;
+  internal.status = 'connected';
+  internal.messages.set(message._id, message);
+  expect(await client.attachmentImage('channel', message._id, 'file')).toMatch(/^data:image\/png/);
+  expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/messages/'))).toHaveLength(0);
+  // An invalidated channel, or a reconnect that may have missed deletes, asks upstream again.
+  internal.invalidChannels.add('channel');
+  await expect(client.attachmentImage('channel', message._id, 'file')).rejects.toMatchObject({
+    status: 409,
+  });
+  expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/messages/'))).toHaveLength(1);
+  internal.invalidChannels.delete('channel');
+  await internal.processPacket({ type: 'Ready', users: [], servers: [], channels: [] });
+  expect(internal.messages.has(message._id)).toBe(false);
+});
