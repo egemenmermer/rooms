@@ -55,6 +55,21 @@ const serialize = (values) =>
     .map(([key, value]) => `${key}=${value}`)
     .join('\n') + '\n';
 
+/** Web Push (VAPID) pair in the encoding Stoat's pushd expects: [public, private]. */
+function vapidPair() {
+  const pair = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+  const jwk = pair.publicKey.export({ format: 'jwk' });
+  const pem = pair.privateKey.export({ format: 'pem', type: 'sec1' });
+  return [
+    Buffer.concat([
+      Buffer.from([4]),
+      Buffer.from(jwk.x, 'base64url'),
+      Buffer.from(jwk.y, 'base64url'),
+    ]).toString('base64url'),
+    Buffer.from(pem).toString('base64').replace(/=+$/, ''),
+  ];
+}
+
 /** Generates secrets once and keeps them across `up`; `reset` deletes them with the data. */
 async function ensureState() {
   await mkdir(join(state, 'access'), { recursive: true, mode: 0o700 });
@@ -72,21 +87,10 @@ async function ensureState() {
     E2E_LIVEKIT_SECRET: existing.E2E_LIVEKIT_SECRET ?? hex(),
     E2E_FILES_KEY: existing.E2E_FILES_KEY ?? randomBytes(32).toString('base64'),
   };
-  if (!existing.E2E_VAPID_PUBLIC) {
-    const pair = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
-    const jwk = pair.publicKey.export({ format: 'jwk' });
-    env.E2E_VAPID_PUBLIC = Buffer.concat([
-      Buffer.from([4]),
-      Buffer.from(jwk.x, 'base64url'),
-      Buffer.from(jwk.y, 'base64url'),
-    ]).toString('base64url');
-    env.E2E_VAPID_PRIVATE = Buffer.from(pair.privateKey.export({ format: 'pem', type: 'sec1' }))
-      .toString('base64')
-      .replace(/=+$/, '');
-  } else {
-    env.E2E_VAPID_PUBLIC = existing.E2E_VAPID_PUBLIC;
-    env.E2E_VAPID_PRIVATE = existing.E2E_VAPID_PRIVATE;
-  }
+  const vapid = existing.E2E_VAPID_PUBLIC
+    ? [existing.E2E_VAPID_PUBLIC, existing.E2E_VAPID_PRIVATE]
+    : vapidPair();
+  [env.E2E_VAPID_PUBLIC, env.E2E_VAPID_PRIVATE] = vapid;
   await writeFile(envPath, serialize(env), { mode: 0o600 });
   await writeFile(
     join(state, 'secrets.env'),
