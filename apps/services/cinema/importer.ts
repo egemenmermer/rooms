@@ -127,6 +127,26 @@ export class Importer {
     }
   }
 
+  /** Provider artwork: images only, at most 3 MB. */
+  async image(url: string) {
+    const response = await this.request(url, AbortSignal.timeout(15_000));
+    const type = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase() ?? '';
+    if (!/^image\/(png|jpe?g|webp|gif|avif)$/.test(type)) {
+      await response.body?.cancel();
+      return fail('CINEMA_ITEM_NOT_FOUND');
+    }
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    for await (const chunk of Readable.fromWeb(
+      response.body as import('node:stream/web').ReadableStream,
+    ) as AsyncIterable<Uint8Array>) {
+      total += chunk.length;
+      if (total > 3 * MB) return fail('CINEMA_ITEM_NOT_FOUND');
+      chunks.push(chunk);
+    }
+    return { body: Buffer.concat(chunks), type };
+  }
+
   /** Checks the account before it is stored. Xtream returns its user info; M3U returns null. */
   async verify(source: CinemaSource, signal?: AbortSignal): Promise<XtreamAccount | null> {
     if (source.kind === 'm3u') {

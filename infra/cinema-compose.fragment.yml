@@ -1,0 +1,29 @@
+# Merge into the private deployment Compose config. The IPTV account is stored encrypted in /state;
+# its key and the relay ticket secret live in ./cinema.env, never in git.
+services:
+  cinema:
+    image: rooms-cinema:${ROOMS_CINEMA_IMAGE_TAG:?Set the built image tag}
+    restart: unless-stopped
+    init: true
+    read_only: true
+    # Catalog of a large provider plus the guide window fits in ~300 MB; ffmpeg copies, never encodes video.
+    mem_limit: 768m
+    cpus: 1.0
+    pids_limit: 64
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - ./cinema.env
+    environment:
+      STOAT_INTERNAL_URL: http://api:14702
+      ROOMS_ACTIVITIES_INTERNAL_URL: http://activities:3031
+    volumes:
+      # Provision as UID 10003, mode 0700.
+      - ${ROOMS_CINEMA_STATE_DIR:?Set a private cinema state directory}:/state
+    tmpfs:
+      # Relay playlists and segments live only in memory: about 3 minutes per stream.
+      - /hls:size=268435456,mode=0700,uid=10003,gid=10003
+      - /tmp:size=16777216,mode=1777
+    # Reverse proxy: /rooms-cinema/* → cinema:3050 with the prefix stripped (like /rooms-access/*).
