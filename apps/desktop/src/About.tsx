@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Modal, Toggle } from '@rooms/design';
 import { ReferenceIcon } from './ReferenceIcon';
 import { useRealtime } from './realtime';
@@ -29,6 +30,7 @@ export function About({ notify }: { notify(message: string): void }) {
     [contentBusy, setContentBusy] = useState(false);
   const [fixture, setFixture] = useState(false);
   const voice = useRealtime();
+  const [params, setParams] = useSearchParams();
   const contentEpoch = useRef(0),
     mounted = useRef(true);
   useEffect(() => {
@@ -83,6 +85,20 @@ export function About({ notify }: { notify(message: string): void }) {
       if (timer) clearInterval(timer);
     };
   }, []);
+  const installable = status?.state === 'ready' || status?.state === 'available';
+  // The sidebar update notice links here with install=1 and expects the restart prompt at once.
+  useEffect(() => {
+    if (!params.has('install') || !status) return;
+    if (installable) setModal('restart');
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.delete('install');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [params, setParams, status, installable]);
   const native = !!window.rooms && !fixture;
   const configured = native && !!status?.configured,
     enabled = configured && !!status?.enabled;
@@ -330,6 +346,7 @@ export function About({ notify }: { notify(message: string): void }) {
           <div className="about-modal-body">
             {modal === 'restart' ? (
               <p>
+                {status?.version ? `ROOMS ${status.version} hazır. ` : ''}
                 {voice.channelId
                   ? 'Ses bağlantın ve açık görüşmeler kapanacak.'
                   : 'Uygulama kapanıp yeniden açılacak.'}{' '}
@@ -384,10 +401,10 @@ export function About({ notify }: { notify(message: string): void }) {
             {modal === 'restart' && (
               <button
                 className="button primary"
-                disabled={!enabled || busy || status?.state !== 'ready'}
+                disabled={!enabled || busy || !installable}
                 onClick={() => void run(() => window.rooms!.updates.install())}
               >
-                Yeniden başlat
+                Yeniden başlat ve güncelle
               </button>
             )}
           </div>

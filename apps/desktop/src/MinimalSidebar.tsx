@@ -42,6 +42,7 @@ import { ChannelTools } from './ChannelTools';
 import { UserProfileDialog } from './SocialSurfaces';
 import type { SocialUser } from '@rooms/social';
 import { uiError } from './i18n';
+import { UpdateNotice } from './UpdateNotice';
 /** A running activity in the joined room, one click from the room list. */
 function RoomActivityRow({ roomId, onOpen }: { roomId: string; onOpen(path: string): void }) {
   const activity = useActivityRoom(roomId),
@@ -356,6 +357,7 @@ export function MinimalSidebar({
               {c.user && <VoiceAvatar id={c.user.id} name={c.user.displayName} />}
               <span>{c.user?.displayName ?? 'Profil'}</span>
             </button>
+            <UpdateNotice />
             <IconButton label="Ayarlar" onClick={() => navigate('/settings')}>
               <Settings size={17} />
             </IconButton>

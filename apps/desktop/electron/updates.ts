@@ -85,6 +85,8 @@ export function setupUpdates(assertSender: (e: Electron.IpcMainInvokeEvent) => v
         check(): void;
         enable(value: boolean): void;
         status(): { state: UpdateStatus['state']; version: string | null };
+        /** Installs a downloaded update and relaunches; false when nothing is waiting. */
+        install(): boolean;
       };
       if (!sparkle.start()) throw new Error('Sparkle initialization failed');
       // Owner requested automatic updates; subsequent explicit opt-out is preserved.
@@ -119,7 +121,8 @@ export function setupUpdates(assertSender: (e: Electron.IpcMainInvokeEvent) => v
       for (const name of ['check', 'download', 'install'])
         bindNative(name, () => {
           if (!status.enabled) throw new Error('Enable updates first');
-          sparkle.check();
+          // A waiting download installs and relaunches at once; otherwise Sparkle shows its own window.
+          if (name !== 'install' || !sparkle.install()) sparkle.check();
           return snapshot();
         });
       bindNative('cancel', () => snapshot());
