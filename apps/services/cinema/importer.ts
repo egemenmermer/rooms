@@ -55,6 +55,12 @@ const fail = (code: string): never => {
 };
 
 const MB = 1024 * 1024;
+/**
+ * Largest stream list or playlist read. The body is buffered, decoded and parsed at once,
+ * which peaks at about four times its size; 96 MB (roughly 150k movies) stays well inside
+ * the service's 1 GB.
+ */
+const MAX_LIST = 96 * MB;
 
 type Progress = (progress: Partial<CinemaImportProgress>) => void;
 
@@ -150,7 +156,7 @@ export class Importer {
   /** Checks the account before it is stored. Xtream returns its user info; M3U returns null. */
   async verify(source: CinemaSource, signal?: AbortSignal): Promise<XtreamAccount | null> {
     if (source.kind === 'm3u') {
-      const head = await this.text(source.url, 200 * MB, signal);
+      const head = await this.text(source.url, MAX_LIST, signal);
       try {
         parseM3u(head, source.url);
       } catch {
@@ -212,7 +218,7 @@ export class Importer {
       const categoryRows = asRows(
         await this.json(urls.api({ action: section.categories }), 10 * MB, signal),
       );
-      const rows = asRows(await this.json(urls.api({ action: section.streams }), 300 * MB, signal));
+      const rows = asRows(await this.json(urls.api({ action: section.streams }), MAX_LIST, signal));
       const names = new Map<string, string>();
       for (const row of categoryRows) {
         const id = asId(row.category_id);
@@ -305,7 +311,7 @@ export class Importer {
     let entries: M3uEntry[];
     let guideUrls: string[];
     try {
-      const parsed = parseM3u(await this.text(source.url, 200 * MB, signal), source.url);
+      const parsed = parseM3u(await this.text(source.url, MAX_LIST, signal), source.url);
       entries = parsed.entries;
       guideUrls = parsed.header.tvgUrls;
     } catch (error) {

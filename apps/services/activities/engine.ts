@@ -403,7 +403,10 @@ export function applyCommand(
     case 'queue.next': {
       // Several viewers report the same end; only the first one moves the room.
       if (state.timeline.itemId !== command.fromItemId) return false;
-      if (command.reason === 'skip') media();
+      const ending = state.queue.find((item) => item.id === command.fromItemId)?.media;
+      // A live channel never ends by itself, so an "ended" report could only be used to
+      // move the server's one provider connection; that takes the remote, like a skip.
+      if (command.reason === 'skip' || (ending?.kind === 'community-media' && ending.live)) media();
       else {
         control();
         shared();

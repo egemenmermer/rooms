@@ -94,9 +94,12 @@ export function xmltvTimeToEpochMs(value: string): number | null {
 
 const entities: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
 
+// Guide data comes from the provider, so every helper below runs in linear time: plain
+// indexOf scans and bounded regexes, never a lazy match that can rescan to the end.
+
 function decode(text: string) {
   return text
-    .replace(/&(#x[0-9a-fA-F]{1,6}|#\d{1,7}|[a-z]+);/g, (whole, name: string) => {
+    .replace(/&(#x[0-9a-fA-F]{1,6}|#\d{1,7}|[a-z]{2,8});/g, (whole, name: string) => {
       if (name[0] !== '#') return entities[name] ?? whole;
       const cp = name[1] === 'x' ? Number.parseInt(name.slice(2), 16) : Number(name.slice(1));
       return cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '';
@@ -104,33 +107,89 @@ function decode(text: string) {
     .trim();
 }
 
+/** Attributes of one start tag (at most {@link MAX_TAG} characters). */
 function attributesOf(tag: string) {
   const out = new Map<string, string>();
-  for (const m of tag.matchAll(/([A-Za-z_:][\w:.-]*)\s*=\s*("([^"]*)"|'([^']*)')/g))
-    out.set(m[1], decode(m[3] ?? m[4] ?? ''));
+  for (const m of tag.matchAll(/([A-Za-z_:][\w:.-]{0,63})\s*=\s*(?:"([^"]*)"|'([^']*)')/g))
+    out.set(m[1], decode(m[2] ?? m[3] ?? ''));
   return out;
 }
 
-/** Text of every direct `<name>` child, in order. */
-function children(body: string, name: string) {
+const isSpaceCode = (c: number) => c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d;
+
+/** Text of an element body: markup removed, CDATA kept literally, entities decoded. */
+function textContent(raw: string) {
+  let out = '';
+  let i = 0;
+  while (i < raw.length) {
+    const lt = raw.indexOf('<', i);
+    if (lt < 0) {
+      out += raw.slice(i);
+      break;
+    }
+    out += raw.slice(i, lt);
+    if (raw.startsWith('<![CDATA[', lt)) {
+      const end = raw.indexOf(']]>', lt + 9);
+      const data = raw.slice(lt + 9, end < 0 ? raw.length : end);
+      out += data.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      i = end < 0 ? raw.length : end + 3;
+      continue;
+    }
+    const gt = raw.indexOf('>', lt + 1);
+    if (gt < 0) break;
+    i = gt + 1;
+  }
+  return decode(out);
+}
+
+/** Text of the first `limit` `<name>` children, in order. */
+function children(body: string, name: string, limit = 8) {
   const out: string[] = [];
-  const pattern = new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)</${name}>`, 'g');
-  for (const m of body.matchAll(pattern)) {
-    // CDATA keeps `<` literally; escape it before markup is stripped.
-    const escaped = m[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_m, data: string) =>
-      data.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
-    );
-    const text = decode(escaped.replace(/<[^>]+>/g, ''));
+  const open = `<${name}`;
+  const close = `</${name}>`;
+  let from = 0;
+  while (out.length < limit) {
+    const start = body.indexOf(open, from);
+    if (start < 0) break;
+    const next = body.charCodeAt(start + open.length);
+    // `<title` must not match `<titles>`.
+    if (next !== 0x3e && next !== 0x2f && !isSpaceCode(next)) {
+      from = start + open.length;
+      continue;
+    }
+    const tagEnd = body.indexOf('>', start);
+    if (tagEnd < 0) break;
+    if (body.charCodeAt(tagEnd - 1) === 0x2f) {
+      from = tagEnd + 1;
+      continue;
+    }
+    const end = body.indexOf(close, tagEnd + 1);
+    if (end < 0) break;
+    const text = textContent(body.slice(tagEnd + 1, end));
     if (text) out.push(text);
+    from = end + close.length;
   }
   return out;
 }
 
 function iconOf(body: string) {
-  const tag = /<icon\s[^>]*>/.exec(body)?.[0];
-  const src = tag ? attributesOf(tag).get('src') : undefined;
-  return src && /^https?:\/\//i.test(src) ? src : null;
+  let from = 0;
+  for (;;) {
+    const start = body.indexOf('<icon', from);
+    if (start < 0) return null;
+    if (!isSpaceCode(body.charCodeAt(start + 5))) {
+      from = start + 5;
+      continue;
+    }
+    const end = body.indexOf('>', start);
+    if (end < 0 || end - start > MAX_TAG) return null;
+    const src = attributesOf(body.slice(start, end + 1)).get('src');
+    return src && /^https?:\/\//i.test(src) ? src : null;
+  }
 }
+
+/** Longest start tag read; real ones are well under 300 characters. */
+const MAX_TAG = 4096;
 
 /** Hard limit for one element; real programmes are a few kilobytes. */
 const MAX_ELEMENT = 256 * 1024;
@@ -163,8 +222,14 @@ export async function* parseXmltv(chunks: AsyncIterable<string>): AsyncGenerator
       const name = found[1];
       const openEnd = buffer.indexOf('>', at);
       if (openEnd < 0) {
-        cursor = at;
-        break;
+        // Wait for the rest of the tag, unless it is already longer than any real one.
+        cursor = buffer.length - at > MAX_TAG ? at + name.length + 1 : at;
+        if (cursor === at) break;
+        continue;
+      }
+      if (openEnd - at > MAX_TAG) {
+        cursor = at + name.length + 1;
+        continue;
       }
       const openTag = buffer.slice(at, openEnd + 1);
       let end: number;
@@ -180,8 +245,13 @@ export async function* parseXmltv(chunks: AsyncIterable<string>): AsyncGenerator
           cursor = at;
           break;
         }
-        body = buffer.slice(openEnd + 1, close);
         end = close + name.length + 3;
+        // An element larger than any real one is skipped whole.
+        if (close - openEnd > MAX_ELEMENT) {
+          cursor = end;
+          continue;
+        }
+        body = buffer.slice(openEnd + 1, close);
       }
       cursor = end;
       const event = name === 'channel' ? channelOf(openTag, body) : programmeOf(openTag, body);

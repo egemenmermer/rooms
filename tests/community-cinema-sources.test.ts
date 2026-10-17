@@ -213,3 +213,39 @@ describe('Xtream JSON', () => {
     );
   });
 });
+
+describe('XMLTV with hostile input', () => {
+  const run = async (xml: string, size = 65_536) => {
+    const chunks: string[] = [];
+    for (let i = 0; i < xml.length; i += size) chunks.push(xml.slice(i, i + size));
+    const started = performance.now();
+    let count = 0;
+    for await (const event of parseXmltv(
+      (async function* () {
+        yield* chunks;
+      })(),
+    ))
+      if (event) count++;
+    return { count, ms: performance.now() - started };
+  };
+  const programme = (body: string) =>
+    `<programme start="20261017180000 +0000" channel="a.tr">${body}</programme>`;
+
+  it('stays linear on unclosed child tags, CDATA, markup and icon tags', async () => {
+    for (const filler of ['<title>', '<![CDATA[', '<', '<icon ', '&amp', 'a="']) {
+      const body = filler.repeat(Math.floor(200_000 / filler.length));
+      const { ms } = await run(`<tv>${programme(`<title>Ok</title>${body}`)}</tv>`);
+      expect(ms, filler).toBeLessThan(500);
+    }
+  });
+
+  it('skips oversized elements and endless start tags without rescanning', async () => {
+    const huge = programme(`<title>Big</title>${'x'.repeat(400_000)}`);
+    const tail = programme('<title>After</title>');
+    const result = await run(`<tv>${huge}${tail}</tv>`);
+    expect(result.count).toBe(1);
+    const endless = await run(`<tv><programme ${'a'.repeat(3_000_000)}`, 16_384);
+    expect(endless.count).toBe(0);
+    expect(endless.ms).toBeLessThan(2000);
+  });
+});
