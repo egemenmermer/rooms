@@ -490,6 +490,44 @@ html[data-input='keyboard'] .hall-tabs button::after {
   cursor: default;
 }
 
+/* Subtitles: this viewer's own, above the controls while they show. */
+.hall-subtitle {
+  position: absolute;
+  left: 50%;
+  bottom: 7%;
+  z-index: 4;
+  width: max-content;
+  max-width: min(84%, 1100px);
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  transition: bottom 200ms ease;
+}
+.hall-subtitle span {
+  display: inline;
+  padding: 0.12em 0.4em;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.62);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  color: #fff;
+  font: 600 clamp(15px, 2.4vw, 34px) / 1.42 var(--font-family);
+  white-space: pre-line;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.8);
+}
+.hall-screen:not(.idle) .hall-subtitle {
+  bottom: max(7%, 96px);
+}
+.hall-screen.mini .hall-subtitle {
+  bottom: 8px;
+}
+.hall-screen.mini .hall-subtitle span {
+  font-size: 11px;
+}
+.hall-control.hall-audio-trigger[data-active] svg {
+  color: rgb(139 131 255);
+}
+
 /* Controls fade after a short idle, cursor included. */
 .hall-controls {
   position: absolute;

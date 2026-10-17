@@ -18,6 +18,7 @@ import type {
   CinemaItemsQuery,
   CinemaSourceInput,
 } from '../../../../packages/community-cinema/src/bridge';
+import { formatVtt } from '../../../../packages/community-cinema/src/webvtt';
 import { installCinemaFixture } from '../cinema/cinema-bridge';
 import { installMediaFixture } from './media-fixture';
 import { installDevelopmentRuntime, mediaBridge, mediaProvider } from '../runtime-sources';
@@ -521,6 +522,24 @@ export function createCommunityCinemaFixtureBridge(
                 { index: 2, label: 'İngilizce' },
               ],
           audioTrack: current.media.live ? null : (audioChoice ?? 1),
+          subtitles: current.media.live
+            ? []
+            : [
+                {
+                  index: 0,
+                  label: 'Türkçe',
+                  language: 'tur',
+                  forced: false,
+                  src: fixtureVtt('Türkçe'),
+                },
+                {
+                  index: 1,
+                  label: 'İngilizce',
+                  language: 'eng',
+                  forced: false,
+                  src: fixtureVtt('English'),
+                },
+              ],
         },
         variant === 'default' ? 300 : 200,
       );
@@ -776,4 +795,14 @@ export function installCommunityCinemaFixture(value: string): () => void {
     restoreRuntime();
     restoreMedia();
   };
+}
+
+/** DEV fixture subtitles: a labelled cue every 6 s for three hours, as a data URL. */
+function fixtureVtt(language: string) {
+  const cues = Array.from({ length: 1800 }, (_, i) => ({
+    start: i * 6,
+    end: i * 6 + 4,
+    text: `DEMO altyazı (${language})\nÖrnek satır ${i + 1}`,
+  }));
+  return `data:text/vtt;charset=utf-8,${encodeURIComponent(formatVtt(cues))}`;
 }

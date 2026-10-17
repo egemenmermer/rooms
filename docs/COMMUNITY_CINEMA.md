@@ -11,6 +11,7 @@ Kişisel medya (Medyam) bundan ayrıdır ve özel kalır. Sinema'daki yeniden ya
 - [Akış](#akış)
 - [Güvenlik sınırları](#güvenlik-sınırları)
 - [Aktarım](#aktarım)
+- [Altyazılar](#altyazılar)
 - [Etkinlik protokolü](#etkinlik-protokolü)
 - [Kurulum](#kurulum)
 - [Doğrulama](#doğrulama)
@@ -63,9 +64,22 @@ Sunucu 2 vCPU / 3,7 GB RAM'dir, bu yüzden video **dönüştürülmez**.
 - **ffmpeg'in ağ erişimi.**
   - ffmpeg sağlayıcı adresini hiç görmez. Servis içindeki loopback vekil her adımı özel ağ engeli, sabitlenmiş DNS ve en fazla 4 yönlendirme ile `privateFetch` üzerinden yapar.
   - HLS listeleri yeniden yazılır. Böylece ffmpeg iç servislere ulaşamaz ve kimlik bilgisi süreç argümanlarında görünmez.
+- **Okuma hızı.** Altyazısız filmler ffmpeg'in `-readrate 1` ayarıyla okunur. Altyazılı filmlerde bu ayar kullanılmaz; ayrıntısı [Altyazılar](#altyazılar) bölümündedir.
 - **Bağlantı bütçesi.**
   - Aynı anda çalışan aktarım sayısı en fazla hesabın `max_connections` değeri ve `ROOMS_CINEMA_MAX_RELAYS` (varsayılan 1) kadardır. Bütçe doluysa en uzun süredir izlenmeyen aktarım kapanır.
   - 60 saniye izleyicisi olmayan aktarım durur.
+
+## Altyazılar
+
+Film ve dizi bölümlerindeki gömülü metin altyazıları (SubRip, ASS/SSA, mov_text, WebVTT) salonda gösterilir. Altyazıyı her izleyici kendisi seçer; seçim başkasının ekranını değiştirmez.
+
+- **Çıkarma.** Röle, aynı ffmpeg sürecinde her metin altyazısını ayrı bir WebVTT dosyasına (`sub<n>.vtt`) yazar. Sağlayıcıya ikinci bir bağlantı açılmaz. En fazla 16 iz aktarılır.
+- **Desteklenmeyenler.** Görüntü tabanlı altyazılar (PGS, DVD, DVB) OCR gerektirdiği için aktarılmaz. Canlı kanallarda altyazı yoktur.
+- **Zamanlama.** ffmpeg altyazıyı sarma noktasından (`startSec`) itibaren zamanlar. Servis cue'ları eserin kendi zamanına çevirerek sunar. Oynatıcı bunları salonun ortak konumuyla (`offsetSec` ve PROGRAM-DATE-TIME) eşleştirir. Hâlâ yazılan son cue sunulmaz.
+- **Okuma hızı.** ffmpeg'in `-readrate` ayarı en yavaş akışı izler. Seyrek bir altyazı akışı neredeyse her zaman en yavaşıdır. Bu yüzden ffmpeg cue'lar arasında sınırsız okur, sonraki cue'da ise dakikalarca bekler. Altyazılı filmlerde okuma hızını loopback vekil belirler:
+  - HLS çıktısı, ffmpeg başladığından beri geçen süreyi en fazla 15 saniye önde tutar.
+  - İlk segmentten sonra baytlar, kaynağın ortalama bit hızının en fazla 1,5 katıyla geçer (2 saniyelik kova). Bu sınır olmasa vekil beklerken biriken veri ffmpeg'e loopback hızında akardı.
+- **Arayüz.** Kontrol çubuğundaki altyazı menüsünde "Kapalı" ve izler yer alır. Salon başka bir dil duyuyorsa ve Türkçe altyazı varsa, Türkçe kendiliğinden açılır. Türkçe seste yalnız zorunlu Türkçe altyazı açılır. Altyazıyı kapatan izleyiciye bir daha kendiliğinden açılmaz.
 
 ## Etkinlik protokolü
 
@@ -106,6 +120,8 @@ Salon, `hall` adlı ana etkinliktir; `roomId` salon kanalının kimliğidir. Sı
   - yalnızca seçili öğenin aktarılması
   - yanıtlarda ve diskte hesap bilgisinin bulunmaması
   - M3U dışa aktarma bağlantısının Xtream'e çevrilmesi
-- `tests/community-cinema-ipc.test.ts`: ana süreç IPC doğrulaması, biletin görünüme gitmemesi, 410 ve hesap değişimi.
+- `tests/community-cinema-ipc.test.ts`: ana süreç IPC doğrulaması, biletin görünüme gitmemesi, 410 ve hesap değişimi, altyazı izlerinin aynı oturumun `sub<n>.vtt` dosyalarına eşlenmesi.
+- `tests/community-cinema-subtitles.test.ts`: WebVTT okuma ve yazma, yazılmakta olan cue, ffmpeg altyazı çıktıları, eser zamanına çevirme, vekil hız kapısı ve kendiliğinden altyazı seçimi.
+- `tests/community-cinema-relay-native.test.ts` (`ROOMS_CINEMA_RELAY_NATIVE=1`, ffmpeg 9): seyrek SubRip ve ASS izli bir MKV ile hız sınırı, sarma sonrası zamanlama ve eser zamanındaki cue'lar.
 
 Bunlar birim, taklit servis ve yerel kontrollerdir. Gerçek sağlayıcı hesabı, iki fiziksel bilgisayarda birlikte izleme, Windows ve uzun canlı yayın kabulü ayrıca yapılmalıdır.

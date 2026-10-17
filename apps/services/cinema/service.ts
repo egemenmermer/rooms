@@ -15,6 +15,7 @@ import type {
   CinemaDetails,
   CinemaImportProgress,
   CinemaStatus,
+  CinemaSubtitleTrack,
   CinemaWatch,
 } from '../../../packages/community-cinema/src/types';
 import {
@@ -47,6 +48,7 @@ export type RelayInfo = {
   windowStartSec?: number;
   audioTracks?: { index: number; label: string }[];
   audioTrack?: number | null;
+  subtitleTracks?: CinemaSubtitleTrack[];
 };
 
 /** The part of the relay manager the service drives. */
@@ -645,6 +647,7 @@ export class CinemaService {
       originPdtMs: info.originPdtMs ?? null,
       audioTracks: info.audioTracks ?? [],
       audioTrack: info.audioTrack ?? null,
+      subtitleTracks: info.subtitleTracks ?? [],
     };
   }
 

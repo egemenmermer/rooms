@@ -10,6 +10,7 @@ import type {
   CinemaItem,
   CinemaProgramme,
   CinemaStatus,
+  CinemaSubtitleTrack,
 } from './types';
 
 export const CINEMA_SCHEME = 'rooms-cinema';
@@ -59,7 +60,11 @@ export type CinemaWatchSource = {
   /** The source's audio streams and the one the hall hears. */
   audioTracks: CinemaAudioTrack[];
   audioTrack: number | null;
+  /** VOD text subtitles; `src` is a WebVTT file on the work's timeline, still growing. */
+  subtitles: CinemaSubtitleSource[];
 };
+
+export type CinemaSubtitleSource = CinemaSubtitleTrack & { src: string };
 
 /** Error messages the bridge rejects with; the UI maps them to Turkish copy. */
 export type CinemaErrorCode =

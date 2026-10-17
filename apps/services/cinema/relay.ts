@@ -3,7 +3,8 @@ import { randomBytes } from 'node:crypto';
 import { mkdir, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { maskText } from '../../../packages/community-cinema/src/mask';
-import { UpstreamProxy } from './upstream-proxy';
+import { formatVtt, parseVtt } from '../../../packages/community-cinema/src/webvtt';
+import { UpstreamProxy, type Pacer } from './upstream-proxy';
 
 export type RelaySource = { url: string; headers: Record<string, string>; live: boolean };
 
@@ -25,6 +26,15 @@ export type RelayInfo = {
   /** The source's audio streams and the one relayed (`0:a:<index>`). */
   audioTracks: { index: number; label: string }[];
   audioTrack: number | null;
+  /** Text subtitle streams relayed as `sub<index>.vtt` (VOD only). */
+  subtitleTracks: RelaySubtitle[];
+};
+
+export type RelaySubtitle = {
+  index: number;
+  label: string;
+  language: string | null;
+  forced: boolean;
 };
 
 export type ProbeResult = {
@@ -34,6 +44,8 @@ export type ProbeResult = {
   durationSec: number | null;
   /** Every audio stream, in order (`index` is its position among them: `0:a:<index>`). */
   audioTracks?: ProbeAudio[];
+  /** Every subtitle stream, in order (`index` is its position among them: `0:s:<index>`). */
+  subtitleTracks?: ProbeSubtitle[];
 };
 
 export type ProbeAudio = {
@@ -42,6 +54,17 @@ export type ProbeAudio = {
   title: string | null;
   isDefault: boolean;
 };
+
+export type ProbeSubtitle = ProbeAudio & { codec: string; forced: boolean };
+
+/** Subtitle codecs ffmpeg can turn into WebVTT; image subtitles (PGS, DVB) would need OCR. */
+const TEXT_SUBTITLES = new Set(['subrip', 'srt', 'ass', 'ssa', 'mov_text', 'webvtt', 'text']);
+const MAX_SUBTITLES = 16;
+
+/** The text subtitle streams a VOD relay converts, in source order. */
+export function textSubtitles(tracks: ProbeSubtitle[] | undefined) {
+  return (tracks ?? []).filter((t) => TEXT_SUBTITLES.has(t.codec)).slice(0, MAX_SUBTITLES);
+}
 
 const LANGUAGES: Record<string, string> = {
   tur: 'Türkçe',
@@ -77,8 +100,8 @@ const LANGUAGES: Record<string, string> = {
   hi: 'Hintçe',
 };
 
-/** A short Turkish label for an audio stream: its language, then the provider's title. */
-export function audioLabel(track: ProbeAudio) {
+/** A short Turkish label for a stream: its language, then the provider's title. */
+function trackLabel(track: ProbeAudio, fallback: string) {
   const language = LANGUAGES[track.language?.toLowerCase() ?? ''] ?? null;
   const title =
     track.title
@@ -87,7 +110,23 @@ export function audioLabel(track: ProbeAudio) {
       .slice(0, 48) || null;
   if (language && title && title.toLocaleLowerCase('tr') !== language.toLocaleLowerCase('tr'))
     return `${language} · ${title}`;
-  return language ?? title ?? `Ses ${track.index + 1}`;
+  return language ?? title ?? `${fallback} ${track.index + 1}`;
+}
+
+export function audioLabel(track: ProbeAudio) {
+  return trackLabel(track, 'Ses');
+}
+
+/** Like {@link audioLabel}; forced (signs and foreign-dialogue) tracks say so. */
+export function subtitleLabel(track: ProbeSubtitle) {
+  const label = trackLabel(track, 'Altyazı');
+  return track.forced && !/zorunlu|forced/i.test(label) ? `${label} · Zorunlu` : label;
+}
+
+/** The ISO 639 code of a stream's language tag, or null. */
+function languageCode(value: string | null) {
+  const code = value?.toLowerCase() ?? '';
+  return /^[a-z]{2,3}$/.test(code) && code !== 'und' ? code : null;
 }
 
 /** The hall's chosen stream when it exists, else Turkish, else the default, else the first. */
@@ -128,10 +167,29 @@ type Session = {
   originPdtMs: number | null;
   audioTracks: ProbeAudio[];
   audioTrack: number | null;
+  subtitleTracks: ProbeSubtitle[];
+  /** Read pacing by the proxy instead of ffmpeg's `-readrate` (see {@link RelayManager.pace}). */
+  paced: boolean;
+  launchedAt: number | null;
+  producedReadAt: number;
+  /** Bytes passed to ffmpeg, the source's average byte rate, and the token bucket. */
+  pacedBytes: number;
+  byteRate: number | null;
+  tokens: number | null;
+  tokensAt: number;
 };
 
-const FILE = /^(?:index\.m3u8|init\.mp4|seg\d{6,9}\.m4s)$/;
+const FILE = /^(?:index\.m3u8|init\.mp4|seg\d{6,9}\.m4s|sub\d{1,2}\.vtt)$/;
+const SUBTITLE = /^sub(\d{1,2})\.vtt$/;
+const MAX_SUBTITLE_FILE = 8_000_000;
 const SEGMENT_SEC = 2;
+// Proxy pacing: ffmpeg's -readrate_initial_burst, -readrate and -readrate_catchup
+// equivalents. A hold stays well under ffmpeg's 15 s read timeout; holding again right
+// after is fine. The bucket holds this many seconds of the source's average bitrate.
+const PACE_BURST_SEC = 15;
+const PACE_CATCHUP = 1.5;
+const PACE_BUCKET_SEC = 2;
+const PACE_HOLD_MS = 8000;
 // The AAC encoder's priming delay: its first output sample is 1024 samples early.
 const AAC_PRIMING_SEC = 1024 / 48_000;
 const PROXIED = /http:\/\/127\.0\.0\.1:\d+\/[a-f0-9]{64}\/[a-f0-9]{32}\/[a-f0-9]{24}\/\S*/g;
@@ -178,6 +236,12 @@ export function playlistSegments(text: string) {
  * Track timing lives in each fragment's decode time, never in edit lists: Chromium's
  * MSE ignores the empty edits ffmpeg writes by default, which put the audio (cut
  * exactly at `startSec`) up to one GOP ahead of the video.
+ *
+ * VOD text subtitles become one WebVTT side output each (`sub<index>.vtt`), timed from
+ * `startSec` (cue 0 = the work at `startSec`). ffmpeg's `-readrate` follows the slowest
+ * stream, and a sparse subtitle stream is nearly always the slowest: it reads unthrottled
+ * between cues, then sleeps for minutes on the next one. Relays with subtitles are
+ * therefore paced by the proxy ({@link RelayManager}) and run without `-readrate`.
  */
 export function relayArgs(input: {
   url: string;
@@ -189,8 +253,11 @@ export function relayArgs(input: {
   discontinuity: boolean;
   /** Position among the audio streams; 0 when omitted. */
   audioTrack?: number;
+  /** Positions among the subtitle streams to write as WebVTT (VOD only). */
+  subtitles?: number[];
 }) {
   const { probe, live } = input;
+  const subtitles = live ? [] : (input.subtitles ?? []);
   const network = [
     '-rw_timeout',
     '15000000',
@@ -225,12 +292,9 @@ export function relayArgs(input: {
   const pacing = live
     ? ['-fflags', '+genpts+discardcorrupt', '-analyzeduration', '1000000', '-probesize', '1000000']
     : [
-        '-readrate',
-        '1',
-        '-readrate_initial_burst',
-        '15',
-        '-readrate_catchup',
-        '1.5',
+        ...(subtitles.length
+          ? []
+          : ['-readrate', '1', '-readrate_initial_burst', '15', '-readrate_catchup', '1.5']),
         ...(input.startSec > 0 ? ['-ss', input.startSec.toFixed(3)] : []),
       ];
   const flags = [
@@ -287,6 +351,17 @@ export function relayArgs(input: {
     '-start_number',
     String(input.startNumber),
     'index.m3u8',
+    ...subtitles.flatMap((index) => [
+      '-map',
+      `0:s:${index}`,
+      '-c:s',
+      'webvtt',
+      '-flush_packets',
+      '1',
+      '-f',
+      'webvtt',
+      `sub${index}.vtt`,
+    ]),
   ];
 }
 
@@ -379,6 +454,18 @@ export class RelayManager {
       return null;
     }
     if (name === 'index.m3u8') this.observe(value, body.toString('utf8'));
+    const subtitle = SUBTITLE.exec(name);
+    if (subtitle) {
+      if (!value.subtitleTracks.some((t) => t.index === Number(subtitle[1]))) return null;
+      if (body.length > MAX_SUBTITLE_FILE) return null;
+      // ffmpeg is still appending: serve whole cues only, on the work's own timeline.
+      const cues = parseVtt(body.toString('utf8'), { complete: true }).map((cue) => ({
+        ...cue,
+        start: cue.start + value.startSec,
+        end: cue.end + value.startSec,
+      }));
+      return { body: Buffer.from(formatVtt(cues)), type: 'text/vtt; charset=utf-8' };
+    }
     return {
       body,
       type: name.endsWith('.m3u8') ? 'application/vnd.apple.mpegurl' : 'video/mp4',
@@ -418,8 +505,12 @@ export class RelayManager {
     return null;
   }
 
+  private produced(s: Session) {
+    return s.durations.reduce((sum, d) => sum + (d ?? SEGMENT_SEC), 0);
+  }
+
   private info(s: Session): RelayInfo {
-    const produced = s.durations.reduce((sum, d) => sum + (d ?? SEGMENT_SEC), 0);
+    const produced = this.produced(s);
     let windowStart = 0;
     for (let i = 0; i < s.firstSeq; i++) windowStart += s.durations[i] ?? SEGMENT_SEC;
     return {
@@ -434,6 +525,12 @@ export class RelayManager {
       originPdtMs: s.originPdtMs,
       audioTracks: s.audioTracks.map((t) => ({ index: t.index, label: audioLabel(t) })),
       audioTrack: s.audioTrack,
+      subtitleTracks: s.subtitleTracks.map((t) => ({
+        index: t.index,
+        label: subtitleLabel(t),
+        language: languageCode(t.language),
+        forced: t.forced,
+      })),
     };
   }
 
@@ -470,7 +567,10 @@ export class RelayManager {
       allowPrivateNetwork: this.options.allowPrivateNetwork,
     });
     const proxy = await this.proxy;
-    const { scope, url } = proxy.open(input.source.url, input.source.headers);
+    // Set before ffmpeg starts; until then nothing reads through the proxy.
+    let paced: Session | null = null;
+    const pacer: Pacer = (chunk) => (paced ? this.pace(paced, chunk) : Promise.resolve());
+    const { scope, url } = proxy.open(input.source.url, input.source.headers, pacer);
     const id = randomBytes(16).toString('hex');
     const now = Date.now();
     const session: Session = {
@@ -497,6 +597,14 @@ export class RelayManager {
       originPdtMs: null,
       audioTracks: [],
       audioTrack: null,
+      subtitleTracks: [],
+      paced: false,
+      launchedAt: null,
+      producedReadAt: 0,
+      pacedBytes: 0,
+      byteRate: null,
+      tokens: null,
+      tokensAt: 0,
     };
     this.sessions.set(id, session);
     const upstreamError = (fallback: string) => {
@@ -524,6 +632,9 @@ export class RelayManager {
       session.durationSec = session.live ? null : probe.durationSec;
       session.audioTracks = probe.audio ? (probe.audioTracks ?? []) : [];
       session.audioTrack = probe.audio ? pickAudio(session.audioTracks, input.audio) : null;
+      session.subtitleTracks = session.live ? [] : textSubtitles(probe.subtitleTracks);
+      session.paced = session.subtitleTracks.length > 0;
+      if (session.paced) paced = session;
       session.args = (startNumber) =>
         relayArgs({
           url,
@@ -534,9 +645,10 @@ export class RelayManager {
           vodWindowSec: this.options.vodWindowSec ?? 180,
           discontinuity: startNumber > 0,
           audioTrack: session.audioTrack ?? 0,
+          subtitles: session.subtitleTracks.map((t) => t.index),
         });
       this.log(
-        `relay ${id.slice(0, 8)} starting ${session.live ? 'live' : `vod@${session.startSec}`} video=${probe.video ?? '-'} audio=${probe.audio ?? '-'}`,
+        `relay ${id.slice(0, 8)} starting ${session.live ? 'live' : `vod@${session.startSec}`} video=${probe.video ?? '-'} audio=${probe.audio ?? '-'} subtitles=${session.subtitleTracks.length}`,
       );
       this.launch(session, 0);
       const ended = await this.ready(session, upstreamError);
@@ -563,6 +675,7 @@ export class RelayManager {
 
   private launch(session: Session, startNumber: number) {
     session.exited = false;
+    session.launchedAt = Date.now();
     const child = (this.options.spawn ?? spawn)(
       this.options.ffmpeg ?? 'ffmpeg',
       session.args(startNumber),
@@ -601,6 +714,60 @@ export class RelayManager {
       this.log(`relay ${session.id.slice(0, 8)} ended (${code}) ${this.tail(session)}`);
       void this.stop(session.id);
     });
+  }
+
+  /**
+   * Holds the next upstream chunk of a paced relay. Two limits, like `-readrate 1` with
+   * an initial burst and a catch-up rate:
+   * - the HLS output may lead the seconds since ffmpeg started by {@link PACE_BURST_SEC};
+   * - once output exists, bytes pass at most {@link PACE_CATCHUP} times the source's
+   *   average bitrate. While the first limit holds, the proxy's upstream socket keeps
+   *   filling; without this one, that backlog would reach ffmpeg at loopback speed.
+   */
+  private async pace(session: Session, chunk: { bytes: number; total: number | null }) {
+    session.pacedBytes += chunk.bytes;
+    if (session.byteRate === null && chunk.total && session.durationSec)
+      session.byteRate = chunk.total / session.durationSec;
+    const began = Date.now();
+    while (session.state !== 'stopped' && session.launchedAt !== null) {
+      const now = Date.now();
+      const produced = await this.producedNow(session);
+      const allowed = PACE_BURST_SEC + (now - session.launchedAt) / 1000;
+      let wait = produced > allowed ? 250 : 0;
+      // Without a file size (an HLS source), what passed per produced second; it runs high.
+      const rate = session.byteRate ?? (produced > 0 ? session.pacedBytes / produced : null);
+      if (!wait && rate && produced > 0) {
+        const capacity = rate * PACE_BUCKET_SEC;
+        if (session.tokens === null)
+          session.tokens = Math.max(capacity, rate * (allowed - produced));
+        else if (session.tokens < capacity)
+          session.tokens = Math.min(
+            capacity,
+            session.tokens + ((now - session.tokensAt) / 1000) * rate * PACE_CATCHUP,
+          );
+        session.tokensAt = now;
+        if (session.tokens >= chunk.bytes) {
+          session.tokens -= chunk.bytes;
+          return;
+        }
+        wait = Math.min(250, ((chunk.bytes - session.tokens) / (rate * PACE_CATCHUP)) * 1000);
+      }
+      if (!wait || now - began >= PACE_HOLD_MS) return;
+      await sleep(Math.max(10, wait));
+    }
+  }
+
+  /** Produced seconds, re-reading the playlist at most twice a second. */
+  private async producedNow(session: Session) {
+    if (Date.now() - session.producedReadAt >= 500) {
+      session.producedReadAt = Date.now();
+      try {
+        this.observe(session, await readFile(join(session.dir, 'index.m3u8'), 'utf8'));
+      } catch {
+        // Not written yet.
+      }
+    }
+    return this.produced(session);
   }
 
   private async ready(session: Session, upstreamError: (fallback: string) => Error) {
@@ -679,7 +846,7 @@ export class RelayManager {
         codec_type?: string;
         codec_name?: string;
         tags?: { language?: string; title?: string };
-        disposition?: { default?: number };
+        disposition?: { default?: number; forced?: number };
       }[];
       format?: { format_name?: string; duration?: string };
     };
@@ -699,6 +866,17 @@ export class RelayManager {
           language: s.tags?.language?.slice(0, 8) ?? null,
           title: s.tags?.title ?? null,
           isDefault: s.disposition?.default === 1,
+        })),
+      subtitleTracks: (json.streams ?? [])
+        .filter((s) => s.codec_type === 'subtitle')
+        .slice(0, 32)
+        .map((s, index) => ({
+          index,
+          codec: s.codec_name ?? '',
+          language: s.tags?.language?.slice(0, 8) ?? null,
+          title: s.tags?.title ?? null,
+          isDefault: s.disposition?.default === 1,
+          forced: s.disposition?.forced === 1,
         })),
     };
   }

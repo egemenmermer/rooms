@@ -129,6 +129,20 @@ export type CinemaWatch = {
   /** The source's audio streams (`index` = position among them) and the one relayed. */
   audioTracks: CinemaAudioTrack[];
   audioTrack: number | null;
+  /**
+   * VOD text subtitles; each viewer picks their own. The desktop maps `index` to
+   * `rooms-cinema://stream/<session>/sub<index>.vtt`, timed on the work's timeline.
+   */
+  subtitleTracks: CinemaSubtitleTrack[];
 };
 
 export type CinemaAudioTrack = { index: number; label: string };
+
+export type CinemaSubtitleTrack = {
+  index: number;
+  label: string;
+  /** ISO 639 code from the stream's tag (`tur`, `tr`, `eng` …), or null. */
+  language: string | null;
+  /** Signs and foreign-dialogue only. */
+  forced: boolean;
+};
