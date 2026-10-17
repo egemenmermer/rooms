@@ -59,6 +59,11 @@ const watchResponse = z
     itemRef: z.string().regex(CINEMA_REF_PATTERN),
     ttlMs: z.number().int().min(0).max(3_600_000).optional(),
     originPdtMs: z.number().nullable().optional(),
+    audioTracks: z
+      .array(z.object({ index: z.number().int().min(0).max(31), label: z.string().max(80) }))
+      .max(32)
+      .optional(),
+    audioTrack: z.number().int().min(0).max(31).nullable().optional(),
   })
   .passthrough();
 
@@ -216,7 +221,15 @@ export function setupCommunityCinema(options: {
       offsetSec: watch.offsetSec,
       epoch: watch.epoch,
       originPdtMs: watch.originPdtMs ?? null,
+      audioTracks: watch.audioTracks ?? [],
+      audioTrack: watch.audioTrack ?? null,
     };
+  });
+  options.handle('rooms:cinema-audio', async (hallId, value, track) => {
+    await api('POST', `${hall(hallId)}/audio`, {
+      ref: ref.parse(value),
+      track: z.number().int().min(0).max(31).parse(track),
+    });
   });
 
   /**

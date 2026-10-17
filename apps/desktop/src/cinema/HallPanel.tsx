@@ -154,6 +154,13 @@ function HallQueue() {
   const queue = hall.room?.queue ?? [];
   const current = hall.current;
   const currentIndex = queue.findIndex((item) => item.id === current?.id);
+  // Hooks stay above the empty-queue return.
+  const [confirming, setConfirming] = useState(false);
+  useEffect(() => {
+    if (!confirming) return;
+    const timer = setTimeout(() => setConfirming(false), 4000);
+    return () => clearTimeout(timer);
+  }, [confirming]);
   const move = (index: number, direction: number) => {
     const ids = queue.map((item) => item.id),
       other = index + direction;
@@ -174,72 +181,93 @@ function HallQueue() {
         <p>Sıra boş. {paletteShortcut} ile bir kanal, film ya da YouTube videosu ekle.</p>
       </div>
     );
+  const others = queue.filter((item) => item.id !== current?.id).length;
   return (
-    <ol className="hall-queue">
-      {queue.map((item, index) => {
-        const playing = item.id === current?.id;
-        const watched = currentIndex >= 0 && index < currentIndex;
-        const own = item.addedBy === hall.me;
-        return (
-          <li key={item.id} className={`${playing ? 'playing' : ''} ${watched ? 'watched' : ''}`}>
-            <button
-              className="hall-queue-open"
-              disabled={playing || !hall.canDirect}
-              title={playing ? 'Şu an oynuyor' : hall.canDirect ? 'Şimdi aç' : hall.directReason}
-              onClick={() => hall.run({ type: 'queue.select', itemId: item.id, play: true })}
-            >
-              <QueueThumb item={item} />
-              <span className="hall-queue-text">
-                <strong>{item.media.title}</strong>
-                <small>
-                  {playing ? (
-                    <span className="hall-now-label">
-                      {item.media.kind === 'community-media' && item.media.live && (
-                        <i className="hall-live-dot" />
-                      )}
-                      Şimdi oynuyor
-                    </span>
-                  ) : (
-                    didThis(hall.nameOf(item.addedBy), 'ekledi')
+    <>
+      {hall.canDirect && others > 0 && (
+        <div className="hall-queue-head">
+          <span>{queue.length} öğe</span>
+          <button
+            className={`hall-text-button ${confirming ? 'danger' : ''}`}
+            onClick={() => {
+              // A second click within a few seconds confirms; nothing else asks first.
+              if (!confirming) return setConfirming(true);
+              setConfirming(false);
+              hall.run({ type: 'queue.clear' });
+            }}
+            onBlur={() => setConfirming(false)}
+          >
+            <Trash2 size={13} />
+            {confirming ? `${others} öğeyi kaldır` : 'Sırayı temizle'}
+          </button>
+        </div>
+      )}
+      <ol className="hall-queue">
+        {queue.map((item, index) => {
+          const playing = item.id === current?.id;
+          const watched = currentIndex >= 0 && index < currentIndex;
+          const own = item.addedBy === hall.me;
+          return (
+            <li key={item.id} className={`${playing ? 'playing' : ''} ${watched ? 'watched' : ''}`}>
+              <button
+                className="hall-queue-open"
+                disabled={playing || !hall.canDirect}
+                title={playing ? 'Şu an oynuyor' : hall.canDirect ? 'Şimdi aç' : hall.directReason}
+                onClick={() => hall.run({ type: 'queue.select', itemId: item.id, play: true })}
+              >
+                <QueueThumb item={item} />
+                <span className="hall-queue-text">
+                  <strong>{item.media.title}</strong>
+                  <small>
+                    {playing ? (
+                      <span className="hall-now-label">
+                        {item.media.kind === 'community-media' && item.media.live && (
+                          <i className="hall-live-dot" />
+                        )}
+                        Şimdi oynuyor
+                      </span>
+                    ) : (
+                      didThis(hall.nameOf(item.addedBy), 'ekledi')
+                    )}
+                  </small>
+                </span>
+                {!playing && hall.canDirect && <Play size={14} className="hall-queue-play" />}
+              </button>
+              {!playing && (
+                <span className="hall-queue-tools">
+                  {hall.canDirect && (
+                    <>
+                      <button
+                        aria-label="Yukarı taşı"
+                        disabled={index === 0 || index - 1 === currentIndex}
+                        onClick={() => move(index, -1)}
+                      >
+                        <ArrowUp size={13} />
+                      </button>
+                      <button
+                        aria-label="Aşağı taşı"
+                        disabled={index === queue.length - 1}
+                        onClick={() => move(index, 1)}
+                      >
+                        <ArrowDown size={13} />
+                      </button>
+                    </>
                   )}
-                </small>
-              </span>
-              {!playing && hall.canDirect && <Play size={14} className="hall-queue-play" />}
-            </button>
-            {!playing && (
-              <span className="hall-queue-tools">
-                {hall.canDirect && (
-                  <>
+                  {(own || hall.canDirect) && (
                     <button
-                      aria-label="Yukarı taşı"
-                      disabled={index === 0 || index - 1 === currentIndex}
-                      onClick={() => move(index, -1)}
+                      aria-label="Sıradan kaldır"
+                      onClick={() => hall.run({ type: 'queue.remove', itemId: item.id })}
                     >
-                      <ArrowUp size={13} />
+                      <Trash2 size={13} />
                     </button>
-                    <button
-                      aria-label="Aşağı taşı"
-                      disabled={index === queue.length - 1}
-                      onClick={() => move(index, 1)}
-                    >
-                      <ArrowDown size={13} />
-                    </button>
-                  </>
-                )}
-                {(own || hall.canDirect) && (
-                  <button
-                    aria-label="Sıradan kaldır"
-                    onClick={() => hall.run({ type: 'queue.remove', itemId: item.id })}
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                )}
-              </span>
-            )}
-          </li>
-        );
-      })}
-    </ol>
+                  )}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </>
   );
 }
 

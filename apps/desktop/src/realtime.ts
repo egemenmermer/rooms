@@ -97,7 +97,8 @@ export function joinVoice(channelId: string, roomName: string): Promise<void> {
   const epoch = ++transitionEpoch,
     scope = sessionScope();
   if (microphoneScope !== scope) {
-    desiredMuted = true;
+    // A restart or update keeps the microphone as it was left; only a first join is muted.
+    desiredMuted = !useRooms.getState().preferences.microphoneOn;
     microphoneScope = scope;
   }
   pendingTarget = channelId;
@@ -195,6 +196,7 @@ export async function toggleMic() {
     const muted = !mediaProvider().snapshot().muted;
     await mediaProvider().mute(muted);
     desiredMuted = muted;
+    useRooms.getState().setPreference('microphoneOn', !muted);
     if (mediaProvider().snapshot().inputDeviceFallback)
       useRooms.getState().setPreference('inputId', '');
   });

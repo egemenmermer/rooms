@@ -234,6 +234,23 @@ export async function createCinemaServer(options: CinemaServerOptions) {
     );
   });
 
+  /** The hall's audio stream for the playing item; only whoever holds the remote. */
+  server.post<Hall>('/v1/halls/:hallId/audio', async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    const body = z
+      .object({ ref, track: z.number().int().min(0).max(31) })
+      .strict()
+      .parse(request.body);
+    return service.setAudio(
+      token(request),
+      request.params.hallId,
+      identity.communityId,
+      identity.userId,
+      body.ref,
+      body.track,
+    );
+  });
+
   /** Renews the ticket of a running relay session; never starts or restarts a relay. */
   server.post<{ Params: { hallId: string; session: string } }>(
     '/v1/halls/:hallId/sessions/:session/ticket',

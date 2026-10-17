@@ -380,6 +380,10 @@ export function applyCommand(
       state.queue = state.queue.filter((i) => i.id !== command.itemId);
       break;
     }
+    case 'queue.clear':
+      media();
+      state.queue = state.queue.filter((i) => i.id === state.timeline.itemId);
+      break;
     case 'queue.reorder':
       media();
       if (

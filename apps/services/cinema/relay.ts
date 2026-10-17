@@ -22,6 +22,9 @@ export type RelayInfo = {
   windowStartSec: number;
   /** EXT-X-PROGRAM-DATE-TIME of output time 0 (epoch ms), once the first playlist is read. */
   originPdtMs: number | null;
+  /** The source's audio streams and the one relayed (`0:a:<index>`). */
+  audioTracks: { index: number; label: string }[];
+  audioTrack: number | null;
 };
 
 export type ProbeResult = {
@@ -29,7 +32,75 @@ export type ProbeResult = {
   video: string | null;
   audio: string | null;
   durationSec: number | null;
+  /** Every audio stream, in order (`index` is its position among them: `0:a:<index>`). */
+  audioTracks?: ProbeAudio[];
 };
+
+export type ProbeAudio = {
+  index: number;
+  language: string | null;
+  title: string | null;
+  isDefault: boolean;
+};
+
+const LANGUAGES: Record<string, string> = {
+  tur: 'Türkçe',
+  tr: 'Türkçe',
+  eng: 'İngilizce',
+  en: 'İngilizce',
+  ger: 'Almanca',
+  deu: 'Almanca',
+  de: 'Almanca',
+  fre: 'Fransızca',
+  fra: 'Fransızca',
+  fr: 'Fransızca',
+  spa: 'İspanyolca',
+  es: 'İspanyolca',
+  ita: 'İtalyanca',
+  it: 'İtalyanca',
+  rus: 'Rusça',
+  ru: 'Rusça',
+  ara: 'Arapça',
+  ar: 'Arapça',
+  jpn: 'Japonca',
+  ja: 'Japonca',
+  kor: 'Korece',
+  ko: 'Korece',
+  dut: 'Felemenkçe',
+  nld: 'Felemenkçe',
+  nl: 'Felemenkçe',
+  pol: 'Lehçe',
+  pl: 'Lehçe',
+  por: 'Portekizce',
+  pt: 'Portekizce',
+  hin: 'Hintçe',
+  hi: 'Hintçe',
+};
+
+/** A short Turkish label for an audio stream: its language, then the provider's title. */
+export function audioLabel(track: ProbeAudio) {
+  const language = LANGUAGES[track.language?.toLowerCase() ?? ''] ?? null;
+  const title =
+    track.title
+      ?.replace(/[\u0000-\u001f\u007f]/g, '')
+      .trim()
+      .slice(0, 48) || null;
+  if (language && title && title.toLocaleLowerCase('tr') !== language.toLocaleLowerCase('tr'))
+    return `${language} · ${title}`;
+  return language ?? title ?? `Ses ${track.index + 1}`;
+}
+
+/** The hall's chosen stream when it exists, else Turkish, else the default, else the first. */
+export function pickAudio(tracks: ProbeAudio[], requested: number | null | undefined) {
+  if (requested != null && tracks.some((t) => t.index === requested)) return requested;
+  const turkish = tracks.find(
+    (t) =>
+      t.language?.toLowerCase() === 'tur' ||
+      t.language?.toLowerCase() === 'tr' ||
+      /t[uü]rk|dublaj/i.test(t.title ?? ''),
+  );
+  return (turkish ?? tracks.find((t) => t.isDefault) ?? tracks[0])?.index ?? 0;
+}
 
 type Spawner = (command: string, args: string[], options: SpawnOptions) => ChildProcess;
 
@@ -55,6 +126,8 @@ type Session = {
   firstSeq: number;
   stderr: string[];
   originPdtMs: number | null;
+  audioTracks: ProbeAudio[];
+  audioTrack: number | null;
 };
 
 const FILE = /^(?:index\.m3u8|init\.mp4|seg\d{6,9}\.m4s)$/;
@@ -114,6 +187,8 @@ export function relayArgs(input: {
   startNumber: number;
   vodWindowSec: number;
   discontinuity: boolean;
+  /** Position among the audio streams; 0 when omitted. */
+  audioTrack?: number;
 }) {
   const { probe, live } = input;
   const network = [
@@ -178,7 +253,18 @@ export function relayArgs(input: {
     ...(probe.video ? ['-map', '0:v:0', '-c:v', 'copy'] : []),
     ...(probe.video === 'hevc' ? ['-tag:v', 'hvc1'] : []),
     ...(probe.audio
-      ? ['-map', '0:a:0', '-c:a', 'aac', '-ac', '2', '-ar', '48000', '-b:a', '192k']
+      ? [
+          '-map',
+          `0:a:${input.audioTrack ?? 0}`,
+          '-c:a',
+          'aac',
+          '-ac',
+          '2',
+          '-ar',
+          '48000',
+          '-b:a',
+          '192k',
+        ]
       : []),
     '-sn',
     '-dn',
@@ -246,6 +332,8 @@ export class RelayManager {
     source: RelaySource;
     startSec?: number;
     slots: number;
+    /** The hall's audio choice (`0:a:<index>`); null picks Turkish, the default, or the first. */
+    audio?: number | null;
   }): Promise<RelayInfo> {
     if (this.closed || input.slots < 1) throw fail('CINEMA_RELAY_BUSY');
     const startSec = input.source.live ? 0 : Math.max(0, input.startSec ?? 0);
@@ -344,6 +432,8 @@ export class RelayManager {
       producedSec: Math.round(produced * 1000) / 1000,
       windowStartSec: Math.round(windowStart * 1000) / 1000,
       originPdtMs: s.originPdtMs,
+      audioTracks: s.audioTracks.map((t) => ({ index: t.index, label: audioLabel(t) })),
+      audioTrack: s.audioTrack,
     };
   }
 
@@ -366,6 +456,7 @@ export class RelayManager {
     source: RelaySource;
     startSec: number;
     slots: number;
+    audio?: number | null;
   }): Promise<RelayInfo> {
     const previous = this.find(input.communityId, input.key);
     if (previous) await this.stop(previous.id);
@@ -404,6 +495,8 @@ export class RelayManager {
       firstSeq: 0,
       stderr: [],
       originPdtMs: null,
+      audioTracks: [],
+      audioTrack: null,
     };
     this.sessions.set(id, session);
     const upstreamError = (fallback: string) => {
@@ -429,6 +522,8 @@ export class RelayManager {
         throw fail('CINEMA_CODEC_UNSUPPORTED');
       if (!probe.video && !probe.audio) throw fail('CINEMA_STREAM_FAILED');
       session.durationSec = session.live ? null : probe.durationSec;
+      session.audioTracks = probe.audio ? (probe.audioTracks ?? []) : [];
+      session.audioTrack = probe.audio ? pickAudio(session.audioTracks, input.audio) : null;
       session.args = (startNumber) =>
         relayArgs({
           url,
@@ -438,6 +533,7 @@ export class RelayManager {
           startNumber,
           vodWindowSec: this.options.vodWindowSec ?? 180,
           discontinuity: startNumber > 0,
+          audioTrack: session.audioTrack ?? 0,
         });
       this.log(
         `relay ${id.slice(0, 8)} starting ${session.live ? 'live' : `vod@${session.startSec}`} video=${probe.video ?? '-'} audio=${probe.audio ?? '-'}`,
@@ -579,7 +675,12 @@ export class RelayManager {
       url,
     ]);
     const json = JSON.parse(out) as {
-      streams?: { codec_type?: string; codec_name?: string }[];
+      streams?: {
+        codec_type?: string;
+        codec_name?: string;
+        tags?: { language?: string; title?: string };
+        disposition?: { default?: number };
+      }[];
       format?: { format_name?: string; duration?: string };
     };
     const stream = (type: string) =>
@@ -590,6 +691,15 @@ export class RelayManager {
       video: stream('video'),
       audio: stream('audio'),
       durationSec: Number.isFinite(duration) && duration > 0 ? duration : null,
+      audioTracks: (json.streams ?? [])
+        .filter((s) => s.codec_type === 'audio')
+        .slice(0, 32)
+        .map((s, index) => ({
+          index,
+          language: s.tags?.language?.slice(0, 8) ?? null,
+          title: s.tags?.title ?? null,
+          isDefault: s.disposition?.default === 1,
+        })),
     };
   }
 

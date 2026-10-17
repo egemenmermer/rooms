@@ -19,6 +19,8 @@ export interface Preferences {
   notifications: boolean;
   chatFontSize: number;
   accent: 'pearl' | 'sage';
+  /** The microphone as the person last left it; a first join starts muted. */
+  microphoneOn: boolean;
 }
 const defaults: Preferences = {
   roomEventSounds: true,
@@ -37,6 +39,7 @@ const defaults: Preferences = {
   notifications: false,
   chatFontSize: 15,
   accent: 'pearl',
+  microphoneOn: false,
 };
 interface RoomsState {
   preferences: Preferences;

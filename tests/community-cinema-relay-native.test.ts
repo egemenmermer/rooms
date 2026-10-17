@@ -131,6 +131,12 @@ describe.runIf(native)('cinema relay with real ffmpeg', () => {
       'hls%03d.ts',
       'hls.m3u8',
     ]);
+    // Two audio streams with the German one first, as many providers ship films.
+    ffmpeg([
+      ...['-i', 'movie.mp4', '-i', 'movie.mp4', '-map', '0:v', '-map', '0:a', '-map', '1:a'],
+      ...['-c', 'copy', '-metadata:s:a:0', 'language=ger', '-metadata:s:a:1', 'language=tur'],
+      'dubbed.mp4',
+    ]);
 
     // Paths look like Xtream URLs so a leaked URL would show the fake password.
     server = createServer((request, response) => {
@@ -306,6 +312,27 @@ describe.runIf(native)('cinema relay with real ffmpeg', () => {
     expect(playlist).not.toContain('#EXT-X-PLAYLIST-TYPE');
     // Chromium ignores empty edits: the audio's 2 s delay must sit in the fragments.
     expect(readFileSync(join(dirOf(later.session), 'init.mp4')).includes('elst')).toBe(false);
+  }, 60_000);
+
+  it('relays the Turkish audio stream unless the hall picked another', async () => {
+    const dubbed = { url: `${base}/movie/user/secretpass/dubbed.mp4`, headers: {}, live: false };
+    const auto = await relays.acquire({
+      communityId: 'C5',
+      key: 'C5:m-9',
+      source: dubbed,
+      slots: 1,
+    });
+    expect(auto.audioTracks.map((t) => t.label)).toEqual(['Almanca', 'Türkçe']);
+    expect(auto.audioTrack).toBe(1);
+    const german = await relays.acquire({
+      communityId: 'C5',
+      key: 'C5:m-9#a0',
+      source: dubbed,
+      slots: 1,
+      audio: 0,
+    });
+    expect(german.audioTrack).toBe(0);
+    await relays.stop(german.session);
   }, 60_000);
 
   it('stops idle relays and never logs a provider URL', async () => {

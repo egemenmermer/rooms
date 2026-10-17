@@ -4,6 +4,7 @@
 // renderer never sees a ticket, a token or a provider URL.
 import type {
   CatalogKind,
+  CinemaAudioTrack,
   CinemaCategory,
   CinemaDetails,
   CinemaItem,
@@ -55,6 +56,9 @@ export type CinemaWatchSource = {
    * starts its own timeline.
    */
   originPdtMs: number | null;
+  /** The source's audio streams and the one the hall hears. */
+  audioTracks: CinemaAudioTrack[];
+  audioTrack: number | null;
 };
 
 /** Error messages the bridge rejects with; the UI maps them to Turkish copy. */
@@ -100,4 +104,6 @@ export interface CinemaBridge {
   details(hallId: string, ref: string): Promise<CinemaDetails>;
   /** A playable source for the hall's current queue item (relayed by the server). */
   watch(hallId: string): Promise<CinemaWatchSource>;
+  /** Whoever holds the remote: the audio stream of the playing item, for the whole hall. */
+  setAudio(hallId: string, ref: string, track: number): Promise<void>;
 }

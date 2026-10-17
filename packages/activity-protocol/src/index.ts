@@ -152,6 +152,8 @@ export const commandSchema = z
         })
         .strict(),
       z.object({ type: z.literal('queue.remove'), itemId: opaqueId }).strict(),
+      // Removes every item except the one playing.
+      z.object({ type: z.literal('queue.clear') }).strict(),
       z.object({ type: z.literal('queue.reorder'), itemIds: z.array(opaqueId).max(100) }).strict(),
       z
         .object({ type: z.literal('queue.select'), itemId: opaqueId, play: z.boolean().optional() })

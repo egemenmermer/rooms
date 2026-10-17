@@ -63,6 +63,8 @@ export type CinemaDetails = {
   durationSec: number | null;
   backdrop: string | null;
   seasons: { season: number; episodes: CinemaEpisode[] }[];
+  /** The same title listed in other qualities (its own badges are on `item`). */
+  versions?: { ref: string; badges: string[] }[];
 };
 
 export type CinemaImportStep =
@@ -124,4 +126,9 @@ export type CinemaWatch = {
    * Work position = offsetSec + (playing date − originPdtMs) / 1000, for live and VOD.
    */
   originPdtMs: number | null;
+  /** The source's audio streams (`index` = position among them) and the one relayed. */
+  audioTracks: CinemaAudioTrack[];
+  audioTrack: number | null;
 };
+
+export type CinemaAudioTrack = { index: number; label: string };
