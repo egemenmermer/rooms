@@ -153,3 +153,69 @@ describe('community cinema IPC', () => {
     );
   });
 });
+
+describe('relay ticket renewal', () => {
+  const OLD = 'b2xkLXRpY2tldC1zZXNzaW9uLXMx.c2ln';
+  const NEW = 'bmV3LXRpY2tldC1zZXNzaW9uLXMx.c2ln';
+  function renewing(sessionEnded = false) {
+    const handlers = new Map<string, (...args: unknown[]) => unknown>();
+    const urls: string[] = [];
+    const account: CinemaAccount = { client: {} as never, token: 't', origin: 'https://r.example' };
+    const fetchMock = (async (input: string | URL | Request) => {
+      const url = String(input);
+      urls.push(url);
+      if (url.endsWith('/watch'))
+        return Response.json({
+          session: '0123456789abcdef0123456789abcdef',
+          ticket: OLD,
+          expiresAt: 0,
+          ttlMs: 10_000,
+          itemRef: 'l-1001',
+          live: true,
+          durationSec: null,
+          offsetSec: 0,
+          epoch: 1,
+          originPdtMs: 1_700_000_000_000,
+        });
+      if (url.includes('/sessions/'))
+        return sessionEnded
+          ? Response.json({ error: 'CINEMA_SESSION_ENDED' }, { status: 410 })
+          : Response.json({ ticket: NEW, expiresAt: 0, ttlMs: 120_000 });
+      if (url.includes(`/relay/${OLD}/`)) return new Response(null, { status: 401 });
+      if (url.includes(`/relay/${NEW}/`))
+        return new Response('#EXTM3U\n', {
+          headers: { 'content-type': 'application/vnd.apple.mpegurl' },
+        });
+      return new Response(null, { status: 404 });
+    }) as typeof fetch;
+    const cinema = setupCommunityCinema({
+      handle: (name, handler) => handlers.set(name, handler),
+      account: () => account,
+      isCurrent: (value) => value === account,
+      fetch: fetchMock,
+    });
+    return { cinema, urls, watch: async () => handlers.get('rooms:cinema-watch')!('hall') };
+  }
+
+  it('renews by the local clock through the session endpoint, never through /watch', async () => {
+    const r = renewing();
+    expect(await r.watch()).toMatchObject({ originPdtMs: 1_700_000_000_000 });
+    const response = await r.cinema.serve(
+      new Request('rooms-cinema://stream/0123456789abcdef0123456789abcdef/index.m3u8'),
+    );
+    expect(response.status).toBe(200);
+    expect(r.urls.filter((url) => url.endsWith('/watch'))).toHaveLength(1);
+    expect(r.urls).toContain(
+      'https://r.example/rooms-cinema/v1/halls/hall/sessions/0123456789abcdef0123456789abcdef/ticket',
+    );
+  });
+
+  it('answers 410 once the session has ended', async () => {
+    const r = renewing(true);
+    await r.watch();
+    const response = await r.cinema.serve(
+      new Request('rooms-cinema://stream/0123456789abcdef0123456789abcdef/index.m3u8'),
+    );
+    expect(response.status).toBe(410);
+  });
+});

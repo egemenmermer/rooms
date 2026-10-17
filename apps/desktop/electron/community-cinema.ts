@@ -62,7 +62,25 @@ const watchResponse = z
   })
   .passthrough();
 
-type Ticket = z.infer<typeof watchResponse> & { hallId: string; account: CinemaAccount };
+type Ticket = {
+  ticket: string;
+  hallId: string;
+  account: CinemaAccount;
+  /** Local clock: the server's ttl counted from when we received it. */
+  expiresAt: number;
+  renewal?: Promise<Ticket | null>;
+};
+
+const renewalResponse = z
+  .object({
+    ticket: z
+      .string()
+      .min(16)
+      .max(1024)
+      .regex(/^[A-Za-z0-9_.-]+$/),
+    ttlMs: z.number().int().min(0).max(3_600_000),
+  })
+  .passthrough();
 
 /**
  * Community cinema IPC and the `rooms-cinema:` scheme. The Stoat token and
@@ -79,6 +97,8 @@ export function setupCommunityCinema(options: {
 }) {
   const request = options.fetch ?? fetch;
   const tickets = new Map<string, Ticket>();
+  /** Latest watch request per hall; an older answer must not drop a newer session. */
+  const watches = new Map<string, number>();
 
   async function call(
     account: CinemaAccount,
@@ -173,12 +193,21 @@ export function setupCommunityCinema(options: {
   options.handle('rooms:cinema-watch', async (hallId) => {
     const id = socialId.parse(hallId);
     const account = options.account();
+    const sequence = (watches.get(id) ?? 0) + 1;
+    watches.set(id, sequence);
+    // Starting a relay can take the provider up to ~20 s plus probing.
     const watch = watchResponse.parse(
-      await call(account, 'POST', `${hall(id)}/watch`, undefined, 30_000),
+      await call(account, 'POST', `${hall(id)}/watch`, undefined, 45_000),
     );
-    for (const [session, ticket] of tickets)
-      if (ticket.hallId === id && session !== watch.session) tickets.delete(session);
-    tickets.set(watch.session, { ...watch, hallId: id, account });
+    if (watches.get(id) === sequence)
+      for (const [session, ticket] of tickets)
+        if (ticket.hallId === id && session !== watch.session) tickets.delete(session);
+    tickets.set(watch.session, {
+      ticket: watch.ticket,
+      hallId: id,
+      account,
+      expiresAt: Date.now() + (watch.ttlMs ?? Math.max(0, watch.expiresAt - Date.now())),
+    });
     return {
       src: `rooms-cinema://stream/${watch.session}/index.m3u8`,
       itemRef: watch.itemRef,
@@ -190,25 +219,44 @@ export function setupCommunityCinema(options: {
     };
   });
 
-  /** Renews a ticket close to expiry; a new session means the hall moved on. */
-  async function ticketFor(session: string) {
+  /**
+   * The session's ticket, renewed when it is close to expiry (or `force`d after a 401).
+   * Renewal never starts or restarts a relay; an ended session returns null (→ 410).
+   */
+  async function ticketFor(session: string, force = false): Promise<Ticket | null> {
     const ticket = tickets.get(session);
     if (!ticket || !options.isCurrent(ticket.account)) return null;
-    if (ticket.expiresAt - Date.now() > 30_000) return ticket;
-    try {
-      const next = watchResponse.parse(
-        await call(ticket.account, 'POST', `${hall(ticket.hallId)}/watch`, undefined, 30_000),
-      );
-      if (next.session !== session) {
-        tickets.delete(session);
-        return null;
+    if (!force && ticket.expiresAt - Date.now() > 30_000) return ticket;
+    ticket.renewal ??= (async () => {
+      try {
+        const next = renewalResponse.parse(
+          await call(
+            ticket.account,
+            'POST',
+            `${hall(ticket.hallId)}/sessions/${session}/ticket`,
+            undefined,
+            15_000,
+          ),
+        );
+        const renewed: Ticket = {
+          ticket: next.ticket,
+          hallId: ticket.hallId,
+          account: ticket.account,
+          expiresAt: Date.now() + next.ttlMs,
+        };
+        if (tickets.get(session) === ticket) tickets.set(session, renewed);
+        return renewed;
+      } catch (error) {
+        if (error instanceof CinemaRequestError && error.message === 'CINEMA_SESSION_ENDED') {
+          tickets.delete(session);
+          return null;
+        }
+        return ticket.expiresAt > Date.now() ? ticket : null;
+      } finally {
+        ticket.renewal = undefined;
       }
-      const renewed = { ...ticket, ...next };
-      tickets.set(session, renewed);
-      return renewed;
-    } catch {
-      return ticket.expiresAt > Date.now() ? ticket : null;
-    }
+    })();
+    return ticket.renewal;
   }
 
   const cors = { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' };
@@ -220,12 +268,21 @@ export function setupCommunityCinema(options: {
       if (url.hostname === 'stream') {
         if (!first || !second || !sessionId.test(first) || !relayFile.test(second))
           return new Response('Not found', { status: 404, headers: cors });
-        const ticket = await ticketFor(first);
+        let ticket = await ticketFor(first);
         if (!ticket) return new Response('Expired', { status: 410, headers: cors });
-        const response = await request(
-          `${ticket.account.origin}/rooms-cinema/v1/relay/${encodeURIComponent(ticket.ticket)}/${encodeURIComponent(second)}`,
-          { redirect: 'error', signal: incoming.signal },
-        );
+        const fetchFile = (value: Ticket) =>
+          request(
+            `${value.account.origin}/rooms-cinema/v1/relay/${encodeURIComponent(value.ticket)}/${encodeURIComponent(second)}`,
+            { redirect: 'error', signal: incoming.signal },
+          );
+        let response = await fetchFile(ticket);
+        if (response.status === 401) {
+          // Clock skew or a lost renewal: renew once and retry.
+          await response.body?.cancel();
+          ticket = await ticketFor(first, true);
+          if (!ticket) return new Response('Expired', { status: 410, headers: cors });
+          response = await fetchFile(ticket);
+        }
         if (!options.isCurrent(ticket.account)) {
           await response.body?.cancel();
           return new Response('Expired', { status: 410, headers: cors });
