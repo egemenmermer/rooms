@@ -44,6 +44,8 @@ export interface PrivateRequestOptions {
   signal?: AbortSignal;
   allowedHosts?: string[];
   allowedProtocols?: string[];
+  /** Development only: also reach private and loopback addresses. */
+  allowPrivateNetwork?: boolean;
 }
 export function redirectRequest(
   previous: URL,
@@ -76,7 +78,10 @@ export async function privateFetch(
   const addresses = isIP(host)
     ? [{ address: host, family: isIP(host) }]
     : await lookup(host, { all: true });
-  if (!addresses.length || addresses.some((a) => !isPublicAddress(a.address)))
+  if (
+    !addresses.length ||
+    (!options.allowPrivateNetwork && addresses.some((a) => !isPublicAddress(a.address)))
+  )
     throw new Error('This source resolves to a private or reserved network.');
   const addr = addresses[0];
   const response = await new Promise<http.IncomingMessage>((resolve, reject) => {
