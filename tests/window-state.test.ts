@@ -16,9 +16,11 @@ vi.mock('node:fs', () => ({
   rmSync: (path: string) => fs.files.delete(path),
 }));
 import {
+  hideWindow,
   readWindowState,
   restoreWindowState,
   showRestored,
+  showWindow,
   trackWindowState,
 } from '../apps/desktop/electron/window-state';
 
@@ -37,7 +39,11 @@ function fakeWindow(state: { maximized?: boolean; fullscreen?: boolean } = {}) {
     getNormalBounds: () => ({ x: 1700, y: 80, width: 1400, height: 900 }),
     maximize: () => calls.push('maximize'),
     show: () => calls.push('show'),
-    setFullScreen: (value: boolean) => calls.push(`fullscreen:${value}`),
+    hide: () => calls.push('hide'),
+    setFullScreen: (value: boolean) => {
+      calls.push(`fullscreen:${value}`);
+      state.fullscreen = value;
+    },
   });
   return { window: window as unknown as BrowserWindow & EventEmitter, calls, state };
 }
@@ -80,4 +86,66 @@ it('starts with the default size when nothing valid was saved', () => {
     fullscreen: false,
   });
   expect(restoreWindowState({ width: 'x', height: 900 }, workArea).width).toBe(1440);
+});
+
+it('leaves fullscreen before hiding a closed Mac window, then returns to it when shown', () => {
+  const platform = Object.getOwnPropertyDescriptor(process, 'platform')!;
+  Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
+  try {
+    const { window, calls } = fakeWindow({ fullscreen: true });
+    trackWindowState(window, '/w.json');
+    hideWindow(window);
+    // Hiding at once would leave an empty black fullscreen Space behind.
+    expect(calls).toEqual(['fullscreen:false']);
+    window.emit('leave-full-screen');
+    expect(calls).toEqual(['fullscreen:false', 'hide']);
+    // macOS occlusion changes also emit 'show'; only an explicit show restores fullscreen.
+    window.emit('show');
+    expect(calls).toEqual(['fullscreen:false', 'hide']);
+    // Quitting while hidden still reopens fullscreen next time.
+    window.emit('close');
+    expect(readWindowState('/w.json', workArea).fullscreen).toBe(true);
+    showWindow(window);
+    expect(calls.slice(-2)).toEqual(['show', 'fullscreen:true']);
+    showWindow(window);
+    expect(calls.filter((c) => c === 'fullscreen:true')).toHaveLength(1);
+  } finally {
+    Object.defineProperty(process, 'platform', platform);
+  }
+});
+
+it('keeps a window up when it is shown again while still leaving fullscreen', () => {
+  const platform = Object.getOwnPropertyDescriptor(process, 'platform')!;
+  Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
+  try {
+    const { window, calls } = fakeWindow({ fullscreen: true });
+    hideWindow(window);
+    showWindow(window);
+    window.emit('leave-full-screen');
+    expect(calls).toEqual(['fullscreen:false', 'show', 'fullscreen:true']);
+  } finally {
+    Object.defineProperty(process, 'platform', platform);
+  }
+});
+
+it('hides a closed Mac window even if leaving fullscreen never reports back', () => {
+  vi.useFakeTimers();
+  const platform = Object.getOwnPropertyDescriptor(process, 'platform')!;
+  Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
+  try {
+    const { window, calls } = fakeWindow({ fullscreen: true });
+    hideWindow(window);
+    hideWindow(window);
+    vi.advanceTimersByTime(1500);
+    expect(calls).toEqual(['fullscreen:false', 'hide']);
+  } finally {
+    Object.defineProperty(process, 'platform', platform);
+    vi.useRealTimers();
+  }
+});
+
+it('hides a normal window at once', () => {
+  const { window, calls } = fakeWindow();
+  hideWindow(window);
+  expect(calls).toEqual(['hide']);
 });

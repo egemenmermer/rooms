@@ -22,7 +22,7 @@ import { Readable } from 'node:stream';
 import { setupCommunity } from './community';
 import { setupNotifications } from './notifications';
 import { setupWindowPolicy } from './window-policy';
-import { readWindowState, showRestored, trackWindowState } from './window-state';
+import { readWindowState, showRestored, showWindow, trackWindowState } from './window-state';
 import { parseWatchPage } from './browser-video';
 import { setupUpdates } from './updates';
 import { setupProviders } from './providers';
@@ -45,7 +45,7 @@ function receiveLink(raw: string) {
   if (!invite) return;
   pendingInvite = invite;
   if (win) {
-    win.show();
+    showWindow(win);
     win.focus();
     win.webContents.send('rooms:invite-link', invite);
   }
@@ -63,7 +63,7 @@ if (app.isPackaged && !process.env.ROOMS_PROFILE) {
     app.on('second-instance', (_event, argv) => {
       const link = argv.find((arg) => arg.startsWith('rooms://'));
       if (link) receiveLink(link);
-      else win?.show();
+      else if (win) showWindow(win);
     });
 }
 const startupLink = process.argv.find((arg) => arg.startsWith('rooms://'));
@@ -545,7 +545,7 @@ app.whenReady().then(async () => {
         {
           label: 'ROOMS’u aç',
           click: () => {
-            if (win) win.show();
+            if (win) showWindow(win);
             else createWindow();
           },
         },
@@ -556,7 +556,7 @@ app.whenReady().then(async () => {
   }
   app.on('activate', () => {
     if (!win) createWindow();
-    else win.show();
+    else showWindow(win);
   });
 });
 app.on('window-all-closed', () => {
