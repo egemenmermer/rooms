@@ -246,6 +246,27 @@ describe('community cinema service', () => {
     expect(guide['l-1002'].map((p: { title: string }) => p.title)).toEqual(['Kızılcık Şerbeti']);
   });
 
+  it('keeps a catalog import successful when the provider has no guide', async () => {
+    await s.call('PUT', `/v1/communities/${COMMUNITY}/hall`, 'owner-token', { channelId: HALL });
+    await s.call('PUT', `/v1/communities/${COMMUNITY}/source`, 'owner-token', {
+      kind: 'xtream',
+      server: `${s.provider.url}/`,
+      username: PROVIDER_USER,
+      password: PROVIDER_PASSWORD,
+      guideUrl: `${s.provider.url}/no-guide.xml`,
+    });
+    const status = await s.waitImport();
+    expect(status.importing).toBeNull();
+    expect(status.catalog).toMatchObject({ live: 3, movies: 2, series: 1, programmes: 0 });
+    // Asking for the guide alone still says it failed.
+    await s.call('POST', `/v1/communities/${COMMUNITY}/reload`, 'owner-token', { scope: 'guide' });
+    const guideOnly = await s.waitImport();
+    expect(guideOnly.importing).toMatchObject({
+      step: 'failed',
+      error: 'CINEMA_PROVIDER_UNREACHABLE',
+    });
+  });
+
   it('searches Turkish titles and current programmes', async () => {
     await s.connect();
     const search = async (q: string) =>
