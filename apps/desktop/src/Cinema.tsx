@@ -59,6 +59,7 @@ const QUEUE_KEY = 'rooms.cinema.queue-open';
 const activityName: Record<Primary['activity'], string> = {
   youtube: 'YouTube',
   cinema: 'kişisel dosya oturumu',
+  hall: 'Sinema salonu',
   screen: 'ekran paylaşımı',
   holdem: 'Hold’em masası',
   blackjack: 'Blackjack masası',

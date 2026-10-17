@@ -4,6 +4,7 @@ import type {
   ActivityResponse,
   CommandEnvelope,
   RoomSnapshot,
+  SharedMedia,
 } from '../../../packages/activity-protocol/src/index';
 import {
   directsSession,
@@ -19,6 +20,13 @@ const gameTitles = {
   batak: 'Batak',
   '101': '101 Okey',
 } as const;
+/** Queue media each shared player accepts. The hall plays catalog items and YouTube. */
+function acceptsMedia(activity: string, kind: SharedMedia['kind']) {
+  if (activity === 'cinema') return kind === 'independent-source';
+  if (activity === 'youtube') return kind === 'youtube';
+  if (activity === 'hall') return kind === 'community-media' || kind === 'youtube';
+  return false;
+}
 export interface ActivityIdentity {
   userId: string;
   displayName: string;
@@ -186,7 +194,7 @@ export function applyCommand(
     if (!directsSession(state.primary, identity.userId, true)) fail(403, 'SESSION_HOST_CONTROL');
   };
   const shared = () => {
-    if (!state.primary || !['cinema', 'youtube'].includes(state.primary.activity))
+    if (!state.primary || !['cinema', 'youtube', 'hall'].includes(state.primary.activity))
       fail(409, 'SHARED_PLAYER_REQUIRED');
   };
   const media = () => {
@@ -194,7 +202,7 @@ export function applyCommand(
     shared();
   };
   const host = () => {
-    if (!state.primary || !['cinema', 'youtube', 'screen'].includes(state.primary.activity))
+    if (!state.primary || !['cinema', 'youtube', 'hall', 'screen'].includes(state.primary.activity))
       fail(409, 'SHARED_PLAYER_REQUIRED');
     if (state.primary.hostUserId !== identity.userId) fail(403, 'SESSION_HOST_REQUIRED');
     return state.primary;
@@ -205,7 +213,10 @@ export function applyCommand(
       state.primary?.activity === 'cinema' && selected.media.kind === 'independent-source';
     state.timeline = {
       // Independent sources need every viewer's own file first, so they never autoplay.
-      playing: play && !cinemaItem && selected.media.kind === 'youtube',
+      playing:
+        play &&
+        !cinemaItem &&
+        (selected.media.kind === 'youtube' || selected.media.kind === 'community-media'),
       positionSec: 0,
       rate: 1,
       effectiveServerTimeMs: now,
@@ -254,13 +265,7 @@ export function applyCommand(
         state: 'live',
       };
       state.cinema = null;
-      state.queue = state.queue.filter((item) =>
-        command.activity === 'cinema'
-          ? item.media.kind === 'independent-source'
-          : command.activity === 'youtube'
-            ? item.media.kind === 'youtube'
-            : false,
-      );
+      state.queue = state.queue.filter((item) => acceptsMedia(command.activity, item.media.kind));
       state.timeline = {
         playing: false,
         positionSec: 0,
@@ -281,6 +286,11 @@ export function applyCommand(
       media();
       if (state.primary?.activity === 'cinema') fail(409, 'CINEMA_SOURCE_REQUIRED');
       if (!state.timeline.itemId) fail(409, 'MEDIA_SOURCE_REQUIRED');
+      {
+        const current = state.queue.find((item) => item.id === state.timeline.itemId)?.media;
+        // A live channel has no shared timeline: everyone watches the live edge.
+        if (current?.kind === 'community-media' && current.live) fail(409, 'LIVE_PLAYBACK_FIXED');
+      }
       state.timeline = {
         ...state.timeline,
         playing: command.playing,
@@ -353,7 +363,7 @@ export function applyCommand(
       control();
       shared();
       if (command.start) direct();
-      if ((state.primary?.activity === 'cinema') !== (command.media.kind === 'independent-source'))
+      if (!state.primary || !acceptsMedia(state.primary.activity, command.media.kind))
         fail(409, 'MEDIA_KIND_MISMATCH');
       if (state.queue.length >= 100) fail(409, 'QUEUE_FULL');
       if (state.queue.some((i) => i.id === command.itemId)) fail(409, 'QUEUE_ITEM_EXISTS');

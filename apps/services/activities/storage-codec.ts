@@ -79,7 +79,16 @@ const snapshot = z
     ),
     primary: z
       .object({
-        activity: z.enum(['cinema', 'youtube', 'screen', 'holdem', 'blackjack', 'batak', '101']),
+        activity: z.enum([
+          'cinema',
+          'youtube',
+          'hall',
+          'screen',
+          'holdem',
+          'blackjack',
+          'batak',
+          '101',
+        ]),
         title: z.string(),
         hostUserId: id,
         startedAt: number,
@@ -106,6 +115,14 @@ const snapshot = z
             z.object({ kind: z.literal('youtube'), videoId: id, title: z.string() }).passthrough(),
             z
               .object({ kind: z.literal('independent-source'), referenceId: id, title: z.string() })
+              .passthrough(),
+            z
+              .object({
+                kind: z.literal('community-media'),
+                ref: z.string().regex(/^[a-z]-[A-Za-z0-9_-]{1,120}$/),
+                title: z.string(),
+                live: z.boolean(),
+              })
               .passthrough(),
           ]),
         })

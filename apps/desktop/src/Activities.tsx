@@ -14,7 +14,7 @@ import { AppDirectory } from './AppDirectory';
 
 /** Where a running primary activity is shown in this client. */
 export function activityRoute(kind: NonNullable<RoomSnapshot['primary']>['activity']) {
-  return kind === 'cinema' || kind === 'youtube'
+  return kind === 'cinema' || kind === 'youtube' || kind === 'hall'
     ? '/cinema'
     : kind === 'screen'
       ? '/voice?view=share'
