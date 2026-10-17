@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import {
+  directsSession,
   playbackPosition,
   type ActivityResponse,
 } from '../../../packages/activity-protocol/src/index';
@@ -44,6 +45,8 @@ export type RelayInfo = {
   /** PROGRAM-DATE-TIME of output time 0 (epoch ms), once the first playlist exists. */
   originPdtMs?: number | null;
   windowStartSec?: number;
+  audioTracks?: { index: number; label: string }[];
+  audioTrack?: number | null;
 };
 
 /** The part of the relay manager the service drives. */
@@ -54,8 +57,10 @@ export interface RelayPort {
     source: RelaySource;
     startSec?: number;
     slots: number;
+    audio?: number | null;
   }): Promise<RelayInfo>;
   sessionsOf(communityId: string): RelayInfo[];
+  stop(session: string): Promise<void>;
   stopCommunity(communityId: string): Promise<void>;
 }
 
@@ -165,7 +170,12 @@ export class CinemaService {
   private readonly jobs = new Map<string, Job>();
   private readonly lastJobs = new Map<string, CinemaImportProgress>();
   /** Relay session → the catalog ref it plays, for VOD reuse; pruned as relays stop. */
-  private readonly sessionRefs = new Map<string, { communityId: string; ref: string }>();
+  private readonly sessionRefs = new Map<
+    string,
+    { communityId: string; ref: string; audio: number | null }
+  >();
+  /** The hall's audio stream per item (`communityId\nref`); everyone hears the same one. */
+  private readonly audioChoices = new Map<string, number>();
   private readonly art = new Map<string, { body: Buffer; type: string }>();
   private artBytes = 0;
   private readonly artLoads = new Map<string, Promise<{ body: Buffer; type: string }>>();
@@ -264,6 +274,8 @@ export class CinemaService {
     this.jobs.get(communityId)?.abort.abort();
     this.jobs.delete(communityId);
     this.lastJobs.delete(communityId);
+    for (const key of this.audioChoices.keys())
+      if (key.startsWith(`${communityId}\n`)) this.audioChoices.delete(key);
     await this.options.relays.stopCommunity(communityId);
     await this.options.catalogs.remove(communityId);
     this.options.configs.update(communityId, (config) => ({
@@ -455,6 +467,7 @@ export class CinemaService {
       seasons: [...seasons]
         .sort((a, b) => a[0] - b[0])
         .map(([season, episodes]) => ({ season, episodes })),
+      versions: catalog.versions(ref).map((other) => ({ ref: other.ref, badges: other.badges })),
     };
   }
 
@@ -571,15 +584,18 @@ export class CinemaService {
     const episode = item ? null : catalog.episode(current.ref);
     const source = this.relaySource(config.source!, config.account, item, episode);
     const slots = this.slots(config);
+    const audio = this.audioChoices.get(`${communityId}\n${current.ref}`) ?? null;
+    const audioKey = audio === null ? '' : `#a${audio}`;
     // One relay decision at a time per community: viewers who press play together share it.
     const info = await this.serial(communityId, async () => {
       let chosen: RelayInfo;
       if (source.live) {
         chosen = await this.options.relays.acquire({
           communityId,
-          key: `${communityId}:${current.ref}`,
+          key: `${communityId}:${current.ref}${audioKey}`,
           source,
           slots,
+          audio,
         });
       } else {
         const position = playbackPosition(
@@ -592,6 +608,7 @@ export class CinemaService {
           .find(
             (session) =>
               this.sessionRefs.get(session.session)?.ref === current.ref &&
+              this.sessionRefs.get(session.session)?.audio === audio &&
               position >= session.offsetSec + (session.windowStartSec ?? 0) - 5 &&
               position <= session.offsetSec + (session.producedSec ?? 0) + 30,
           );
@@ -600,17 +617,18 @@ export class CinemaService {
           reusable ??
           (await this.options.relays.acquire({
             communityId,
-            key: `${communityId}:${current.ref}@${startSec}`,
+            key: `${communityId}:${current.ref}@${startSec}${audioKey}`,
             source,
             startSec,
             slots,
+            audio,
           }));
       }
       const running = new Set(this.options.relays.sessionsOf(communityId).map((r) => r.session));
       for (const [session, entry] of this.sessionRefs)
         if (entry.communityId === communityId && !running.has(session))
           this.sessionRefs.delete(session);
-      this.sessionRefs.set(chosen.session, { communityId, ref: current.ref });
+      this.sessionRefs.set(chosen.session, { communityId, ref: current.ref, audio });
       return chosen;
     });
     const ticket = this.options.tickets({ session: info.session, userId, hallId });
@@ -625,7 +643,43 @@ export class CinemaService {
       epoch: info.epoch,
       ttlMs: Math.max(0, ticket.expiresAt - Date.now()),
       originPdtMs: info.originPdtMs ?? null,
+      audioTracks: info.audioTracks ?? [],
+      audioTrack: info.audioTrack ?? null,
     };
+  }
+
+  /**
+   * Whoever holds the hall's remote picks the audio stream of the playing item. Its
+   * relays stop; every player gets 404/410, watches again and hears the new stream.
+   */
+  async setAudio(
+    token: string,
+    hallId: string,
+    communityId: string,
+    userId: string,
+    ref: string,
+    track: number,
+  ) {
+    const config = this.options.configs.get(communityId);
+    if (!config.source) fail('CINEMA_NOT_CONNECTED');
+    if (config.hallChannelId !== hallId) fail('CINEMA_HALL_REQUIRED');
+    const room = (await this.options.activity(token, hallId)).room;
+    const current = room.queue.find((entry) => entry.id === room.timeline.itemId)?.media;
+    if (current?.kind !== 'community-media' || current.ref !== ref) fail('CINEMA_NOTHING_SELECTED');
+    const self = room.participants.find((p) => p.userId === userId);
+    if (!directsSession(room.primary, userId, self?.canControl === true))
+      fail('CINEMA_ACCESS_DENIED');
+    const key = `${communityId}\n${ref}`;
+    if (this.audioChoices.get(key) === track) return { audioTrack: track };
+    this.audioChoices.set(key, track);
+    await this.serial(communityId, async () => {
+      for (const [session, entry] of this.sessionRefs)
+        if (entry.communityId === communityId && entry.ref === ref && entry.audio !== track) {
+          this.sessionRefs.delete(session);
+          await this.options.relays.stop(session);
+        }
+    });
+    return { audioTrack: track };
   }
 }
 

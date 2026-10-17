@@ -42,6 +42,9 @@ export function hallProgress(room: RoomSnapshot | null) {
  * Commands that open `media` for everyone now. A live channel replaces the previous live
  * channel instead of piling up in the queue, so zapping never fills it.
  */
+/** The activities service refuses `queue.add` past this many items. */
+const QUEUE_LIMIT = 100;
+
 export function openNowCommands(
   room: RoomSnapshot | null,
   media: SharedMedia,
@@ -64,7 +67,20 @@ export function openNowCommands(
   if (existing) {
     if (existing.id !== current?.id)
       commands.push({ type: 'queue.select', itemId: existing.id, play: true });
-  } else commands.push({ type: 'queue.add', itemId, media, start: true });
+  } else {
+    // A full queue (the service keeps 100) drops its oldest watched items first.
+    const queue = room?.primary ? room.queue : [];
+    const watched = queue.slice(
+      0,
+      Math.max(
+        0,
+        queue.findIndex((item) => item.id === current?.id),
+      ),
+    );
+    for (const item of watched.slice(0, Math.max(0, queue.length - (QUEUE_LIMIT - 1))))
+      commands.push({ type: 'queue.remove', itemId: item.id });
+    commands.push({ type: 'queue.add', itemId, media, start: true });
+  }
   if (room?.primary && isHallItem(current) && current.media.live && current.id !== existing?.id)
     commands.push({ type: 'queue.remove', itemId: current.id });
   return commands;

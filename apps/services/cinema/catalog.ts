@@ -109,6 +109,7 @@ export class Catalog {
   private readonly words = new Map<string, string[]>();
   private readonly programmeWords = new Map<CinemaProgramme, string[]>();
   private episodeIndex: Map<string, { seriesRef: string; episode: StoredEpisode }> | null = null;
+  private versionIndex: Map<string, StoredItem[]> | null = null;
 
   constructor(private readonly data: CatalogSnapshot) {
     for (const item of data.items) {
@@ -139,6 +140,31 @@ export class Catalog {
 
   item(ref: string) {
     return this.byRef.get(ref) ?? null;
+  }
+
+  /**
+   * The same film or series listed again in another quality: same kind, same title once
+   * quality words are gone, and the same year when both have one.
+   */
+  versions(ref: string) {
+    const item = this.byRef.get(ref);
+    if (!item || item.kind === 'live') return [];
+    const key = (value: StoredItem) => `${value.kind}\n${normalizeForSearch(value.title)}`;
+    if (!this.versionIndex) {
+      this.versionIndex = new Map();
+      for (const value of [...this.byKind.movie, ...this.byKind.series]) {
+        const list = this.versionIndex.get(key(value));
+        if (list) list.push(value);
+        else this.versionIndex.set(key(value), [value]);
+      }
+    }
+    return (this.versionIndex.get(key(item)) ?? [])
+      .filter(
+        (other) =>
+          other.ref !== ref &&
+          (other.year === null || item.year === null || other.year === item.year),
+      )
+      .slice(0, 8);
   }
 
   list(query: ListQuery) {

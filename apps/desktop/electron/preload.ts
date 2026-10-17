@@ -238,6 +238,7 @@ const bridge: DesktopBridge = {
       ipcRenderer.invoke('rooms:cinema-guide', hallId, refs, from, to),
     details: (hallId, ref) => ipcRenderer.invoke('rooms:cinema-details', hallId, ref),
     watch: (hallId) => ipcRenderer.invoke('rooms:cinema-watch', hallId),
+    setAudio: (hallId, ref, track) => ipcRenderer.invoke('rooms:cinema-audio', hallId, ref, track),
   },
   remoteControl: {
     register: (room, track) => ipcRenderer.invoke('rooms:remote-register', room, track),

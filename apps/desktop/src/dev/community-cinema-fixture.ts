@@ -490,6 +490,11 @@ export function createCommunityCinemaFixtureBridge(
       if (!value) throw new Error('CINEMA_ITEM_NOT_FOUND');
       return delay(value);
     },
+    setAudio: async (hallId, _ref, track) => {
+      hall(hallId);
+      audioChoice = track;
+      await delay(null, 150);
+    },
     watch: async (hallId) => {
       hall(hallId);
       if (variant === 'error') {
@@ -508,6 +513,14 @@ export function createCommunityCinemaFixtureBridge(
           offsetSec: 0,
           epoch: room?.timeline.epoch ?? 1,
           originPdtMs: null,
+          audioTracks: current.media.live
+            ? []
+            : [
+                { index: 0, label: 'Almanca' },
+                { index: 1, label: 'Türkçe · Dublaj' },
+                { index: 2, label: 'İngilizce' },
+              ],
+          audioTrack: current.media.live ? null : (audioChoice ?? 1),
         },
         variant === 'default' ? 300 : 200,
       );
@@ -516,6 +529,7 @@ export function createCommunityCinemaFixtureBridge(
 }
 
 let room: RoomSnapshot | null = null;
+let audioChoice: number | null = null;
 
 const people = [
   { userId: 'demo-deniz', displayName: 'Deniz' },
@@ -678,6 +692,10 @@ export function createCommunityCinemaFixtureActivity(
         case 'queue.remove':
           if (command.itemId === state.timeline.itemId) fail('QUEUE_ACTIVE_ITEM_FIXED');
           state.queue = state.queue.filter((i) => i.id !== command.itemId);
+          break;
+        case 'queue.clear':
+          directs();
+          state.queue = state.queue.filter((i) => i.id === state.timeline.itemId);
           break;
         case 'queue.reorder':
           directs();

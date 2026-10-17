@@ -137,13 +137,11 @@ export function LiveTab({
           aria-activedescendant={selected ? `hall-channel-${selected}` : undefined}
           tabIndex={0}
           onKeyDown={keyNav}
-          onScroll={(event) =>
-            setView((current) => ({
-              ...current,
-              top: event.currentTarget.scrollTop,
-              height: event.currentTarget.clientHeight,
-            }))
-          }
+          onScroll={(event) => {
+            // Read now: React clears `currentTarget` before a deferred updater runs.
+            const { scrollTop: top, clientHeight: height } = event.currentTarget;
+            setView((current) => ({ ...current, top, height }));
+          }}
         >
           {items.loading && !items.data ? (
             <ChannelSkeleton />

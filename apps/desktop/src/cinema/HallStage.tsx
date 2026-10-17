@@ -8,9 +8,11 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  Check,
   ChevronDown,
   ChevronUp,
   Eye,
+  Languages,
   Maximize,
   Maximize2,
   Minimize,
@@ -28,7 +30,7 @@ import type { QueueItem } from '../../../../packages/activity-protocol/src';
 import '../cozy-cinema.css';
 import { CinemaYouTubeStage } from '../CinemaYouTubeStage';
 import { clock, expectedPosition } from '../cinema-youtube';
-import { cinemaErrorCopy } from './cinema-bridge';
+import { cinemaErrorCopy, cinemaErrorText, getCinemaBridge } from './cinema-bridge';
 import { knownItem } from './catalog-cache';
 import { QualityBadges } from './CinemaArt';
 import { HallPlayer, type PlayerControls, type PlayerSnapshot } from './HallPlayer';
@@ -371,6 +373,20 @@ export function HallStage({
                 <span>{viewers > 1 ? viewerLabel(viewers) : 'Herkes aynı sahnede'}</span>
               )}
             </span>
+            {hallItem && player && player.audioTracks.length > 1 && (
+              <AudioMenu
+                tracks={player.audioTracks}
+                selected={player.audioTrack}
+                disabledReason={canDirect ? null : directReason}
+                onPick={(track) => {
+                  const bridge = getCinemaBridge();
+                  if (!bridge || track === player.audioTrack) return;
+                  void bridge
+                    .setAudio(hall.hallId, hallItem.media.ref, track)
+                    .catch((error) => hall.notify(cinemaErrorText(error)));
+                }}
+              />
+            )}
             <ControlButton
               label={panelOpen ? 'Paneli gizle (C)' : 'Paneli göster (C)'}
               onClick={onTogglePanel}
@@ -387,6 +403,61 @@ export function HallStage({
         </div>
       )}
     </div>
+  );
+}
+
+/** The hall's audio language; changing it restarts the relay for everyone. */
+function AudioMenu({
+  tracks,
+  selected,
+  disabledReason,
+  onPick,
+}: {
+  tracks: { index: number; label: string }[];
+  selected: number | null;
+  disabledReason: string | null;
+  onPick(track: number): void;
+}) {
+  const [open, setOpen] = useState(false);
+  const current = tracks.find((t) => t.index === selected);
+  return (
+    <span
+      className="hall-audio-menu"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+      }}
+    >
+      <button
+        className="hall-control hall-audio-trigger"
+        aria-label={`Ses dili: ${current?.label ?? 'seçilmedi'}`}
+        aria-expanded={open}
+        title={disabledReason ?? 'Ses dili (herkes için)'}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <Languages size={17} />
+        <span>{current?.label.split(' · ')[0] ?? 'Ses'}</span>
+      </button>
+      {open && (
+        <span className="hall-audio-list" role="menu">
+          <small>{disabledReason ?? 'Herkes için değişir'}</small>
+          {tracks.map((track) => (
+            <button
+              key={track.index}
+              role="menuitemradio"
+              aria-checked={track.index === selected}
+              disabled={!!disabledReason}
+              onClick={() => {
+                setOpen(false);
+                onPick(track.index);
+              }}
+            >
+              <Check size={14} style={{ opacity: track.index === selected ? 1 : 0 }} />
+              {track.label}
+            </button>
+          ))}
+        </span>
+      )}
+    </span>
   );
 }
 

@@ -31,7 +31,14 @@ export function VodTab({
   onView(view: VodView): void;
 }) {
   if (view.mode === 'details')
-    return <VodDetails kind={kind} refId={view.ref} onBack={() => onView({ mode: 'home' })} />;
+    return (
+      <VodDetails
+        kind={kind}
+        refId={view.ref}
+        onBack={() => onView({ mode: 'home' })}
+        onOpen={(ref) => onView({ mode: 'details', ref })}
+      />
+    );
   if (view.mode === 'grid')
     return (
       <VodGrid
@@ -347,7 +354,17 @@ function VodGrid({
   );
 }
 
-function VodDetails({ kind, refId, onBack }: { kind: VodKind; refId: string; onBack(): void }) {
+function VodDetails({
+  kind,
+  refId,
+  onBack,
+  onOpen,
+}: {
+  kind: VodKind;
+  refId: string;
+  onBack(): void;
+  onOpen(ref: string): void;
+}) {
   const hall = useHall();
   const details = useBridgeRead<CinemaDetails>(`${hall.hallId}:details:${refId}`, (bridge) =>
     bridge.details(hall.hallId, refId).then((value) => {
@@ -405,6 +422,24 @@ function VodDetails({ kind, refId, onBack }: { kind: VodKind; refId: string; onB
                     </>
                   )}
                 </dl>
+                {!!data.versions?.length && (
+                  <div className="hall-versions" role="radiogroup" aria-label="Kalite">
+                    <span>Kalite</span>
+                    {[{ ref: data.item.ref, badges: data.item.badges }, ...data.versions].map(
+                      (version) => (
+                        <button
+                          key={version.ref}
+                          role="radio"
+                          aria-checked={version.ref === data.item.ref}
+                          className={version.ref === data.item.ref ? 'selected' : ''}
+                          onClick={() => version.ref !== data.item.ref && onOpen(version.ref)}
+                        >
+                          {version.badges.join(' ') || 'Standart'}
+                        </button>
+                      ),
+                    )}
+                  </div>
+                )}
                 {kind === 'movie' && (
                   <div className="hall-detail-actions">
                     <button

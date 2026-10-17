@@ -13,6 +13,7 @@ import type {
   CinemaErrorCode,
   CinemaWatchSource,
 } from '../../../../packages/community-cinema/src/bridge';
+import type { CinemaAudioTrack } from '../../../../packages/community-cinema/src/types';
 import { expectedPosition } from '../cinema-youtube';
 import { cinemaErrorCode, getCinemaBridge } from './cinema-bridge';
 import type { HallItem } from './hall-model';
@@ -32,6 +33,9 @@ export interface PlayerSnapshot {
   positionSec: number;
   durationSec: number | null;
   live: boolean;
+  /** The relayed source's audio streams and the one the hall hears. */
+  audioTracks: CinemaAudioTrack[];
+  audioTrack: number | null;
 }
 
 export interface PlayerControls {
@@ -101,6 +105,8 @@ export function HallPlayer({
     positionSec: 0,
     durationSec: null,
     live: item.media.live,
+    audioTracks: [],
+    audioTrack: null,
   });
   const latest = useRef({ timeline, serverOffsetMs, item, source });
   latest.current = { timeline, serverOffsetMs, item, source };
@@ -170,7 +176,12 @@ export function HallPlayer({
         }
         setSource(value);
         reconnects.current = 0;
-        update({ durationSec: value.durationSec, live: value.live });
+        update({
+          durationSec: value.durationSec,
+          live: value.live,
+          audioTracks: value.audioTracks,
+          audioTrack: value.audioTrack,
+        });
       } catch (error) {
         if (active)
           update({ phase: 'error', code: cinemaErrorCode(error) ?? 'CINEMA_STREAM_FAILED' });

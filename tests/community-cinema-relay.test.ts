@@ -9,6 +9,8 @@ import Fastify from 'fastify';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { issueTicket, verifyTicket } from '../apps/services/cinema/tickets';
 import {
+  audioLabel,
+  pickAudio,
   playlistSegments,
   relayArgs,
   RelayManager,
@@ -436,5 +438,37 @@ describe('strict HLS rewrite', () => {
     expect(() =>
       rewriteManifest('#EXTM3U\n#EXT-X-KEY:URI="data:,x"', 'http://cdn.example/', register),
     ).toThrow();
+  });
+});
+
+describe('relay audio streams', () => {
+  const tracks = [
+    { index: 0, language: 'ger', title: null, isDefault: true },
+    { index: 1, language: 'tur', title: 'Dublaj', isDefault: false },
+    { index: 2, language: null, title: null, isDefault: false },
+  ];
+
+  it('prefers the hall’s choice, then Turkish, then the default stream', () => {
+    expect(pickAudio(tracks, null)).toBe(1);
+    expect(pickAudio(tracks, 2)).toBe(2);
+    // A choice the source does not have falls back like no choice.
+    expect(pickAudio(tracks, 7)).toBe(1);
+    expect(pickAudio([tracks[2]!, { ...tracks[0]!, index: 1 }], null)).toBe(1);
+    expect(pickAudio([], null)).toBe(0);
+  });
+
+  it('labels streams in Turkish and maps the chosen one', () => {
+    expect(tracks.map(audioLabel)).toEqual(['Almanca', 'Türkçe · Dublaj', 'Ses 3']);
+    const args = relayArgs({
+      url: 'http://127.0.0.1/movie.mkv',
+      live: false,
+      startSec: 0,
+      probe: { format: 'matroska,webm', video: 'h264', audio: 'ac3', durationSec: 60 },
+      startNumber: 0,
+      vodWindowSec: 60,
+      discontinuity: false,
+      audioTrack: 1,
+    });
+    expect(args.join(' ')).toContain('-map 0:a:1 -c:a aac');
   });
 });

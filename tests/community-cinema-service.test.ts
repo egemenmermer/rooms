@@ -88,6 +88,13 @@ async function setup() {
       return info;
     },
     sessionsOf: () => [...running],
+    async stop(session) {
+      stopped.push(session);
+      running.splice(
+        running.findIndex((info) => info.session === session),
+        running.some((info) => info.session === session) ? 1 : 0,
+      );
+    },
     async stopCommunity(communityId) {
       stopped.push(communityId);
     },
@@ -299,6 +306,39 @@ describe('community cinema service', () => {
       director: 'Nuri Bilge Ceylan',
       item: { year: 2014, rating: 8.1 },
     });
+  });
+
+  it('lets whoever holds the remote switch the hall’s audio stream', async () => {
+    await s.connect();
+    s.send('member', { type: 'join' });
+    s.send('member', { type: 'start', activity: 'hall', title: 'Sinema' });
+    s.send('member', {
+      type: 'queue.add',
+      itemId: 'a',
+      media: { kind: 'community-media', ref: 'l-1001', title: 'TRT 1', live: true },
+      start: true,
+    });
+    await s.call('POST', `/v1/halls/${HALL}/watch`, 'member-token');
+    expect(s.acquired[0]).toMatchObject({ key: `${COMMUNITY}:l-1001`, audio: null });
+    // The owner never joined the hall's activity, so the remote is not theirs.
+    const denied = await s.call('POST', `/v1/halls/${HALL}/audio`, 'owner-token', {
+      ref: 'l-1001',
+      track: 1,
+    });
+    expect(denied.body).toEqual({ error: 'CINEMA_ACCESS_DENIED' });
+    const wrongItem = await s.call('POST', `/v1/halls/${HALL}/audio`, 'member-token', {
+      ref: 'l-1002',
+      track: 1,
+    });
+    expect(wrongItem.body).toEqual({ error: 'CINEMA_NOTHING_SELECTED' });
+    const chosen = await s.call('POST', `/v1/halls/${HALL}/audio`, 'member-token', {
+      ref: 'l-1001',
+      track: 1,
+    });
+    expect(chosen.body).toEqual({ audioTrack: 1 });
+    expect(s.stopped).toContain('s1');
+    await s.call('POST', `/v1/halls/${HALL}/watch`, 'member-token');
+    expect(s.acquired[1]).toMatchObject({ key: `${COMMUNITY}:l-1001#a1`, audio: 1 });
   });
 
   it('relays only the hall’s selected item and never exposes the account', async () => {
