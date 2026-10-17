@@ -17,3 +17,15 @@ export {
 } from './epg-matcher';
 export { maskUrl, maskServer, maskText } from './mask';
 export { compareNames, sortByName } from './collation';
+export type * from './types';
+export { CINEMA_REF_PATTERN } from './types';
+export {
+  CINEMA_SCHEME,
+  cinemaArtUrl,
+  type CinemaBridge,
+  type CinemaErrorCode,
+  type CinemaItemsQuery,
+  type CinemaPage,
+  type CinemaSourceInput,
+  type CinemaWatchSource,
+} from './bridge';

@@ -130,6 +130,8 @@ export interface DesktopBridge {
     install(): Promise<void>;
   };
   providers: import('../../../apps/desktop/electron/provider-contracts').ProviderBridge;
+  /** Community cinema hall; absent in dev fixtures and older preload scripts. */
+  cinema?: import('../../community-cinema/src/bridge').CinemaBridge;
   agent: import('@rooms/agent-contracts').AgentBridge;
   activity: {
     exportBoard(roomId: string, format?: 'svg' | 'png'): Promise<boolean>;
