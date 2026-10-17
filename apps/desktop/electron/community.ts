@@ -643,6 +643,74 @@ export async function setupCommunity(
       throw new SocialInputError('The account changed. Open community management again.');
     return result;
   });
+  handle('rooms:social-space-profile', (spaceId) =>
+    requireClient().spaceProfile(id.parse(spaceId)),
+  );
+  handle('rooms:social-update-space-profile', async (input) => {
+    const change = z
+      .object({
+        spaceId: id,
+        name: z.string().trim().min(1).max(32),
+        description: z.string().max(1024),
+      })
+      .strict()
+      .parse(input);
+    return requireClient().updateSpaceProfile(change.spaceId, {
+      name: change.name,
+      description: change.description,
+    });
+  });
+  const spaceImageKind = z.enum(['icon', 'banner']);
+  /** Reads a chosen community image; the type comes from its bytes, never its name. */
+  function readSpaceImage(path: string, limit: number) {
+    const file = openSync(path, 'r');
+    try {
+      const stat = fstatSync(file);
+      if (!stat.isFile() || stat.size < 12 || stat.size > limit)
+        throw new SocialInputError(
+          `Görsel en fazla ${Math.floor((limit / 1_000_000) * 10) / 10} MB olabilir.`,
+        );
+      const bytes = Buffer.alloc(stat.size);
+      if (readSync(file, bytes, 0, bytes.length, 0) !== bytes.length)
+        throw new SocialInputError('Görsel okunamadı.');
+      const mime = bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+        ? 'image/png'
+        : bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255
+          ? 'image/jpeg'
+          : bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP'
+            ? 'image/webp'
+            : bytes.toString('ascii', 0, 4) === 'GIF8'
+              ? 'image/gif'
+              : null;
+      if (!mime) throw new SocialInputError('PNG, JPEG, WebP ya da GIF bir görsel seç.');
+      return { bytes: new Uint8Array(bytes), mime, name: basename(path) };
+    } finally {
+      closeSync(file);
+    }
+  }
+  handle('rooms:social-choose-space-image', async (spaceId, kind) => {
+    const space = id.parse(spaceId),
+      which = spaceImageKind.parse(kind);
+    const current = requireClient(),
+      owner = user!.id,
+      window = getWindow();
+    if (!window) return null;
+    const choice = await dialog.showOpenDialog(window, {
+      title: which === 'icon' ? 'Sunucu ikonu seç' : 'Sunucu afişi seç',
+      properties: ['openFile'],
+      filters: [{ name: 'Görseller', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }],
+    });
+    if (choice.canceled || !choice.filePaths[0]) return null;
+    if (client !== current || user?.id !== owner)
+      throw new SocialInputError('The account changed. Open server settings again.');
+    const image = readSpaceImage(choice.filePaths[0], which === 'icon' ? 2_500_000 : 6_000_000);
+    return current.updateSpaceProfile(space, { [which]: image });
+  });
+  handle('rooms:social-remove-space-image', (spaceId, kind) =>
+    requireClient().updateSpaceProfile(id.parse(spaceId), {
+      [spaceImageKind.parse(kind)]: null,
+    }),
+  );
   handle('rooms:social-community-capabilities', (spaceId) =>
     requireClient().communityCapabilities(id.parse(spaceId)),
   );

@@ -88,6 +88,12 @@ const bridge: DesktopBridge = {
     banCommunityMember: (change) => ipcRenderer.invoke('rooms:social-ban-community-member', change),
     communityCapabilities: (spaceId) =>
       ipcRenderer.invoke('rooms:social-community-capabilities', spaceId),
+    spaceProfile: (spaceId) => ipcRenderer.invoke('rooms:social-space-profile', spaceId),
+    updateSpaceProfile: (change) => ipcRenderer.invoke('rooms:social-update-space-profile', change),
+    chooseSpaceImage: (spaceId, kind) =>
+      ipcRenderer.invoke('rooms:social-choose-space-image', spaceId, kind),
+    removeSpaceImage: (spaceId, kind) =>
+      ipcRenderer.invoke('rooms:social-remove-space-image', spaceId, kind),
     channels: (id) => ipcRenderer.invoke('rooms:social-channels', id),
     cachedMessages: (id) => ipcRenderer.invoke('rooms:social-cached-messages', id),
     messages: (id, before) => ipcRenderer.invoke('rooms:social-messages', id, before),

@@ -8,6 +8,7 @@ import {
   type SocialRolePermissionKey,
   type SocialUser,
   type SocialSpace,
+  type SocialSpaceProfile,
   type SocialChannel,
   type SocialMessage,
   type SocialInvite,
@@ -969,6 +970,128 @@ export class StoatClient {
     if (!fresh.some((file) => file.id === fileId)) throw new StoatError(409, 'ACCESS_CHANGED');
     if (epoch !== this.aclEpoch) throw new StoatError(409, 'ACCESS_CHANGED');
     return { mime: attachment.mime, bytes: new Uint8Array(Buffer.concat(parts)) };
+  }
+  /** An image from the file server as a data URL, or null if missing, too big or not an image. */
+  private async fileImage(tag: 'icons' | 'banners', id: string, limit: number) {
+    if (!this.fileOrigin) this.configureFileOrigin(await this.request<Raw>(''));
+    if (!this.fileOrigin) return null;
+    const response = await fetch(`${this.fileOrigin}/${tag}/${checked(id)}`, {
+      redirect: 'error',
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) return null;
+    const mime = response.headers.get('content-type')?.split(';')[0];
+    if (!mime || !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(mime))
+      return null;
+    const reader = response.body?.getReader();
+    if (!reader) return null;
+    let size = 0;
+    const parts: Uint8Array[] = [];
+    try {
+      while (true) {
+        const next = await reader.read();
+        if (next.done) break;
+        size += next.value.length;
+        if (size > limit) return null;
+        parts.push(next.value);
+      }
+    } finally {
+      await reader.cancel();
+    }
+    return `data:${mime};base64,${Buffer.concat(parts).toString('base64')}`;
+  }
+  /** A community's profile for its settings page: name, description, icon and banner. */
+  async spaceProfile(spaceId: string): Promise<SocialSpaceProfile> {
+    const raw = await this.request<Raw>(`/servers/${checked(spaceId)}`);
+    if (raw._id !== spaceId || typeof raw.name !== 'string')
+      throw new StoatError(502, 'INVALID_SERVER_RESPONSE');
+    this.servers.set(raw._id, { ...this.servers.get(raw._id), ...raw });
+    const [icon, banner] = await Promise.all([
+      typeof raw.icon?._id === 'string' ? this.fileImage('icons', raw.icon._id, 2_500_000) : null,
+      typeof raw.banner?._id === 'string'
+        ? this.fileImage('banners', raw.banner._id, 6_000_000)
+        : null,
+    ]);
+    return {
+      id: raw._id,
+      name: raw.name,
+      description: typeof raw.description === 'string' ? raw.description.slice(0, 1024) : '',
+      icon,
+      banner,
+      ...(raw.owner ? { ownerId: String(raw.owner) } : {}),
+    };
+  }
+  /**
+   * Saves a community profile. New images are uploaded to the file server first; null removes
+   * one. The server checks Manage Server for every change.
+   */
+  async updateSpaceProfile(
+    spaceId: string,
+    change: {
+      name?: string;
+      description?: string;
+      icon?: { bytes: Uint8Array; name: string; mime: string } | null;
+      banner?: { bytes: Uint8Array; name: string; mime: string } | null;
+    },
+  ): Promise<SocialSpaceProfile> {
+    checked(spaceId);
+    const body: Raw = { remove: [] };
+    if (change.name !== undefined) {
+      const name = change.name.trim();
+      if (!name || name.length > 32 || /[\x00-\x1f\x7f]/.test(name))
+        throw new StoatError(400, 'INVALID_SERVER_NAME');
+      body.name = name;
+    }
+    if (change.description !== undefined) {
+      const description = change.description.trim();
+      if (description.length > 1024) throw new StoatError(400, 'INVALID_SERVER_DESCRIPTION');
+      if (description) body.description = description;
+      else body.remove.push('Description');
+    }
+    for (const [key, tag, field, limit] of [
+      ['icon', 'icons', 'Icon', 2_500_000],
+      ['banner', 'banners', 'Banner', 6_000_000],
+    ] as const) {
+      const image = change[key];
+      if (image === undefined) continue;
+      if (image === null) {
+        body.remove.push(field);
+        continue;
+      }
+      if (
+        !image.bytes.length ||
+        image.bytes.length > limit ||
+        !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(image.mime)
+      )
+        throw new StoatError(400, 'INVALID_SERVER_IMAGE');
+      if (!this.fileOrigin) this.configureFileOrigin(await this.request<Raw>(''));
+      if (!this.fileOrigin) throw new StoatError(501, 'ATTACHMENTS_UNAVAILABLE');
+      const form = new FormData();
+      form.append(
+        'file',
+        new Blob([new Uint8Array(image.bytes)], { type: image.mime }),
+        image.name,
+      );
+      const response = await fetch(`${this.fileOrigin}/${tag}`, {
+        method: 'POST',
+        headers: this.token
+          ? { [this.botToken ? 'x-bot-token' : 'x-session-token']: this.token }
+          : {},
+        body: form,
+        redirect: 'error',
+        signal: AbortSignal.timeout(60000),
+      });
+      const data = (await response.json().catch(() => ({}))) as Raw;
+      if (!response.ok || typeof data.id !== 'string' || !SOCIAL_ID_PATTERN.test(data.id))
+        throw new StoatError(response.ok ? 502 : response.status, 'SERVER_IMAGE_UPLOAD_FAILED');
+      body[key] = data.id;
+    }
+    if (!body.remove.length) delete body.remove;
+    const raw = await this.request<Raw>(`/servers/${spaceId}`, 'PATCH', body);
+    if (raw._id !== spaceId) throw new StoatError(502, 'INVALID_SERVER_RESPONSE');
+    this.servers.set(raw._id, { ...this.servers.get(raw._id), ...raw });
+    this.emit('SOCIAL_REFRESH', null);
+    return this.spaceProfile(spaceId);
   }
   async avatar(userId: string): Promise<string | null> {
     const raw = await this.request<Raw>(`/users/${checked(userId)}`);

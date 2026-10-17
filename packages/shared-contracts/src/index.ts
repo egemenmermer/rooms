@@ -338,6 +338,22 @@ export interface SocialBridge {
   banCommunityMember?(
     change: import('@rooms/social').SocialMemberRemoval,
   ): Promise<import('@rooms/social').SocialCommunityManagement>;
+  /** The community's name, description, icon and banner for its settings page. */
+  spaceProfile?(spaceId: string): Promise<import('@rooms/social').SocialSpaceProfile>;
+  updateSpaceProfile?(change: {
+    spaceId: string;
+    name: string;
+    description: string;
+  }): Promise<import('@rooms/social').SocialSpaceProfile>;
+  /** Opens a file picker and uploads the chosen icon or banner; null when cancelled. */
+  chooseSpaceImage?(
+    spaceId: string,
+    kind: 'icon' | 'banner',
+  ): Promise<import('@rooms/social').SocialSpaceProfile | null>;
+  removeSpaceImage?(
+    spaceId: string,
+    kind: 'icon' | 'banner',
+  ): Promise<import('@rooms/social').SocialSpaceProfile>;
   /** This account's moderation rights in a community, without listing members. */
   communityCapabilities?(
     spaceId: string,

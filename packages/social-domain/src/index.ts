@@ -13,6 +13,15 @@ export interface SocialSpace {
   icon: string | null;
   ownerId?: string;
 }
+/** A community's public face, edited on its settings page; images are data URLs. */
+export interface SocialSpaceProfile {
+  id: string;
+  name: string;
+  description: string;
+  icon: string | null;
+  banner: string | null;
+  ownerId?: string;
+}
 export interface SocialChannel {
   id: string;
   spaceId: string | null;

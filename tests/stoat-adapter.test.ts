@@ -244,6 +244,59 @@ it('uploads multipart bytes only to the configured Autumn origin and returns no 
   ).rejects.toMatchObject({ code: 'INVALID_ATTACHMENT' });
   expect(calls).toHaveLength(2);
 });
+it('saves a community profile: uploads the icon, removes an empty description, reads it back', async () => {
+  const calls: { method: string; path: string; body: string }[] = [];
+  const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0]);
+  let server_: Record<string, unknown> = {
+    _id: 'space',
+    name: 'Eski',
+    description: 'x',
+    owner: 'me',
+  };
+  let base = '';
+  server = createServer(async (req, res) => {
+    let body = '';
+    for await (const chunk of req) body += chunk;
+    calls.push({ method: req.method!, path: req.url!, body });
+    if (req.url === '/autumn/icons/icon_1') {
+      res.setHeader('Content-Type', 'image/png');
+      res.end(png);
+      return;
+    }
+    res.setHeader('Content-Type', 'application/json');
+    if (req.url === '/api')
+      res.end(JSON.stringify({ features: { autumn: { enabled: true, url: base + '/autumn' } } }));
+    else if (req.url === '/autumn/icons') res.end(JSON.stringify({ id: 'icon_1' }));
+    else if (req.url === '/api/servers/space' && req.method === 'PATCH') {
+      const change = JSON.parse(body);
+      server_ = { ...server_, name: change.name, icon: { _id: change.icon } };
+      if (change.remove?.includes('Description')) delete server_.description;
+      res.end(JSON.stringify(server_));
+    } else res.end(JSON.stringify(server_));
+  });
+  await new Promise<void>((resolve) => server!.listen(0, '127.0.0.1', resolve));
+  base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  const client = new StoatClient(base, 'fixture-token');
+  const saved = await client.updateSpaceProfile('space', {
+    name: '  Dostlar ',
+    description: '',
+    icon: { bytes: png, name: 'ikon.png', mime: 'image/png' },
+  });
+  const patch = calls.find((c) => c.method === 'PATCH')!;
+  expect(JSON.parse(patch.body)).toEqual({
+    name: 'Dostlar',
+    icon: 'icon_1',
+    remove: ['Description'],
+  });
+  expect(calls.find((c) => c.path === '/autumn/icons')!.method).toBe('POST');
+  expect(saved).toMatchObject({ name: 'Dostlar', description: '', banner: null, ownerId: 'me' });
+  expect(saved.icon).toBe(`data:image/png;base64,${png.toString('base64')}`);
+  await expect(
+    client.updateSpaceProfile('space', {
+      icon: { bytes: png, name: 'x.svg', mime: 'image/svg+xml' },
+    }),
+  ).rejects.toMatchObject({ code: 'INVALID_SERVER_IMAGE' });
+});
 it('refuses an attachment above the limit the server advertises before uploading it', async () => {
   const paths: string[] = [];
   server = createServer((req, res) => {

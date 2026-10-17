@@ -80,14 +80,14 @@ export function MinimalSidebar({
   notify,
   invite,
   createSpace,
-  editSpace,
   search,
   help,
 }: {
   notify(message: string): void;
   invite(): void;
   createSpace(): void;
-  editSpace(): void;
+  /** Kept for callers; server settings now open the settings page. */
+  editSpace?(): void;
   search(): void;
   help(): void;
 }) {
@@ -140,16 +140,8 @@ export function MinimalSidebar({
             <hr />
             <button onClick={createSpace}>Topluluk oluştur</button>
             <button onClick={invite}>Davet oluştur</button>
-            <button
-              disabled={space?.ownerId !== c.user?.id}
-              title={
-                space?.ownerId !== c.user?.id
-                  ? 'Yalnızca topluluk sahibi düzenleyebilir.'
-                  : undefined
-              }
-              onClick={editSpace}
-            >
-              Topluluğu düzenle
+            <button disabled={!space} onClick={() => navigate('/settings?tab=server-profile')}>
+              Sunucu ayarları
             </button>
             <button onClick={() => navigate('/friends')}>Arkadaşlar</button>
             <button onClick={() => navigate('/notifications')}>Bildirimler</button>
