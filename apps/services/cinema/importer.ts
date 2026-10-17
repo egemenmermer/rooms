@@ -502,7 +502,7 @@ export class Importer {
       matches = result;
       wanted = new Set(result.values());
     };
-    const programmes: Record<string, CinemaProgramme[]> = {};
+    const programmes: Record<string, CinemaProgramme[]> = Object.create(null);
     let kept = 0;
     let seen = 0;
     const response = await this.request(url, signal);

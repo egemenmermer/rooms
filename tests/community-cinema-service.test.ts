@@ -70,10 +70,11 @@ async function setup() {
   const acquired: Parameters<RelayPort['acquire']>[0][] = [];
   const stopped: string[] = [];
   let sessions = 0;
+  const running: Awaited<ReturnType<RelayPort['acquire']>>[] = [];
   const relays: RelayPort = {
     async acquire(input) {
       acquired.push(input);
-      return {
+      const info = {
         session: `s${++sessions}`,
         live: input.source.live,
         offsetSec: input.startSec ?? 0,
@@ -82,8 +83,11 @@ async function setup() {
         producedSec: 30,
         windowStartSec: 0,
       };
+      // One slot: a new relay replaces the previous one.
+      running.splice(0, running.length, info);
+      return info;
     },
-    sessionsOf: () => [],
+    sessionsOf: () => [...running],
     async stopCommunity(communityId) {
       stopped.push(communityId);
     },
@@ -154,6 +158,7 @@ async function setup() {
     acquired,
     stopped,
     service,
+    catalogs,
   };
 }
 
@@ -341,6 +346,7 @@ describe('community cinema service', () => {
 
   it('stores the account and catalog encrypted, and wipes them on disconnect', async () => {
     await s.connect();
+    await s.catalogs.settled();
     const files = readdirSync(join(s.dir, 'communities')).map((name) =>
       join(s.dir, 'communities', name),
     );
@@ -369,5 +375,78 @@ describe('community cinema service', () => {
     });
     expect(result.body.source.kind).toBe('xtream');
     expect((await s.waitImport()).catalog.live).toBe(3);
+  });
+});
+
+describe('cached authority', () => {
+  it('reuses successful answers for a short time and never caches failures', async () => {
+    const { cachedAuthority } = await import('../apps/services/cinema/authority');
+    let calls = 0;
+    let deny = false;
+    const cached = cachedAuthority(
+      {
+        community: async () => ({ userId: 'u', displayName: 'u', isOwner: false }),
+        channel: async (token) => {
+          calls++;
+          if (deny || token === 'bad') throw new Error('denied');
+          return { userId: 'u', displayName: 'u', communityId: 'c', isOwner: false };
+        },
+        close: async () => {},
+      },
+      50,
+    );
+    await cached.channel('t', 'h');
+    await cached.channel('t', 'h');
+    expect(calls).toBe(1);
+    await expect(cached.channel('bad', 'h')).rejects.toThrow();
+    await expect(cached.channel('bad', 'h')).rejects.toThrow();
+    expect(calls).toBe(3);
+    deny = true;
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    await expect(cached.channel('t', 'h')).rejects.toThrow();
+  });
+});
+
+describe('ticket renewal', () => {
+  let s: Setup;
+  beforeEach(async () => {
+    s = await setup();
+  });
+  afterEach(async () => {
+    await s.server.close();
+    await s.provider.close();
+    rmSync(s.dir, { recursive: true, force: true });
+  });
+
+  it('renews a running session without a new relay, and ends it once the hall moves on', async () => {
+    await s.connect();
+    s.send('member', { type: 'join' });
+    s.send('member', { type: 'start', activity: 'hall', title: 'Sinema' });
+    s.send('member', {
+      type: 'queue.add',
+      itemId: 'a',
+      media: { kind: 'community-media', ref: 'l-1001', title: 'TRT 1', live: true },
+      start: true,
+    });
+    const watch = (await s.call('POST', `/v1/halls/${HALL}/watch`, 'member-token')).body;
+    const renewed = await s.service.renew('member-token', HALL, COMMUNITY, 'member', watch.session);
+    expect(renewed).toMatchObject({ ticket: `ticket-${watch.session}-member` });
+    expect(renewed.ttlMs).toBeGreaterThan(0);
+    expect(s.acquired).toHaveLength(1);
+    s.send('member', {
+      type: 'queue.add',
+      itemId: 'b',
+      media: { kind: 'community-media', ref: 'l-1002', title: 'Show TV', live: true },
+      start: true,
+    });
+    await expect(
+      s.service.renew('member-token', HALL, COMMUNITY, 'member', watch.session),
+    ).rejects.toThrow('CINEMA_SESSION_ENDED');
+    const route = await s.call(
+      'POST',
+      `/v1/halls/${HALL}/sessions/0123456789abcdef0123456789abcdef/ticket`,
+      'member-token',
+    );
+    expect(route).toMatchObject({ status: 410, body: { error: 'CINEMA_SESSION_ENDED' } });
   });
 });

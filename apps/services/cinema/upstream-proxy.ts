@@ -1,14 +1,17 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { randomBytes } from 'node:crypto';
 import { privateFetch } from '../../../packages/personal-media/src/network';
-import { rewriteHLS } from '../../../packages/personal-media/src/playlist';
 
 /** What the last upstream request of a scope reported; read to explain ffmpeg failures. */
 export type UpstreamFailure = 'denied' | 'unreachable' | null;
 
 type Scope = {
   headers: Record<string, string>;
+  /** Capability id → upstream URL, least recently used first. */
   urls: Map<string, string>;
+  /** Upstream URL → capability id, so a refreshed live playlist reuses its ids. */
+  ids: Map<string, string>;
+  root: string;
   failure: UpstreamFailure;
 };
 
@@ -47,6 +50,35 @@ export function singleVariant(text: string) {
     out.push(line);
   }
   return out.join('\n');
+}
+
+/**
+ * Rewrites every URI of an HLS playlist to a proxy capability: URI lines and `URI=`
+ * attributes (quoted or not, any tag), with CR, LF or CRLF line ends. NUL bytes and
+ * non-HTTP(S) targets reject the playlist, so nothing reaches ffmpeg unrewritten.
+ */
+export function rewriteManifest(text: string, base: string, register: (url: string) => string) {
+  if (text.includes('\0')) throw new Error('CINEMA_STREAM_FAILED');
+  const lines = text.split(/\r\n|\r|\n/);
+  if (!lines[0]?.trim().startsWith('#EXTM3U')) throw new Error('CINEMA_STREAM_FAILED');
+  const resolve = (raw: string) => {
+    const target = new URL(raw.trim(), base);
+    if (target.protocol !== 'http:' && target.protocol !== 'https:')
+      throw new Error('CINEMA_STREAM_FAILED');
+    return register(target.href);
+  };
+  return lines
+    .map((line) => {
+      const value = line.trim();
+      if (!value) return '';
+      if (!value.startsWith('#')) return resolve(value);
+      return value.replace(
+        /URI=(?:"([^"]*)"|([^",\s]+))/gi,
+        (_m, quoted: string | undefined, bare: string | undefined) =>
+          `URI="${resolve(quoted ?? bare ?? '')}"`,
+      );
+    })
+    .join('\n');
 }
 
 function basename(url: string) {
@@ -97,8 +129,16 @@ export class UpstreamProxy {
   /** Creates a scope for one relay and returns the local URL of its root source. */
   open(url: string, headers: Record<string, string> = {}) {
     const scopeId = randomBytes(16).toString('hex');
-    this.scopes.set(scopeId, { headers: { ...headers }, urls: new Map(), failure: null });
-    return { scope: scopeId, url: this.grant(scopeId, url) };
+    this.scopes.set(scopeId, {
+      headers: { ...headers },
+      urls: new Map(),
+      ids: new Map(),
+      root: '',
+      failure: null,
+    });
+    const local = this.grant(scopeId, url);
+    this.scopes.get(scopeId)!.root = this.scopes.get(scopeId)!.ids.get(url)!;
+    return { scope: scopeId, url: local };
   }
 
   failure(scope: string): UpstreamFailure {
@@ -126,12 +166,23 @@ export class UpstreamProxy {
   private grant(scopeId: string, url: string) {
     const scope = this.scopes.get(scopeId);
     if (!scope) throw new Error('CINEMA_STREAM_FAILED');
-    if (scope.urls.size >= MAX_URLS_PER_SCOPE) {
-      // The root stays; old segment capabilities go first.
-      const [, ...rest] = scope.urls.keys();
-      if (rest[0]) scope.urls.delete(rest[0]);
+    let id = scope.ids.get(url);
+    if (id) {
+      scope.urls.delete(id);
+    } else {
+      if (scope.urls.size >= MAX_URLS_PER_SCOPE) {
+        // Least recently used goes first; the root never does. Playlists in use are
+        // refreshed every few seconds, so they stay at the recent end.
+        for (const [oldId, oldUrl] of scope.urls) {
+          if (oldId === scope.root) continue;
+          scope.urls.delete(oldId);
+          scope.ids.delete(oldUrl);
+          break;
+        }
+      }
+      id = randomBytes(12).toString('hex');
+      scope.ids.set(url, id);
     }
-    const id = randomBytes(12).toString('hex');
     scope.urls.set(id, url);
     return `http://${this.host}/${this.secret}/${scopeId}/${id}/${basename(url)}`;
   }
@@ -156,6 +207,8 @@ export class UpstreamProxy {
       out.writeHead(404).end();
       return;
     }
+    scope.urls.delete(match![3]);
+    scope.urls.set(match![3], url);
     const range = request.headers.range;
     if (range && !/^bytes=\d+-\d*$/.test(range)) {
       out.writeHead(416).end();
@@ -215,7 +268,7 @@ export class UpstreamProxy {
         }
         const text = singleVariant(Buffer.concat(chunks).toString('utf8').replace(BOM, ''));
         const rewritten = Buffer.from(
-          rewriteHLS(text, response.url || url, (child) => this.grant(scopeId, child)),
+          rewriteManifest(text, response.url || url, (child) => this.grant(scopeId, child)),
         );
         scope.failure = null;
         out.writeHead(200, {

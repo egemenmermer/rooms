@@ -19,6 +19,7 @@ import type {
 import {
   Catalog,
   emptySnapshot,
+  programmesOf,
   publicItem,
   type CatalogSnapshot,
   type StoredItem,
@@ -90,7 +91,7 @@ export class CatalogStore {
   }
   put(communityId: string, snapshot: CatalogSnapshot) {
     const catalog = new Catalog(snapshot);
-    this.files.write(this.path(communityId), snapshot, true);
+    void this.write(communityId, snapshot);
     this.loaded.set(communityId, catalog);
     return catalog;
   }
@@ -99,7 +100,25 @@ export class CatalogStore {
     if (timer) clearTimeout(timer);
     this.pending.delete(communityId);
     const catalog = this.loaded.get(communityId);
-    if (catalog) this.files.write(this.path(communityId), catalog.snapshot, true);
+    if (catalog) void this.write(communityId, catalog.snapshot);
+  }
+  /** Writes are queued per community so an older snapshot never lands after a newer one. */
+  private readonly writes = new Map<string, Promise<void>>();
+  private write(communityId: string, snapshot: CatalogSnapshot) {
+    const previous = this.writes.get(communityId) ?? Promise.resolve();
+    const next = previous
+      .then(() => this.files.writeAsync(this.path(communityId), snapshot, true))
+      .catch(() => {});
+    this.writes.set(communityId, next);
+    return next;
+  }
+  /** Waits for queued writes (shutdown, tests). */
+  async settled() {
+    await Promise.all(this.writes.values());
+  }
+  /** Loads every given community's catalog now instead of on the first request. */
+  preload(communityIds: string[]) {
+    for (const communityId of communityIds) this.get(communityId);
   }
   /** Lazily fetched details are worth keeping, but not worth a 30 MB write per click. */
   saveSoon(communityId: string) {
@@ -111,10 +130,13 @@ export class CatalogStore {
   flush() {
     for (const communityId of [...this.pending.keys()]) this.save(communityId);
   }
-  remove(communityId: string) {
+  /** Drops the catalog; a write still in flight lands first, then the file goes. */
+  async remove(communityId: string) {
     clearTimeout(this.pending.get(communityId));
     this.pending.delete(communityId);
     this.loaded.delete(communityId);
+    await this.writes.get(communityId);
+    this.writes.delete(communityId);
     this.files.remove(this.path(communityId));
   }
 }
@@ -146,6 +168,7 @@ export class CinemaService {
   private readonly sessionRefs = new Map<string, { communityId: string; ref: string }>();
   private readonly art = new Map<string, { body: Buffer; type: string }>();
   private artBytes = 0;
+  private readonly artLoads = new Map<string, Promise<{ body: Buffer; type: string }>>();
 
   constructor(private readonly options: CinemaServiceOptions) {}
 
@@ -225,7 +248,7 @@ export class CinemaService {
     this.jobs.get(communityId)?.abort.abort();
     this.jobs.delete(communityId);
     await this.options.relays.stopCommunity(communityId);
-    this.options.catalogs.remove(communityId);
+    await this.options.catalogs.remove(communityId);
     this.options.configs.update(communityId, (config) => ({
       ...config,
       source,
@@ -242,7 +265,7 @@ export class CinemaService {
     this.jobs.delete(communityId);
     this.lastJobs.delete(communityId);
     await this.options.relays.stopCommunity(communityId);
-    this.options.catalogs.remove(communityId);
+    await this.options.catalogs.remove(communityId);
     this.options.configs.update(communityId, (config) => ({
       ...config,
       source: null,
@@ -264,6 +287,9 @@ export class CinemaService {
       if (!config.source || this.jobs.has(config.communityId)) continue;
       const catalog = this.options.catalogs.get(config.communityId).snapshot;
       const now = this.now();
+      // After a failure, wait an hour instead of hitting the provider every 10 minutes.
+      const last = this.lastJobs.get(config.communityId);
+      if (last?.step === 'failed' && now - (last.finishedAt ?? 0) < 3600_000) continue;
       if (!catalog.importedAt || now - catalog.importedAt > CATALOG_REFRESH_MS)
         this.startImport(config.communityId, 'all');
       else if (!catalog.guideImportedAt || now - catalog.guideImportedAt > GUIDE_REFRESH_MS)
@@ -299,6 +325,9 @@ export class CinemaService {
       if (scope === 'all') {
         const snapshot = await importer.importCatalog(source, update, abort.signal);
         const previous = catalog.snapshot;
+        // A provider that answers with nothing is treated as down, not as an empty catalog.
+        if (!snapshot.items.length && previous.items.length)
+          throw new CinemaError('CINEMA_PROVIDER_UNREACHABLE');
         // Keep the current guide until the new one arrives.
         snapshot.programmes = previous.programmes;
         snapshot.guideImportedAt = previous.guideImportedAt;
@@ -307,7 +336,7 @@ export class CinemaService {
         const matched = new Map(previous.items.map((item) => [item.ref, item.epgId]));
         for (const item of snapshot.items) {
           item.epgId = matched.get(item.ref) ?? null;
-          item.hasGuide = !!item.epgId && !!snapshot.programmes[item.epgId]?.length;
+          item.hasGuide = !!item.epgId && !!programmesOf(snapshot.programmes, item.epgId)?.length;
         }
         catalog = catalogs.put(communityId, snapshot);
       }
@@ -315,6 +344,8 @@ export class CinemaService {
       if (url) {
         const guide = await importer.importGuide(url, catalog.snapshot.items, update, abort.signal);
         if (abort.signal.aborted) return;
+        if (!guide.count && Object.keys(catalog.snapshot.programmes).length)
+          throw new CinemaError('CINEMA_PROVIDER_UNREACHABLE');
         catalog.setGuide(guide.programmes, guide.matches, this.now());
         catalogs.save(communityId);
         update({ counts: { ...job.progress.counts, programmes: guide.count } });
@@ -342,6 +373,16 @@ export class CinemaService {
 
   async details(communityId: string, ref: string): Promise<CinemaDetails> {
     const catalog = this.catalog(communityId);
+    if (ref.startsWith('e-')) {
+      // An episode answers with its series; the episode itself is in `seasons`.
+      const hit = catalog.episode(ref) ?? fail('CINEMA_ITEM_NOT_FOUND');
+      const series = await this.details(communityId, hit.series.ref);
+      return {
+        ...series,
+        plot: hit.episode.plot ?? series.plot,
+        durationSec: hit.episode.durationSec,
+      };
+    }
     const source = this.options.configs.get(communityId).source!;
     const item = catalog.item(ref) ?? fail('CINEMA_ITEM_NOT_FOUND');
     let changed = false;
@@ -415,7 +456,13 @@ export class CinemaService {
       this.art.set(key, cached);
       return cached;
     }
-    const image = await this.options.image(url);
+    let load = this.artLoads.get(key);
+    if (!load) {
+      load = this.options.image(url).finally(() => this.artLoads.delete(key));
+      this.artLoads.set(key, load);
+    }
+    const image = await load;
+    if (this.art.has(key)) return image;
     this.art.set(key, image);
     this.artBytes += image.body.length;
     for (const [oldKey, old] of this.art) {
@@ -462,6 +509,36 @@ export class CinemaService {
    * relayed, so changing what the server's one connection plays requires the
    * hall's remote control.
    */
+  private readonly locks = new Map<string, Promise<unknown>>();
+
+  private serial<T>(key: string, run: () => Promise<T>): Promise<T> {
+    const next = (this.locks.get(key) ?? Promise.resolve()).catch(() => {}).then(run);
+    const tracked = next.finally(() => {
+      if (this.locks.get(key) === tracked) this.locks.delete(key);
+    });
+    this.locks.set(key, tracked);
+    return next;
+  }
+
+  /**
+   * A fresh ticket for a running relay session, without acquiring or restarting
+   * anything: the session must still play the hall's current item.
+   */
+  async renew(token: string, hallId: string, communityId: string, userId: string, session: string) {
+    const config = this.options.configs.get(communityId);
+    if (!config.source) fail('CINEMA_NOT_CONNECTED');
+    if (config.hallChannelId !== hallId) fail('CINEMA_HALL_REQUIRED');
+    const entry = this.sessionRefs.get(session);
+    const running = this.options.relays.sessionsOf(communityId).some((r) => r.session === session);
+    if (!entry || entry.communityId !== communityId || !running) fail('CINEMA_SESSION_ENDED');
+    const room = (await this.options.activity(token, hallId)).room;
+    const current = room.queue.find((item) => item.id === room.timeline.itemId)?.media;
+    if (current?.kind !== 'community-media' || current.ref !== entry!.ref)
+      fail('CINEMA_SESSION_ENDED');
+    const ticket = this.options.tickets({ session, userId, hallId });
+    return { ...ticket, ttlMs: Math.max(0, ticket.expiresAt - Date.now()) };
+  }
+
   async watch(
     token: string,
     hallId: string,
@@ -472,6 +549,7 @@ export class CinemaService {
     if (!config.source) fail('CINEMA_NOT_CONNECTED');
     if (config.hallChannelId !== hallId) fail('CINEMA_HALL_REQUIRED');
     const response = await this.options.activity(token, hallId);
+    const fetchedAt = Date.now();
     const room = response.room;
     const current = room.queue.find((entry) => entry.id === room.timeline.itemId)?.media;
     if (room.primary?.activity !== 'hall' || current?.kind !== 'community-media')
@@ -481,40 +559,48 @@ export class CinemaService {
     const episode = item ? null : catalog.episode(current.ref);
     const source = this.relaySource(config.source!, config.account, item, episode);
     const slots = this.slots(config);
-    let info: RelayInfo;
-    if (source.live) {
-      info = await this.options.relays.acquire({
-        communityId,
-        key: `${communityId}:${current.ref}`,
-        source,
-        slots,
-      });
-    } else {
-      const position = playbackPosition(room.timeline, response.serverTimeMs);
-      const reusable = this.options.relays
-        .sessionsOf(communityId)
-        .find(
-          (session) =>
-            this.sessionRefs.get(session.session)?.ref === current.ref &&
-            position >= session.offsetSec + (session.windowStartSec ?? 0) &&
-            position <= session.offsetSec + (session.producedSec ?? 0) + 10,
-        );
-      const startSec = Math.max(0, Math.floor(position) - 2);
-      info =
-        reusable ??
-        (await this.options.relays.acquire({
+    // One relay decision at a time per community: viewers who press play together share it.
+    const info = await this.serial(communityId, async () => {
+      let chosen: RelayInfo;
+      if (source.live) {
+        chosen = await this.options.relays.acquire({
           communityId,
-          key: `${communityId}:${current.ref}@${startSec}`,
+          key: `${communityId}:${current.ref}`,
           source,
-          startSec,
           slots,
-        }));
-    }
-    const running = new Set(this.options.relays.sessionsOf(communityId).map((s) => s.session));
-    for (const [session, entry] of this.sessionRefs)
-      if (entry.communityId === communityId && !running.has(session))
-        this.sessionRefs.delete(session);
-    this.sessionRefs.set(info.session, { communityId, ref: current.ref });
+        });
+      } else {
+        const position = playbackPosition(
+          room.timeline,
+          // The lock may have waited; advance the server clock by that much.
+          response.serverTimeMs + (Date.now() - fetchedAt),
+        );
+        const reusable = this.options.relays
+          .sessionsOf(communityId)
+          .find(
+            (session) =>
+              this.sessionRefs.get(session.session)?.ref === current.ref &&
+              position >= session.offsetSec + (session.windowStartSec ?? 0) - 5 &&
+              position <= session.offsetSec + (session.producedSec ?? 0) + 30,
+          );
+        const startSec = Math.max(0, Math.floor(position) - 2);
+        chosen =
+          reusable ??
+          (await this.options.relays.acquire({
+            communityId,
+            key: `${communityId}:${current.ref}@${startSec}`,
+            source,
+            startSec,
+            slots,
+          }));
+      }
+      const running = new Set(this.options.relays.sessionsOf(communityId).map((r) => r.session));
+      for (const [session, entry] of this.sessionRefs)
+        if (entry.communityId === communityId && !running.has(session))
+          this.sessionRefs.delete(session);
+      this.sessionRefs.set(chosen.session, { communityId, ref: current.ref });
+      return chosen;
+    });
     const ticket = this.options.tickets({ session: info.session, userId, hallId });
     return {
       session: info.session,

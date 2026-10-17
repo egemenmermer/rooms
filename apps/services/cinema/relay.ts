@@ -20,6 +20,8 @@ export type RelayInfo = {
   producedSec: number;
   /** Output time of the oldest segment still kept. */
   windowStartSec: number;
+  /** EXT-X-PROGRAM-DATE-TIME of output time 0 (epoch ms), once the first playlist is read. */
+  originPdtMs: number | null;
 };
 
 export type ProbeResult = {
@@ -52,6 +54,7 @@ type Session = {
   durations: number[];
   firstSeq: number;
   stderr: string[];
+  originPdtMs: number | null;
 };
 
 const FILE = /^(?:index\.m3u8|init\.mp4|seg\d{6,9}\.m4s)$/;
@@ -74,7 +77,15 @@ export const RELAY_ERRORS = new Set([
 export function playlistSegments(text: string) {
   const first = Number(/#EXT-X-MEDIA-SEQUENCE:(\d+)/.exec(text)?.[1] ?? 0);
   const durations = [...text.matchAll(/#EXTINF:([\d.]+)/g)].map((m) => Number(m[1]));
-  return { first, durations, ended: text.includes('#EXT-X-ENDLIST') };
+  const head = text.slice(0, Math.max(0, text.indexOf('#EXTINF')));
+  const pdt = Date.parse(/#EXT-X-PROGRAM-DATE-TIME:(\S+)/.exec(head)?.[1] ?? '');
+  return {
+    first,
+    durations,
+    ended: text.includes('#EXT-X-ENDLIST'),
+    /** PROGRAM-DATE-TIME of the first listed segment, or null. */
+    firstPdtMs: Number.isFinite(pdt) ? pdt : null,
+  };
 }
 
 /**
@@ -146,7 +157,8 @@ export function relayArgs(input: {
     'delete_segments',
     'independent_segments',
     'temp_file',
-    ...(live ? ['program_date_time'] : []),
+    // Every playlist carries PROGRAM-DATE-TIME: players map it to the work's timeline.
+    'program_date_time',
     ...(input.discontinuity ? ['discont_start'] : []),
   ];
   return [
@@ -324,13 +336,20 @@ export class RelayManager {
       startedAt: s.startedAt,
       producedSec: Math.round(produced * 1000) / 1000,
       windowStartSec: Math.round(windowStart * 1000) / 1000,
+      originPdtMs: s.originPdtMs,
     };
   }
 
   private observe(s: Session, text: string) {
-    const { first, durations } = playlistSegments(text);
+    const { first, durations, firstPdtMs } = playlistSegments(text);
     s.firstSeq = first;
     durations.forEach((d, i) => (s.durations[first + i] = d));
+    // ffmpeg stamps each segment at the muxer's start time plus the durations before it.
+    if (s.originPdtMs === null && firstPdtMs !== null) {
+      let before = 0;
+      for (let i = 0; i < first; i++) before += s.durations[i] ?? SEGMENT_SEC;
+      s.originPdtMs = Math.round(firstPdtMs - before * 1000);
+    }
     return durations.length;
   }
 
@@ -377,6 +396,7 @@ export class RelayManager {
       durations: [],
       firstSeq: 0,
       stderr: [],
+      originPdtMs: null,
     };
     this.sessions.set(id, session);
     const upstreamError = (fallback: string) => {

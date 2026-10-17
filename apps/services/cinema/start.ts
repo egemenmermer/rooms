@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import type { ActivityResponse } from '../../../packages/activity-protocol/src/index';
-import { stoatAuthority } from './authority';
+import { cachedAuthority, stoatAuthority } from './authority';
 import { ConfigStore } from './config-store';
 import { Importer, safeError } from './importer';
 import { RelayManager } from './relay';
@@ -25,6 +25,12 @@ async function main() {
   const files = new SecureFiles(Buffer.from(key, 'hex'));
   const configs = new ConfigStore(state, files);
   const catalogs = new CatalogStore(state, files);
+  catalogs.preload(
+    configs
+      .all()
+      .filter((config) => config.source)
+      .map((c) => c.communityId),
+  );
   const importer = new Importer({ userAgent, allowPrivateNetwork });
   const relays = new RelayManager({
     directory: process.env.ROOMS_CINEMA_HLS ?? join(state, 'hls'),
@@ -36,10 +42,12 @@ async function main() {
   });
   const secret = Buffer.from(ticketSecret);
   const activities = process.env.ROOMS_ACTIVITIES_INTERNAL_URL ?? 'http://127.0.0.1:3031';
-  const authority = stoatAuthority({
-    stoatUrl: process.env.STOAT_INTERNAL_URL ?? 'http://127.0.0.1:3022',
-    mongoUrl: process.env.ROOMS_SOCIAL_READ_MONGO_URL,
-  });
+  const authority = cachedAuthority(
+    stoatAuthority({
+      stoatUrl: process.env.STOAT_INTERNAL_URL ?? 'http://127.0.0.1:3022',
+      mongoUrl: process.env.ROOMS_SOCIAL_READ_MONGO_URL,
+    }),
+  );
   const service = new CinemaService({
     configs,
     catalogs,
@@ -81,6 +89,7 @@ async function main() {
   server.addHook('onClose', async () => {
     await relays.close();
     catalogs.flush();
+    await catalogs.settled();
     await authority.close();
   });
   await server.listen({

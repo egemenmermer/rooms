@@ -29,6 +29,7 @@ const statusOf: Record<string, number> = {
   CINEMA_CODEC_UNSUPPORTED: 415,
   CINEMA_RELAY_BUSY: 503,
   CINEMA_ITEM_NOT_FOUND: 404,
+  CINEMA_SESSION_ENDED: 410,
 };
 
 export type CinemaServerOptions = {
@@ -96,8 +97,11 @@ export async function createCinemaServer(options: CinemaServerOptions) {
     if (error instanceof z.ZodError)
       return reply.code(400).send({ error: 'CINEMA_SOURCE_INVALID' });
     if (error instanceof StoatError) return reply.code(403).send({ error: 'CINEMA_ACCESS_DENIED' });
-    if ((error as { statusCode?: number }).statusCode === 429)
-      return reply.code(429).send({ error: 'CINEMA_RATE_LIMITED' });
+    const status = (error as { statusCode?: number }).statusCode;
+    if (status === 429) return reply.code(429).send({ error: 'CINEMA_RATE_LIMITED' });
+    // Fastify's own request errors (bad JSON, unsupported media type, body too large…).
+    if (status && status >= 400 && status < 500)
+      return reply.code(status).send({ error: 'CINEMA_SOURCE_INVALID' });
     options.log?.(`cinema request failed: ${safeError(error)}`);
     return reply.code(500).send({ error: 'CINEMA_UNAVAILABLE' });
   });
@@ -229,6 +233,25 @@ export async function createCinemaServer(options: CinemaServerOptions) {
       identity.userId,
     );
   });
+
+  /** Renews the ticket of a running relay session; never starts or restarts a relay. */
+  server.post<{ Params: { hallId: string; session: string } }>(
+    '/v1/halls/:hallId/sessions/:session/ticket',
+    async (request) => {
+      const identity = await viewer(request, request.params.hallId);
+      const session = z
+        .string()
+        .regex(/^[a-f0-9]{32}$/)
+        .parse(request.params.session);
+      return service.renew(
+        token(request),
+        request.params.hallId,
+        identity.communityId,
+        identity.userId,
+        session,
+      );
+    },
+  );
 
   options.registerRelay?.(server);
   return server;

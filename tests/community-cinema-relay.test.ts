@@ -89,7 +89,7 @@ describe('relay arguments and playlists', () => {
     expect(vod.indexOf('-ss')).toBeLessThan(vod.indexOf('-i'));
     expect(vod[vod.indexOf('-hls_list_size') + 1]).toBe('90');
     expect(vod[vod.indexOf('-hls_flags') + 1]).toBe(
-      'delete_segments+independent_segments+temp_file+discont_start',
+      'delete_segments+independent_segments+temp_file+program_date_time+discont_start',
     );
     expect(vod[vod.indexOf('-start_number') + 1]).toBe('4');
   });
@@ -99,7 +99,12 @@ describe('relay arguments and playlists', () => {
       playlistSegments(
         '#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:3\n#EXTINF:2.000,\nseg000003.m4s\n#EXTINF:1.5,\nseg000004.m4s\n#EXT-X-ENDLIST\n',
       ),
-    ).toEqual({ first: 3, durations: [2, 1.5], ended: true });
+    ).toEqual({ first: 3, durations: [2, 1.5], ended: true, firstPdtMs: null });
+    expect(
+      playlistSegments(
+        '#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-PROGRAM-DATE-TIME:2026-10-17T18:00:00.000+0000\n#EXTINF:2.000,\nseg000000.m4s\n',
+      ).firstPdtMs,
+    ).toBe(Date.UTC(2026, 9, 17, 18));
   });
 
   it('keeps only the best variant of a master playlist', () => {
@@ -407,5 +412,29 @@ describe('relay manager', () => {
     const other = issueTicket({ session: 'c'.repeat(32), userId: 'U', hallId: 'H' }, secret);
     expect((await server.inject(`/v1/relay/${other.ticket}/index.m3u8`)).statusCode).toBe(404);
     await server.close();
+  });
+});
+
+describe('strict HLS rewrite', () => {
+  const register = (url: string) => `http://proxy/${encodeURIComponent(url)}`;
+  it('rewrites URI lines and every URI= attribute, whatever the line endings', async () => {
+    const { rewriteManifest } = await import('../apps/services/cinema/upstream-proxy');
+    const text =
+      '#EXTM3U\r#EXT-X-KEY:METHOD=AES-128,URI=http://10.0.0.1/key\r\n#EXT-X-MAP:uri="init.mp4"\n#EXTINF:2,\rseg1.ts\r#EXT-X-MEDIA:TYPE=AUDIO,URI="audio.m3u8"\n';
+    const out = rewriteManifest(text, 'http://cdn.example/live/', register);
+    for (const line of out.split('\n').filter(Boolean)) {
+      if (!line.startsWith('#')) expect(line.startsWith('http://proxy/')).toBe(true);
+      for (const m of line.matchAll(/URI="([^"]*)"/gi))
+        expect(m[1].startsWith('http://proxy/')).toBe(true);
+    }
+    expect(out).toContain(encodeURIComponent('http://10.0.0.1/key'));
+    expect(out).toContain(encodeURIComponent('http://cdn.example/live/seg1.ts'));
+    expect(() => rewriteManifest('#EXTM3U\nseg\0.ts', 'http://cdn.example/', register)).toThrow();
+    expect(() =>
+      rewriteManifest('#EXTM3U\nfile:///etc/passwd', 'http://cdn.example/', register),
+    ).toThrow();
+    expect(() =>
+      rewriteManifest('#EXTM3U\n#EXT-X-KEY:URI="data:,x"', 'http://cdn.example/', register),
+    ).toThrow();
   });
 });

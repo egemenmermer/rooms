@@ -51,6 +51,10 @@ export type CatalogSnapshot = {
   programmes: Record<string, CinemaProgramme[]>;
 };
 
+/** XMLTV ids come from the provider: `constructor` or `__proto__` must not reach Object's own members. */
+export const programmesOf = (record: Record<string, CinemaProgramme[]>, id: string) =>
+  Object.hasOwn(record, id) ? record[id] : undefined;
+
 export const emptySnapshot = (): CatalogSnapshot => ({
   version: 1,
   importedAt: null,
@@ -181,7 +185,7 @@ export class Catalog {
       for (const item of this.byKind.live) {
         if (out.length >= limit) break;
         if (seen.has(item.ref) || !item.epgId) continue;
-        const upcoming = (this.data.programmes[item.epgId] ?? []).filter(
+        const upcoming = (programmesOf(this.data.programmes, item.epgId) ?? []).filter(
           (p) => p.stop > now && p.start < now + 12 * 3600_000,
         );
         if (upcoming.slice(0, 2).some((p) => matchScore(this.titleWords(p), terms) > 0))
@@ -205,7 +209,7 @@ export class Catalog {
     for (const ref of refs.slice(0, 200)) {
       const item = this.byRef.get(ref);
       if (!item || item.kind !== 'live' || !item.epgId) continue;
-      const list = this.data.programmes[item.epgId] ?? [];
+      const list = programmesOf(this.data.programmes, item.epgId) ?? [];
       out[ref] = list.filter((p) => p.stop > from && p.start < to).slice(0, 200);
     }
     return out;
@@ -253,7 +257,7 @@ export class Catalog {
     this.programmeWords.clear();
     for (const item of this.byKind.live) {
       item.epgId = matches.get(item.ref) ?? null;
-      item.hasGuide = !!item.epgId && !!programmes[item.epgId]?.length;
+      item.hasGuide = !!item.epgId && !!programmesOf(programmes, item.epgId)?.length;
     }
   }
 }
