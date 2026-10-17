@@ -18,7 +18,15 @@ async function mount(status: ReturnType<typeof vi.fn>) {
   render(
     <MemoryRouter initialEntries={['/']}>
       <Routes>
-        <Route path="*" element={<><UpdateNotice /><Where /></>} />
+        <Route
+          path="*"
+          element={
+            <>
+              <UpdateNotice />
+              <Where />
+            </>
+          }
+        />
       </Routes>
     </MemoryRouter>,
   );
@@ -35,7 +43,9 @@ it('stays hidden while no release is waiting or updates are switched off', async
 
 it('glows beside Settings once a release is ready and opens the restart prompt', async () => {
   await mount(vi.fn(async () => ({ enabled: true, state: 'ready', version: '0.1.18-rc.21' })));
-  const button = screen.getByRole('button', { name: 'ROOMS 0.1.18-rc.21 hazır, güncellemek için tıkla' });
+  const button = screen.getByRole('button', {
+    name: 'ROOMS 0.1.18-rc.21 hazır, güncellemek için tıkla',
+  });
   expect(button.className).toContain('update-notice');
   fireEvent.click(button);
   expect(screen.getByRole('status').textContent).toBe('/settings?tab=about&install=1');
