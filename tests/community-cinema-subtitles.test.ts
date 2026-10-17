@@ -31,7 +31,7 @@ const sub = (index: number, codec: string, extra: Partial<ProbeSubtitle> = {}): 
 describe('WebVTT cues', () => {
   it('reads ffmpeg output with and without hours, skipping headers and notes', () => {
     const text =
-      '﻿WEBVTT\r\n\r\nNOTE written by ffmpeg\r\n\r\n00:34.347 --> 00:36.158\r\nİlk satır\r\nikinci\r\n\r\n01:02:03.004 --> 01:02:05.000 align:start\r\n<i>Eğik</i> &amp; düz\r\n\r\n';
+      '\uFEFFWEBVTT\r\n\r\nNOTE written by ffmpeg\r\n\r\n00:34.347 --> 00:36.158\r\nİlk satır\r\nikinci\r\n\r\n01:02:03.004 --> 01:02:05.000 align:start\r\n<i>Eğik</i> &amp; düz\r\n\r\n';
     expect(parseVtt(text)).toEqual([
       { start: 34.347, end: 36.158, text: 'İlk satır\nikinci' },
       { start: 3723.004, end: 3725, text: '<i>Eğik</i> &amp; düz' },

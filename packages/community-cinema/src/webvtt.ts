@@ -23,7 +23,7 @@ function stamp(value: number) {
  * starts the next one with the blank line, so a newline-terminated last cue is whole.
  */
 export function parseVtt(text: string, options: { complete?: boolean } = {}): SubtitleCue[] {
-  const normalized = text.replace(/^﻿/, '').replace(/\r\n?/g, '\n');
+  const normalized = text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   if (!/^WEBVTT(?:[ \t][^\n]*)?(?:\n|$)/.test(normalized)) return [];
   const whole = options.complete
     ? normalized.slice(0, normalized.lastIndexOf('\n') + 1)
