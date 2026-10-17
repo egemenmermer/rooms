@@ -1,20 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const mocks = vi.hoisted(() => ({
-  protocol: null as null | ((request: Request) => Promise<Response>),
-}));
-vi.mock('electron', () => ({
-  protocol: {
-    handle: (_scheme: string, handler: (request: Request) => Promise<Response>) => {
-      mocks.protocol = handler;
-    },
-  },
-}));
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   setupCommunityCinema,
   type CinemaAccount,
 } from '../apps/desktop/electron/community-cinema';
+
+const mocks = { protocol: null as null | ((request: Request) => Promise<Response>) };
 
 const TICKET = 'eyJzZXNzaW9uIjoiczEifQ.c2lnbmF0dXJl';
 
@@ -61,6 +52,7 @@ function setup() {
     isCurrent: (value) => value === current,
     fetch: fetchMock,
   });
+  mocks.protocol = cinema.serve;
   return {
     cinema,
     requests,

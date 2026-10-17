@@ -336,7 +336,7 @@ export async function setupCommunity(
     });
   handle('rooms:social-session', () => snapshot());
   handle('rooms:social-read-states', () => requireClient().readStates());
-  setupCommunityCinema({
+  const cinema = setupCommunityCinema({
     handle: (name, handler) =>
       handle(name, async (...args) => {
         try {
@@ -1855,6 +1855,7 @@ export async function setupCommunity(
   return {
     snapshot,
     activityRequest,
+    serveCinema: cinema.serve,
     close: async () => {
       recoveryEpoch++;
       hostOps.close();

@@ -1,4 +1,3 @@
-import { protocol } from 'electron';
 import { z } from 'zod';
 import type { StoatClient } from '@rooms/stoat';
 import { SOCIAL_ID_PATTERN } from '@rooms/social';
@@ -211,7 +210,7 @@ export function setupCommunityCinema(options: {
 
   const cors = { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' };
 
-  protocol.handle('rooms-cinema', async (incoming) => {
+  const serve = async (incoming: Request) => {
     try {
       const url = new URL(incoming.url);
       const [first, second] = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
@@ -266,9 +265,11 @@ export function setupCommunityCinema(options: {
     } catch {
       return new Response('Unavailable', { status: 502, headers: cors });
     }
-  });
+  };
 
   return {
+    /** Handler for the `rooms-cinema:` scheme; main registers it. */
+    serve,
     /** Forget every relay ticket (sign-out, account switch). */
     clear() {
       tickets.clear();
