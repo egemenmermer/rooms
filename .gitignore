@@ -28,3 +28,8 @@ dist-native/
 **/target/
 .private/
 publication-output/
+
+# Self-hosted deployment state (secrets, databases, backups).
+deploy/config/
+deploy/data/
+deploy/backups/

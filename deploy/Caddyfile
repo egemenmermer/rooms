@@ -1,0 +1,54 @@
+# ROOMS public entry point. Caddy obtains and renews the HTTPS certificate itself.
+{
+	email {$ROOMS_ACME_EMAIL}
+	{$ROOMS_CADDY_GLOBAL_OPTIONS}
+	servers {
+		protocols h1 h2
+	}
+}
+
+{$ROOMS_DOMAIN} {
+	header -Server
+
+	handle /.well-known/stoat {
+		rewrite * /stoat.json
+		root * /srv
+		file_server
+	}
+	handle_path /rooms-access/* {
+		reverse_proxy access:3002
+	}
+	handle_path /rooms-activities/* {
+		reverse_proxy activities:3031
+	}
+	# Accounts are created only through ROOMS signup invitations.
+	handle_path /api/* {
+		@account_create path /auth/account/create /auth/account/create/*
+		respond @account_create "Use a ROOMS signup invitation." 403
+		reverse_proxy api:14702
+	}
+	handle /api {
+		rewrite * /
+		reverse_proxy api:14702
+	}
+	handle /ws {
+		rewrite * /
+		reverse_proxy events:14703
+	}
+	handle_path /autumn/* {
+		reverse_proxy autumn:14704
+	}
+	handle_path /january/* {
+		reverse_proxy january:14705
+	}
+	handle_path /gifbox/* {
+		reverse_proxy gifbox:14706
+	}
+	handle_path /livekit/* {
+		reverse_proxy media:7880
+	}
+	handle {
+		header Content-Type "text/plain; charset=utf-8"
+		respond "Bu bir ROOMS sunucusu. Bağlanmak için ROOMS masaüstü uygulamasını kullan: https://github.com/egemenmermer/rooms" 200
+	}
+}
