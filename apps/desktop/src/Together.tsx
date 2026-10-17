@@ -47,8 +47,10 @@ export default function Together() {
       (person) => person.userId === community.user?.id,
     ),
     canControl = participant?.canControl === true;
+  // A viewer who has not joined yet (fresh room, or pruned after idling) has no participant
+  // record; send() joins first and the service still enforces canCreate on poll.create.
   const createReason =
-    reason || (participant?.canCreate === true ? '' : 'Bu odada anket oluşturma yetkin yok.');
+    reason || (participant?.canCreate === false ? 'Bu odada anket oluşturma yetkin yok.' : '');
   const roomName = community.channels.find((channel) => channel.id === roomId)?.name ?? 'Oda';
   const send = async (command: ActivityCommand) => {
     if (fixture || !connected || activity.busy || lock.current) return false;

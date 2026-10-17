@@ -1,6 +1,7 @@
 import { test, expect } from '../support/fixtures';
 import { ChatView } from '../support/pages/chat';
 import { uniqueText } from '../support/seed';
+import { StoatApi } from '../support/stoat-api';
 
 test.describe('community text chat between two real clients', () => {
   test('messages arrive live in both directions', async ({ owner, guest, run }) => {
@@ -43,10 +44,6 @@ test.describe('community text chat between two real clients', () => {
   });
 
   test('reactions are shared and counted', async ({ owner, guest, run }) => {
-    // Known defect found by this suite: the picker sends codepoint ids such as "2764", the
-    // adapter only accepts [A-Za-z0-9_-], and Stoat v0.15.5 answers 400 InvalidOperation
-    // unless it receives the emoji itself. Remove `test.fail` once reactions are fixed.
-    test.fail(true, 'Stoat rejects codepoint reaction ids (400 InvalidOperation).');
     const ownerChat = await new ChatView(owner).open(run.channels.text.name);
     const guestChat = await new ChatView(guest).open(run.channels.text.name);
     const text = uniqueText('Reaksiyon bekliyor');
@@ -54,10 +51,20 @@ test.describe('community text chat between two real clients', () => {
     await expect(guestChat.message(text)).toBeVisible();
 
     await guestChat.react(text, 'Kalp');
-    await expect(ownerChat.reaction(text, '2764', 1)).toBeVisible();
-    await ownerChat.reaction(text, '2764', 1).click();
-    await expect(guestChat.reaction(text, '2764', 2)).toBeVisible();
-    await expect(ownerChat.reaction(text, '2764', 2)).toHaveAttribute('aria-pressed', 'true');
+    await expect(ownerChat.reaction(text, 'Kalp', 1)).toBeVisible();
+    await ownerChat.reaction(text, 'Kalp', 1).click();
+    await expect(guestChat.reaction(text, 'Kalp', 2)).toBeVisible();
+    await expect(ownerChat.reaction(text, 'Kalp', 2)).toHaveAttribute('aria-pressed', 'true');
+
+    // Upstream stores the emoji itself, so other Stoat clients count the same reaction.
+    const messages = await new StoatApi(run.owner.token).request<
+      { content?: string; reactions?: Record<string, string[]> }[]
+    >(`/channels/${run.channels.text.id}/messages?limit=20`);
+    const stored = messages.find((message) => message.content === text);
+    expect(Object.keys(stored?.reactions ?? {})).toEqual(['\u2764\ufe0f']);
+    expect(stored?.reactions?.['\u2764\ufe0f']?.sort()).toEqual(
+      [run.owner.userId, run.guest.userId].sort(),
+    );
   });
 
   test('history survives an app restart', async ({ clients, owner, run }) => {

@@ -58,6 +58,12 @@ export interface GatewayEvent {
 }
 
 export const SOCIAL_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+/**
+ * Reaction keys accepted by the upstream: a custom emoji ULID or a short Unicode emoji sequence
+ * (at most 16 code points, at least one non-ASCII). Codepoint ids such as `2764` are rejected.
+ */
+export const SOCIAL_REACTION_PATTERN =
+  /^(?:[0-9A-HJKMNP-TV-Z]{26}|(?=[^]*[^\x00-\x7F])[\p{Extended_Pictographic}\p{Emoji_Component}\u200D\uFE0F\u20E3]{1,16})$/u;
 export type SocialProvider = 'stoat';
 
 export interface SocialAttachment {

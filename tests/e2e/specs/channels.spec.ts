@@ -4,7 +4,12 @@ import { StoatApi } from '../support/stoat-api';
 import { ChatView } from '../support/pages/chat';
 import { createChannel, uniqueText } from '../support/seed';
 
-async function createFromSidebar(client: RoomsClient, kind: 'text' | 'voice', name: string) {
+async function createFromSidebar(
+  client: RoomsClient,
+  kind: 'text' | 'voice',
+  name: string,
+  timeout = 10000,
+) {
   await client.nav
     .getByRole('button', { name: kind === 'text' ? 'Sohbet kanalı oluştur' : 'Ses odası oluştur' })
     .click();
@@ -14,9 +19,7 @@ async function createFromSidebar(client: RoomsClient, kind: 'text' | 'voice', na
     .click();
   await dialog.getByRole('textbox', { name: 'Ad' }).fill(name);
   await dialog.getByRole('button', { name: 'Oluştur', exact: true }).click();
-  // A save should close the dialog in well under a second, but see the known-defect note
-  // below: it intermittently stalls for ~20 s, so functional tests allow 30 s.
-  await expect(dialog).toHaveCount(0, { timeout: 30000 });
+  await expect(dialog).toHaveCount(0, { timeout });
 }
 
 test.describe('channel management', () => {
@@ -41,11 +44,16 @@ test.describe('channel management', () => {
     expect(channels.find((channel) => channel.name === voice)?.voice).toBeTruthy();
   });
 
-  // Known defect found by this suite (intermittent, so not asserted): creating a channel
-  // from the sidebar sometimes keeps the dialog on "Kaydediliyor…" for ~20 s although the
-  // channel already exists upstream; other times it closes in ~0.3 s. The ~20 s matches the
-  // activity long-poll window (waitMs=20000). See docs/E2E_TESTING.md, "Bulunan hatalar".
-  test.fixme('channel creation always closes the dialog within 5 s', async () => {});
+  // Regression: every create used to spend the POST plus five reads of the upstream server
+  // bucket (5 calls / 10 s), so the next save waited ~10-20 s on "Kaydediliyor…" for the window
+  // to reset. See docs/E2E_TESTING.md, "Bulunan hatalar".
+  test('back-to-back channel creation closes the dialog within 5 s', async ({ owner }) => {
+    for (const kind of ['voice', 'text'] as const) {
+      const name = uniqueText(`hizli-${kind}`).replace(' ', '-');
+      await createFromSidebar(owner, kind, name, 5000);
+      await expect(owner.nav.getByRole('button', { name, exact: true })).toBeVisible();
+    }
+  });
 
   test('rename and delete from the channel menu reach members', async ({ owner, guest, run }) => {
     const channel = await createChannel(

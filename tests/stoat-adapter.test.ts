@@ -179,15 +179,49 @@ it('maps attachment metadata and reactions without credentials; reaction edits u
   client.subscribe((e) => {
     if (e.type === 'MESSAGE_UPDATE') update = e.data;
   });
-  await client.react('channel', raw._id, '1f44d');
+  await client.react('channel', raw._id, '\u{1f44d}');
   expect(update).toMatchObject({
     attachments: [{ id: 'file', name: 'safe.pdf', size: 10, mime: 'application/pdf' }],
     reactions: { '1f44d': ['friend'] },
   });
   expect(JSON.stringify(update)).not.toContain('fixture-token');
   expect(calls[0]).toBe(
-    'PUT /api/channels/channel/messages/01ARZ3NDEKTSV4RRFFQ69G5FAV/reactions/1f44d',
+    'PUT /api/channels/channel/messages/01ARZ3NDEKTSV4RRFFQ69G5FAV/reactions/%F0%9F%91%8D',
   );
+});
+it('sends Unicode and custom emoji reactions URL-encoded and rejects anything else', async () => {
+  const calls: string[] = [];
+  const url = await fixture((path, method) => {
+    calls.push(method + ' ' + path);
+    return method === 'GET' ? { _id: '01ARZ3NDEKTSV4RRFFQ69G5FAV', channel: 'channel' } : {};
+  });
+  const client = new StoatClient(url, 'fixture-token');
+  const base = 'channels/channel/messages/01ARZ3NDEKTSV4RRFFQ69G5FAV/reactions';
+  await client.react('channel', '01ARZ3NDEKTSV4RRFFQ69G5FAV', '\u2764\ufe0f');
+  await client.react('channel', '01ARZ3NDEKTSV4RRFFQ69G5FAV', '\u{1f44d}\u{1f3fd}', true);
+  await client.react('channel', '01ARZ3NDEKTSV4RRFFQ69G5FAV', '01ARZ3NDEKTSV4RRFFQ69G5FAW');
+  expect(calls.filter((call) => !call.startsWith('GET'))).toEqual([
+    `PUT /api/${base}/%E2%9D%A4%EF%B8%8F`,
+    `DELETE /api/${base}/%F0%9F%91%8D%F0%9F%8F%BD`,
+    `PUT /api/${base}/01ARZ3NDEKTSV4RRFFQ69G5FAW`,
+  ]);
+  calls.length = 0;
+  for (const emoji of [
+    '2764',
+    '1f44d',
+    'thumbsup',
+    '1',
+    '',
+    '../x',
+    '\u2764/..',
+    '\u2764?x=1',
+    '\u2764 ',
+    '\u{1f44d}'.repeat(17),
+  ])
+    await expect(
+      client.react('channel', '01ARZ3NDEKTSV4RRFFQ69G5FAV', emoji),
+    ).rejects.toMatchObject({ code: 'INVALID_EMOJI' });
+  expect(calls).toEqual([]);
 });
 it('rejects foreign file origins before sending upload credentials', async () => {
   const url = await fixture(() => ({

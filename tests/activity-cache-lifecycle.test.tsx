@@ -120,3 +120,21 @@ it('a rejected action releases controls without waiting for a pending long poll'
   expect(hook.result.current.room?.revision).toBe(1);
   hook.unmount();
 });
+
+it('fetches the first snapshot immediately instead of long-polling a never-used room', async () => {
+  act(() =>
+    useCommunity.setState({
+      user: { id: 'user', username: 'User', displayName: 'User', avatar: null },
+      serverUrl: 'https://server',
+    }),
+  );
+  native.snapshot.mockResolvedValue({
+    room: { ...room, roomId: 'fresh-room', revision: 0 },
+    serverTimeMs: Date.now(),
+  });
+  const hook = renderHook(() => useActivityRoom('fresh-room'));
+  await waitFor(() => expect(hook.result.current.status).toBe('connected'));
+  // A revision-0 room would otherwise hold `afterRevision=0` for the whole long-poll window.
+  expect(native.snapshot.mock.calls[0]).toEqual(['fresh-room', undefined]);
+  hook.unmount();
+});
