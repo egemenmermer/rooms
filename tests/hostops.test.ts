@@ -128,6 +128,39 @@ describe('HostOps telemetry and authority', () => {
     expect(store.history('other', 'month')).toEqual([]);
     store.close();
   });
+  it('reports an unreachable membership store as an outage instead of no permission', async () => {
+    const store = new HostOpsStore(':memory:');
+    const app = createHostOpsServer({
+      store,
+      hosts: [
+        {
+          id: 'core',
+          label: 'Core',
+          physicalHostId: 'primary',
+          mode: 'shared',
+          communityId: 'space',
+          ownerProfileId: null,
+          agentAvailable: false,
+        },
+      ],
+      identify: async (token) => {
+        if (token === 'stranger') throw Object.assign(Error('denied'), { status: 403 });
+        if (token === 'signed-out') throw Error('SIGN_IN_REQUIRED');
+        throw Error('connect ECONNREFUSED 172.18.0.3:27017');
+      },
+    });
+    try {
+      for (const token of ['stranger', 'signed-out'])
+        expect(
+          (await app.inject({ url: '/v1/hosts', headers: { authorization: token } })).json(),
+        ).toEqual({ hosts: [] });
+      const outage = await app.inject({ url: '/v1/hosts', headers: { authorization: 'owner' } });
+      expect(outage.statusCode).toBe(503);
+      expect(outage.json()).toEqual({ error: 'HOSTOPS_UNAVAILABLE' });
+    } finally {
+      await app.close();
+    }
+  });
   it('enforces owner grants and separates monitor from terminal/agent privileges', async () => {
     const store = new HostOpsStore(':memory:');
     const app = createHostOpsServer({
