@@ -11,6 +11,7 @@ import { ChannelPermissionsSurface } from './ChannelPermissionsSurface';
 import { CommunityManagementEntry } from './CommunityManagementEntry';
 import { About } from './About';
 import { ServerProfile } from './ServerProfile';
+import { CinemaSettings } from './cinema/CinemaSettings';
 import { SettingsConnection } from './SettingsConnection';
 import { AssistantManagement } from './AssistantManagement';
 import { VoiceAvatar } from './VoiceAvatar';
@@ -24,6 +25,7 @@ import {
   ArrowLeft,
   Bookmark,
   Bot,
+  Clapperboard,
   Clock3,
   Info,
   KeyRound,
@@ -79,6 +81,7 @@ const tabs = [
   { id: 'schedules', label: 'Tek seferlik görevler', icon: Clock3 },
   { id: 'services', label: 'ROOMS bağlantıları', icon: Globe },
   { id: 'server-profile', label: 'Sunucu profili', icon: Store },
+  { id: 'cinema', label: 'Sinema', icon: Clapperboard },
   { id: 'hostops', label: 'Sunucu makinesi', icon: Monitor },
   { id: 'shortcuts', label: 'Klavye', icon: Keyboard },
   { id: 'diagnostics', label: 'Tanılama', icon: SlidersHorizontal },
@@ -935,6 +938,7 @@ export default function Settings({
                     ?.name.toLocaleUpperCase('tr-TR') || 'TOPLULUK',
                 ids: [
                   'server-profile',
+                  'cinema',
                   'community-management',
                   'channel-permissions',
                   'assistant-permissions',
@@ -1002,6 +1006,7 @@ export default function Settings({
             <strong>{tabs.find((t) => t.id === tab)?.label}</strong>
             {[
               'server-profile',
+              'cinema',
               'community-management',
               'channel-permissions',
               'assistant-permissions',
@@ -1404,6 +1409,7 @@ export default function Settings({
               </>
             )}
             {tab === 'server-profile' && <ServerProfile notify={notify} />}
+            {tab === 'cinema' && <CinemaSettings notify={notify} />}
             {tab === 'hostops' && <HostOperations />}
             {tab === 'connections' && <AgentReferenceSettingsContent view="connections" />}
             {tab === 'room-memory' && <AgentReferenceSettingsContent view="memory" />}

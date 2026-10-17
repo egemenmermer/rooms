@@ -1,0 +1,338 @@
+import { z } from 'zod';
+import type { StoatClient } from '@rooms/stoat';
+import { SOCIAL_ID_PATTERN } from '@rooms/social';
+import { CINEMA_REF_PATTERN } from '../../../packages/community-cinema/src/types';
+
+/** The account the cinema request was made with; a request finishing in another account fails. */
+export type CinemaAccount = { client: StoatClient; token: string; origin: string };
+
+export class CinemaRequestError extends Error {}
+
+const socialId = z.string().regex(SOCIAL_ID_PATTERN);
+const ref = z.string().regex(CINEMA_REF_PATTERN);
+const kind = z.enum(['live', 'movie', 'series']);
+const relayFile = /^[A-Za-z0-9_.-]{1,80}$/;
+const sessionId = /^[A-Za-z0-9_-]{1,80}$/;
+
+const sourceInput = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('xtream'),
+      server: z.string().max(2048),
+      username: z.string().max(200),
+      password: z.string().max(200),
+      guideUrl: z.string().max(2048).nullable(),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('m3u'),
+      url: z.string().max(2048),
+      guideUrl: z.string().max(2048).nullable(),
+    })
+    .strict(),
+]);
+
+const itemsQuery = z
+  .object({
+    kind,
+    categoryId: z.string().max(120).nullable().optional(),
+    sort: z.enum(['default', 'name', 'added', 'rating']).optional(),
+    offset: z.number().int().min(0).max(1_000_000).optional(),
+    limit: z.number().int().min(1).max(1000).optional(),
+  })
+  .strict();
+
+const watchResponse = z
+  .object({
+    session: z.string().regex(sessionId),
+    ticket: z
+      .string()
+      .min(16)
+      .max(1024)
+      .regex(/^[A-Za-z0-9_.-]+$/),
+    expiresAt: z.number(),
+    live: z.boolean(),
+    durationSec: z.number().nullable(),
+    offsetSec: z.number().min(0),
+    epoch: z.number().int(),
+    itemRef: z.string().regex(CINEMA_REF_PATTERN),
+    ttlMs: z.number().int().min(0).max(3_600_000).optional(),
+    originPdtMs: z.number().nullable().optional(),
+  })
+  .passthrough();
+
+type Ticket = {
+  ticket: string;
+  hallId: string;
+  account: CinemaAccount;
+  /** Local clock: the server's ttl counted from when we received it. */
+  expiresAt: number;
+  renewal?: Promise<Ticket | null>;
+};
+
+const renewalResponse = z
+  .object({
+    ticket: z
+      .string()
+      .min(16)
+      .max(1024)
+      .regex(/^[A-Za-z0-9_.-]+$/),
+    ttlMs: z.number().int().min(0).max(3_600_000),
+  })
+  .passthrough();
+
+/**
+ * Community cinema IPC and the `rooms-cinema:` scheme. The Stoat token and
+ * relay tickets stay here; the renderer gets `rooms-cinema://stream/<session>/…`
+ * for playback and `rooms-cinema://art/<hall>/<id>` for artwork.
+ */
+export function setupCommunityCinema(options: {
+  handle(name: string, handler: (...args: unknown[]) => unknown): void;
+  /** The signed-in account, or a thrown sign-in error. */
+  account(): CinemaAccount;
+  /** Whether `account` is still the signed-in one. */
+  isCurrent(account: CinemaAccount): boolean;
+  fetch?: typeof fetch;
+}) {
+  const request = options.fetch ?? fetch;
+  const tickets = new Map<string, Ticket>();
+  /** Latest watch request per hall; an older answer must not drop a newer session. */
+  const watches = new Map<string, number>();
+
+  async function call(
+    account: CinemaAccount,
+    method: 'GET' | 'PUT' | 'POST' | 'DELETE',
+    path: string,
+    body?: unknown,
+    timeoutMs = 15_000,
+  ) {
+    let response: Response;
+    try {
+      response = await request(`${account.origin}/rooms-cinema${path}`, {
+        method,
+        headers: {
+          Authorization: account.token,
+          ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+        redirect: 'error',
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch {
+      throw new CinemaRequestError('CINEMA_UNAVAILABLE');
+    }
+    const value = (await response.json().catch(() => null)) as { error?: unknown } | null;
+    if (!options.isCurrent(account)) throw new CinemaRequestError('Oturum değişti.');
+    if (!response.ok)
+      throw new CinemaRequestError(
+        typeof value?.error === 'string' && /^CINEMA_[A-Z_]{2,40}$/.test(value.error)
+          ? value.error
+          : 'CINEMA_UNAVAILABLE',
+      );
+    return value;
+  }
+
+  const api = (
+    method: 'GET' | 'PUT' | 'POST' | 'DELETE',
+    path: string,
+    body?: unknown,
+    timeoutMs?: number,
+  ) => call(options.account(), method, path, body, timeoutMs);
+  const community = (communityId: unknown) =>
+    `/v1/communities/${encodeURIComponent(socialId.parse(communityId))}`;
+  const hall = (hallId: unknown) => `/v1/halls/${encodeURIComponent(socialId.parse(hallId))}`;
+
+  options.handle('rooms:cinema-status', (communityId) => api('GET', community(communityId)));
+  options.handle('rooms:cinema-set-hall', (communityId, channelId) =>
+    api('PUT', `${community(communityId)}/hall`, {
+      channelId: socialId.nullable().parse(channelId),
+    }),
+  );
+  // Verifying an account downloads its playlist or account info; large M3U files take a while.
+  options.handle('rooms:cinema-connect', (communityId, source) =>
+    api('PUT', `${community(communityId)}/source`, sourceInput.parse(source), 180_000),
+  );
+  options.handle('rooms:cinema-disconnect', async (communityId) => {
+    const result = await api('DELETE', `${community(communityId)}/source`);
+    tickets.clear();
+    return result;
+  });
+  options.handle('rooms:cinema-reload', (communityId, scope) =>
+    api('POST', `${community(communityId)}/reload`, {
+      scope: z.enum(['all', 'guide']).parse(scope),
+    }),
+  );
+  options.handle('rooms:cinema-categories', (hallId, value) =>
+    api('GET', `${hall(hallId)}/categories?kind=${kind.parse(value)}`),
+  );
+  options.handle('rooms:cinema-items', (hallId, value) => {
+    const query = itemsQuery.parse(value);
+    const params = new URLSearchParams({ kind: query.kind });
+    if (query.categoryId) params.set('categoryId', query.categoryId);
+    if (query.sort) params.set('sort', query.sort);
+    if (query.offset !== undefined) params.set('offset', String(query.offset));
+    if (query.limit !== undefined) params.set('limit', String(query.limit));
+    return api('GET', `${hall(hallId)}/items?${params}`);
+  });
+  options.handle('rooms:cinema-search', (hallId, text, kinds) => {
+    const params = new URLSearchParams({ q: z.string().max(200).parse(text) });
+    if (kinds !== undefined) params.set('kinds', z.array(kind).max(3).parse(kinds).join(','));
+    return api('GET', `${hall(hallId)}/search?${params}`);
+  });
+  options.handle('rooms:cinema-guide', (hallId, refs, from, to) =>
+    api('POST', `${hall(hallId)}/guide`, {
+      refs: z.array(ref).max(200).parse(refs),
+      from: z.number().int().nonnegative().parse(from),
+      to: z.number().int().nonnegative().parse(to),
+    }),
+  );
+  options.handle('rooms:cinema-details', (hallId, value) =>
+    api('GET', `${hall(hallId)}/details/${encodeURIComponent(ref.parse(value))}`),
+  );
+  options.handle('rooms:cinema-watch', async (hallId) => {
+    const id = socialId.parse(hallId);
+    const account = options.account();
+    const sequence = (watches.get(id) ?? 0) + 1;
+    watches.set(id, sequence);
+    // Starting a relay can take the provider up to ~20 s plus probing.
+    const watch = watchResponse.parse(
+      await call(account, 'POST', `${hall(id)}/watch`, undefined, 45_000),
+    );
+    if (watches.get(id) === sequence)
+      for (const [session, ticket] of tickets)
+        if (ticket.hallId === id && session !== watch.session) tickets.delete(session);
+    tickets.set(watch.session, {
+      ticket: watch.ticket,
+      hallId: id,
+      account,
+      expiresAt: Date.now() + (watch.ttlMs ?? Math.max(0, watch.expiresAt - Date.now())),
+    });
+    return {
+      src: `rooms-cinema://stream/${watch.session}/index.m3u8`,
+      itemRef: watch.itemRef,
+      live: watch.live,
+      durationSec: watch.durationSec,
+      offsetSec: watch.offsetSec,
+      epoch: watch.epoch,
+      originPdtMs: watch.originPdtMs ?? null,
+    };
+  });
+
+  /**
+   * The session's ticket, renewed when it is close to expiry (or `force`d after a 401).
+   * Renewal never starts or restarts a relay; an ended session returns null (→ 410).
+   */
+  async function ticketFor(session: string, force = false): Promise<Ticket | null> {
+    const ticket = tickets.get(session);
+    if (!ticket || !options.isCurrent(ticket.account)) return null;
+    if (!force && ticket.expiresAt - Date.now() > 30_000) return ticket;
+    ticket.renewal ??= (async () => {
+      try {
+        const next = renewalResponse.parse(
+          await call(
+            ticket.account,
+            'POST',
+            `${hall(ticket.hallId)}/sessions/${session}/ticket`,
+            undefined,
+            15_000,
+          ),
+        );
+        const renewed: Ticket = {
+          ticket: next.ticket,
+          hallId: ticket.hallId,
+          account: ticket.account,
+          expiresAt: Date.now() + next.ttlMs,
+        };
+        if (tickets.get(session) === ticket) tickets.set(session, renewed);
+        return renewed;
+      } catch (error) {
+        if (error instanceof CinemaRequestError && error.message === 'CINEMA_SESSION_ENDED') {
+          tickets.delete(session);
+          return null;
+        }
+        return ticket.expiresAt > Date.now() ? ticket : null;
+      } finally {
+        ticket.renewal = undefined;
+      }
+    })();
+    return ticket.renewal;
+  }
+
+  const cors = { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' };
+
+  const serve = async (incoming: Request) => {
+    try {
+      const url = new URL(incoming.url);
+      const [first, second] = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+      if (url.hostname === 'stream') {
+        if (!first || !second || !sessionId.test(first) || !relayFile.test(second))
+          return new Response('Not found', { status: 404, headers: cors });
+        let ticket = await ticketFor(first);
+        if (!ticket) return new Response('Expired', { status: 410, headers: cors });
+        const fetchFile = (value: Ticket) =>
+          request(
+            `${value.account.origin}/rooms-cinema/v1/relay/${encodeURIComponent(value.ticket)}/${encodeURIComponent(second)}`,
+            { redirect: 'error', signal: incoming.signal },
+          );
+        let response = await fetchFile(ticket);
+        if (response.status === 401) {
+          // Clock skew or a lost renewal: renew once and retry.
+          await response.body?.cancel();
+          ticket = await ticketFor(first, true);
+          if (!ticket) return new Response('Expired', { status: 410, headers: cors });
+          response = await fetchFile(ticket);
+        }
+        if (!options.isCurrent(ticket.account)) {
+          await response.body?.cancel();
+          return new Response('Expired', { status: 410, headers: cors });
+        }
+        return new Response(response.ok ? response.body : null, {
+          status: response.status,
+          headers: {
+            ...cors,
+            'Content-Type': response.headers.get('content-type') ?? 'application/octet-stream',
+          },
+        });
+      }
+      if (url.hostname === 'art') {
+        if (
+          !first ||
+          !second ||
+          !SOCIAL_ID_PATTERN.test(first) ||
+          !/^[a-f0-9]{16,64}$/.test(second)
+        )
+          return new Response('Not found', { status: 404 });
+        const account = options.account();
+        const response = await request(
+          `${account.origin}/rooms-cinema${hall(first)}/art/${second}`,
+          {
+            headers: { Authorization: account.token },
+            redirect: 'error',
+            signal: incoming.signal,
+          },
+        );
+        const type = response.headers.get('content-type') ?? '';
+        if (!response.ok || !type.startsWith('image/') || !options.isCurrent(account)) {
+          await response.body?.cancel();
+          return new Response('Not found', { status: 404 });
+        }
+        return new Response(response.body, {
+          headers: { 'Content-Type': type, 'Cache-Control': 'private, max-age=86400' },
+        });
+      }
+      return new Response('Not found', { status: 404 });
+    } catch {
+      return new Response('Unavailable', { status: 502, headers: cors });
+    }
+  };
+
+  return {
+    /** Handler for the `rooms-cinema:` scheme; main registers it. */
+    serve,
+    /** Forget every relay ticket (sign-out, account switch). */
+    clear() {
+      tickets.clear();
+    },
+  };
+}

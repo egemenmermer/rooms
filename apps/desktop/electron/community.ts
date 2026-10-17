@@ -1,4 +1,5 @@
 import { loadMusicLyrics } from './music-lyrics';
+import { CinemaRequestError, setupCommunityCinema } from './community-cinema';
 import { setupHostOps } from './hostops';
 import {
   playlistCatalogSchema,
@@ -335,6 +336,26 @@ export async function setupCommunity(
     });
   handle('rooms:social-session', () => snapshot());
   handle('rooms:social-read-states', () => requireClient().readStates());
+  const cinema = setupCommunityCinema({
+    handle: (name, handler) =>
+      handle(name, async (...args) => {
+        try {
+          return await handler(...args);
+        } catch (error) {
+          throw error instanceof CinemaRequestError ? new SocialInputError(error.message) : error;
+        }
+      }),
+    account: () => {
+      const current = requireClient();
+      return {
+        client: current,
+        token: current.getToken()!,
+        origin: new URL(current.instanceUrl).origin,
+      };
+    },
+    isCurrent: (account) =>
+      client === account.client && account.client.getToken() === account.token,
+  });
   const replaceSession = async (next: StoatClient, nextUser: SocialUser, request: number) => {
     if (request !== authRequestEpoch) {
       await next.disconnect().catch(() => {});
@@ -1834,6 +1855,7 @@ export async function setupCommunity(
   return {
     snapshot,
     activityRequest,
+    serveCinema: cinema.serve,
     close: async () => {
       recoveryEpoch++;
       hostOps.close();

@@ -44,9 +44,9 @@ export function Home({
     space = c.spaces.find((s) => s.id === c.activeSpaceId);
   const activityPath =
     primary?.activity === 'cinema'
-      ? '/cinema'
+      ? '/cinema/room'
       : primary?.activity === 'youtube'
-        ? '/cinema'
+        ? '/cinema/room'
         : primary?.activity === 'screen'
           ? '/voice?view=share'
           : '/games';

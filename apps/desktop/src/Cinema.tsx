@@ -59,6 +59,7 @@ const QUEUE_KEY = 'rooms.cinema.queue-open';
 const activityName: Record<Primary['activity'], string> = {
   youtube: 'YouTube',
   cinema: 'kişisel dosya oturumu',
+  hall: 'Sinema salonu',
   screen: 'ekran paylaşımı',
   holdem: 'Hold’em masası',
   blackjack: 'Blackjack masası',
@@ -678,7 +679,7 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
       if (await chooseCinemaMedia(binding)) {
         setPersonal(false);
         setPicker(false);
-        navigate('/cinema?view=personal');
+        navigate('/cinema/room?view=personal');
       }
     } catch (error) {
       setPersonalError(uiError(error));

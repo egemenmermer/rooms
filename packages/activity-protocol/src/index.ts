@@ -16,6 +16,21 @@ const media = z.discriminatedUnion('kind', [
     .strict(),
   // A shared reference describes the work, never a filesystem path or provider URL.
   z.object({ kind: z.literal('independent-source'), referenceId: opaqueId, title: text }).strict(),
+  // An item of the community cinema catalog. The cinema service resolves `ref` and
+  // relays one server-side stream to everyone in the hall; no provider data is shared.
+  z
+    .object({
+      kind: z.literal('community-media'),
+      ref: z.string().regex(/^[a-z]-[A-Za-z0-9_-]{1,120}$/),
+      title: text,
+      live: z.boolean(),
+      art: z
+        .string()
+        .regex(/^[a-f0-9]{16,64}$/)
+        .nullable()
+        .optional(),
+    })
+    .strict(),
 ]);
 export const holdemTableRulesSchema = z
   .object({
@@ -42,7 +57,16 @@ export const holdemTableRulesSchema = z
 export type HoldemTableRules = z.infer<typeof holdemTableRulesSchema>;
 const replacePrimarySchema = z
   .object({
-    activity: z.enum(['cinema', 'youtube', 'screen', 'holdem', 'blackjack', 'batak', '101']),
+    activity: z.enum([
+      'cinema',
+      'youtube',
+      'hall',
+      'screen',
+      'holdem',
+      'blackjack',
+      'batak',
+      '101',
+    ]),
     startedAt: z.number().int().nonnegative(),
   })
   .strict();
@@ -57,7 +81,16 @@ export const commandSchema = z
       z
         .object({
           type: z.literal('start'),
-          activity: z.enum(['cinema', 'youtube', 'screen', 'holdem', 'blackjack', 'batak', '101']),
+          activity: z.enum([
+            'cinema',
+            'youtube',
+            'hall',
+            'screen',
+            'holdem',
+            'blackjack',
+            'batak',
+            '101',
+          ]),
           title: text,
         })
         .strict(),
@@ -291,7 +324,8 @@ export interface RoomSnapshot {
   revision: number;
   participants: Participant[];
   primary: null | {
-    activity: 'cinema' | 'youtube' | 'screen' | 'holdem' | 'blackjack' | 'batak' | '101';
+    /** `hall`: the permanent community cinema, keyed by its hall channel. */
+    activity: 'cinema' | 'youtube' | 'hall' | 'screen' | 'holdem' | 'blackjack' | 'batak' | '101';
     title: string;
     hostUserId: string;
     startedAt: number;
@@ -422,7 +456,7 @@ export function endsActivity(
   canControl: boolean,
 ): boolean {
   if (!canControl || !userId) return false;
-  if (!primary || !['cinema', 'youtube', 'screen'].includes(primary.activity)) return true;
+  if (!primary || !['cinema', 'youtube', 'hall', 'screen'].includes(primary.activity)) return true;
   return primary.hostUserId === userId;
 }
 export function playbackPosition(timeline: Timeline, serverTimeMs: number): number {

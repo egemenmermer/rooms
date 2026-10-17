@@ -48,9 +48,9 @@ afterEach(() => {
 });
 function mount() {
   return render(
-    <MemoryRouter initialEntries={['/cinema?view=personal']}>
+    <MemoryRouter initialEntries={['/cinema/room?view=personal']}>
       <Link to="/chat">Browse chat</Link>
-      <Link to="/cinema?view=personal">Return</Link>
+      <Link to="/cinema/room?view=personal">Return</Link>
       <CinemaPlayback notify={vi.fn()} />
     </MemoryRouter>,
   );

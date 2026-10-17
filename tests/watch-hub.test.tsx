@@ -56,7 +56,7 @@ function Route() {
 }
 function mount() {
   return render(
-    <MemoryRouter initialEntries={['/cinema']}>
+    <MemoryRouter initialEntries={['/cinema/room']}>
       <Cinema notify={vi.fn()} />
       <Route />
     </MemoryRouter>,

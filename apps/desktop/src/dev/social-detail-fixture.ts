@@ -540,7 +540,7 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
                 messageId: 'demo-detail-notice-mention',
               },
               'demo-notice-friend': { route: '/friends' },
-              'demo-notice-cinema': { route: '/cinema' },
+              'demo-notice-cinema': { route: '/cinema/room' },
               'demo-notice-agent': { route: '/agent' },
             },
     };

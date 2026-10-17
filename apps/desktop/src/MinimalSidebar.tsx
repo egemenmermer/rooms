@@ -43,6 +43,8 @@ import { UserProfileDialog } from './SocialSurfaces';
 import type { SocialUser } from '@rooms/social';
 import { uiError } from './i18n';
 import { UpdateNotice } from './UpdateNotice';
+import { HallSidebarRow } from './cinema/HallSidebarRow';
+import { useCommunityCinema } from './cinema/cinema-status';
 import {
   VOICE_MEMBER_DRAG,
   VoiceMemberMenu,
@@ -111,8 +113,10 @@ export function MinimalSidebar({
       return null;
     }
   };
+  // The cinema hall is a channel too, but it lives in its own "Sinema" row.
+  const hallId = useCommunityCinema().hallId;
   const space = c.spaces.find((s) => s.id === c.activeSpaceId),
-    voices = c.channels.filter((ch) => ch.type === 2);
+    voices = c.channels.filter((ch) => ch.type === 2 && ch.id !== hallId);
   const directory = useVoiceDirectory(voices.map((ch) => ch.id));
   const run = (task: Promise<unknown>) => void task.catch((e) => notify(uiError(e)));
   const enter = (id: string, name: string) => {
@@ -164,6 +168,10 @@ export function MinimalSidebar({
               (id) => c.dms.some((dm) => dm.id === id) && c.unread[id],
             ) && <i className="nav-dot" />}
           </button>
+          <HallSidebarRow
+            selected={location.pathname === '/cinema'}
+            onOpen={() => navigate('/cinema')}
+          />
           <div className="minimal-section" data-channel-type="text" tabIndex={0}>
             Sohbetler
             <button
@@ -176,7 +184,7 @@ export function MinimalSidebar({
             </button>
           </div>
           {c.channels
-            .filter((ch) => ch.type === 0)
+            .filter((ch) => ch.type === 0 && ch.id !== hallId)
             .map((ch) => (
               <button
                 data-channel-id={ch.id}

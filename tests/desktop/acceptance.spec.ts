@@ -50,7 +50,7 @@ test('desktop shell isolates native APIs and supports current signed-out onboard
     await page.getByRole('button', { name: 'Vazgeç', exact: true }).click();
     await expect(page.getByRole('region', { name: 'Kaydedilmemiş ayarlar' })).toHaveCount(0);
     await page.getByRole('button', { name: 'Ayarları kapat', exact: true }).click();
-    await page.evaluate(() => (location.hash = '/cinema'));
+    await page.evaluate(() => (location.hash = '/cinema/room'));
     await expect(page.locator('.cozy-heading h2')).toHaveText('Sinema');
     // Signed out there is no room: the closed curtain explains it and sources stay unavailable.
     await expect(
@@ -138,7 +138,7 @@ test('two real Stoat desktop accounts exchange events and join one authorized ro
     await winner.evaluate((id) => (window as any).rooms.media.presenter(id, 'release'), channelId);
     await other.evaluate((id) => (window as any).rooms.media.presenter(id, 'acquire'), channelId);
     await other.evaluate((id) => (window as any).rooms.media.presenter(id, 'release'), channelId);
-    await owner.evaluate(() => (location.hash = '/cinema'));
+    await owner.evaluate(() => (location.hash = '/cinema/room'));
     await expect(owner.locator('.cozy-heading h2')).toHaveText('Sinema');
     await expect(
       owner.getByRole('button', { name: 'Sesten ayrıl', exact: true }).first(),

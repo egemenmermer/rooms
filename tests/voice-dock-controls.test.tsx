@@ -99,7 +99,7 @@ function CurrentRoute() {
     </output>
   );
 }
-it.each(['/media', '/cinema'])(
+it.each(['/media', '/cinema/room'])(
   'keeps the personal player visible after explicit capture from %s',
   async (path) => {
     render(
@@ -117,7 +117,7 @@ it.each(['/media', '/cinema'])(
     expect(f.start).toHaveBeenCalledOnce();
     await waitFor(() =>
       expect(screen.getByTestId('capture-route').textContent).toBe(
-        path === '/media' ? '/media' : '/cinema?view=screen',
+        path === '/media' ? '/media' : '/cinema/room?view=screen',
       ),
     );
   },

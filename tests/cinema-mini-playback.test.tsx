@@ -42,7 +42,7 @@ afterEach(() => {
 const mount = () =>
   render(
     <MemoryRouter initialEntries={['/chat']}>
-      <Link to="/cinema?view=personal">Main player</Link>
+      <Link to="/cinema/room?view=personal">Main player</Link>
       <Link to="/chat">Chat</Link>
       <CinemaPlayback notify={vi.fn()} />
     </MemoryRouter>,

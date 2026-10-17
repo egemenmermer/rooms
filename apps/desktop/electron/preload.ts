@@ -223,6 +223,22 @@ const bridge: DesktopBridge = {
     rdLibrary: () => ipcRenderer.invoke('rooms:provider-rd-library'),
     rdPlay: (id) => ipcRenderer.invoke('rooms:provider-rd-play', id),
   },
+  cinema: {
+    status: (communityId) => ipcRenderer.invoke('rooms:cinema-status', communityId),
+    setHall: (communityId, channelId) =>
+      ipcRenderer.invoke('rooms:cinema-set-hall', communityId, channelId),
+    connect: (communityId, source) =>
+      ipcRenderer.invoke('rooms:cinema-connect', communityId, source),
+    disconnect: (communityId) => ipcRenderer.invoke('rooms:cinema-disconnect', communityId),
+    reload: (communityId, scope) => ipcRenderer.invoke('rooms:cinema-reload', communityId, scope),
+    categories: (hallId, kind) => ipcRenderer.invoke('rooms:cinema-categories', hallId, kind),
+    items: (hallId, query) => ipcRenderer.invoke('rooms:cinema-items', hallId, query),
+    search: (hallId, text, kinds) => ipcRenderer.invoke('rooms:cinema-search', hallId, text, kinds),
+    guide: (hallId, refs, from, to) =>
+      ipcRenderer.invoke('rooms:cinema-guide', hallId, refs, from, to),
+    details: (hallId, ref) => ipcRenderer.invoke('rooms:cinema-details', hallId, ref),
+    watch: (hallId) => ipcRenderer.invoke('rooms:cinema-watch', hallId),
+  },
   remoteControl: {
     register: (room, track) => ipcRenderer.invoke('rooms:remote-register', room, track),
     state: (room) => ipcRenderer.invoke('rooms:remote-state', room),

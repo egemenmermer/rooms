@@ -243,7 +243,11 @@ export function CommunityChat({
   const showFriends = membersVisible ?? storedFriends;
   const voice = useRealtime();
   const activity = useActivityRoom(c.user ? (voice.channelId ?? c.activeChannelId) : null);
-  const primary = activity.status === 'connected' ? activity.room?.primary : null;
+  // Inside the hall the screen is already on the page; no banner pointing back to it.
+  const primary =
+    activity.status === 'connected' && activity.room?.primary?.activity !== 'hall'
+      ? activity.room?.primary
+      : null;
   const [nameColors, setNameColors] = useState<Record<string, string>>({});
   useEffect(() => {
     let active = true;
@@ -267,13 +271,15 @@ export function CommunityChat({
     };
   }, []);
   const activityPath =
-    primary?.activity === 'youtube'
+    primary?.activity === 'hall'
       ? '/cinema'
-      : primary?.activity === 'screen'
-        ? '/voice'
-        : primary?.activity === 'cinema'
-          ? '/cinema'
-          : '/games';
+      : primary?.activity === 'youtube'
+        ? '/cinema/room'
+        : primary?.activity === 'screen'
+          ? '/voice'
+          : primary?.activity === 'cinema'
+            ? '/cinema/room'
+            : '/games';
   const [searchOpen, setSearchOpen] = useState(false),
     [query, setQuery] = useState('');
   const [options, setOptions] = useState<CommunityMessage | null>(null),
@@ -897,7 +903,7 @@ export function CommunityChat({
                   kişi hazır
                 </p>
               </span>
-              <button className="button primary" onClick={() => navigate('/cinema')}>
+              <button className="button primary" onClick={() => navigate('/cinema/room')}>
                 <Play size={17} />
                 Odaya git
               </button>
@@ -2543,8 +2549,8 @@ export function RealVoiceDock({
                     if (generation.current !== epoch) return;
                     if (location.pathname !== '/media')
                       navigate(
-                        location.pathname === '/cinema'
-                          ? '/cinema?view=screen'
+                        location.pathname === '/cinema/room'
+                          ? '/cinema/room?view=screen'
                           : '/voice?view=share',
                       );
                     close();

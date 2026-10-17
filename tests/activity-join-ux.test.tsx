@@ -140,7 +140,7 @@ it('lets a newcomer join a running activity in one click without end-for-everyon
   expect(screen.queryByRole('button', { name: 'Etkinliği bitir' })).toBeNull();
   expect(screen.queryByRole('button', { name: 'Kıraathane' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Katıl' }));
-  expect(screen.getByTestId('route').textContent).toBe('/cinema');
+  expect(screen.getByTestId('route').textContent).toBe('/cinema/room');
 });
 
 it('keeps ending the shared player for the host only', () => {
@@ -166,7 +166,7 @@ it('shows the running activity under the joined room and opens it from the sideb
   f.activity.room = watchTogether(['egemen']);
   sidebar();
   fireEvent.click(screen.getByRole('button', { name: /Birlikte izle sürüyor, 1 kişi\. Katıl/ }));
-  expect(screen.getByTestId('route').textContent).toBe('/cinema');
+  expect(screen.getByTestId('route').textContent).toBe('/cinema/room');
 });
 
 it('marks a person this listener silenced and drops their speaking ring', () => {
