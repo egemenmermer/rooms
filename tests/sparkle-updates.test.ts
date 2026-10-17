@@ -10,6 +10,7 @@ const fixture = vi.hoisted(() => ({
     check: vi.fn(),
     enable: vi.fn(),
     status: vi.fn(() => ({ state: 'idle', version: null })),
+    install: vi.fn(() => false),
   },
 }));
 vi.mock('electron', () => ({
@@ -72,6 +73,17 @@ it('migrates automatic updates once and routes user check through native Sparkle
   invoke('check');
   expect(fixture.native.check).toHaveBeenCalledOnce();
   expect(sender).toHaveBeenCalledTimes(2);
+});
+it('installs a downloaded update at once and otherwise lets Sparkle present it', () => {
+  setupUpdates(vi.fn());
+  fixture.native.install.mockReturnValueOnce(true);
+  invoke('install');
+  expect(fixture.native.install).toHaveBeenCalledOnce();
+  expect(fixture.native.check).not.toHaveBeenCalled();
+  invoke('install');
+  expect(fixture.native.check).toHaveBeenCalledOnce();
+  invoke('check');
+  expect(fixture.native.install).toHaveBeenCalledTimes(2);
 });
 it('preserves a migrated explicit opt-out and blocks checking until enabled', () => {
   fixture.prefs = { enabled: false, sparkleMigrated: true };

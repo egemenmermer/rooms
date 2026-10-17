@@ -8,6 +8,7 @@ import {
   type SocialRolePermissionKey,
   type SocialUser,
   type SocialSpace,
+  type SocialSpaceProfile,
   type SocialChannel,
   type SocialMessage,
   type SocialInvite,
@@ -73,6 +74,9 @@ const directMessageErrors: Record<string, string> = {
   DM_FRIEND_INCOMING: 'This person sent you a friend request. Accept it to send a private message.',
   DM_BLOCKED: 'You cannot send private messages to a blocked user.',
 };
+const ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
+/** Video types the desktop chat plays inline; QuickTime covers Mac recordings and iPhone videos. */
+export const INLINE_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 export class StoatError extends Error {
   constructor(
     public status: number,
@@ -103,11 +107,13 @@ export class StoatError extends Error {
                             ? 'You do not have permission for this action.'
                             : status === 404
                               ? 'This room, message or invitation is unavailable.'
-                              : status === 429
-                                ? 'Too many requests. Please wait and retry.'
-                                : status >= 500
-                                  ? 'The social server is unavailable. Retry shortly.'
-                                  : 'The social server rejected this request. Check the supplied details.'),
+                              : status === 413
+                                ? 'This file is larger than the server accepts.'
+                                : status === 429
+                                  ? 'Too many requests. Please wait and retry.'
+                                  : status >= 500
+                                    ? 'The social server is unavailable. Retry shortly.'
+                                    : 'The social server rejected this request. Check the supplied details.'),
     );
     this.name = 'StoatError';
   }
@@ -245,6 +251,8 @@ const managementBits = {
   managePermissions: 4n,
   assignRoles: 512n,
   kickMembers: 64n,
+  banMembers: 128n,
+  moveMembers: 1n << 35n,
 } as const;
 const rolePermissionBits: Record<SocialRolePermissionKey, bigint> = {
   view: 1n << 20n,
@@ -259,6 +267,8 @@ const rolePermissionBits: Record<SocialRolePermissionKey, bigint> = {
   manageRoles: 8n,
   managePermissions: 4n,
   kickMembers: 64n,
+  banMembers: 128n,
+  moveMembers: 1n << 35n,
 };
 function rolePermissionValues(raw: Raw | undefined): SocialRolePermissionValues {
   const p = permissionOverride(raw);
@@ -284,6 +294,8 @@ const managementUnavailable = (
     managePermissions: false,
     assignRoles: false,
     kickMembers: false,
+    banMembers: false,
+    moveMembers: false,
   },
   roles: [],
   grantablePermissions: [],
@@ -349,6 +361,8 @@ export class StoatClient {
   private readonly botToken: boolean;
   private currentUser: SocialUser | null = null;
   private fileOrigin: string | null = null;
+  // The server's advertised attachment size limit; uploads above it are refused before sending.
+  private attachmentLimit = ATTACHMENT_MAX_BYTES;
   private socket: WebSocket | null = null;
   private heartbeat: ReturnType<typeof setInterval> | null = null;
   private retry: ReturnType<typeof setTimeout> | null = null;
@@ -719,6 +733,9 @@ export class StoatClient {
     };
   }
   private configureFileOrigin(root: Raw) {
+    const limit = root.features?.limits?.default?.file_upload_size_limits?.attachments;
+    if (Number.isSafeInteger(limit) && limit > 0)
+      this.attachmentLimit = Math.min(limit, ATTACHMENT_MAX_BYTES);
     const raw = root.features?.autumn;
     if (raw?.enabled !== true || typeof raw.url !== 'string') return;
     let url: URL;
@@ -752,10 +769,15 @@ export class StoatClient {
         : {}),
     };
   }
+  /** The largest attachment this server accepts, in bytes. */
+  async attachmentSizeLimit(): Promise<number> {
+    if (!this.fileOrigin) this.configureFileOrigin(await this.request<Raw>(''));
+    return this.attachmentLimit;
+  }
   async uploadAttachment(bytes: Uint8Array, name: string, mime: string): Promise<SocialAttachment> {
     if (
       !bytes.byteLength ||
-      bytes.byteLength > 25 * 1024 * 1024 ||
+      bytes.byteLength > ATTACHMENT_MAX_BYTES ||
       !name ||
       name.length > 255 ||
       /[\r\n/\\]/.test(name) ||
@@ -764,6 +786,7 @@ export class StoatClient {
       throw new StoatError(400, 'INVALID_ATTACHMENT');
     if (!this.fileOrigin) this.configureFileOrigin(await this.request<Raw>(''));
     if (!this.fileOrigin) throw new StoatError(501, 'ATTACHMENTS_UNAVAILABLE');
+    if (bytes.byteLength > this.attachmentLimit) throw new StoatError(413, 'ATTACHMENT_TOO_LARGE');
     const form = new FormData();
     form.append('file', new Blob([new Uint8Array(bytes)], { type: mime }), name);
     let response: Response;
@@ -910,6 +933,165 @@ export class StoatClient {
     if (!fresh.some((file) => file.id === fileId)) throw new StoatError(409, 'ACCESS_CHANGED');
     if (epoch !== this.aclEpoch) throw new StoatError(409, 'ACCESS_CHANGED');
     return `data:${mime};base64,${Buffer.concat(parts).toString('base64')}`;
+  }
+  /** A video attachment's bytes for inline playback, read with the same access checks as photos. */
+  async attachmentVideo(
+    channelId: string,
+    messageId: string,
+    fileId: string,
+  ): Promise<{ mime: string; bytes: Uint8Array } | null> {
+    const epoch = this.aclEpoch;
+    if (!this.fileOrigin) this.configureFileOrigin(await this.request<Raw>(''));
+    const attachment = (await this.messageAttachments(channelId, messageId)).find(
+      (file) => file.id === fileId,
+    );
+    if (!attachment?.url || !INLINE_VIDEO_TYPES.includes(attachment.mime)) return null;
+    const response = await fetch(attachment.url, {
+      redirect: 'error',
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!response.ok) throw new StoatError(response.status, 'ATTACHMENT_UNAVAILABLE');
+    const reader = response.body?.getReader();
+    if (!reader) return null;
+    let size = 0;
+    const parts: Uint8Array[] = [];
+    try {
+      while (true) {
+        const next = await reader.read();
+        if (next.done) break;
+        size += next.value.length;
+        if (size > ATTACHMENT_MAX_BYTES) throw new StoatError(413, 'ATTACHMENT_TOO_LARGE');
+        parts.push(next.value);
+      }
+    } finally {
+      await reader.cancel();
+    }
+    const fresh = await this.messageAttachments(channelId, messageId);
+    if (!fresh.some((file) => file.id === fileId)) throw new StoatError(409, 'ACCESS_CHANGED');
+    if (epoch !== this.aclEpoch) throw new StoatError(409, 'ACCESS_CHANGED');
+    return { mime: attachment.mime, bytes: new Uint8Array(Buffer.concat(parts)) };
+  }
+  /** An image from the file server as a data URL, or null if missing, too big or not an image. */
+  private async fileImage(tag: 'icons' | 'banners', id: string, limit: number) {
+    if (!this.fileOrigin) this.configureFileOrigin(await this.request<Raw>(''));
+    if (!this.fileOrigin) return null;
+    const response = await fetch(`${this.fileOrigin}/${tag}/${checked(id)}`, {
+      redirect: 'error',
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) return null;
+    const mime = response.headers.get('content-type')?.split(';')[0];
+    if (!mime || !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(mime))
+      return null;
+    const reader = response.body?.getReader();
+    if (!reader) return null;
+    let size = 0;
+    const parts: Uint8Array[] = [];
+    try {
+      while (true) {
+        const next = await reader.read();
+        if (next.done) break;
+        size += next.value.length;
+        if (size > limit) return null;
+        parts.push(next.value);
+      }
+    } finally {
+      await reader.cancel();
+    }
+    return `data:${mime};base64,${Buffer.concat(parts).toString('base64')}`;
+  }
+  /** A community's profile for its settings page: name, description, icon and banner. */
+  async spaceProfile(spaceId: string): Promise<SocialSpaceProfile> {
+    const raw = await this.request<Raw>(`/servers/${checked(spaceId)}`);
+    if (raw._id !== spaceId || typeof raw.name !== 'string')
+      throw new StoatError(502, 'INVALID_SERVER_RESPONSE');
+    this.servers.set(raw._id, { ...this.servers.get(raw._id), ...raw });
+    const [icon, banner] = await Promise.all([
+      typeof raw.icon?._id === 'string' ? this.fileImage('icons', raw.icon._id, 2_500_000) : null,
+      typeof raw.banner?._id === 'string'
+        ? this.fileImage('banners', raw.banner._id, 6_000_000)
+        : null,
+    ]);
+    return {
+      id: raw._id,
+      name: raw.name,
+      description: typeof raw.description === 'string' ? raw.description.slice(0, 1024) : '',
+      icon,
+      banner,
+      ...(raw.owner ? { ownerId: String(raw.owner) } : {}),
+    };
+  }
+  /**
+   * Saves a community profile. New images are uploaded to the file server first; null removes
+   * one. The server checks Manage Server for every change.
+   */
+  async updateSpaceProfile(
+    spaceId: string,
+    change: {
+      name?: string;
+      description?: string;
+      icon?: { bytes: Uint8Array; name: string; mime: string } | null;
+      banner?: { bytes: Uint8Array; name: string; mime: string } | null;
+    },
+  ): Promise<SocialSpaceProfile> {
+    checked(spaceId);
+    const body: Raw = { remove: [] };
+    if (change.name !== undefined) {
+      const name = change.name.trim();
+      if (!name || name.length > 32 || /[\x00-\x1f\x7f]/.test(name))
+        throw new StoatError(400, 'INVALID_SERVER_NAME');
+      body.name = name;
+    }
+    if (change.description !== undefined) {
+      const description = change.description.trim();
+      if (description.length > 1024) throw new StoatError(400, 'INVALID_SERVER_DESCRIPTION');
+      if (description) body.description = description;
+      else body.remove.push('Description');
+    }
+    for (const [key, tag, field, limit] of [
+      ['icon', 'icons', 'Icon', 2_500_000],
+      ['banner', 'banners', 'Banner', 6_000_000],
+    ] as const) {
+      const image = change[key];
+      if (image === undefined) continue;
+      if (image === null) {
+        body.remove.push(field);
+        continue;
+      }
+      if (
+        !image.bytes.length ||
+        image.bytes.length > limit ||
+        !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(image.mime)
+      )
+        throw new StoatError(400, 'INVALID_SERVER_IMAGE');
+      if (!this.fileOrigin) this.configureFileOrigin(await this.request<Raw>(''));
+      if (!this.fileOrigin) throw new StoatError(501, 'ATTACHMENTS_UNAVAILABLE');
+      const form = new FormData();
+      form.append(
+        'file',
+        new Blob([new Uint8Array(image.bytes)], { type: image.mime }),
+        image.name,
+      );
+      const response = await fetch(`${this.fileOrigin}/${tag}`, {
+        method: 'POST',
+        headers: this.token
+          ? { [this.botToken ? 'x-bot-token' : 'x-session-token']: this.token }
+          : {},
+        body: form,
+        redirect: 'error',
+        signal: AbortSignal.timeout(60000),
+      });
+      const data = (await response.json().catch(() => ({}))) as Raw;
+      if (!response.ok || typeof data.id !== 'string' || !SOCIAL_ID_PATTERN.test(data.id))
+        throw new StoatError(response.ok ? 502 : response.status, 'SERVER_IMAGE_UPLOAD_FAILED');
+      body[key] = data.id;
+    }
+    if (!body.remove.length) delete body.remove;
+    const raw = await this.request<Raw>(`/servers/${spaceId}`, 'PATCH', body);
+    if (raw._id !== spaceId) throw new StoatError(502, 'INVALID_SERVER_RESPONSE');
+    this.servers.set(raw._id, { ...this.servers.get(raw._id), ...raw });
+    this.emit('SOCIAL_REFRESH', null);
+    return this.spaceProfile(spaceId);
   }
   async avatar(userId: string): Promise<string | null> {
     const raw = await this.request<Raw>(`/users/${checked(userId)}`);
@@ -1361,6 +1543,7 @@ export class StoatClient {
             roles: [...(m.roles ?? [])],
             canAssignRoles: result.capabilities.assignRoles && !isOwner && (isSelf || elevated),
             canRemove: result.capabilities.kickMembers && !isSelf && !isOwner && elevated,
+            canBan: !!result.capabilities.banMembers && !isSelf && !isOwner && elevated,
           },
         ];
       });
@@ -1500,6 +1683,34 @@ export class StoatClient {
     await this.request(`/servers/${checked(spaceId)}/members/${checked(userId)}`, 'PATCH', {
       roles: roleIds,
     });
+    if (c.session !== this.sessionEpoch) throw new StoatError(401, 'SESSION_CHANGED');
+    ++this.managementEpoch;
+    try {
+      return await this.refreshAfterWrite(spaceId, c.session);
+    } finally {
+      this.managementChanged(spaceId);
+    }
+  }
+  /** What this account may do in a community, without listing its members. */
+  async communityCapabilities(spaceId: string): Promise<SocialCommunityManagement['capabilities']> {
+    checked(spaceId);
+    const context = await this.managementContext(spaceId);
+    return Object.fromEntries(
+      Object.entries(managementBits).map(([key, bit]) => [key, !!(context.bits & bit)]),
+    ) as SocialCommunityManagement['capabilities'];
+  }
+  /** Bans someone below this account's rank; they leave the community and cannot rejoin. */
+  async banCommunityMember(change: SocialMemberRemoval): Promise<SocialCommunityManagement> {
+    const { spaceId, userId } = change;
+    checked(spaceId);
+    checked(userId);
+    const c = await this.managementContext(spaceId);
+    if (!(c.bits & managementBits.banMembers) || userId === c.self._id || userId === c.server.owner)
+      throw new StoatError(403, 'BAN_MEMBER_DENIED');
+    const target = checkedMember(await this.getMember(spaceId, userId), spaceId, userId);
+    if (memberRank(target, c.roles) <= c.rank) throw new StoatError(403, 'NotElevated');
+    this.assertManagementContext(c.epoch, c.session);
+    await this.request(`/servers/${checked(spaceId)}/bans/${checked(userId)}`, 'PUT', {});
     if (c.session !== this.sessionEpoch) throw new StoatError(401, 'SESSION_CHANGED');
     ++this.managementEpoch;
     try {

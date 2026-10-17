@@ -340,6 +340,20 @@ function DirectMessageScope({
           <span>{statusLabel(c.presence[peer.id])}</span>
           <div>
             <IconButton
+              disabled={!!callReason || relationship === 'blocked' || dm.busy}
+              label={callReason ?? 'Sesli arama başlat'}
+              onClick={() => void call('audio')}
+            >
+              <Phone size={19} />
+            </IconButton>
+            <IconButton
+              disabled={!!callReason || relationship === 'blocked' || dm.busy}
+              label={callReason ?? 'Görüntülü arama başlat'}
+              onClick={() => void call('video')}
+            >
+              <Video size={19} />
+            </IconButton>
+            <IconButton
               label="Bildirim ayarları"
               onClick={() => navigate(preserveReferenceFixtureRoute('/settings?tab=desktop'))}
             >
@@ -366,20 +380,6 @@ function DirectMessageScope({
             <strong>{nameOf(peer)} ile özel konuşman</strong>
             <small>Bu konuşmayı yalnızca siz görebilirsiniz.</small>
           </div>
-          <IconButton
-            disabled={!!callReason || relationship === 'blocked' || dm.busy}
-            label={callReason ?? 'Sesli arama'}
-            onClick={() => void call('audio')}
-          >
-            <Phone size={19} />
-          </IconButton>
-          <IconButton
-            disabled={!!callReason || relationship === 'blocked' || dm.busy}
-            label={callReason ?? 'Görüntülü arama'}
-            onClick={() => void call('video')}
-          >
-            <Video size={19} />
-          </IconButton>
         </div>
         <CommunityChat
           notify={notify}

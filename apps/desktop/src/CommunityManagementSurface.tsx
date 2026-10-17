@@ -7,6 +7,7 @@ import {
   Check,
   Link2,
   LockKeyhole,
+  Ban,
   LogOut,
   MoreHorizontal,
   Plus,
@@ -34,6 +35,7 @@ export interface CommunityManagementBridge {
   changeCommunityRole(change: SocialCommunityRoleChange): Promise<SocialCommunityRoleResult>;
   setMemberRoles(change: SocialMemberRoleChange): Promise<SocialCommunityManagement>;
   removeCommunityMember(change: SocialMemberRemoval): Promise<SocialCommunityManagement>;
+  banCommunityMember?(change: SocialMemberRemoval): Promise<SocialCommunityManagement>;
   /** Root maps content-free gateway/session invalidation; never passes secrets or raw invitations. */
   subscribeInvalidation?(listener: () => void): () => void;
 }
@@ -93,7 +95,10 @@ function ManagementScope({
     [error, setError] = useState('');
   const [tab, setTab] = useState<'members' | 'roles' | 'invites'>('members'),
     [query, setQuery] = useState('');
-  const [dialog, setDialog] = useState<{ kind: 'role' | 'remove'; userId: string } | null>(null),
+  const [dialog, setDialog] = useState<{
+      kind: 'role' | 'remove' | 'ban';
+      userId: string;
+    } | null>(null),
     [menu, setMenu] = useState<string | null>(null);
   const [roleIds, setRoleIds] = useState<string[]>([]);
   const generation = useRef(0),
@@ -247,6 +252,11 @@ function ManagementScope({
   const canAssign = !!target?.canAssignRoles && !!snapshot?.capabilities.assignRoles;
   const canRemove =
     !!target?.canRemove && !!snapshot?.capabilities.kickMembers && target.user.id !== userId;
+  const canBan =
+    !!target?.canBan &&
+    !!snapshot?.capabilities.banMembers &&
+    target.user.id !== userId &&
+    !!bridgeRef.current?.banCommunityMember;
   const roleNames = (member: SocialManagedMember) =>
     member.roles.map((id) => snapshot?.roles.find((role) => role.id === id)?.name ?? 'Tanımlı rol');
   const space = community.spaces.find((item) => item.id === spaceId),
@@ -260,7 +270,7 @@ function ManagementScope({
   };
   const changed =
     !!target && JSON.stringify([...target.roles].sort()) !== JSON.stringify([...roleIds].sort());
-  async function mutate(kind: 'role' | 'remove') {
+  async function mutate(kind: 'role' | 'remove' | 'ban') {
     if (
       fixtureMode ||
       mutationReason ||
@@ -271,7 +281,7 @@ function ManagementScope({
       !currentScope()
     )
       return;
-    if (kind === 'role' ? !canAssign || !changed : !canRemove) return;
+    if (kind === 'role' ? !canAssign || !changed : kind === 'ban' ? !canBan : !canRemove) return;
     const current = bridgeRef.current;
     if (!current) {
       setError('Masaüstü bağlantısı gerekli.');
@@ -297,7 +307,9 @@ function ManagementScope({
       const value =
         kind === 'role'
           ? await current.setMemberRoles({ spaceId, userId: target.user.id, roleIds: [...roleIds] })
-          : await current.removeCommunityMember({ spaceId, userId: target.user.id });
+          : kind === 'ban'
+            ? await current.banCommunityMember!({ spaceId, userId: target.user.id })
+            : await current.removeCommunityMember({ spaceId, userId: target.user.id });
       if (accept(value, epoch)) {
         setDialog(null);
         setRoleIds([]);
@@ -547,7 +559,12 @@ function ManagementScope({
                     remove =
                       member.canRemove &&
                       snapshot.capabilities.kickMembers &&
-                      member.user.id !== userId;
+                      member.user.id !== userId,
+                    ban =
+                      !!member.canBan &&
+                      !!snapshot.capabilities.banMembers &&
+                      member.user.id !== userId &&
+                      !!bridge?.banCommunityMember;
                   return (
                     <tr key={member.user.id}>
                       <td>
@@ -637,6 +654,20 @@ function ManagementScope({
                                   <LogOut size={14} />
                                   Topluluktan çıkar
                                 </button>
+                                {ban && (
+                                  <button
+                                    className="danger"
+                                    disabled={busy}
+                                    onClick={() => {
+                                      setMenu(null);
+                                      setError('');
+                                      setDialog({ kind: 'ban', userId: member.user.id });
+                                    }}
+                                  >
+                                    <Ban size={14} />
+                                    Yasakla
+                                  </button>
+                                )}
                               </div>
                             )}
                           </>
@@ -693,7 +724,9 @@ function ManagementScope({
           title={
             dialog.kind === 'role'
               ? `${target.user.displayName} adlı üyenin rolünü değiştir`
-              : `${target.user.displayName} adlı üyeyi çıkar?`
+              : dialog.kind === 'ban'
+                ? `${target.user.displayName} adlı üyeyi yasakla?`
+                : `${target.user.displayName} adlı üyeyi çıkar?`
           }
           className="rcm-modal"
           onClose={() => {
@@ -771,6 +804,7 @@ function ManagementScope({
             ) : (
               <p className="rcm-removal">
                 {target.user.displayName}, {name} topluluğundaki kanal ve odalara erişemeyecek.
+                {dialog.kind === 'ban' && ' Yasak kaldırılana kadar davetle de geri dönemez.'}
               </p>
             )}
             {mutationReason && <p className="rcm-note">{mutationReason}</p>}
@@ -792,21 +826,33 @@ function ManagementScope({
               Vazgeç
             </button>
             <button
-              className={`button ${dialog.kind === 'remove' ? 'danger' : 'primary'}`}
+              className={`button ${dialog.kind === 'role' ? 'primary' : 'danger'}`}
               disabled={
                 busy ||
                 !!mutationReason ||
-                (dialog.kind === 'role' ? !canAssign || !changed : !canRemove)
+                (dialog.kind === 'role'
+                  ? !canAssign || !changed
+                  : dialog.kind === 'ban'
+                    ? !canBan
+                    : !canRemove)
               }
               title={mutationReason || undefined}
               onClick={() => void mutate(dialog.kind)}
             >
-              {dialog.kind === 'role' ? <Check size={16} /> : <LogOut size={16} />}{' '}
+              {dialog.kind === 'role' ? (
+                <Check size={16} />
+              ) : dialog.kind === 'ban' ? (
+                <Ban size={16} />
+              ) : (
+                <LogOut size={16} />
+              )}{' '}
               {working
                 ? 'Bekleniyor…'
                 : dialog.kind === 'role'
                   ? 'Rolü değiştir'
-                  : 'Topluluktan çıkar'}
+                  : dialog.kind === 'ban'
+                    ? 'Yasakla'
+                    : 'Topluluktan çıkar'}
             </button>
           </footer>
         </Modal>

@@ -109,3 +109,36 @@ it('reuses a shown photo when the channel is reopened until channel access chang
   await screen.findByRole('button', { name: 'Fotoğrafı büyüt' });
   expect(image).toHaveBeenCalledTimes(2);
 });
+it('plays a shared video in place once someone presses play', async () => {
+  const video = vi.fn(async () => ({
+    mime: 'video/quicktime',
+    bytes: new Uint8Array([0, 0, 0, 24]),
+  }));
+  window.rooms = { social: { attachmentVideo: video } } as unknown as DesktopBridge;
+  const created: Blob[] = [];
+  vi.stubGlobal(
+    'URL',
+    Object.assign(URL, {
+      createObjectURL: (blob: Blob) => (created.push(blob), 'blob:clip'),
+      revokeObjectURL: vi.fn(),
+    }),
+  );
+  const view = render(
+    <ChatAttachment
+      file={{ id: 'clip', name: 'Ekran Kaydı.mov', size: 2_400_000, mime: 'video/quicktime' }}
+      channelId="room"
+      messageId="video-message"
+    />,
+  );
+  // Opening a channel downloads no video until someone asks for it.
+  expect(video).not.toHaveBeenCalled();
+  expect(screen.getByText('Video · 2.4 MB')).toBeTruthy();
+  expect(screen.queryByText('Ekran Kaydı.mov')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Videoyu oynat' }));
+  await screen.findByLabelText('Paylaşılan video');
+  expect(video).toHaveBeenCalledWith('room', 'video-message', 'clip');
+  expect(view.container.querySelector('video')?.getAttribute('src')).toBe('blob:clip');
+  expect(created[0]!.type).toBe('video/mp4');
+  expect(screen.getByRole('button', { name: /İndir/ })).toBeTruthy();
+  vi.unstubAllGlobals();
+});

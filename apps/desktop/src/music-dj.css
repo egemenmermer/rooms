@@ -540,3 +540,53 @@
   color: #d1c8ff;
   font-weight: 700;
 }
+.dj-volume button.dj-eq-on {
+  color: var(--accent, #9384ff);
+}
+/* Personal equalizer: three compact rows under the volume. */
+.dj-equalizer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: -6px 3px 14px;
+  padding: 10px 12px;
+  border: 1px solid #ffffff10;
+  border-radius: 10px;
+  background: #ffffff06;
+}
+.dj-equalizer label {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.dj-equalizer input {
+  min-width: 0;
+  accent-color: var(--accent, #9384ff);
+}
+.dj-equalizer small {
+  text-align: right;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.dj-equalizer p {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.dj-equalizer p button {
+  padding: 2px 6px;
+  border: 0;
+  background: transparent;
+  color: var(--accent, #9384ff);
+  font-size: 11px;
+}
+.dj-equalizer p button:disabled {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}

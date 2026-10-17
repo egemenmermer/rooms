@@ -3,7 +3,7 @@ import { useDmCall } from './dm-call';
 import { uiError } from './i18n';
 import { create } from 'zustand';
 import { useSyncExternalStore } from 'react';
-import { type NoiseSuppressionMode, type MediaSnapshot } from '@rooms/media';
+import { type NoiseSuppressionMode, type MediaSnapshot, type MusicEqualizer } from '@rooms/media';
 import { mediaProvider, mediaBridge } from './runtime-sources';
 import { useRooms } from './store';
 export const useVoiceContext = create<{
@@ -56,6 +56,15 @@ const updateListenerScope = () => {
   );
 };
 updateListenerScope();
+// A moderator moved this person: join the target through the normal grant check.
+mediaProvider().onMove?.((channelId) => {
+  if (useVoiceContext.getState().channelId === channelId) return;
+  const name = useCommunity.getState().channels.find((c) => c.id === channelId)?.name ?? 'Oda';
+  window.dispatchEvent(
+    new CustomEvent('rooms:toast', { detail: `Bir yönetici seni ${name} odasına taşıdı.` }),
+  );
+  void joinVoice(channelId, name).catch(() => {});
+});
 useCommunity.subscribe((state, previous) => {
   if (state.user?.id !== previous.user?.id || state.serverUrl !== previous.serverUrl)
     updateListenerScope();
@@ -247,6 +256,14 @@ export function setScreenVolume(id: string, volume: number) {
   provider.setScreenVolume(id, volume);
 }
 export const startRoomAudio = () => run(() => mediaProvider().startAudio());
+/** This listener's own DJ bass/mid/treble; null where the media provider cannot equalize. */
+export const musicEqualizer = (): MusicEqualizer | null =>
+  mediaProvider().musicEqualizer?.() ?? null;
+export function setMusicEqualizer(value: MusicEqualizer) {
+  const provider = mediaProvider();
+  if (!provider.setMusicEqualizer) throw Error('Ekolayzır bu sürümde kullanılamıyor.');
+  provider.setMusicEqualizer(value);
+}
 /** Lossy pointer positions shared with everyone in the voice room; silently skipped offline. */
 export const publishCursor = (payload: string) =>
   void mediaProvider()

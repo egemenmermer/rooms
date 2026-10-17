@@ -50,6 +50,48 @@ export function readWindowState(file: string, workAreaFor: (bounds: Rectangle) =
   }
 }
 
+// Windows that left fullscreen only to be hidden; they still count as fullscreen and return to it.
+const hiddenFromFullScreen = new WeakSet<BrowserWindow>();
+// Cancels a hide that is still waiting for the window to leave fullscreen.
+const pendingHide = new WeakMap<BrowserWindow, () => void>();
+
+/**
+ * Hides a window that is closed but kept running. macOS leaves an empty black Space behind a
+ * hidden fullscreen window, so the window leaves fullscreen first and hides once it has.
+ */
+export function hideWindow(window: BrowserWindow) {
+  if (pendingHide.has(window)) return;
+  if (process.platform !== 'darwin' || !window.isFullScreen()) {
+    window.hide();
+    return;
+  }
+  hiddenFromFullScreen.add(window);
+  const stop = () => {
+    clearTimeout(fallback);
+    window.removeListener('leave-full-screen', hide);
+    pendingHide.delete(window);
+  };
+  const hide = () => {
+    stop();
+    if (!window.isDestroyed()) window.hide();
+  };
+  // The transition normally takes under a second; a stuck animation must not keep the window up.
+  const fallback = setTimeout(hide, 1500);
+  window.once('leave-full-screen', hide);
+  pendingHide.set(window, stop);
+  window.setFullScreen(false);
+}
+
+/**
+ * Brings a kept-running window back, into fullscreen again if it was hidden from fullscreen.
+ * Electron's own 'show' event also fires on macOS occlusion changes, so callers use this instead.
+ */
+export function showWindow(window: BrowserWindow) {
+  pendingHide.get(window)?.();
+  window.show();
+  if (hiddenFromFullScreen.delete(window)) window.setFullScreen(true);
+}
+
 /** Shows the window the way it was closed: maximized or fullscreen on the same display. */
 export function showRestored(window: BrowserWindow, state: WindowState) {
   if (state.maximized && !state.fullscreen) window.maximize();
@@ -73,7 +115,7 @@ export function trackWindowState(window: BrowserWindow, file: string) {
       x,
       y,
       maximized: window.isMaximized(),
-      fullscreen: window.isFullScreen(),
+      fullscreen: window.isFullScreen() || hiddenFromFullScreen.has(window),
     };
     const temporary = file + '.tmp';
     try {

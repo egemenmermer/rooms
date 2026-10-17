@@ -41,6 +41,7 @@ function setup() {
     hide: vi.fn(),
     close: vi.fn(),
     isDestroyed: () => false,
+    isFullScreen: () => false,
   });
   service.attach(window as unknown as BrowserWindow);
   const close = () => {

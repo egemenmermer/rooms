@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { SOCIAL_ID_PATTERN } from '@rooms/social';
 import type { ChannelNotificationScope, ChannelNotificationInput } from '@rooms/contracts';
+import { showWindow } from './window-state';
 /** Opt-in, content-free notifications; never disclose messages or account/provider details. */
 export function setupNotifications(
   getWindow: () => BrowserWindow | null,
@@ -153,8 +154,9 @@ export function setupNotifications(
       });
       notification.on('click', () => {
         const current = getWindow();
-        current?.show();
-        current?.focus();
+        if (!current) return;
+        showWindow(current);
+        current.focus();
       });
       notification.show();
     },

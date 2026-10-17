@@ -695,3 +695,89 @@
   background: #ffffff0b;
   color: #ddd8f1;
 }
+
+/* A downloaded or found release waits beside Settings until someone installs it. */
+.minimal-self-row .update-notice {
+  position: relative;
+  color: var(--color-action-focus);
+  border-radius: 50%;
+  animation: update-notice-glow 2.4s ease-in-out infinite;
+}
+.minimal-self-row .update-notice:hover {
+  color: #fff;
+  background: #8b83ff2e;
+}
+@keyframes update-notice-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 #8b83ff00;
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px #8b83ff33,
+      0 0 14px 2px #8b83ff59;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .minimal-self-row .update-notice {
+    animation: none;
+    box-shadow: 0 0 0 2px #8b83ff4d;
+  }
+}
+
+/* Moving people between voice rooms: the room under the pointer shows where they will land. */
+.voice-drop-target {
+  border-radius: 8px;
+  background: #8b83ff1f;
+  box-shadow: inset 0 0 0 1px #8b83ff73;
+}
+.minimal-occupant[draggable='true'] {
+  cursor: grab;
+}
+.voice-member-menu-label {
+  display: block;
+  padding: 6px 12px 2px;
+  color: #8f8a9c;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.voice-member-menu-error {
+  margin: 6px 8px 2px;
+  color: #f18b94;
+  font-size: 12px;
+}
+.voice-moderation-confirm .button-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+.voice-moderation-confirm .button.danger {
+  background: #41282e;
+  color: #f18b94;
+  border: 1px solid #714049;
+}
+
+/* Header actions are icons, like the rest of the app's chrome. */
+.minimal-room-ui .toolbar-actions {
+  gap: 4px;
+}
+.toolbar-actions .toolbar-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #b4afc2;
+}
+.toolbar-actions .toolbar-icon:hover:not(:disabled),
+.toolbar-actions .toolbar-icon:focus-visible {
+  background: #ffffff0f;
+  color: #f2f0f8;
+}
+.toolbar-actions .toolbar-icon:disabled {
+  opacity: 0.45;
+}

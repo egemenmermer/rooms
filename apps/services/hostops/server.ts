@@ -54,6 +54,13 @@ export function createHostOpsServer(config: {
     wsServer = new WebSocketServer({ noServer: true, maxPayload: 8192 });
   const failure = (message: string, statusCode = 403) =>
     Object.assign(Error(message), { statusCode });
+  // Sign-in and membership refusals carry a 4xx status or an error code; anything else broke.
+  const refused = (error: unknown) => {
+    const e = error as { status?: unknown; statusCode?: unknown; message?: unknown };
+    const status = e.statusCode ?? e.status;
+    if (typeof status === 'number') return status < 500;
+    return typeof e.message === 'string' && /^[A-Z_]{1,70}$/.test(e.message);
+  };
   const tokenOf = (header: unknown) => {
     if (typeof header !== 'string' || header.length > 4096) throw failure('SIGN_IN_REQUIRED', 401);
     return header.replace(/^Bearer /, '');
@@ -135,8 +142,10 @@ export function createHostOpsServer(config: {
       try {
         const p = await authorize(req.headers.authorization, h);
         if (p.permissions.length) hosts.push(project(h, p));
-      } catch {
-        /* No inaccessible host metadata. */
+      } catch (error) {
+        // No inaccessible host metadata; a check that could not run is an outage, not a refusal,
+        // so the owner is never told they lack permission while the membership store is down.
+        if (!refused(error)) throw failure('HOSTOPS_UNAVAILABLE', 503);
       }
     }
     return { hosts };

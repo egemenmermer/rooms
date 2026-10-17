@@ -68,6 +68,18 @@ const permissions: {
     group: 'Düzeni sağlama',
   },
   {
+    key: 'banMembers',
+    title: 'Üyeleri yasakla',
+    detail: 'Kendisinden alt roldeki üyeleri çıkarıp geri dönmelerini engelleyebilir.',
+    group: 'Düzeni sağlama',
+  },
+  {
+    key: 'moveMembers',
+    title: 'Odalar arasında taşı',
+    detail: 'Ses odasındaki birini başka odaya taşıyabilir ya da sesten çıkarabilir.',
+    group: 'Düzeni sağlama',
+  },
+  {
     key: 'manageChannels',
     title: 'Sohbet ve odaları yönet',
     detail: 'Kanal oluşturabilir, düzenleyebilir ve silebilir.',
@@ -110,7 +122,7 @@ const presets = [
     name: 'Moderatör',
     color: colors[3],
     description: 'Mesaj ve üye düzeni',
-    allow: ['manageMessages', 'kickMembers'],
+    allow: ['manageMessages', 'kickMembers', 'moveMembers'],
   },
 ] satisfies {
   name: string;

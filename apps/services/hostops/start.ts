@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { StoatClient } from '@rooms/stoat';
 import { RoomServiceClient, TrackType } from 'livekit-server-sdk';
 import { StoatAuthorizationReader } from '../access/stoat-authorization';
-import { visibleHostRooms } from './authorization';
+import { communityOwnership, visibleHostRooms } from './authorization';
 import { createHostOpsServer } from './server';
 import { HostOpsStore } from './store';
 import { LinuxCollector, emptySupplement, type HostSupplement } from './collector';
@@ -166,11 +166,7 @@ async function start() {
         apiRoot: !new URL(config.stoatUrl).pathname.startsWith('/api'),
       });
       const user = await client.getCurrentUser();
-      const space = reader
-        ? (await reader.community(host.communityId, user.id)).server
-        : await client.getServer(host.communityId);
-      const owner = space.owner === user.id;
-      if (!reader && !owner) await client.getMember(host.communityId, user.id);
+      const owner = await communityOwnership(reader, client, host.communityId, user.id);
       if (identities.size >= 500) identities.clear();
       const value = { userId: user.id, owner };
       identities.set(token, { value, until: Date.now() + 1000 });

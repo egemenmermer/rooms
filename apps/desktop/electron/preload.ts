@@ -85,6 +85,15 @@ const bridge: DesktopBridge = {
     setMemberRoles: (change) => ipcRenderer.invoke('rooms:social-set-member-roles', change),
     removeCommunityMember: (change) =>
       ipcRenderer.invoke('rooms:social-remove-community-member', change),
+    banCommunityMember: (change) => ipcRenderer.invoke('rooms:social-ban-community-member', change),
+    communityCapabilities: (spaceId) =>
+      ipcRenderer.invoke('rooms:social-community-capabilities', spaceId),
+    spaceProfile: (spaceId) => ipcRenderer.invoke('rooms:social-space-profile', spaceId),
+    updateSpaceProfile: (change) => ipcRenderer.invoke('rooms:social-update-space-profile', change),
+    chooseSpaceImage: (spaceId, kind) =>
+      ipcRenderer.invoke('rooms:social-choose-space-image', spaceId, kind),
+    removeSpaceImage: (spaceId, kind) =>
+      ipcRenderer.invoke('rooms:social-remove-space-image', spaceId, kind),
     channels: (id) => ipcRenderer.invoke('rooms:social-channels', id),
     cachedMessages: (id) => ipcRenderer.invoke('rooms:social-cached-messages', id),
     messages: (id, before) => ipcRenderer.invoke('rooms:social-messages', id, before),
@@ -97,6 +106,8 @@ const bridge: DesktopBridge = {
     acceptInvite: (code) => ipcRenderer.invoke('rooms:social-accept-invite', code),
     attachmentImage: (channel, message, file) =>
       ipcRenderer.invoke('rooms:social-attachment-image', channel, message, file),
+    attachmentVideo: (channel, message, file) =>
+      ipcRenderer.invoke('rooms:social-attachment-video', channel, message, file),
     downloadAttachment: (channel, message, file) =>
       ipcRenderer.invoke('rooms:social-download-attachment', channel, message, file),
     avatar: (userId) => ipcRenderer.invoke('rooms:social-avatar', userId),
@@ -263,6 +274,8 @@ const bridge: DesktopBridge = {
   media: {
     directory: (channelIds) => ipcRenderer.invoke('rooms:media-directory', channelIds),
     deafen: (id, deafened) => ipcRenderer.invoke('rooms:media-deafen', id, deafened),
+    moderate: (input) => ipcRenderer.invoke('rooms:media-moderate', input),
+    gifs: (query, page) => ipcRenderer.invoke('rooms:gif-search', query, page),
     grant: (id) => ipcRenderer.invoke('rooms:media-grant', id),
     presenter: (id, action) => ipcRenderer.invoke('rooms:media-presenter', id, action),
     screenState: (id) => ipcRenderer.invoke('rooms:media-screen-state', id),

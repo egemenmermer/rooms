@@ -1,5 +1,5 @@
 import { SoundboardButton } from './Soundboard';
-import { useState } from 'react';
+import { useState, type DragEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   HeadphoneOff,
@@ -42,6 +42,14 @@ import { ChannelTools } from './ChannelTools';
 import { UserProfileDialog } from './SocialSurfaces';
 import type { SocialUser } from '@rooms/social';
 import { uiError } from './i18n';
+import { UpdateNotice } from './UpdateNotice';
+import {
+  VOICE_MEMBER_DRAG,
+  VoiceMemberMenu,
+  moveVoiceMember,
+  useModerationRights,
+  type VoiceMemberTarget,
+} from './VoiceModeration';
 /** A running activity in the joined room, one click from the room list. */
 function RoomActivityRow({ roomId, onOpen }: { roomId: string; onOpen(path: string): void }) {
   const activity = useActivityRoom(roomId),
@@ -72,14 +80,14 @@ export function MinimalSidebar({
   notify,
   invite,
   createSpace,
-  editSpace,
   search,
   help,
 }: {
   notify(message: string): void;
   invite(): void;
   createSpace(): void;
-  editSpace(): void;
+  /** Kept for callers; server settings now open the settings page. */
+  editSpace?(): void;
   search(): void;
   help(): void;
 }) {
@@ -89,6 +97,20 @@ export function MinimalSidebar({
     location = useLocation();
 
   const [person, setPerson] = useState<SocialUser | null>(null);
+  const [memberMenu, setMemberMenu] = useState<
+      (VoiceMemberTarget & { x: number; y: number }) | null
+    >(null),
+    [dropRoom, setDropRoom] = useState<string | null>(null);
+  const rights = useModerationRights(c.activeSpaceId);
+  const moderates = rights.moveMembers || rights.kickMembers || rights.banMembers;
+  const dragged = (event: DragEvent) => {
+    try {
+      const value = JSON.parse(event.dataTransfer.getData(VOICE_MEMBER_DRAG)) as VoiceMemberTarget;
+      return typeof value?.id === 'string' && typeof value.from === 'string' ? value : null;
+    } catch {
+      return null;
+    }
+  };
   const space = c.spaces.find((s) => s.id === c.activeSpaceId),
     voices = c.channels.filter((ch) => ch.type === 2);
   const directory = useVoiceDirectory(voices.map((ch) => ch.id));
@@ -118,16 +140,8 @@ export function MinimalSidebar({
             <hr />
             <button onClick={createSpace}>Topluluk oluştur</button>
             <button onClick={invite}>Davet oluştur</button>
-            <button
-              disabled={space?.ownerId !== c.user?.id}
-              title={
-                space?.ownerId !== c.user?.id
-                  ? 'Yalnızca topluluk sahibi düzenleyebilir.'
-                  : undefined
-              }
-              onClick={editSpace}
-            >
-              Topluluğu düzenle
+            <button disabled={!space} onClick={() => navigate('/settings?tab=server-profile')}>
+              Sunucu ayarları
             </button>
             <button onClick={() => navigate('/friends')}>Arkadaşlar</button>
             <button onClick={() => navigate('/notifications')}>Bildirimler</button>
@@ -195,7 +209,30 @@ export function MinimalSidebar({
                 ? r.participants
                 : (directory.rooms.find((room) => room.channelId === ch.id)?.participants ?? []);
             return (
-              <div key={ch.id}>
+              <div
+                key={ch.id}
+                className={dropRoom === ch.id ? 'voice-drop-target' : undefined}
+                onDragOver={(event) => {
+                  if (!rights.moveMembers || !event.dataTransfer.types.includes(VOICE_MEMBER_DRAG))
+                    return;
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = 'move';
+                  setDropRoom(ch.id);
+                }}
+                onDragLeave={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+                    setDropRoom((current) => (current === ch.id ? null : current));
+                }}
+                onDrop={(event) => {
+                  setDropRoom(null);
+                  const target = dragged(event);
+                  if (!target || target.from === ch.id) return;
+                  event.preventDefault();
+                  void moveVoiceMember(target, ch.id)
+                    .then(() => notify(`${target.name}, ${ch.name} odasına taşındı.`))
+                    .catch((e) => notify(uiError(e)));
+                }}
+              >
                 <button
                   data-channel-id={ch.id}
                   className={`minimal-nav ${(r.channelId === ch.id || c.activeChannelId === ch.id) && location.pathname === '/voice' ? 'selected' : ''}`}
@@ -217,6 +254,27 @@ export function MinimalSidebar({
                       onClick={() =>
                         setPerson({ id: p.id, username: p.name, displayName: p.name, avatar: null })
                       }
+                      draggable={rights.moveMembers && p.id !== c.user?.id}
+                      onDragStart={(event) => {
+                        event.dataTransfer.effectAllowed = 'move';
+                        event.dataTransfer.setData(
+                          VOICE_MEMBER_DRAG,
+                          JSON.stringify({ id: p.id, name: p.name, from: ch.id }),
+                        );
+                      }}
+                      onDragEnd={() => setDropRoom(null)}
+                      onContextMenu={(event) => {
+                        if (!moderates || p.id === c.user?.id) return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setMemberMenu({
+                          id: p.id,
+                          name: p.name,
+                          from: ch.id,
+                          x: event.clientX,
+                          y: event.clientY,
+                        });
+                      }}
                     >
                       <VoiceAvatar id={p.id} name={p.name} />
                       <span>{p.name}</span>
@@ -356,6 +414,7 @@ export function MinimalSidebar({
               {c.user && <VoiceAvatar id={c.user.id} name={c.user.displayName} />}
               <span>{c.user?.displayName ?? 'Profil'}</span>
             </button>
+            <UpdateNotice />
             <IconButton label="Ayarlar" onClick={() => navigate('/settings')}>
               <Settings size={17} />
             </IconButton>
@@ -386,6 +445,25 @@ export function MinimalSidebar({
         </div>
       </aside>
       <SoundboardButton showTrigger={false} />
+      {memberMenu && (
+        <VoiceMemberMenu
+          target={memberMenu}
+          x={memberMenu.x}
+          y={memberMenu.y}
+          rooms={voices}
+          rights={rights}
+          notify={notify}
+          onProfile={() =>
+            setPerson({
+              id: memberMenu.id,
+              username: memberMenu.name,
+              displayName: memberMenu.name,
+              avatar: null,
+            })
+          }
+          onClose={() => setMemberMenu(null)}
+        />
+      )}
       {person && (
         <UserProfileDialog
           key={`${c.serverUrl}:${c.user?.id}:${person.id}`}

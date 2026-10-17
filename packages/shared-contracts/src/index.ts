@@ -168,6 +168,26 @@ export interface DesktopBridge {
     }>;
     /** Shares this user's deafen state with the room; false when the server lacks support. */
     deafen?(channelId: string, deafened: boolean): Promise<boolean>;
+    /** GIF search through the community server (KLIPY); media comes from static.klipy.com. */
+    gifs?(
+      query: string,
+      page: number,
+    ): Promise<{
+      items: {
+        id: string;
+        title: string;
+        preview: { url: string; width: number; height: number };
+        gif: { url: string; width: number; height: number };
+      }[];
+      more: boolean;
+    }>;
+    /** Moves someone to another voice room, or disconnects them; needs Move Members. */
+    moderate?(input: {
+      channelId: string;
+      userId: string;
+      action: 'disconnect' | 'move';
+      targetChannelId?: string;
+    }): Promise<void>;
     grant(
       channelId: string,
     ): Promise<{ serverUrl: string; roomName: string; token: string; expiresAt: string }>;
@@ -291,6 +311,12 @@ export interface SocialBridge {
   inspectInvite(serverUrl: string, code: string): Promise<import('@rooms/social').SocialInvite>;
   acceptInvite(code: string): Promise<import('@rooms/social').SocialInvite>;
   attachmentImage(channelId: string, messageId: string, fileId: string): Promise<string | null>;
+  /** Video bytes for inline playback (MP4, WebM, QuickTime), or null for other files. */
+  attachmentVideo(
+    channelId: string,
+    messageId: string,
+    fileId: string,
+  ): Promise<{ mime: string; bytes: Uint8Array } | null>;
   downloadAttachment(channelId: string, messageId: string, fileId: string): Promise<boolean>;
   avatar(userId: string): Promise<string | null>;
   chooseAvatar(): Promise<import('@rooms/social').SocialUser | null>;
@@ -308,6 +334,30 @@ export interface SocialBridge {
   removeCommunityMember(
     change: import('@rooms/social').SocialMemberRemoval,
   ): Promise<import('@rooms/social').SocialCommunityManagement>;
+  /** Bans a member below this account's rank; they cannot rejoin until unbanned. */
+  banCommunityMember?(
+    change: import('@rooms/social').SocialMemberRemoval,
+  ): Promise<import('@rooms/social').SocialCommunityManagement>;
+  /** The community's name, description, icon and banner for its settings page. */
+  spaceProfile?(spaceId: string): Promise<import('@rooms/social').SocialSpaceProfile>;
+  updateSpaceProfile?(change: {
+    spaceId: string;
+    name: string;
+    description: string;
+  }): Promise<import('@rooms/social').SocialSpaceProfile>;
+  /** Opens a file picker and uploads the chosen icon or banner; null when cancelled. */
+  chooseSpaceImage?(
+    spaceId: string,
+    kind: 'icon' | 'banner',
+  ): Promise<import('@rooms/social').SocialSpaceProfile | null>;
+  removeSpaceImage?(
+    spaceId: string,
+    kind: 'icon' | 'banner',
+  ): Promise<import('@rooms/social').SocialSpaceProfile>;
+  /** This account's moderation rights in a community, without listing members. */
+  communityCapabilities?(
+    spaceId: string,
+  ): Promise<import('@rooms/social').SocialCommunityManagement['capabilities']>;
   members(spaceId: string): Promise<import('@rooms/social').SocialMember[]>;
   friends(): Promise<import('@rooms/social').SocialFriend[]>;
   addFriend(username: string): Promise<void>;

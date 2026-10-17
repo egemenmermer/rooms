@@ -9,7 +9,7 @@ const message = {
   attachments: [{ _id: 'file', filename: 'photo.png', size: 12, content_type: 'image/png' }],
 };
 afterEach(() => vi.restoreAllMocks());
-function network(revoke = false, mime = 'image/png') {
+function network(revoke = false, mime = 'image/png', attachments = message.attachments) {
   let reads = 0;
   return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, options) => {
     const url = String(input);
@@ -23,8 +23,10 @@ function network(revoke = false, mime = 'image/png') {
       reads++;
       return reads === 2 && revoke
         ? new Response('{}', { status: 403 })
-        : new Response(JSON.stringify(message));
+        : new Response(JSON.stringify({ ...message, attachments }));
     }
+    if (url.includes('/autumn/attachments/clip/'))
+      return new Response(new Uint8Array([0, 0, 0, 24]));
     if (url.includes('/autumn/attachments/file/photo.png')) {
       expect(options?.headers).toBeUndefined();
       return new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0]), {
@@ -96,4 +98,19 @@ it('serves photos of already loaded messages without re-reading each message whi
   internal.invalidChannels.delete('channel');
   await internal.processPacket({ type: 'Ready', users: [], servers: [], channels: [] });
   expect(internal.messages.has(message._id)).toBe(false);
+});
+it('reads a shared video for inline playback with the same message access check', async () => {
+  const clip = { _id: 'clip', filename: 'ekran.mov', size: 4, content_type: 'video/quicktime' };
+  const fetcher = network(false, 'image/png', [clip]);
+  const client = new StoatClient('https://rooms.example/api', 'fixture-session');
+  const video = await client.attachmentVideo('channel', message._id, 'clip');
+  expect(video?.mime).toBe('video/quicktime');
+  expect([...video!.bytes]).toEqual([0, 0, 0, 24]);
+  expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/messages/'))).toHaveLength(2);
+  expect(await client.attachmentVideo('channel', message._id, 'missing')).toBeNull();
+});
+it('reports a photo as no video', async () => {
+  network();
+  const client = new StoatClient('https://rooms.example/api', 'fixture-session');
+  expect(await client.attachmentVideo('channel', message._id, 'file')).toBeNull();
 });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, LoaderCircle, Play } from 'lucide-react';
 import { Modal } from '@rooms/design';
 import type { SocialAttachment } from '@rooms/social';
 import { useCommunity } from './community';
@@ -32,6 +32,103 @@ if (typeof window !== 'undefined')
     for (const key of [...imageCache.keys()])
       if (ids.includes(key.split('|')[2]!)) forgetImage(key);
   });
+/** Video types the chat plays in place; QuickTime covers Mac recordings and iPhone videos. */
+const inlineVideo = ['video/mp4', 'video/webm', 'video/quicktime'];
+
+async function saveAttachment(channelId: string, messageId: string, fileId: string) {
+  if (!window.rooms) throw Error('Dosya indirmek için masaüstü uygulaması gerekiyor.');
+  await window.rooms.social.downloadAttachment(channelId, messageId, fileId);
+}
+
+/** Plays a shared video in the conversation; bytes load only when someone presses play. */
+function ChatVideo({
+  file,
+  channelId,
+  messageId,
+}: {
+  file: SocialAttachment;
+  channelId: string;
+  messageId: string;
+}) {
+  const [state, setState] = useState<'idle' | 'loading' | 'failed'>('idle'),
+    [source, setSource] = useState<string | null>(null),
+    [saveError, setSaveError] = useState('');
+  useEffect(
+    () => () => {
+      if (source) URL.revokeObjectURL(source);
+    },
+    [source],
+  );
+  useEffect(() => {
+    setSource(null);
+    setState('idle');
+  }, [channelId, messageId, file.id]);
+  const load = async () => {
+    if (!window.rooms) return setState('failed');
+    setState('loading');
+    try {
+      const video = await window.rooms.social.attachmentVideo(channelId, messageId, file.id);
+      if (!video) return setState('failed');
+      // QuickTime and MP4 share a container; Chromium plays H.264/HEVC .mov files as MP4.
+      const type = video.mime === 'video/quicktime' ? 'video/mp4' : video.mime;
+      setSource(URL.createObjectURL(new Blob([video.bytes as BlobPart], { type })));
+      setState('idle');
+    } catch {
+      setState('failed');
+    }
+  };
+  const size =
+    file.size >= 1_000_000
+      ? `${(file.size / 1_000_000).toFixed(1)} MB`
+      : `${Math.round(file.size / 1000)} KB`;
+  return (
+    <div className="chat-video-attachment">
+      {source ? (
+        <video
+          src={source}
+          controls
+          autoPlay
+          playsInline
+          aria-label="Paylaşılan video"
+          onError={() => {
+            setSource(null);
+            setState('failed');
+          }}
+        />
+      ) : (
+        <button
+          className="chat-video-poster"
+          aria-label={state === 'loading' ? 'Video yükleniyor' : 'Videoyu oynat'}
+          disabled={state === 'loading'}
+          onClick={() => void load()}
+        >
+          <span className="chat-video-play">
+            {state === 'loading' ? <LoaderCircle size={26} className="spin" /> : <Play size={26} />}
+          </span>
+          <small>
+            {state === 'failed'
+              ? 'Video oynatılamadı. Yeniden dene ya da indir.'
+              : `Video · ${size}`}
+          </small>
+        </button>
+      )}
+      <button
+        className="chat-video-save"
+        onClick={() => {
+          setSaveError('');
+          void saveAttachment(channelId, messageId, file.id).catch(() =>
+            setSaveError('Video indirilemedi. Bağlantını kontrol edip yeniden dene.'),
+          );
+        }}
+      >
+        <Download size={14} />
+        İndir
+      </button>
+      {saveError && <p role="alert">{saveError}</p>}
+    </div>
+  );
+}
+
 export function ChatAttachment({
   file,
   channelId,
@@ -73,6 +170,8 @@ export function ChatAttachment({
       alive = false;
     };
   }, [key, channelId, messageId, file.id, image, retry]);
+  if (inlineVideo.includes(file.mime))
+    return <ChatVideo file={file} channelId={channelId} messageId={messageId} />;
   if (!image)
     return (
       <div>
@@ -83,8 +182,7 @@ export function ChatAttachment({
             setDownloading(true);
             setDownloadError('');
             try {
-              if (!window.rooms) throw Error('Dosya indirmek için masaüstü uygulaması gerekiyor.');
-              await window.rooms.social.downloadAttachment(channelId, messageId, file.id);
+              await saveAttachment(channelId, messageId, file.id);
             } catch {
               setDownloadError(
                 'Dosya indirilemedi. Mesaja erişimini ve bağlantını kontrol edip yeniden dene.',

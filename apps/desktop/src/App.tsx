@@ -55,10 +55,12 @@ import {
   MicOff,
   Moon,
   MoreHorizontal,
+  Music2,
   PanelRightClose,
   PanelRightOpen,
   PhoneOff,
   Plus,
+  Rocket,
   Search,
   Settings as SettingsIcon,
   Sparkles,
@@ -294,6 +296,15 @@ export default function App() {
   const [toast, setToast] = useState('');
   const [search, setSearch] = useState('');
   const notify = useCallback((message: string) => setToast(message), []);
+  useEffect(() => {
+    // Modules without a component (voice, updates) report through this event.
+    const show = (event: Event) => {
+      const message = (event as CustomEvent<unknown>).detail;
+      if (typeof message === 'string' && message) setToast(message.slice(0, 300));
+    };
+    window.addEventListener('rooms:toast', show);
+    return () => window.removeEventListener('rooms:toast', show);
+  }, []);
   const close = useCallback(() => {
     setOverlay(null);
     setSearch('');
@@ -614,8 +625,9 @@ export default function App() {
             </div>
             <div className="toolbar-actions">
               {!['/chat', '/home', '/messages'].includes(visiblePath) && (
-                <button
-                  className="text-button"
+                <IconButton
+                  label="Sohbete dön"
+                  className="toolbar-icon"
                   onClick={() => {
                     if (voiceView && realtime.channelId)
                       void community
@@ -625,28 +637,40 @@ export default function App() {
                     else navigate('/chat');
                   }}
                 >
-                  Sohbete dön
-                </button>
+                  <ArrowLeft size={19} />
+                </IconButton>
               )}
-              <button
-                className="text-button"
+              <IconButton
+                label={community.user ? 'DJ' : 'DJ için önce giriş yap.'}
+                className="toolbar-icon"
                 disabled={!community.user}
-                title={!community.user ? 'Önce giriş yap.' : undefined}
                 onClick={openMusicDJ}
               >
-                DJ
-              </button>
-              <button className="text-button" onClick={() => open('launcher')}>
-                Etkinlikler
-              </button>
+                <Music2 size={19} />
+              </IconButton>
+              <IconButton
+                label="Etkinlikler"
+                className="toolbar-icon"
+                onClick={() => open('launcher')}
+              >
+                <Rocket size={19} />
+              </IconButton>
+              <IconButton
+                label={dmView ? 'Kişi bilgisi' : 'Üyeler'}
+                className="toolbar-icon"
+                disabled={!community.user}
+                onClick={() => (dmView ? open('profile') : toggleContext())}
+              >
+                <Users size={19} />
+              </IconButton>
+              <IconButton
+                label="Mesajlarda ara"
+                className="toolbar-icon"
+                onClick={() => open('social-search')}
+              >
+                <Search size={19} />
+              </IconButton>
               <QuietMenu label="Oda işlemleri" compact>
-                <button
-                  disabled={!community.user}
-                  onClick={() => (dmView ? open('profile') : toggleContext())}
-                >
-                  {dmView ? 'Kişi bilgisi' : 'Üyeler'}
-                </button>
-                <button onClick={() => open('social-search')}>Mesajlarda ara</button>
                 <button onClick={() => navigate('/files')}>Dosyalar</button>
                 <button onClick={() => open('invite')}>Davet oluştur</button>
                 <button onClick={() => open('command')}>Ara</button>

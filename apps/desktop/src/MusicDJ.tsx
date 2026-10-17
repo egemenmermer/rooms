@@ -21,12 +21,14 @@ import {
   History,
   ArrowUp,
   ArrowDown,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { create } from 'zustand';
 import { useQuery } from '@tanstack/react-query';
 import { queryClient } from './query-client';
 import { useCommunity } from './community';
-import { useRealtime, setParticipantVolume } from './realtime';
+import { useRealtime, setParticipantVolume, musicEqualizer, setMusicEqualizer } from './realtime';
+import type { MusicEqualizer } from '@rooms/media';
 import { useActivityRoom } from './activity';
 import { uiError } from './i18n';
 import {
@@ -179,6 +181,17 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
     [busy, setBusy] = useState(false),
     [placement, setPlacement] = useState<{ x: number; y: number } | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [equalizer, setEqualizer] = useState<MusicEqualizer | null>(() => musicEqualizer()),
+    [equalizerOpen, setEqualizerOpen] = useState(false);
+  const flat = (eq: MusicEqualizer) => !eq.bass && !eq.mid && !eq.treble;
+  const changeEqualizer = (next: MusicEqualizer) => {
+    try {
+      setMusicEqualizer(next);
+      setEqualizer(musicEqualizer());
+    } catch (e) {
+      setError(uiError(e));
+    }
+  };
   const [listsOpen, setListsOpen] = useState(false);
   const [results, setResults] = useState<MusicSearchResult[] | null>(null);
   const panel = useRef<HTMLElement>(null),
@@ -528,7 +541,54 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
             onChange={(e) => bot && setParticipantVolume(bot.id, Number(e.target.value))}
           />
           <small>{Math.round((bot?.volume ?? 1) * 100)}%</small>
+          <button
+            aria-label="Ekolayzır"
+            aria-expanded={equalizerOpen}
+            className={equalizer && !flat(equalizer) ? 'dj-eq-on' : undefined}
+            disabled={!equalizer}
+            title={equalizer ? 'Yalnızca senin duyduğun bas, orta ve tiz' : undefined}
+            onClick={() => setEqualizerOpen((value) => !value)}
+          >
+            <SlidersHorizontal size={16} />
+          </button>
         </div>
+        {equalizerOpen && equalizer && (
+          <div className="dj-equalizer" role="group" aria-label="Ekolayzır">
+            {(
+              [
+                ['bass', 'Bas'],
+                ['mid', 'Orta'],
+                ['treble', 'Tiz'],
+              ] as const
+            ).map(([key, label]) => (
+              <label key={key}>
+                <span>{label}</span>
+                <input
+                  type="range"
+                  min={-12}
+                  max={12}
+                  step={1}
+                  value={equalizer[key]}
+                  aria-valuetext={`${equalizer[key] > 0 ? '+' : ''}${equalizer[key]} dB`}
+                  onChange={(e) => changeEqualizer({ ...equalizer, [key]: Number(e.target.value) })}
+                />
+                <small>
+                  {equalizer[key] > 0 ? '+' : ''}
+                  {equalizer[key]} dB
+                </small>
+              </label>
+            ))}
+            <p>
+              Yalnızca senin duyduğun sesi değiştirir.
+              <button
+                disabled={flat(equalizer)}
+                onClick={() => changeEqualizer({ bass: 0, mid: 0, treble: 0 })}
+              >
+                Sıfırla
+              </button>
+            </p>
+          </div>
+        )}
         {active && channelId && !fixture && (
           <MusicLyrics
             key={`lyrics:${active.id}`}

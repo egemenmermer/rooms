@@ -643,6 +643,85 @@ export async function setupCommunity(
       throw new SocialInputError('The account changed. Open community management again.');
     return result;
   });
+  handle('rooms:social-space-profile', (spaceId) =>
+    requireClient().spaceProfile(id.parse(spaceId)),
+  );
+  handle('rooms:social-update-space-profile', async (input) => {
+    const change = z
+      .object({
+        spaceId: id,
+        name: z.string().trim().min(1).max(32),
+        description: z.string().max(1024),
+      })
+      .strict()
+      .parse(input);
+    return requireClient().updateSpaceProfile(change.spaceId, {
+      name: change.name,
+      description: change.description,
+    });
+  });
+  const spaceImageKind = z.enum(['icon', 'banner']);
+  /** Reads a chosen community image; the type comes from its bytes, never its name. */
+  function readSpaceImage(path: string, limit: number) {
+    const file = openSync(path, 'r');
+    try {
+      const stat = fstatSync(file);
+      if (!stat.isFile() || stat.size < 12 || stat.size > limit)
+        throw new SocialInputError(
+          `Görsel en fazla ${Math.floor((limit / 1_000_000) * 10) / 10} MB olabilir.`,
+        );
+      const bytes = Buffer.alloc(stat.size);
+      if (readSync(file, bytes, 0, bytes.length, 0) !== bytes.length)
+        throw new SocialInputError('Görsel okunamadı.');
+      const mime = bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+        ? 'image/png'
+        : bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255
+          ? 'image/jpeg'
+          : bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP'
+            ? 'image/webp'
+            : bytes.toString('ascii', 0, 4) === 'GIF8'
+              ? 'image/gif'
+              : null;
+      if (!mime) throw new SocialInputError('PNG, JPEG, WebP ya da GIF bir görsel seç.');
+      return { bytes: new Uint8Array(bytes), mime, name: basename(path) };
+    } finally {
+      closeSync(file);
+    }
+  }
+  handle('rooms:social-choose-space-image', async (spaceId, kind) => {
+    const space = id.parse(spaceId),
+      which = spaceImageKind.parse(kind);
+    const current = requireClient(),
+      owner = user!.id,
+      window = getWindow();
+    if (!window) return null;
+    const choice = await dialog.showOpenDialog(window, {
+      title: which === 'icon' ? 'Sunucu ikonu seç' : 'Sunucu afişi seç',
+      properties: ['openFile'],
+      filters: [{ name: 'Görseller', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }],
+    });
+    if (choice.canceled || !choice.filePaths[0]) return null;
+    if (client !== current || user?.id !== owner)
+      throw new SocialInputError('The account changed. Open server settings again.');
+    const image = readSpaceImage(choice.filePaths[0], which === 'icon' ? 2_500_000 : 6_000_000);
+    return current.updateSpaceProfile(space, { [which]: image });
+  });
+  handle('rooms:social-remove-space-image', (spaceId, kind) =>
+    requireClient().updateSpaceProfile(id.parse(spaceId), {
+      [spaceImageKind.parse(kind)]: null,
+    }),
+  );
+  handle('rooms:social-community-capabilities', (spaceId) =>
+    requireClient().communityCapabilities(id.parse(spaceId)),
+  );
+  handle('rooms:social-ban-community-member', async (input) => {
+    const current = requireClient(),
+      owner = user!.id,
+      result = await current.banCommunityMember(memberRemoval.parse(input));
+    if (client !== current || user?.id !== owner)
+      throw new SocialInputError('The account changed. Open community management again.');
+    return result;
+  });
   handle('rooms:social-remove-community-member', async (input) => {
     const current = requireClient(),
       owner = user!.id,
@@ -690,6 +769,18 @@ export async function setupCommunity(
     const current = requireClient(),
       owner = user!.id;
     const result = await current.attachmentImage(
+      id.parse(channelId),
+      id.parse(messageId),
+      id.parse(fileId),
+    );
+    if (client !== current || user?.id !== owner)
+      throw new SocialInputError('The conversation session changed.');
+    return result;
+  });
+  handle('rooms:social-attachment-video', async (channelId, messageId, fileId) => {
+    const current = requireClient(),
+      owner = user!.id;
+    const result = await current.attachmentVideo(
       id.parse(channelId),
       id.parse(messageId),
       id.parse(fileId),
@@ -795,6 +886,8 @@ export async function setupCommunity(
       '.webp': 'image/webp',
       '.gif': 'image/gif',
       '.mp4': 'video/mp4',
+      '.m4v': 'video/mp4',
+      '.mov': 'video/quicktime',
       '.webm': 'video/webm',
       '.mp3': 'audio/mpeg',
       '.wav': 'audio/wav',
@@ -873,7 +966,16 @@ export async function setupCommunity(
     bytes: Uint8Array,
     name: string,
   ) {
-    const result = await current.uploadAttachment(bytes, name, attachmentMime(name));
+    const mime = attachmentMime(name),
+      limit = await current.attachmentSizeLimit();
+    if (bytes.byteLength > limit)
+      throw new SocialInputError(
+        `${name} sunucunun ${Math.floor(limit / 1_000_000)} MB sınırını aşıyor.` +
+          (mime.startsWith('video/')
+            ? ' Uzun videoları Sinema’da “Kendi dosyamla” ile birlikte izleyebilirsiniz.'
+            : ''),
+      );
+    const result = await current.uploadAttachment(bytes, name, mime);
     if (current !== client)
       throw new SocialInputError('The conversation session changed. Select the attachment again.');
     uploadedAttachments.set(result.id, {
@@ -903,6 +1005,8 @@ export async function setupCommunity(
             'webp',
             'gif',
             'mp4',
+            'm4v',
+            'mov',
             'webm',
             'mp3',
             'wav',
@@ -1025,6 +1129,8 @@ export async function setupCommunity(
         SCREEN_REQUEST_OWNER_REQUIRED: 'Yalnızca kendi sunum talebini iptal edebilirsin.',
         ALREADY_PRESENTER: 'Zaten ekran paylaşıyorsun.',
         JOIN_VOICE_FIRST: 'Sunum istemeden önce ses odasına katıl.',
+        MOVE_MEMBERS_REQUIRED: 'Bu odadaki kişileri taşıma veya sesten çıkarma yetkin yok.',
+        MEMBER_NOT_IN_ROOM: 'Bu kişi artık bu odada değil.',
         SCREEN_REQUEST_LIMIT: 'Çok fazla sunum talebi var. Biraz sonra yeniden dene.',
       };
       if (typeof value?.error === 'string' && Object.hasOwn(reasons, value.error))
@@ -1355,6 +1461,87 @@ export async function setupCommunity(
     } catch (error) {
       // Servers without the endpoint keep deafen local; it never blocks the toggle.
       if (error instanceof StoatError && error.status === 404) return false;
+      throw error;
+    }
+  });
+  const gifMedia = z
+    .object({
+      url: z
+        .string()
+        .url()
+        .refine((value) => new URL(value).hostname === 'static.klipy.com'),
+      width: z.number().int().positive().max(4096),
+      height: z.number().int().positive().max(4096),
+    })
+    .strict();
+  // GIF search goes through the community's access service, which holds the provider key.
+  handle('rooms:gif-search', async (query, page) => {
+    const current = requireClient();
+    const q = z
+        .string()
+        .trim()
+        .max(80)
+        .parse(query ?? ''),
+      number = z
+        .number()
+        .int()
+        .min(1)
+        .max(20)
+        .parse(page ?? 1);
+    const url = new URL(`${new URL(current.instanceUrl).origin}/rooms-access/v1/gifs`);
+    if (q) url.searchParams.set('q', q);
+    url.searchParams.set('page', String(number));
+    const response = await fetch(url, {
+      headers: { Authorization: current.getToken()! },
+      redirect: 'error',
+      signal: AbortSignal.timeout(12000),
+    });
+    const value = await response.json().catch(() => null);
+    if (current !== client) throw new SocialInputError('The conversation session changed.');
+    if (!response.ok)
+      throw new SocialInputError(
+        value?.error === 'GIFS_NOT_CONFIGURED'
+          ? 'GIF araması için sunucuya KLIPY anahtarı eklenmeli.'
+          : response.status === 404
+            ? 'Bu sunucu GIF aramasını henüz desteklemiyor.'
+            : response.status === 429
+              ? 'Çok fazla GIF araması yapıldı. Biraz bekleyip yeniden dene.'
+              : 'GIF servisine şu an ulaşılamıyor. Biraz sonra yeniden dene.',
+      );
+    return z
+      .object({
+        items: z
+          .array(
+            z
+              .object({
+                id: z.string().max(64),
+                title: z.string().max(120),
+                preview: gifMedia,
+                gif: gifMedia,
+              })
+              .strict(),
+          )
+          .max(50),
+        more: z.boolean(),
+      })
+      .strict()
+      .parse(value);
+  });
+  handle('rooms:media-moderate', async (input) => {
+    const body = z
+      .object({
+        channelId: id,
+        userId: id,
+        action: z.enum(['disconnect', 'move']),
+        targetChannelId: id.optional(),
+      })
+      .strict()
+      .parse(input);
+    try {
+      await broker('moderate', body);
+    } catch (error) {
+      if (error instanceof StoatError && error.status === 404)
+        throw new SocialInputError('Sunucu bu işlemi henüz desteklemiyor.');
       throw error;
     }
   });

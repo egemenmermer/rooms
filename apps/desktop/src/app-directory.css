@@ -1,0 +1,231 @@
+/* Apps and activities: a searchable catalogue in the app's own surfaces. */
+.appdir {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, calc(100vw - 32px));
+  max-height: min(600px, 72vh);
+  overflow: hidden;
+  border: 1px solid #ffffff14;
+  border-radius: var(--radius-16, 16px);
+  background: #1d2026;
+  box-shadow: 0 22px 60px #000a;
+  color: var(--color-text-primary, #f2f3f7);
+}
+.appdir-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 14px 6px;
+  padding: 0 12px;
+  border: 1px solid #ffffff1f;
+  border-radius: 10px;
+  background: #15171c;
+  color: var(--color-text-secondary, #b1b5c2);
+}
+.appdir-search input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font-size: 15px;
+}
+.appdir-scroll {
+  overflow-y: auto;
+  padding: 4px 14px 16px;
+}
+.appdir h3 {
+  margin: 14px 2px 8px;
+  color: var(--color-text-secondary, #b1b5c2);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Something already running in the room comes first. */
+.appdir-live {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border: 1px solid #8b83ff55;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #8b83ff26, transparent 70%), #23262e;
+  color: inherit;
+  text-align: left;
+}
+.appdir-live i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 0 4px #4ade8033;
+}
+.appdir-live span {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.appdir-live small {
+  color: var(--color-text-secondary, #b1b5c2);
+  font-size: 11px;
+}
+.appdir-live em {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #c1bcff;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.appdir-featured {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.appdir-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #ffffff10;
+  border-radius: 12px;
+  background: #262a32;
+  color: inherit;
+  text-align: left;
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+.appdir-card:hover,
+.appdir-card:focus-visible {
+  border-color: #8b83ff88;
+  transform: translateY(-1px);
+}
+.appdir-card > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px 12px;
+}
+.appdir-card strong,
+.appdir-row strong {
+  font-size: 14px;
+  font-weight: 650;
+}
+.appdir-card small,
+.appdir-row small {
+  overflow: hidden;
+  color: var(--color-text-secondary, #b1b5c2);
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appdir-list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #23262e;
+}
+.appdir-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 0;
+  border-bottom: 1px solid #ffffff08;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+.appdir-row:last-child {
+  border-bottom: 0;
+}
+.appdir-row:hover:not(:disabled),
+.appdir-row:focus-visible {
+  background: #2e323c;
+}
+.appdir-row:disabled {
+  opacity: 0.55;
+}
+.appdir-row > span:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.appdir-empty {
+  margin: 28px 0;
+  color: var(--color-text-secondary, #b1b5c2);
+  text-align: center;
+}
+
+/* Icon tiles: a tinted square with the icon, or a felt square with drawn pieces for games. */
+.appdir-tile {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--tile) 88%, #fff 12%), var(--tile));
+  color: #fff;
+}
+.appdir-tile.large {
+  width: 100%;
+  height: 112px;
+  border-radius: 0;
+}
+.appdir-tile.felt {
+  background: radial-gradient(120% 90% at 50% 20%, #2d6a52 0%, #1f4a3b 45%, #163629 100%);
+}
+.appdir-tile.felt .kh-art {
+  transform: scale(0.34);
+}
+.appdir-tile.felt.large .kh-art {
+  transform: scale(0.9);
+}
+
+/* Anchored above the chat composer like a picker. */
+.composer-popover {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  z-index: 40;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .appdir-card {
+    transition: none;
+  }
+}
+/* The catalogue opened from the header uses the modal layer but brings its own surface. */
+.modal.appdir-modal {
+  width: auto;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* The field carries the focus ring, so the input inside does not draw a second one. */
+.appdir-search:focus-within {
+  border-color: #8b83ff;
+  box-shadow: 0 0 0 3px #8b83ff33;
+}
+.appdir-search input:focus-visible {
+  outline: none;
+}

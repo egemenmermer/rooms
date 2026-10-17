@@ -160,7 +160,7 @@ export default function DmCallRuntime() {
       {!ringing && !connected && !busy && (
         <button
           className="button primary"
-          disabled={occupied}
+          title={occupied ? 'Katılınca bulunduğun ses odasından çıkarsın.' : undefined}
           onClick={() => run(() => joinAcceptedDmCall(false))}
         >
           Görüşmeye katıl
@@ -170,8 +170,8 @@ export default function DmCallRuntime() {
         <>
           <button
             className="button primary"
-            disabled={busy || occupied}
-            title={occupied ? 'Önce bağlı olduğun ses odasından ayrıl.' : undefined}
+            disabled={busy}
+            title={occupied ? 'Kabul edince bulunduğun ses odasından çıkarsın.' : undefined}
             onClick={() => run(() => accept(false))}
           >
             <Phone size={18} />
@@ -180,8 +180,8 @@ export default function DmCallRuntime() {
           {call.mode === 'video' && (
             <button
               className="button secondary"
-              disabled={busy || occupied}
-              title={occupied ? 'Önce bağlı olduğun ses odasından ayrıl.' : undefined}
+              disabled={busy}
+              title={occupied ? 'Kabul edince bulunduğun ses odasından çıkarsın.' : undefined}
               onClick={() => run(() => accept(true))}
             >
               <Video size={18} />
@@ -250,7 +250,9 @@ export default function DmCallRuntime() {
             <PhoneOff size={19} />
           </button>
         )}
-        {occupied && ringing && incoming && <small>Önce bağlı olduğun ses odasından ayrıl.</small>}
+        {occupied && ringing && incoming && (
+          <small>Kabul edince bulunduğun ses odasından çıkarsın.</small>
+        )}
         {error && <small role="alert">{error}</small>}
       </aside>
     );
@@ -331,7 +333,7 @@ export default function DmCallRuntime() {
           </article>
         </div>
         {occupied && ringing && incoming && (
-          <p className="dm-call-error">Kabul etmeden önce bağlı olduğun ses odasından ayrıl.</p>
+          <p className="dm-call-note">Kabul edince bulunduğun ses odasından çıkarsın.</p>
         )}
         {error && (
           <p className="dm-call-error" role="alert">

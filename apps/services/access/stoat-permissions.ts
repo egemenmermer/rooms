@@ -6,6 +6,7 @@ export const StoatPermissions = {
   CONNECT: 1n << 30n,
   SPEAK: 1n << 31n,
   VIDEO: 1n << 32n,
+  MOVE_MEMBERS: 1n << 35n,
   LISTEN: 1n << 36n,
   ALL: (1n << 52n) - 1n,
 };

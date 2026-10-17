@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   ConnectionState,
   RoomEvent,
+  DisconnectReason,
   Track,
   LocalAudioTrack,
   createLocalAudioTrack,
@@ -167,6 +168,70 @@ describe('LiveKit adapter lifecycle', () => {
     await provider.disconnect();
     expect(document.body.contains(element)).toBe(false);
     expect(element.pause).toHaveBeenCalled();
+  });
+  it('plays the DJ through this listener’s equalizer and back, without leaking past deafen', async () => {
+    const { provider, room, emit } = fixture();
+    const gains: number[][] = [];
+    vi.stubGlobal(
+      'AudioContext',
+      class {
+        state = 'running';
+        currentTime = 0;
+        resume = vi.fn(async () => {});
+        createBiquadFilter() {
+          const gain: number[] = [];
+          gains.push(gain);
+          return {
+            type: '',
+            frequency: { value: 0 },
+            Q: { value: 0 },
+            gain: { setTargetAtTime: (value: number) => gain.push(value) },
+          };
+        }
+      },
+    );
+    await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+    const element = document.createElement('audio');
+    element.play = vi.fn(async () => {});
+    element.pause = vi.fn();
+    const track = {
+      kind: 'audio',
+      attach: () => element,
+      setAudioContext: vi.fn(),
+      setWebAudioPlugins: vi.fn(),
+      setVolume: vi.fn(),
+    };
+    const publication = { trackSid: 'TR_dj', source: Track.Source.Microphone, track };
+    const dj = {
+      identity: 'rooms-music-room',
+      setVolume: vi.fn(),
+      trackPublications: new Map([['TR_dj', publication]]),
+    };
+    room.remoteParticipants.set(dj.identity, dj);
+    emit(RoomEvent.TrackSubscribed, track, publication, dj);
+    // A flat equalizer leaves the DJ on its ordinary element.
+    expect(track.setAudioContext).not.toHaveBeenCalled();
+    expect(element.muted).toBe(false);
+    provider.setMusicEqualizer({ bass: 6, mid: 0, treble: -3 });
+    expect(provider.musicEqualizer()).toEqual({ bass: 6, mid: 0, treble: -3 });
+    expect(gains.map((g) => g.at(-1))).toEqual([6, 0, -3]);
+    expect(track.setWebAudioPlugins).toHaveBeenCalledTimes(1);
+    expect(track.setAudioContext).toHaveBeenLastCalledWith(expect.any(Object));
+    expect(element.muted).toBe(true);
+    await provider.deafen(true);
+    expect(track.setVolume).toHaveBeenLastCalledWith(0);
+    expect(element.muted).toBe(true);
+    provider.setParticipantVolume('rooms-music-room', 0.5);
+    expect(track.setVolume).toHaveBeenLastCalledWith(0);
+    await provider.deafen(false);
+    // The DJ volume curve is quadratic: 0.5 becomes 0.25.
+    expect(track.setVolume).toHaveBeenLastCalledWith(0.25);
+    expect(element.muted).toBe(true);
+    expect(() => provider.setMusicEqualizer({ bass: 40, mid: 0, treble: 0 })).toThrow();
+    provider.setMusicEqualizer({ bass: 0, mid: 0, treble: 0 });
+    expect(track.setAudioContext).toHaveBeenLastCalledWith(undefined);
+    expect(element.muted).toBe(false);
+    await provider.disconnect();
   });
   it('records denial without false capture success', async () => {
     const { provider, local } = fixture();
@@ -466,6 +531,29 @@ it('shares whiteboard pointers lossily and keeps them apart from control input',
     emit(RoomEvent.DataReceived, packet('{"b":"room"}'), carol, 0, 'rooms-cursor-v1');
   expect(cursors.length).toBeLessThanOrEqual(600);
   await provider.disconnect();
+});
+it('follows a move only when the server sends it, and says when a moderator disconnected you', async () => {
+  const { provider, room, emit } = fixture();
+  await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+  const carol = { identity: 'carol', name: 'Carol', trackPublications: new Map() };
+  room.remoteParticipants.set('carol', carol);
+  const moves: string[] = [];
+  provider.onMove((channelId) => moves.push(channelId));
+  const packet = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
+  // A member cannot forge a move; only the server sends without a participant.
+  emit(RoomEvent.DataReceived, packet({ channelId: 'lounge' }), carol, 0, 'rooms-move-v1');
+  emit(RoomEvent.DataReceived, packet({ channelId: '../x' }), undefined, 0, 'rooms-move-v1');
+  emit(RoomEvent.DataReceived, packet({ channelId: 'lounge' }), undefined, 0, 'rooms-cursor-v1');
+  emit(
+    RoomEvent.DataReceived,
+    packet({ channelId: 'lounge', by: 'admin' }),
+    undefined,
+    0,
+    'rooms-move-v1',
+  );
+  expect(moves).toEqual(['lounge']);
+  emit(RoomEvent.Disconnected, DisconnectReason.PARTICIPANT_REMOVED);
+  expect(provider.snapshot().error).toBe('A moderator disconnected you from the voice room.');
 });
 it('local volume is applied again when a muted participant publishes a replacement track', async () => {
   const { provider, room, emit } = fixture();

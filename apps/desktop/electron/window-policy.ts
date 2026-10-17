@@ -2,6 +2,7 @@ import { app, dialog, ipcMain, type BrowserWindow, type IpcMainInvokeEvent } fro
 import { readFileSync, writeFileSync, renameSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DesktopWindowPreferences } from '@rooms/contracts';
+import { hideWindow } from './window-state';
 
 /** Closing a window and explicitly quitting the application are separate user actions. */
 export function setupWindowPolicy(
@@ -61,7 +62,7 @@ export function setupWindowPolicy(
       // A missing tray always falls back to an ordinary, recoverable close.
       if (keepOpenOnClose && trayAvailable()) {
         event.preventDefault();
-        window.hide();
+        hideWindow(window);
         return;
       }
       if (approved || !warnOnVoiceClose || !voiceActive()) return;
@@ -82,7 +83,7 @@ export function setupWindowPolicy(
         .then((result) => {
           if (result.response !== 1 || window.isDestroyed() || isQuitting()) return;
           // Re-read the policy after the asynchronous dialog; a new keep-open choice must win.
-          if (keepOpenOnClose && trayAvailable()) window.hide();
+          if (keepOpenOnClose && trayAvailable()) hideWindow(window);
           else {
             approved = true;
             window.close();

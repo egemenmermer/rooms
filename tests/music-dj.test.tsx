@@ -24,16 +24,25 @@ const media = vi.hoisted(() => ({
     busy: boolean;
   },
   volume: vi.fn(),
+  equalizer: { bass: 0, mid: 0, treble: 0 },
+  setEqualizer: vi.fn(),
 }));
 vi.mock('../apps/desktop/src/realtime', () => ({
   useRealtime: () => media.voice,
   setParticipantVolume: media.volume,
+  musicEqualizer: () => media.equalizer,
+  setMusicEqualizer: (value: typeof media.equalizer) => {
+    media.setEqualizer(value);
+    media.equalizer = value;
+  },
 }));
 vi.mock('../apps/desktop/src/activity', () => ({
   useActivityRoom: () => ({ room: { primary: null }, send: vi.fn() }),
 }));
 beforeEach(() => {
   media.volume.mockReset();
+  media.setEqualizer.mockReset();
+  media.equalizer = { bass: 0, mid: 0, treble: 0 };
   media.voice = {
     channelId: 'room',
     roomName: 'Friends',
@@ -400,4 +409,23 @@ it('keeps a single seek control while playback snapshots refresh', async () => {
   }
   expect(snapshot.mock.calls.length).toBeGreaterThanOrEqual(6);
   expect(view.container.querySelectorAll('.dj-seek')).toHaveLength(1);
+});
+it('shapes only this listener’s DJ sound with bass, mid and treble, and resets it', async () => {
+  window.rooms = {
+    music: { snapshot: async () => empty, command: vi.fn() },
+  } as unknown as DesktopBridge;
+  render(<MusicDJ />);
+  await waitFor(() => expect(screen.queryByText('Yükleniyor…')).toBeNull());
+  const toggle = screen.getByRole('button', { name: 'Ekolayzır' });
+  expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  fireEvent.click(toggle);
+  const group = screen.getByRole('group', { name: 'Ekolayzır' });
+  expect(group.textContent).toContain('Yalnızca senin duyduğun sesi değiştirir.');
+  fireEvent.change(screen.getByRole('slider', { name: /Bas/ }), { target: { value: '6' } });
+  expect(media.setEqualizer).toHaveBeenLastCalledWith({ bass: 6, mid: 0, treble: 0 });
+  expect(screen.getByText('+6 dB')).toBeTruthy();
+  expect(toggle.className).toContain('dj-eq-on');
+  fireEvent.click(screen.getByRole('button', { name: 'Sıfırla' }));
+  expect(media.setEqualizer).toHaveBeenLastCalledWith({ bass: 0, mid: 0, treble: 0 });
+  expect(toggle.className).not.toContain('dj-eq-on');
 });

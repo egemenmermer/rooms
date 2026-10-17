@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { SOCIAL_ROLE_PERMISSION_KEYS, type SocialCommunityManagement } from '@rooms/social';
 import CommunityManagementSurface from '../apps/desktop/src/CommunityManagementSurface';
 import { inheritedRolePermissions } from '../apps/desktop/src/CommunityRoles';
@@ -114,4 +114,37 @@ it('removes roles/editor when management permission is revoked', async () => {
   await screen.findByRole('heading', { name: 'Yönetim yetkin yok' });
   expect(screen.queryByLabelText('Rol adı')).toBeNull();
   expect(bridge.changeCommunityRole).not.toHaveBeenCalled();
+});
+it('bans a member below you after confirming, from the member menu', async () => {
+  const member = {
+    user: { id: 'ece', username: 'ece', displayName: 'Ece', avatar: null },
+    status: 'online' as const,
+    statusText: null,
+    roles: [],
+    canAssignRoles: false,
+    canRemove: true,
+    canBan: true,
+  };
+  const current = {
+    ...snapshot(),
+    capabilities: { ...snapshot().capabilities, banMembers: true },
+    members: [member],
+  };
+  const bridge = {
+    communityManagement: vi.fn(async () => current),
+    setMemberRoles: vi.fn(),
+    removeCommunityMember: vi.fn(),
+    changeCommunityRole: vi.fn(),
+    banCommunityMember: vi.fn(async () => ({ ...current, members: [] })),
+  };
+  render(<CommunityManagementSurface bridge={bridge} />);
+  fireEvent.click(await screen.findByRole('button', { name: /Yönet/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Yasakla' }));
+  expect(bridge.banCommunityMember).not.toHaveBeenCalled();
+  expect(screen.getByText(/davetle de geri dönemez/)).toBeTruthy();
+  const dialog = screen.getByRole('dialog');
+  fireEvent.click(within(dialog).getByRole('button', { name: /Yasakla/ }));
+  await waitFor(() =>
+    expect(bridge.banCommunityMember).toHaveBeenCalledWith({ spaceId: 'space', userId: 'ece' }),
+  );
 });

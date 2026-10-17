@@ -9,7 +9,7 @@ export const gameNames: Record<Kind, string> = {
   batak: 'Batak',
   '101': '101 Okey',
 };
-const catalog: { kind: Kind; players: string; detail: string }[] = [
+export const gameCatalog: { kind: Kind; players: string; detail: string }[] = [
   { kind: 'holdem', players: '2–9 oyuncu', detail: 'Blind, flop ve showdown. Sanal fişle.' },
   {
     kind: 'blackjack',
@@ -30,7 +30,7 @@ export function tableCapacity(game: GamePublicState): number {
 }
 
 /** Small drawn table pieces; no photos, so the lobby keeps the app's own look. */
-function GameArt({ kind }: { kind: Kind }) {
+export function GameArt({ kind }: { kind: Kind }) {
   if (kind === '101')
     return (
       <span className="kh-art okey" aria-hidden="true">
@@ -183,7 +183,7 @@ export function Kiraathane({
         </div>
       )}
       <div className="kh-grid">
-        {catalog.map((item) => {
+        {gameCatalog.map((item) => {
           const open = game?.kind === item.kind;
           return (
             <article key={item.kind} className={`kh-game ${open ? 'is-open' : ''}`}>

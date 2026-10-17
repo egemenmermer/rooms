@@ -10,6 +10,7 @@ import { DesktopUpdates } from './Updates';
 import { ChannelPermissionsSurface } from './ChannelPermissionsSurface';
 import { CommunityManagementEntry } from './CommunityManagementEntry';
 import { About } from './About';
+import { ServerProfile } from './ServerProfile';
 import { SettingsConnection } from './SettingsConnection';
 import { AssistantManagement } from './AssistantManagement';
 import { VoiceAvatar } from './VoiceAvatar';
@@ -43,6 +44,7 @@ import {
   CircleHelp,
   Fingerprint,
   Globe,
+  Store,
   Keyboard,
   Link,
   Mic,
@@ -76,7 +78,8 @@ const tabs = [
   { id: 'room-memory', label: 'Oda hafızası', icon: Bookmark },
   { id: 'schedules', label: 'Tek seferlik görevler', icon: Clock3 },
   { id: 'services', label: 'ROOMS bağlantıları', icon: Globe },
-  { id: 'hostops', label: 'Sunucu', icon: Monitor },
+  { id: 'server-profile', label: 'Sunucu profili', icon: Store },
+  { id: 'hostops', label: 'Sunucu makinesi', icon: Monitor },
   { id: 'shortcuts', label: 'Klavye', icon: Keyboard },
   { id: 'diagnostics', label: 'Tanılama', icon: SlidersHorizontal },
   { id: 'community-management', label: 'Üyeler ve roller', icon: Users },
@@ -931,11 +934,16 @@ export default function Settings({
                     .find((space) => space.id === community.activeSpaceId)
                     ?.name.toLocaleUpperCase('tr-TR') || 'TOPLULUK',
                 ids: [
+                  'server-profile',
                   'community-management',
                   'channel-permissions',
                   'assistant-permissions',
                   'automation',
-                  'hostops',
+                  // The machine behind the server is the owner's concern, not every member's.
+                  ...(community.spaces.find((space) => space.id === community.activeSpaceId)
+                    ?.ownerId === community.user?.id
+                    ? ['hostops']
+                    : []),
                 ],
               },
               { label: 'ROOMS', ids: ['about'] },
@@ -993,10 +1001,12 @@ export default function Settings({
             <Settings2 size={22} />
             <strong>{tabs.find((t) => t.id === tab)?.label}</strong>
             {[
+              'server-profile',
               'community-management',
               'channel-permissions',
               'assistant-permissions',
               'automation',
+              'hostops',
             ].includes(tab) && (
               <span className="ref-settings-community-name">
                 {community.spaces.find((space) => space.id === community.activeSpaceId)?.name ||
@@ -1393,6 +1403,7 @@ export default function Settings({
                 </div>
               </>
             )}
+            {tab === 'server-profile' && <ServerProfile notify={notify} />}
             {tab === 'hostops' && <HostOperations />}
             {tab === 'connections' && <AgentReferenceSettingsContent view="connections" />}
             {tab === 'room-memory' && <AgentReferenceSettingsContent view="memory" />}

@@ -8,6 +8,8 @@ import { HostOpsStore } from '../apps/services/hostops/store';
 import { LinuxCollector, emptySupplement } from '../apps/services/hostops/collector';
 import { TerminalHub, type TerminalDriver } from '../apps/services/hostops/terminals';
 import { createHostOpsServer } from '../apps/services/hostops/server';
+import { communityOwnership } from '../apps/services/hostops/authorization';
+import { StoatError } from '@rooms/stoat';
 import type { HostSample, TerminalEvent } from '../packages/shared-contracts/src/hostops';
 const temp: string[] = [];
 afterEach(() => {
@@ -127,6 +129,39 @@ describe('HostOps telemetry and authority', () => {
     expect(store.history('core', 'week')).toHaveLength(2);
     expect(store.history('other', 'month')).toEqual([]);
     store.close();
+  });
+  it('reports an unreachable membership store as an outage instead of no permission', async () => {
+    const store = new HostOpsStore(':memory:');
+    const app = createHostOpsServer({
+      store,
+      hosts: [
+        {
+          id: 'core',
+          label: 'Core',
+          physicalHostId: 'primary',
+          mode: 'shared',
+          communityId: 'space',
+          ownerProfileId: null,
+          agentAvailable: false,
+        },
+      ],
+      identify: async (token) => {
+        if (token === 'stranger') throw Object.assign(Error('denied'), { status: 403 });
+        if (token === 'signed-out') throw Error('SIGN_IN_REQUIRED');
+        throw Error('connect ECONNREFUSED 172.18.0.3:27017');
+      },
+    });
+    try {
+      for (const token of ['stranger', 'signed-out'])
+        expect(
+          (await app.inject({ url: '/v1/hosts', headers: { authorization: token } })).json(),
+        ).toEqual({ hosts: [] });
+      const outage = await app.inject({ url: '/v1/hosts', headers: { authorization: 'owner' } });
+      expect(outage.statusCode).toBe(503);
+      expect(outage.json()).toEqual({ error: 'HOSTOPS_UNAVAILABLE' });
+    } finally {
+      await app.close();
+    }
   });
   it('enforces owner grants and separates monitor from terminal/agent privileges', async () => {
     const store = new HostOpsStore(':memory:');
@@ -327,5 +362,39 @@ describe('operator terminal lifecycle', () => {
       socket.terminate();
       await app.close();
     }
+  });
+});
+
+describe('community ownership for host operations', () => {
+  const api = (owner: string) => ({
+    getServer: vi.fn(async () => ({ owner })),
+    getMember: vi.fn(async () => ({})),
+  });
+  it('asks the Stoat API when the membership store cannot be reached', async () => {
+    const reader = {
+      community: vi.fn(async () => {
+        throw Error('connect ECONNREFUSED 172.18.0.3:27017');
+      }),
+    };
+    const client = api('owner');
+    expect(await communityOwnership(reader as never, client, 'space', 'owner')).toBe(true);
+    expect(client.getServer).toHaveBeenCalledWith('space');
+    expect(client.getMember).not.toHaveBeenCalled();
+    // A non-owner still has to be a member.
+    const other = api('owner');
+    expect(await communityOwnership(reader as never, other, 'space', 'member')).toBe(false);
+    expect(other.getMember).toHaveBeenCalledWith('space', 'member');
+  });
+  it('keeps a refusal from the store as a refusal', async () => {
+    const reader = {
+      community: vi.fn(async () => {
+        throw new StoatError(403, 'ROOM_ACCESS_DENIED');
+      }),
+    };
+    const client = api('stranger');
+    await expect(communityOwnership(reader as never, client, 'space', 'x')).rejects.toMatchObject({
+      status: 403,
+    });
+    expect(client.getServer).not.toHaveBeenCalled();
   });
 });

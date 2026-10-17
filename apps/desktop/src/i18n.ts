@@ -433,6 +433,8 @@ const trMessages: Record<string, string> = {
     'Bu ses odasına erişimin değişti. Üyeliğin yeniden açıldıktan sonra katıl.',
   'The conversation session changed. Join the voice room again.':
     'Oturumun değişti. Ses odasına yeniden katıl.',
+  'A moderator disconnected you from the voice room.':
+    'Bir yönetici seni ses odasından çıkardı. İstersen yeniden katılabilirsin.',
   'Voice disconnected. Rejoin to obtain a fresh membership grant.':
     'Ses bağlantısı kesildi. Oda erişimini yeniden doğrulamak için tekrar katıl.',
   'Your screen is being shared': 'Ekranın paylaşılıyor',
