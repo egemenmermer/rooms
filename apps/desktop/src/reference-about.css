@@ -179,7 +179,8 @@
   border: 1px solid #4a5060;
   border-radius: 15px;
 }
-.about-modal > header {
+.about-modal > header,
+.about-modal > .modal-heading {
   padding: 22px 26px;
   border-bottom: 1px solid #3a414e;
 }
