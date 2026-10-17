@@ -1,33 +1,24 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { CalendarClock, ListPlus, Play, Search, Tv } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ListPlus, Play, Search, Tv } from 'lucide-react';
 import type { CinemaItem } from '../../../../packages/community-cinema/src/types';
 import { CinemaArt, QualityBadges } from './CinemaArt';
 import { useAllItems, useCategories } from './catalog-cache';
-import { useGuides, useNow } from './guide-cache';
-import {
-  hhmm,
-  minutesLabel,
-  programmeAfter,
-  programmeAt,
-  programmeProgress,
-  timeRange,
-} from './hall-model';
 import { useHall } from './use-hall';
 
-const ROW = 76;
-const OVERSCAN = 6;
+const TILE_MIN = 164;
+const TILE_GAP = 10;
+const ROW = 118 + TILE_GAP;
+const OVERSCAN = 3;
 
-/** Live TV: categories, channel cards with what is on now, and the selected channel's guide. */
+/** Live TV: categories and a calm grid of channel tiles; a click opens the channel in the hall. */
 export function LiveTab({
   categoryId,
   onCategory,
   onZapList,
-  onGuide,
 }: {
   categoryId: string | null;
   onCategory(id: string | null): void;
   onZapList(list: CinemaItem[]): void;
-  onGuide(ref: string): void;
 }) {
   const hall = useHall();
   const categories = useCategories(hall.hallId, 'live');
@@ -54,46 +45,45 @@ export function LiveTab({
       setSelected(list.find((item) => item.ref === playingRef)?.ref ?? list[0]!.ref);
   }, [list, selected, playingRef]);
 
-  // Virtualized channel list: only the rows in view (plus a little) are rendered.
+  // Virtualized grid: only the tile rows in view (plus a little) are rendered.
   const scroller = useRef<HTMLDivElement>(null);
-  const [view, setView] = useState({ top: 0, height: 600 });
+  const [view, setView] = useState({ top: 0, height: 600, width: 800 });
   useEffect(() => {
     const element = scroller.current;
     if (!element) return;
-    const measure = () => setView({ top: element.scrollTop, height: element.clientHeight });
+    const measure = () =>
+      setView({
+        top: element.scrollTop,
+        height: element.clientHeight,
+        width: element.clientWidth,
+      });
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-  const first = Math.max(0, Math.floor(view.top / ROW) - OVERSCAN);
-  const last = Math.min(list.length, Math.ceil((view.top + view.height) / ROW) + OVERSCAN);
-  const visible = list.slice(first, last);
-  const now = useNow();
-  const selectedItem = list.find((item) => item.ref === selected) ?? null;
-  const guides = useGuides(
-    hall.hallId,
-    [...visible, ...(selectedItem ? [selectedItem] : [])]
-      .filter((i) => i.hasGuide)
-      .map((i) => i.ref),
-  );
+  const columns = Math.max(1, Math.floor((view.width + TILE_GAP) / (TILE_MIN + TILE_GAP)));
+  const rows = Math.ceil(list.length / columns);
+  const firstRow = Math.max(0, Math.floor(view.top / ROW) - OVERSCAN);
+  const lastRow = Math.min(rows, Math.ceil((view.top + view.height) / ROW) + OVERSCAN);
   const total = categories.data?.reduce((sum, c) => sum + c.count, 0) ?? 0;
+  const direct = hall.canDirect || !hall.primary;
 
   const keyNav = (event: React.KeyboardEvent) => {
-    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Enter') return;
+    const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: columns, ArrowUp: -columns }[event.key];
+    if (step === undefined && event.key !== 'Enter') return;
     event.preventDefault();
     event.stopPropagation();
     const index = list.findIndex((item) => item.ref === selected);
-    if (event.key === 'Enter' && selectedItem) {
-      void hall.openItem(selectedItem);
+    if (event.key === 'Enter') {
+      if (index >= 0) void hall.openItem(list[index]!);
       return;
     }
-    const next =
-      list[Math.min(list.length - 1, Math.max(0, index + (event.key === 'ArrowDown' ? 1 : -1)))];
+    const next = list[Math.min(list.length - 1, Math.max(0, index + step!))];
     if (!next) return;
     setSelected(next.ref);
     const element = scroller.current,
-      y = list.indexOf(next) * ROW;
+      y = Math.floor(list.indexOf(next) / columns) * ROW;
     if (element && (y < element.scrollTop || y + ROW > element.scrollTop + element.clientHeight))
       element.scrollTop = y - element.clientHeight / 2 + ROW / 2;
   };
@@ -127,15 +117,18 @@ export function LiveTab({
         ))}
       </nav>
       <section className="hall-channels" aria-label="Kanallar">
-        <label className="hall-filter">
-          <Search size={15} />
-          <input
-            value={filter}
-            placeholder="Bu listede ara"
-            aria-label="Kanallarda ara"
-            onChange={(event) => setFilter(event.target.value)}
-          />
-        </label>
+        <div className="hall-channels-head">
+          <label className="hall-filter">
+            <Search size={15} />
+            <input
+              value={filter}
+              placeholder="Bu listede ara"
+              aria-label="Kanallarda ara"
+              onChange={(event) => setFilter(event.target.value)}
+            />
+          </label>
+          {!direct && <p className="hall-detail-note">{hall.directReason}</p>}
+        </div>
         <div
           ref={scroller}
           className="hall-channel-scroll"
@@ -145,10 +138,11 @@ export function LiveTab({
           tabIndex={0}
           onKeyDown={keyNav}
           onScroll={(event) =>
-            setView({
+            setView((current) => ({
+              ...current,
               top: event.currentTarget.scrollTop,
               height: event.currentTarget.clientHeight,
-            })
+            }))
           }
         >
           {items.loading && !items.data ? (
@@ -160,62 +154,58 @@ export function LiveTab({
               {filter ? 'Bu adla bir kanal yok.' : 'Bu kategoride kanal yok.'}
             </p>
           ) : (
-            <div style={{ height: list.length * ROW, position: 'relative' }}>
-              {visible.map((item, offset) => {
-                const programmes = guides[item.ref];
-                const onAir = programmeAt(programmes, now);
+            <div style={{ height: rows * ROW, position: 'relative' }}>
+              {Array.from({ length: lastRow - firstRow }, (_, offset) => {
+                const row = firstRow + offset;
                 return (
                   <div
-                    key={item.ref}
-                    id={`hall-channel-${item.ref}`}
-                    role="option"
-                    aria-selected={item.ref === selected}
-                    className={`hall-channel ${item.ref === selected ? 'selected' : ''} ${item.ref === playingRef ? 'playing' : ''}`}
-                    style={{ top: (first + offset) * ROW, height: ROW - 6 }}
-                    onClick={() => setSelected(item.ref)}
-                    onDoubleClick={() => void hall.openItem(item)}
+                    key={row}
+                    className="hall-tile-row"
+                    style={{
+                      top: row * ROW,
+                      height: ROW - TILE_GAP,
+                      gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+                    }}
                   >
-                    <span className="hall-channel-number">{item.number ?? ''}</span>
-                    <CinemaArt hallId={hall.hallId} art={item.art} title={item.title} />
-                    <span className="hall-channel-text">
-                      <span className="hall-channel-name">
-                        <QualityBadges badges={item.badges} max={1} />
-                        <strong>{item.title}</strong>
-                        {item.ref === playingRef && (
-                          <i className="hall-live-dot" aria-label="Salonda açık" />
-                        )}
-                      </span>
-                      <span className="hall-channel-programme">
-                        {onAir
-                          ? onAir.title
-                          : item.hasGuide
-                            ? programmes
-                              ? 'Yayın akışı yok'
-                              : ' '
-                            : 'Rehber yok'}
-                      </span>
-                      {onAir && (
-                        <span className="hall-channel-time">
-                          <span>{timeRange(onAir)}</span>
-                          <span
-                            className="hall-progress"
-                            style={{ '--progress': programmeProgress(onAir, now) } as CSSProperties}
-                          />
-                        </span>
-                      )}
-                    </span>
-                    {item.ref === selected && item.ref !== playingRef && (
-                      // Narrow windows hide the detail column; this keeps a pointer way to open.
-                      <button
-                        className="button primary small hall-channel-open"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void hall.openItem(item);
-                        }}
-                      >
-                        Aç
-                      </button>
-                    )}
+                    {list.slice(row * columns, row * columns + columns).map((item) => {
+                      const playing = item.ref === playingRef;
+                      return (
+                        <div
+                          key={item.ref}
+                          id={`hall-channel-${item.ref}`}
+                          role="option"
+                          aria-selected={item.ref === selected}
+                          title={playing ? 'Bu kanal salonda açık.' : undefined}
+                          className={`hall-tile ${item.ref === selected ? 'selected' : ''} ${playing ? 'playing' : ''}`}
+                          onClick={() => {
+                            setSelected(item.ref);
+                            if (!playing) void hall.openItem(item);
+                          }}
+                        >
+                          <CinemaArt hallId={hall.hallId} art={item.art} title={item.title} />
+                          <strong>{item.title}</strong>
+                          <span className="hall-tile-meta">
+                            {playing ? (
+                              <>
+                                <i className="hall-live-dot" aria-hidden="true" />
+                                Salonda
+                              </>
+                            ) : (
+                              <>
+                                {item.number !== null && <span>{item.number}</span>}
+                                <QualityBadges badges={item.badges} max={1} />
+                              </>
+                            )}
+                          </span>
+                          {!playing && (
+                            <span className="hall-tile-action" aria-hidden="true">
+                              {direct ? <Play size={14} /> : <ListPlus size={14} />}
+                              {direct ? 'Salonda aç' : 'Sıraya öner'}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })}
@@ -223,111 +213,7 @@ export function LiveTab({
           )}
         </div>
       </section>
-      <ChannelDetail
-        item={selectedItem}
-        guides={selectedItem ? guides[selectedItem.ref] : undefined}
-        now={now}
-        playing={selectedItem?.ref === playingRef}
-        onGuide={onGuide}
-      />
     </div>
-  );
-}
-
-function ChannelDetail({
-  item,
-  guides,
-  now,
-  playing,
-  onGuide,
-}: {
-  item: CinemaItem | null;
-  guides: ReturnType<typeof useGuides>[string];
-  now: number;
-  playing: boolean;
-  onGuide(ref: string): void;
-}) {
-  const hall = useHall();
-  if (!item)
-    return (
-      <aside className="hall-channel-detail empty">
-        <Tv size={28} />
-        <p>Bir kanal seç. Neyin yayında olduğunu burada görürsün.</p>
-      </aside>
-    );
-  const onAir = programmeAt(guides, now);
-  const upcoming = guides?.filter((p) => p.start >= (onAir?.stop ?? now)).slice(0, 4) ?? [];
-  const next = programmeAfter(guides, now);
-  return (
-    <aside className="hall-channel-detail" aria-label={`${item.title} yayın bilgisi`}>
-      <header>
-        <CinemaArt hallId={hall.hallId} art={item.art} title={item.title} />
-        <div>
-          <h2>{item.title}</h2>
-          <span>
-            {item.number !== null && <>Kanal {item.number} · </>}
-            <QualityBadges badges={item.badges} max={3} />
-          </span>
-        </div>
-      </header>
-      <section className="hall-onair">
-        <span className="hall-eyebrow live">Yayında</span>
-        {onAir ? (
-          <>
-            <h3>{onAir.title}</h3>
-            <p className="hall-onair-time">
-              {timeRange(onAir)} · {minutesLabel(onAir.stop - now)} kaldı
-            </p>
-            <span
-              className="hall-progress large"
-              style={{ '--progress': programmeProgress(onAir, now) } as CSSProperties}
-            />
-            {onAir.description && <p className="hall-onair-description">{onAir.description}</p>}
-          </>
-        ) : (
-          <p className="hall-onair-description">
-            {item.hasGuide ? 'Şu an için yayın akışı bilgisi yok.' : 'Bu kanalın rehberi yok.'}
-          </p>
-        )}
-      </section>
-      <div className="hall-detail-actions">
-        <button
-          className="button primary"
-          disabled={playing}
-          title={playing ? 'Bu kanal zaten salonda açık.' : undefined}
-          onClick={() => void hall.openItem(item)}
-        >
-          {hall.canDirect || !hall.primary ? <Play size={16} /> : <ListPlus size={16} />}
-          {playing
-            ? 'Salonda açık'
-            : hall.canDirect || !hall.primary
-              ? 'Salonda aç'
-              : 'Sıraya öner'}
-        </button>
-        {item.hasGuide && (
-          <button className="button secondary" onClick={() => onGuide(item.ref)}>
-            <CalendarClock size={16} />
-            Rehberde gör
-          </button>
-        )}
-      </div>
-      {!hall.canDirect && hall.primary && <p className="hall-detail-note">{hall.directReason}</p>}
-      {upcoming.length > 0 && (
-        <section className="hall-upcoming">
-          <span className="hall-eyebrow">Sıradaki</span>
-          <ol>
-            {upcoming.map((p) => (
-              <li key={p.start}>
-                <time>{hhmm(p.start)}</time>
-                <span>{p.title}</span>
-                <small>{minutesLabel(p.stop - p.start)}</small>
-              </li>
-            ))}
-          </ol>
-        </section>
-      )}
-      {!upcoming.length && next && <p className="hall-detail-note">Sonra: {next.title}</p>}
-    </aside>
   );
 }
 

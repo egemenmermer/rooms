@@ -8,7 +8,7 @@ import type { CinemaItem, CinemaProgramme } from '../../../../packages/community
 
 export type HallMedia = Extract<SharedMedia, { kind: 'community-media' }>;
 export type HallItem = QueueItem & { media: HallMedia };
-export type HallTab = 'live' | 'guide' | 'movies' | 'series' | 'youtube';
+export type HallTab = 'live' | 'movies' | 'series' | 'youtube';
 
 export const HALL_TITLE = 'Sinema salonu';
 

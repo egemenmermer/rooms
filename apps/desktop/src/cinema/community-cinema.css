@@ -182,21 +182,8 @@ html[data-input='keyboard'] .hall-tabs button::after {
     0 0 0 1px rgb(255 255 255 / 0.05);
   transform-origin: top left;
 }
-.hall-channel-open {
-  display: none;
-  align-self: center;
-  margin-left: auto;
-}
 /* While the mini player sits in the corner, every list scrolls clear of it. */
-.hall[data-mini='true']
-  :is(
-    .hall-categories,
-    .hall-channel-scroll,
-    .hall-channel-detail,
-    .hall-guide-scroll,
-    .hall-vod,
-    .hall-youtube-tab
-  ) {
+.hall[data-mini='true'] :is(.hall-categories, .hall-channel-scroll, .hall-vod, .hall-youtube-tab) {
   padding-bottom: calc(var(--hall-mini-h, 0px) + 32px);
 }
 .hall-screen-host.mini {
@@ -616,9 +603,6 @@ html[data-input='pointer'][data-motion='full'] .hall-control:active:not(:disable
 .hall-browse.with-mini .hall-youtube-tab {
   padding-bottom: 220px;
 }
-.hall-browse.with-mini .hall-channel-detail {
-  padding-bottom: 210px;
-}
 
 /* Under the screen: what is on, how far along, what is next. */
 .hall-nowbar {
@@ -717,9 +701,11 @@ button.hall-next:hover span {
 .hall-viewers > :is(span, div, img),
 .hall-nav-viewers > :is(span, div, img) {
   width: 26px;
+  min-width: 26px;
   height: 26px;
   margin-left: -7px;
   border-radius: 50%;
+  object-fit: cover;
   box-shadow: 0 0 0 2px var(--cinema-ground);
   font-size: 10px;
 }
@@ -1061,7 +1047,7 @@ button.hall-next:hover span {
 /* Live TV. */
 .hall-live {
   display: grid;
-  grid-template-columns: 216px minmax(0, 1fr) 320px;
+  grid-template-columns: 216px minmax(0, 1fr);
   height: 100%;
   min-height: 0;
 }
@@ -1143,6 +1129,19 @@ button.hall-next:hover span {
   color: var(--color-text-primary);
   font: 13.5px / 20px var(--font-family);
 }
+.hall-channels-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 4px 12px 0;
+}
+.hall-channels-head .hall-filter {
+  flex: 0 1 360px;
+  margin: 0;
+}
+.hall-channels-head .hall-detail-note {
+  margin: 0;
+}
 .hall-channel-scroll {
   position: relative;
   flex: 1;
@@ -1151,33 +1150,91 @@ button.hall-next:hover span {
   overflow-y: auto;
   outline: none;
 }
-.hall-channel {
+.hall-tile-row {
   position: absolute;
   left: 0;
   right: 4px;
   display: grid;
-  grid-template-columns: 26px 44px minmax(0, 1fr);
+  gap: 10px;
+}
+.hall-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 0 12px 0 8px;
-  border: 1px solid transparent;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 10px 8px;
+  overflow: hidden;
+  border: 1px solid var(--cinema-line);
   border-radius: 12px;
-  cursor: pointer;
-}
-.hall-channel:hover {
   background: var(--cinema-fill);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
 }
-.hall-channel.selected {
-  border-color: rgb(139 131 255 / 0.55);
-  background: var(--cinema-accent-soft);
+.hall-tile:hover {
+  background: var(--cinema-fill-hover);
 }
-.hall-channel-scroll:focus-visible .hall-channel.selected {
+.hall-tile.selected {
+  border-color: rgb(139 131 255 / 0.45);
+}
+.hall-channel-scroll:focus-visible .hall-tile.selected {
   border-color: var(--color-action-focus);
 }
-.hall-channel .hall-art.logo {
-  width: 44px;
+.hall-tile.playing {
+  border-color: rgb(139 131 255 / 0.7);
+  background: var(--cinema-accent-soft);
+  cursor: default;
+}
+.hall-tile .hall-art.logo {
+  width: 72px;
   height: 44px;
-  border-radius: 10px;
+  border-radius: 8px;
+  background: none;
+}
+.hall-tile .hall-art-fallback {
+  font-size: 15px;
+}
+.hall-tile strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font: 600 13px / 18px var(--font-family);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hall-tile-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 18px;
+  color: var(--color-text-muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+.hall-tile-action {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  background: var(--color-action-primary);
+  color: var(--cinema-on-video);
+  font: 600 12px / 1 var(--font-family);
+  opacity: 0;
+  transform: translateY(100%);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+.hall-tile:hover .hall-tile-action {
+  opacity: 1;
+  transform: none;
 }
 .hall-channel-number {
   color: var(--color-text-muted);
@@ -1195,373 +1252,6 @@ button.hall-next:hover span {
   background: var(--cinema-fill-hover);
   color: var(--color-text-secondary);
   font-weight: 600;
-}
-.hall-channel-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.hall-channel-name {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-}
-.hall-channel-name strong {
-  overflow: hidden;
-  font: 600 14px / 19px var(--font-family);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.hall-channel-programme {
-  overflow: hidden;
-  color: var(--color-text-secondary);
-  font-size: 12.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.hall-channel-time {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--color-text-muted);
-  font-size: 11.5px;
-  font-variant-numeric: tabular-nums;
-}
-.hall-channel-time .hall-progress {
-  width: 84px;
-}
-.hall-channel-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  min-height: 0;
-  padding: 20px 20px 24px;
-  overflow-y: auto;
-  border-left: 1px solid var(--cinema-line);
-}
-.hall-channel-detail.empty {
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-muted);
-  text-align: center;
-}
-.hall-channel-detail.empty p {
-  max-width: 220px;
-  font-size: var(--font-size-ui);
-}
-.hall-channel-detail header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.hall-channel-detail header .hall-art.logo {
-  width: 60px;
-  height: 60px;
-  border-radius: 14px;
-}
-.hall-channel-detail h2 {
-  margin: 0 0 3px;
-  font: var(--font-weight-h1) 20px / 26px var(--font-family);
-}
-.hall-channel-detail header span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--color-text-muted);
-  font-size: 12.5px;
-}
-.hall-onair {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 16px;
-  border-radius: 14px;
-  background: var(--cinema-fill);
-  box-shadow: inset 0 0 0 1px var(--cinema-line);
-}
-.hall-onair h3 {
-  margin: 0;
-  font: 650 18px / 24px var(--font-family);
-}
-.hall-onair-time {
-  margin: 0 0 4px;
-  color: var(--color-text-secondary);
-  font-size: 12.5px;
-  font-variant-numeric: tabular-nums;
-}
-.hall-onair-description {
-  margin: 6px 0 0;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  line-height: 1.55;
-}
-.hall-upcoming ol {
-  margin: 8px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.hall-upcoming li {
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto;
-  align-items: baseline;
-  gap: 10px;
-  padding: 8px 0;
-  border-top: 1px solid var(--cinema-line);
-  font-size: 13px;
-}
-.hall-upcoming time {
-  color: var(--color-text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-.hall-upcoming span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.hall-upcoming small {
-  color: var(--color-text-muted);
-  font-size: 12px;
-}
-
-/* Guide grid. */
-.hall-guide {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
-.hall-guide.empty {
-  justify-content: center;
-}
-.hall-guide-day {
-  padding: 12px 24px 8px;
-  color: var(--color-text-secondary);
-  font: 600 13px / 18px var(--font-family);
-}
-.hall-guide-day::first-letter {
-  text-transform: uppercase;
-}
-.hall-guide-scroll {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-}
-.hall-guide-canvas {
-  position: relative;
-}
-.hall-guide-times {
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  height: 34px;
-  background: var(--cinema-ground);
-  box-shadow: 0 1px 0 var(--cinema-line);
-}
-.hall-guide-corner {
-  position: sticky;
-  left: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  width: 205px;
-  height: 34px;
-  padding-left: 24px;
-  background: var(--cinema-ground);
-  color: var(--color-text-primary);
-  font: 650 12.5px / 1 var(--font-family);
-  box-sizing: border-box;
-}
-.hall-guide-slot {
-  position: absolute;
-  top: 0;
-  display: flex;
-  align-items: center;
-  height: 34px;
-  padding-left: 8px;
-  border-left: 1px solid var(--cinema-line);
-  color: var(--color-text-muted);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-.hall-guide-slot.current {
-  color: var(--color-text-primary);
-  font-weight: 600;
-}
-.hall-guide-now {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  z-index: 3;
-  width: 2px;
-  margin-left: -1px;
-  background: var(--cinema-live);
-  pointer-events: none;
-}
-.hall-guide-now::before {
-  content: '';
-  position: absolute;
-  top: 27px;
-  left: -3px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--cinema-live);
-}
-.hall-guide-row {
-  position: absolute;
-  left: 0;
-  right: 0;
-}
-.hall-guide-channel {
-  position: sticky;
-  left: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 205px;
-  height: 100%;
-  padding: 0 12px 0 20px;
-  border: 0;
-  border-right: 1px solid var(--cinema-line);
-  background: var(--cinema-ground);
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  box-sizing: border-box;
-}
-.hall-guide-channel:hover strong {
-  color: var(--color-action-primaryHover);
-}
-.hall-guide-channel .hall-art.logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-}
-.hall-guide-channel > span:last-child {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.hall-guide-channel small {
-  color: var(--color-text-muted);
-  font-size: 11px;
-}
-.hall-guide-channel strong {
-  overflow: hidden;
-  font-size: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.hall-guide-cell {
-  position: absolute;
-  top: 4px;
-  bottom: 4px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  min-width: 0;
-  padding: 0 10px;
-  overflow: hidden;
-  border: 0;
-  border-radius: var(--radius-8);
-  background: var(--cinema-fill);
-  color: var(--color-text-secondary);
-  text-align: left;
-  cursor: pointer;
-}
-.hall-guide-cell:hover {
-  background: var(--cinema-fill-hover);
-  color: var(--color-text-primary);
-}
-.hall-guide-cell.airing {
-  background: var(--cinema-accent-soft);
-  color: var(--color-text-primary);
-}
-.hall-guide-cell.past {
-  opacity: 0.5;
-}
-.hall-guide-cell.selected {
-  background: var(--color-action-primary);
-  color: var(--color-text-onAccent);
-  opacity: 1;
-}
-.hall-guide-cell strong,
-.hall-guide-cell small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.hall-guide-cell strong {
-  font: 600 12.5px / 17px var(--font-family);
-}
-.hall-guide-cell small {
-  font-size: 11px;
-  opacity: 0.75;
-  font-variant-numeric: tabular-nums;
-}
-.hall-guide-loading {
-  position: absolute;
-  top: 18px;
-  width: 240px;
-  height: 26px;
-  border-radius: 8px;
-  background: var(--cinema-fill);
-}
-.hall-programme {
-  position: absolute;
-  right: 20px;
-  bottom: 20px;
-  z-index: 10;
-  width: min(380px, calc(100% - 40px));
-  padding: 16px 18px 18px;
-  border-radius: 16px;
-  background: var(--color-background-sidebar);
-  box-shadow:
-    0 24px 60px -20px rgb(0 0 0 / 0.8),
-    0 0 0 1px var(--cinema-line-strong);
-}
-.hall-programme header {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-.hall-programme header .hall-art.logo {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-}
-.hall-programme header > div {
-  flex: 1;
-  min-width: 0;
-}
-.hall-programme h3 {
-  margin: 2px 0;
-  font: 650 17px / 22px var(--font-family);
-}
-.hall-programme header small {
-  color: var(--color-text-muted);
-  font-size: 12px;
-}
-.hall-programme p {
-  margin: 10px 0 0;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  line-height: 1.55;
-}
-.hall-programme .hall-programme-sub {
-  color: var(--color-text-primary);
-}
-.hall-programme .hall-detail-actions {
-  margin-top: 14px;
-}
-.hall-programme .hall-detail-note {
-  margin: 0;
 }
 
 /* Movies and series. */
@@ -1912,42 +1602,21 @@ button.hall-next:hover span {
   -webkit-line-clamp: 2;
 }
 
-/* YouTube tab. */
-.hall-youtube-tab {
-  height: 100%;
-  padding: var(--space-32) var(--space-24);
-  overflow-y: auto;
-  box-sizing: border-box;
+/* YouTube tab: the Movies/Series hero with a link field instead of a catalog. */
+.hall-hero.youtube.blank {
+  background:
+    radial-gradient(120% 140% at 85% 10%, rgb(139 131 255 / 0.28), transparent 60%),
+    radial-gradient(90% 120% at 100% 100%, rgb(255 79 96 / 0.12), transparent 55%),
+    var(--color-background-raised);
 }
-.hall-youtube-card {
-  display: flex;
-  gap: 18px;
-  max-width: 640px;
-  margin-bottom: 32px;
-  padding: 24px;
-  border-radius: 18px;
-  background: var(--cinema-fill);
-  box-shadow: inset 0 0 0 1px var(--cinema-line);
+.hall-hero.youtube .hall-hero-text {
+  max-width: 560px;
 }
-.hall-youtube-icon {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 46px;
-  height: 46px;
-  border-radius: 13px;
-  background: var(--cinema-accent-soft);
-  color: var(--color-action-primary);
-}
-.hall-youtube-card h2 {
-  margin: 2px 0 6px;
-  font: var(--font-weight-h1) 19px / 25px var(--font-family);
-}
-.hall-youtube-card p {
-  margin: 0 0 16px;
-  color: var(--color-text-secondary);
-  font-size: 13.5px;
-  line-height: 1.5;
+.hall-hero.youtube h2 {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 .hall-youtube-form {
   display: flex;
@@ -1956,29 +1625,21 @@ button.hall-next:hover span {
 .hall-youtube-form input {
   flex: 1;
   min-width: 0;
-  height: 38px;
-  padding: 0 12px;
+  height: 40px;
+  padding: 0 14px;
   border: 1px solid var(--cinema-line-strong);
   border-radius: var(--radius-8);
-  background: var(--color-background-sidebar);
+  background: rgb(23 24 29 / 0.78);
   color: var(--color-text-primary);
   font: 13.5px / 20px var(--font-family);
+  backdrop-filter: blur(8px);
 }
 .hall-youtube-form input:focus {
   border-color: var(--color-action-primary);
   outline: none;
 }
-.hall-youtube-preview {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 12px;
-  color: var(--color-text-muted);
-  font-size: 12.5px;
-}
-.hall-youtube-preview img {
-  width: 96px;
-  border-radius: 6px;
+.hall-youtube-form .button {
+  height: 40px;
 }
 .hall-form-error,
 .cs-error {
@@ -2217,6 +1878,34 @@ button.hall-next:hover span {
 /* The channel header's member and search tools act on the main chat page, not this panel. */
 .hall-chat .chat-header-tools {
   display: none;
+}
+/* Beside a film the chat stays small and quiet: one compact row per message. */
+.hall-chat .reference-chat {
+  --chat-font-size: 13px;
+}
+.hall-chat .reference-chat .chat-transcript {
+  gap: 8px;
+  padding: 6px 12px 8px;
+}
+.hall-chat .reference-chat .message {
+  gap: 8px;
+}
+.hall-chat .reference-chat .message > :is(.avatar, .voice-photo) {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  font-size: 10px;
+}
+.hall-chat .reference-chat .message-byline {
+  gap: 6px;
+  min-height: 15px;
+  margin: 0 0 1px;
+}
+.hall-chat .reference-chat .message-author {
+  font-size: 12px;
+}
+.hall-chat .reference-chat .message-body > p {
+  line-height: 1.4;
 }
 .hall-queue {
   display: flex;
@@ -2521,11 +2210,13 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
   flex: 0 0 auto;
   align-items: center;
 }
-.hall-nav-viewers > :is(span, div, img) {
-  width: 16px;
-  height: 16px;
-  margin-left: -5px;
-  box-shadow: 0 0 0 2px var(--color-background-sidebar);
+/* No ring: the row's own background changes on hover and selection, a ring never matches. */
+.minimal-nav.hall-nav > .hall-nav-viewers > :is(span, div, img) {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 3px;
+  box-shadow: none;
   font-size: 8px;
 }
 .hall-nav-viewers small {
@@ -2836,12 +2527,7 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
   letter-spacing: 0.05em;
 }
 
-/* Narrow windows: the panel floats over the hall, Live TV drops its detail column. */
-@media (max-width: 1340px) {
-  .hall-live {
-    grid-template-columns: 196px minmax(0, 1fr) 280px;
-  }
-}
+/* Narrow windows: the panel floats over the hall. */
 @media (max-width: 1180px) {
   .hall.with-panel .hall-body {
     grid-template-columns: minmax(0, 1fr);
@@ -2857,12 +2543,6 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
   }
   .hall-live {
     grid-template-columns: 180px minmax(0, 1fr);
-  }
-  .hall-channel-detail {
-    display: none;
-  }
-  .hall-channel-open {
-    display: inline-flex;
   }
 }
 @media (max-width: 1000px) {
