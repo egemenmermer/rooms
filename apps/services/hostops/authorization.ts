@@ -1,3 +1,4 @@
+import { StoatError } from '@rooms/stoat';
 import type { StoatAuthorizationReader } from '../access/stoat-authorization';
 import { stoatChannelPermissions, StoatPermissions } from '../access/stoat-permissions';
 
@@ -30,4 +31,29 @@ export async function visibleHostRooms(
     visible.push(...ids.filter((id): id is string => id !== null));
   }
   return visible;
+}
+
+/**
+ * Whether this member owns the community. The membership store answers first; if it cannot be
+ * reached (a refusal is still a refusal) the Stoat API answers instead, so an unreachable store
+ * never locks the owner out.
+ */
+export async function communityOwnership(
+  reader: Pick<StoatAuthorizationReader, 'community'> | null,
+  api: {
+    getServer(id: string): Promise<{ owner?: unknown }>;
+    getMember(serverId: string, userId: string): Promise<unknown>;
+  },
+  communityId: string,
+  userId: string,
+): Promise<boolean> {
+  if (reader)
+    try {
+      return (await reader.community(communityId, userId)).server.owner === userId;
+    } catch (error) {
+      if (error instanceof StoatError) throw error;
+    }
+  const owner = (await api.getServer(communityId)).owner === userId;
+  if (!owner) await api.getMember(communityId, userId);
+  return owner;
 }
