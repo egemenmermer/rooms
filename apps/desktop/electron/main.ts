@@ -88,6 +88,17 @@ protocol.registerSchemesAsPrivileged([
     },
   },
   {
+    // Community cinema relay playlists, segments and artwork, fetched by main with the session token.
+    scheme: 'rooms-cinema',
+    privileges: {
+      standard: true,
+      secure: true,
+      stream: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+    },
+  },
+  {
     scheme: 'rooms-media',
     privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true },
   },

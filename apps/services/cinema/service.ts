@@ -503,6 +503,7 @@ export class CinemaService {
       session: info.session,
       ticket: ticket.ticket,
       expiresAt: ticket.expiresAt,
+      itemRef: current.ref,
       live: info.live,
       durationSec: info.durationSec ?? item?.durationSec ?? episode?.episode.durationSec ?? null,
       offsetSec: info.offsetSec,

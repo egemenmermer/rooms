@@ -110,6 +110,7 @@ export type CinemaWatch = {
   session: string;
   ticket: string;
   expiresAt: number;
+  itemRef: string;
   live: boolean;
   /** Seconds; VOD only. */
   durationSec: number | null;
