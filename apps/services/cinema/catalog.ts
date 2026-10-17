@@ -147,7 +147,7 @@ export class Catalog {
     else if (sort === 'rating')
       items = [...items].sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
     const offset = Math.max(0, query.offset ?? 0);
-    const limit = Math.min(200, Math.max(1, query.limit ?? 60));
+    const limit = Math.min(1000, Math.max(1, query.limit ?? 60));
     return { items: items.slice(offset, offset + limit).map(publicItem), total: items.length };
   }
 

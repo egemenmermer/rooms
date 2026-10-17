@@ -39,7 +39,7 @@ const itemsQuery = z
     categoryId: z.string().max(120).nullable().optional(),
     sort: z.enum(['default', 'name', 'added', 'rating']).optional(),
     offset: z.number().int().min(0).max(1_000_000).optional(),
-    limit: z.number().int().min(1).max(200).optional(),
+    limit: z.number().int().min(1).max(1000).optional(),
   })
   .strict();
 
@@ -57,6 +57,8 @@ const watchResponse = z
     offsetSec: z.number().min(0),
     epoch: z.number().int(),
     itemRef: z.string().regex(CINEMA_REF_PATTERN),
+    ttlMs: z.number().int().min(0).max(3_600_000).optional(),
+    originPdtMs: z.number().nullable().optional(),
   })
   .passthrough();
 
@@ -184,6 +186,7 @@ export function setupCommunityCinema(options: {
       durationSec: watch.durationSec,
       offsetSec: watch.offsetSec,
       epoch: watch.epoch,
+      originPdtMs: watch.originPdtMs ?? null,
     };
   });
 

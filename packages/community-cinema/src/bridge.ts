@@ -48,6 +48,13 @@ export type CinemaWatchSource = {
   offsetSec: number;
   /** Changes whenever the relay restarts (seek, new item); reload the player then. */
   epoch: number;
+  /**
+   * PROGRAM-DATE-TIME (epoch ms) of relay output time 0, or null. Every relay playlist
+   * carries EXT-X-PROGRAM-DATE-TIME, so the work position is
+   * `offsetSec + (hls.playingDate − originPdtMs) / 1000` — independent of where hls.js
+   * starts its own timeline.
+   */
+  originPdtMs: number | null;
 };
 
 /** Error messages the bridge rejects with; the UI maps them to Turkish copy. */
@@ -66,7 +73,10 @@ export type CinemaErrorCode =
   | 'CINEMA_NOTHING_SELECTED'
   | 'CINEMA_RELAY_BUSY'
   | 'CINEMA_CODEC_UNSUPPORTED'
-  | 'CINEMA_STREAM_FAILED';
+  | 'CINEMA_STREAM_FAILED'
+  /** The relay session ended (the hall moved on or it went idle); call watch() again. */
+  | 'CINEMA_SESSION_ENDED'
+  | 'CINEMA_RATE_LIMITED';
 
 export interface CinemaBridge {
   status(communityId: string): Promise<CinemaStatus>;

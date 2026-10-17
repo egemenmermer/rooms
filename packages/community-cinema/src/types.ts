@@ -117,4 +117,11 @@ export type CinemaWatch = {
   /** VOD: the position the relay started from. */
   offsetSec: number;
   epoch: number;
+  /** Ticket lifetime from issue, so clients renew by their own clock. */
+  ttlMs: number;
+  /**
+   * EXT-X-PROGRAM-DATE-TIME (epoch ms) of relay output time 0, or null while unknown.
+   * Work position = offsetSec + (playing date − originPdtMs) / 1000, for live and VOD.
+   */
+  originPdtMs: number | null;
 };

@@ -507,6 +507,7 @@ export function createCommunityCinemaFixtureBridge(
           durationSec: current.media.live ? null : (detail?.durationSec ?? 2700),
           offsetSec: 0,
           epoch: room?.timeline.epoch ?? 1,
+          originPdtMs: null,
         },
         variant === 'default' ? 300 : 200,
       );

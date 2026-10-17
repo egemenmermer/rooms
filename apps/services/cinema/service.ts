@@ -40,6 +40,8 @@ export type RelayInfo = {
   epoch: number;
   durationSec: number | null;
   producedSec?: number;
+  /** PROGRAM-DATE-TIME of output time 0 (epoch ms), once the first playlist exists. */
+  originPdtMs?: number | null;
   windowStartSec?: number;
 };
 
@@ -523,6 +525,8 @@ export class CinemaService {
       durationSec: info.durationSec ?? item?.durationSec ?? episode?.episode.durationSec ?? null,
       offsetSec: info.offsetSec,
       epoch: info.epoch,
+      ttlMs: Math.max(0, ticket.expiresAt - Date.now()),
+      originPdtMs: info.originPdtMs ?? null,
     };
   }
 }

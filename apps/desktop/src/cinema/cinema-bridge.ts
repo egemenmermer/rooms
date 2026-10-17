@@ -53,6 +53,8 @@ const copy: Record<CinemaErrorCode, string> = {
   CINEMA_CODEC_UNSUPPORTED:
     'Bu kanalın görüntü biçimi salonda oynatılamıyor. Başka bir kanal dene.',
   CINEMA_STREAM_FAILED: 'Yayın açılamadı. Biraz sonra yeniden dene.',
+  CINEMA_SESSION_ENDED: 'Salondaki yayın değişti. Yeniden bağlanılıyor…',
+  CINEMA_RATE_LIMITED: 'Çok hızlı istek gönderildi. Birkaç saniye sonra yeniden dene.',
 };
 
 /** The bridge code inside an error, if any (IPC wraps messages). */

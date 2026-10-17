@@ -118,6 +118,7 @@ describe('community cinema IPC', () => {
       durationSec: null,
       offsetSec: 0,
       epoch: 3,
+      originPdtMs: null,
     });
     expect(JSON.stringify(source)).not.toContain(TICKET);
     const playlist = await mocks.protocol!(new Request('rooms-cinema://stream/s1/index.m3u8'));

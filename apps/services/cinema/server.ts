@@ -166,7 +166,7 @@ export async function createCinemaServer(options: CinemaServerOptions) {
           .optional(),
         sort: z.enum(['default', 'name', 'added', 'rating']).optional(),
         offset: z.coerce.number().int().min(0).max(1_000_000).optional(),
-        limit: z.coerce.number().int().min(1).max(200).optional(),
+        limit: z.coerce.number().int().min(1).max(1000).optional(),
       })
       .parse(request.query);
     return service.catalog(identity.communityId).list(query);
