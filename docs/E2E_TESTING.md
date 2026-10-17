@@ -148,11 +148,11 @@ Kayıt üretimde olduğu gibi davetle sınırlıdır (`invite_only = true`). Tes
 | Oturum | `auth.spec.ts` | İlk giriş, profil adımı ve üst sistemde kaydedilen görünen ad; yanlış şifre; yeniden açılışta oturum; çıkış sonrası oturumun unutulması |
 | Kayıt | `registration.spec.ts` | Biletle hesap oluşturup topluluğa düşme; kullanılmış biletin reddi ve defter durumu; vekilin doğrudan hesap oluşturmayı reddetmesi |
 | Sohbet | `chat.spec.ts` | İki yönlü canlı mesaj; düzenle/sil yayılımı; başkasının mesajını silememe; iki üyenin ortak reaksiyonu, sayımı ve üst sistemde emojinin kendisiyle saklanması; yeniden açılışta geçmiş |
-| Kanallar | `channels.spec.ts` | Sahibin oluşturduğu metin/ses kanallarının üyeye canlı düşmesi; üst sistemde ses yeteneği; menüden yeniden adlandırma ve silme; üyeye yetki açıklaması |
+| Kanallar | `channels.spec.ts` | Sahibin oluşturduğu metin/ses kanallarının üyeye canlı düşmesi; üst sistemde ses yeteneği; art arda oluşturmanın 5 sn içinde bitmesi; menüden yeniden adlandırma ve silme; üyeye yetki açıklaması |
 | Arkadaşlar ve DM | `friends-dm.spec.ts` | `ad#1234` ile istek, kabul, özel mesaj alışverişi; arkadaş olmayana kuralın açıklanması |
 | Erişim | `access-control.spec.ts` | Topluluk dışı hesabın odaları görmemesi; medya/etkinlik servislerinin üye olmayanı reddi; 5 dakikalık medya yetkisi; görünüm sürecinde Node ve sahte IPC olmaması |
 | Ses | `voice.spec.ts` | Katılımcıların birbirini görmesi; mikrofonun açılıp karşı tarafa ses paketlerinin ulaşması; kamera görüntüsü; sayfa değişiminde görüşmenin sürmesi; ayrılma |
-| Etkinlikler | `activities.spec.ts` | Anket oluşturma, oy ve sayım (geçici çözümle); yeni odada anket (bilinen hata); ilk yükleme süresi (bilinen hata); Kıraathane oyun kartları |
+| Etkinlikler | `activities.spec.ts` | Anket oluşturma, oy ve sayım; yeni veya boş odada anket formunun açılması; yeni odanın beklemeden yüklenmesi; Kıraathane oyun kartları |
 | Tercihler | `settings.spec.ts` | Görünüm ayarının açık kayıtla saklanıp yeniden açılışta korunması; kaydedilmemiş değişikliğin geri alınması |
 
 Kapsam dışı ve neden:
