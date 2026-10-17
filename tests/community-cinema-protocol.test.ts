@@ -104,3 +104,35 @@ describe('community cinema hall protocol', () => {
       expect(commandSchema.safeParse(envelope(media)).success).toBe(false);
   });
 });
+
+describe('hall remote control', () => {
+  it('does not let a member without the remote move a live channel with an "ended" report', () => {
+    const { room, send } = hall();
+    send('alice', { type: 'session.control', mode: 'host' });
+    send('alice', { type: 'queue.add', itemId: 'a', media: live, start: true });
+    send('bob', {
+      type: 'queue.add',
+      itemId: 'b',
+      media: { kind: 'community-media', ref: 'l-1002', title: 'Show TV', live: true },
+    });
+    expect(() => send('bob', { type: 'queue.next', fromItemId: 'a', reason: 'ended' })).toThrow(
+      /SESSION_HOST_CONTROL/,
+    );
+    expect(room.snapshot.timeline.itemId).toBe('a');
+    send('alice', { type: 'queue.next', fromItemId: 'a', reason: 'ended' });
+    expect(room.snapshot.timeline.itemId).toBe('b');
+  });
+
+  it('still lets any viewer report the end of a film', () => {
+    const { room, send } = hall();
+    send('alice', { type: 'session.control', mode: 'host' });
+    send('alice', { type: 'queue.add', itemId: 'a', media: movie, start: true });
+    send('alice', {
+      type: 'queue.add',
+      itemId: 'b',
+      media: { ...movie, ref: 'm-3002', title: 'Babam ve Oğlum' },
+    });
+    send('bob', { type: 'queue.next', fromItemId: 'a', reason: 'ended' });
+    expect(room.snapshot.timeline).toMatchObject({ itemId: 'b', playing: true });
+  });
+});

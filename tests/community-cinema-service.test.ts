@@ -200,6 +200,14 @@ describe('community cinema service', () => {
       relaySlots: 1,
     });
     expect(status.source.label).toMatch(/^http:\/\/127\*\*\*:\d+$/);
+    const memberView = (await s.call('GET', `/v1/communities/${COMMUNITY}`, 'member-token')).body;
+    expect(memberView).toMatchObject({
+      connected: true,
+      isOwner: false,
+      source: null,
+      account: null,
+    });
+    expect(memberView.catalog.live).toBe(3);
     const categories = (
       await s.call('GET', `/v1/halls/${HALL}/categories?kind=live`, 'member-token')
     ).body;

@@ -60,7 +60,7 @@ export class ConfigStore {
       names = [];
     }
     for (const name of names) {
-      const match = /^([A-Za-z0-9]+)\.enc$/.exec(name);
+      const match = /^(.+)\.enc$/.exec(name);
       if (!match || !id.safeParse(match[1]).success) continue;
       const config = this.files.read<CommunityConfig>(join(this.folder, name));
       if (config?.communityId === match[1]) this.configs.set(config.communityId, config);

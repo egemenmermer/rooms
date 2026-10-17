@@ -1,5 +1,6 @@
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import rateLimit from '@fastify/rate-limit';
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { StoatError } from '@rooms/stoat';
 import { SOCIAL_ID_PATTERN } from '@rooms/social';
@@ -45,8 +46,13 @@ export async function createCinemaServer(options: CinemaServerOptions) {
   await server.register(rateLimit, {
     max: 1200,
     timeWindow: '1 minute',
-    // Relay segments are fetched every two seconds per viewer and carry their own ticket.
-    allowList: (request) => request.url.startsWith('/v1/relay/'),
+    // Every request arrives through the reverse proxy, so the peer address is the proxy's.
+    // Budget per member (token) instead; relay files are budgeted per ticket.
+    keyGenerator: (request) => {
+      const relay = /^\/v1\/relay\/([^/]{1,1024})\//.exec(request.url);
+      const key = relay?.[1] ?? request.headers.authorization ?? request.ip;
+      return createHash('sha256').update(key).digest('base64url').slice(0, 22);
+    },
   });
 
   const token = (request: FastifyRequest) => {

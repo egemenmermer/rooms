@@ -140,7 +140,8 @@ const CATALOG_REFRESH_MS = 24 * 3600_000;
 export class CinemaService {
   private readonly jobs = new Map<string, Job>();
   private readonly lastJobs = new Map<string, CinemaImportProgress>();
-  private readonly sessionRefs = new Map<string, string>();
+  /** Relay session → the catalog ref it plays, for VOD reuse; pruned as relays stop. */
+  private readonly sessionRefs = new Map<string, { communityId: string; ref: string }>();
   private readonly art = new Map<string, { body: Buffer; type: string }>();
   private artBytes = 0;
 
@@ -163,24 +164,27 @@ export class CinemaService {
       hallChannelId: config.hallChannelId,
       isOwner,
       connected: !!config.source,
-      source: config.source
-        ? {
-            kind: config.source.kind,
-            label: isOwner
-              ? maskServer(
-                  config.source.kind === 'xtream' ? config.source.server : config.source.url,
-                )
-              : null,
-            hasCustomGuide: !!config.source.guideUrl,
-          }
-        : null,
-      account: config.account
-        ? {
-            status: config.account.status,
-            expiresAt: config.account.expiresAt,
-            maxConnections: config.account.maxConnections,
-          }
-        : null,
+      // Only the owner learns anything about the provider account.
+      source:
+        config.source && isOwner
+          ? {
+              kind: config.source.kind,
+              label: isOwner
+                ? maskServer(
+                    config.source.kind === 'xtream' ? config.source.server : config.source.url,
+                  )
+                : null,
+              hasCustomGuide: !!config.source.guideUrl,
+            }
+          : null,
+      account:
+        config.account && isOwner
+          ? {
+              status: config.account.status,
+              expiresAt: config.account.expiresAt,
+              maxConnections: config.account.maxConnections,
+            }
+          : null,
       catalog: {
         ...counts,
         importedAt: catalog?.snapshot.importedAt ?? null,
@@ -489,7 +493,7 @@ export class CinemaService {
         .sessionsOf(communityId)
         .find(
           (session) =>
-            this.sessionRefs.get(session.session) === current.ref &&
+            this.sessionRefs.get(session.session)?.ref === current.ref &&
             position >= session.offsetSec + (session.windowStartSec ?? 0) &&
             position <= session.offsetSec + (session.producedSec ?? 0) + 10,
         );
@@ -504,7 +508,11 @@ export class CinemaService {
           slots,
         }));
     }
-    this.sessionRefs.set(info.session, current.ref);
+    const running = new Set(this.options.relays.sessionsOf(communityId).map((s) => s.session));
+    for (const [session, entry] of this.sessionRefs)
+      if (entry.communityId === communityId && !running.has(session))
+        this.sessionRefs.delete(session);
+    this.sessionRefs.set(info.session, { communityId, ref: current.ref });
     const ticket = this.options.tickets({ session: info.session, userId, hallId });
     return {
       session: info.session,
