@@ -1,0 +1,25 @@
+# Rendered into .local/e2e/stack/Revolt.toml. Secrets arrive through REVOLT__* variables in secrets.env.
+production = false
+environment = "dev"
+
+[database]
+mongodb = "mongodb://database"
+redis = "redis://redis/"
+
+[hosts]
+app = "http://127.0.0.1:{{E2E_HTTP_PORT}}"
+api = "http://127.0.0.1:{{E2E_HTTP_PORT}}/api"
+events = "ws://127.0.0.1:{{E2E_HTTP_PORT}}/ws"
+autumn = "http://127.0.0.1:{{E2E_HTTP_PORT}}/autumn"
+january = "http://127.0.0.1:{{E2E_HTTP_PORT}}/january"
+voso_legacy = ""
+voso_legacy_ws = ""
+
+[api.registration]
+# Production is invite-only; the suite seeds account invitations through the database.
+invite_only = true
+
+[files.s3]
+endpoint = "http://minio:9000"
+region = "minio"
+default_bucket = "revolt-uploads"

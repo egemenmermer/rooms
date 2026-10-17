@@ -28,6 +28,7 @@ ROOMS'u kullanmak için herkesin sunucu kurması gerekmez. Var olan bir toplulu�
 - [Katkı rehberi](../CONTRIBUTING.md) ve [geliştirme ortamı](DEVELOPMENT.md).
 - [Mimari](ARCHITECTURE.md): bileşenler, veri sahipliği ve güven sınırları.
 - [Medya aktarımı](MEDIA_TRANSPORT.md) ve [etkinlik protokolü](ACTIVITY_PROTOCOL.md).
+- [Uçtan uca test paketi](E2E_TESTING.md): gerçek istemcilerle yerel atılabilir sunucuda otomatik test.
 - [Betik dizini](../scripts/README.md) ve [sınırlı YouTube tanı aracı](../scripts/diagnostics/youtube-source-probe/README.md).
 - [Hata ve özellik teslim kaydı](BUGS_FEATURES_DELIVERY.md): uygulama aşamaları ve açık kabul.
 

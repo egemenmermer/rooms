@@ -1,0 +1,195 @@
+# Disposable ROOMS end-to-end stack. Rendered and started by `pnpm e2e:stack up`.
+# Mirrors the production topology (pinned Stoat, Caddy routes, access, activities, LiveKit)
+# on loopback-only ports. Generated secrets and data live in ${E2E_STATE} (.local/e2e/stack).
+name: rooms-e2e
+
+x-stoat: &stoat
+  env_file: ${E2E_STATE}/secrets.env
+  restart: unless-stopped
+  volumes:
+    - type: bind
+      source: ${E2E_STATE}/Revolt.toml
+      target: /Revolt.toml
+      read_only: true
+
+x-rooms-service: &rooms-service
+  image: node:22.22.0-bookworm-slim
+  working_dir: /service
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ['no-new-privileges:true']
+  tmpfs: ['/tmp:size=16m']
+
+services:
+  database:
+    image: mongo:8
+    restart: unless-stopped
+    command: [mongod, --wiredTigerCacheSizeGB, '0.25']
+    ports: ['127.0.0.1:${E2E_MONGO_PORT}:27017']
+    volumes: [mongo:/data/db]
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
+
+  redis:
+    image: valkey/valkey:9-alpine
+    restart: unless-stopped
+
+  rabbit:
+    image: rabbitmq:4
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbituser
+      RABBITMQ_DEFAULT_PASS: ${E2E_RABBIT_PASSWORD}
+    volumes: [rabbit:/var/lib/rabbitmq]
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+
+  minio:
+    image: pgsty/silo
+    command: server /data
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: roomsuploads
+      MINIO_ROOT_PASSWORD: ${E2E_MINIO_PASSWORD}
+      MINIO_DOMAIN: minio
+    volumes: [minio:/data]
+    networks:
+      default:
+        aliases:
+          - revolt-uploads.minio
+          - attachments.minio
+          - avatars.minio
+          - backgrounds.minio
+          - icons.minio
+          - banners.minio
+          - emojis.minio
+
+  createbuckets:
+    image: pgsty/mc
+    depends_on: [minio]
+    environment:
+      MINIO_PASSWORD: ${E2E_MINIO_PASSWORD}
+    entrypoint: >
+      /bin/sh -c "
+      while ! /usr/bin/mc ready minio; do
+        /usr/bin/mc alias set minio http://minio:9000 roomsuploads $${MINIO_PASSWORD};
+        sleep 1;
+      done;
+      /usr/bin/mc mb --ignore-existing minio/revolt-uploads;
+      exit 0;
+      "
+
+  api:
+    <<: *stoat
+    image: ghcr.io/stoatchat/api:v0.15.5
+    ports: ['127.0.0.1:${E2E_API_PORT}:14702']
+    depends_on:
+      database: { condition: service_healthy }
+      redis: { condition: service_started }
+      rabbit: { condition: service_healthy }
+
+  events:
+    <<: *stoat
+    image: ghcr.io/stoatchat/events:v0.15.5
+    depends_on:
+      database: { condition: service_healthy }
+      redis: { condition: service_started }
+
+  autumn:
+    <<: *stoat
+    image: ghcr.io/stoatchat/file-server:v0.15.5
+    depends_on:
+      database: { condition: service_healthy }
+      createbuckets: { condition: service_completed_successfully }
+
+  january:
+    <<: *stoat
+    image: ghcr.io/stoatchat/proxy:v0.15.5
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ['127.0.0.1:${E2E_HTTP_PORT}:80']
+    volumes:
+      - ${E2E_STATE}/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${E2E_STATE}/stoat.json:/srv/rooms-e2e/stoat.json:ro
+    depends_on: [api, events, autumn, january, access, activities, livekit]
+
+  livekit:
+    # Same server release as production.
+    image: livekit/livekit-server:v1.9.12
+    restart: unless-stopped
+    command: [--config, /etc/livekit.yaml]
+    volumes: ['${E2E_STATE}/livekit.yaml:/etc/livekit.yaml:ro']
+    ports:
+      # The renderer CSP only allows local LiveKit signalling at 127.0.0.1:7880.
+      - '127.0.0.1:7880:7880'
+      - '127.0.0.1:${E2E_RTC_TCP_PORT}:${E2E_RTC_TCP_PORT}'
+      - '127.0.0.1:${E2E_RTC_UDP_START}-${E2E_RTC_UDP_END}:${E2E_RTC_UDP_START}-${E2E_RTC_UDP_END}/udp'
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rooms_activity
+      POSTGRES_PASSWORD: ${E2E_POSTGRES_PASSWORD}
+      POSTGRES_DB: rooms
+    volumes: [postgres:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U rooms_activity -d rooms]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  access:
+    <<: *rooms-service
+    command: [node, access.cjs]
+    volumes:
+      - ${E2E_REPO}/dist-services:/service:ro
+      - ${E2E_STATE}/access:/state
+    environment:
+      SERVICE_HOST: 0.0.0.0
+      PORT: '3002'
+      STOAT_INTERNAL_URL: http://api:14702
+      LIVEKIT_INTERNAL_URL: http://livekit:7880
+      LIVEKIT_PUBLIC_URL: ws://127.0.0.1:7880
+      LIVEKIT_API_KEY: ${E2E_LIVEKIT_KEY}
+      LIVEKIT_API_SECRET: ${E2E_LIVEKIT_SECRET}
+      ROOMS_REGISTRATION_INVITES_FILE: /state/registration-invites.json
+      ROOMS_ACCOUNT_INVITE_MONGO_URL: mongodb://database:27017/revolt
+      ROOMS_SOCIAL_READ_MONGO_URL: mongodb://database:27017/revolt
+      ROOMS_SOUNDBOARD_DIRECTORY: /state/soundboard
+      ROOMS_MUSIC_PLAYLISTS_DIRECTORY: /state/music-playlists
+      ROOMS_MUSIC_NAME: DJ
+    depends_on:
+      api: { condition: service_started }
+      database: { condition: service_healthy }
+
+  activities:
+    <<: *rooms-service
+    command: [node, activities.cjs]
+    volumes: ['${E2E_REPO}/dist-services:/service:ro']
+    environment:
+      SERVICE_HOST: 0.0.0.0
+      ACTIVITY_PORT: '3031'
+      STOAT_INTERNAL_URL: http://api:14702
+      ROOMS_ACTIVITY_DATABASE_URL: postgres://rooms_activity:${E2E_POSTGRES_PASSWORD}@postgres:5432/rooms
+      ROOMS_SOCIAL_READ_MONGO_URL: mongodb://database:27017/revolt
+    depends_on:
+      postgres: { condition: service_healthy }
+      api: { condition: service_started }
+
+volumes:
+  mongo:
+  rabbit:
+  minio:
+  postgres:
