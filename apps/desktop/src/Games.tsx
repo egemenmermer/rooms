@@ -154,6 +154,11 @@ export default function Games() {
       ? (activity.room?.game ?? null)
       : null;
   useEffect(() => setCreate(null), [roomId, activity.room?.primary?.startedAt]);
+  // The app directory opens a game's table setup directly: /games?create=holdem.
+  const requested = params.get('create');
+  useEffect(() => {
+    if (requested && Object.hasOwn(names, requested)) setCreate(requested as GameKind);
+  }, [requested]);
   useEffect(() => {
     if (fixtureMetadata) {
       setCreate(fixtureMetadata.ui.create);

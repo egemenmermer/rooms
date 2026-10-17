@@ -10,6 +10,7 @@ import { useActivityRoom } from './activity';
 import { uiError } from './i18n';
 import { gameNames } from './Kiraathane';
 import { endsActivity, type RoomSnapshot } from '../../../packages/activity-protocol/src/index';
+import { AppDirectory } from './AppDirectory';
 
 /** Where a running primary activity is shown in this client. */
 export function activityRoute(kind: NonNullable<RoomSnapshot['primary']>['activity']) {
@@ -40,20 +41,13 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
   const position = Math.max(0, Math.floor(activity.room?.timeline.positionSec ?? 0));
   const positionLabel = `${Math.floor(position / 60)}:${String(position % 60).padStart(2, '0')}`;
   const roomCount = activity.room?.participants.length;
-  const catalog = [
-    {
-      label: 'Birlikte izle',
-      icon: 'film',
-      description: 'YouTube, IPTV, Stremio veya kendi dosyan.',
-      path: '/cinema',
-    },
-    {
-      label: 'Kıraathane',
-      icon: 'cards',
-      description: 'Hold’em, Blackjack, Batak ve 101 Okey.',
-      path: '/games',
-    },
-  ];
+  // Nothing running: the searchable catalogue; the DJ keeps its own button.
+  if (!primary && !forbidden)
+    return (
+      <Modal title="Etkinlikler" hideHeading onClose={onClose} className="appdir-modal">
+        <AppDirectory apps={false} onClose={onClose} />
+      </Modal>
+    );
   return (
     <Modal
       title={
@@ -132,44 +126,7 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
             Sesli sohbetin ve erişebildiğin kanallar çalışmaya devam eder.
           </p>
         </>
-      ) : (
-        <>
-          <p className="modal-description">
-            {voice.roomName ?? 'Oda'}
-            {roomCount !== undefined ? ` · ${roomCount} kişi hazır` : ''}. Bir ana etkinlik seç;
-            sohbet açık kalsın.
-          </p>
-          <div className="reference-activity-grid">
-            {catalog.map((card) => (
-              <button
-                className="reference-activity-card"
-                key={card.path}
-                onClick={() => open(card.path)}
-              >
-                <ReferenceIcon name={card.icon} size={25} />
-                <strong>{card.label}</strong>
-                <small>{card.description}</small>
-              </button>
-            ))}
-          </div>
-          <div className="reference-launcher-divider" />
-          <h3 className="reference-launcher-label">Sohbetin yanında</h3>
-          <div className="reference-side-activities">
-            <button className="button secondary" onClick={() => open('/together?tab=polls')}>
-              <ReferenceIcon name="poll" size={16} />
-              Anket aç
-            </button>
-            <button className="button secondary" onClick={() => open('/together?tab=board')}>
-              <ReferenceIcon name="whiteboard" size={16} />
-              Whiteboard
-            </button>
-            <button className="button ghost" onClick={() => open('/agent')}>
-              <ReferenceIcon name="bot" size={16} />
-              Asistana yaz
-            </button>
-          </div>
-        </>
-      )}
+      ) : null}
       {forbidden && (
         <button className="button secondary" onClick={() => open('/games')}>
           <ReferenceIcon name="cards" size={16} />

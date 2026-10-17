@@ -157,8 +157,8 @@ it('keeps ending the shared player for the host only', () => {
 it('does not offer the DJ as an activity; it already has its own button', () => {
   f.activity.room = { ...watchTogether([]), primary: null };
   launcher();
-  expect(screen.getByRole('button', { name: /Birlikte izle/ })).toBeTruthy();
-  expect(screen.queryByText('Ses odasına müzik botu çağır.')).toBeNull();
+  expect(screen.getAllByRole('button', { name: /Sinema/ }).length).toBeGreaterThan(0);
+  expect(screen.queryByRole('button', { name: /DJ Recep/ })).toBeNull();
 });
 
 it('shows the running activity under the joined room and opens it from the sidebar', () => {
