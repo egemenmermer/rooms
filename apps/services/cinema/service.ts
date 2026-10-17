@@ -5,7 +5,11 @@ import {
 } from '../../../packages/activity-protocol/src/index';
 import { maskServer } from '../../../packages/community-cinema/src/mask';
 import { detectXtreamExport } from '../../../packages/community-cinema/src/m3u';
-import { xtreamUrls } from '../../../packages/community-cinema/src/xtream';
+import {
+  liveExtension,
+  xtreamUrls,
+  type XtreamAccount,
+} from '../../../packages/community-cinema/src/xtream';
 import type {
   CinemaDetails,
   CinemaImportProgress,
@@ -418,6 +422,7 @@ export class CinemaService {
 
   private relaySource(
     source: CinemaSource,
+    account: XtreamAccount | null,
     item: StoredItem | null,
     episode: ReturnType<Catalog['episode']>,
   ): RelaySource {
@@ -438,7 +443,9 @@ export class CinemaService {
     if (source.kind !== 'xtream') return fail('CINEMA_ITEM_NOT_FOUND');
     const urls = xtreamUrls(source.server, source.username, source.password);
     return {
-      url: live ? urls.live(item.providerId, 'ts') : urls.movie(item.providerId, item.ext ?? 'mp4'),
+      url: live
+        ? urls.live(item.providerId, liveExtension(account))
+        : urls.movie(item.providerId, item.ext ?? 'mp4'),
       headers: {},
       live,
     };
@@ -466,7 +473,7 @@ export class CinemaService {
     const catalog = this.catalog(communityId);
     const item = catalog.item(current.ref);
     const episode = item ? null : catalog.episode(current.ref);
-    const source = this.relaySource(config.source!, item, episode);
+    const source = this.relaySource(config.source!, config.account, item, episode);
     const slots = this.slots(config);
     let info: RelayInfo;
     if (source.live) {

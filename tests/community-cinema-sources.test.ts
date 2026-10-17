@@ -15,6 +15,7 @@ import {
   asInt,
   asNumber,
   asString,
+  liveExtension,
   xtreamAccount,
   xtreamUrls,
 } from '../packages/community-cinema/src/xtream';
@@ -189,7 +190,17 @@ describe('Xtream JSON', () => {
       maxConnections: 2,
       activeConnections: 0,
       serverOffsetMinutes: 180,
+      outputFormats: [],
     });
+    const hlsOnly = xtreamAccount({
+      user_info: { auth: 1, allowed_output_formats: ['m3u8', 'rtmp'] },
+    });
+    expect(hlsOnly.outputFormats).toEqual(['m3u8', 'rtmp']);
+    expect(liveExtension(hlsOnly)).toBe('m3u8');
+    expect(
+      liveExtension(xtreamAccount({ user_info: { allowed_output_formats: ['m3u8', 'ts'] } })),
+    ).toBe('ts');
+    expect(liveExtension(null)).toBe('ts');
     expect(xtreamAccount({ user_info: { auth: 1, status: 'Expired' } }).active).toBe(false);
   });
 

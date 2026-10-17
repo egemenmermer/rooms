@@ -77,7 +77,15 @@ export type XtreamAccount = {
   activeConnections: number | null;
   /** Server wall clock minus UTC, rounded to 15 minutes. */
   serverOffsetMinutes: number;
+  /** Live output formats the account may use (`ts`, `m3u8`); empty when the panel does not say. */
+  outputFormats: string[];
 };
+
+/** MPEG-TS when the account allows it (one long request, quick zaps), else HLS. */
+export function liveExtension(account: Pick<XtreamAccount, 'outputFormats'> | null) {
+  const formats = account?.outputFormats ?? [];
+  return formats.length && !formats.includes('ts') && formats.includes('m3u8') ? 'm3u8' : 'ts';
+}
 
 /** Reads `player_api.php` (no action): `user_info` + `server_info`. */
 export function xtreamAccount(json: unknown): XtreamAccount {
@@ -102,6 +110,12 @@ export function xtreamAccount(json: unknown): XtreamAccount {
     maxConnections: asPositiveInt(user.max_connections),
     activeConnections: asInt(user.active_cons),
     serverOffsetMinutes: Math.abs(offset) <= 14 * 60 ? offset : 0,
+    outputFormats: Array.isArray(user.allowed_output_formats)
+      ? user.allowed_output_formats
+          .map((format) => asString(format)?.toLowerCase())
+          .filter((format): format is string => !!format && /^[a-z0-9]{1,8}$/.test(format))
+          .slice(0, 8)
+      : [],
   };
 }
 
