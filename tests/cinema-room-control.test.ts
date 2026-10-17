@@ -48,6 +48,15 @@ describe('watch-together queue', () => {
     expect(send('can', { type: 'queue.next', fromItemId: 'a', reason: 'ended' }, 5000)).toBe(true);
     expect(state.timeline).toMatchObject({ itemId: 'b', playing: true, epoch: epoch + 1 });
   });
+  it('clears everything but the playing item in one command', () => {
+    const { send, state } = setup();
+    send('host', { type: 'queue.add', itemId: 'c', media: video('c') });
+    send('host', { type: 'queue.next', fromItemId: 'a', reason: 'skip' });
+    send('host', { type: 'queue.clear' });
+    expect(state.queue.map((item) => item.id)).toEqual(['b']);
+    expect(state.timeline.itemId).toBe('b');
+  });
+
   it('treats the same end reported by every viewer as one advance', () => {
     const { send, state } = setup();
     send('ece', { type: 'queue.next', fromItemId: 'a', reason: 'ended' });
@@ -121,6 +130,7 @@ describe('host-granted control', () => {
       send('can', { type: 'queue.add', itemId: 'c', media: video('c'), start: true }),
     ).toThrow('SESSION_HOST_CONTROL');
     send('can', { type: 'queue.add', itemId: 'c', media: video('c') });
+    expect(() => send('can', { type: 'queue.clear' })).toThrow('SESSION_HOST_CONTROL');
     send('can', { type: 'queue.remove', itemId: 'c' });
     expect(() => send('can', { type: 'queue.remove', itemId: 'b' })).toThrow(
       'SESSION_HOST_CONTROL',
