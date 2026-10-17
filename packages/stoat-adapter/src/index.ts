@@ -73,6 +73,9 @@ const directMessageErrors: Record<string, string> = {
   DM_FRIEND_INCOMING: 'This person sent you a friend request. Accept it to send a private message.',
   DM_BLOCKED: 'You cannot send private messages to a blocked user.',
 };
+const ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
+/** Video types the desktop chat plays inline; QuickTime covers Mac recordings and iPhone videos. */
+export const INLINE_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 export class StoatError extends Error {
   constructor(
     public status: number,
@@ -103,11 +106,13 @@ export class StoatError extends Error {
                             ? 'You do not have permission for this action.'
                             : status === 404
                               ? 'This room, message or invitation is unavailable.'
-                              : status === 429
-                                ? 'Too many requests. Please wait and retry.'
-                                : status >= 500
-                                  ? 'The social server is unavailable. Retry shortly.'
-                                  : 'The social server rejected this request. Check the supplied details.'),
+                              : status === 413
+                                ? 'This file is larger than the server accepts.'
+                                : status === 429
+                                  ? 'Too many requests. Please wait and retry.'
+                                  : status >= 500
+                                    ? 'The social server is unavailable. Retry shortly.'
+                                    : 'The social server rejected this request. Check the supplied details.'),
     );
     this.name = 'StoatError';
   }
@@ -349,6 +354,8 @@ export class StoatClient {
   private readonly botToken: boolean;
   private currentUser: SocialUser | null = null;
   private fileOrigin: string | null = null;
+  // The server's advertised attachment size limit; uploads above it are refused before sending.
+  private attachmentLimit = ATTACHMENT_MAX_BYTES;
   private socket: WebSocket | null = null;
   private heartbeat: ReturnType<typeof setInterval> | null = null;
   private retry: ReturnType<typeof setTimeout> | null = null;
@@ -719,6 +726,9 @@ export class StoatClient {
     };
   }
   private configureFileOrigin(root: Raw) {
+    const limit = root.features?.limits?.default?.file_upload_size_limits?.attachments;
+    if (Number.isSafeInteger(limit) && limit > 0)
+      this.attachmentLimit = Math.min(limit, ATTACHMENT_MAX_BYTES);
     const raw = root.features?.autumn;
     if (raw?.enabled !== true || typeof raw.url !== 'string') return;
     let url: URL;
@@ -752,10 +762,15 @@ export class StoatClient {
         : {}),
     };
   }
+  /** The largest attachment this server accepts, in bytes. */
+  async attachmentSizeLimit(): Promise<number> {
+    if (!this.fileOrigin) this.configureFileOrigin(await this.request<Raw>(''));
+    return this.attachmentLimit;
+  }
   async uploadAttachment(bytes: Uint8Array, name: string, mime: string): Promise<SocialAttachment> {
     if (
       !bytes.byteLength ||
-      bytes.byteLength > 25 * 1024 * 1024 ||
+      bytes.byteLength > ATTACHMENT_MAX_BYTES ||
       !name ||
       name.length > 255 ||
       /[\r\n/\\]/.test(name) ||
@@ -764,6 +779,7 @@ export class StoatClient {
       throw new StoatError(400, 'INVALID_ATTACHMENT');
     if (!this.fileOrigin) this.configureFileOrigin(await this.request<Raw>(''));
     if (!this.fileOrigin) throw new StoatError(501, 'ATTACHMENTS_UNAVAILABLE');
+    if (bytes.byteLength > this.attachmentLimit) throw new StoatError(413, 'ATTACHMENT_TOO_LARGE');
     const form = new FormData();
     form.append('file', new Blob([new Uint8Array(bytes)], { type: mime }), name);
     let response: Response;
@@ -910,6 +926,43 @@ export class StoatClient {
     if (!fresh.some((file) => file.id === fileId)) throw new StoatError(409, 'ACCESS_CHANGED');
     if (epoch !== this.aclEpoch) throw new StoatError(409, 'ACCESS_CHANGED');
     return `data:${mime};base64,${Buffer.concat(parts).toString('base64')}`;
+  }
+  /** A video attachment's bytes for inline playback, read with the same access checks as photos. */
+  async attachmentVideo(
+    channelId: string,
+    messageId: string,
+    fileId: string,
+  ): Promise<{ mime: string; bytes: Uint8Array } | null> {
+    const epoch = this.aclEpoch;
+    if (!this.fileOrigin) this.configureFileOrigin(await this.request<Raw>(''));
+    const attachment = (await this.messageAttachments(channelId, messageId)).find(
+      (file) => file.id === fileId,
+    );
+    if (!attachment?.url || !INLINE_VIDEO_TYPES.includes(attachment.mime)) return null;
+    const response = await fetch(attachment.url, {
+      redirect: 'error',
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!response.ok) throw new StoatError(response.status, 'ATTACHMENT_UNAVAILABLE');
+    const reader = response.body?.getReader();
+    if (!reader) return null;
+    let size = 0;
+    const parts: Uint8Array[] = [];
+    try {
+      while (true) {
+        const next = await reader.read();
+        if (next.done) break;
+        size += next.value.length;
+        if (size > ATTACHMENT_MAX_BYTES) throw new StoatError(413, 'ATTACHMENT_TOO_LARGE');
+        parts.push(next.value);
+      }
+    } finally {
+      await reader.cancel();
+    }
+    const fresh = await this.messageAttachments(channelId, messageId);
+    if (!fresh.some((file) => file.id === fileId)) throw new StoatError(409, 'ACCESS_CHANGED');
+    if (epoch !== this.aclEpoch) throw new StoatError(409, 'ACCESS_CHANGED');
+    return { mime: attachment.mime, bytes: new Uint8Array(Buffer.concat(parts)) };
   }
   async avatar(userId: string): Promise<string | null> {
     const raw = await this.request<Raw>(`/users/${checked(userId)}`);

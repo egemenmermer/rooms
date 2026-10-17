@@ -698,6 +698,18 @@ export async function setupCommunity(
       throw new SocialInputError('The conversation session changed.');
     return result;
   });
+  handle('rooms:social-attachment-video', async (channelId, messageId, fileId) => {
+    const current = requireClient(),
+      owner = user!.id;
+    const result = await current.attachmentVideo(
+      id.parse(channelId),
+      id.parse(messageId),
+      id.parse(fileId),
+    );
+    if (client !== current || user?.id !== owner)
+      throw new SocialInputError('The conversation session changed.');
+    return result;
+  });
   handle('rooms:social-avatar', async (userId) => {
     const selectedId = id.parse(userId),
       current = requireClient();
@@ -795,6 +807,8 @@ export async function setupCommunity(
       '.webp': 'image/webp',
       '.gif': 'image/gif',
       '.mp4': 'video/mp4',
+      '.m4v': 'video/mp4',
+      '.mov': 'video/quicktime',
       '.webm': 'video/webm',
       '.mp3': 'audio/mpeg',
       '.wav': 'audio/wav',
@@ -873,7 +887,16 @@ export async function setupCommunity(
     bytes: Uint8Array,
     name: string,
   ) {
-    const result = await current.uploadAttachment(bytes, name, attachmentMime(name));
+    const mime = attachmentMime(name),
+      limit = await current.attachmentSizeLimit();
+    if (bytes.byteLength > limit)
+      throw new SocialInputError(
+        `${name} sunucunun ${Math.floor(limit / 1_000_000)} MB sınırını aşıyor.` +
+          (mime.startsWith('video/')
+            ? ' Uzun videoları Sinema’da “Kendi dosyamla” ile birlikte izleyebilirsiniz.'
+            : ''),
+      );
+    const result = await current.uploadAttachment(bytes, name, mime);
     if (current !== client)
       throw new SocialInputError('The conversation session changed. Select the attachment again.');
     uploadedAttachments.set(result.id, {
@@ -903,6 +926,8 @@ export async function setupCommunity(
             'webp',
             'gif',
             'mp4',
+            'm4v',
+            'mov',
             'webm',
             'mp3',
             'wav',

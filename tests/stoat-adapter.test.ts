@@ -244,6 +244,30 @@ it('uploads multipart bytes only to the configured Autumn origin and returns no 
   ).rejects.toMatchObject({ code: 'INVALID_ATTACHMENT' });
   expect(calls).toHaveLength(2);
 });
+it('refuses an attachment above the limit the server advertises before uploading it', async () => {
+  const paths: string[] = [];
+  server = createServer((req, res) => {
+    paths.push(req.url!);
+    res.setHeader('Content-Type', 'application/json');
+    res.end(
+      JSON.stringify({
+        features: {
+          autumn: { enabled: true, url: base + '/autumn' },
+          limits: { default: { file_upload_size_limits: { attachments: 8 } } },
+        },
+      }),
+    );
+  });
+  let base = '';
+  await new Promise<void>((resolve) => server!.listen(0, '127.0.0.1', resolve));
+  base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  const client = new StoatClient(base, 'fixture-token');
+  expect(await client.attachmentSizeLimit()).toBe(8);
+  await expect(
+    client.uploadAttachment(new Uint8Array(9), 'clip.mov', 'video/quicktime'),
+  ).rejects.toMatchObject({ status: 413, message: 'This file is larger than the server accepts.' });
+  expect(paths).toEqual(['/api']);
+});
 it('sends official bot replies with a stable delivery key and no reply ping (protocol fixture)', async () => {
   let request: Record<string, unknown> | undefined;
   server = createServer(async (req, res) => {

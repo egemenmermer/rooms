@@ -291,6 +291,12 @@ export interface SocialBridge {
   inspectInvite(serverUrl: string, code: string): Promise<import('@rooms/social').SocialInvite>;
   acceptInvite(code: string): Promise<import('@rooms/social').SocialInvite>;
   attachmentImage(channelId: string, messageId: string, fileId: string): Promise<string | null>;
+  /** Video bytes for inline playback (MP4, WebM, QuickTime), or null for other files. */
+  attachmentVideo(
+    channelId: string,
+    messageId: string,
+    fileId: string,
+  ): Promise<{ mime: string; bytes: Uint8Array } | null>;
   downloadAttachment(channelId: string, messageId: string, fileId: string): Promise<boolean>;
   avatar(userId: string): Promise<string | null>;
   chooseAvatar(): Promise<import('@rooms/social').SocialUser | null>;

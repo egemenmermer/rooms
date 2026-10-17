@@ -97,6 +97,8 @@ const bridge: DesktopBridge = {
     acceptInvite: (code) => ipcRenderer.invoke('rooms:social-accept-invite', code),
     attachmentImage: (channel, message, file) =>
       ipcRenderer.invoke('rooms:social-attachment-image', channel, message, file),
+    attachmentVideo: (channel, message, file) =>
+      ipcRenderer.invoke('rooms:social-attachment-video', channel, message, file),
     downloadAttachment: (channel, message, file) =>
       ipcRenderer.invoke('rooms:social-download-attachment', channel, message, file),
     avatar: (userId) => ipcRenderer.invoke('rooms:social-avatar', userId),

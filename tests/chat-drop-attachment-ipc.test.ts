@@ -51,6 +51,9 @@ vi.mock('@rooms/stoat', async () => ({
     uploadAttachment(bytes: Uint8Array, name: string, mime: string) {
       return mock.upload(bytes, name, mime);
     }
+    attachmentSizeLimit() {
+      return Promise.resolve(20_000_000);
+    }
     passwordRecoveryCapabilities() {
       return Promise.resolve(mock.capabilities);
     }
@@ -158,6 +161,19 @@ describe('dropped attachment IPC (fully mocked Stoat/Electron)', () => {
     await expect(
       invoke('rooms:social-drop-attachment', channel, 'foto.png', 'not bytes'),
     ).rejects.toThrow('25 MB');
+    expect(mock.upload).not.toHaveBeenCalled();
+  });
+  it('accepts Mac and iPhone videos and explains the server size limit', async () => {
+    await expect(
+      invoke('rooms:social-drop-attachment', channel, 'Ekran Kaydı.mov', new Uint8Array([1])),
+    ).resolves.toMatchObject({ mime: 'video/quicktime' });
+    await expect(
+      invoke('rooms:social-drop-attachment', channel, 'IMG_1.M4V', new Uint8Array([1])),
+    ).resolves.toMatchObject({ mime: 'video/mp4' });
+    mock.upload.mockClear();
+    await expect(
+      invoke('rooms:social-drop-attachment', channel, 'film.mov', new Uint8Array(20_000_001)),
+    ).rejects.toThrow('film.mov sunucunun 20 MB sınırını aşıyor. Uzun videoları Sinema’da');
     expect(mock.upload).not.toHaveBeenCalled();
   });
   it('requires a trusted sender', async () => {
