@@ -102,7 +102,7 @@ describe('relay arguments and playlists', () => {
     ).toEqual({ first: 3, durations: [2, 1.5], ended: true, firstPdtMs: null });
     expect(
       playlistSegments(
-        '#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-PROGRAM-DATE-TIME:2026-10-17T18:00:00.000+0000\n#EXTINF:2.000,\nseg000000.m4s\n',
+        '#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:2.000,\n#EXT-X-PROGRAM-DATE-TIME:2026-10-17T18:00:00.000+0000\nseg000000.m4s\n',
       ).firstPdtMs,
     ).toBe(Date.UTC(2026, 9, 17, 18));
   });

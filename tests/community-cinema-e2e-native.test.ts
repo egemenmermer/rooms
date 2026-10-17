@@ -204,6 +204,9 @@ describe.runIf(mock && native)('community cinema end to end with real ffmpeg', (
     const movie = await watchAndProbe();
     expect(movie.watch.body).toMatchObject({ live: false, offsetSec: 0 });
     expect(movie.watch.body.durationSec).toBeGreaterThan(0);
+    // Films carry PROGRAM-DATE-TIME too, and the service reports output time 0's date.
+    expect(movie.playlist).toContain('#EXT-X-PROGRAM-DATE-TIME');
+    expect(movie.watch.body.originPdtMs).toBeGreaterThan(Date.now() - 120_000);
     expect(movie.streams.find((s) => s.codec_type === 'audio')?.codec_name).toBe('aac');
     const details = await call('GET', '/v1/halls/hall/details/s-5001');
     const episode = details.body.seasons[0].episodes[0];

@@ -77,8 +77,9 @@ export const RELAY_ERRORS = new Set([
 export function playlistSegments(text: string) {
   const first = Number(/#EXT-X-MEDIA-SEQUENCE:(\d+)/.exec(text)?.[1] ?? 0);
   const durations = [...text.matchAll(/#EXTINF:([\d.]+)/g)].map((m) => Number(m[1]));
-  const head = text.slice(0, Math.max(0, text.indexOf('#EXTINF')));
-  const pdt = Date.parse(/#EXT-X-PROGRAM-DATE-TIME:(\S+)/.exec(head)?.[1] ?? '');
+  // ffmpeg writes each segment's PROGRAM-DATE-TIME between its EXTINF and its URI, so the
+  // first one in the list belongs to the first listed segment.
+  const pdt = Date.parse(/#EXT-X-PROGRAM-DATE-TIME:(\S+)/.exec(text)?.[1] ?? '');
   return {
     first,
     durations,
