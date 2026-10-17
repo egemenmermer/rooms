@@ -135,9 +135,10 @@ describe('community cinema hall', () => {
     mount('empty');
     expect(await screen.findByText('Bu akşam ne izliyoruz?')).toBeTruthy();
     fireEvent.click(screen.getByRole('tab', { name: 'Canlı TV' }));
+    // One click on a channel tile opens it; the tile says so on hover.
     const option = await screen.findByRole('option', { name: /Show TV/ });
+    expect(option.textContent).toContain('Salonda aç');
     fireEvent.click(option);
-    fireEvent.click(await screen.findByRole('button', { name: /Salonda aç/ }));
     await waitFor(() => expect(commands).toContain('queue.add'));
     // The first command takes a seat; then the hall starts and plays the channel.
     const steps = sent.filter((c) => c.type !== 'join');
@@ -153,9 +154,9 @@ describe('community cinema hall', () => {
   it('suggests instead of switching when the host holds the remote', async () => {
     mount('remote');
     fireEvent.click(await screen.findByRole('tab', { name: 'Canlı TV' }));
-    fireEvent.click(await screen.findByRole('option', { name: /Kanal D/ }));
-    const suggest = await screen.findByRole('button', { name: /Sıraya öner/ });
-    fireEvent.click(suggest);
+    const option = await screen.findByRole('option', { name: /Kanal D/ });
+    expect(option.textContent).toContain('Sıraya öner');
+    fireEvent.click(option);
     await waitFor(() => expect(sent.some((c) => c.type === 'queue.add')).toBe(true));
     const add = sent.find((c) => c.type === 'queue.add');
     expect(add).toMatchObject({ media: { ref: 'l-1003' } });

@@ -8,8 +8,8 @@
 
 [![Son sürüm](https://img.shields.io/github/v/release/egemenmermer/rooms?style=flat-square&label=son%20s%C3%BCr%C3%BCm&color=8B5CF6)](https://github.com/egemenmermer/rooms/releases/latest)
 [![MIT lisansı](https://img.shields.io/badge/lisans-MIT-64748B?style=flat-square)](LICENSE)
-[![macOS indir](https://img.shields.io/badge/macOS-indir-18181B?style=flat-square&logo=apple&logoColor=white)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.22/ROOMS-0.1.18-rc.22-arm64.dmg)
-[![Windows indir](https://img.shields.io/badge/Windows-indir-2563EB?style=flat-square)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.22/ROOMS-0.1.18-rc.22-windows-x64-setup.exe)
+[![macOS indir](https://img.shields.io/badge/macOS-indir-18181B?style=flat-square&logo=apple&logoColor=white)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.23/ROOMS-0.1.18-rc.23-arm64.dmg)
+[![Windows indir](https://img.shields.io/badge/Windows-indir-2563EB?style=flat-square)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.23/ROOMS-0.1.18-rc.23-windows-x64-setup.exe)
 
 Sesli sohbet, ekran paylaşımı, mesajlar, müzik ve ortak etkinlikler — tek masaüstü uygulamasında.
 
@@ -50,7 +50,7 @@ ROOMS, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında 
 | İstediğin | Başlangıç noktası | Gerekenler |
 | --- | --- | --- |
 | Var olan topluluğa katılmak | [Kullanım rehberi](docs/USER_GUIDE.md) | Uyumlu uygulama, sunucu adresi ve davet veya mevcut hesap |
-| Kendi topluluğunu kurmak | [Sunucu kurulum rehberi](docs/SELF_HOSTING.md) | Sunucu, Docker Compose, Node.js ve ağ/TLS/arka uç yönetimi |
+| Kendi topluluğunu kurmak | [Tek komutla kurulum](docs/SELF_HOSTING.md#hızlı-kurulum-tek-komut) | Linux sunucu (VPS) ve alan adı; gerisini kurulum betiği yapar |
 | Uygulamayı geliştirmek | [Geliştirme rehberi](docs/DEVELOPMENT.md) | Git, Node.js, pnpm ve kaynak kod |
 | Topluluğun DJ görselini değiştirmek | [Özelleştirme rehberi](docs/CUSTOMIZATION.md) | Kendi sunucunun herkese açık görsel dosyalarını yönetebilmek |
 
@@ -58,12 +58,12 @@ ROOMS, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında 
 
 ## İndir ve topluluğa katıl
 
-Güncel paketler [GitHub sürümleri](https://github.com/egemenmermer/rooms/releases/latest) sayfasındadır. Son yayımlanan arkadaş test sürümü **RC22**:
+Güncel paketler [GitHub sürümleri](https://github.com/egemenmermer/rooms/releases/latest) sayfasındadır. Son yayımlanan arkadaş test sürümü **RC23**:
 
 | Platform | Paket | Durum |
 | --- | --- | --- |
-| macOS 14+ / Apple Silicon | [RC22 DMG indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.22/ROOMS-0.1.18-rc.22-arm64.dmg) | Apple imzalı ve noter onaylı |
-| Windows x64 | [RC22 EXE indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.22/ROOMS-0.1.18-rc.22-windows-x64-setup.exe) | İmzasız arkadaş test paketi; sistem uyarısı gösterebilir |
+| macOS 14+ / Apple Silicon | [RC23 DMG indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.23/ROOMS-0.1.18-rc.23-arm64.dmg) | Apple imzalı ve noter onaylı |
+| Windows x64 | [RC23 EXE indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.23/ROOMS-0.1.18-rc.23-windows-x64-setup.exe) | İmzasız arkadaş test paketi; sistem uyarısı gösterebilir |
 
 1. Platformuna uygun paketi indirip uygulamayı kur.
 2. Topluluk yöneticisinden sunucu adresini ve gerekiyorsa davetini al.
@@ -140,17 +140,15 @@ Derleme, doğrulama ve paket komutları için [geliştirme rehberine](docs/DEVEL
 
 ## Kendi topluluğunu kur
 
-Kendi sunucunda çalıştırmak, yalnızca masaüstü dosyalarını web'den sunmak değildir:
+Bir Linux sunucu (2 GB RAM yeterli, 4 GB önerilir) ve bir alan adı ile kendi ROOMS sunucunu tek komutla kurabilirsin. Alan adın yoksa ücretsiz bir [DuckDNS](https://www.duckdns.org) adı da işe yarar.
 
-1. İzole bir sunucu ve kalıcı depolama hazırla.
-2. Hesaplar, sohbet ve dosyalar için sabitlenmiş Stoat arka ucunu yapılandır.
-3. Yetkili ses/medya için ROOMS erişim servisini ve LiveKit'i çalıştır.
-4. Ortak etkinlik ve oyun istiyorsan Activities servisini çalıştır.
-5. İlk hesabı ve topluluğu oluştur; ardından davetleri üret.
-6. Uzaktaki üyeler için HTTPS/WSS ve medya erişimini yapılandır.
-7. Başkalarını davet etmeden önce iki cihazla dene ve bir yedeğin geri yüklenebildiğini doğrula.
+```sh
+curl -fsSL https://raw.githubusercontent.com/egemenmermer/rooms/main/deploy/install.sh | sudo bash
+```
 
-[Sunucu rehberi](docs/SELF_HOSTING.md), dosyaları, komutları, portları, yapılandırmayı ve kabul kontrollerini anlatır. Mevcut kaynakta kurulum yardımcıları vardır; **tek komutla eksiksiz üretim kurulumu** yoktur. İlk hesap ve dış ağ yapılandırması hâlâ yöneticinin tamamlaması gereken işlerdir.
+Betik Docker'ı kurar, tüm parolaları sunucuda üretir, HTTPS sertifikasını otomatik alır, sahip hesabını ve ilk topluluğu ses kanalıyla oluşturur ve ilk davet bağlantını verir. Sonra arkadaşlarını uygulamadan veya `sudo rooms invite` ile davet edersin.
+
+Ayrıntılar, portlar, yedekleme ve güncelleme için [sunucu rehberine](docs/SELF_HOSTING.md#hızlı-kurulum-tek-komut) bak. Müzik (DJ), Sinema salonu, Agent ve sunucu yönetim paneli isteğe bağlıdır ve hızlı kuruluma dahil değildir.
 
 ## Nasıl çalışıyor?
 
@@ -190,7 +188,7 @@ Açık istemcide özgün bir statik DJ çizimi bulunur. Her topluluk kendi adın
 
 ## Belgeler
 
-[Tüm belgeler ve okuma sırası](docs/README.md) · [RC22 yayın ve doğrulama kaydı](docs/RC22_RELEASE.md)
+[Tüm belgeler ve okuma sırası](docs/README.md) · [RC23 yayın ve doğrulama kaydı](docs/RC23_RELEASE.md)
 
 | Rehber | İçeriği |
 | --- | --- |

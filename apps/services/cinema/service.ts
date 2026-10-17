@@ -342,13 +342,25 @@ export class CinemaService {
       }
       const url = importer.guideUrl(source, catalog.snapshot);
       if (url) {
-        const guide = await importer.importGuide(url, catalog.snapshot.items, update, abort.signal);
-        if (abort.signal.aborted) return;
-        if (!guide.count && Object.keys(catalog.snapshot.programmes).length)
-          throw new CinemaError('CINEMA_PROVIDER_UNREACHABLE');
-        catalog.setGuide(guide.programmes, guide.matches, this.now());
-        catalogs.save(communityId);
-        update({ counts: { ...job.progress.counts, programmes: guide.count } });
+        try {
+          const guide = await importer.importGuide(
+            url,
+            catalog.snapshot.items,
+            update,
+            abort.signal,
+          );
+          if (abort.signal.aborted) return;
+          if (!guide.count && Object.keys(catalog.snapshot.programmes).length)
+            throw new CinemaError('CINEMA_PROVIDER_UNREACHABLE');
+          catalog.setGuide(guide.programmes, guide.matches, this.now());
+          catalogs.save(communityId);
+          update({ counts: { ...job.progress.counts, programmes: guide.count } });
+        } catch (error) {
+          // Many providers serve no XMLTV; the catalog is already saved, so only a
+          // guide-only reload reports the guide as failed.
+          if (scope === 'guide') throw error;
+          this.log(`cinema guide import skipped for ${communityId}: ${safeError(error)}`);
+        }
       }
       update({ step: 'completed', finishedAt: this.now() });
     })()

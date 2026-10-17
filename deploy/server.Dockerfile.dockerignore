@@ -1,0 +1,10 @@
+**
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!tsconfig.json
+!apps/services/**
+!packages/**
+!scripts/build-services.mjs
+**/node_modules
+**/target

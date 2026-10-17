@@ -23,7 +23,6 @@ import { CinemaArt, QualityBadges } from './CinemaArt';
 import { knownItem, useAllItems, useBridgeRead } from './catalog-cache';
 import { useCommunityCinema } from './cinema-status';
 import { cachedGuide, useGuides, useNow } from './guide-cache';
-import { GuideTab } from './GuideTab';
 import { HallPanel, type PanelTab } from './HallPanel';
 import type { PlayerControls } from './HallPlayer';
 import { HallStage, type StageOsd } from './HallStage';
@@ -55,7 +54,6 @@ type View = 'stage' | HallTab;
 const tabs: { id: View; label: string }[] = [
   { id: 'stage', label: 'Salon' },
   { id: 'live', label: 'Canlı TV' },
-  { id: 'guide', label: 'Rehber' },
   { id: 'movies', label: 'Filmler' },
   { id: 'series', label: 'Diziler' },
   { id: 'youtube', label: 'YouTube' },
@@ -137,7 +135,6 @@ function HallLayout() {
   const connected = hall.status.connected;
   const [view, setView] = useState<View>('stage');
   const [liveCategory, setLiveCategory] = useState<string | null>(null);
-  const [guideFocus, setGuideFocus] = useState<string | null>(null);
   const [vod, setVod] = useState<{ movies: VodView; series: VodView }>({
     movies: { mode: 'home' },
     series: { mode: 'home' },
@@ -356,12 +353,6 @@ function HallLayout() {
           event.preventDefault();
           togglePanel();
           return;
-        case 'g':
-        case 'G':
-          if (!connected) return;
-          event.preventDefault();
-          setView((value) => (value === 'guide' ? (hall.current ? 'stage' : 'live') : 'guide'));
-          return;
       }
       if (!stage || controlTarget(event.target)) return;
       if (live && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
@@ -504,7 +495,7 @@ function HallLayout() {
           {view === 'stage' ? (
             <div className="hall-theater">
               <div className="hall-screen-slot" ref={slot} />
-              <NowBar onGuide={() => goTo('guide')} />
+              <NowBar />
             </div>
           ) : (
             <div className={`hall-browse ${hall.current ? 'with-mini' : ''}`}>
@@ -515,13 +506,7 @@ function HallLayout() {
                   categoryId={liveCategory}
                   onCategory={setLiveCategory}
                   onZapList={setZapList}
-                  onGuide={(ref) => {
-                    setGuideFocus(ref);
-                    goTo('guide');
-                  }}
                 />
-              ) : view === 'guide' ? (
-                <GuideTab categoryId={liveCategory} focusRef={guideFocus} />
               ) : view === 'movies' || view === 'series' ? (
                 <VodTab
                   kind={view === 'movies' ? 'movie' : 'series'}
@@ -610,7 +595,7 @@ function currentPosition(hall: ReturnType<typeof useHall>) {
 }
 
 /** Under the screen: what is on, how far along it is, and what comes next. */
-function NowBar({ onGuide }: { onGuide(): void }) {
+function NowBar() {
   const hall = useHall();
   const now = useNow(15_000);
   const current = hall.current;
@@ -689,10 +674,10 @@ function NowBar({ onGuide }: { onGuide(): void }) {
       </div>
       <div className="hall-nowbar-side">
         {next ? (
-          <button className="hall-next" onClick={onGuide} title="Rehberi aç">
+          <div className="hall-next">
             <small>Sıradaki · {hhmm(next.start)}</small>
             <span>{next.title}</span>
-          </button>
+          </div>
         ) : upNext ? (
           <div className="hall-next">
             <small>Sırada</small>

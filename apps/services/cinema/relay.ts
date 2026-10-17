@@ -101,6 +101,10 @@ export function playlistSegments(text: string) {
  * and `#EXT-X-ENDLIST` appended once ffmpeg reaches the end. Players must seek
  * explicitly (hls.js `startPosition`), not rely on live-edge defaults. Output time 0
  * is the keyframe at or before `startSec` (stream copy cannot cut inside a GOP).
+ *
+ * Track timing lives in each fragment's decode time, never in edit lists: Chromium's
+ * MSE ignores the empty edits ffmpeg writes by default, which put the audio (cut
+ * exactly at `startSec`) up to one GOP ahead of the video.
  */
 export function relayArgs(input: {
   url: string;
@@ -192,6 +196,8 @@ export function relayArgs(input: {
     String(live ? 8 : Math.max(8, Math.ceil(input.vodWindowSec / SEGMENT_SEC))),
     '-hls_flags',
     flags.join('+'),
+    '-hls_segment_options',
+    'movflags=+frag_discont+negative_cts_offsets:use_editlist=0',
     '-start_number',
     String(input.startNumber),
     'index.m3u8',
@@ -587,28 +593,40 @@ export class RelayManager {
     };
   }
 
-  /** Output start time of the audio, which ffmpeg cuts exactly at `startSec`. */
+  /**
+   * How far the audio, which ffmpeg cuts exactly at `startSec`, starts after the video
+   * in the first segment. Read from the fragments themselves: the HLS demuxer rebases
+   * every stream's start time.
+   */
   private async audioStart(session: Session) {
     try {
+      const playlist = await readFile(join(session.dir, 'index.m3u8'), 'utf8');
+      const segment = playlist
+        .split('\n')
+        .find((line) => FILE.test(line.trim()) && line.endsWith('.m4s'));
+      if (!segment) return null;
       const out = await this.run(
         this.options.ffprobe ?? 'ffprobe',
         [
           '-v',
           'error',
-          '-select_streams',
-          'a:0',
+          '-protocol_whitelist',
+          'file,concat',
           '-show_entries',
-          'stream=start_time',
+          'stream=codec_type,start_time',
           '-of',
           'json',
-          'index.m3u8',
+          `concat:init.mp4|${segment.trim()}`,
         ],
         session.dir,
         10_000,
       );
-      const value = Number(
-        (JSON.parse(out) as { streams?: { start_time?: string }[] }).streams?.[0]?.start_time,
-      );
+      const streams = (
+        JSON.parse(out) as { streams?: { codec_type?: string; start_time?: string }[] }
+      ).streams;
+      const start = (type: string) =>
+        Number(streams?.find((s) => s.codec_type === type)?.start_time);
+      const value = start('audio') - start('video');
       return Number.isFinite(value) && value >= 0 ? value : null;
     } catch {
       return null;

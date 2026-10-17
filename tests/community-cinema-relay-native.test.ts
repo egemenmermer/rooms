@@ -304,6 +304,8 @@ describe.runIf(native)('cinema relay with real ffmpeg', () => {
     expect(existsSync(dirOf(first.session))).toBe(false);
     const playlist = readFileSync(join(dirOf(later.session), 'index.m3u8'), 'utf8');
     expect(playlist).not.toContain('#EXT-X-PLAYLIST-TYPE');
+    // Chromium ignores empty edits: the audio's 2 s delay must sit in the fragments.
+    expect(readFileSync(join(dirOf(later.session), 'init.mp4')).includes('elst')).toBe(false);
   }, 60_000);
 
   it('stops idle relays and never logs a provider URL', async () => {
