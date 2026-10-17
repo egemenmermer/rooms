@@ -6,8 +6,9 @@ services:
     restart: unless-stopped
     init: true
     read_only: true
-    # Catalog of a large provider plus the guide window fits in ~300 MB; ffmpeg copies, never encodes video.
-    mem_limit: 768m
+    # Catalog of a large provider plus the guide window fits in ~300 MB; the /hls tmpfs counts too.
+    # ffmpeg copies video and never encodes it.
+    mem_limit: 1024m
     cpus: 1.0
     pids_limit: 64
     cap_drop:

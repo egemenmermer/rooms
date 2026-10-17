@@ -252,8 +252,14 @@ export class Importer {
     art: Record<string, string>,
   ): StoredItem | null {
     const providerId = asId(kind === 'series' ? row.series_id : row.stream_id);
-    const rawName = asString(row.name);
-    if (!providerId || !rawName || rawName.includes('://')) return null;
+    if (!providerId) return null;
+    // Panels do ship nameless entries; a name holding a URL could leak one, so neither is shown.
+    const given = asString(row.name);
+    const fallback = { live: 'Kanal', movie: 'Film', series: 'Dizi' }[kind];
+    const rawName =
+      given && !given.includes('://')
+        ? given
+        : `${fallback} ${asPositiveInt(row.num) ?? providerId}`;
     const quality = parseQuality(rawName);
     const image = imageUrl(kind === 'series' ? row.cover : row.stream_icon);
     const backdropRow = Array.isArray(row.backdrop_path) ? row.backdrop_path[0] : row.backdrop_path;

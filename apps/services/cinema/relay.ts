@@ -492,7 +492,8 @@ export class RelayManager {
       }
       const count = text ? this.observe(session, text) : 0;
       const ended = text.includes('#EXT-X-ENDLIST');
-      if (count >= 2 || (count >= 1 && ended)) return ended;
+      // One live segment is enough to start: players align to the live edge themselves.
+      if (count >= (session.live ? 1 : 2) || (count >= 1 && ended)) return ended;
       if (session.exited) throw upstreamError('CINEMA_STREAM_FAILED');
       if (Date.now() > deadline) throw upstreamError('CINEMA_STREAM_FAILED');
       await sleep(200);
@@ -538,10 +539,12 @@ export class RelayManager {
       'ALL',
       '-extension_picky',
       '0',
+      // MPEG-TS declares its codecs in the PMT; 1.5 s is plenty and keeps zapping quick
+      // (Kanal measured 3.3 s zaps with libavformat's 5 s default).
       '-analyzeduration',
-      '3000000',
+      '1500000',
       '-probesize',
-      '5000000',
+      '3000000',
       '-print_format',
       'json',
       '-show_streams',

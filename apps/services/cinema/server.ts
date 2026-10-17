@@ -84,7 +84,8 @@ export async function createCinemaServer(options: CinemaServerOptions) {
   };
 
   server.setErrorHandler((error, _request, reply: FastifyReply) => {
-    if (error instanceof CinemaError && statusOf[error.message])
+    // The relay throws plain errors carrying the same codes.
+    if (error instanceof Error && Object.hasOwn(statusOf, error.message))
       return reply.code(statusOf[error.message]).send({ error: error.message });
     if (error instanceof z.ZodError)
       return reply.code(400).send({ error: 'CINEMA_SOURCE_INVALID' });
