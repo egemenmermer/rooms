@@ -168,6 +168,19 @@ export interface DesktopBridge {
     }>;
     /** Shares this user's deafen state with the room; false when the server lacks support. */
     deafen?(channelId: string, deafened: boolean): Promise<boolean>;
+    /** GIF search through the community server (KLIPY); media comes from static.klipy.com. */
+    gifs?(
+      query: string,
+      page: number,
+    ): Promise<{
+      items: {
+        id: string;
+        title: string;
+        preview: { url: string; width: number; height: number };
+        gif: { url: string; width: number; height: number };
+      }[];
+      more: boolean;
+    }>;
     /** Moves someone to another voice room, or disconnects them; needs Move Members. */
     moderate?(input: {
       channelId: string;

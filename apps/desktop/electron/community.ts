@@ -1396,6 +1396,69 @@ export async function setupCommunity(
       throw error;
     }
   });
+  const gifMedia = z
+    .object({
+      url: z
+        .string()
+        .url()
+        .refine((value) => new URL(value).hostname === 'static.klipy.com'),
+      width: z.number().int().positive().max(4096),
+      height: z.number().int().positive().max(4096),
+    })
+    .strict();
+  // GIF search goes through the community's access service, which holds the provider key.
+  handle('rooms:gif-search', async (query, page) => {
+    const current = requireClient();
+    const q = z
+        .string()
+        .trim()
+        .max(80)
+        .parse(query ?? ''),
+      number = z
+        .number()
+        .int()
+        .min(1)
+        .max(20)
+        .parse(page ?? 1);
+    const url = new URL(`${new URL(current.instanceUrl).origin}/rooms-access/v1/gifs`);
+    if (q) url.searchParams.set('q', q);
+    url.searchParams.set('page', String(number));
+    const response = await fetch(url, {
+      headers: { Authorization: current.getToken()! },
+      redirect: 'error',
+      signal: AbortSignal.timeout(12000),
+    });
+    const value = await response.json().catch(() => null);
+    if (current !== client) throw new SocialInputError('The conversation session changed.');
+    if (!response.ok)
+      throw new SocialInputError(
+        value?.error === 'GIFS_NOT_CONFIGURED'
+          ? 'GIF araması için sunucuya KLIPY anahtarı eklenmeli.'
+          : response.status === 404
+            ? 'Bu sunucu GIF aramasını henüz desteklemiyor.'
+            : response.status === 429
+              ? 'Çok fazla GIF araması yapıldı. Biraz bekleyip yeniden dene.'
+              : 'GIF servisine şu an ulaşılamıyor. Biraz sonra yeniden dene.',
+      );
+    return z
+      .object({
+        items: z
+          .array(
+            z
+              .object({
+                id: z.string().max(64),
+                title: z.string().max(120),
+                preview: gifMedia,
+                gif: gifMedia,
+              })
+              .strict(),
+          )
+          .max(50),
+        more: z.boolean(),
+      })
+      .strict()
+      .parse(value);
+  });
   handle('rooms:media-moderate', async (input) => {
     const body = z
       .object({

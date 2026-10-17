@@ -20,6 +20,8 @@ import { VoiceAvatar } from './VoiceAvatar';
 import { ScreenHandoffControls, cancelScreenHandoff, decideScreenHandoff } from './screen-handoff';
 import { MessageReminder } from './Reminder';
 import { ChatAgentRequest } from './ChatAgent';
+import { EmojiPicker, GifPicker, isGifMessage } from './ComposerPickers';
+import { AppDirectory } from './AppDirectory';
 import {
   Fragment,
   useCallback,
@@ -80,6 +82,7 @@ import {
   Trophy,
   Gem,
   Dice5,
+  LayoutGrid,
 } from 'lucide-react';
 import { Avatar, EmptyState, IconButton, Modal } from '@rooms/design';
 import type { SocialUser, SocialAttachment } from '@rooms/social';
@@ -329,6 +332,36 @@ export function CommunityChat({
   const [reminder, setReminder] = useState<CommunityMessage | null>(null);
   const closeReminder = useCallback(() => setReminder(null), []);
   const [agentPrompt, setAgentPrompt] = useState<string | null>(null);
+  const [picker, setPicker] = useState<'gif' | 'emoji' | 'apps' | null>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!picker) return;
+    const outside = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (pickerRef.current?.contains(target) || target?.closest('[data-composer-picker]')) return;
+      setPicker(null);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPicker(null);
+    };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [picker]);
+  useEffect(() => setPicker(null), [c.activeChannelId]);
+  const insertEmoji = (emoji: string) => {
+    const input = mentionInput.input.current,
+      start = input?.selectionStart ?? draft.length,
+      end = input?.selectionEnd ?? start;
+    mentionInput.change(draft.slice(0, start) + emoji + draft.slice(end), start + emoji.length);
+    requestAnimationFrame(() => {
+      input?.focus();
+      input?.setSelectionRange(start + emoji.length, start + emoji.length);
+    });
+  };
   const closeAgent = useCallback(() => setAgentPrompt(null), []);
   const saveMemory = (message: CommunityMessage) => {
     if (!c.activeChannelId || !window.rooms?.agent) return;
@@ -771,7 +804,11 @@ export function CommunityChat({
                     </time>
                     {m.editedTimestamp && <span>düzenlendi</span>}
                   </div>
-                  <p>{messageText(m.content)}</p>
+                  {isGifMessage(m.content) ? (
+                    <img className="chat-gif" src={m.content.trim()} alt="GIF" loading="lazy" />
+                  ) : (
+                    <p>{messageText(m.content)}</p>
+                  )}
                   {!!m.attachments?.length && (
                     <div className="message-attachments">
                       {m.attachments.map((file) => (
@@ -1013,12 +1050,49 @@ export function CommunityChat({
                 }
               }}
             />
+            {picker && (
+              <div className="composer-popover" ref={pickerRef}>
+                {picker === 'gif' ? (
+                  <GifPicker
+                    onClose={() => setPicker(null)}
+                    onPick={(gif) => {
+                      setPicker(null);
+                      nearBottom.current = true;
+                      report(c.send(gif.gif.url, []), notify);
+                    }}
+                  />
+                ) : picker === 'emoji' ? (
+                  <EmojiPicker onClose={() => setPicker(null)} onPick={insertEmoji} />
+                ) : (
+                  <AppDirectory onClose={() => setPicker(null)} />
+                )}
+              </div>
+            )}
             <IconButton
-              label="Son mesaja reaksiyon ekle"
-              disabled={!c.messages.at(-1) || c.messages.at(-1)?.delivery === 'failed'}
-              onClick={() => setReactionTarget(c.messages.at(-1) ?? null)}
+              label="GIF gönder"
+              data-composer-picker
+              aria-expanded={picker === 'gif'}
+              disabled={!c.activeChannelId || !!editing}
+              onClick={() => setPicker((value) => (value === 'gif' ? null : 'gif'))}
+            >
+              <span className="composer-gif-label">GIF</span>
+            </IconButton>
+            <IconButton
+              label="Emoji ekle"
+              data-composer-picker
+              aria-expanded={picker === 'emoji'}
+              disabled={!c.activeChannelId}
+              onClick={() => setPicker((value) => (value === 'emoji' ? null : 'emoji'))}
             >
               <Smile size={20} />
+            </IconButton>
+            <IconButton
+              label="Uygulamalar ve etkinlikler"
+              data-composer-picker
+              aria-expanded={picker === 'apps'}
+              onClick={() => setPicker((value) => (value === 'apps' ? null : 'apps'))}
+            >
+              <LayoutGrid size={20} />
             </IconButton>
             <IconButton
               label="Asistanı etiketle"

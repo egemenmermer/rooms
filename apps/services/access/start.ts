@@ -18,6 +18,7 @@ async function start() {
     registrationInvitesFile: process.env.ROOMS_REGISTRATION_INVITES_FILE,
     accountInviteMongoUrl: process.env.ROOMS_ACCOUNT_INVITE_MONGO_URL,
     socialReadMongoUrl: process.env.ROOMS_SOCIAL_READ_MONGO_URL,
+    klipyKey: process.env.ROOMS_KLIPY_KEY || undefined,
     apiKey: required('LIVEKIT_API_KEY'),
     apiSecret: required('LIVEKIT_API_SECRET'),
   });

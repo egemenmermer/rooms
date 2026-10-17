@@ -2,6 +2,7 @@ import { registerSoundboard } from './soundboard';
 import { registerMusicGateway } from './music-gateway';
 import { registerMusicPlaylists } from './music-playlists';
 import { registerDmCalls } from './dm-calls';
+import { registerGifs } from './gifs';
 import { registerRemoteControl, type RemoteConsent } from './remote-control';
 import Fastify, { type FastifyRequest } from 'fastify';
 import { RegistrationGate, issueRegistrationInvite } from './registration';
@@ -42,6 +43,8 @@ export interface AccessConfig {
   registrationInvitesFile?: string;
   accountInviteMongoUrl?: string;
   socialReadMongoUrl?: string;
+  /** KLIPY app key for GIF search; kept on the server, never sent to clients. */
+  klipyKey?: string;
 }
 const opaqueId = z.string().regex(SOCIAL_ID_PATTERN);
 /** Server-sent request for one client to join another voice room; members cannot forge it. */
@@ -378,6 +381,17 @@ export async function createAccessServer(config: AccessConfig) {
     ...((permissions & Permissions.VIDEO) !== 0n ? [TrackSource.CAMERA] : []),
     ...(screen ? [TrackSource.SCREEN_SHARE, TrackSource.SCREEN_SHARE_AUDIO] : []),
   ];
+  registerGifs(server, {
+    key: config.klipyKey,
+    user: async (authorization) =>
+      (
+        await new StoatClient(
+          config.stoatUrl ?? 'http://127.0.0.1:3022',
+          tokenOf(authorization),
+          socialOptions,
+        ).getCurrentUser()
+      ).id,
+  });
   server.setErrorHandler((error, request, reply) => {
     if (error instanceof StoatError)
       return reply.code(error.status).send({ error: error.code, message: error.message });
