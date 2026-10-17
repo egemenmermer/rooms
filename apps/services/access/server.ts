@@ -344,7 +344,7 @@ export async function createAccessServer(config: AccessConfig) {
             canPublish: sources(value.permissions).length > 0,
             canSubscribe: (value.permissions & Permissions.LISTEN) !== 0n,
             canPublishSources: sources(value.permissions, hasScreen),
-            canPublishData: enabled && !value.user.bot,
+            canPublishData: !value.user.bot,
             canUpdateMetadata: false,
           },
         })
@@ -433,7 +433,7 @@ export async function createAccessServer(config: AccessConfig) {
           permission: {
             canPublish: sources(permissions).length > 0,
             canSubscribe: (permissions & Permissions.LISTEN) !== 0n,
-            canPublishData: !user.bot && (remoteControl?.hasControl(channelId, user.id) ?? false),
+            canPublishData: !user.bot,
             canPublishSources: sources(permissions),
           },
         });
@@ -678,6 +678,8 @@ export async function createAccessServer(config: AccessConfig) {
       return { rooms };
     },
   );
+  // Every member may publish data packets: cursors, watch state and remote input all ride on it.
+  // Remote input stays safe because each frame carries a per-lease MAC the receiver verifies.
   server.post('/v1/media/grant', async (request) => {
     const { channelId } = channelBody.parse(request.body);
     const token = tokenOf(request.headers.authorization);
@@ -694,7 +696,7 @@ export async function createAccessServer(config: AccessConfig) {
       canSubscribe: (permissions & Permissions.LISTEN) !== 0n,
       canPublish: sources(permissions).length > 0,
       canPublishSources: sources(permissions),
-      canPublishData: !user.bot && (remoteControl?.hasControl(channelId, user.id) ?? false),
+      canPublishData: !user.bot,
       canUpdateOwnMetadata: false,
     });
     grants.set(`${channelId}:${user.id}`, {
@@ -738,7 +740,7 @@ export async function createAccessServer(config: AccessConfig) {
         permission: {
           canPublish: true,
           canSubscribe: (current.permissions & Permissions.LISTEN) !== 0n,
-          canPublishData: !user.bot && (remoteControl?.hasControl(channelId, user.id) ?? false),
+          canPublishData: !user.bot,
           canPublishSources: sources(current.permissions, true),
         },
       });
@@ -771,7 +773,7 @@ export async function createAccessServer(config: AccessConfig) {
       permission: {
         canPublish: sources(permissions).length > 0,
         canSubscribe: (permissions & Permissions.LISTEN) !== 0n,
-        canPublishData: !user.bot && (remoteControl?.hasControl(channelId, user.id) ?? false),
+        canPublishData: !user.bot,
         canPublishSources: sources(permissions),
       },
     });
@@ -932,7 +934,7 @@ export async function createAccessServer(config: AccessConfig) {
         permission: {
           canPublish: true,
           canSubscribe: (current.permissions & Permissions.LISTEN) !== 0n,
-          canPublishData: !user.bot && (remoteControl?.hasControl(channelId, user.id) ?? false),
+          canPublishData: !user.bot,
           canPublishSources: sources(current.permissions, true),
         },
       });
@@ -976,7 +978,7 @@ export async function createAccessServer(config: AccessConfig) {
       permission: {
         canPublish: sources(permissions).length > 0,
         canSubscribe: (permissions & Permissions.LISTEN) !== 0n,
-        canPublishData: !user.bot && (remoteControl?.hasControl(channelId, user.id) ?? false),
+        canPublishData: !user.bot,
         canPublishSources: sources(permissions),
       },
     });
@@ -1012,7 +1014,7 @@ export async function createAccessServer(config: AccessConfig) {
         pruneScreen(channelId);
       for (const [key, grant] of grants) {
         try {
-          const { permissions } = await authorize(grant.token, grant.channelId);
+          const { user, permissions } = await authorize(grant.token, grant.channelId);
           const participant = await roomService
             .getParticipant(roomName(grant.channelId), grant.userId)
             .catch(() => null);
@@ -1045,7 +1047,7 @@ export async function createAccessServer(config: AccessConfig) {
               permission: {
                 canSubscribe: (permissions & Permissions.LISTEN) !== 0n,
                 canPublish: sources(permissions).length > 0,
-                canPublishData: remoteControl?.hasControl(grant.channelId, grant.userId) ?? false,
+                canPublishData: !user.bot,
                 canPublishSources: sources(
                   permissions,
                   (lease?.userId === grant.userId || parallelScreens.has(key)) &&

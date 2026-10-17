@@ -163,10 +163,19 @@ describe('screen handoff access lease', () => {
     expect((await post('remote/state', 'other')).json().lease).toBeNull();
     expect((await post('grant', 'next')).statusCode).toBe(200);
     expect((await post('remote/state', 'host')).json().lease).toBeNull();
-    expect((media.publish.get('host') as any).permission.canPublishData).toBe(false);
+    // Data stays open after the lease: cursors and watch state use it, and input frames need the MAC.
+    expect((media.publish.get('host') as any).permission.canPublishData).toBe(true);
     expect((media.publish.get('host') as any).permission.canPublishSources).toContain(
       TrackSource.SCREEN_SHARE,
     );
+  });
+  it('lets every member send room data such as whiteboard cursors and watch state', async () => {
+    const result = await post('grant', 'other');
+    expect(result.statusCode).toBe(200);
+    const claims = JSON.parse(
+      Buffer.from(result.json().token.split('.')[1], 'base64url').toString('utf8'),
+    );
+    expect(claims.video.canPublishData).toBe(true);
   });
   it('approval reserves but does not revoke the old presenter; release waits for old SFU tracks to disappear', async () => {
     const leaseId = await start(),
