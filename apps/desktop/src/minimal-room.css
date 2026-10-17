@@ -713,7 +713,9 @@
     box-shadow: 0 0 0 0 #8b83ff00;
   }
   50% {
-    box-shadow: 0 0 0 4px #8b83ff33, 0 0 14px 2px #8b83ff59;
+    box-shadow:
+      0 0 0 4px #8b83ff33,
+      0 0 14px 2px #8b83ff59;
   }
 }
 @media (prefers-reduced-motion: reduce) {
