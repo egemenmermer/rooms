@@ -72,7 +72,7 @@ export const directoryItems: DirectoryItem[] = [
     keywords: 'youtube film video izle sinema',
     icon: Popcorn,
     tint: '#c2593a',
-    run: (open) => open('/cinema'),
+    run: (open) => open('/cinema/room'),
   },
   {
     id: 'screen',

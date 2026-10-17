@@ -70,6 +70,10 @@ async function bootstrap() {
       const cinema = await import('./dev/cinema-fixture');
       cinema.cinemaFixtureVariant(fixture, params.get('variant') || 'default');
       cinema.installCinemaFixture(fixture, params.get('variant') || 'default');
+    } else if (fixture === 'S80') {
+      await installReferenceFixture('S19', 'default');
+      const hall = await import('./dev/community-cinema-fixture');
+      hall.installCommunityCinemaFixture(params.get('variant') || 'default');
     } else if (fixture === 'S30') {
       await installReferenceFixture('S19', 'default');
       const mini = await import('./dev/mini-playback-fixture');

@@ -679,7 +679,7 @@ export default function Cinema({ notify }: { notify(message: string): void }) {
       if (await chooseCinemaMedia(binding)) {
         setPersonal(false);
         setPicker(false);
-        navigate('/cinema?view=personal');
+        navigate('/cinema/room?view=personal');
       }
     } catch (error) {
       setPersonalError(uiError(error));

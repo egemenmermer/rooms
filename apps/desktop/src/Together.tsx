@@ -117,9 +117,9 @@ export default function Together() {
   const primary = activity.room?.primary;
   const primaryPath =
     primary?.activity === 'cinema'
-      ? '/cinema'
+      ? '/cinema/room'
       : primary?.activity === 'youtube'
-        ? '/cinema'
+        ? '/cinema/room'
         : primary?.activity === 'screen'
           ? '/voice'
           : '/games';

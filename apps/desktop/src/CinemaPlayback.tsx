@@ -100,7 +100,7 @@ export default function CinemaPlayback({ notify }: { notify(message: string): vo
     [joining, setJoining] = useState(false);
   const [dismissedSourceCheck, setDismissedSourceCheck] = useState<typeof media>(null);
   const active =
-    location.pathname === '/cinema' &&
+    location.pathname === '/cinema/room' &&
     !['queue', 'status', 'screen'].includes(new URLSearchParams(location.search).get('view') ?? '');
   const [buffering, setBuffering] = useState(false),
     [ended, setEnded] = useState(false);
@@ -198,7 +198,7 @@ export default function CinemaPlayback({ notify }: { notify(message: string): vo
 
   const choose = async () => {
     try {
-      if (await chooseCinemaMedia(media?.binding)) navigate('/cinema?view=personal');
+      if (await chooseCinemaMedia(media?.binding)) navigate('/cinema/room?view=personal');
     } catch (error) {
       notify(uiError(error));
     }
@@ -623,7 +623,10 @@ export default function CinemaPlayback({ notify }: { notify(message: string): vo
           <p>{binding ? 'Kendi kaynağın · oda zaman çizelgesi' : 'Kişisel oynatma'}</p>
         </div>
         {binding && (
-          <button className="button secondary small" onClick={() => navigate('/cinema?view=queue')}>
+          <button
+            className="button secondary small"
+            onClick={() => navigate('/cinema/room?view=queue')}
+          >
             <ReferenceIcon name="queue" size={16} />
             Ortak kuyruk
           </button>
@@ -694,7 +697,7 @@ export default function CinemaPlayback({ notify }: { notify(message: string): vo
           >
             {joining ? 'Hazırlanıyor' : declaration?.ready ? 'Hazır' : 'Hazırım, katıl'}
           </button>
-          <button className="button secondary" onClick={() => navigate('/cinema?view=queue')}>
+          <button className="button secondary" onClick={() => navigate('/cinema/room?view=queue')}>
             Ortak kuyruk
           </button>
         </div>
@@ -1071,7 +1074,7 @@ export default function CinemaPlayback({ notify }: { notify(message: string): vo
           controlReason={controlReason}
           onToggle={() => void toggle()}
           onMute={() => command(toggleMic())}
-          onReturn={() => navigate('/cinema?view=personal')}
+          onReturn={() => navigate('/cinema/room?view=personal')}
           onCompact={() => setCollapsed((value) => !value)}
           onHide={() => setMiniHidden(true)}
         />

@@ -268,11 +268,11 @@ export function CommunityChat({
   }, []);
   const activityPath =
     primary?.activity === 'youtube'
-      ? '/cinema'
+      ? '/cinema/room'
       : primary?.activity === 'screen'
         ? '/voice'
         : primary?.activity === 'cinema'
-          ? '/cinema'
+          ? '/cinema/room'
           : '/games';
   const [searchOpen, setSearchOpen] = useState(false),
     [query, setQuery] = useState('');
@@ -897,7 +897,7 @@ export function CommunityChat({
                   kişi hazır
                 </p>
               </span>
-              <button className="button primary" onClick={() => navigate('/cinema')}>
+              <button className="button primary" onClick={() => navigate('/cinema/room')}>
                 <Play size={17} />
                 Odaya git
               </button>
@@ -2543,8 +2543,8 @@ export function RealVoiceDock({
                     if (generation.current !== epoch) return;
                     if (location.pathname !== '/media')
                       navigate(
-                        location.pathname === '/cinema'
-                          ? '/cinema?view=screen'
+                        location.pathname === '/cinema/room'
+                          ? '/cinema/room?view=screen'
                           : '/voice?view=share',
                       );
                     close();

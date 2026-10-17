@@ -260,9 +260,9 @@ export function VoiceSidebar({
                   onClick={() =>
                     openRoomActivity(
                       primary.activity === 'youtube'
-                        ? '/cinema'
+                        ? '/cinema/room'
                         : primary.activity === 'cinema'
-                          ? '/cinema'
+                          ? '/cinema/room'
                           : primary.activity === 'screen'
                             ? '/voice?view=share'
                             : '/games',
