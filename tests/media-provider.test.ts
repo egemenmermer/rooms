@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   ConnectionState,
   RoomEvent,
+  DisconnectReason,
   Track,
   LocalAudioTrack,
   createLocalAudioTrack,
@@ -466,6 +467,29 @@ it('shares whiteboard pointers lossily and keeps them apart from control input',
     emit(RoomEvent.DataReceived, packet('{"b":"room"}'), carol, 0, 'rooms-cursor-v1');
   expect(cursors.length).toBeLessThanOrEqual(600);
   await provider.disconnect();
+});
+it('follows a move only when the server sends it, and says when a moderator disconnected you', async () => {
+  const { provider, room, emit } = fixture();
+  await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+  const carol = { identity: 'carol', name: 'Carol', trackPublications: new Map() };
+  room.remoteParticipants.set('carol', carol);
+  const moves: string[] = [];
+  provider.onMove((channelId) => moves.push(channelId));
+  const packet = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
+  // A member cannot forge a move; only the server sends without a participant.
+  emit(RoomEvent.DataReceived, packet({ channelId: 'lounge' }), carol, 0, 'rooms-move-v1');
+  emit(RoomEvent.DataReceived, packet({ channelId: '../x' }), undefined, 0, 'rooms-move-v1');
+  emit(RoomEvent.DataReceived, packet({ channelId: 'lounge' }), undefined, 0, 'rooms-cursor-v1');
+  emit(
+    RoomEvent.DataReceived,
+    packet({ channelId: 'lounge', by: 'admin' }),
+    undefined,
+    0,
+    'rooms-move-v1',
+  );
+  expect(moves).toEqual(['lounge']);
+  emit(RoomEvent.Disconnected, DisconnectReason.PARTICIPANT_REMOVED);
+  expect(provider.snapshot().error).toBe('A moderator disconnected you from the voice room.');
 });
 it('local volume is applied again when a muted participant publishes a replacement track', async () => {
   const { provider, room, emit } = fixture();

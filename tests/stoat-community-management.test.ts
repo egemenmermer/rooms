@@ -176,6 +176,37 @@ it('sends exact authorized role PATCH and member DELETE, then returns authoritat
   expect(removed.members.some((m) => m.user.id === 'member')).toBe(false);
   expect(calls.find((c) => c.method === 'DELETE')!.path).toBe('/api/servers/space/members/member');
 });
+it('reports ban and move rights and bans only members below this account', async () => {
+  const { client, calls } = fixture({ bits: 512 + 64 + 128 + 2 ** 35 });
+  expect(await client.communityCapabilities('space')).toMatchObject({
+    kickMembers: true,
+    banMembers: true,
+    moveMembers: true,
+  });
+  const before = await client.communityManagement('space');
+  expect(before.members.find((m) => m.user.id === 'member')?.canBan).toBe(true);
+  expect(before.members.find((m) => m.user.id === 'peer')?.canBan).toBe(false);
+  await expect(
+    client.banCommunityMember({ spaceId: 'space', userId: 'peer' }),
+  ).rejects.toMatchObject({ code: 'NotElevated' });
+  await expect(
+    client.banCommunityMember({ spaceId: 'space', userId: 'owner' }),
+  ).rejects.toMatchObject({ code: 'BAN_MEMBER_DENIED' });
+  const banned = await client.banCommunityMember({ spaceId: 'space', userId: 'member' });
+  expect(banned.members.some((m) => m.user.id === 'member')).toBe(false);
+  expect(calls.find((c) => c.method === 'PUT')).toMatchObject({
+    path: '/api/servers/space/bans/member',
+    body: {},
+  });
+});
+it('refuses to ban without the Ban Members permission', async () => {
+  const { client, calls } = fixture();
+  expect((await client.communityCapabilities('space')).banMembers).toBe(false);
+  await expect(
+    client.banCommunityMember({ spaceId: 'space', userId: 'member' }),
+  ).rejects.toMatchObject({ code: 'BAN_MEMBER_DENIED' });
+  expect(calls.every((c) => c.method === 'GET')).toBe(true);
+});
 it('blocks privilege escalation, same-rank edits, owner changes and self removal before mutation', async () => {
   const { client, calls } = fixture();
   await expect(

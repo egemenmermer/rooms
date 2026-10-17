@@ -643,6 +643,17 @@ export async function setupCommunity(
       throw new SocialInputError('The account changed. Open community management again.');
     return result;
   });
+  handle('rooms:social-community-capabilities', (spaceId) =>
+    requireClient().communityCapabilities(id.parse(spaceId)),
+  );
+  handle('rooms:social-ban-community-member', async (input) => {
+    const current = requireClient(),
+      owner = user!.id,
+      result = await current.banCommunityMember(memberRemoval.parse(input));
+    if (client !== current || user?.id !== owner)
+      throw new SocialInputError('The account changed. Open community management again.');
+    return result;
+  });
   handle('rooms:social-remove-community-member', async (input) => {
     const current = requireClient(),
       owner = user!.id,
@@ -1050,6 +1061,8 @@ export async function setupCommunity(
         SCREEN_REQUEST_OWNER_REQUIRED: 'Yalnızca kendi sunum talebini iptal edebilirsin.',
         ALREADY_PRESENTER: 'Zaten ekran paylaşıyorsun.',
         JOIN_VOICE_FIRST: 'Sunum istemeden önce ses odasına katıl.',
+        MOVE_MEMBERS_REQUIRED: 'Bu odadaki kişileri taşıma veya sesten çıkarma yetkin yok.',
+        MEMBER_NOT_IN_ROOM: 'Bu kişi artık bu odada değil.',
         SCREEN_REQUEST_LIMIT: 'Çok fazla sunum talebi var. Biraz sonra yeniden dene.',
       };
       if (typeof value?.error === 'string' && Object.hasOwn(reasons, value.error))
@@ -1380,6 +1393,24 @@ export async function setupCommunity(
     } catch (error) {
       // Servers without the endpoint keep deafen local; it never blocks the toggle.
       if (error instanceof StoatError && error.status === 404) return false;
+      throw error;
+    }
+  });
+  handle('rooms:media-moderate', async (input) => {
+    const body = z
+      .object({
+        channelId: id,
+        userId: id,
+        action: z.enum(['disconnect', 'move']),
+        targetChannelId: id.optional(),
+      })
+      .strict()
+      .parse(input);
+    try {
+      await broker('moderate', body);
+    } catch (error) {
+      if (error instanceof StoatError && error.status === 404)
+        throw new SocialInputError('Sunucu bu işlemi henüz desteklemiyor.');
       throw error;
     }
   });

@@ -56,6 +56,15 @@ const updateListenerScope = () => {
   );
 };
 updateListenerScope();
+// A moderator moved this person: join the target through the normal grant check.
+mediaProvider().onMove?.((channelId) => {
+  if (useVoiceContext.getState().channelId === channelId) return;
+  const name = useCommunity.getState().channels.find((c) => c.id === channelId)?.name ?? 'Oda';
+  window.dispatchEvent(
+    new CustomEvent('rooms:toast', { detail: `Bir yönetici seni ${name} odasına taşıdı.` }),
+  );
+  void joinVoice(channelId, name).catch(() => {});
+});
 useCommunity.subscribe((state, previous) => {
   if (state.user?.id !== previous.user?.id || state.serverUrl !== previous.serverUrl)
     updateListenerScope();

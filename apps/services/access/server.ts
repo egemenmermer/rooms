@@ -9,7 +9,13 @@ import { MongoClient } from 'mongodb';
 import { StoatAuthorizationReader } from './stoat-authorization';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import rateLimit from '@fastify/rate-limit';
-import { AccessToken, RoomServiceClient, TrackSource, WebhookReceiver } from 'livekit-server-sdk';
+import {
+  AccessToken,
+  DataPacket_Kind,
+  RoomServiceClient,
+  TrackSource,
+  WebhookReceiver,
+} from 'livekit-server-sdk';
 import { z } from 'zod';
 import { StoatClient, StoatError } from '@rooms/stoat';
 import { SOCIAL_ID_PATTERN } from '@rooms/social';
@@ -38,6 +44,8 @@ export interface AccessConfig {
   socialReadMongoUrl?: string;
 }
 const opaqueId = z.string().regex(SOCIAL_ID_PATTERN);
+/** Server-sent request for one client to join another voice room; members cannot forge it. */
+const MOVE_TOPIC = 'rooms-move-v1';
 const channelBody = z.object({ channelId: opaqueId }).strict();
 const credentialBody = z
   .object({ email: z.string().email().max(254), password: z.string().min(1).max(256) })
@@ -206,6 +214,7 @@ export async function createAccessServer(config: AccessConfig) {
       user,
       permissions,
       communityId: channel.server,
+      ownerId: (rawServer as StoatServer).owner,
       canManage: rawServer.owner === user.id,
     };
   };
@@ -676,6 +685,70 @@ export async function createAccessServer(config: AccessConfig) {
         }),
       );
       return { rooms };
+    },
+  );
+  // Moving or disconnecting someone needs Stoat's MoveMembers in their room (and, to move, in the
+  // target). A move only tells their client where to go: it joins through the normal grant check.
+  server.post(
+    '/v1/media/moderate',
+    {
+      config: {
+        rateLimit: {
+          max: 60,
+          timeWindow: '1 minute',
+          keyGenerator: (request: FastifyRequest) =>
+            'voice-moderate:' +
+            createHash('sha256')
+              .update(request.headers.authorization ?? request.ip)
+              .digest('hex'),
+        },
+      },
+    },
+    async (request) => {
+      const body = z
+        .object({
+          channelId: opaqueId,
+          userId: opaqueId,
+          action: z.enum(['disconnect', 'move']),
+          targetChannelId: opaqueId.optional(),
+        })
+        .strict()
+        .refine(
+          (v) =>
+            (v.action === 'move') === (v.targetChannelId !== undefined) &&
+            v.targetChannelId !== v.channelId,
+        )
+        .parse(request.body);
+      const token = tokenOf(request.headers.authorization);
+      const moderator = await authorize(token, body.channelId);
+      if ((moderator.permissions & Permissions.MOVE_MEMBERS) === 0n)
+        throw new StoatError(403, 'MOVE_MEMBERS_REQUIRED');
+      if (body.userId === moderator.user.id) throw new StoatError(400, 'MODERATE_SELF');
+      if (body.userId === moderator.ownerId) throw new StoatError(403, 'MOVE_MEMBERS_REQUIRED');
+      const room = roomName(body.channelId);
+      const participant = await roomService.getParticipant(room, body.userId).catch(() => null);
+      if (!participant) throw new StoatError(404, 'MEMBER_NOT_IN_ROOM');
+      if (body.action === 'move') {
+        const target = await authorize(token, body.targetChannelId!);
+        if (
+          target.communityId !== moderator.communityId ||
+          (target.permissions & Permissions.MOVE_MEMBERS) === 0n
+        )
+          throw new StoatError(403, 'MOVE_MEMBERS_REQUIRED');
+        await roomService.sendData(
+          room,
+          new TextEncoder().encode(
+            JSON.stringify({ channelId: body.targetChannelId, by: moderator.user.id }),
+          ),
+          DataPacket_Kind.RELIABLE,
+          { destinationIdentities: [body.userId], topic: MOVE_TOPIC },
+        );
+        return { moved: true };
+      }
+      await roomService.removeParticipant(room, body.userId);
+      grants.delete(`${body.channelId}:${body.userId}`);
+      invalidateScreenUser(body.channelId, body.userId);
+      return { disconnected: true };
     },
   );
   // Every member may publish data packets: cursors, watch state and remote input all ride on it.

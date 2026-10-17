@@ -294,6 +294,15 @@ export default function App() {
   const [toast, setToast] = useState('');
   const [search, setSearch] = useState('');
   const notify = useCallback((message: string) => setToast(message), []);
+  useEffect(() => {
+    // Modules without a component (voice, updates) report through this event.
+    const show = (event: Event) => {
+      const message = (event as CustomEvent<unknown>).detail;
+      if (typeof message === 'string' && message) setToast(message.slice(0, 300));
+    };
+    window.addEventListener('rooms:toast', show);
+    return () => window.removeEventListener('rooms:toast', show);
+  }, []);
   const close = useCallback(() => {
     setOverlay(null);
     setSearch('');

@@ -168,6 +168,13 @@ export interface DesktopBridge {
     }>;
     /** Shares this user's deafen state with the room; false when the server lacks support. */
     deafen?(channelId: string, deafened: boolean): Promise<boolean>;
+    /** Moves someone to another voice room, or disconnects them; needs Move Members. */
+    moderate?(input: {
+      channelId: string;
+      userId: string;
+      action: 'disconnect' | 'move';
+      targetChannelId?: string;
+    }): Promise<void>;
     grant(
       channelId: string,
     ): Promise<{ serverUrl: string; roomName: string; token: string; expiresAt: string }>;
@@ -314,6 +321,14 @@ export interface SocialBridge {
   removeCommunityMember(
     change: import('@rooms/social').SocialMemberRemoval,
   ): Promise<import('@rooms/social').SocialCommunityManagement>;
+  /** Bans a member below this account's rank; they cannot rejoin until unbanned. */
+  banCommunityMember?(
+    change: import('@rooms/social').SocialMemberRemoval,
+  ): Promise<import('@rooms/social').SocialCommunityManagement>;
+  /** This account's moderation rights in a community, without listing members. */
+  communityCapabilities?(
+    spaceId: string,
+  ): Promise<import('@rooms/social').SocialCommunityManagement['capabilities']>;
   members(spaceId: string): Promise<import('@rooms/social').SocialMember[]>;
   friends(): Promise<import('@rooms/social').SocialFriend[]>;
   addFriend(username: string): Promise<void>;

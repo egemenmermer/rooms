@@ -250,6 +250,8 @@ const managementBits = {
   managePermissions: 4n,
   assignRoles: 512n,
   kickMembers: 64n,
+  banMembers: 128n,
+  moveMembers: 1n << 35n,
 } as const;
 const rolePermissionBits: Record<SocialRolePermissionKey, bigint> = {
   view: 1n << 20n,
@@ -264,6 +266,8 @@ const rolePermissionBits: Record<SocialRolePermissionKey, bigint> = {
   manageRoles: 8n,
   managePermissions: 4n,
   kickMembers: 64n,
+  banMembers: 128n,
+  moveMembers: 1n << 35n,
 };
 function rolePermissionValues(raw: Raw | undefined): SocialRolePermissionValues {
   const p = permissionOverride(raw);
@@ -289,6 +293,8 @@ const managementUnavailable = (
     managePermissions: false,
     assignRoles: false,
     kickMembers: false,
+    banMembers: false,
+    moveMembers: false,
   },
   roles: [],
   grantablePermissions: [],
@@ -1414,6 +1420,7 @@ export class StoatClient {
             roles: [...(m.roles ?? [])],
             canAssignRoles: result.capabilities.assignRoles && !isOwner && (isSelf || elevated),
             canRemove: result.capabilities.kickMembers && !isSelf && !isOwner && elevated,
+            canBan: !!result.capabilities.banMembers && !isSelf && !isOwner && elevated,
           },
         ];
       });
@@ -1553,6 +1560,34 @@ export class StoatClient {
     await this.request(`/servers/${checked(spaceId)}/members/${checked(userId)}`, 'PATCH', {
       roles: roleIds,
     });
+    if (c.session !== this.sessionEpoch) throw new StoatError(401, 'SESSION_CHANGED');
+    ++this.managementEpoch;
+    try {
+      return await this.refreshAfterWrite(spaceId, c.session);
+    } finally {
+      this.managementChanged(spaceId);
+    }
+  }
+  /** What this account may do in a community, without listing its members. */
+  async communityCapabilities(spaceId: string): Promise<SocialCommunityManagement['capabilities']> {
+    checked(spaceId);
+    const context = await this.managementContext(spaceId);
+    return Object.fromEntries(
+      Object.entries(managementBits).map(([key, bit]) => [key, !!(context.bits & bit)]),
+    ) as SocialCommunityManagement['capabilities'];
+  }
+  /** Bans someone below this account's rank; they leave the community and cannot rejoin. */
+  async banCommunityMember(change: SocialMemberRemoval): Promise<SocialCommunityManagement> {
+    const { spaceId, userId } = change;
+    checked(spaceId);
+    checked(userId);
+    const c = await this.managementContext(spaceId);
+    if (!(c.bits & managementBits.banMembers) || userId === c.self._id || userId === c.server.owner)
+      throw new StoatError(403, 'BAN_MEMBER_DENIED');
+    const target = checkedMember(await this.getMember(spaceId, userId), spaceId, userId);
+    if (memberRank(target, c.roles) <= c.rank) throw new StoatError(403, 'NotElevated');
+    this.assertManagementContext(c.epoch, c.session);
+    await this.request(`/servers/${checked(spaceId)}/bans/${checked(userId)}`, 'PUT', {});
     if (c.session !== this.sessionEpoch) throw new StoatError(401, 'SESSION_CHANGED');
     ++this.managementEpoch;
     try {

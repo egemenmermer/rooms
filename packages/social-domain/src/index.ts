@@ -127,6 +127,8 @@ export const SOCIAL_ROLE_PERMISSION_KEYS = [
   'manageRoles',
   'managePermissions',
   'kickMembers',
+  'banMembers',
+  'moveMembers',
 ] as const;
 export type SocialRolePermissionKey = (typeof SOCIAL_ROLE_PERMISSION_KEYS)[number];
 export type SocialRolePermissionValues = Record<SocialRolePermissionKey, SocialPermissionValue>;
@@ -154,6 +156,7 @@ export interface SocialCommunityRole {
 export interface SocialManagedMember extends SocialMember {
   canAssignRoles: boolean;
   canRemove: boolean;
+  canBan?: boolean;
 }
 export interface SocialCommunityManagement {
   spaceId: string;
@@ -165,6 +168,10 @@ export interface SocialCommunityManagement {
     managePermissions: boolean;
     assignRoles: boolean;
     kickMembers: boolean;
+    /** Stoat BanMembers; absent from older projections. */
+    banMembers?: boolean;
+    /** Stoat MoveMembers: move people between voice rooms or disconnect them. */
+    moveMembers?: boolean;
   };
   roles: SocialCommunityRole[];
   grantablePermissions: SocialRolePermissionKey[];

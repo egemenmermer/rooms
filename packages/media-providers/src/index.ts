@@ -3,6 +3,7 @@ import type { NoiseSuppressionMode, NoiseProcessingState } from './noise-suppres
 import { SoundboardMixer } from './soundboard';
 import {
   ConnectionState,
+  DisconnectReason,
   Room,
   RoomEvent,
   Track,
@@ -89,6 +90,8 @@ export interface RealtimeMediaProvider {
   /** Lossy, room-wide pointer positions for shared surfaces such as the whiteboard. */
   publishCursor?(payload: string): Promise<void>;
   onCursor?(listener: (payload: string, senderId: string) => void): () => void;
+  /** A moderator asked this client to join another voice room (sent by the server only). */
+  onMove?(listener: (channelId: string) => void): () => void;
   readonly status: ConnectionStatus;
   connectRoom(roomId: string, shortLivedMembershipToken: string, serverUrl: string): Promise<void>;
   publishMic(deviceId?: string): Promise<void>;
@@ -117,6 +120,7 @@ export interface RealtimeMediaProvider {
 }
 const WATCH_TOPIC = 'rooms-watch-v1';
 const CURSOR_TOPIC = 'rooms-cursor-v1';
+const MOVE_TOPIC = 'rooms-move-v1';
 const isScreenSource = (source: Track.Source) =>
   source === Track.Source.ScreenShare || source === Track.Source.ScreenShareAudio;
 /** `{ watching: identity | null }`; anything else is ignored. */
@@ -151,6 +155,13 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     this.cursorListeners.add(listener);
     return () => {
       this.cursorListeners.delete(listener);
+    };
+  }
+  private moveListeners = new Set<(channelId: string) => void>();
+  onMove(listener: (channelId: string) => void) {
+    this.moveListeners.add(listener);
+    return () => {
+      this.moveListeners.delete(listener);
     };
   }
   async publishCursor(payload: string) {
@@ -515,7 +526,21 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       cursorSecond = 0,
       cursorCount = 0;
     room.on(RoomEvent.DataReceived, (payload, participant, _kind, topic) => {
-      if (this.room !== room || !participant || this.state.status !== 'connected') return;
+      if (this.room !== room || this.state.status !== 'connected') return;
+      if (!participant) {
+        // Only the server sends without a participant; members cannot forge a move.
+        if (topic !== MOVE_TOPIC || payload.length > 512) return;
+        try {
+          const channelId = JSON.parse(
+            new TextDecoder('utf-8', { fatal: true }).decode(payload),
+          )?.channelId;
+          if (typeof channelId === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(channelId))
+            for (const listener of this.moveListeners) listener(channelId);
+        } catch {
+          /* Malformed data is never a move. */
+        }
+        return;
+      }
       if (topic === CURSOR_TOPIC) {
         // Cursors are frequent and disposable: their own budget, never mixed with control input.
         const second = Math.floor(Date.now() / 1000);
@@ -600,7 +625,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       this.patch({ status });
       sync();
     });
-    room.on(RoomEvent.Disconnected, () => {
+    room.on(RoomEvent.Disconnected, (reason) => {
       if (this.room === room) {
         this.stopSoundboard();
         this.cleanupPlayback();
@@ -611,7 +636,10 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
           camera: false,
           tracks: [],
           participants: [],
-          error: 'Voice disconnected. Rejoin to obtain a fresh membership grant.',
+          error:
+            reason === DisconnectReason.PARTICIPANT_REMOVED
+              ? 'A moderator disconnected you from the voice room.'
+              : 'Voice disconnected. Rejoin to obtain a fresh membership grant.',
         });
       }
     });

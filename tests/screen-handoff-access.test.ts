@@ -8,6 +8,7 @@ const media = vi.hoisted(() => ({
   publish: new Map<string, unknown>(),
   revoked: new Set<string>(),
   update: vi.fn(),
+  send: vi.fn(),
   list: vi.fn(),
   get: vi.fn(),
   event: {} as any,
@@ -20,6 +21,7 @@ vi.mock('livekit-server-sdk', async () => {
       listParticipants = media.list;
       getParticipant = media.get;
       updateParticipant = media.update;
+      sendData = media.send;
       removeParticipant = vi.fn(async (_room: string, id: string) => {
         media.participants.delete(id);
       });
@@ -168,6 +170,39 @@ describe('screen handoff access lease', () => {
     expect((media.publish.get('host') as any).permission.canPublishSources).toContain(
       TrackSource.SCREEN_SHARE,
     );
+  });
+  it('lets a member with Move Members move or disconnect someone in the room, and no one else', async () => {
+    const moderate = (user: string, payload: Record<string, unknown>) =>
+      post('moderate', user, { channelId: 'channel', ...payload });
+    expect((await moderate('host', { userId: 'next', action: 'disconnect' })).json().error).toBe(
+      'MOVE_MEMBERS_REQUIRED',
+    );
+    expect((await moderate('admin', { userId: 'admin', action: 'disconnect' })).statusCode).toBe(
+      400,
+    );
+    expect((await moderate('admin', { userId: 'next', action: 'move' })).statusCode).toBe(400);
+    expect((await moderate('admin', { userId: 'nobody', action: 'disconnect' })).json().error).toBe(
+      'MEMBER_NOT_IN_ROOM',
+    );
+    media.send.mockClear();
+    const moved = await moderate('admin', {
+      userId: 'next',
+      action: 'move',
+      targetChannelId: 'lounge',
+    });
+    expect(moved.json()).toEqual({ moved: true });
+    const [room, data, , options] = media.send.mock.calls[0]!;
+    expect(room).toBe('stoat-channel-channel');
+    expect(JSON.parse(new TextDecoder().decode(data))).toEqual({
+      channelId: 'lounge',
+      by: 'admin',
+    });
+    expect(options).toEqual({ destinationIdentities: ['next'], topic: 'rooms-move-v1' });
+    expect(media.participants.has('next')).toBe(true);
+    expect((await moderate('admin', { userId: 'next', action: 'disconnect' })).json()).toEqual({
+      disconnected: true,
+    });
+    expect(media.participants.has('next')).toBe(false);
   });
   it('lets every member send room data such as whiteboard cursors and watch state', async () => {
     const result = await post('grant', 'other');
