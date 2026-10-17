@@ -1,0 +1,534 @@
+import { join } from 'node:path';
+import {
+  playbackPosition,
+  type ActivityResponse,
+} from '../../../packages/activity-protocol/src/index';
+import { maskServer } from '../../../packages/community-cinema/src/mask';
+import { detectXtreamExport } from '../../../packages/community-cinema/src/m3u';
+import { xtreamUrls } from '../../../packages/community-cinema/src/xtream';
+import type {
+  CinemaDetails,
+  CinemaImportProgress,
+  CinemaStatus,
+  CinemaWatch,
+} from '../../../packages/community-cinema/src/types';
+import {
+  Catalog,
+  emptySnapshot,
+  publicItem,
+  type CatalogSnapshot,
+  type StoredItem,
+} from './catalog';
+import {
+  sourceSchema,
+  type CinemaSource,
+  type CommunityConfig,
+  type ConfigStore,
+} from './config-store';
+import { CinemaError, safeError, type Importer } from './importer';
+import type { SecureFiles } from './secure-file';
+
+export type RelaySource = { url: string; headers: Record<string, string>; live: boolean };
+export type RelayInfo = {
+  session: string;
+  live: boolean;
+  offsetSec: number;
+  epoch: number;
+  durationSec: number | null;
+  producedSec?: number;
+  windowStartSec?: number;
+};
+
+/** The part of the relay manager the service drives. */
+export interface RelayPort {
+  acquire(input: {
+    communityId: string;
+    key: string;
+    source: RelaySource;
+    startSec?: number;
+    slots: number;
+  }): Promise<RelayInfo>;
+  sessionsOf(communityId: string): RelayInfo[];
+  stopCommunity(communityId: string): Promise<void>;
+}
+
+export type TicketIssuer = (claims: { session: string; userId: string; hallId: string }) => {
+  ticket: string;
+  expiresAt: number;
+};
+
+const fail = (code: string): never => {
+  throw new CinemaError(code);
+};
+
+/** Catalog snapshots, encrypted and gzipped, one per community; loaded on first use. */
+export class CatalogStore {
+  private readonly loaded = new Map<string, Catalog>();
+  private readonly pending = new Map<string, NodeJS.Timeout>();
+  constructor(
+    private readonly directory: string,
+    private readonly files: SecureFiles,
+  ) {}
+  private path(communityId: string) {
+    return join(this.directory, 'catalogs', `${communityId}.enc`);
+  }
+  get(communityId: string) {
+    let catalog = this.loaded.get(communityId);
+    if (!catalog) {
+      catalog = new Catalog(
+        this.files.read<CatalogSnapshot>(this.path(communityId), true) ?? emptySnapshot(),
+      );
+      this.loaded.set(communityId, catalog);
+    }
+    return catalog;
+  }
+  put(communityId: string, snapshot: CatalogSnapshot) {
+    const catalog = new Catalog(snapshot);
+    this.files.write(this.path(communityId), snapshot, true);
+    this.loaded.set(communityId, catalog);
+    return catalog;
+  }
+  save(communityId: string) {
+    const timer = this.pending.get(communityId);
+    if (timer) clearTimeout(timer);
+    this.pending.delete(communityId);
+    const catalog = this.loaded.get(communityId);
+    if (catalog) this.files.write(this.path(communityId), catalog.snapshot, true);
+  }
+  /** Lazily fetched details are worth keeping, but not worth a 30 MB write per click. */
+  saveSoon(communityId: string) {
+    if (this.pending.has(communityId)) return;
+    const timer = setTimeout(() => this.save(communityId), 30_000);
+    timer.unref();
+    this.pending.set(communityId, timer);
+  }
+  flush() {
+    for (const communityId of [...this.pending.keys()]) this.save(communityId);
+  }
+  remove(communityId: string) {
+    clearTimeout(this.pending.get(communityId));
+    this.pending.delete(communityId);
+    this.loaded.delete(communityId);
+    this.files.remove(this.path(communityId));
+  }
+}
+
+type Job = { progress: CinemaImportProgress; abort: AbortController };
+
+export type CinemaServiceOptions = {
+  configs: ConfigStore;
+  catalogs: CatalogStore;
+  importer: Importer;
+  relays: RelayPort;
+  tickets: TicketIssuer;
+  /** Reads the hall activity with the member's own token. */
+  activity(token: string, hallId: string): Promise<ActivityResponse>;
+  /** Fetches provider artwork (size and type checked). */
+  image(url: string): Promise<{ body: Buffer; type: string }>;
+  maxRelays?: number;
+  log?: (line: string) => void;
+  now?: () => number;
+};
+
+const GUIDE_REFRESH_MS = 12 * 3600_000;
+const CATALOG_REFRESH_MS = 24 * 3600_000;
+
+export class CinemaService {
+  private readonly jobs = new Map<string, Job>();
+  private readonly lastJobs = new Map<string, CinemaImportProgress>();
+  private readonly sessionRefs = new Map<string, string>();
+  private readonly art = new Map<string, { body: Buffer; type: string }>();
+  private artBytes = 0;
+
+  constructor(private readonly options: CinemaServiceOptions) {}
+
+  private now() {
+    return this.options.now?.() ?? Date.now();
+  }
+
+  private log(line: string) {
+    this.options.log?.(line);
+  }
+
+  status(communityId: string, isOwner: boolean): CinemaStatus {
+    const config = this.options.configs.get(communityId);
+    const catalog = config.source ? this.options.catalogs.get(communityId) : null;
+    const counts = catalog?.counts() ?? { live: 0, movies: 0, series: 0, programmes: 0 };
+    return {
+      communityId,
+      hallChannelId: config.hallChannelId,
+      isOwner,
+      connected: !!config.source,
+      source: config.source
+        ? {
+            kind: config.source.kind,
+            label: isOwner
+              ? maskServer(
+                  config.source.kind === 'xtream' ? config.source.server : config.source.url,
+                )
+              : null,
+            hasCustomGuide: !!config.source.guideUrl,
+          }
+        : null,
+      account: config.account
+        ? {
+            status: config.account.status,
+            expiresAt: config.account.expiresAt,
+            maxConnections: config.account.maxConnections,
+          }
+        : null,
+      catalog: {
+        ...counts,
+        importedAt: catalog?.snapshot.importedAt ?? null,
+        guideImportedAt: catalog?.snapshot.guideImportedAt ?? null,
+      },
+      importing: this.jobs.get(communityId)?.progress ?? this.failedJob(communityId),
+      relaySlots: this.slots(config),
+    };
+  }
+
+  private failedJob(communityId: string) {
+    const last = this.lastJobs.get(communityId);
+    return last?.step === 'failed' ? last : null;
+  }
+
+  private slots(config: CommunityConfig) {
+    const cap = Math.max(1, this.options.maxRelays ?? 1);
+    const account = config.account?.maxConnections ?? 1;
+    return Math.max(1, Math.min(cap, account, config.relaySlots || 1));
+  }
+
+  setHall(communityId: string, channelId: string | null) {
+    if (channelId) {
+      const other = this.options.configs.communityOfHall(channelId);
+      if (other && other !== communityId) fail('CINEMA_HALL_REQUIRED');
+    }
+    this.options.configs.update(communityId, (config) => ({ ...config, hallChannelId: channelId }));
+  }
+
+  /** Validates, verifies with the provider, stores and starts the import. */
+  async connect(communityId: string, userId: string, input: unknown) {
+    const parsed = sourceSchema.safeParse(normalizeSource(input));
+    if (!parsed.success) return fail('CINEMA_SOURCE_INVALID');
+    const source = parsed.data;
+    const account = await this.options.importer.verify(source);
+    this.jobs.get(communityId)?.abort.abort();
+    this.jobs.delete(communityId);
+    await this.options.relays.stopCommunity(communityId);
+    this.options.catalogs.remove(communityId);
+    this.options.configs.update(communityId, (config) => ({
+      ...config,
+      source,
+      account,
+      connectedAt: this.now(),
+      connectedBy: userId,
+      relaySlots: Math.max(1, Math.min(this.options.maxRelays ?? 1, account?.maxConnections ?? 1)),
+    }));
+    this.startImport(communityId, 'all');
+  }
+
+  async disconnect(communityId: string) {
+    this.jobs.get(communityId)?.abort.abort();
+    this.jobs.delete(communityId);
+    this.lastJobs.delete(communityId);
+    await this.options.relays.stopCommunity(communityId);
+    this.options.catalogs.remove(communityId);
+    this.options.configs.update(communityId, (config) => ({
+      ...config,
+      source: null,
+      account: null,
+      connectedAt: null,
+      connectedBy: null,
+    }));
+  }
+
+  reload(communityId: string, scope: 'all' | 'guide') {
+    if (!this.options.configs.get(communityId).source) fail('CINEMA_NOT_CONNECTED');
+    if (this.jobs.has(communityId)) fail('CINEMA_IMPORT_RUNNING');
+    this.startImport(communityId, scope);
+  }
+
+  /** Background refresh: guide every 12 h, catalog every 24 h. */
+  refreshDue() {
+    for (const config of this.options.configs.all()) {
+      if (!config.source || this.jobs.has(config.communityId)) continue;
+      const catalog = this.options.catalogs.get(config.communityId).snapshot;
+      const now = this.now();
+      if (!catalog.importedAt || now - catalog.importedAt > CATALOG_REFRESH_MS)
+        this.startImport(config.communityId, 'all');
+      else if (!catalog.guideImportedAt || now - catalog.guideImportedAt > GUIDE_REFRESH_MS)
+        this.startImport(config.communityId, 'guide');
+    }
+  }
+
+  private startImport(communityId: string, scope: 'all' | 'guide') {
+    const abort = new AbortController();
+    const job: Job = {
+      abort,
+      progress: {
+        step: 'connecting',
+        counts: { live: 0, movies: 0, series: 0, programmes: 0 },
+        error: null,
+        startedAt: this.now(),
+        finishedAt: null,
+      },
+    };
+    this.jobs.set(communityId, job);
+    const update = (change: Partial<CinemaImportProgress>) => {
+      job.progress = {
+        ...job.progress,
+        ...change,
+        counts: { ...job.progress.counts, ...change.counts },
+      };
+    };
+    void (async () => {
+      const source = this.options.configs.get(communityId).source;
+      if (!source) return;
+      const { importer, catalogs } = this.options;
+      let catalog = catalogs.get(communityId);
+      if (scope === 'all') {
+        const snapshot = await importer.importCatalog(source, update, abort.signal);
+        const previous = catalog.snapshot;
+        // Keep the current guide until the new one arrives.
+        snapshot.programmes = previous.programmes;
+        snapshot.guideImportedAt = previous.guideImportedAt;
+        if (abort.signal.aborted) return;
+        // Channels that survive the reload keep their guide match until the next guide import.
+        const matched = new Map(previous.items.map((item) => [item.ref, item.epgId]));
+        for (const item of snapshot.items) {
+          item.epgId = matched.get(item.ref) ?? null;
+          item.hasGuide = !!item.epgId && !!snapshot.programmes[item.epgId]?.length;
+        }
+        catalog = catalogs.put(communityId, snapshot);
+      }
+      const url = importer.guideUrl(source, catalog.snapshot);
+      if (url) {
+        const guide = await importer.importGuide(url, catalog.snapshot.items, update, abort.signal);
+        if (abort.signal.aborted) return;
+        catalog.setGuide(guide.programmes, guide.matches, this.now());
+        catalogs.save(communityId);
+        update({ counts: { ...job.progress.counts, programmes: guide.count } });
+      }
+      update({ step: 'completed', finishedAt: this.now() });
+    })()
+      .catch((error: unknown) => {
+        if (abort.signal.aborted) return;
+        const code = error instanceof CinemaError ? error.message : 'CINEMA_PROVIDER_UNREACHABLE';
+        this.log(`cinema import failed for ${communityId}: ${safeError(error)}`);
+        update({ step: 'failed', error: code, finishedAt: this.now() });
+      })
+      .finally(() => {
+        if (this.jobs.get(communityId) === job) {
+          this.jobs.delete(communityId);
+          this.lastJobs.set(communityId, job.progress);
+        }
+      });
+  }
+
+  catalog(communityId: string) {
+    if (!this.options.configs.get(communityId).source) fail('CINEMA_NOT_CONNECTED');
+    return this.options.catalogs.get(communityId);
+  }
+
+  async details(communityId: string, ref: string): Promise<CinemaDetails> {
+    const catalog = this.catalog(communityId);
+    const source = this.options.configs.get(communityId).source!;
+    const item = catalog.item(ref) ?? fail('CINEMA_ITEM_NOT_FOUND');
+    let changed = false;
+    if (item.kind === 'series' && !catalog.episodes(ref)) {
+      const info = await this.options.importer.seriesInfo(source, item);
+      if (info) {
+        catalog.setEpisodes(ref, info.episodes, info.art);
+        item.plot ??= info.plot;
+        item.genre ??= info.genre;
+        item.cast ??= info.cast;
+        item.director ??= info.director;
+        changed = true;
+      }
+    }
+    if (
+      item.kind === 'movie' &&
+      source.kind === 'xtream' &&
+      item.plot === null &&
+      item.durationSec === null
+    ) {
+      const info = await this.options.importer.vodInfo(source, item).catch(() => null);
+      if (info) {
+        item.plot = info.plot ?? '';
+        item.genre ??= info.genre;
+        item.cast ??= info.cast;
+        item.director ??= info.director;
+        item.durationSec = info.durationSec;
+        if (info.backdrop) {
+          const id = catalog.registerArt(info.backdrop);
+          item.backdrop ??= id;
+        }
+        changed = true;
+      }
+    }
+    if (changed) this.options.catalogs.saveSoon(communityId);
+    const seasons = new Map<number, CinemaDetails['seasons'][number]['episodes']>();
+    for (const episode of catalog.episodes(ref) ?? [])
+      seasons.set(episode.season, [
+        ...(seasons.get(episode.season) ?? []),
+        {
+          ref: episode.ref,
+          season: episode.season,
+          episode: episode.episode,
+          title: episode.title,
+          plot: episode.plot,
+          durationSec: episode.durationSec,
+          art: episode.art,
+        },
+      ]);
+    return {
+      item: publicItem(item),
+      plot: item.plot || null,
+      genre: item.genre,
+      cast: item.cast,
+      director: item.director,
+      durationSec: item.durationSec,
+      backdrop: item.backdrop,
+      seasons: [...seasons]
+        .sort((a, b) => a[0] - b[0])
+        .map(([season, episodes]) => ({ season, episodes })),
+    };
+  }
+
+  /** Provider artwork through the service, cached in memory (about 48 MB). */
+  async image(communityId: string, id: string) {
+    const url = this.catalog(communityId).artUrl(id) ?? fail('CINEMA_ITEM_NOT_FOUND');
+    const key = `${communityId}:${id}`;
+    const cached = this.art.get(key);
+    if (cached) {
+      this.art.delete(key);
+      this.art.set(key, cached);
+      return cached;
+    }
+    const image = await this.options.image(url);
+    this.art.set(key, image);
+    this.artBytes += image.body.length;
+    for (const [oldKey, old] of this.art) {
+      if (this.artBytes <= 48 * 1024 * 1024) break;
+      this.art.delete(oldKey);
+      this.artBytes -= old.body.length;
+    }
+    return image;
+  }
+
+  private relaySource(
+    source: CinemaSource,
+    item: StoredItem | null,
+    episode: ReturnType<Catalog['episode']>,
+  ): RelaySource {
+    const headers = (userAgent: string | null, referrer: string | null) => ({
+      ...(userAgent ? { 'User-Agent': userAgent } : {}),
+      ...(referrer ? { Referer: referrer } : {}),
+    });
+    if (episode) {
+      const { episode: entry } = episode;
+      if (entry.url) return { url: entry.url, headers: {}, live: false };
+      if (source.kind !== 'xtream') return fail('CINEMA_ITEM_NOT_FOUND');
+      const urls = xtreamUrls(source.server, source.username, source.password);
+      return { url: urls.episode(entry.providerId, entry.ext ?? 'mp4'), headers: {}, live: false };
+    }
+    if (!item || item.kind === 'series') return fail('CINEMA_ITEM_NOT_FOUND');
+    const live = item.kind === 'live';
+    if (item.url) return { url: item.url, headers: headers(item.userAgent, item.referrer), live };
+    if (source.kind !== 'xtream') return fail('CINEMA_ITEM_NOT_FOUND');
+    const urls = xtreamUrls(source.server, source.username, source.password);
+    return {
+      url: live ? urls.live(item.providerId, 'ts') : urls.movie(item.providerId, item.ext ?? 'mp4'),
+      headers: {},
+      live,
+    };
+  }
+
+  /**
+   * Relays the hall's current item. Only the activity's selected item can be
+   * relayed, so changing what the server's one connection plays requires the
+   * hall's remote control.
+   */
+  async watch(
+    token: string,
+    hallId: string,
+    communityId: string,
+    userId: string,
+  ): Promise<CinemaWatch> {
+    const config = this.options.configs.get(communityId);
+    if (!config.source) fail('CINEMA_NOT_CONNECTED');
+    if (config.hallChannelId !== hallId) fail('CINEMA_HALL_REQUIRED');
+    const response = await this.options.activity(token, hallId);
+    const room = response.room;
+    const current = room.queue.find((entry) => entry.id === room.timeline.itemId)?.media;
+    if (room.primary?.activity !== 'hall' || current?.kind !== 'community-media')
+      return fail('CINEMA_NOTHING_SELECTED');
+    const catalog = this.catalog(communityId);
+    const item = catalog.item(current.ref);
+    const episode = item ? null : catalog.episode(current.ref);
+    const source = this.relaySource(config.source!, item, episode);
+    const slots = this.slots(config);
+    let info: RelayInfo;
+    if (source.live) {
+      info = await this.options.relays.acquire({
+        communityId,
+        key: `${communityId}:${current.ref}`,
+        source,
+        slots,
+      });
+    } else {
+      const position = playbackPosition(room.timeline, response.serverTimeMs);
+      const reusable = this.options.relays
+        .sessionsOf(communityId)
+        .find(
+          (session) =>
+            this.sessionRefs.get(session.session) === current.ref &&
+            position >= session.offsetSec + (session.windowStartSec ?? 0) &&
+            position <= session.offsetSec + (session.producedSec ?? 0) + 10,
+        );
+      const startSec = Math.max(0, Math.floor(position) - 2);
+      info =
+        reusable ??
+        (await this.options.relays.acquire({
+          communityId,
+          key: `${communityId}:${current.ref}@${startSec}`,
+          source,
+          startSec,
+          slots,
+        }));
+    }
+    this.sessionRefs.set(info.session, current.ref);
+    const ticket = this.options.tickets({ session: info.session, userId, hallId });
+    return {
+      session: info.session,
+      ticket: ticket.ticket,
+      expiresAt: ticket.expiresAt,
+      live: info.live,
+      durationSec: info.durationSec ?? item?.durationSec ?? episode?.episode.durationSec ?? null,
+      offsetSec: info.offsetSec,
+      epoch: info.epoch,
+    };
+  }
+}
+
+/** Accepts the bridge input; an M3U `get.php?username=…` export becomes an Xtream source. */
+function normalizeSource(input: unknown) {
+  if (!input || typeof input !== 'object') return input;
+  const value = input as Record<string, unknown>;
+  const trim = (v: unknown) => (typeof v === 'string' ? v.trim() : v);
+  if (value.kind === 'm3u' && typeof value.url === 'string') {
+    const xtream = detectXtreamExport(value.url.trim());
+    if (xtream) return { kind: 'xtream', ...xtream, guideUrl: trim(value.guideUrl) ?? null };
+    return { kind: 'm3u', url: trim(value.url), guideUrl: trim(value.guideUrl) ?? null };
+  }
+  if (value.kind === 'xtream')
+    return {
+      kind: 'xtream',
+      server:
+        typeof value.server === 'string' ? value.server.trim().replace(/\/+$/, '') : value.server,
+      username: trim(value.username),
+      password: value.password,
+      guideUrl: trim(value.guideUrl) ?? null,
+    };
+  return input;
+}
