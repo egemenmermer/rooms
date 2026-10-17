@@ -96,7 +96,6 @@ const entities: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"'
 
 function decode(text: string) {
   return text
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_m, data: string) => data)
     .replace(/&(#x[0-9a-fA-F]{1,6}|#\d{1,7}|[a-z]+);/g, (whole, name: string) => {
       if (name[0] !== '#') return entities[name] ?? whole;
       const cp = name[1] === 'x' ? Number.parseInt(name.slice(2), 16) : Number(name.slice(1));
@@ -117,7 +116,11 @@ function children(body: string, name: string) {
   const out: string[] = [];
   const pattern = new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)</${name}>`, 'g');
   for (const m of body.matchAll(pattern)) {
-    const text = decode(m[1].replace(/<[^>]+>/g, ''));
+    // CDATA keeps `<` literally; escape it before markup is stripped.
+    const escaped = m[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_m, data: string) =>
+      data.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+    );
+    const text = decode(escaped.replace(/<[^>]+>/g, ''));
     if (text) out.push(text);
   }
   return out;
@@ -139,13 +142,13 @@ const MAX_ELEMENT = 256 * 1024;
  */
 export async function* parseXmltv(chunks: AsyncIterable<string>): AsyncGenerator<XmltvEvent> {
   let buffer = '';
-  let checkedPrologue = false;
+  let prologue = '';
   for await (const chunk of chunks) {
-    buffer += chunk;
-    if (!checkedPrologue && buffer.length > 4096) {
-      checkedPrologue = true;
-      if (/<!ENTITY/i.test(buffer.slice(0, 4096))) throw new Error('XMLTV_UNSAFE');
+    if (prologue.length < 4096) {
+      prologue += chunk.slice(0, 4096 - prologue.length);
+      if (/<!ENTITY/i.test(prologue)) throw new Error('XMLTV_UNSAFE');
     }
+    buffer += chunk;
     let cursor = 0;
     const tags = /<(channel|programme)[\s>/]/g;
     for (;;) {
@@ -186,7 +189,6 @@ export async function* parseXmltv(chunks: AsyncIterable<string>): AsyncGenerator
     }
     buffer = buffer.slice(cursor);
   }
-  if (!checkedPrologue && /<!ENTITY/i.test(buffer)) throw new Error('XMLTV_UNSAFE');
 }
 
 function channelOf(tag: string, body: string): XmltvChannel | null {
