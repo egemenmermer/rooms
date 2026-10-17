@@ -33,5 +33,5 @@ export function installMiniPlaybackFixture(value: string): {
     };
   }
   const cleanup = installCinemaFixture('S25', 'default');
-  return { variant, initialRoute: '/cinema?view=personal', captureRoute: '/chat', cleanup };
+  return { variant, initialRoute: '/cinema/room?view=personal', captureRoute: '/chat', cleanup };
 }

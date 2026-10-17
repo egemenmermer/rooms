@@ -95,6 +95,7 @@ const PersonalMediaFixtureEntry = import.meta.env.DEV
   ? lazy(() => import('./dev/PersonalMediaEntry'))
   : null;
 const Cinema = lazy(() => import('./Cinema'));
+const CinemaHall = lazy(() => import('./cinema/CinemaHall'));
 const Settings = lazy(() => import('./Settings'));
 const AgentWorkspace = lazy(() => import('./Agent'));
 const Together = lazy(() => import('./Together'));
@@ -333,7 +334,8 @@ export default function App() {
     return allowed;
   }, [navigate]);
   const visiblePath = settingsPage ? returnFromSettings.current.split('?')[0]! : location.pathname;
-  const cinema = visiblePath === '/cinema';
+  const cinema = visiblePath === '/cinema/room';
+  const hallView = visiblePath === '/cinema';
   const voiceView = visiblePath === '/voice';
   const videoView =
     voiceView &&
@@ -414,6 +416,8 @@ export default function App() {
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        // The cinema hall's own "Aç…" palette owns ⌘K there.
+        if (hallView) return;
         e.preventDefault();
         setOverlay((current) => (current === 'command' ? null : 'command'));
       }
@@ -463,6 +467,7 @@ export default function App() {
     notify,
     channelNavOpen,
     contextDrawerOpen,
+    hallView,
   ]);
   useEffect(() => applyAppearancePreferences(p), [p]);
   const titles: Record<string, string> = {
@@ -473,7 +478,8 @@ export default function App() {
     '/spaces': tr('Your spaces'),
     '/chat': channel.startsWith('dm-') ? channel.slice(3) : `# ${channel}`,
     '/voice': tr('The lounge'),
-    '/cinema': tr('Cinema'),
+    '/cinema': 'Sinema',
+    '/cinema/room': 'Oda sineması',
     '/settings': tr('Settings'),
     '/notifications': 'Bildirimler',
     '/polls': tr('Quick polls'),
@@ -554,7 +560,7 @@ export default function App() {
     );
   return (
     <div
-      className={`app minimal-room-ui ${cinema ? 'cinema-mode' : ''} ${voiceView ? 'voice-mode' : ''} ${mediaView ? 'personal-media-mode' : ''} ${communityView ? 'community-mode' : ''} ${visiblePath === '/chat' || visiblePath === '/dm' ? 'chat-mode' : ''} ${realtime.channelId ? 'voice-active' : ''} ${channelNavOpen ? 'channel-nav-open' : ''} ${contextDrawerOpen ? 'context-drawer-open' : ''}`}
+      className={`app minimal-room-ui ${cinema ? 'cinema-mode' : ''} ${hallView ? 'hall-mode' : ''} ${voiceView ? 'voice-mode' : ''} ${mediaView ? 'personal-media-mode' : ''} ${communityView ? 'community-mode' : ''} ${visiblePath === '/chat' || visiblePath === '/dm' ? 'chat-mode' : ''} ${realtime.channelId ? 'voice-active' : ''} ${channelNavOpen ? 'channel-nav-open' : ''} ${contextDrawerOpen ? 'context-drawer-open' : ''}`}
     >
       {<PushToTalk notify={notify} />}
       <div className="window-chrome">
@@ -823,7 +829,13 @@ export default function App() {
                       )
                     }
                   />
-                  <Route path="/cinema" element={<Cinema notify={notify} />} />
+                  <Route
+                    path="/cinema"
+                    element={
+                      community.user ? <CinemaHall notify={notify} /> : <ConnectionRequired />
+                    }
+                  />
+                  <Route path="/cinema/room" element={<Cinema notify={notify} />} />
                   <Route path="/polls" element={<Navigate to="/together?tab=polls" replace />} />
                   <Route path="/agent" element={<AgentWorkspace notify={notify} />} />
                   <Route path="/together" element={<Together />} />
@@ -832,14 +844,14 @@ export default function App() {
                     path="/youtube"
                     element={
                       localFixture ? (
-                        <Navigate to="/cinema" replace />
+                        <Navigate to="/cinema/room" replace />
                       ) : (
                         <MusicDJEntry returnTo={lastNonDJPath.current} />
                       )
                     }
                   />
                   {/* The cinema room replaced the separate YouTube page; keep old links working. */}
-                  <Route path="/watch/youtube" element={<Navigate to="/cinema" replace />} />
+                  <Route path="/watch/youtube" element={<Navigate to="/cinema/room" replace />} />
                   <Route path="*" element={<Navigate to="/home" replace />} />
                 </Routes>
               </Suspense>
@@ -949,8 +961,8 @@ export default function App() {
             {[
               { label: 'Ana sayfa', detail: '', path: '/home', icon: HomeIcon },
               {
-                label: tr('Cinema'),
-                detail: tr('Open the local theater'),
+                label: 'Sinema',
+                detail: 'Topluluğun sinema salonu',
                 path: '/cinema',
                 icon: Film,
               },

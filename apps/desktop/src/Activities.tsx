@@ -14,11 +14,13 @@ import { AppDirectory } from './AppDirectory';
 
 /** Where a running primary activity is shown in this client. */
 export function activityRoute(kind: NonNullable<RoomSnapshot['primary']>['activity']) {
-  return kind === 'cinema' || kind === 'youtube' || kind === 'hall'
+  return kind === 'hall'
     ? '/cinema'
-    : kind === 'screen'
-      ? '/voice?view=share'
-      : '/games';
+    : kind === 'cinema' || kind === 'youtube'
+      ? '/cinema/room'
+      : kind === 'screen'
+        ? '/voice?view=share'
+        : '/games';
 }
 
 export function ActivityLauncher({ onClose }: { onClose(): void }) {

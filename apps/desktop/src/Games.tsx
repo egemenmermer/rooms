@@ -1559,7 +1559,7 @@ function ReferenceGames({
                     onCreate(null);
                     navigate(
                       ['cinema', 'youtube'].includes(activity.room?.primary?.activity ?? '')
-                        ? '/cinema'
+                        ? '/cinema/room'
                         : game
                           ? '/games?tab=table'
                           : '/voice',
