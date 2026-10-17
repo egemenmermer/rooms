@@ -1,7 +1,8 @@
 // Streaming XMLTV parsing. Follows Kanal's `lib/data/sources/xmltv/`: never
 // builds a DOM, reads `<channel>` and `<programme>` elements one at a time and
-// converts times to UTC epoch milliseconds. DOCTYPE and entity declarations
-// are rejected.
+// converts times to UTC epoch milliseconds. Only the five XML entities and
+// character references are decoded; a document declaring its own entities is
+// rejected. The usual `<!DOCTYPE tv SYSTEM "xmltv.dtd">` line is fine.
 
 export type XmltvChannel = {
   type: 'channel';
@@ -134,7 +135,7 @@ const MAX_ELEMENT = 256 * 1024;
 /**
  * Parses XMLTV text chunks as they arrive. Chunks are decoded strings (the
  * caller handles gzip and UTF-8). Yields channels and programmes; skips
- * malformed elements. Throws `XMLTV_UNSAFE` for DOCTYPE or ENTITY.
+ * malformed elements. Throws `XMLTV_UNSAFE` for entity declarations.
  */
 export async function* parseXmltv(chunks: AsyncIterable<string>): AsyncGenerator<XmltvEvent> {
   let buffer = '';
@@ -143,7 +144,7 @@ export async function* parseXmltv(chunks: AsyncIterable<string>): AsyncGenerator
     buffer += chunk;
     if (!checkedPrologue && buffer.length > 4096) {
       checkedPrologue = true;
-      if (/<!DOCTYPE|<!ENTITY/i.test(buffer.slice(0, 4096))) throw new Error('XMLTV_UNSAFE');
+      if (/<!ENTITY/i.test(buffer.slice(0, 4096))) throw new Error('XMLTV_UNSAFE');
     }
     let cursor = 0;
     const tags = /<(channel|programme)[\s>/]/g;
@@ -185,7 +186,7 @@ export async function* parseXmltv(chunks: AsyncIterable<string>): AsyncGenerator
     }
     buffer = buffer.slice(cursor);
   }
-  if (!checkedPrologue && /<!DOCTYPE|<!ENTITY/i.test(buffer)) throw new Error('XMLTV_UNSAFE');
+  if (!checkedPrologue && /<!ENTITY/i.test(buffer)) throw new Error('XMLTV_UNSAFE');
 }
 
 function channelOf(tag: string, body: string): XmltvChannel | null {
