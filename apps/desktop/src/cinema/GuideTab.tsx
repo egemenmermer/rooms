@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ListPlus, Play, X } from 'lucide-react';
 import type { CinemaItem, CinemaProgramme } from '../../../../packages/community-cinema/src/types';
 import { CinemaArt } from './CinemaArt';
-import { useItems } from './catalog-cache';
+import { useAllItems } from './catalog-cache';
 import { useGuides, useNow } from './guide-cache';
 import { dayLabel, hhmm, minutesLabel, timeRange } from './hall-model';
 import { useHall } from './use-hall';
@@ -23,7 +23,7 @@ export function GuideTab({
   focusRef: string | null;
 }) {
   const hall = useHall();
-  const items = useItems(hall.hallId, 'live', categoryId);
+  const items = useAllItems(hall.hallId, 'live', categoryId);
   const channels = useMemo(
     () => (items.data?.items ?? []).filter((item) => item.hasGuide),
     [items.data],

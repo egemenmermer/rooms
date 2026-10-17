@@ -36,6 +36,14 @@ const stepLabels: Record<NonNullable<CinemaStatus['importing']>['step'], string>
 };
 
 /** Settings → Sinema: the owner picks the hall channel and connects the server's IPTV account. */
+/** Xtream account states as panels report them. */
+const accountStatus: Record<string, string> = {
+  active: 'Etkin',
+  expired: 'Süresi dolmuş',
+  banned: 'Yasaklı',
+  disabled: 'Devre dışı',
+};
+
 export function CinemaSettings({ notify }: { notify(message: string): void }) {
   const cinema = useCommunityCinema(15_000);
   const channels = useCommunity((s) => s.channels);
@@ -95,7 +103,7 @@ export function CinemaSettings({ notify }: { notify(message: string): void }) {
         <h2>Salon kanalı</h2>
         <p>
           Salonun sohbeti bu kanalda kalır, kimin göreceğini kanal izinleri belirler. Kanal, sol
-          menüde “Sinema” olarak görünür.
+          menüde “Sinema” olarak görünür; bu yüzden yalnızca yazı kanalları seçilebilir.
         </p>
         <select
           className="cs-select"
@@ -112,18 +120,18 @@ export function CinemaSettings({ notify }: { notify(message: string): void }) {
         >
           <option value="">Kanal seç…</option>
           {channels
-            .filter((channel) => channel.type === 0 || channel.type === 2)
+            // A voice channel would vanish from Odalar once it becomes the hall.
+            .filter((channel) => channel.type === 0)
             .map((channel) => (
               <option key={channel.id} value={channel.id}>
-                {channel.type === 2 ? '🔊 ' : '# '}
-                {channel.name}
+                # {channel.name}
               </option>
             ))}
         </select>
       </section>
 
       <hr />
-      {status.connected && status.source ? (
+      {status.connected && (status.source || !owner) ? (
         <ConnectedCard
           status={status}
           owner={owner}
@@ -200,25 +208,37 @@ function ConnectedCard({
           <span className="cs-state connected">
             <i /> Bağlı
           </span>
-          <strong>{status.source?.kind === 'xtream' ? 'Xtream Codes' : 'M3U listesi'}</strong>
+          <strong>
+            {!status.source
+              ? 'Topluluk sahibi bağladı'
+              : status.source.kind === 'xtream'
+                ? 'Xtream Codes'
+                : 'M3U listesi'}
+          </strong>
           {status.source?.label && <code>{status.source.label}</code>}
         </div>
         <dl className="cs-facts">
-          <div>
-            <dt>Bağlantı hakkı</dt>
-            <dd>
-              {account?.maxConnections ? `${account.maxConnections} eşzamanlı` : 'Bilinmiyor'} ·
-              salon {status.relaySlots} yayın açar
-            </dd>
-          </div>
-          <div>
-            <dt>Hesap</dt>
-            <dd>
-              {account?.expiresAt
-                ? `${dateFormat.format(account.expiresAt)} tarihine kadar`
-                : (account?.status ?? 'Süre bilgisi yok')}
-            </dd>
-          </div>
+          {owner && (
+            <>
+              <div>
+                <dt>Bağlantı hakkı</dt>
+                <dd>
+                  {account?.maxConnections ? `${account.maxConnections} eşzamanlı` : 'Bilinmiyor'} ·
+                  salon {status.relaySlots} yayın açar
+                </dd>
+              </div>
+              <div>
+                <dt>Hesap</dt>
+                <dd>
+                  {account?.expiresAt
+                    ? `${dateFormat.format(account.expiresAt)} tarihine kadar`
+                    : account?.status
+                      ? (accountStatus[account.status.toLowerCase()] ?? account.status)
+                      : 'Süre bilgisi yok'}
+                </dd>
+              </div>
+            </>
+          )}
           <div>
             <dt>Katalog</dt>
             <dd>

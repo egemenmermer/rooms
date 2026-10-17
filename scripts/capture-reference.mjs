@@ -25,11 +25,11 @@ const referenceRoutes = {
   S21: '/voice',
   S22: '/voice?view=share',
   S23: '/voice',
-  S24: '/cinema?view=start',
-  S25: '/cinema?view=personal',
-  S26: '/cinema?view=personal',
-  S27: '/cinema?view=screen',
-  S28: '/cinema?view=queue',
+  S24: '/cinema/room?view=start',
+  S25: '/cinema/room?view=personal',
+  S26: '/cinema/room?view=personal',
+  S27: '/cinema/room?view=screen',
+  S28: '/cinema/room?view=queue',
   S29: '/media?player=1',
   S59: '/settings?tab=agent',
   S60: '/settings?tab=connections',
@@ -43,7 +43,7 @@ const targetRoute = insetPlayer
   : ['S33', 'S34', 'S35', 'S37', 'S38'].includes(id)
     ? '/media'
     : id === 'S30' && ['default', 'compact'].includes(variant)
-      ? '/cinema?view=personal'
+      ? '/cinema/room?view=personal'
       : id === 'S30'
         ? '/chat'
         : (referenceRoutes[id] ?? route);

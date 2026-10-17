@@ -66,3 +66,30 @@ export function useItems(
     }),
   );
 }
+
+/** Most items a whole-list read pulls (twenty pages). */
+const ALL_LIMIT = 20_000;
+const PAGE = 1000;
+
+/**
+ * Every item of a list, read page by page; for the live channel lists, which are
+ * virtualized. Very large providers stop at {@link ALL_LIMIT}; `total` still says how many exist.
+ */
+export function useAllItems(hallId: string, kind: CatalogKind, categoryId: string | null) {
+  return useBridgeRead(`${hallId}:${kind}:${categoryId ?? '*'}:all`, async (bridge) => {
+    const first = await bridge.items(hallId, { kind, categoryId, limit: PAGE });
+    const items = [...first.items];
+    while (items.length < Math.min(first.total, ALL_LIMIT)) {
+      const page = await bridge.items(hallId, {
+        kind,
+        categoryId,
+        offset: items.length,
+        limit: PAGE,
+      });
+      if (!page.items.length) break;
+      items.push(...page.items);
+    }
+    rememberItems(items);
+    return { items, total: first.total };
+  });
+}

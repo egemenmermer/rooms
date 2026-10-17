@@ -28,7 +28,9 @@ export const isHallItem = (item: QueueItem | null | undefined): item is HallItem
 
 /** The playing queue item and what follows it. */
 export function hallProgress(room: RoomSnapshot | null) {
-  const queue = room?.queue ?? [];
+  // Without a running hall there is nothing on screen, whatever the last timeline says.
+  if (room?.primary?.activity !== 'hall') return { current: null, upcoming: [] as QueueItem[] };
+  const queue = room.queue;
   const index = queue.findIndex((item) => item.id === room?.timeline.itemId);
   return {
     current: index >= 0 ? queue[index]! : null,
@@ -124,8 +126,26 @@ export function neighbour<T extends { ref: string }>(list: T[], ref: string | nu
 /** Typing in a field must never zap, seek or pause. */
 export function editingTarget(target: EventTarget | null) {
   const element = target as HTMLElement | null;
-  return !!element?.closest?.('input,textarea,select,[contenteditable="true"],[role="dialog"] *');
+  return !!element?.closest?.(
+    'input,textarea,select,[contenteditable="true"],[role="dialog"] *,.hall-panel',
+  );
 }
+
+/** Space, arrows and digits belong to a focused control (button, tab, link, list option). */
+export function controlTarget(target: EventTarget | null) {
+  const element = target as HTMLElement | null;
+  return !!element?.closest?.(
+    'button,a[href],[role="tab"],[role="option"],[role="menuitem"],[role="slider"],summary',
+  );
+}
+
+/** The palette shortcut as this platform writes it. */
+export const paletteShortcut =
+  typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';
+
+/** `Ece açtı`, but `Sen açtın` (Turkish verbs agree with the person). */
+export const didThis = (name: string, verb: 'açtı' | 'ekledi') =>
+  name === 'Sen' ? `Sen ${verb}n` : `${name} ${verb}`;
 
 export const viewerLabel = (count: number) =>
   count === 1 ? '1 kişi izliyor' : `${count} kişi izliyor`;

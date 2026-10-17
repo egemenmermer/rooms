@@ -182,6 +182,23 @@ html[data-input='keyboard'] .hall-tabs button::after {
     0 0 0 1px rgb(255 255 255 / 0.05);
   transform-origin: top left;
 }
+.hall-channel-open {
+  display: none;
+  align-self: center;
+  margin-left: auto;
+}
+/* While the mini player sits in the corner, every list scrolls clear of it. */
+.hall[data-mini='true']
+  :is(
+    .hall-categories,
+    .hall-channel-scroll,
+    .hall-channel-detail,
+    .hall-guide-scroll,
+    .hall-vod,
+    .hall-youtube-tab
+  ) {
+  padding-bottom: calc(var(--hall-mini-h, 0px) + 32px);
+}
 .hall-screen-host.mini {
   z-index: 20;
   border-radius: 12px;
@@ -2197,6 +2214,10 @@ button.hall-next:hover span {
   padding-left: 12px;
   padding-right: 12px;
 }
+/* The channel header's member and search tools act on the main chat page, not this panel. */
+.hall-chat .chat-header-tools {
+  display: none;
+}
 .hall-queue {
   display: flex;
   flex-direction: column;
@@ -2839,6 +2860,9 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
   }
   .hall-channel-detail {
     display: none;
+  }
+  .hall-channel-open {
+    display: inline-flex;
   }
 }
 @media (max-width: 1000px) {

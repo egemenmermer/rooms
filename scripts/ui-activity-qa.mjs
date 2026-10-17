@@ -73,8 +73,8 @@ try {
     .filter({ hasText: 'Birlikte gerçek bir not.' })
     .waitFor({ timeout: 15000 });
   await shot(b.page, 'whiteboard-two-client-service');
-  await go(a.page, '/cinema', '.cinema-stage');
-  await go(b.page, '/cinema', '.cinema-stage');
+  await go(a.page, '/cinema/room', '.cinema-stage');
+  await go(b.page, '/cinema/room', '.cinema-stage');
   await a.page.getByRole('button', { name: 'Ortak sinemayı başlat', exact: true }).click();
   await a.page.waitForTimeout(700);
   await a.page.getByRole('button', { name: 'Mavi saati oynat', exact: true }).click();

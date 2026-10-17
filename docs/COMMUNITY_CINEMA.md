@@ -43,7 +43,8 @@ Kişisel medya (Medyam) bundan ayrıdır ve özel kalır. Sinema'daki yeniden ya
 - **Masaüstü tarafı.**
   - Stoat belirteci ve aktarım biletleri Electron ana sürecinde kalır.
   - Görünüm `rooms-cinema://stream/<oturum>/…` ve `rooms-cinema://art/<salon>/<kimlik>` adreslerini kullanır.
-  - Biletler 120 saniyeliktir; ana süreç bitmeden yeniler. Salon başka bir öğeye geçtiyse veya hesap değiştiyse 410 döner.
+  - Biletler 120 saniyeliktir. Ana süreç süreyi kendi saatiyle sayar ve bitmeden `POST /v1/halls/:hall/sessions/:session/ticket` ile yeniler; bu uç röleyi asla başlatmaz veya yeniden başlatmaz. Salon başka bir öğeye geçtiyse veya hesap değiştiyse 410 (`CINEMA_SESSION_ENDED`) döner, oynatıcı yeniden bağlanır.
+  - Stoat yetki yanıtları 20 saniye önbelleğe alınır (yalnızca başarılı olanlar); afiş ve rehber gezintisi üyenin Stoat hız sınırını tüketmez.
 - **Kayıtlar.** Hiçbir log satırında sağlayıcı adresi veya kimlik bilgisi yer almaz; Kanal'dan taşınan maskeleme kullanılır.
 
 ## Aktarım
@@ -56,7 +57,9 @@ Sunucu 2 vCPU / 3,7 GB RAM'dir, bu yüzden video **dönüştürülmez**.
   - MPEG-2 gibi diğer görüntü kodekleri `CINEMA_CODEC_UNSUPPORTED` ile açıkça reddedilir.
 - **Çıktı.** fMP4 segmentli HLS üretilir ve tmpfs'te tutulur.
   - Canlı yayında 8 segmentlik kayan pencere ve `EXT-X-PROGRAM-DATE-TIME` kullanılır. İstemciler bu zamana göre aynı hedef gecikmeye hizalanır.
-  - Film ve dizide okuma hızı sınırlanır ve yaklaşık 3 dakikalık pencere tutulur. Sarma işlemi aktarımı yeni konumdan yeniden başlatır.
+  - Film ve dizide okuma hızı sınırlanır ve yaklaşık 60 saniyelik pencere tutulur (`ROOMS_CINEMA_VOD_WINDOW_SEC`). Sarma işlemi aktarımı yeni konumdan yeniden başlatır.
+  - Her liste `EXT-X-PROGRAM-DATE-TIME` taşır ve servis çıktı zamanı 0'ın PDT'sini (`originPdtMs`) bildirir; oynatıcılar eserdeki konumu `offsetSec + (oynatılan tarih − originPdtMs)` olarak hesaplar.
+  - İmaj, rölenin test edildiği sürümü kullanır: `mwader/static-ffmpeg:9.0.2` (Debian'ın ffmpeg 5.1'i gereken bayrakları tanımaz).
 - **ffmpeg'in ağ erişimi.**
   - ffmpeg sağlayıcı adresini hiç görmez. Servis içindeki loopback vekil her adımı özel ağ engeli, sabitlenmiş DNS ve en fazla 4 yönlendirme ile `privateFetch` üzerinden yapar.
   - HLS listeleri yeniden yazılır. Böylece ffmpeg iç servislere ulaşamaz ve kimlik bilgisi süreç argümanlarında görünmez.
@@ -79,14 +82,15 @@ Salon, `hall` adlı ana etkinliktir; `roomId` salon kanalının kimliğidir. Sı
 
 | Değişken | Anlamı |
 | --- | --- |
-| `ROOMS_CINEMA_STORAGE_KEY` | 64 onaltılık karakter; hesap ve katalog şifreleme anahtarı. Yedekle, değiştirme. |
+| `ROOMS_CINEMA_STORAGE_KEY` | 64 onaltılık karakter; hesap ve katalog şifreleme anahtarı. Yedekle; değişirse kayıtlı hesap okunamaz ve servis başlamaz, sahibin hesabı yeniden bağlaması gerekir. |
 | `ROOMS_CINEMA_TICKET_SECRET` | En az 32 karakter; aktarım bileti imzası |
 | `STOAT_INTERNAL_URL` | Özel ham Stoat API (`http://api:14702`) |
 | `ROOMS_SOCIAL_READ_MONGO_URL` | Yalnızca okuyabilen üyelik okuyucusu (Access ve Activities ile aynı) |
 | `ROOMS_ACTIVITIES_INTERNAL_URL` | Salon etkinliğini okumak için (`http://activities:3031`) |
 | `ROOMS_CINEMA_MAX_RELAYS` | Aynı anda en fazla aktarım; hesabın sınırını aşamaz |
 | `ROOMS_CINEMA_USER_AGENT` | Sağlayıcıya giden istemci adı; varsayılan `ROOMS-Cinema/1.0` |
-| `ROOMS_CINEMA_ALLOW_PRIVATE_SOURCES` | Yalnızca yerel geliştirme: `1` olursa 127.0.0.1'deki taklit sağlayıcıya izin verir |
+| `ROOMS_CINEMA_ALLOW_PRIVATE_SOURCES` | Yalnızca yerel geliştirme. `1` olursa SSRF korumasının tamamı kapanır (özel ağlar ve yönlendirmeler serbest kalır); üretimde asla ayarlama |
+| `ROOMS_CINEMA_VOD_WINDOW_SEC` | Film rölesinin tuttuğu saniye (imajda 60) |
 
 `/state` dizinini UID 10003 ve 0700 izniyle hazırla, diğer kalıcı depolar gibi şifreli yedekle. `/hls` yalnızca bellektedir.
 

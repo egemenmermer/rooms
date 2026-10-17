@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ListPlus, MonitorPlay, Play } from 'lucide-react';
 import { parseYouTubeVideo, youtubeThumbnail } from '../cinema-youtube';
 import { activityBridge } from '../runtime-sources';
+import { didThis, paletteShortcut } from './hall-model';
 import { useHall } from './use-hall';
 
 /** Paste a YouTube link to watch it in the hall; the official embedded player plays it. */
@@ -47,8 +48,8 @@ export function YouTubeTab() {
         <div>
           <h2>YouTube’dan bir şey aç</h2>
           <p>
-            Bağlantıyı yapıştır; video salondaki herkes için aynı anda oynar. Arama için ⌘K’yı da
-            kullanabilirsin.
+            Bağlantıyı yapıştır; video salondaki herkes için aynı anda oynar. Arama için{' '}
+            {paletteShortcut} kısayolunu da kullanabilirsin.
           </p>
           <form
             className="hall-youtube-form"
@@ -105,7 +106,7 @@ export function YouTubeTab() {
                     </span>
                   </span>
                   <strong>{item.media.title}</strong>
-                  <small>{hall.nameOf(item.addedBy)} ekledi</small>
+                  <small>{didThis(hall.nameOf(item.addedBy), 'ekledi')}</small>
                 </button>
               ) : null,
             )}

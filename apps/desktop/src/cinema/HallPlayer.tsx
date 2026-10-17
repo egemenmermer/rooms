@@ -42,6 +42,15 @@ export interface PlayerControls {
   retry(): void;
 }
 
+/** The seekable window of the video element, or null before it has one. */
+function seekRange(element: HTMLVideoElement) {
+  if (!element.seekable.length) return null;
+  return {
+    start: element.seekable.start(0),
+    end: element.seekable.end(element.seekable.length - 1),
+  };
+}
+
 /** Live drift in seconds (positive: this viewer is behind the hall's shared target). */
 export function liveDrift(playingDateMs: number, nowMs: number, serverOffsetMs: number) {
   return (nowMs + serverOffsetMs - LIVE_LATENCY_MS - playingDateMs) / 1000;
@@ -97,7 +106,10 @@ export function HallPlayer({
   latest.current = { timeline, serverOffsetMs, item, source };
   const localPause = useRef(false);
   const rewatchAt = useRef(0);
+  const rewatchDelay = useRef(4000);
+  const seekAt = useRef(0);
   const endedFor = useRef<string | null>(null);
+  const reconnects = useRef(0);
 
   const update = useCallback((patch: Partial<PlayerSnapshot>) => {
     setSnapshot((current) => {
@@ -132,7 +144,14 @@ export function HallPlayer({
     const bridge = getCinemaBridge();
     setSource(null);
     localPause.current = false;
-    update({ phase: 'loading', code: null, behindLive: false, live: item.media.live });
+    update({
+      phase: 'loading',
+      code: null,
+      behindLive: false,
+      live: item.media.live,
+      positionSec: 0,
+      durationSec: null,
+    });
     if (!bridge) {
       update({ phase: 'error', code: 'CINEMA_UNAVAILABLE' });
       return;
@@ -150,6 +169,7 @@ export function HallPlayer({
           return;
         }
         setSource(value);
+        reconnects.current = 0;
         update({ durationSec: value.durationSec, live: value.live });
       } catch (error) {
         if (active)
@@ -185,15 +205,15 @@ export function HallPlayer({
           return;
         }
         const status = (data.response as { code?: number } | undefined)?.code;
-        update({
-          phase: 'error',
-          code:
-            status === 401 || status === 403
-              ? 'CINEMA_PROVIDER_DENIED'
-              : data.type === Hls.ErrorTypes.NETWORK_ERROR
-                ? 'CINEMA_PROVIDER_UNREACHABLE'
-                : 'CINEMA_STREAM_FAILED',
-        });
+        // 410/404: the relay session ended (the hall moved on, or it restarted). Ask again.
+        if ((status === 410 || status === 404) && reconnects.current < 5) {
+          reconnects.current += 1;
+          update({ phase: 'loading', code: 'CINEMA_SESSION_ENDED' });
+          setTimeout(() => setAttempt((value) => value + 1), 600 * reconnects.current);
+          return;
+        }
+        // These are failures of the ROOMS relay connection, not of the provider account.
+        update({ phase: 'error', code: 'CINEMA_STREAM_FAILED' });
       });
       instance.loadSource(source.src);
       instance.attachMedia(element);
@@ -227,9 +247,11 @@ export function HallPlayer({
     const waiting = () => update({ phase: 'buffering' });
     const paused = () => update({ phase: 'paused' });
     const ended = () => {
-      const current = latest.current.item;
-      if (!current.media.live && endedFor.current !== current.id) {
-        endedFor.current = current.id;
+      const { item: current, timeline: shared } = latest.current;
+      // Once per time the item is opened: the epoch changes when it is selected again.
+      const key = `${current.id}:${shared.epoch}`;
+      if (!current.media.live && endedFor.current !== key) {
+        endedFor.current = key;
         onEnded(current.id);
       }
     };
@@ -277,13 +299,19 @@ export function HallPlayer({
         if (date) {
           const drift = liveDrift(date, Date.now(), offset);
           const rate = liveRate(drift);
-          if (rate === null) {
-            const end = element.seekable.length
-              ? element.seekable.end(element.seekable.length - 1)
-              : Infinity;
-            element.currentTime = Math.min(end - 1, Math.max(0, element.currentTime + drift));
+          const range = seekRange(element);
+          // The shared target can fall outside what the relay holds (a fresh relay has only a
+          // few seconds). Aim for the nearest playable point and never seek in a loop.
+          const target = range
+            ? Math.min(range.end - 1, Math.max(range.start + 0.5, element.currentTime + drift))
+            : element.currentTime;
+          const gap = target - element.currentTime;
+          if (rate === null && Math.abs(gap) > 1 && Date.now() > seekAt.current) {
+            seekAt.current = Date.now() + 3000;
+            element.currentTime = target;
             element.playbackRate = 1;
-          } else element.playbackRate = rate;
+          } else if (rate !== null && Math.abs(gap) > 0.25) element.playbackRate = rate;
+          else element.playbackRate = 1;
           update({ behindLive: drift > 6 });
         } else {
           const edge = hls.current?.liveSyncPosition;
@@ -293,18 +321,32 @@ export function HallPlayer({
         if (element.paused && element.readyState > 2) void element.play().catch(() => {});
         return;
       }
-      const work = expectedPosition(shared, Date.now(), offset);
-      const local = work - current.offsetSec;
-      const end = element.seekable.length ? element.seekable.end(element.seekable.length - 1) : 0;
-      update({ positionSec: element.currentTime + current.offsetSec });
-      // Outside what this relay produced: ask the server to restart it at the room position.
-      if ((local < -1 || local > end + 30) && Date.now() > rewatchAt.current) {
-        rewatchAt.current = Date.now() + 4000;
-        setAttempt((value) => value + 1);
+      const target = expectedPosition(shared, Date.now(), offset);
+      // Where playback is in the work. PROGRAM-DATE-TIME pins the relay's output time 0, so
+      // this holds wherever hls.js started its own timeline (late joiners, remounts).
+      const date = hls.current?.playingDate?.getTime();
+      const work =
+        current.originPdtMs !== null && date
+          ? current.offsetSec + (date - current.originPdtMs) / 1000
+          : current.offsetSec + element.currentTime;
+      update({ positionSec: Math.max(0, work) });
+      const want = element.currentTime + (target - work);
+      const range = seekRange(element);
+      if (range && (want < range.start - 1 || want > range.end + 30)) {
+        // Outside what this relay holds: ask the server for the room position, backing off so
+        // a relay that is still filling is not restarted over and over.
+        if (Date.now() > rewatchAt.current) {
+          rewatchAt.current = Date.now() + rewatchDelay.current;
+          rewatchDelay.current = Math.min(30_000, rewatchDelay.current * 2);
+          setAttempt((value) => value + 1);
+        }
         return;
       }
-      if (local >= 0 && local <= end && Math.abs(element.currentTime - local) > 0.75)
-        element.currentTime = local;
+      rewatchDelay.current = 4000;
+      if (range && Math.abs(target - work) > 0.75 && Date.now() > seekAt.current) {
+        seekAt.current = Date.now() + 1500;
+        element.currentTime = Math.min(range.end - 0.5, Math.max(range.start, want));
+      }
       if (shared.playing && element.paused && element.readyState > 2)
         void element.play().catch(() => {});
       if (!shared.playing && !element.paused) element.pause();

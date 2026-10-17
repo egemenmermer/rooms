@@ -23,6 +23,7 @@ import { CommunityChat } from '../RealSocial';
 import { VoiceAvatar } from '../VoiceAvatar';
 import { youtubeThumbnail } from '../cinema-youtube';
 import { cinemaArt } from './cinema-bridge';
+import { didThis, paletteShortcut } from './hall-model';
 import { useHall } from './use-hall';
 
 export type PanelTab = 'chat' | 'queue' | 'people';
@@ -83,6 +84,17 @@ function HallChat({ notify }: { notify(message: string): void }) {
   const active = useCommunity((s) => s.activeChannelId);
   const openChannel = useCommunity((s) => s.openChannel);
   const [failed, setFailed] = useState(false);
+  // Showing the hall chat borrows the app-wide active channel; give it back afterwards
+  // unless the member picked another channel meanwhile.
+  const previous = useRef(active === hall.hallId ? null : active);
+  useEffect(() => {
+    const hallId = hall.hallId;
+    return () => {
+      const state = useCommunity.getState();
+      if (previous.current && state.activeChannelId === hallId)
+        void state.openChannel(previous.current).catch(() => {});
+    };
+  }, [hall.hallId]);
   useEffect(() => {
     if (active === hall.hallId) return;
     setFailed(false);
@@ -110,7 +122,7 @@ function HallChat({ notify }: { notify(message: string): void }) {
     );
   return (
     <div className="hall-chat">
-      <CommunityChat notify={notify} composerPlaceholder="Salona yaz" />
+      <CommunityChat notify={notify} composerPlaceholder="Mesaj yaz" />
     </div>
   );
 }
@@ -159,7 +171,7 @@ function HallQueue() {
     return (
       <div className="hall-panel-empty">
         <Film size={22} />
-        <p>Sıra boş. ⌘K ile bir kanal, film ya da YouTube videosu ekle.</p>
+        <p>Sıra boş. {paletteShortcut} ile bir kanal, film ya da YouTube videosu ekle.</p>
       </div>
     );
   return (
@@ -188,7 +200,7 @@ function HallQueue() {
                       Şimdi oynuyor
                     </span>
                   ) : (
-                    `${hall.nameOf(item.addedBy)} ekledi`
+                    didThis(hall.nameOf(item.addedBy), 'ekledi')
                   )}
                 </small>
               </span>

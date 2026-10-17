@@ -243,7 +243,11 @@ export function CommunityChat({
   const showFriends = membersVisible ?? storedFriends;
   const voice = useRealtime();
   const activity = useActivityRoom(c.user ? (voice.channelId ?? c.activeChannelId) : null);
-  const primary = activity.status === 'connected' ? activity.room?.primary : null;
+  // Inside the hall the screen is already on the page; no banner pointing back to it.
+  const primary =
+    activity.status === 'connected' && activity.room?.primary?.activity !== 'hall'
+      ? activity.room?.primary
+      : null;
   const [nameColors, setNameColors] = useState<Record<string, string>>({});
   useEffect(() => {
     let active = true;
@@ -267,13 +271,15 @@ export function CommunityChat({
     };
   }, []);
   const activityPath =
-    primary?.activity === 'youtube'
-      ? '/cinema/room'
-      : primary?.activity === 'screen'
-        ? '/voice'
-        : primary?.activity === 'cinema'
-          ? '/cinema/room'
-          : '/games';
+    primary?.activity === 'hall'
+      ? '/cinema'
+      : primary?.activity === 'youtube'
+        ? '/cinema/room'
+        : primary?.activity === 'screen'
+          ? '/voice'
+          : primary?.activity === 'cinema'
+            ? '/cinema/room'
+            : '/games';
   const [searchOpen, setSearchOpen] = useState(false),
     [query, setQuery] = useState('');
   const [options, setOptions] = useState<CommunityMessage | null>(null),

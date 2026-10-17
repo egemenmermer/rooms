@@ -20,7 +20,7 @@ import type {
 import { VoiceAvatar } from '../VoiceAvatar';
 import { storeVolume, storedVolume } from '../cinema-youtube';
 import { CinemaArt, QualityBadges } from './CinemaArt';
-import { knownItem, useBridgeRead, useItems } from './catalog-cache';
+import { knownItem, useAllItems, useBridgeRead } from './catalog-cache';
 import { useCommunityCinema } from './cinema-status';
 import { cachedGuide, useGuides, useNow } from './guide-cache';
 import { GuideTab } from './GuideTab';
@@ -29,12 +29,15 @@ import type { PlayerControls } from './HallPlayer';
 import { HallStage, type StageOsd } from './HallStage';
 import {
   ARROW_ZAP_MS,
+  controlTarget,
+  didThis,
   editingTarget,
   hhmm,
   isHallItem,
   minutesLabel,
   neighbour,
   NUMBER_ZAP_MS,
+  paletteShortcut,
   programmeAfter,
   programmeAt,
   programmeProgress,
@@ -147,7 +150,7 @@ function HallLayout() {
   const [osd, setOsd] = useState<StageOsd | null>(null);
   const [audio, setAudioState] = useState(storedVolume);
   const controls = useRef<PlayerControls | null>(null);
-  const allLive = useItems(hall.hallId, 'live', null);
+  const allLive = useAllItems(hall.hallId, 'live', null);
   const [zapList, setZapList] = useState<CinemaItem[]>([]);
   const zapItems = zapList.length ? zapList : (allLive.data?.items ?? []);
   const currentRef = hall.current?.media.kind === 'community-media' ? hall.current.media.ref : null;
@@ -312,12 +315,13 @@ function HallLayout() {
     const key = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        setPalette((value) => !value);
+        if (!document.querySelector('.settings-layout')) setPalette((value) => !value);
         return;
       }
       if (palette || event.metaKey || event.ctrlKey || event.altKey || editingTarget(event.target))
         return;
-      if (document.querySelector('.modal-backdrop')) return;
+      // The hall stays mounted under Settings and dialogs; it must not react there.
+      if (document.querySelector('.modal-backdrop,.settings-layout')) return;
       const stage = view === 'stage';
       const timeline = hall.room?.timeline;
       switch (event.key) {
@@ -359,7 +363,7 @@ function HallLayout() {
           setView((value) => (value === 'guide' ? (hall.current ? 'stage' : 'live') : 'guide'));
           return;
       }
-      if (!stage) return;
+      if (!stage || controlTarget(event.target)) return;
       if (live && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
         event.preventDefault();
         zap(event.key === 'ArrowDown' ? 1 : -1);
@@ -396,6 +400,7 @@ function HallLayout() {
     left: number;
     width: number;
     height: number;
+    mode: 'stage' | 'mini';
   } | null>(null);
   const measure = useCallback(() => {
     const container = main.current;
@@ -410,15 +415,18 @@ function HallLayout() {
         left: inner.left - outer.left,
         width: inner.width,
         height: inner.height,
+        mode,
       });
     } else {
-      const width = container.clientWidth < 760 ? 240 : 320;
+      // Small enough to sit in a corner; the lists below reserve its height (`--hall-mini-h`).
+      const width = container.clientWidth < 760 ? 208 : 256;
       const height = Math.round((width * 9) / 16);
       setRect({
-        top: container.clientHeight - height - 20,
-        left: container.clientWidth - width - 20,
+        top: container.clientHeight - height - 16,
+        left: container.clientWidth - width - 16,
         width,
         height,
+        mode,
       });
     }
   }, [mode]);
@@ -430,15 +438,13 @@ function HallLayout() {
     return () => observer.disconnect();
   }, [measure, view]);
   // FLIP between the stage and the mini player; instant from the keyboard or with reduced motion.
+  // The measured rect carries its mode, so the animation runs when the new rect arrives.
   const previous = useRef<typeof rect>(null);
-  const previousMode = useRef(mode);
   useLayoutEffect(() => {
     const element = host.current;
     const before = previous.current;
     previous.current = rect;
-    const changed = previousMode.current !== mode;
-    previousMode.current = mode;
-    if (!element || !rect || !before || !changed || keyboardInput()) return;
+    if (!element || !rect || !before || before.mode === rect.mode || keyboardInput()) return;
     const dx = before.left - rect.left,
       dy = before.top - rect.top,
       sx = before.width / rect.width,
@@ -452,10 +458,16 @@ function HallLayout() {
       element.style.transition = '';
     };
     element.addEventListener('transitionend', done, { once: true });
-  }, [rect, mode]);
+  }, [rect]);
 
+  const mini = mode === 'mini' && showScreen && rect?.mode === 'mini';
   return (
-    <div className={`hall ${panel.open ? 'with-panel' : ''}`} data-view={view}>
+    <div
+      className={`hall ${panel.open ? 'with-panel' : ''}`}
+      data-view={view}
+      data-mini={mini ? 'true' : undefined}
+      style={mini ? ({ '--hall-mini-h': `${rect!.height}px` } as CSSProperties) : undefined}
+    >
       <header className="hall-bar">
         <nav className="hall-tabs" role="tablist" aria-label="Sinema">
           {tabs.map((tab) => (
@@ -484,7 +496,7 @@ function HallLayout() {
         >
           <Search size={15} />
           <span>Aç…</span>
-          <kbd>⌘K</kbd>
+          <kbd>{paletteShortcut}</kbd>
         </button>
       </header>
       <div className="hall-body">
@@ -660,14 +672,14 @@ function NowBar({ onGuide }: { onGuide(): void }) {
               {item?.media.live
                 ? 'Canlı yayın'
                 : current.media.kind === 'youtube'
-                  ? `YouTube · ${hall.nameOf(current.addedBy)} açtı`
+                  ? `YouTube · ${didThis(hall.nameOf(current.addedBy), 'açtı')}`
                   : [
                       details.data?.item.year,
                       details.data?.genre,
                       details.data?.durationSec
                         ? minutesLabel(details.data.durationSec * 1000)
                         : null,
-                      `${hall.nameOf(current.addedBy)} açtı`,
+                      didThis(hall.nameOf(current.addedBy), 'açtı'),
                     ]
                       .filter(Boolean)
                       .join(' · ')}
@@ -713,7 +725,7 @@ function NowBar({ onGuide }: { onGuide(): void }) {
 function Welcome({ onBrowse, onOpen }: { onBrowse(view: View): void; onOpen(): void }) {
   const hall = useHall();
   const connected = hall.status.connected;
-  const channels = useItems(hall.hallId, 'live', null, 'default', 500);
+  const channels = useAllItems(hall.hallId, 'live', null);
   const now = useNow();
   const candidates = useMemo(
     () => (channels.data?.items ?? []).filter((item) => item.hasGuide).slice(0, 12),
@@ -741,7 +753,7 @@ function Welcome({ onBrowse, onOpen }: { onBrowse(view: View): void; onOpen(): v
         <button className="button primary" onClick={onOpen}>
           <Search size={16} />
           Aç…
-          <kbd>⌘K</kbd>
+          <kbd>{paletteShortcut}</kbd>
         </button>
         {connected ? (
           <>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { CalendarClock, ListPlus, Play, Search, Tv } from 'lucide-react';
 import type { CinemaItem } from '../../../../packages/community-cinema/src/types';
 import { CinemaArt, QualityBadges } from './CinemaArt';
-import { useCategories, useItems } from './catalog-cache';
+import { useAllItems, useCategories } from './catalog-cache';
 import { useGuides, useNow } from './guide-cache';
 import {
   hhmm,
@@ -31,7 +31,7 @@ export function LiveTab({
 }) {
   const hall = useHall();
   const categories = useCategories(hall.hallId, 'live');
-  const items = useItems(hall.hallId, 'live', categoryId);
+  const items = useAllItems(hall.hallId, 'live', categoryId);
   const [filter, setFilter] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
   const playingRef = hall.current?.media.kind === 'community-media' ? hall.current.media.ref : null;
@@ -204,6 +204,18 @@ export function LiveTab({
                         </span>
                       )}
                     </span>
+                    {item.ref === selected && item.ref !== playingRef && (
+                      // Narrow windows hide the detail column; this keeps a pointer way to open.
+                      <button
+                        className="button primary small hall-channel-open"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void hall.openItem(item);
+                        }}
+                      >
+                        Aç
+                      </button>
+                    )}
                   </div>
                 );
               })}
