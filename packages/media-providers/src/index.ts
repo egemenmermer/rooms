@@ -2,6 +2,15 @@ import { SpeakingMeter } from './speaking-meter';
 import type { NoiseSuppressionMode, NoiseProcessingState } from './noise-suppression';
 import { SoundboardMixer } from './soundboard';
 import {
+  FLAT_EQUALIZER,
+  equalizerNodes,
+  isFlat,
+  parseEqualizer,
+  tuneEqualizer,
+  type MusicEqualizer,
+} from './music-equalizer';
+export type { MusicEqualizer } from './music-equalizer';
+import {
   ConnectionState,
   DisconnectReason,
   Room,
@@ -111,6 +120,9 @@ export interface RealtimeMediaProvider {
   mute(value: boolean): Promise<void>;
   deafen(value: boolean): Promise<void>;
   setListenerScope?(scope: string): void;
+  /** This listener's own DJ equalizer; it never changes what others hear. */
+  musicEqualizer?(): MusicEqualizer;
+  setMusicEqualizer?(value: MusicEqualizer): void;
   setParticipantVolume(participantId: string, volume: number): void;
   setScreenVolume?(participantId: string, volume: number): void;
   watchScreen?(participantId: string | null): void;
@@ -198,6 +210,15 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     if (scope === this.listenerScope) return;
     this.listenerScope = scope;
     this.volumes.clear();
+    try {
+      this.equalizer =
+        (scope &&
+          parseEqualizer(JSON.parse(localStorage.getItem(`rooms-dj-eq-v1:${scope}`) ?? 'null'))) ||
+        FLAT_EQUALIZER;
+    } catch {
+      this.equalizer = FLAT_EQUALIZER;
+    }
+    this.applyEqualizer();
     try {
       const value = JSON.parse(localStorage.getItem(`rooms-listener-levels-v1:${scope}`) ?? '{}');
       if (scope && value && typeof value === 'object' && !Array.isArray(value))
@@ -666,6 +687,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
           screen ? Track.Source.ScreenShareAudio : Track.Source.Microphone,
         );
         void element.play().catch(() => this.patch({ audioBlocked: true }));
+        if (participant.identity.startsWith('rooms-music-')) this.applyEqualizer();
       }
       sync();
     });
@@ -678,6 +700,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       }
       this.audio.delete(publication.trackSid);
       this.screenAudio.delete(publication.trackSid);
+      this.equalized.delete(publication.trackSid);
       sync();
     });
     room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
@@ -922,6 +945,73 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     }
     this.sync();
   }
+  private equalizer: MusicEqualizer = FLAT_EQUALIZER;
+  private equalizerContext: AudioContext | null = null;
+  private equalizerChain: BiquadFilterNode[] = [];
+  /** DJ audio tracks currently played through the equalizer instead of their element. */
+  private equalized = new Set<string>();
+  musicEqualizer() {
+    return this.equalizer;
+  }
+  setMusicEqualizer(value: MusicEqualizer) {
+    const eq = parseEqualizer(value);
+    if (!eq) throw Error('Equalizer bands must be between -12 and 12 dB.');
+    this.equalizer = eq;
+    if (this.listenerScope)
+      try {
+        localStorage.setItem(`rooms-dj-eq-v1:${this.listenerScope}`, JSON.stringify(eq));
+      } catch {
+        /* The equalizer still applies for this session. */
+      }
+    this.applyEqualizer();
+  }
+  /**
+   * A flat equalizer leaves the DJ on its ordinary element. Otherwise the DJ track plays through
+   * Web Audio filters with its element silenced, still following volume, deafen and output device.
+   */
+  private applyEqualizer() {
+    const room = this.room;
+    if (!room) return;
+    const flat = isFlat(this.equalizer);
+    if (!flat && !this.equalizerContext && typeof AudioContext !== 'undefined') {
+      this.equalizerContext = new AudioContext({ sampleRate: 48_000 });
+      this.equalizerChain = equalizerNodes(this.equalizerContext);
+      void (this.equalizerContext as AudioContext & { setSinkId?(id: string): Promise<void> })
+        .setSinkId?.(this.outputDeviceId)
+        ?.catch(() => {});
+    }
+    const context = this.equalizerContext;
+    if (!flat && context) tuneEqualizer(this.equalizerChain, this.equalizer, context);
+    for (const person of room.remoteParticipants.values()) {
+      if (!person.identity.startsWith('rooms-music-')) continue;
+      const gain = this.state.deafened
+        ? 0
+        : listenerGain(person.identity, this.volumes.get(person.identity) ?? 1);
+      for (const pub of person.trackPublications.values()) {
+        const track = pub.track as
+          | (Track & {
+              setAudioContext?(context: AudioContext | undefined): void;
+              setWebAudioPlugins?(nodes: AudioNode[]): void;
+              setVolume?(volume: number): void;
+            })
+          | undefined;
+        const element = this.audio.get(pub.trackSid);
+        if (!track?.setAudioContext || !track.setWebAudioPlugins || !element) continue;
+        if (flat || !context) {
+          if (!this.equalized.delete(pub.trackSid)) continue;
+          track.setAudioContext(undefined);
+          element.muted = this.state.deafened;
+        } else if (!this.equalized.has(pub.trackSid)) {
+          element.muted = true;
+          track.setWebAudioPlugins(this.equalizerChain);
+          track.setAudioContext(context);
+          this.equalized.add(pub.trackSid);
+          if (context.state !== 'running') void context.resume().catch(() => {});
+        }
+        track.setVolume?.(gain);
+      }
+    }
+  }
   setParticipantVolume(id: string, volume: number) {
     if (!Number.isFinite(volume) || volume < 0 || volume > 1)
       throw new Error('Volume must be between 0 and 1.');
@@ -938,6 +1028,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     this.room?.remoteParticipants
       .get(id)
       ?.setVolume(listenerGain(id, volume), Track.Source.Microphone);
+    if (id.startsWith('rooms-music-')) this.applyEqualizer();
     this.sync();
   }
   watchScreen(id: string | null) {
@@ -979,7 +1070,11 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     for (const pub of person?.trackPublications.values() ?? [])
       if (pub.source === Track.Source.ScreenShareAudio) allowed.add(pub.trackSid);
     for (const [id, element] of this.audio)
-      element.muted = this.state.deafened || (this.screenAudio.has(id) && !allowed.has(id));
+      element.muted =
+        this.equalized.has(id) ||
+        this.state.deafened ||
+        (this.screenAudio.has(id) && !allowed.has(id));
+    this.applyEqualizer();
   }
   setScreenVolume(id: string, volume: number) {
     if (!Number.isFinite(volume) || volume < 0 || volume > 1)
@@ -1014,9 +1109,10 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
         throw new Error('Input unavailable.');
       if (!(await room.switchActiveDevice('audiooutput', outputId || 'default')))
         throw new Error('Output unavailable.');
-      await (
-        this.soundContext as (AudioContext & { setSinkId?(id: string): Promise<void> }) | null
-      )?.setSinkId?.(outputId || '');
+      for (const context of [this.soundContext, this.equalizerContext])
+        await (
+          context as (AudioContext & { setSinkId?(id: string): Promise<void> }) | null
+        )?.setSinkId?.(outputId || '');
       this.outputDeviceId = outputId || '';
       this.inputDeviceId = inputId || undefined;
       this.patch({ error: null, inputDeviceFallback: false });
@@ -1142,6 +1238,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       e.remove();
     });
     this.audio.clear();
+    this.equalized.clear();
     this.priorStats = null;
   }
   disconnect(): Promise<void> {
