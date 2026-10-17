@@ -210,6 +210,7 @@ Herkese açık ters vekil, Stoat API/olay/dosya rotalarını korumalı ve ROOMS 
 | `/api/*`, `/ws`, dosya/proxy yolları | Sabit üst sistem rotaları | Doğrudan hesap oluşturma engeli korunur |
 | `/rooms-access/*` | Erişim 3002 | Ön ek kaldırılarak iletilir |
 | `/rooms-activities/*` | Activities 3031 | Ön ek kaldırılarak iletilir |
+| `/rooms-cinema/*` | Sinema 3050 | İsteğe bağlı; ön ek kaldırılarak iletilir ([Topluluk Sineması](COMMUNITY_CINEMA.md)) |
 | `/rooms-branding/*` | Dekoratif statik dosyaların | İsteğe bağlı |
 
 LiveKit sinyali ayrıca yapılandırılmış, istemcinin ulaşabileceği adrestedir. Yerel örnekte sinyal 7880, medya TCP 7881, UDP 50000–50020'dir. Üretim kuralları gerçek yapılandırmayla eşleşmelidir; HTTPS ters vekil tek başına UDP medyayı erişilebilir yapmaz.
