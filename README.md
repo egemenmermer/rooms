@@ -8,8 +8,8 @@
 
 [![Son sürüm](https://img.shields.io/github/v/release/egemenmermer/rooms?style=flat-square&label=son%20s%C3%BCr%C3%BCm&color=8B5CF6)](https://github.com/egemenmermer/rooms/releases/latest)
 [![MIT lisansı](https://img.shields.io/badge/lisans-MIT-64748B?style=flat-square)](LICENSE)
-[![macOS indir](https://img.shields.io/badge/macOS-indir-18181B?style=flat-square&logo=apple&logoColor=white)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.22/ROOMS-0.1.18-rc.22-arm64.dmg)
-[![Windows indir](https://img.shields.io/badge/Windows-indir-2563EB?style=flat-square)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.22/ROOMS-0.1.18-rc.22-windows-x64-setup.exe)
+[![macOS indir](https://img.shields.io/badge/macOS-indir-18181B?style=flat-square&logo=apple&logoColor=white)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.23/ROOMS-0.1.18-rc.23-arm64.dmg)
+[![Windows indir](https://img.shields.io/badge/Windows-indir-2563EB?style=flat-square)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.23/ROOMS-0.1.18-rc.23-windows-x64-setup.exe)
 
 Sesli sohbet, ekran paylaşımı, mesajlar, müzik ve ortak etkinlikler — tek masaüstü uygulamasında.
 
@@ -58,12 +58,12 @@ ROOMS, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında 
 
 ## İndir ve topluluğa katıl
 
-Güncel paketler [GitHub sürümleri](https://github.com/egemenmermer/rooms/releases/latest) sayfasındadır. Son yayımlanan arkadaş test sürümü **RC22**:
+Güncel paketler [GitHub sürümleri](https://github.com/egemenmermer/rooms/releases/latest) sayfasındadır. Son yayımlanan arkadaş test sürümü **RC23**:
 
 | Platform | Paket | Durum |
 | --- | --- | --- |
-| macOS 14+ / Apple Silicon | [RC22 DMG indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.22/ROOMS-0.1.18-rc.22-arm64.dmg) | Apple imzalı ve noter onaylı |
-| Windows x64 | [RC22 EXE indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.22/ROOMS-0.1.18-rc.22-windows-x64-setup.exe) | İmzasız arkadaş test paketi; sistem uyarısı gösterebilir |
+| macOS 14+ / Apple Silicon | [RC23 DMG indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.23/ROOMS-0.1.18-rc.23-arm64.dmg) | Apple imzalı ve noter onaylı |
+| Windows x64 | [RC23 EXE indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.23/ROOMS-0.1.18-rc.23-windows-x64-setup.exe) | İmzasız arkadaş test paketi; sistem uyarısı gösterebilir |
 
 1. Platformuna uygun paketi indirip uygulamayı kur.
 2. Topluluk yöneticisinden sunucu adresini ve gerekiyorsa davetini al.
@@ -148,7 +148,7 @@ curl -fsSL https://raw.githubusercontent.com/egemenmermer/rooms/main/deploy/inst
 
 Betik Docker'ı kurar, tüm parolaları sunucuda üretir, HTTPS sertifikasını otomatik alır, sahip hesabını ve ilk topluluğu ses kanalıyla oluşturur ve ilk davet bağlantını verir. Sonra arkadaşlarını uygulamadan veya `sudo rooms invite` ile davet edersin.
 
-Ayrıntılar, portlar, yedekleme ve güncelleme için [sunucu rehberine](docs/SELF_HOSTING.md#hızlı-kurulum-tek-komut) bak. Müzik (DJ), Agent ve sunucu yönetim paneli isteğe bağlıdır ve hızlı kuruluma dahil değildir.
+Ayrıntılar, portlar, yedekleme ve güncelleme için [sunucu rehberine](docs/SELF_HOSTING.md#hızlı-kurulum-tek-komut) bak. Müzik (DJ), Sinema salonu, Agent ve sunucu yönetim paneli isteğe bağlıdır ve hızlı kuruluma dahil değildir.
 
 ## Nasıl çalışıyor?
 
@@ -188,7 +188,7 @@ Açık istemcide özgün bir statik DJ çizimi bulunur. Her topluluk kendi adın
 
 ## Belgeler
 
-[Tüm belgeler ve okuma sırası](docs/README.md) · [RC22 yayın ve doğrulama kaydı](docs/RC22_RELEASE.md)
+[Tüm belgeler ve okuma sırası](docs/README.md) · [RC23 yayın ve doğrulama kaydı](docs/RC23_RELEASE.md)
 
 | Rehber | İçeriği |
 | --- | --- |
