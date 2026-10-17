@@ -227,3 +227,8 @@
     display: none;
   }
 }
+.dm-call-note {
+  margin: 0;
+  color: var(--color-text-secondary, #b1b5c2);
+  font-size: 13px;
+}

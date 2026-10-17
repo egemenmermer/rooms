@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { DmCallSession } from '../../../packages/shared-contracts/src/dm-call';
 import { useCommunity } from './community';
 import { mediaProvider } from './runtime-sources';
-import { useVoiceContext } from './realtime';
+import { leaveVoice, useVoiceContext } from './realtime';
 import { useRooms } from './store';
 import { uiError } from './i18n';
 
@@ -44,12 +44,7 @@ export function dmCallUnavailable() {
   if (useDmCall.getState().signalingError) return useDmCall.getState().signalingError;
   if (useDmCall.getState().busy || connecting) return 'Arama işlemi sürüyor.';
   if (active(useDmCall.getState().call)) return 'Önce mevcut özel görüşmeyi bitir.';
-  if (
-    useVoiceContext.getState().busy ||
-    useVoiceContext.getState().channelId ||
-    mediaProvider().snapshot().roomId
-  )
-    return 'Önce bağlı olduğun ses odasından ayrıl.';
+  if (useVoiceContext.getState().busy) return 'Ses bağlantısı değişiyor. Biraz bekle.';
   return null;
 }
 export const dmCallFailure = (error: unknown) => {
@@ -87,12 +82,7 @@ export async function acceptDmCall(camera = false) {
   if (!call || call.state !== 'ringing' || call.calleeId !== useCommunity.getState().user?.id)
     return;
   if (useDmCall.getState().busy || connecting) return;
-  if (
-    useVoiceContext.getState().busy ||
-    useVoiceContext.getState().channelId ||
-    mediaProvider().snapshot().roomId
-  )
-    throw new Error('Kabul etmeden önce bağlı olduğun ses odasından ayrıl.');
+  if (useVoiceContext.getState().busy) throw new Error('Ses bağlantısı değişiyor. Biraz bekle.');
   const generation = epoch;
   identity = account();
   useDmCall.setState({ busy: true, error: null });
@@ -112,12 +102,7 @@ export async function acceptDmCall(camera = false) {
 export async function joinAcceptedDmCall(camera = false) {
   const call = useDmCall.getState().call;
   if (!call || call.state !== 'accepted' || connecting || useDmCall.getState().busy) return;
-  if (
-    useVoiceContext.getState().busy ||
-    useVoiceContext.getState().channelId ||
-    mediaProvider().snapshot().roomId
-  )
-    throw new Error('Önce bağlı olduğun ses odasından ayrıl.');
+  if (useVoiceContext.getState().busy) throw new Error('Ses bağlantısı değişiyor. Biraz bekle.');
   consent = { callId: call.id, camera };
   identity = account();
   await connectAccepted();
@@ -142,12 +127,10 @@ async function connectAccepted() {
     useDmCall.getState().call?.state === 'accepted';
   useDmCall.setState({ busy: true });
   const work = (async () => {
-    if (
-      useVoiceContext.getState().busy ||
-      useVoiceContext.getState().channelId ||
-      mediaProvider().snapshot().roomId
-    )
-      throw new Error('Önce bağlı olduğun ses odasından ayrıl.');
+    // Like Discord, a private call takes over the voice connection: the room is left first.
+    if (useVoiceContext.getState().channelId || mediaProvider().snapshot().roomId)
+      await leaveVoice();
+    if (!valid()) return;
     const grant = await bridge().grant(call.id);
     if (!valid()) return;
     await mediaProvider().connectRoom(grant.roomName, grant.token, grant.serverUrl);

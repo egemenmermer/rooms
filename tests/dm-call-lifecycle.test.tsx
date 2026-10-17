@@ -16,12 +16,14 @@ import {
   dmCallFailure,
 } from '../apps/desktop/src/dm-call';
 import DmCallRuntime from '../apps/desktop/src/DmCallRuntime';
+import { useVoiceContext } from '../apps/desktop/src/realtime';
 import type { DmCallSession } from '../packages/shared-contracts/src/dm-call';
 const mock = vi.hoisted(() => ({
   connect: vi.fn(async () => {}),
   disconnect: vi.fn(async () => {}),
   mic: vi.fn(async () => {}),
   camera: vi.fn(async () => {}),
+  leave: vi.fn(async () => {}),
   snapshot: {
     roomId: null as string | null,
     status: 'connected',
@@ -44,7 +46,11 @@ vi.mock('../apps/desktop/src/runtime-sources', () => ({
   }),
 }));
 vi.mock('../apps/desktop/src/realtime', () => ({
-  useVoiceContext: create(() => ({ channelId: null, busy: false })),
+  useVoiceContext: create<{ channelId: string | null; busy: boolean }>(() => ({
+    channelId: null,
+    busy: false,
+  })),
+  leaveVoice: mock.leave,
   useRealtime: () => mock.snapshot,
   toggleMic: vi.fn(),
   toggleCamera: vi.fn(),
@@ -159,6 +165,29 @@ describe('private call renderer lifetime and device consent', () => {
     expect(mock.connect).toHaveBeenCalledOnce();
     expect(mock.mic).toHaveBeenCalledOnce();
     expect(mock.camera).not.toHaveBeenCalled();
+  });
+  it('lets someone in a voice room call, and leaves the room only when the call connects', async () => {
+    useVoiceContext.setState({ channelId: 'room', busy: false });
+    mock.leave.mockImplementation(async () => {
+      useVoiceContext.setState({ channelId: null });
+    });
+    try {
+      expect(dmCallUnavailable()).toBeNull();
+      await startDmCall('999999', 'audio');
+      // Ringing keeps the room; nobody is cut off for a call that may not be answered.
+      expect(mock.leave).not.toHaveBeenCalled();
+      useCommunity.setState({ user: callee });
+      poll.mockResolvedValue({ call: ringing });
+      await refreshDmCall();
+      useVoiceContext.setState({ channelId: 'room' });
+      await acceptDmCall(false);
+      expect(mock.leave).toHaveBeenCalledOnce();
+      expect(mock.leave.mock.invocationCallOrder[0]).toBeLessThan(
+        mock.connect.mock.invocationCallOrder[0]!,
+      );
+    } finally {
+      useVoiceContext.setState({ channelId: null });
+    }
   });
   it('outgoing video consent is honored only after acceptance; camera failure preserves connected voice', async () => {
     mock.camera.mockRejectedValueOnce(new Error('no device'));
