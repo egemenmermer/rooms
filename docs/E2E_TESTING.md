@@ -152,7 +152,7 @@ Kayıt üretimde olduğu gibi davetle sınırlıdır (`invite_only = true`). Tes
 | Arkadaşlar ve DM | `friends-dm.spec.ts` | `ad#1234` ile istek, kabul, özel mesaj alışverişi; arkadaş olmayana kuralın açıklanması |
 | Erişim | `access-control.spec.ts` | Topluluk dışı hesabın odaları görmemesi; medya/etkinlik servislerinin üye olmayanı reddi; 5 dakikalık medya yetkisi; görünüm sürecinde Node ve sahte IPC olmaması |
 | Ses | `voice.spec.ts` | Katılımcıların birbirini görmesi; mikrofonun açılıp karşı tarafa ses paketlerinin ulaşması; kamera görüntüsü; sayfa değişiminde görüşmenin sürmesi; ayrılma |
-| Etkinlikler | `activities.spec.ts` | Anket oluşturma, oy ve sayım (geçici çözümle); yeni odada anket (bilinen hata); ilk yükleme süresi (bilinen hata); Kıraathane masaları |
+| Etkinlikler | `activities.spec.ts` | Anket oluşturma, oy ve sayım (geçici çözümle); yeni odada anket (bilinen hata); ilk yükleme süresi (bilinen hata); Kıraathane oyun kartları |
 | Tercihler | `settings.spec.ts` | Görünüm ayarının açık kayıtla saklanıp yeniden açılışta korunması; kaydedilmemiş değişikliğin geri alınması |
 
 Kapsam dışı ve neden:

@@ -101,11 +101,16 @@ test.describe('shared room activities', () => {
     );
   });
 
-  test('game tables reflect the room state', async ({ owner, run }) => {
+  test('the game hall offers every table game in a voice room', async ({ owner, run }) => {
     await new VoiceView(owner).join(run.channels.voice.name);
     await owner.goto('/games');
     const hall = owner.page.getByRole('region', { name: 'Kıraathane' });
     await expect(hall).toBeVisible();
-    await expect(hall.getByRole('button', { name: /Masa 2 Batak/ })).toBeVisible();
+    for (const game of ['Texas Hold’em', 'Blackjack', 'Batak', '101 Okey']) {
+      const card = hall
+        .getByRole('article')
+        .filter({ has: owner.page.getByRole('heading', { name: game }) });
+      await expect(card.getByRole('button', { name: 'Masa aç' })).toBeEnabled(firstLoad);
+    }
   });
 });
