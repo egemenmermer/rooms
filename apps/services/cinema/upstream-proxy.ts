@@ -13,7 +13,12 @@ type Scope = {
   ids: Map<string, string>;
   root: string;
   failure: UpstreamFailure;
+  /** Awaited before each media chunk is passed on; the relay paces its reads with it. */
+  pace?: Pacer;
 };
+
+/** A media chunk about to reach ffmpeg, and the size of the whole file when known. */
+export type Pacer = (chunk: { bytes: number; total: number | null }) => Promise<void>;
 
 const MAX_URLS_PER_SCOPE = 10_000;
 const MAX_MANIFEST = 5_000_000;
@@ -127,7 +132,7 @@ export class UpstreamProxy {
   }
 
   /** Creates a scope for one relay and returns the local URL of its root source. */
-  open(url: string, headers: Record<string, string> = {}) {
+  open(url: string, headers: Record<string, string> = {}, pace?: Pacer) {
     const scopeId = randomBytes(16).toString('hex');
     this.scopes.set(scopeId, {
       headers: { ...headers },
@@ -135,6 +140,7 @@ export class UpstreamProxy {
       ids: new Map(),
       root: '',
       failure: null,
+      pace,
     });
     const local = this.grant(scopeId, url);
     this.scopes.get(scopeId)!.root = this.scopes.get(scopeId)!.ids.get(url)!;
@@ -290,8 +296,18 @@ export class UpstreamProxy {
         out.end();
         return;
       }
+      const ranged = /\/(\d+)$/.exec(headers['content-range'] ?? '');
+      const total = ranged
+        ? Number(ranged[1])
+        : response.status === 200 && headers['content-length']
+          ? Number(headers['content-length'])
+          : null;
       for (let chunk = first; !chunk.done; chunk = await reader.read()) {
         if (this.closed || controller.signal.aborted || !this.scopes.has(scopeId)) break;
+        if (scope.pace && chunk.value) {
+          await scope.pace({ bytes: chunk.value.length, total });
+          if (this.closed || controller.signal.aborted || !this.scopes.has(scopeId)) break;
+        }
         if (chunk.value && !out.write(chunk.value))
           await new Promise<void>((resolve) => {
             const done = () => {

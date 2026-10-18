@@ -21,6 +21,33 @@ function setup() {
   const fetchMock = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input);
     requests.push({ url, init });
+    if (url.endsWith('/halls/film/watch'))
+      return Response.json({
+        session: 's2',
+        ticket: TICKET,
+        expiresAt: Date.now() + 120_000,
+        itemRef: 'm-208525',
+        live: false,
+        durationSec: 6470,
+        offsetSec: 598.9,
+        epoch: 4,
+        subtitleTracks: [
+          { index: 0, label: 'Türkçe · Tam', language: 'tur', forced: false },
+          { index: 2, label: 'İngilizce', language: null, forced: true },
+        ],
+      });
+    if (url.endsWith('/halls/bad-subtitles/watch'))
+      return Response.json({
+        session: 's3',
+        ticket: TICKET,
+        expiresAt: Date.now() + 120_000,
+        itemRef: 'm-1',
+        live: false,
+        durationSec: 60,
+        offsetSec: 0,
+        epoch: 1,
+        subtitleTracks: [{ index: 0, label: 'x', language: 'http://x', forced: false }],
+      });
     if (url.endsWith('/watch'))
       return Response.json({
         session: 's1',
@@ -121,6 +148,7 @@ describe('community cinema IPC', () => {
       originPdtMs: null,
       audioTracks: [],
       audioTrack: null,
+      subtitles: [],
     });
     expect(JSON.stringify(source)).not.toContain(TICKET);
     const playlist = await mocks.protocol!(new Request('rooms-cinema://stream/s1/index.m3u8'));
@@ -139,6 +167,34 @@ describe('community cinema IPC', () => {
     expect((await mocks.protocol!(new Request('rooms-cinema://stream/s1/seg1.m4s'))).status).toBe(
       410,
     );
+  });
+
+  it('maps each subtitle track to a relay file of the same session', async () => {
+    const source = (await s.invoke('rooms:cinema-watch', 'film')) as {
+      subtitles: { index: number; src: string; language: string | null; forced: boolean }[];
+    };
+    expect(source.subtitles).toEqual([
+      {
+        index: 0,
+        label: 'Türkçe · Tam',
+        language: 'tur',
+        forced: false,
+        src: 'rooms-cinema://stream/s2/sub0.vtt',
+      },
+      {
+        index: 2,
+        label: 'İngilizce',
+        language: null,
+        forced: true,
+        src: 'rooms-cinema://stream/s2/sub2.vtt',
+      },
+    ]);
+    const vtt = await mocks.protocol!(new Request('rooms-cinema://stream/s2/sub2.vtt'));
+    expect(vtt.status).toBe(200);
+    expect(s.requests.at(-1)!.url).toBe(
+      `https://rooms.example/rooms-cinema/v1/relay/${TICKET}/sub2.vtt`,
+    );
+    await expect(s.invoke('rooms:cinema-watch', 'bad-subtitles')).rejects.toThrow();
   });
 
   it('serves artwork only when the service returns an image', async () => {

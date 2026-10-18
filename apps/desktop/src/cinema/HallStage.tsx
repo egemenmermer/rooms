@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  Captions,
   Check,
   ChevronDown,
   ChevronUp,
@@ -387,6 +388,13 @@ export function HallStage({
                 }}
               />
             )}
+            {hallItem && player && !live && player.subtitleTracks.length > 0 && (
+              <SubtitleMenu
+                tracks={player.subtitleTracks}
+                selected={player.subtitle}
+                onPick={(track) => controls.current?.setSubtitle(track)}
+              />
+            )}
             <ControlButton
               label={panelOpen ? 'Paneli gizle (C)' : 'Paneli göster (C)'}
               onClick={onTogglePanel}
@@ -446,6 +454,60 @@ function AudioMenu({
               role="menuitemradio"
               aria-checked={track.index === selected}
               disabled={!!disabledReason}
+              onClick={() => {
+                setOpen(false);
+                onPick(track.index);
+              }}
+            >
+              <Check size={14} style={{ opacity: track.index === selected ? 1 : 0 }} />
+              {track.label}
+            </button>
+          ))}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** This viewer's subtitles; nobody else's screen changes. */
+function SubtitleMenu({
+  tracks,
+  selected,
+  onPick,
+}: {
+  tracks: { index: number; label: string }[];
+  selected: number | null;
+  onPick(track: number | null): void;
+}) {
+  const [open, setOpen] = useState(false);
+  const current = tracks.find((t) => t.index === selected);
+  const options = [{ index: null, label: 'Kapalı' }, ...tracks];
+  return (
+    <span
+      className="hall-audio-menu"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+      }}
+    >
+      <button
+        className="hall-control hall-audio-trigger"
+        aria-label={`Altyazı: ${current?.label ?? 'kapalı'}`}
+        aria-expanded={open}
+        title="Altyazı (yalnızca sende)"
+        data-active={current ? 'true' : undefined}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <Captions size={17} />
+        <span>{current?.label.split(' · ')[0] ?? 'Kapalı'}</span>
+      </button>
+      {open && (
+        <span className="hall-audio-list" role="menu">
+          <small>Yalnızca sende değişir</small>
+          {options.map((track) => (
+            <button
+              key={track.index ?? 'off'}
+              role="menuitemradio"
+              aria-checked={track.index === selected}
               onClick={() => {
                 setOpen(false);
                 onPick(track.index);

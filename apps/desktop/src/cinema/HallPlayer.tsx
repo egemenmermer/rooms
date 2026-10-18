@@ -11,9 +11,18 @@ import Hls from 'hls.js';
 import type { Timeline } from '../../../../packages/activity-protocol/src';
 import type {
   CinemaErrorCode,
+  CinemaSubtitleSource,
   CinemaWatchSource,
 } from '../../../../packages/community-cinema/src/bridge';
-import type { CinemaAudioTrack } from '../../../../packages/community-cinema/src/types';
+import type {
+  CinemaAudioTrack,
+  CinemaSubtitleTrack,
+} from '../../../../packages/community-cinema/src/types';
+import {
+  cueText,
+  parseVtt,
+  type SubtitleCue,
+} from '../../../../packages/community-cinema/src/webvtt';
 import { expectedPosition } from '../cinema-youtube';
 import { cinemaErrorCode, getCinemaBridge } from './cinema-bridge';
 import type { HallItem } from './hall-model';
@@ -21,6 +30,9 @@ import type { HallItem } from './hall-model';
 /** Everyone in the hall watches this far behind the server clock on live channels. */
 export const LIVE_LATENCY_MS = 10_000;
 const SYNC_EVERY_MS = 1000;
+const SUBTITLE_POLL_MS = 5000;
+const SUBTITLE_TICK_MS = 250;
+const SUBTITLE_PREFERENCE = 'rooms.cinema.subtitles';
 
 export type PlayerPhase = 'loading' | 'playing' | 'buffering' | 'paused' | 'error';
 
@@ -36,6 +48,9 @@ export interface PlayerSnapshot {
   /** The relayed source's audio streams and the one the hall hears. */
   audioTracks: CinemaAudioTrack[];
   audioTrack: number | null;
+  /** VOD text subtitles and this viewer's choice (null: off). Never shared with the hall. */
+  subtitleTracks: CinemaSubtitleTrack[];
+  subtitle: number | null;
 }
 
 export interface PlayerControls {
@@ -44,6 +59,8 @@ export interface PlayerControls {
   /** Live only: pause or resume for this viewer. */
   toggleLocalPause(): void;
   retry(): void;
+  /** This viewer's subtitles; null turns them off. */
+  setSubtitle(index: number | null): void;
 }
 
 /** The seekable window of the video element, or null before it has one. */
@@ -53,6 +70,57 @@ function seekRange(element: HTMLVideoElement) {
     start: element.seekable.start(0),
     end: element.seekable.end(element.seekable.length - 1),
   };
+}
+
+const turkish = (track: { language: string | null; label: string }) =>
+  track.language === 'tur' || track.language === 'tr' || track.label.startsWith('Türkçe');
+
+function subtitlesOff() {
+  try {
+    return localStorage.getItem(SUBTITLE_PREFERENCE) === 'off';
+  } catch {
+    return false;
+  }
+}
+
+function rememberSubtitles(on: boolean) {
+  try {
+    localStorage.setItem(SUBTITLE_PREFERENCE, on ? 'auto' : 'off');
+  } catch {
+    // Private storage: the choice still holds for this film.
+  }
+}
+
+/**
+ * The subtitles a viewer starts with: Turkish when the hall hears another language, only
+ * Turkish forced subtitles over Turkish audio, nothing once the viewer turned them off.
+ */
+export function autoSubtitle(
+  tracks: CinemaSubtitleTrack[],
+  audioLabel: string | null,
+  off = subtitlesOff(),
+): number | null {
+  if (off) return null;
+  const candidates = tracks.filter(turkish);
+  if (audioLabel?.startsWith('Türkçe')) return candidates.find((t) => t.forced)?.index ?? null;
+  return (candidates.find((t) => !t.forced) ?? candidates[0])?.index ?? null;
+}
+
+/** The cues of a subtitle source; DEV fixtures carry theirs inline as a data URL. */
+async function readSubtitles(source: CinemaSubtitleSource) {
+  if (source.src.startsWith('data:'))
+    return decodeURIComponent(source.src.slice(source.src.indexOf(',') + 1));
+  const response = await fetch(source.src, { cache: 'no-store' });
+  return response.ok ? response.text() : null;
+}
+
+/** VOD: where playback is in the work, wherever hls.js started its own timeline. */
+function workPosition(element: HTMLVideoElement, source: CinemaWatchSource, hls: Hls | null) {
+  // PROGRAM-DATE-TIME pins the relay's output time 0 (late joiners, remounts).
+  const date = hls?.playingDate?.getTime();
+  return source.originPdtMs !== null && date
+    ? source.offsetSec + (date - source.originPdtMs) / 1000
+    : source.offsetSec + element.currentTime;
 }
 
 /** Live drift in seconds (positive: this viewer is behind the hall's shared target). */
@@ -107,7 +175,13 @@ export function HallPlayer({
     live: item.media.live,
     audioTracks: [],
     audioTrack: null,
+    subtitleTracks: [],
+    subtitle: null,
   });
+  const [cues, setCues] = useState<SubtitleCue[]>([]);
+  const [caption, setCaption] = useState('');
+  /** The viewer's own pick for an item; it survives relay restarts (seeks, audio). */
+  const subtitleChoice = useRef<{ ref: string; index: number | null } | null>(null);
   const latest = useRef({ timeline, serverOffsetMs, item, source });
   latest.current = { timeline, serverOffsetMs, item, source };
   const localPause = useRef(false);
@@ -157,6 +231,8 @@ export function HallPlayer({
       live: item.media.live,
       positionSec: 0,
       durationSec: null,
+      subtitleTracks: [],
+      subtitle: null,
     });
     if (!bridge) {
       update({ phase: 'error', code: 'CINEMA_UNAVAILABLE' });
@@ -176,11 +252,23 @@ export function HallPlayer({
         }
         setSource(value);
         reconnects.current = 0;
+        const subtitles = value.subtitles ?? [];
+        const chosen = subtitleChoice.current;
+        const kept =
+          chosen?.ref === item.media.ref &&
+          (chosen.index === null || subtitles.some((t) => t.index === chosen.index));
         update({
           durationSec: value.durationSec,
           live: value.live,
           audioTracks: value.audioTracks,
           audioTrack: value.audioTrack,
+          subtitleTracks: subtitles.map(({ src: _src, ...track }) => track),
+          subtitle: kept
+            ? chosen.index
+            : autoSubtitle(
+                subtitles,
+                value.audioTracks.find((t) => t.index === value.audioTrack)?.label ?? null,
+              ),
         });
       } catch (error) {
         if (active)
@@ -333,13 +421,7 @@ export function HallPlayer({
         return;
       }
       const target = expectedPosition(shared, Date.now(), offset);
-      // Where playback is in the work. PROGRAM-DATE-TIME pins the relay's output time 0, so
-      // this holds wherever hls.js started its own timeline (late joiners, remounts).
-      const date = hls.current?.playingDate?.getTime();
-      const work =
-        current.originPdtMs !== null && date
-          ? current.offsetSec + (date - current.originPdtMs) / 1000
-          : current.offsetSec + element.currentTime;
+      const work = workPosition(element, current, hls.current);
       update({ positionSec: Math.max(0, work) });
       const want = element.currentTime + (target - work);
       const range = seekRange(element);
@@ -365,6 +447,59 @@ export function HallPlayer({
     return () => clearInterval(timer);
   }, [fixture, update]);
 
+  // The relay keeps appending cues as it reads ahead; re-read the file while it grows.
+  const subtitleSource = source?.subtitles?.find((t) => t.index === snapshot.subtitle) ?? null;
+  useEffect(() => {
+    setCues([]);
+    if (!subtitleSource) return;
+    let active = true;
+    let size = -1;
+    const load = async () => {
+      try {
+        const text = await readSubtitles(subtitleSource);
+        if (!active || text === null || text.length === size) return;
+        size = text.length;
+        setCues(parseVtt(text));
+      } catch {
+        // The relay restarted or the hall moved on; the player reconnects on its own.
+      }
+    };
+    void load();
+    const timer = subtitleSource.src.startsWith('data:')
+      ? undefined
+      : setInterval(() => void load(), SUBTITLE_POLL_MS);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [subtitleSource]);
+
+  useEffect(() => {
+    setCaption('');
+    if (!cues.length) return;
+    const tick = () => {
+      const { timeline: shared, serverOffsetMs: offset, source: current } = latest.current;
+      const element = video.current;
+      if (!current) return;
+      const position = fixture
+        ? expectedPosition(shared, Date.now(), offset)
+        : element
+          ? workPosition(element, current, hls.current)
+          : null;
+      if (position === null) return;
+      setCaption(
+        cues
+          .filter((cue) => cue.start <= position && position < cue.end)
+          .map((cue) => cueText(cue.text))
+          .filter(Boolean)
+          .join('\n'),
+      );
+    };
+    tick();
+    const timer = setInterval(tick, SUBTITLE_TICK_MS);
+    return () => clearInterval(timer);
+  }, [cues, fixture]);
+
   useEffect(() => {
     controls.current = {
       goLive: () => {
@@ -386,6 +521,11 @@ export function HallPlayer({
         });
       },
       retry: () => setAttempt((value) => value + 1),
+      setSubtitle: (index) => {
+        subtitleChoice.current = { ref: latest.current.item.media.ref, index };
+        rememberSubtitles(index !== null);
+        update({ subtitle: index });
+      },
     };
     return () => {
       controls.current = null;
@@ -400,6 +540,11 @@ export function HallPlayer({
         <video ref={video} playsInline disablePictureInPicture={false} />
       )}
       <canvas ref={curtain} className="hall-player-curtain" aria-hidden="true" />
+      {caption && (
+        <div className="hall-subtitle">
+          <span>{caption}</span>
+        </div>
+      )}
     </div>
   );
 }

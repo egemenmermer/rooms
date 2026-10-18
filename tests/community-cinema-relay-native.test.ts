@@ -2,12 +2,21 @@
 // ffprobe (libx264, libx265, ac3, eac3, mpeg2video, mp2) on PATH. Media is generated in
 // a temp directory and served from 127.0.0.1, so the relay runs with allowPrivateNetwork.
 import { execFileSync } from 'node:child_process';
-import { createReadStream, existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
+import {
+  createReadStream,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { RelayManager } from '../apps/services/cinema/relay';
+import { parseVtt } from '../packages/community-cinema/src/webvtt';
 
 const native = process.env.ROOMS_CINEMA_RELAY_NATIVE === '1';
 
@@ -138,6 +147,36 @@ describe.runIf(native)('cinema relay with real ffmpeg', () => {
       'dubbed.mp4',
     ]);
 
+    // Sparse Turkish SubRip and English ASS, as films ship them: long gaps between cues.
+    writeFileSync(
+      join(root, 'tur.srt'),
+      '1\n00:00:03,000 --> 00:00:05,000\nbirinci\n\n2\n00:00:24,000 --> 00:00:26,500\nikinci\n\n3\n00:00:45,000 --> 00:00:47,000\nüçüncü\n',
+    );
+    writeFileSync(
+      join(root, 'eng.ass'),
+      [
+        '[Script Info]',
+        'ScriptType: v4.00+',
+        '',
+        '[V4+ Styles]',
+        'Format: Name, Fontname, Fontsize, PrimaryColour, Bold, Italic, Alignment',
+        'Style: Default,Arial,20,&H00FFFFFF,0,0,2',
+        '',
+        '[Events]',
+        'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
+        'Dialogue: 0,0:00:24.00,0:00:26.00,Default,,0,0,0,,{\\an8}{\\i1}second{\\i0}',
+        '',
+      ].join('\n'),
+    );
+    ffmpeg([
+      ...video,
+      ...audio,
+      ...['-i', 'tur.srt', '-i', 'eng.ass', '-t', '50', '-map', '0:v', '-map', '1:a'],
+      ...['-map', '2:s', '-map', '3:s', ...h264, '-g', '50', '-c:a', 'aac', '-c:s:0', 'srt'],
+      ...['-c:s:1', 'ass', '-metadata:s:s:0', 'language=tur', '-metadata:s:s:1', 'language=eng'],
+      'subbed.mkv',
+    ]);
+
     // Paths look like Xtream URLs so a leaked URL would show the fake password.
     server = createServer((request, response) => {
       const name = /^\/(?:live|movie)\/user\/secretpass\/([A-Za-z0-9_.]+)$/.exec(
@@ -153,11 +192,11 @@ describe.runIf(native)('cinema relay with real ffmpeg', () => {
           .writeHead(200, { 'Content-Type': 'application/vnd.apple.mpegurl' })
           .end(readFileSync(file));
       const range = /^bytes=(\d+)-(\d*)$/.exec(request.headers.range ?? '');
-      if (name.endsWith('.mp4') && range) {
+      if (/\.(?:mp4|mkv)$/.test(name) && range) {
         const start = Number(range[1]);
         const end = range[2] ? Number(range[2]) : size - 1;
         response.writeHead(206, {
-          'Content-Type': 'video/mp4',
+          'Content-Type': name.endsWith('.mkv') ? 'video/x-matroska' : 'video/mp4',
           'Content-Range': `bytes ${start}-${end}/${size}`,
           'Content-Length': end - start + 1,
           'Accept-Ranges': 'bytes',
@@ -333,6 +372,53 @@ describe.runIf(native)('cinema relay with real ffmpeg', () => {
     });
     expect(german.audioTrack).toBe(0);
     await relays.stop(german.session);
+  }, 60_000);
+
+  it('paces a film with subtitles and serves its cues on the work timeline', async () => {
+    const film = { url: `${base}/movie/user/secretpass/subbed.mkv`, headers: {}, live: false };
+    const began = Date.now();
+    const info = await relays.acquire({ communityId: 'C6', key: 'C6:m-6', source: film, slots: 1 });
+    expect(info.subtitleTracks.map((t) => [t.index, t.label, t.language])).toEqual([
+      [0, 'Türkçe', 'tur'],
+      [1, 'İngilizce', 'eng'],
+    ]);
+    const vtt = async (index: number) =>
+      parseVtt((await relays.file(info.session, `sub${index}.vtt`))!.body.toString('utf8'));
+    // The local server answers at disk speed. Unpaced, ffmpeg would finish all 50 s at once;
+    // -readrate would stall on the sparse subtitle stream. The proxy keeps 15 s + 1x.
+    let second: { start: number; text: string } | undefined;
+    for (let tries = 0; tries < 80 && !second; tries++) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      second = (await vtt(0)).find((cue) => cue.text === 'ikinci');
+    }
+    const elapsed = (Date.now() - began) / 1000;
+    const produced = relays.sessionsOf('C6')[0]!.producedSec;
+    expect(second).toMatchObject({ start: 24, end: 26.5 });
+    expect(produced).toBeLessThan(50);
+    expect(produced).toBeLessThanOrEqual(15 + elapsed + 6);
+    expect((await vtt(0))[0]).toMatchObject({ start: 3, end: 5, text: 'birinci' });
+    const english = (await vtt(1)).find((cue) => cue.start === 24);
+    expect(english?.text.replace(/<[^>]+>/g, '')).toBe('second');
+    await relays.stop(info.session);
+  }, 60_000);
+
+  it('times subtitles from the seek position of a restarted film', async () => {
+    const film = { url: `${base}/movie/user/secretpass/subbed.mkv`, headers: {}, live: false };
+    const info = await relays.acquire({
+      communityId: 'C7',
+      key: 'C7:m-6@20',
+      source: film,
+      startSec: 20,
+      slots: 1,
+    });
+    let cues: { start: number; end: number; text: string }[] = [];
+    for (let tries = 0; tries < 60 && !cues.length; tries++) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      cues = parseVtt((await relays.file(info.session, 'sub0.vtt'))!.body.toString('utf8'));
+    }
+    expect(cues[0]).toMatchObject({ start: 24, end: 26.5, text: 'ikinci' });
+    expect(cues.some((cue) => cue.text === 'birinci')).toBe(false);
+    await relays.stop(info.session);
   }, 60_000);
 
   it('stops idle relays and never logs a provider URL', async () => {
