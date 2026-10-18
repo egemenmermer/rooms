@@ -142,7 +142,8 @@ export type PersonalSoundUpload = z.infer<typeof personalSoundUploadSchema>;
  * - `PUT    /v1/personal-sounds/me/assign` (PersonalSoundAssign) → PersonalSoundProfile
  * - `GET    /v1/personal-sounds/me/sounds/:soundId` → audio/wav (own upload or preset)
  * - `GET    /v1/personal-sounds/:channelId/:userId/:soundId` → audio/wav; the caller must be able
- *   to join that voice channel, and the sound must be a preset or belong to `userId`.
+ *   to join that voice channel, and the sound must be a preset or an upload of `userId`, who must
+ *   be able to view that channel.
  */
 export const PERSONAL_SOUND_ERRORS = [
   'PERSONAL_SOUNDS_NOT_CONFIGURED',
