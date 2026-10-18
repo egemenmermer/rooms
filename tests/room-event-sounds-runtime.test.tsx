@@ -3,12 +3,21 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { useRooms } from '../apps/desktop/src/store';
 import { useCommunity } from '../apps/desktop/src/community';
+import { useVoiceContext } from '../apps/desktop/src/realtime';
+import { setPersonalSoundMuted } from '../apps/desktop/src/personal-sound-mutes';
+import {
+  encodePersonalSoundWav,
+  toBase64,
+} from '../packages/shared-contracts/src/personal-sound-audio';
 const f = vi.hoisted(() => ({
   snapshot: { status: 'not-configured', roomId: null, deafened: false, participants: [] } as any,
   listeners: new Set<() => void>(),
   play: vi.fn(),
   sink: vi.fn(),
   pause: vi.fn(),
+  audios: [] as { src: string; volume: number; paused: boolean }[],
+  urls: 0,
+  revoked: [] as string[],
 }));
 vi.mock('../apps/desktop/src/runtime-sources', () => ({
   mediaProvider: () => ({
@@ -26,11 +35,17 @@ vi.mock('../apps/desktop/src/realtime', async () => {
 import { RoomEventSounds } from '../apps/desktop/src/room-event-sounds';
 const prefs = useRooms.getState().preferences,
   community = useCommunity.getState();
+const clip = toBase64(encodePersonalSoundWav(new Float32Array(960).fill(0.1)));
+const read = vi.fn<(channelId: string, userId: string, soundId: string) => Promise<string>>();
 beforeEach(() => {
+  localStorage.clear();
   f.play.mockClear();
   f.sink.mockClear();
   f.pause.mockClear();
   f.listeners.clear();
+  f.audios = [];
+  f.revoked = [];
+  read.mockReset().mockResolvedValue(clip);
   f.snapshot = { status: 'not-configured', roomId: null, deafened: false, participants: [] };
   vi.stubGlobal(
     'Audio',
@@ -39,11 +54,15 @@ beforeEach(() => {
       paused = true;
       onended = null;
       setSinkId = f.sink;
+      constructor(public src = '') {
+        f.audios.push(this);
+      }
       async play() {
         this.paused = false;
         f.play();
       }
       pause() {
+        this.paused = true;
         f.pause();
       }
     },
@@ -52,7 +71,10 @@ beforeEach(() => {
     'URL',
     class extends URL {
       static createObjectURL() {
-        return 'blob:local-original-cue';
+        return `blob:local-${++f.urls}`;
+      }
+      static revokeObjectURL(url: string) {
+        f.revoked.push(url);
       }
     },
   );
@@ -61,9 +83,11 @@ beforeEach(() => {
     serverUrl: 'https://test',
   });
   useRooms.setState({ preferences: { ...prefs, roomEventSounds: true, outputId: 'headphones' } });
+  useVoiceContext.setState({ channelId: 'room', busy: false });
 });
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   useRooms.setState({ preferences: prefs });
   useCommunity.setState(community);
@@ -119,4 +143,168 @@ it('deafened participant movements never play or publish cues', async () => {
   });
   expect(f.play).not.toHaveBeenCalled();
   expect(f.pause).toHaveBeenCalled();
+});
+
+// Personal sounds run on the policy clock, so these tests drive time explicitly.
+const tick = (ms = 0) =>
+  act(async () => {
+    await vi.advanceTimersByTimeAsync(ms);
+  });
+async function roster(people: { id: string; local?: boolean; sounds?: object }[], extra = {}) {
+  await act(async () => {
+    f.snapshot = {
+      ...f.snapshot,
+      status: 'connected',
+      roomId: 'room',
+      participants: people.map((p) => ({ local: false, ...p })),
+      ...extra,
+    };
+    for (const fn of f.listeners) fn();
+  });
+  await tick();
+}
+const self = { id: 'self', local: true };
+const played = () => f.audios.filter((a) => !a.paused).map((a) => a.volume);
+async function start(bridge = true) {
+  vi.useFakeTimers();
+  if (bridge) vi.stubGlobal('rooms', { personalSounds: { read } });
+  render(<RoomEventSounds />);
+  await roster([self, { id: 'friend' }]);
+  expect(played()).toEqual([0.55]);
+  await tick(1000);
+}
+it('plays a joiner’s own sound at the personal gain and the listener’s effects level', async () => {
+  useRooms.getState().setPreference('soundEffectsLevel', 0.5);
+  vi.useFakeTimers();
+  vi.stubGlobal('rooms', { personalSounds: { read } });
+  render(<RoomEventSounds />);
+  await roster([self, { id: 'friend' }]);
+  expect(played()).toEqual([0.275]);
+  await tick(1000);
+  await roster([self, { id: 'friend' }, { id: 'ada', sounds: { enter: 'p.fanfar' } }]);
+  expect(read).toHaveBeenCalledWith('room', 'ada', 'p.fanfar');
+  expect(played()).toEqual([0.275, 0.225]);
+  expect(f.audios[1].src).toMatch(/^blob:local-/);
+  expect(f.sink).toHaveBeenLastCalledWith('headphones');
+});
+it('uses the classic cue for a muted person and when personal sounds are off', async () => {
+  await start();
+  act(() => setPersonalSoundMuted('ada', true));
+  await roster([self, { id: 'friend' }, { id: 'ada', sounds: { enter: 'p.fanfar' } }]);
+  expect(played()).toEqual([0.55, 0.55]);
+  await tick(1000);
+  act(() => useRooms.getState().setPreference('personalSounds', false));
+  await roster([
+    self,
+    { id: 'friend' },
+    { id: 'ada', sounds: { enter: 'p.fanfar' } },
+    { id: 'bo', sounds: { enter: 'p.kapi' } },
+  ]);
+  expect(played()).toEqual([0.55, 0.55, 0.55]);
+  expect(read).not.toHaveBeenCalled();
+});
+it('plays nothing, not even a personal sound, while deafened', async () => {
+  await start();
+  await roster([self, { id: 'friend' }, { id: 'ada', sounds: { enter: 'p.fanfar' } }], {
+    deafened: true,
+  });
+  await tick(2000);
+  expect(played()).toEqual([]);
+  expect(read).not.toHaveBeenCalled();
+});
+it('keeps classic cues without the desktop bridge', async () => {
+  await start(false);
+  await roster([self, { id: 'friend' }, { id: 'ada', sounds: { enter: 'p.fanfar' } }]);
+  expect(played()).toEqual([0.55, 0.55]);
+});
+it('replaces a clip that misses the deadline with the classic cue and never plays it late', async () => {
+  let deliver!: (value: string) => void;
+  read.mockImplementationOnce(() => new Promise((resolve) => (deliver = resolve)));
+  await start();
+  await roster([self, { id: 'friend' }, { id: 'ada', sounds: { enter: 'p.fanfar' } }]);
+  await tick(1499);
+  expect(played()).toEqual([0.55]);
+  await tick(1);
+  expect(played()).toEqual([0.55, 0.55]);
+  deliver(clip);
+  await tick(5000);
+  expect(played()).toEqual([0.55, 0.55]);
+});
+it('falls back at once when a sound fails and does not ask again for a minute', async () => {
+  read.mockRejectedValue(new Error('PERSONAL_SOUND_NOT_FOUND'));
+  await start();
+  await roster([self, { id: 'friend' }, { id: 'ada', sounds: { enter: 'p.fanfar' } }]);
+  expect(played()).toEqual([0.55, 0.55]);
+  await tick(6000);
+  await roster([
+    self,
+    { id: 'friend' },
+    { id: 'ada', sounds: { enter: 'p.fanfar' } },
+    { id: 'bo', sounds: { enter: 'p.fanfar' } },
+  ]);
+  expect(played()).toHaveLength(3);
+  expect(read).toHaveBeenCalledTimes(1);
+  await tick(60_000);
+  await roster([
+    self,
+    { id: 'friend' },
+    { id: 'ada', sounds: { enter: 'p.fanfar' } },
+    { id: 'bo', sounds: { enter: 'p.fanfar' } },
+    { id: 'cy', sounds: { enter: 'p.fanfar' } },
+  ]);
+  expect(read).toHaveBeenCalledTimes(2);
+});
+it('warms up leave sounds so a departure plays its old attribute without waiting', async () => {
+  await start();
+  await roster([self, { id: 'friend', sounds: { leave: 'p.kapanis' } }, { id: 'ada' }]);
+  await tick(1000);
+  expect(read).toHaveBeenCalledWith('room', 'friend', 'p.kapanis');
+  read.mockClear();
+  await roster([self, { id: 'ada' }]);
+  await tick(1499);
+  expect(played()).toEqual([0.55, 0.55]);
+  await tick(1);
+  expect(played()).toEqual([0.55, 0.55, 0.45]);
+  expect(read).not.toHaveBeenCalled();
+});
+it('skips muted people when warming up', async () => {
+  act(() => setPersonalSoundMuted('friend', true));
+  await start();
+  await roster([self, { id: 'friend', sounds: { leave: 'p.kapanis' } }]);
+  await tick(2000);
+  expect(read).not.toHaveBeenCalled();
+});
+it('turning personal sounds off stops only personal playback', async () => {
+  await start();
+  await roster([self, { id: 'friend' }, { id: 'ada', sounds: { enter: 'p.fanfar' } }]);
+  expect(played()).toEqual([0.55, 0.45]);
+  act(() => useRooms.getState().setPreference('personalSounds', false));
+  await tick();
+  expect(played()).toEqual([0.55]);
+});
+it('an account change stops playback and revokes the previous account’s clips', async () => {
+  await start();
+  await roster([self, { id: 'friend' }, { id: 'ada', sounds: { enter: 'p.fanfar' } }]);
+  const url = f.audios[1].src;
+  expect(f.revoked).not.toContain(url);
+  act(() =>
+    useCommunity.setState({
+      user: { id: 'other', username: 'Other', displayName: 'Other', avatar: null },
+    }),
+  );
+  await tick();
+  expect(f.revoked).toContain(url);
+  expect(f.audios.slice(0, 2).map((a) => a.paused)).toEqual([true, true]);
+});
+it('leaving the room stops a personal clip and still plays the own leave cue', async () => {
+  await start();
+  await roster([self, { id: 'friend' }, { id: 'ada', sounds: { enter: 'p.fanfar' } }]);
+  expect(played()).toEqual([0.55, 0.45]);
+  await act(async () => {
+    f.snapshot = { ...f.snapshot, status: 'not-configured', roomId: null, participants: [] };
+    for (const fn of f.listeners) fn();
+  });
+  await tick();
+  expect(played()).toEqual([0.55]);
+  expect(f.audios.at(-1)?.paused).toBe(false);
 });

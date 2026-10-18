@@ -21,6 +21,11 @@ import {
   type Participant,
 } from 'livekit-client';
 import type { ConnectionStatus } from '@rooms/contracts';
+import {
+  PERSONAL_SOUND_ATTRIBUTES,
+  PERSONAL_SOUND_EVENTS,
+  isPersonalSoundId,
+} from '../../shared-contracts/src/personal-sounds';
 
 export interface MediaParticipant {
   id: string;
@@ -37,6 +42,8 @@ export interface MediaParticipant {
   quality: string;
   /** Screen share this person chose to watch, as they announced it; null when not watching. */
   watching?: string | null;
+  /** Entrance and leave sounds the access service stamped on this person; absent means classic. */
+  sounds?: { enter?: string; leave?: string };
 }
 export interface MediaTrack {
   id: string;
@@ -151,6 +158,15 @@ export function parseWatch(payload: Uint8Array): string | null | undefined {
 /** Bot music needs finer attenuation than speech; the UI still stores a 0–1 level. */
 function listenerGain(id: string, level: number) {
   return id.startsWith('rooms-music-') ? level * level : level;
+}
+/** Only well-formed ids survive, so a stray attribute can never become a fetch path. */
+function personalSounds(attributes: Readonly<Record<string, string>> | undefined) {
+  let sounds: MediaParticipant['sounds'];
+  for (const event of PERSONAL_SOUND_EVENTS) {
+    const value = attributes?.[PERSONAL_SOUND_ATTRIBUTES[event]];
+    if (isPersonalSoundId(value)) sounds = { ...sounds, [event]: value };
+  }
+  return sounds;
 }
 const emptyDiagnostics = (): MediaDiagnostics => ({ bitrate: null, packetLoss: null, rtt: null });
 /** No auth credentials other than the in-memory, short-lived room token enter this adapter. */
@@ -504,6 +520,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
             p === room.localParticipant
               ? this.watchedScreen
               : (this.watchers.get(p.identity) ?? null),
+          sounds: personalSounds(p.attributes),
         })),
       tracks: people.flatMap((p) =>
         [...p.trackPublications.values()]
