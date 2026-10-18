@@ -126,7 +126,9 @@ export class SubtitleSearch {
     const rows = await this.api(key, params);
     const found: SubtitleCandidate[] = [];
     for (const row of rows) {
-      const id = /^\/subtitle\/([A-Za-z0-9_-]{1,64})\.zip$/.exec(String(row.url ?? ''))?.[1];
+      // SubDL appends the caller's key (`?api_key=…`); only the id is kept, the key never.
+      const path = String(row.url ?? '').split(/[?#]/)[0]!;
+      const id = /^\/subtitle\/([A-Za-z0-9_-]{1,64})\.zip$/.exec(path)?.[1];
       const language =
         LANGUAGES[String(row.language ?? '').toLowerCase()] ??
         LANGUAGES[String(row.lang ?? '').toLowerCase()];
