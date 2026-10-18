@@ -1,4 +1,5 @@
 import { createAccessServer } from './server';
+import { personalSoundUploadsEnabled } from './personal-sounds';
 const required = (name: string) => {
   const value = process.env[name];
   if (!value) throw new Error(`Missing service configuration: ${name}`);
@@ -12,7 +13,7 @@ async function start() {
     soundboardDirectory: process.env.ROOMS_SOUNDBOARD_DIRECTORY ?? '/state/soundboard',
     personalSoundsDirectory:
       process.env.ROOMS_PERSONAL_SOUNDS_DIRECTORY ?? '/state/personal-sounds',
-    personalSoundUploads: process.env.ROOMS_PERSONAL_SOUND_UPLOADS !== '0',
+    personalSoundUploads: personalSoundUploadsEnabled(process.env.ROOMS_PERSONAL_SOUND_UPLOADS),
     personalSoundsMaxBytes: personalSoundsMegabytes * 1024 * 1024,
     musicPlaylistsDirectory:
       process.env.ROOMS_MUSIC_PLAYLISTS_DIRECTORY ?? '/state/music-playlists',

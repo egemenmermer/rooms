@@ -251,6 +251,30 @@ export async function createAccessServer(config: AccessConfig) {
     authorize: async (token, channelId) => ({
       userId: (await authorize(token, channelId)).user.id,
     }),
+    // The owner's current membership, read with the listener's session.
+    canView: async (token, channelId, userId) => {
+      const client = new StoatClient(
+        config.stoatUrl ?? 'http://127.0.0.1:3022',
+        token,
+        socialOptions,
+      );
+      const context = reader ? await reader.read(channelId, userId) : null;
+      const channel = context?.channel ?? (await client.getChannel(channelId));
+      if (typeof channel.server !== 'string') return false;
+      const [rawServer, rawMember] = context
+        ? [context.server, context.member]
+        : await Promise.all([
+            client.getServer(channel.server),
+            client.getMember(channel.server, userId),
+          ]);
+      const permissions = stoatChannelPermissions(
+        rawServer as StoatServer,
+        channel as StoatChannel,
+        rawMember as StoatMember,
+        userId,
+      );
+      return (permissions & Permissions.VIEW_CHANNEL) !== 0n;
+    },
     // Attributes merge, so rooms.deafened stays; a grant whose holder already left fails quietly.
     onAssignChanged: (userId, attributes) => {
       for (const grant of grants.values())

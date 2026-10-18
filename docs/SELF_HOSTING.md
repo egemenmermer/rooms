@@ -215,7 +215,7 @@ PowerShell'de eşdeğer dosya işlemleri için `New-Item -ItemType Directory -Fo
 | `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | Eşleşen kendi LiveKit kimlik bilgilerin |
 | `ROOMS_SOUNDBOARD_DIRECTORY` | Yazılabilir kalıcı soundboard dizini |
 | `ROOMS_PERSONAL_SOUNDS_DIRECTORY` | Yazılabilir kalıcı giriş sesi dizini; varsayılan `/state/personal-sounds` |
-| `ROOMS_PERSONAL_SOUND_UPLOADS` | `0` ise üyeler ses yükleyemez; ROOMS'un hazır sesleri seçilebilir kalır |
+| `ROOMS_PERSONAL_SOUND_UPLOADS` | `0`, `false`, `off` veya `no` ise (büyük/küçük harf fark etmez) üyeler yeni ses yükleyemez; daha önce yüklenen sesler ve ROOMS'un hazır sesleri seçilebilir ve çalınabilir kalır |
 | `ROOMS_PERSONAL_SOUNDS_MAX_MB` | Yüklenen giriş seslerinin toplam üst sınırı (MB); varsayılan 512 |
 | `ROOMS_ACTIVITY_DATA` | PostgreSQL yoksa dosya tabanlı etkinlik dizini |
 | `ROOMS_ACTIVITY_DATABASE_URL` | İsteğe bağlı Activities PostgreSQL bağlantısı |
@@ -313,7 +313,7 @@ Temel giriş, sohbet, izinler ve medya çalıştıktan sonra ekle:
 | Giriş sesleri | `ROOMS_PERSONAL_SOUNDS_DIRECTORY` | Kişi klasörlerini olduğu gibi koru |
 | Agent/yapılandırma | Yapılandırılmış veri dizini ve şifreleme anahtarı | Veri ile eşleşen anahtarı ayrı ve korumalı sakla |
 
-**Giriş sesleri.** Her üyenin giriş/çıkış sesleri kendi klasöründe (`<dizin>/<kullanıcı kimliği>/`) durur: seçimler ve yükleme onayının zamanı `profile.json` içinde, sesler ise sunucunun ses düzeyini eşitlediği en fazla 4 saniyelik WAV dosyaları olarak saklanır; yüklenen özgün dosya tutulmaz. Hızlı kurulumda dizin `/opt/rooms/deploy/data/access/personal-sounds` olur ve `rooms backup` yedeğine girer. Yüklemeyi kapatmak için `/opt/rooms/deploy/.env` dosyasına `ROOMS_PERSONAL_SOUND_UPLOADS=0`, toplam alanı değiştirmek için `ROOMS_PERSONAL_SOUNDS_MAX_MB=<MB>` ekleyip `sudo rooms up` çalıştır. Bir kişinin bütün seslerini kaldırmak için o kişinin klasörünü sil; bir sonraki ses bağlantısından itibaren onun için klasik ROOMS sesi çalar.
+**Giriş sesleri.** Her üyenin giriş/çıkış sesleri kendi klasöründe (`<dizin>/<kullanıcı kimliği>/`) durur: seçimler ve yükleme onayının zamanı `profile.json` içinde, sesler ise sunucunun ses düzeyini eşitlediği en fazla 4 saniyelik WAV dosyaları olarak saklanır; yüklenen özgün dosya tutulmaz. Hızlı kurulumda dizin `/opt/rooms/deploy/data/access/personal-sounds` olur ve `rooms backup` yedeğine girer. Yüklemeyi kapatmak için `/opt/rooms/deploy/.env` dosyasına `ROOMS_PERSONAL_SOUND_UPLOADS=0` (`false`, `off` ve `no` da olur), toplam alanı değiştirmek için `ROOMS_PERSONAL_SOUNDS_MAX_MB=<MB>` ekleyip `sudo rooms up` çalıştır. Bu anahtar yalnızca yeni yüklemeyi durdurur: daha önce yüklenen sesler silinmez, sahipleri onları seçebilir ve odalarda çalmaya devam ederler. Onları da kaldırmak için bir kişinin bütün seslerinde o kişinin klasörünü (`<dizin>/<kullanıcı kimliği>/`), herkesinkinde dizinin kendisini değil içindekileri sil. Servisi yeniden başlatmak gerekmez; bir sonraki ses bağlantısından itibaren o kişi için klasik ROOMS sesi çalar. Tek bir `.wav` dosyasını elle silme, `profile.json` onu listelemeye devam eder; tek bir sesi kişinin kendisi Ayarlar → Ses ve video → **Giriş ve çıkış sesin** bölümünden siler.
 
 Activities, başlangıçta PostgreSQL'de mevcut `rooms_activity_state` tablosunu oluşturur. Bu, tam sürümlü migration/geri dönüş sistemi değildir. Tek yetkili Activities süreci kullan; ortak PostgreSQL bağımsız komut işlemcilerini kendiliğinden güvenli yapmaz.
 

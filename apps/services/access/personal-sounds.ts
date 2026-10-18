@@ -77,13 +77,17 @@ const limit = (max: number, scope: string) => ({
   rateLimit: {
     max,
     timeWindow: '1 minute',
+    // Keyed by the token as sessions read it, so `Bearer X` and `X` share one budget.
     keyGenerator: (request: FastifyRequest) =>
       `${scope}:` +
       createHash('sha256')
-        .update(request.headers.authorization ?? request.ip)
+        .update(request.headers.authorization?.replace(/^Bearer /, '') || request.ip)
         .digest('hex'),
   },
 });
+/** `ROOMS_PERSONAL_SOUND_UPLOADS`: `0`, `false`, `off` or `no` stops new uploads. */
+export const personalSoundUploadsEnabled = (value: string | undefined) =>
+  !/^(0|false|off|no)$/i.test(value?.trim() ?? '');
 /** Personal entrance/leave sounds; the caller's choice rides on their LiveKit token as attributes. */
 export function registerPersonalSounds(
   server: FastifyInstance,
@@ -94,6 +98,8 @@ export function registerPersonalSounds(
     maxBytes: number;
     currentUser(token: string): Promise<{ id: string }>;
     authorize(token: string, channelId: string): Promise<{ userId: string }>;
+    /** Whether `userId` may view the voice channel, read with the caller's session. */
+    canView(token: string, channelId: string, userId: string): Promise<boolean>;
     /** Only the changed attributes; a cleared one is `''`, which LiveKit deletes. */
     onAssignChanged?(userId: string, attributes: PersonalSoundAttributes): void;
   },
@@ -231,12 +237,20 @@ export function registerPersonalSounds(
     const userId = await me(request);
     return view(await load(userId));
   });
+  const uploaders = new WeakMap<FastifyRequest, string>();
   server.post(
     '/v1/personal-sounds/me/sounds',
-    { bodyLimit: PERSONAL_SOUND_MAX_BASE64 + 4096, config: limit(6, 'personal-sound-upload') },
+    {
+      bodyLimit: PERSONAL_SOUND_MAX_BASE64 + 4096,
+      config: limit(6, 'personal-sound-upload'),
+      // Checked before the body is read, so only a signed-in member's upload is ever parsed.
+      preParsing: async (request) => {
+        uploaders.set(request, await me(request));
+        if (!options.uploads) throw new StoatError(403, 'PERSONAL_SOUND_UPLOADS_DISABLED');
+      },
+    },
     async (request) => {
-      const userId = await me(request);
-      if (!options.uploads) throw new StoatError(403, 'PERSONAL_SOUND_UPLOADS_DISABLED');
+      const userId = uploaders.get(request)!;
       const body = personalSoundUploadSchema.parse(request.body),
         bytes = Buffer.from(body.audio, 'base64');
       if (bytes.toString('base64') !== body.audio)
@@ -288,9 +302,9 @@ export function registerPersonalSounds(
         sounds: value.sounds.filter((s) => s.id !== id),
       };
       await save(userId, next);
-      await unlink(join(folder(userId), `${id}.wav`)).catch((error) => {
-        if (!missing(error)) throw error;
-      });
+      // The saved profile no longer lists the clip; a file that cannot be removed stays on disk,
+      // and in the quota, until an administrator deletes it.
+      await unlink(join(folder(userId), `${id}.wav`)).catch(() => {});
       notify(userId, effective(value), effective(next));
       return view(next);
     });
@@ -320,8 +334,17 @@ export function registerPersonalSounds(
       const params = request.params as { channelId: string; userId: string; soundId: string },
         channelId = identifier.parse(params.channelId),
         userId = identifier.parse(params.userId),
-        id = personalSoundIdSchema.parse(params.soundId);
-      await options.authorize(token(request), channelId);
+        id = personalSoundIdSchema.parse(params.soundId),
+        caller = token(request),
+        listener = (await options.authorize(caller, channelId)).userId;
+      // An upload plays only where its owner may be, so a leaked id is no use elsewhere; whatever
+      // fails, it looks like a missing sound.
+      if (
+        !presets.has(id) &&
+        listener !== userId &&
+        !(await options.canView(caller, channelId, userId).catch(() => false))
+      )
+        throw notFound();
       return send(reply, await sound(userId, id));
     },
   );

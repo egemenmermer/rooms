@@ -8,26 +8,41 @@ vi.mock('livekit-server-sdk', async () => ({
     removeParticipant = vi.fn(async () => {});
   },
 }));
+// `<id>-token` signs in as `<id>`; `viewer` owns the community, `hidden` cannot see `room` and
+// `stranger` is not a member.
 vi.mock('@rooms/stoat', async () => {
   const real = await vi.importActual<any>('@rooms/stoat');
   return {
     ...real,
     StoatClient: class {
+      constructor(
+        _url: string,
+        private token: string,
+      ) {}
       async getCurrentUser() {
-        return { id: 'viewer', displayName: 'Viewer' };
+        if (this.token === 'stale-token') throw new real.StoatError(401, 'AUTH_REQUIRED');
+        return { id: this.token.replace(/-token$/, ''), displayName: 'Viewer' };
       }
       async getChannel() {
-        return { _id: 'room', channel_type: 'TextChannel', voice: {}, server: 'space' };
+        return {
+          _id: 'room',
+          channel_type: 'TextChannel',
+          voice: {},
+          server: 'space',
+          role_permissions: { hidden: { a: 0, d: Number(1n << 20n) } },
+        };
       }
       async getServer() {
         return {
           _id: 'space',
           owner: 'viewer',
           default_permissions: String((1n << 20n) | (1n << 22n)),
+          roles: { hidden: { rank: 1, permissions: { a: 0, d: 0 } } },
         };
       }
-      async getMember() {
-        return { _id: { server: 'space', user: 'viewer' }, roles: [] };
+      async getMember(server: string, user: string) {
+        if (user === 'stranger') throw new real.StoatError(404, 'NotFound');
+        return { _id: { server, user }, roles: user === 'hidden' ? ['hidden'] : [] };
       }
     },
   };
@@ -37,13 +52,17 @@ import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { registerPersonalSounds } from '../apps/services/access/personal-sounds';
+import {
+  personalSoundUploadsEnabled,
+  registerPersonalSounds,
+} from '../apps/services/access/personal-sounds';
 import { createAccessServer } from '../apps/services/access/server';
 import {
   integratedLoudness,
   parsePersonalSoundWav,
 } from '../packages/shared-contracts/src/personal-sound-audio';
 import {
+  PERSONAL_SOUND_MAX_BASE64,
   PERSONAL_SOUND_PRESETS,
   personalSoundProfileSchema,
 } from '../packages/shared-contracts/src/personal-sounds';
@@ -109,6 +128,7 @@ async function open(
         throw denied(403, 'ROOM_ACCESS_DENIED');
       return { userId: token };
     },
+    canView: async (_token, channelId) => channelId === 'DEMO-room',
     onAssignChanged: (userId, attributes) => changes.push([userId, attributes]),
     ...options,
   });
@@ -189,6 +209,33 @@ describe('personal sound storage', { timeout: 20_000 }, () => {
     expect(await readdir(directory)).toEqual([]);
   });
 
+  it('checks the session before an upload body is read', async () => {
+    const currentUser = vi.fn(async (token: string) => {
+      if (token === 'stale') throw denied(401, 'AUTH_REQUIRED');
+      return { id: token };
+    });
+    const app = await open(await temp(), { currentUser });
+    const post = (authorization: string | null, payload: string) =>
+      app.server.inject({
+        method: 'POST',
+        url: '/v1/personal-sounds/me/sounds',
+        headers: {
+          'content-type': 'application/json',
+          ...(authorization === null ? {} : { authorization }),
+        },
+        payload,
+      });
+    // Read first, these bodies would fail as too large (413) or malformed (400).
+    const oversized = JSON.stringify('A'.repeat(PERSONAL_SOUND_MAX_BASE64 + 8192));
+    const rejected = { error: 'AUTH_REQUIRED' };
+    expect((await post('stale', oversized)).json()).toEqual(rejected);
+    expect((await post('Bearer stale', '{')).json()).toEqual(rejected);
+    expect((await post(null, oversized)).json()).toEqual(rejected);
+    expect(currentUser.mock.calls).toEqual([['stale'], ['stale']]);
+    expect((await post('alice', oversized)).statusCode).toBe(413);
+    expect((await post('alice', '{')).statusCode).toBe(400);
+  });
+
   it('enforces the per-person library and the instance byte quota', async () => {
     const directory = await temp();
     const app = await open(directory);
@@ -210,8 +257,16 @@ describe('personal sound storage', { timeout: 20_000 }, () => {
     expect((await small.send('bob', 'POST', 'me/sounds', upload(wav(0.2)))).status).toBe(200);
   });
 
-  it('keeps presets usable when uploads are off and reports an unconfigured service', async () => {
-    const off = await open(await temp(), { uploads: false });
+  it('keeps presets and earlier uploads usable when uploads are off and reports an unconfigured service', async () => {
+    for (const value of ['0', 'false', 'OFF', ' No '])
+      expect(personalSoundUploadsEnabled(value)).toBe(false);
+    for (const value of [undefined, '', '1', 'true', 'on', 'yes'])
+      expect(personalSoundUploadsEnabled(value)).toBe(true);
+    const directory = await temp();
+    const before = await open(directory);
+    const id = (await before.send('alice', 'POST', 'me/sounds', upload(wav(0.5)))).body.id;
+    await before.server.close();
+    const off = await open(directory, { uploads: false });
     expect((await off.send('alice', 'GET', 'me')).body.uploads).toBe(false);
     expect(await off.send('alice', 'POST', 'me/sounds', upload(wav(0.5)))).toEqual({
       status: 403,
@@ -219,10 +274,11 @@ describe('personal sound storage', { timeout: 20_000 }, () => {
     });
     const assigned = await off.send('alice', 'PUT', 'me/assign', {
       enter: 'p.fanfar',
-      leave: null,
+      leave: id,
     });
     expect(assigned.status).toBe(200);
-    expect(assigned.body.assign).toEqual({ enter: 'p.fanfar', leave: null });
+    expect(assigned.body.assign).toEqual({ enter: 'p.fanfar', leave: id });
+    expect((await off.request('bob', 'GET', `DEMO-room/alice/${id}`)).status).toBe(200);
 
     const unconfigured = await open(undefined);
     const missing = { status: 501, body: { error: 'PERSONAL_SOUNDS_NOT_CONFIGURED' } };
@@ -273,6 +329,25 @@ describe('personal sound storage', { timeout: 20_000 }, () => {
     expect(await stat(join(directory, 'bob', `${theirs}.wav`))).toBeTruthy();
   });
 
+  it('completes a delete whose clip file cannot be removed', async () => {
+    const directory = await temp();
+    const app = await open(directory);
+    const id = (await app.send('alice', 'POST', 'me/sounds', upload(wav(0.5)))).body.id;
+    expect((await app.send('alice', 'PUT', 'me/assign', { enter: id, leave: null })).status).toBe(
+      200,
+    );
+    // A directory in the clip's place fails unlink with EPERM or EISDIR, not ENOENT.
+    const clip = join(directory, 'alice', `${id}.wav`);
+    await rm(clip);
+    await mkdir(clip);
+    const removed = await app.send('alice', 'DELETE', `me/sounds/${id}`);
+    expect(removed.status).toBe(200);
+    expect(removed.body).toMatchObject({ assign: { enter: null, leave: null }, sounds: [] });
+    expect(app.changes.at(-1)).toEqual(['alice', { 'rooms.sound.enter': '' }]);
+    expect(await app.sounds.attributes('alice')).toEqual({});
+    expect((await stat(clip)).isDirectory()).toBe(true);
+  });
+
   it('serves a sound to listeners who can join the channel only when the owner has it', async () => {
     const directory = await temp();
     const app = await open(directory);
@@ -298,6 +373,31 @@ describe('personal sound storage', { timeout: 20_000 }, () => {
     expect(await app.send('bob', 'GET', 'DEMO-room/alice/p.unknown')).toEqual(notFound);
     expect((await app.request('bob', 'GET', `DEMO-room/al.ce/${id}`)).status).toBe(400);
     expect((await app.request('bob', 'GET', 'DEMO-room/alice/not-a-sound')).status).toBe(400);
+  });
+
+  it('serves an upload only in channels its owner can view', async () => {
+    const canView = vi.fn(async (_token: string, _channelId: string, userId: string) => {
+      if (userId === 'carol') throw denied(503, 'STORAGE_UNAVAILABLE');
+      return userId === 'alice';
+    });
+    const app = await open(await temp(), { canView });
+    const own = async (userId: string) =>
+      (await app.send(userId, 'POST', 'me/sounds', upload(wav(0.2)))).body.id;
+    const [alice, bob, carol] = [await own('alice'), await own('bob'), await own('carol')];
+    expect((await app.request('Bearer dave', 'GET', `DEMO-room/alice/${alice}`)).status).toBe(200);
+    expect(canView).toHaveBeenCalledWith('dave', 'DEMO-room', 'alice');
+    const notFound = { status: 404, body: { error: 'PERSONAL_SOUND_NOT_FOUND' } };
+    expect(await app.send('dave', 'GET', `DEMO-room/bob/${bob}`)).toEqual(notFound);
+    expect(await app.send('dave', 'GET', `DEMO-room/carol/${carol}`)).toEqual(notFound);
+    // The caller's own access comes first; presets and the caller's own clips need no owner check.
+    expect(await app.send('outsider', 'GET', `DEMO-room/bob/${bob}`)).toEqual({
+      status: 403,
+      body: { error: 'ROOM_ACCESS_DENIED' },
+    });
+    canView.mockClear();
+    expect((await app.request('dave', 'GET', 'DEMO-room/bob/p.fanfar')).status).toBe(200);
+    expect((await app.request('bob', 'GET', `DEMO-room/bob/${bob}`)).status).toBe(200);
+    expect(canView).not.toHaveBeenCalled();
   });
 
   it('routes me/sounds previews to the caller, never to the channel route', async () => {
@@ -348,18 +448,58 @@ describe('personal sounds in the access service', { timeout: 20_000 }, () => {
   };
   it('accepts the largest clip through the service parser and limits upload bursts', async () => {
     const server = await access(await temp());
-    const post = (audio: Buffer) =>
+    const post = (audio: Buffer | string, authorization = 'viewer-token') =>
       server.inject({
         method: 'POST',
         url: '/v1/personal-sounds/me/sounds',
-        headers: { authorization: 'viewer-token' },
-        payload: upload(audio),
+        headers: { authorization, 'content-type': 'application/json' },
+        payload: typeof audio === 'string' ? audio : upload(audio),
       });
+    const stale = await post(
+      JSON.stringify('A'.repeat(PERSONAL_SOUND_MAX_BASE64 + 8192)),
+      'stale-token',
+    );
+    expect(stale.statusCode).toBe(401);
+    expect(stale.json().error).toBe('AUTH_REQUIRED');
     expect((await post(wav(4.05))).statusCode).toBe(200);
-    for (let i = 0; i < 5; i++) expect((await post(wav(0.2))).statusCode).toBe(200);
-    const limited = await post(wav(0.2));
+    // `Bearer X` and `X` are one session, so they share one budget.
+    for (let i = 0; i < 5; i++)
+      expect(
+        (await post(wav(0.2), i % 2 ? 'viewer-token' : 'Bearer viewer-token')).statusCode,
+      ).toBe(200);
+    const limited = await post(wav(0.2), 'Bearer viewer-token');
     expect(limited.statusCode).toBe(429);
     expect(limited.json().error).toBe('RATE_LIMITED');
+  });
+  it('limits listener reads per session and serves uploads only where their owner can look', async () => {
+    const server = await access(await temp());
+    const read = (path: string, authorization = 'viewer-token') =>
+      server.inject({
+        method: 'GET',
+        url: `/v1/personal-sounds/room/${path}`,
+        headers: { authorization },
+      });
+    const own = async (userId: string) =>
+      (
+        await server.inject({
+          method: 'POST',
+          url: '/v1/personal-sounds/me/sounds',
+          headers: { authorization: `${userId}-token` },
+          payload: upload(wav(0.2)),
+        })
+      ).json().id;
+    expect((await read(`alice/${await own('alice')}`)).statusCode).toBe(200);
+    for (const userId of ['hidden', 'stranger']) {
+      const response = await read(`${userId}/${await own(userId)}`);
+      expect(response.statusCode).toBe(404);
+      expect(response.json().error).toBe('PERSONAL_SOUND_NOT_FOUND');
+    }
+    expect((await read('stranger/p.fanfar')).statusCode).toBe(200);
+    for (let i = 4; i < 120; i++)
+      expect(
+        (await read('alice/p.fanfar', i % 2 ? 'viewer-token' : 'Bearer viewer-token')).statusCode,
+      ).toBe(200);
+    expect((await read('alice/p.fanfar', 'Bearer viewer-token')).statusCode).toBe(429);
   });
   it('stamps the saved choice on the token, updates live participants and grants despite storage failures', async () => {
     const directory = await temp();
