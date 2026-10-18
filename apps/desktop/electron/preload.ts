@@ -239,6 +239,10 @@ const bridge: DesktopBridge = {
     details: (hallId, ref) => ipcRenderer.invoke('rooms:cinema-details', hallId, ref),
     watch: (hallId) => ipcRenderer.invoke('rooms:cinema-watch', hallId),
     setAudio: (hallId, ref, track) => ipcRenderer.invoke('rooms:cinema-audio', hallId, ref, track),
+    setSubtitleKey: (communityId, key) =>
+      ipcRenderer.invoke('rooms:cinema-subtitle-key', communityId, key),
+    subtitles: (hallId, ref) => ipcRenderer.invoke('rooms:cinema-subtitles', hallId, ref),
+    chooseSubtitleFile: () => ipcRenderer.invoke('rooms:cinema-subtitle-file'),
   },
   remoteControl: {
     register: (room, track) => ipcRenderer.invoke('rooms:remote-register', room, track),

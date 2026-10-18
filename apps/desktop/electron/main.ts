@@ -17,7 +17,7 @@ import { readFileSync, writeFileSync, statSync, createReadStream } from 'node:fs
 import { join, basename } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { localMediaId } from './media-capabilities';
-import { readCaptionFile } from './caption-file';
+import { readCaptionFile, readSubtitleFile } from './caption-file';
 import { Readable } from 'node:stream';
 import { setupCommunity } from './community';
 import { setupNotifications } from './notifications';
@@ -424,6 +424,21 @@ app.whenReady().then(async () => {
     if (selectedMedia.get(id) !== sourcePath)
       throw new Error('The selected video changed. Choose subtitles again.');
     return { content: readCaptionFile(result.filePaths[0]), name: basename(result.filePaths[0]) };
+  });
+  // The hall's own subtitles for this viewer only: the file's text crosses IPC, never its path.
+  ipcMain.handle('rooms:cinema-subtitle-file', async (event) => {
+    assertSender(event);
+    if (!win) return null;
+    const result = await dialog.showOpenDialog(win, {
+      title: 'Choose a subtitle file',
+      properties: ['openFile'],
+      filters: [{ name: 'Subtitles', extensions: ['srt', 'vtt', 'ass', 'ssa'] }],
+    });
+    if (result.canceled || !result.filePaths[0]) return null;
+    return {
+      content: readSubtitleFile(result.filePaths[0]),
+      name: basename(result.filePaths[0]).slice(0, 120),
+    };
   });
   ipcMain.handle('rooms:external-media', async (event, url) => {
     assertSender(event);

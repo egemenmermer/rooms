@@ -55,6 +55,9 @@ const copy: Record<CinemaErrorCode, string> = {
   CINEMA_STREAM_FAILED: 'Yayın açılamadı. Biraz sonra yeniden dene.',
   CINEMA_SESSION_ENDED: 'Salondaki yayın değişti. Yeniden bağlanılıyor…',
   CINEMA_RATE_LIMITED: 'Çok hızlı istek gönderildi. Birkaç saniye sonra yeniden dene.',
+  CINEMA_SUBTITLE_KEY_INVALID: 'SubDL bu API anahtarını kabul etmedi. Anahtarı kontrol et.',
+  CINEMA_SUBTITLE_UNAVAILABLE:
+    'Altyazı servisine şu an ulaşılamadı ya da günlük indirme sınırı doldu. Biraz sonra yeniden dene.',
 };
 
 /** The bridge code inside an error, if any (IPC wraps messages). */

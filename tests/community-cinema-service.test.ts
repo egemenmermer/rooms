@@ -6,10 +6,16 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { ActivityCommand, ActivityResponse } from '../packages/activity-protocol/src/index';
 import { applyCommand, emptyRoom } from '../apps/services/activities/engine';
 import { ConfigStore } from '../apps/services/cinema/config-store';
-import { Importer } from '../apps/services/cinema/importer';
+import { CinemaError, Importer } from '../apps/services/cinema/importer';
 import { SecureFiles } from '../apps/services/cinema/secure-file';
 import { createCinemaServer } from '../apps/services/cinema/server';
-import { CatalogStore, CinemaService, type RelayPort } from '../apps/services/cinema/service';
+import {
+  CatalogStore,
+  CinemaService,
+  type RelayPort,
+  type SubtitlePort,
+} from '../apps/services/cinema/service';
+import type { SubtitleQuery } from '../apps/services/cinema/subtitles';
 import type { CinemaAuthority } from '../apps/services/cinema/authority';
 import {
   PROVIDER_PASSWORD,
@@ -99,7 +105,35 @@ async function setup() {
       stopped.push(communityId);
     },
   };
+  const subtitleCalls = {
+    verify: [] as string[],
+    search: [] as (SubtitleQuery & { key: string })[],
+    download: [] as string[],
+  };
+  const subtitles: SubtitlePort = {
+    async verify(key) {
+      subtitleCalls.verify.push(key);
+      if (key === 'wrong-subdl-key') throw new CinemaError('CINEMA_SUBTITLE_KEY_INVALID');
+    },
+    async search(key, query) {
+      subtitleCalls.search.push({ ...query, key });
+      return [
+        {
+          id: '3197651-3213944',
+          label: 'Türkçe · WEB-DL',
+          language: 'tur',
+          release: 'WEB-DL',
+          hearingImpaired: false,
+        },
+      ];
+    },
+    async download(id, episode) {
+      subtitleCalls.download.push(episode ? `${id}@${episode.season}x${episode.episode}` : id);
+      return 'WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nMerhaba\n\n';
+    },
+  };
   const service = new CinemaService({
+    subtitles,
     configs,
     catalogs,
     importer: new Importer({ userAgent: 'ROOMS-Cinema/test', allowPrivateNetwork: true }),
@@ -166,6 +200,7 @@ async function setup() {
     stopped,
     service,
     catalogs,
+    subtitleCalls,
   };
 }
 
@@ -509,5 +544,103 @@ describe('ticket renewal', () => {
       'member-token',
     );
     expect(route).toMatchObject({ status: 410, body: { error: 'CINEMA_SESSION_ENDED' } });
+  });
+});
+
+describe('community cinema online subtitles', () => {
+  let s: Setup;
+  beforeEach(async () => {
+    s = await setup();
+  });
+  afterEach(async () => {
+    await s.server.close();
+    await s.provider.close();
+    rmSync(s.dir, { recursive: true, force: true });
+  });
+  const KEY = 'subdl-owner-key-123';
+
+  it('keeps the SubDL key on the server and lets only the owner change it', async () => {
+    await s.connect();
+    const path = `/v1/communities/${COMMUNITY}/subtitles`;
+    expect((await s.call('PUT', path, 'member-token', { key: KEY })).status).toBe(403);
+    const wrong = await s.call('PUT', path, 'owner-token', { key: 'wrong-subdl-key' });
+    expect(wrong).toMatchObject({ status: 422, body: { error: 'CINEMA_SUBTITLE_KEY_INVALID' } });
+    expect((await s.call('PUT', path, 'owner-token', { key: 'kısa' })).status).toBe(400);
+    const saved = await s.call('PUT', path, 'owner-token', { key: KEY });
+    expect(saved.body.subtitleSearch).toBe(true);
+    const member = await s.call('GET', `/v1/communities/${COMMUNITY}`, 'member-token');
+    expect(member.body.subtitleSearch).toBe(true);
+    expect(saved.raw + member.raw).not.toContain(KEY);
+    for (const name of readdirSync(join(s.dir, 'communities')))
+      expect(readFileSync(join(s.dir, 'communities', name)).includes(KEY)).toBe(false);
+    const removed = await s.call('PUT', path, 'owner-token', { key: null });
+    expect(removed.body.subtitleSearch).toBe(false);
+  });
+
+  it('says when there is no key, then searches by TMDB id and downloads once', async () => {
+    await s.connect();
+    const list = `/v1/halls/${HALL}/subtitles/m-3001`;
+    expect((await s.call('GET', list, 'member-token')).body).toEqual({
+      available: false,
+      subtitles: [],
+    });
+    await s.call('PUT', `/v1/communities/${COMMUNITY}/subtitles`, 'owner-token', { key: KEY });
+    const found = await s.call('GET', list, 'member-token');
+    expect(found.body).toEqual({
+      available: true,
+      subtitles: [
+        {
+          id: '3197651-3213944',
+          label: 'Türkçe · WEB-DL',
+          language: 'tur',
+          hearingImpaired: false,
+        },
+      ],
+    });
+    await s.call('GET', list, 'member-token');
+    expect(s.subtitleCalls.search).toEqual([
+      { kind: 'movie', tmdbId: '1001001', name: 'Kış Uykusu', year: 2014, key: KEY },
+    ]);
+    const file = await s.server.inject({
+      method: 'GET',
+      url: `${list}/3197651-3213944`,
+      headers: { authorization: 'Bearer member-token' },
+    });
+    expect(file.statusCode).toBe(200);
+    expect(file.headers['content-type']).toBe('text/vtt; charset=utf-8');
+    expect(file.body).toContain('Merhaba');
+    await s.server.inject({
+      method: 'GET',
+      url: `${list}/3197651-3213944`,
+      headers: { authorization: 'Bearer owner-token' },
+    });
+    expect(s.subtitleCalls.download).toEqual(['3197651-3213944']);
+    expect((await s.call('GET', `${list}/9999-1`, 'member-token')).status).toBe(404);
+    expect((await s.call('GET', list, 'outsider-token')).status).toBe(403);
+    expect((await s.call('GET', `/v1/halls/${HALL}/subtitles/l-1001`, 'member-token')).status).toBe(
+      404,
+    );
+  });
+
+  it("asks a film's own info for a TMDB id it lacks, and searches episodes by series", async () => {
+    await s.connect();
+    await s.call('PUT', `/v1/communities/${COMMUNITY}/subtitles`, 'owner-token', { key: KEY });
+    await s.call('GET', `/v1/halls/${HALL}/subtitles/m-3002`, 'member-token');
+    expect(s.subtitleCalls.search.at(-1)).toMatchObject({ kind: 'movie', tmdbId: '2002002' });
+    const series = await s.call('GET', `/v1/halls/${HALL}/details/s-5001`, 'member-token');
+    const episode = series.body.seasons[0].episodes[0].ref as string;
+    await s.call('GET', `/v1/halls/${HALL}/subtitles/${episode}`, 'member-token');
+    expect(s.subtitleCalls.search.at(-1)).toMatchObject({
+      kind: 'tv',
+      tmdbId: '5005005',
+      season: 1,
+      episode: 1,
+    });
+    await s.server.inject({
+      method: 'GET',
+      url: `/v1/halls/${HALL}/subtitles/${episode}/3197651-3213944`,
+      headers: { authorization: 'Bearer member-token' },
+    });
+    expect(s.subtitleCalls.download.at(-1)).toBe('3197651-3213944@1x1');
   });
 });

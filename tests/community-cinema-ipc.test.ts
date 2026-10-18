@@ -21,6 +21,24 @@ function setup() {
   const fetchMock = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input);
     requests.push({ url, init });
+    if (url.endsWith('/halls/hall/subtitles/m-208525'))
+      return Response.json({
+        available: true,
+        subtitles: [
+          { id: '11-12', label: 'Türkçe · WEB-DL', language: 'tur', hearingImpaired: false },
+        ],
+      });
+    if (url.endsWith('/halls/hall/subtitles/m-1'))
+      return Response.json({
+        available: true,
+        subtitles: [{ id: '../x', label: 'x', language: 'tur', hearingImpaired: false }],
+      });
+    if (url.endsWith('/halls/hall/subtitles/m-208525/11-12'))
+      return new Response('WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nMerhaba\n\n', {
+        headers: { 'content-type': 'text/vtt; charset=utf-8' },
+      });
+    if (url.endsWith('/halls/hall/subtitles/m-208525/66-67'))
+      return new Response('<html>', { headers: { 'content-type': 'text/html' } });
     if (url.endsWith('/halls/film/watch'))
       return Response.json({
         session: 's2',
@@ -195,6 +213,55 @@ describe('community cinema IPC', () => {
       `https://rooms.example/rooms-cinema/v1/relay/${TICKET}/sub2.vtt`,
     );
     await expect(s.invoke('rooms:cinema-watch', 'bad-subtitles')).rejects.toThrow();
+  });
+
+  it('sends the SubDL key only to the service, after checking its shape', async () => {
+    await s.invoke('rooms:cinema-subtitle-key', 'community1', '  subdl-key-123  ');
+    expect(s.requests.at(-1)!.url).toBe(
+      'https://rooms.example/rooms-cinema/v1/communities/community1/subtitles',
+    );
+    expect(JSON.parse(String(s.requests.at(-1)!.init?.body))).toEqual({ key: 'subdl-key-123' });
+    await s.invoke('rooms:cinema-subtitle-key', 'community1', null);
+    expect(JSON.parse(String(s.requests.at(-1)!.init?.body))).toEqual({ key: null });
+    const before = s.requests.length;
+    await expect(s.invoke('rooms:cinema-subtitle-key', 'community1', 'kısa')).rejects.toThrow();
+    await expect(
+      s.invoke('rooms:cinema-subtitle-key', 'community1', 'a b c d e f g h'),
+    ).rejects.toThrow();
+    expect(s.requests).toHaveLength(before);
+  });
+
+  it('maps online subtitles to rooms-cinema files and serves only WebVTT', async () => {
+    const result = await s.invoke('rooms:cinema-subtitles', 'hall', 'm-208525');
+    expect(result).toEqual({
+      available: true,
+      subtitles: [
+        {
+          id: '11-12',
+          label: 'Türkçe · WEB-DL',
+          language: 'tur',
+          hearingImpaired: false,
+          src: 'rooms-cinema://subtitle/hall/m-208525/11-12',
+        },
+      ],
+    });
+    const file = await mocks.protocol!(new Request('rooms-cinema://subtitle/hall/m-208525/11-12'));
+    expect(file.status).toBe(200);
+    expect(file.headers.get('content-type')).toBe('text/vtt; charset=utf-8');
+    expect(await file.text()).toContain('Merhaba');
+    expect((s.requests.at(-1)!.init?.headers as Record<string, string>).Authorization).toBe(
+      'token-a',
+    );
+    expect(
+      (await mocks.protocol!(new Request('rooms-cinema://subtitle/hall/m-208525/66-67'))).status,
+    ).toBe(404);
+    expect(
+      (await mocks.protocol!(new Request('rooms-cinema://subtitle/hall/m-208525/..%2Fx'))).status,
+    ).toBe(404);
+    expect(
+      (await mocks.protocol!(new Request('rooms-cinema://subtitle/hall/http:x/11-12'))).status,
+    ).toBe(404);
+    await expect(s.invoke('rooms:cinema-subtitles', 'hall', 'm-1')).rejects.toThrow();
   });
 
   it('serves artwork only when the service returns an image', async () => {

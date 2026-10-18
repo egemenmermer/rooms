@@ -315,22 +315,37 @@ describe('proxy pacing', () => {
 });
 
 describe('automatic subtitle choice', () => {
+  const track = (
+    key: string,
+    label: string,
+    language: string | null,
+    forced: boolean,
+    origin: 'embedded' | 'online' | 'file' = 'embedded',
+  ) => ({ key, label, language, forced, origin });
   const tracks = [
-    { index: 0, label: 'İngilizce', language: 'eng', forced: false },
-    { index: 1, label: 'Türkçe · Zorunlu', language: 'tur', forced: true },
-    { index: 2, label: 'Türkçe · Tam', language: 'tur', forced: false },
+    track('e0', 'İngilizce', 'eng', false),
+    track('e1', 'Türkçe · Zorunlu', 'tur', true),
+    track('e2', 'Türkçe · Tam', 'tur', false),
   ];
 
   it('turns on full Turkish subtitles over another language', () => {
-    expect(autoSubtitle(tracks, 'İngilizce', false)).toBe(2);
-    expect(autoSubtitle(tracks, null, false)).toBe(2);
-    expect(autoSubtitle([tracks[1]!], 'İngilizce', false)).toBe(1);
+    expect(autoSubtitle(tracks, 'İngilizce', false)).toBe('e2');
+    expect(autoSubtitle(tracks, null, false)).toBe('e2');
+    expect(autoSubtitle([tracks[1]!], 'İngilizce', false)).toBe('e1');
     expect(autoSubtitle([tracks[0]!], 'İngilizce', false)).toBeNull();
   });
 
   it('keeps only forced subtitles over Turkish audio, and nothing once turned off', () => {
-    expect(autoSubtitle(tracks, 'Türkçe · Dublaj', false)).toBe(1);
+    expect(autoSubtitle(tracks, 'Türkçe · Dublaj', false)).toBe('e1');
     expect(autoSubtitle([tracks[2]!], 'Türkçe', false)).toBeNull();
     expect(autoSubtitle(tracks, 'İngilizce', true)).toBeNull();
+  });
+
+  it("prefers the film's own Turkish subtitles, then one found online, never a file", () => {
+    const online = track('o1', 'Türkçe · SubDL · WEB-DL', 'tur', false, 'online');
+    const file = track('file', 'Dosya · film.srt', null, false, 'file');
+    expect(autoSubtitle([online, ...tracks], 'İngilizce', false)).toBe('e2');
+    expect(autoSubtitle([tracks[0]!, online, file], 'İngilizce', false)).toBe('o1');
+    expect(autoSubtitle([file], 'İngilizce', false)).toBeNull();
   });
 });
