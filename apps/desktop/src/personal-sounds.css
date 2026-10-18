@@ -232,6 +232,10 @@
   line-height: 1.55;
   color: #ffafb7;
 }
+/* The live region stays mounted; empty, it takes no grid row. */
+.personal-sound-problem:empty {
+  position: absolute;
+}
 .personal-sound-status {
   margin-top: 12px;
   font-size: 11px;

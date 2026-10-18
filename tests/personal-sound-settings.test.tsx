@@ -34,7 +34,7 @@ vi.mock('../apps/desktop/src/realtime', async () => {
 vi.mock('../apps/desktop/src/runtime-sources', () => ({ mediaProvider: () => ({}) }));
 vi.mock('@rooms/media', () => ({ createNoiseSuppressionNode: vi.fn() }));
 vi.mock('../apps/desktop/src/NoiseComparison', () => ({ NoiseComparison: () => null }));
-import { PersonalSoundSettings } from '../apps/desktop/src/PersonalSoundSettings';
+import { PersonalSoundSettings, monoOf } from '../apps/desktop/src/PersonalSoundSettings';
 import Settings from '../apps/desktop/src/Settings';
 import { useCommunity } from '../apps/desktop/src/community';
 import { useRooms } from '../apps/desktop/src/store';
@@ -45,6 +45,7 @@ const RATE = 48000,
 const presets = [
   { id: 'p.fanfar', name: 'Fanfar', durationSec: 1.2 },
   { id: 'p.kapi', name: 'Kapı zili', durationSec: 0.9 },
+  { id: 'p.portal', name: 'Portal', durationSec: 0.8 },
 ];
 const profile = (change: Partial<PersonalSoundProfile> = {}): PersonalSoundProfile => ({
   assign: { enter: 'p.fanfar', leave: null },
@@ -53,11 +54,18 @@ const profile = (change: Partial<PersonalSoundProfile> = {}): PersonalSoundProfi
   uploads: true,
   ...change,
 });
-const players: FakeAudio[] = [];
+const players: FakeAudio[] = [],
+  probes: FakeAudio[] = [];
+/** What the source's metadata says; `NaN` makes the probe fail. */
+let metadataSeconds = 6;
 class FakeAudio {
   volume = 1;
   paused = true;
+  preload = 'auto';
+  duration = NaN;
   onended: (() => void) | null = null;
+  onloadedmetadata: (() => void) | null = null;
+  onerror: (() => void) | null = null;
   setSinkId = vi.fn(async (_id: string) => {});
   play = vi.fn(async () => {
     this.paused = false;
@@ -65,11 +73,31 @@ class FakeAudio {
   pause = vi.fn(() => {
     this.paused = true;
   });
-  constructor(public src: string) {
-    players.push(this);
+  removeAttribute = vi.fn();
+  load = vi.fn();
+  #src = '';
+  /** Players get their source up front; the duration probe sets it later. */
+  constructor(src?: string) {
+    if (src === undefined) probes.push(this);
+    else {
+      this.#src = src;
+      players.push(this);
+    }
+  }
+  get src() {
+    return this.#src;
+  }
+  set src(url: string) {
+    this.#src = url;
+    queueMicrotask(() => {
+      if (Number.isNaN(metadataSeconds)) return this.onerror?.();
+      this.duration = metadataSeconds;
+      this.onloadedmetadata?.();
+    });
   }
 }
-let decoded: Float32Array[] | Error = [];
+let decoded: Float32Array[] | Error = [],
+  decodedSeconds: number | undefined;
 const contexts: { options: unknown; close: ReturnType<typeof vi.fn> }[] = [];
 class FakeContext {
   close = vi.fn(async () => {});
@@ -83,7 +111,7 @@ class FakeContext {
       sampleRate: RATE,
       numberOfChannels: channels.length,
       length: channels[0].length,
-      duration: channels[0].length / RATE,
+      duration: decodedSeconds ?? channels[0].length / RATE,
       getChannelData: (i: number) => channels[i],
     };
   }
@@ -93,6 +121,9 @@ const revoked: string[] = [];
 const original = { community: useCommunity.getState(), prefs: useRooms.getState().preferences };
 beforeEach(() => {
   players.length = 0;
+  probes.length = 0;
+  metadataSeconds = 6;
+  decodedSeconds = undefined;
   contexts.length = 0;
   revoked.length = 0;
   blobs = 0;
@@ -182,6 +213,18 @@ async function choose(dialog: HTMLElement, file: File) {
     fireEvent.change(input, { target: { files: [file] } });
   });
 }
+async function upload(dialog: HTMLElement) {
+  decoded = tone(2);
+  await choose(dialog, audioFile('Benim sesim.mp3'));
+  fireEvent.click(within(dialog).getByRole('checkbox', { name: /Bu sesi kullanma hakkım var/ }));
+  await act(async () => {
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Kaydet ve seç' }));
+  });
+}
+const pressed = (dialog: HTMLElement) =>
+  within(dialog)
+    .getAllByRole('button', { pressed: true })
+    .map((button) => button.querySelector('span')?.textContent);
 
 describe('Giriş sesi settings', () => {
   it('shows the chosen names and explains when the bridge or account is missing', async () => {
@@ -266,10 +309,12 @@ describe('Giriş sesi settings', () => {
     const pick = (name: string) => option(dialog, name);
     fireEvent.click(pick('Kapı zili'));
     expect(pick('Kapı zili').getAttribute('aria-pressed')).toBe('true');
+    await waitFor(() => expect(api.assign).toHaveBeenCalled());
     await act(async () => reject(remoteError('Bu ses artık yok.')));
     expect(within(dialog).getByRole('alert').textContent).toBe('Bu ses artık yok.');
     expect(pick('Fanfar').getAttribute('aria-pressed')).toBe('true');
     expect(pick('Kapı zili').getAttribute('aria-pressed')).toBe('false');
+    await waitFor(() => expect(api.profile).toHaveBeenCalledTimes(2));
   });
 
   it('deletes an upload only after the inline confirmation', async () => {
@@ -288,6 +333,56 @@ describe('Giriş sesi settings', () => {
     await within(dialog).findByText('Henüz ses yüklemedin.');
     expect(api.remove).toHaveBeenCalledWith(OWN);
     expect(confirm).not.toHaveBeenCalled();
+  });
+
+  it('cancels a delete with Escape and keeps focus in the picker after deleting', async () => {
+    bridge(profile({ assign: { enter: 'p.kapi', leave: null } }));
+    await show();
+    const dialog = openPicker(),
+      trash = () => within(dialog).getByRole('button', { name: 'Kahkaha sesini sil' });
+    fireEvent.click(trash());
+    fireEvent.keyDown(within(dialog).getByRole('button', { name: 'Vazgeç' }), { key: 'Escape' });
+    expect(screen.getByRole('dialog')).toBe(dialog);
+    expect(within(dialog).queryByText('Kahkaha silinsin mi?')).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(trash()));
+    fireEvent.click(trash());
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Sil' }));
+    await within(dialog).findByText('Henüz ses yüklemedin.');
+    await waitFor(() => expect(document.activeElement).toBe(option(dialog, 'Kapı zili')));
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('reloads after a refused delete and forgets one cut off by an account change', async () => {
+    const api = bridge();
+    api.remove.mockRejectedValueOnce(remoteError('Bu ses artık yok.'));
+    api.profile.mockResolvedValueOnce(profile()).mockResolvedValueOnce(profile({ sounds: [] }));
+    await show();
+    let dialog = openPicker();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Kahkaha sesini sil' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Sil' }));
+    await within(dialog).findByText('Henüz ses yüklemedin.');
+    expect(within(dialog).getByRole('alert').textContent).toBe('Bu ses artık yok.');
+    cleanup();
+    const next = bridge();
+    let finish!: (value: PersonalSoundProfile) => void;
+    next.remove.mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
+    await show();
+    dialog = openPicker();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Kahkaha sesini sil' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Sil' }));
+    await waitFor(() => expect(next.remove).toHaveBeenCalled());
+    act(() =>
+      useCommunity.setState({
+        user: { id: 'other', username: 'other', displayName: 'Other', avatar: null } as never,
+      }),
+    );
+    await screen.findByText('Odaya girince');
+    await act(async () => finish(profile({ sounds: [] })));
+    dialog = openPicker();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Kahkaha sesini sil' }));
+    const remove = within(dialog).getByRole('button', { name: 'Sil' });
+    expect(remove.hasAttribute('disabled')).toBe(false);
   });
 
   it('previews on the chosen output at the level others hear, caches and stops', async () => {
@@ -324,17 +419,20 @@ describe('Giriş sesi settings', () => {
     await show();
     const dialog = openPicker();
     await choose(dialog, audioFile('Benim sesim.mp3'));
+    expect(probes[0].preload).toBe('metadata');
+    expect(revoked).toContain(probes[0].src);
     expect(contexts[0].options).toEqual({ sampleRate: RATE });
     expect(contexts[0].close).toHaveBeenCalled();
-    expect(within(dialog).getByRole('alert').textContent).toBe(
-      'Seçtiğin kesit neredeyse sessiz. Başka bir bölüm seç.',
-    );
+    // Polite, not an alert: it comes and goes while the start is dragged.
+    const live = dialog.querySelector('.personal-sound-draft [aria-live="polite"]')!;
+    expect(live.textContent).toBe('Seçtiğin kesit neredeyse sessiz. Başka bir bölüm seç.');
+    expect(within(dialog).queryByRole('alert')).toBeNull();
     const save = within(dialog).getByRole('button', { name: 'Kaydet ve seç' });
     expect(save.hasAttribute('disabled')).toBe(true);
-    fireEvent.change(within(dialog).getByRole('slider', { name: 'Başlangıç' }), {
-      target: { value: '2' },
-    });
-    expect(within(dialog).queryByRole('alert')).toBeNull();
+    const start = within(dialog).getByRole('slider', { name: 'Başlangıç' });
+    fireEvent.change(start, { target: { value: '2' } });
+    expect(start.getAttribute('aria-valuetext')).toBe('2,0 sn');
+    expect(live.textContent).toBe('');
     expect((within(dialog).getByRole('textbox', { name: 'Ad' }) as HTMLInputElement).value).toBe(
       'Benim sesim',
     );
@@ -359,8 +457,190 @@ describe('Giriş sesi settings', () => {
     await waitFor(() =>
       expect(api.assign).toHaveBeenLastCalledWith({ enter: NEW, leave: 'p.kapi' }),
     );
-    expect(within(dialog).getByRole('status').textContent).toBe('Giriş sesin kaydedildi');
+    expect((await within(dialog).findByRole('status')).textContent).toBe('Giriş sesin kaydedildi');
     expect(option(dialog, 'Benim sesim').getAttribute('aria-pressed')).toBe('true');
+    await waitFor(() => expect(document.activeElement).toBe(option(dialog, 'Benim sesim')));
+  });
+
+  it('keeps one mono copy that windows to exactly what the decoded channels give', () => {
+    const channels = [0.37, 0.11, 0.53].map((step) =>
+      Float32Array.from(
+        { length: 6 * RATE },
+        (_, i) => 0.9 * Math.sin(i * step) * Math.cos(i * 1e-4),
+      ),
+    );
+    const bytes = (samples: Float32Array) =>
+      Buffer.from(samples.buffer, samples.byteOffset, samples.byteLength);
+    for (const input of [channels.slice(0, 1), channels.slice(0, 2), channels]) {
+      const mono = monoOf(input);
+      expect(mono).toHaveLength(6 * RATE);
+      for (const start of [0, 1.37, 2])
+        expect(
+          bytes(personalSoundWindow([mono], RATE, start)).equals(
+            bytes(personalSoundWindow(input, RATE, start)),
+          ),
+        ).toBe(true);
+    }
+  });
+
+  it('refuses sources over five minutes, before decoding when the metadata tells', async () => {
+    bridge();
+    await show();
+    const dialog = openPicker(),
+      tooLong = 'Bu dosya 5 dakikadan uzun. Kısa bir bölümünü kaydedip yeniden dene.';
+    metadataSeconds = 301;
+    await choose(dialog, audioFile('konser.mp3'));
+    expect(within(dialog).getByRole('alert').textContent).toBe(tooLong);
+    expect(contexts).toHaveLength(0);
+    expect(probes[0].load).toHaveBeenCalled();
+    // Unknown lengths (live recordings, odd headers) are checked once decoded.
+    metadataSeconds = Infinity;
+    decoded = tone(1);
+    decodedSeconds = 301;
+    await choose(dialog, audioFile('kayit.webm'));
+    expect(within(dialog).getByRole('alert').textContent).toBe(tooLong);
+    expect(contexts[0].close).toHaveBeenCalled();
+    metadataSeconds = NaN;
+    decodedSeconds = undefined;
+    await choose(dialog, audioFile('kisa.mp3'));
+    expect(within(dialog).queryByRole('alert')).toBeNull();
+    expect(within(dialog).getByRole('button', { name: 'Kaydet ve seç' })).toBeTruthy();
+    expect(revoked).toEqual(expect.arrayContaining(probes.map((probe) => probe.src)));
+  });
+
+  it('confirms every pick, since it saves without the page Save bar', async () => {
+    bridge();
+    await show();
+    expect(
+      screen.getByText('Seçimin hemen kaydedilir ve tüm cihazlarında geçerli olur.'),
+    ).toBeTruthy();
+    expect(screen.getByText(/aynı seviyede duyulsun/)).toBeTruthy();
+    const dialog = openPicker();
+    fireEvent.click(option(dialog, 'Kapı zili'));
+    expect((await within(dialog).findByRole('status')).textContent).toBe('Giriş sesin kaydedildi');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Pencereyi kapat' }));
+    expect(screen.getByRole('status').textContent).toBe('Giriş sesin kaydedildi');
+  });
+
+  it('sends one pick at a time and only the newest, so the screen matches the server', async () => {
+    const api = bridge();
+    const save = api.assign.getMockImplementation()!,
+      gates: ((fail?: boolean) => void)[] = [];
+    api.assign.mockImplementation(
+      (value) =>
+        new Promise((resolve, reject) =>
+          gates.push((fail) =>
+            fail
+              ? reject(remoteError('Seçimin kaydedilemedi. Yeniden dene.'))
+              : resolve(save(value)),
+          ),
+        ),
+    );
+    await show();
+    const dialog = openPicker();
+    fireEvent.click(option(dialog, 'Kapı zili'));
+    await waitFor(() => expect(gates).toHaveLength(1));
+    // Both wait for the first request; only the newest is sent after it.
+    fireEvent.click(option(dialog, 'Portal'));
+    fireEvent.click(option(dialog, 'Varsayılan'));
+    await act(async () => {});
+    expect(gates).toHaveLength(1);
+    expect(pressed(dialog)).toEqual(['Varsayılan']);
+    await act(async () => gates[0]());
+    await waitFor(() => expect(gates).toHaveLength(2));
+    expect(api.assign.mock.calls.map(([value]) => value.enter)).toEqual(['p.kapi', null]);
+    expect(within(dialog).queryByRole('status')).toBeNull();
+    await act(async () => gates[1](true));
+    expect(within(dialog).getByRole('alert').textContent).toBe(
+      'Seçimin kaydedilemedi. Yeniden dene.',
+    );
+    await waitFor(() => expect(api.profile).toHaveBeenCalledTimes(2));
+    expect((await api.profile()).assign.enter).toBe('p.kapi');
+    expect(pressed(dialog)).toEqual(['Kapı zili']);
+  });
+
+  it('reloads after a refused pick, so a sound deleted elsewhere does not block the next', async () => {
+    // Loaded with Kahkaha as the entrance sound; another device has since deleted it.
+    const api = bridge(profile({ assign: { enter: OWN, leave: null } }));
+    let server = profile({ sounds: [], assign: { enter: null, leave: null } });
+    const known = (id: string | null) =>
+      id === null || id.startsWith('p.') || server.sounds.some((sound) => sound.id === id);
+    api.assign.mockImplementation(async (value) => {
+      if (!known(value.enter) || !known(value.leave)) throw remoteError('Bu ses artık yok.');
+      return (server = { ...server, assign: value });
+    });
+    await show();
+    api.profile.mockImplementation(async () => server);
+    const dialog = openPicker('Çıkış sesini değiştir');
+    fireEvent.click(option(dialog, 'Kapı zili'));
+    await waitFor(() =>
+      expect(within(dialog).getByRole('alert').textContent).toBe('Bu ses artık yok.'),
+    );
+    await within(dialog).findByText('Henüz ses yüklemedin.');
+    expect(within(row('Odaya girince')).getByText('Varsayılan')).toBeTruthy();
+    fireEvent.click(option(dialog, 'Kapı zili'));
+    expect((await within(dialog).findByRole('status')).textContent).toBe('Çıkış sesin kaydedildi');
+    expect(server.assign).toEqual({ enter: null, leave: 'p.kapi' });
+    expect(within(dialog).queryByRole('alert')).toBeNull();
+  });
+
+  it('reloads after a refused upload and says when a saved sound could not be selected', async () => {
+    const api = bridge();
+    await show();
+    // The library filled up on another device.
+    const full = profile({
+      sounds: Array.from({ length: 6 }, (_, i) => ({
+        id: `3f8e2a6c-1b4d-4c5e-9f0a-2b3c4d5e6f7${i}`,
+        name: `Ses ${i + 1}`,
+        durationSec: 1,
+      })),
+    });
+    api.upload.mockRejectedValueOnce(
+      remoteError('En fazla 6 ses saklayabilirsin. Önce birini sil.'),
+    );
+    api.profile.mockResolvedValueOnce(full);
+    let dialog = openPicker();
+    await upload(dialog);
+    expect(within(dialog).getByRole('alert').textContent).toBe(
+      'En fazla 6 ses saklayabilirsin. Önce birini sil.',
+    );
+    await within(dialog).findByText('Ses 6');
+    expect(
+      within(dialog)
+        .getByRole('button', { name: 'Bilgisayardan ses seç' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+    cleanup();
+    const next = bridge();
+    next.assign.mockRejectedValueOnce(remoteError('Seçimin kaydedilemedi. Yeniden dene.'));
+    await show();
+    dialog = openPicker();
+    await upload(dialog);
+    await waitFor(() =>
+      expect(within(dialog).getByRole('alert').textContent).toBe(
+        'Ses kaydedildi ama seçilemedi. Listeden seçebilirsin.',
+      ),
+    );
+    expect(option(dialog, 'Benim sesim').getAttribute('aria-pressed')).toBe('false');
+    expect(pressed(dialog)).toEqual(['Fanfar']);
+    cleanup();
+    // A refusal while the new sound's selection waited in line rolls that selection back too.
+    const third = bridge();
+    let refuse!: (error: Error) => void;
+    third.assign.mockImplementationOnce(() => new Promise((_, reject) => (refuse = reject)));
+    await show();
+    dialog = openPicker();
+    fireEvent.click(option(dialog, 'Kapı zili'));
+    await waitFor(() => expect(third.assign).toHaveBeenCalledTimes(1));
+    await upload(dialog);
+    await act(async () => refuse(remoteError('Seçimin kaydedilemedi. Yeniden dene.')));
+    await waitFor(() =>
+      expect(within(dialog).getByRole('alert').textContent).toBe(
+        'Ses kaydedildi ama seçilemedi. Listeden seçebilirsin.',
+      ),
+    );
+    expect(third.assign).toHaveBeenCalledTimes(1);
+    expect(pressed(dialog)).toEqual(['Fanfar']);
   });
 
   it('rejects large or unreadable files before upload', async () => {
@@ -432,10 +712,10 @@ describe('listener sound preferences', () => {
     expect(personal.hasAttribute('disabled')).toBe(false);
     fireEvent.click(personal);
     expect(personal.getAttribute('aria-checked')).toBe('false');
-    fireEvent.change(screen.getByRole('slider', { name: 'Efekt ses düzeyi' }), {
-      target: { value: '0.4' },
-    });
+    const effects = screen.getByRole('slider', { name: 'Efekt ses düzeyi' });
+    fireEvent.change(effects, { target: { value: '0.4' } });
     expect(screen.getByText('40%')).toBeTruthy();
+    expect(effects.getAttribute('aria-valuetext')).toBe('40%');
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Kaydet' }));
     });

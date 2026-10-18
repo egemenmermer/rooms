@@ -27,7 +27,7 @@ type Bridge = NonNullable<NonNullable<Window['rooms']>['personalSounds']>;
 type Playing = { key: string; ms: number; token: number; started: boolean };
 type Preview = ReturnType<typeof usePreview>;
 type Draft = {
-  channels: Float32Array[];
+  mono: Float32Array;
   rate: number;
   duration: number;
   peaks: Float32Array;
@@ -36,6 +36,7 @@ type Draft = {
   rights: boolean;
 };
 const MAX_SEC = PERSONAL_SOUND_LIMITS.maxDurationSec,
+  MAX_SOURCE_SEC = PERSONAL_SOUND_LIMITS.maxSourceDurationSec,
   CLASSIC_SEC = 0.24,
   BARS = 120;
 const copy = {
@@ -55,8 +56,19 @@ const copy = {
   },
 } as const;
 const unreadable = 'Bu dosya okunamadı. MP3, WAV, M4A, OGG veya FLAC dene.',
+  tooLong = `Bu dosya ${MAX_SOURCE_SEC / 60} dakikadan uzun. Kısa bir bölümünü kaydedip yeniden dene.`,
   silent = 'Seçtiğin kesit neredeyse sessiz. Başka bir bölüm seç.';
 const seconds = (value: number) => `${value.toFixed(1).replace('.', ',')} sn`;
+const same = (a: PersonalSoundAssign, b: PersonalSoundAssign) =>
+  a.enter === b.enter && a.leave === b.leave;
+/** Focuses the first match once React has rendered the change. */
+const focusSoon = (...selectors: string[]) =>
+  requestAnimationFrame(() =>
+    selectors
+      .map((selector) => document.querySelector<HTMLElement>(selector))
+      .find(Boolean)
+      ?.focus(),
+  );
 
 function clipOf(profile: PersonalSoundProfile, id: string | null) {
   if (id === null)
@@ -70,29 +82,53 @@ function clipOf(profile: PersonalSoundProfile, id: string | null) {
     gain: PERSONAL_SOUND_POLICY.personalGain,
   };
 }
-function peaksOf(channels: Float32Array[]) {
-  const length = channels[0].length,
-    peaks = new Float32Array(BARS);
+/** The one copy kept while a window is chosen; averaged exactly as `personalSoundWindow` does. */
+export function monoOf(channels: Float32Array[]) {
+  const mono = new Float32Array(channels[0].length);
+  for (const channel of channels)
+    for (let i = 0; i < mono.length; i++) mono[i] += channel[i] / channels.length;
+  return mono;
+}
+/** Length from the file's metadata, without decoding; `NaN` when the browser cannot tell. */
+function sourceSeconds(file: File) {
+  const url = URL.createObjectURL(file),
+    probe = new Audio();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return new Promise<number>((resolve) => {
+    timer = setTimeout(() => resolve(NaN), 2000);
+    probe.onloadedmetadata = () => resolve(Number.isFinite(probe.duration) ? probe.duration : NaN);
+    probe.onerror = () => resolve(NaN);
+    probe.preload = 'metadata';
+    probe.src = url;
+  }).finally(() => {
+    clearTimeout(timer);
+    probe.onloadedmetadata = probe.onerror = null;
+    probe.removeAttribute('src');
+    probe.load();
+    URL.revokeObjectURL(url);
+  });
+}
+function peaksOf(samples: Float32Array) {
+  const peaks = new Float32Array(BARS);
   let top = 0;
   for (let bar = 0; bar < BARS; bar++) {
-    const from = Math.floor((bar * length) / BARS),
-      to = Math.floor(((bar + 1) * length) / BARS),
+    const from = Math.floor((bar * samples.length) / BARS),
+      to = Math.floor(((bar + 1) * samples.length) / BARS),
       step = Math.max(1, Math.floor((to - from) / 4000));
     let peak = 0;
-    for (const channel of channels)
-      for (let i = from; i < to; i += step) {
-        const value = Math.abs(channel[i]);
-        if (value > peak) peak = value;
-      }
+    for (let i = from; i < to; i += step) {
+      const value = Math.abs(samples[i]);
+      if (value > peak) peak = value;
+    }
     peaks[bar] = peak;
     if (peak > top) top = peak;
   }
   if (top > 0) for (let bar = 0; bar < BARS; bar++) peaks[bar] /= top;
   return peaks;
 }
-function draftClip(channels: Float32Array[], rate: number, start: number) {
+function draftClip(mono: Float32Array, rate: number, start: number) {
   try {
-    return processPersonalSound(personalSoundWindow(channels, rate, start));
+    return processPersonalSound(personalSoundWindow([mono], rate, start));
   } catch (e) {
     return e instanceof PersonalSoundAudioError && e.code === 'PERSONAL_SOUND_SILENT'
       ? silent
@@ -244,27 +280,26 @@ function UploadArea({
   preview,
   epoch,
   onUploaded,
+  onFailed,
 }: {
   profile: PersonalSoundProfile;
   bridge: Bridge;
   preview: Preview;
   epoch: { current: number };
   onUploaded(sound: PersonalSound): Promise<void>;
+  onFailed(): void;
 }) {
   const picker = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<Draft | null>(null),
     [reading, setReading] = useState(false),
     [saving, setSaving] = useState(false),
     [problem, setProblem] = useState('');
-  const channels = draft?.channels,
+  const mono = draft?.mono,
     rate = draft?.rate,
     start = draft?.start;
   const clip = useMemo(
-    () =>
-      channels && rate !== undefined && start !== undefined
-        ? draftClip(channels, rate, start)
-        : null,
-    [channels, rate, start],
+    () => (mono && rate !== undefined && start !== undefined ? draftClip(mono, rate, start) : null),
+    [mono, rate, start],
   );
   const full = profile.sounds.length >= PERSONAL_SOUND_LIMITS.maxSounds,
     playingDraft = preview.playing?.key === 'draft' ? preview.playing : null;
@@ -286,15 +321,18 @@ function UploadArea({
     setReading(true);
     let context: AudioContext | null = null;
     try {
+      // A decoded source costs 48 kHz float per channel, so long files stop before decoding.
+      if ((await sourceSeconds(file)) > MAX_SOURCE_SEC) throw Error(tooLong);
       context = new AudioContext({ sampleRate: PERSONAL_SOUND_LIMITS.sampleRate });
       const buffer = await context.decodeAudioData(await file.arrayBuffer());
       if (!buffer.length || !buffer.numberOfChannels) throw Error(unreadable);
-      const decoded = Array.from({ length: buffer.numberOfChannels }, (_, i) =>
-        buffer.getChannelData(i),
+      if (buffer.duration > MAX_SOURCE_SEC) throw Error(tooLong);
+      const decoded = monoOf(
+        Array.from({ length: buffer.numberOfChannels }, (_, i) => buffer.getChannelData(i)),
       );
       if (captured !== epoch.current) return;
       setDraft({
-        channels: decoded,
+        mono: decoded,
         rate: buffer.sampleRate,
         duration: buffer.duration,
         peaks: peaksOf(decoded),
@@ -306,8 +344,9 @@ function UploadArea({
             .slice(0, PERSONAL_SOUND_LIMITS.maxNameLength) || 'Sesim',
         rights: false,
       });
-    } catch {
-      if (captured === epoch.current) setProblem(unreadable);
+    } catch (e) {
+      if (captured === epoch.current)
+        setProblem(e instanceof Error && e.message === tooLong ? tooLong : unreadable);
     } finally {
       await context?.close().catch(() => {});
       if (captured === epoch.current) setReading(false);
@@ -329,7 +368,9 @@ function UploadArea({
       setDraft(null);
       await onUploaded(sound);
     } catch (e) {
-      if (captured === epoch.current) setProblem(uiError(e));
+      if (captured !== epoch.current) return;
+      setProblem(uiError(e));
+      onFailed();
     } finally {
       if (captured === epoch.current) setSaving(false);
     }
@@ -372,6 +413,7 @@ function UploadArea({
                 <input
                   type="range"
                   aria-label="Başlangıç"
+                  aria-valuetext={seconds(draft.start)}
                   min={0}
                   max={Math.max(0, draft.duration - MAX_SEC)}
                   step={0.05}
@@ -413,11 +455,10 @@ function UploadArea({
             )}
             {playingDraft?.started && <Progress key={playingDraft.token} ms={playingDraft.ms} />}
           </div>
-          {typeof clip === 'string' && (
-            <p className="personal-sound-problem" role="alert">
-              {clip}
-            </p>
-          )}
+          {/* Stays mounted: it changes while the start is dragged, so it must not interrupt. */}
+          <p className="personal-sound-problem" aria-live="polite">
+            {typeof clip === 'string' && clip}
+          </p>
           <label className="field-label">
             Ad
             <input
@@ -490,23 +531,31 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
     [removing, setRemoving] = useState(false);
   const confirmed = useRef<PersonalSoundAssign>({ enter: null, leave: null }),
     latest = useRef<PersonalSoundAssign>({ enter: null, leave: null }),
-    assignRequest = useRef(0),
+    picked = useRef<Slot>('enter'),
+    refusals = useRef(0),
+    queue = useRef<Promise<unknown>>(Promise.resolve()),
     cache = useRef(new Map<string, string>()),
     statusTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const preview = usePreview(outputId, level, setError),
     { stop } = preview;
-  const accept = (value: PersonalSoundProfile) => {
-    confirmed.current = latest.current = value.assign;
-    setProfile(value);
+  /** Takes the server's profile; picks that differ from `base` were not sent yet and stay. */
+  const accept = (value: PersonalSoundProfile, base = confirmed.current) => {
+    const keep = (event: Slot) =>
+      latest.current[event] === base[event] ? value.assign[event] : latest.current[event];
+    confirmed.current = value.assign;
+    latest.current = { enter: keep('enter'), leave: keep('leave') };
+    setProfile({ ...value, assign: latest.current });
   };
   useEffect(() => {
     const captured = epoch.current;
+    queue.current = Promise.resolve();
     setProfile(null);
     setLoadError('');
     setError('');
     setStatus('');
     setSlot(null);
     setConfirming(null);
+    setRemoving(false);
     if (!bridge || !signedIn) return;
     bridge.profile().then(
       (value) => {
@@ -528,6 +577,27 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
     };
   }, [account, stop]);
   useEffect(() => () => clearTimeout(statusTimer.current), []);
+  const cancelDelete = (id: string) => {
+    setConfirming(null);
+    focusSoon(`[data-delete-sound="${id}"]`);
+  };
+  useEffect(() => {
+    if (!confirming) return;
+    // The modal closes on Escape from a document capture listener; window capture runs first.
+    const key = (event: KeyboardEvent) => {
+      if (
+        event.key !== 'Escape' ||
+        !(event.target instanceof Element) ||
+        !event.target.closest('.personal-sound-confirm')
+      )
+        return;
+      event.preventDefault();
+      event.stopPropagation();
+      cancelDelete(confirming);
+    };
+    window.addEventListener('keydown', key, true);
+    return () => window.removeEventListener('keydown', key, true);
+  }, [confirming]);
   const fetchPreview = async (id: string) => {
     const cached = cache.current.get(id);
     if (cached) return cached;
@@ -562,37 +632,60 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
     setStatus(message);
     statusTimer.current = setTimeout(() => setStatus(''), 4000);
   };
-  /** Optimistic; a failure restores the last assignment the server confirmed. */
-  const choose = async (event: Slot, id: string | null) => {
-    if (!bridge || latest.current[event] === id) return false;
+  /** Server changes run one at a time and in order, so a late response never undoes a newer one. */
+  const serial = <T,>(task: () => Promise<T>) => {
+    const run = queue.current.then(task);
+    queue.current = run.catch(() => {});
+    return run;
+  };
+  /** After a failed change this copy may be stale, e.g. a sound deleted on another device. */
+  const refresh = async (captured: number) => {
+    const value = await bridge?.profile().catch(() => null);
+    if (value && captured === epoch.current) accept(value);
+  };
+  const resync = () => {
+    const captured = epoch.current;
+    void serial(() => refresh(captured));
+  };
+  /** Optimistic and saved at once; resolves false when the server refused it. */
+  const choose = (event: Slot, id: string | null): Promise<boolean> => {
+    if (!bridge) return Promise.resolve(false);
+    if (latest.current[event] === id) return Promise.resolve(true);
     const captured = epoch.current,
-      request = ++assignRequest.current,
+      refused = refusals.current,
       next = { ...latest.current, [event]: id };
     latest.current = next;
+    picked.current = event;
     setProfile((value) => value && { ...value, assign: next });
     setError('');
     setStatus('');
-    try {
-      const value = await bridge.assign(next);
-      if (captured !== epoch.current) return false;
-      confirmed.current = value.assign;
-      if (request === assignRequest.current) {
-        latest.current = value.assign;
-        setProfile(value);
-      }
-      return true;
-    } catch (e) {
-      if (captured === epoch.current && request === assignRequest.current) {
-        latest.current = confirmed.current;
-        setProfile((value) => value && { ...value, assign: confirmed.current });
+    return serial(async () => {
+      // Picks made while an earlier request ran go out together; only the newest is sent.
+      // A refusal in between rolled this pick back as well.
+      const sending = latest.current;
+      if (captured !== epoch.current || refused !== refusals.current) return false;
+      if (same(sending, confirmed.current)) return true;
+      try {
+        const value = await bridge.assign(sending);
+        if (captured !== epoch.current) return false;
+        accept(value, sending);
+        if (same(latest.current, value.assign)) flash(copy[picked.current].saved);
+        return true;
+      } catch (e) {
+        if (captured !== epoch.current) return false;
+        refusals.current++;
+        const restored = (latest.current = confirmed.current);
+        setProfile((value) => value && { ...value, assign: restored });
         setError(uiError(e));
+        await refresh(captured);
+        return false;
       }
-      return false;
-    }
+    });
   };
   const uploaded = async (sound: PersonalSound) => {
     if (!slot) return;
-    const event = slot;
+    const event = slot,
+      captured = epoch.current;
     setProfile(
       (value) =>
         value && {
@@ -600,28 +693,39 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
           sounds: [...value.sounds.filter((item) => item.id !== sound.id), sound],
         },
     );
-    if (await choose(event, sound.id)) flash(copy[event].saved);
+    const saved = choose(event, sound.id);
+    focusSoon(`.personal-sound-pick[data-sound="${sound.id}"]`);
+    if (!(await saved) && captured === epoch.current)
+      setError('Ses kaydedildi ama seçilemedi. Listeden seçebilirsin.');
   };
-  const remove = async (id: string) => {
+  const remove = (id: string) => {
     if (!bridge) return;
     const captured = epoch.current;
     setRemoving(true);
     setError('');
-    try {
-      const value = await bridge.remove(id);
+    void serial(async () => {
       if (captured !== epoch.current) return;
-      stop();
-      const url = cache.current.get(id);
-      if (url) URL.revokeObjectURL(url);
-      cache.current.delete(id);
-      assignRequest.current++;
-      accept(value);
-      setConfirming(null);
-    } catch (e) {
-      if (captured === epoch.current) setError(uiError(e));
-    } finally {
-      if (captured === epoch.current) setRemoving(false);
-    }
+      try {
+        const value = await bridge.remove(id);
+        if (captured !== epoch.current) return;
+        stop();
+        const url = cache.current.get(id);
+        if (url) URL.revokeObjectURL(url);
+        cache.current.delete(id);
+        accept(value);
+        setConfirming(null);
+        focusSoon(
+          '.personal-sound-modal .personal-sound-pick[aria-pressed="true"]',
+          '.personal-sound-modal .personal-sound-pick',
+        );
+      } catch (e) {
+        if (captured !== epoch.current) return;
+        setError(uiError(e));
+        await refresh(captured);
+      } finally {
+        if (captured === epoch.current) setRemoving(false);
+      }
+    });
   };
   const close = useCallback(() => {
     stop();
@@ -640,19 +744,14 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
         {own && id && confirming === id ? (
           <div className="personal-sound-confirm" role="group" aria-label={`${name} silinsin mi?`}>
             <span>{name} silinsin mi?</span>
-            <button className="button danger" disabled={removing} onClick={() => void remove(id)}>
+            <button className="button danger" disabled={removing} onClick={() => remove(id)}>
               {removing ? 'Siliniyor…' : 'Sil'}
             </button>
             <button
               className="button secondary"
               autoFocus
               disabled={removing}
-              onClick={() => {
-                setConfirming(null);
-                requestAnimationFrame(() =>
-                  document.querySelector<HTMLElement>(`[data-delete-sound="${id}"]`)?.focus(),
-                );
-              }}
+              onClick={() => cancelDelete(id)}
             >
               Vazgeç
             </button>
@@ -663,6 +762,7 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
               type="button"
               className="personal-sound-pick"
               aria-pressed={selected}
+              data-sound={id ?? 'classic'}
               onClick={() => void choose(event, id)}
             >
               <span>{name}</span>
@@ -747,10 +847,18 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
             })}
           </div>
           <p className="ref-settings-note">
-            En fazla 4 saniye. Herkesin sesi aynı yükseklikte duyulsun diye ses düzeyi otomatik
+            Seçimin hemen kaydedilir ve tüm cihazlarında geçerli olur.
+          </p>
+          <p className="ref-settings-note">
+            En fazla 4 saniye. Herkesin sesi aynı seviyede duyulsun diye ses düzeyi otomatik
             ayarlanır.
           </p>
           {quiet}
+          {status && !slot && (
+            <p className="personal-sound-status" role="status">
+              {status}
+            </p>
+          )}
           {error && !slot && (
             <div className="ref-settings-callout error personal-sound-error" role="alert">
               {error}
@@ -792,6 +900,7 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
             preview={preview}
             epoch={epoch}
             onUploaded={uploaded}
+            onFailed={resync}
           />
           {quiet}
           {status && (

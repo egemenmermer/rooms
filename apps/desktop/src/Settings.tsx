@@ -1262,12 +1262,13 @@ export default function Settings({
                     </Row>
                     <Row
                       title="Efekt ses düzeyi"
-                      description="Yalnızca bu cihazda; konuşmayı bastırmaz."
+                      description="Giriş ve çıkış seslerinin bu cihazdaki düzeyi. Konuşmaları etkilemez."
                     >
                       <label className="personal-sound-level">
                         <input
                           type="range"
                           aria-label="Efekt ses düzeyi"
+                          aria-valuetext={`${Math.round(p.soundEffectsLevel * 100)}%`}
                           min={0}
                           max={1}
                           step={0.05}

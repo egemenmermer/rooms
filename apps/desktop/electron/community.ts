@@ -1288,7 +1288,13 @@ export async function setupCommunity(
         PERSONAL_SOUND_STORAGE_LIMIT: 'Sunucudaki ses alanı doldu. Yöneticiye haber ver.',
         PERSONAL_SOUND_NOT_FOUND: 'Bu ses artık yok.',
       };
-      throw new SocialInputError(messages[error] ?? 'Giriş sesleri alınamadı. Yeniden dene.');
+      const fallback = {
+        GET: 'Giriş sesleri alınamadı. Yeniden dene.',
+        POST: 'Ses kaydedilemedi. Yeniden dene.',
+        PUT: 'Seçimin kaydedilemedi. Yeniden dene.',
+        DELETE: 'Ses silinemedi. Yeniden dene.',
+      }[method];
+      throw new SocialInputError(messages[error] ?? fallback);
     }
     if (audio) {
       const reader = response.body?.getReader();
