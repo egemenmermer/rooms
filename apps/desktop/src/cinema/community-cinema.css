@@ -490,6 +490,45 @@ html[data-input='keyboard'] .hall-tabs button::after {
   cursor: default;
 }
 
+/* The subtitle menu: grouped sources, a status line and the timing row. */
+.hall-subtitle-list {
+  min-width: 260px;
+  max-height: min(70vh, 460px);
+  overflow-y: auto;
+}
+.hall-subtitle-list small + small {
+  padding-top: 0;
+}
+.hall-audio-list small.hall-subtitle-note {
+  padding: 6px 8px;
+  line-height: 1.35;
+}
+.hall-subtitle-timing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 6px 8px 2px;
+  border-top: 1px solid var(--cinema-line-strong);
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+.hall-subtitle-timing > span {
+  flex: 1;
+}
+.hall-audio-list .hall-subtitle-timing button {
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+}
+.hall-subtitle-timing output {
+  min-width: 52px;
+  color: var(--cinema-on-video);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Subtitles: this viewer's own, above the controls while they show. */
 .hall-subtitle {
   position: absolute;

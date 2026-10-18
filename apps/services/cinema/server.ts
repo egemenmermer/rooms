@@ -30,6 +30,8 @@ const statusOf: Record<string, number> = {
   CINEMA_RELAY_BUSY: 503,
   CINEMA_ITEM_NOT_FOUND: 404,
   CINEMA_SESSION_ENDED: 410,
+  CINEMA_SUBTITLE_KEY_INVALID: 422,
+  CINEMA_SUBTITLE_UNAVAILABLE: 502,
 };
 
 export type CinemaServerOptions = {
@@ -142,6 +144,23 @@ export async function createCinemaServer(options: CinemaServerOptions) {
     return service.status(communityId, true);
   });
 
+  /** Owner: the community's own SubDL API key (null removes it). It is never returned. */
+  server.put<Community>('/v1/communities/:communityId/subtitles', async (request) => {
+    const { communityId } = request.params;
+    await owner(request, communityId);
+    const { key } = z
+      .object({
+        key: z
+          .string()
+          .regex(/^[A-Za-z0-9_-]{8,128}$/)
+          .nullable(),
+      })
+      .strict()
+      .parse(request.body);
+    await service.setSubtitleKey(communityId, key);
+    return service.status(communityId, true);
+  });
+
   server.post<Community>('/v1/communities/:communityId/reload', async (request) => {
     const { communityId } = request.params;
     await owner(request, communityId);
@@ -221,6 +240,35 @@ export async function createCinemaServer(options: CinemaServerOptions) {
         .header('cache-control', 'private, max-age=86400')
         .header('x-content-type-options', 'nosniff')
         .send(image.body);
+    },
+  );
+
+  server.get<{ Params: { hallId: string; ref: string } }>(
+    '/v1/halls/:hallId/subtitles/:ref',
+    async (request) => {
+      const identity = await viewer(request, request.params.hallId);
+      return service.externalSubtitles(identity.communityId, ref.parse(request.params.ref));
+    },
+  );
+
+  server.get<{ Params: { hallId: string; ref: string; id: string } }>(
+    '/v1/halls/:hallId/subtitles/:ref/:id',
+    async (request, reply) => {
+      const identity = await viewer(request, request.params.hallId);
+      const id = z
+        .string()
+        .regex(/^[A-Za-z0-9_-]{1,64}$/)
+        .parse(request.params.id);
+      const text = await service.subtitleFile(
+        identity.communityId,
+        ref.parse(request.params.ref),
+        id,
+      );
+      return reply
+        .header('content-type', 'text/vtt; charset=utf-8')
+        .header('cache-control', 'private, max-age=86400')
+        .header('x-content-type-options', 'nosniff')
+        .send(text);
     },
   );
 

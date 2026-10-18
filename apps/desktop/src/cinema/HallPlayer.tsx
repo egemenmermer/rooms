@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -11,13 +12,10 @@ import Hls from 'hls.js';
 import type { Timeline } from '../../../../packages/activity-protocol/src';
 import type {
   CinemaErrorCode,
-  CinemaSubtitleSource,
+  CinemaExternalSubtitleSource,
   CinemaWatchSource,
 } from '../../../../packages/community-cinema/src/bridge';
-import type {
-  CinemaAudioTrack,
-  CinemaSubtitleTrack,
-} from '../../../../packages/community-cinema/src/types';
+import type { CinemaAudioTrack } from '../../../../packages/community-cinema/src/types';
 import {
   cueText,
   parseVtt,
@@ -48,10 +46,25 @@ export interface PlayerSnapshot {
   /** The relayed source's audio streams and the one the hall hears. */
   audioTracks: CinemaAudioTrack[];
   audioTrack: number | null;
-  /** VOD text subtitles and this viewer's choice (null: off). Never shared with the hall. */
-  subtitleTracks: CinemaSubtitleTrack[];
-  subtitle: number | null;
+  /** VOD subtitles this viewer can pick and their choice (null: off). Never shared. */
+  subtitleTracks: SubtitleOption[];
+  subtitle: string | null;
+  /** Seconds this viewer moves the subtitles by (positive: later). */
+  subtitleOffset: number;
+  /** Subtitles found online: still looking, found, no SubDL key, or the search failed. */
+  onlineSubtitles: 'idle' | 'loading' | 'ready' | 'unavailable' | 'error';
 }
+
+/** A subtitle a viewer can pick: from the film itself, found online, or their own file. */
+export type SubtitleOption = {
+  key: string;
+  label: string;
+  language: string | null;
+  forced: boolean;
+  origin: 'embedded' | 'online' | 'file';
+};
+
+type SubtitleSource = SubtitleOption & { src: string; growing: boolean };
 
 export interface PlayerControls {
   /** Live: catch up with the hall. */
@@ -60,7 +73,11 @@ export interface PlayerControls {
   toggleLocalPause(): void;
   retry(): void;
   /** This viewer's subtitles; null turns them off. */
-  setSubtitle(index: number | null): void;
+  setSubtitle(key: string | null): void;
+  /** This viewer's subtitle timing, in seconds (positive: later). */
+  setSubtitleOffset(seconds: number): void;
+  /** Opens a subtitle file from disk for this viewer and shows it. */
+  chooseSubtitleFile(): Promise<void>;
 }
 
 /** The seekable window of the video element, or null before it has one. */
@@ -92,22 +109,68 @@ function rememberSubtitles(on: boolean) {
 }
 
 /**
- * The subtitles a viewer starts with: Turkish when the hall hears another language, only
- * Turkish forced subtitles over Turkish audio, nothing once the viewer turned them off.
+ * The subtitles a viewer starts with: Turkish when the hall hears another language (the
+ * film's own first, then one found online), only Turkish forced subtitles over Turkish
+ * audio, nothing once the viewer turned them off.
  */
 export function autoSubtitle(
-  tracks: CinemaSubtitleTrack[],
+  tracks: Pick<SubtitleOption, 'key' | 'label' | 'language' | 'forced' | 'origin'>[],
   audioLabel: string | null,
   off = subtitlesOff(),
-): number | null {
+): string | null {
   if (off) return null;
-  const candidates = tracks.filter(turkish);
-  if (audioLabel?.startsWith('Türkçe')) return candidates.find((t) => t.forced)?.index ?? null;
-  return (candidates.find((t) => !t.forced) ?? candidates[0])?.index ?? null;
+  const candidates = tracks.filter((t) => t.origin !== 'file' && turkish(t));
+  if (audioLabel?.startsWith('Türkçe')) return candidates.find((t) => t.forced)?.key ?? null;
+  const embedded = candidates.filter((t) => t.origin === 'embedded');
+  const pool = embedded.length ? embedded : candidates;
+  return (pool.find((t) => !t.forced) ?? pool[0])?.key ?? null;
 }
 
-/** The cues of a subtitle source; DEV fixtures carry theirs inline as a data URL. */
-async function readSubtitles(source: CinemaSubtitleSource) {
+const embeddedKey = (index: number) => `e${index}`;
+
+/** What the hall's relay and SubDL offer, plus this viewer's own file, as one list. */
+function subtitleSources(
+  source: CinemaWatchSource | null,
+  online: CinemaExternalSubtitleSource[],
+  file: { name: string; src: string } | null,
+): SubtitleSource[] {
+  return [
+    ...(source?.subtitles ?? []).map((t) => ({
+      key: embeddedKey(t.index),
+      label: t.label,
+      language: t.language,
+      forced: t.forced,
+      origin: 'embedded' as const,
+      src: t.src,
+      growing: true,
+    })),
+    ...online.map((t) => ({
+      key: `o${t.id}`,
+      label: t.label,
+      language: t.language,
+      forced: false,
+      origin: 'online' as const,
+      src: t.src,
+      growing: false,
+    })),
+    ...(file
+      ? [
+          {
+            key: 'file',
+            label: `Dosya · ${file.name}`,
+            language: null,
+            forced: false,
+            origin: 'file' as const,
+            src: file.src,
+            growing: false,
+          },
+        ]
+      : []),
+  ];
+}
+
+/** The cues of a subtitle source; DEV fixtures and local files carry theirs as a data URL. */
+async function readSubtitles(source: SubtitleSource) {
   if (source.src.startsWith('data:'))
     return decodeURIComponent(source.src.slice(source.src.indexOf(',') + 1));
   const response = await fetch(source.src, { cache: 'no-store' });
@@ -177,11 +240,15 @@ export function HallPlayer({
     audioTrack: null,
     subtitleTracks: [],
     subtitle: null,
+    subtitleOffset: 0,
+    onlineSubtitles: 'idle',
   });
   const [cues, setCues] = useState<SubtitleCue[]>([]);
   const [caption, setCaption] = useState('');
+  const [online, setOnline] = useState<CinemaExternalSubtitleSource[]>([]);
+  const [file, setFile] = useState<{ name: string; src: string } | null>(null);
   /** The viewer's own pick for an item; it survives relay restarts (seeks, audio). */
-  const subtitleChoice = useRef<{ ref: string; index: number | null } | null>(null);
+  const subtitleChoice = useRef<{ ref: string; key: string | null } | null>(null);
   const latest = useRef({ timeline, serverOffsetMs, item, source });
   latest.current = { timeline, serverOffsetMs, item, source };
   const localPause = useRef(false);
@@ -231,8 +298,6 @@ export function HallPlayer({
       live: item.media.live,
       positionSec: 0,
       durationSec: null,
-      subtitleTracks: [],
-      subtitle: null,
     });
     if (!bridge) {
       update({ phase: 'error', code: 'CINEMA_UNAVAILABLE' });
@@ -252,23 +317,11 @@ export function HallPlayer({
         }
         setSource(value);
         reconnects.current = 0;
-        const subtitles = value.subtitles ?? [];
-        const chosen = subtitleChoice.current;
-        const kept =
-          chosen?.ref === item.media.ref &&
-          (chosen.index === null || subtitles.some((t) => t.index === chosen.index));
         update({
           durationSec: value.durationSec,
           live: value.live,
           audioTracks: value.audioTracks,
           audioTrack: value.audioTrack,
-          subtitleTracks: subtitles.map(({ src: _src, ...track }) => track),
-          subtitle: kept
-            ? chosen.index
-            : autoSubtitle(
-                subtitles,
-                value.audioTracks.find((t) => t.index === value.audioTrack)?.label ?? null,
-              ),
         });
       } catch (error) {
         if (active)
@@ -447,8 +500,46 @@ export function HallPlayer({
     return () => clearInterval(timer);
   }, [fixture, update]);
 
-  // The relay keeps appending cues as it reads ahead; re-read the file while it grows.
-  const subtitleSource = source?.subtitles?.find((t) => t.index === snapshot.subtitle) ?? null;
+  // A new item starts with nothing found online, no file and no timing shift.
+  useEffect(() => {
+    let active = true;
+    setOnline([]);
+    setFile(null);
+    update({ subtitle: null, subtitleTracks: [], subtitleOffset: 0, onlineSubtitles: 'idle' });
+    const bridge = getCinemaBridge();
+    if (item.media.live || !bridge?.subtitles) return;
+    update({ onlineSubtitles: 'loading' });
+    bridge
+      .subtitles(hallId, item.media.ref)
+      .then((result) => {
+        if (!active) return;
+        setOnline(result.subtitles);
+        update({ onlineSubtitles: result.available ? 'ready' : 'unavailable' });
+      })
+      .catch(() => active && update({ onlineSubtitles: 'error' }));
+    return () => {
+      active = false;
+    };
+  }, [hallId, item.id, item.media.ref, item.media.live, update]);
+
+  const sources = useMemo(() => subtitleSources(source, online, file), [source, online, file]);
+  // Keep the viewer's pick while it exists; otherwise the automatic choice, which may
+  // change as online results arrive.
+  useEffect(() => {
+    const chosen = subtitleChoice.current;
+    const audio = source?.audioTracks.find((t) => t.index === source.audioTrack)?.label ?? null;
+    update({
+      subtitleTracks: sources.map(({ src: _src, growing: _growing, ...option }) => option),
+      subtitle:
+        chosen?.ref === item.media.ref &&
+        (chosen.key === null || sources.some((t) => t.key === chosen.key))
+          ? chosen.key
+          : autoSubtitle(sources, audio),
+    });
+  }, [sources, source, item.media.ref, update]);
+
+  // The relay keeps appending cues as it reads ahead; re-read its file while it grows.
+  const subtitleSource = sources.find((t) => t.key === snapshot.subtitle) ?? null;
   useEffect(() => {
     setCues([]);
     if (!subtitleSource) return;
@@ -457,6 +548,9 @@ export function HallPlayer({
     const load = async () => {
       try {
         const text = await readSubtitles(subtitleSource);
+        // An online subtitle that cannot be fetched (key removed, daily limit): say so.
+        if (active && text === null && subtitleSource.origin === 'online')
+          update({ onlineSubtitles: 'error' });
         if (!active || text === null || text.length === size) return;
         size = text.length;
         setCues(parseVtt(text));
@@ -465,15 +559,16 @@ export function HallPlayer({
       }
     };
     void load();
-    const timer = subtitleSource.src.startsWith('data:')
-      ? undefined
-      : setInterval(() => void load(), SUBTITLE_POLL_MS);
+    const timer = subtitleSource.growing
+      ? setInterval(() => void load(), SUBTITLE_POLL_MS)
+      : undefined;
     return () => {
       active = false;
       clearInterval(timer);
     };
-  }, [subtitleSource]);
+  }, [subtitleSource, update]);
 
+  const subtitleOffset = snapshot.subtitleOffset;
   useEffect(() => {
     setCaption('');
     if (!cues.length) return;
@@ -481,12 +576,14 @@ export function HallPlayer({
       const { timeline: shared, serverOffsetMs: offset, source: current } = latest.current;
       const element = video.current;
       if (!current) return;
-      const position = fixture
+      let position = fixture
         ? expectedPosition(shared, Date.now(), offset)
         : element
           ? workPosition(element, current, hls.current)
           : null;
       if (position === null) return;
+      // A positive offset shows every cue later.
+      position -= subtitleOffset;
       setCaption(
         cues
           .filter((cue) => cue.start <= position && position < cue.end)
@@ -498,7 +595,7 @@ export function HallPlayer({
     tick();
     const timer = setInterval(tick, SUBTITLE_TICK_MS);
     return () => clearInterval(timer);
-  }, [cues, fixture]);
+  }, [cues, fixture, subtitleOffset]);
 
   useEffect(() => {
     controls.current = {
@@ -521,10 +618,23 @@ export function HallPlayer({
         });
       },
       retry: () => setAttempt((value) => value + 1),
-      setSubtitle: (index) => {
-        subtitleChoice.current = { ref: latest.current.item.media.ref, index };
-        rememberSubtitles(index !== null);
-        update({ subtitle: index });
+      setSubtitle: (key) => {
+        subtitleChoice.current = { ref: latest.current.item.media.ref, key };
+        rememberSubtitles(key !== null);
+        update({ subtitle: key });
+      },
+      setSubtitleOffset: (seconds) =>
+        update({ subtitleOffset: Math.round(Math.max(-600, Math.min(600, seconds)) * 10) / 10 }),
+      chooseSubtitleFile: async () => {
+        const picked = await getCinemaBridge()?.chooseSubtitleFile();
+        if (!picked) return;
+        setFile({
+          name: picked.name,
+          src: `data:text/vtt;charset=utf-8,${encodeURIComponent(picked.content)}`,
+        });
+        subtitleChoice.current = { ref: latest.current.item.media.ref, key: 'file' };
+        rememberSubtitles(true);
+        update({ subtitle: 'file' });
       },
     };
     return () => {

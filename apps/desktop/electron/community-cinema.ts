@@ -81,6 +81,22 @@ const watchResponse = z
   })
   .passthrough();
 
+const externalSubtitles = z.object({
+  available: z.boolean(),
+  subtitles: z
+    .array(
+      z
+        .object({
+          id: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
+          label: z.string().max(80),
+          language: z.enum(['tur', 'eng']),
+          hearingImpaired: z.boolean(),
+        })
+        .strict(),
+    )
+    .max(20),
+});
+
 type Ticket = {
   ticket: string;
   hallId: string;
@@ -246,6 +262,30 @@ export function setupCommunityCinema(options: {
       })),
     };
   });
+  options.handle('rooms:cinema-subtitle-key', (communityId, key) =>
+    api('PUT', `${community(communityId)}/subtitles`, {
+      key: z
+        .string()
+        .trim()
+        .regex(/^[A-Za-z0-9_-]{8,128}$/)
+        .nullable()
+        .parse(key),
+    }),
+  );
+  options.handle('rooms:cinema-subtitles', async (hallId, value) => {
+    const id = socialId.parse(hallId);
+    const item = ref.parse(value);
+    const result = externalSubtitles.parse(
+      await api('GET', `${hall(id)}/subtitles/${encodeURIComponent(item)}`, undefined, 30_000),
+    );
+    return {
+      available: result.available,
+      subtitles: result.subtitles.map((subtitle) => ({
+        ...subtitle,
+        src: `rooms-cinema://subtitle/${id}/${item}/${subtitle.id}`,
+      })),
+    };
+  });
   options.handle('rooms:cinema-audio', async (hallId, value, track) => {
     await api('POST', `${hall(hallId)}/audio`, {
       ref: ref.parse(value),
@@ -353,6 +393,34 @@ export function setupCommunityCinema(options: {
         }
         return new Response(response.body, {
           headers: { 'Content-Type': type, 'Cache-Control': 'private, max-age=86400' },
+        });
+      }
+      if (url.hostname === 'subtitle') {
+        const [, , third] = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+        if (
+          !first ||
+          !second ||
+          !third ||
+          !socialId.safeParse(first).success ||
+          !ref.safeParse(second).success ||
+          !/^[A-Za-z0-9_-]{1,64}$/.test(third)
+        )
+          return new Response('Not found', { status: 404, headers: cors });
+        const account = options.account();
+        const response = await request(
+          `${account.origin}/rooms-cinema${hall(first)}/subtitles/${encodeURIComponent(second)}/${third}`,
+          { headers: { Authorization: account.token }, redirect: 'error', signal: incoming.signal },
+        );
+        const type = response.headers.get('content-type') ?? '';
+        if (!response.ok || !type.startsWith('text/vtt') || !options.isCurrent(account)) {
+          await response.body?.cancel();
+          return new Response('Not found', {
+            status: response.ok ? 404 : response.status,
+            headers: cors,
+          });
+        }
+        return new Response(response.body, {
+          headers: { ...cors, 'Content-Type': 'text/vtt; charset=utf-8' },
         });
       }
       return new Response('Not found', { status: 404 });

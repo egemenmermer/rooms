@@ -4,6 +4,10 @@ import { DEFAULT_PUSH_TO_TALK_KEY, parsePushToTalkKey } from './push-to-talk-key
 
 export interface Preferences {
   roomEventSounds: boolean;
+  /** Other people's chosen entrance and leave sounds; off plays the classic cue for everyone. */
+  personalSounds: boolean;
+  /** Listener-side level for room cues and personal sounds, 0–1. */
+  soundEffectsLevel: number;
   followSystemAccessibility: boolean;
   noiseSuppression: boolean;
   noiseSuppressionMode: 'standard' | 'strong';
@@ -24,6 +28,8 @@ export interface Preferences {
 }
 const defaults: Preferences = {
   roomEventSounds: true,
+  personalSounds: true,
+  soundEffectsLevel: 1,
   followSystemAccessibility: true,
   noiseSuppression: true,
   noiseSuppressionMode: 'strong',
@@ -45,6 +51,9 @@ interface RoomsState {
   preferences: Preferences;
   setPreferences(value: Preferences): void;
   setPreference<K extends keyof Preferences>(key: K, value: Preferences[K]): void;
+}
+export function normalizeSoundEffectsLevel(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 1;
 }
 export function normalizeChatFontSize(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value)
@@ -70,6 +79,10 @@ function preferencesFrom(value: unknown): Preferences {
       result.chatFontSize = normalizeChatFontSize(previous[key]);
       continue;
     }
+    if (key === 'soundEffectsLevel') {
+      result.soundEffectsLevel = normalizeSoundEffectsLevel(previous[key]);
+      continue;
+    }
     if (
       typeof previous[key] === typeof defaults[key] &&
       (key !== 'accent' || previous[key] === 'pearl' || previous[key] === 'sage')
@@ -87,7 +100,12 @@ export const useRooms = create<RoomsState>()(
         set((state) => ({
           preferences: {
             ...state.preferences,
-            [key]: key === 'chatFontSize' ? normalizeChatFontSize(value) : value,
+            [key]:
+              key === 'chatFontSize'
+                ? normalizeChatFontSize(value)
+                : key === 'soundEffectsLevel'
+                  ? normalizeSoundEffectsLevel(value)
+                  : value,
           },
         })),
     }),

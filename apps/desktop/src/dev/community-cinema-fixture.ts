@@ -399,6 +399,7 @@ export function createCommunityCinemaFixtureBridge(
           }
         : null,
     relaySlots: 1,
+    subtitleSearch: variant === 'vod',
   };
   const delay = <T>(value: T, ms = 120) =>
     new Promise<T>((resolve) => setTimeout(() => resolve(structuredClone(value)), ms));
@@ -496,6 +497,45 @@ export function createCommunityCinemaFixtureBridge(
       audioChoice = track;
       await delay(null, 150);
     },
+    setSubtitleKey: async (_communityId, key) => {
+      if (key === 'yanlis-anahtar') throw new Error('CINEMA_SUBTITLE_KEY_INVALID');
+      status = { ...status, subtitleSearch: !!key };
+      return delay(status, 300);
+    },
+    subtitles: async (hallId) => {
+      hall(hallId);
+      if (!status.subtitleSearch) return delay({ available: false, subtitles: [] }, 200);
+      return delay(
+        {
+          available: true,
+          subtitles: [
+            {
+              id: 'demo-tr',
+              label: 'Türkçe · DEMO harici altyazı',
+              language: 'tur' as const,
+              hearingImpaired: false,
+              src: fixtureVtt('SubDL örneği'),
+            },
+            {
+              id: 'demo-en',
+              label: 'İngilizce · DEMO external subtitle',
+              language: 'eng' as const,
+              hearingImpaired: false,
+              src: fixtureVtt('SubDL sample'),
+            },
+          ],
+        },
+        400,
+      );
+    },
+    chooseSubtitleFile: async () =>
+      delay(
+        {
+          name: 'demo-yerel.srt',
+          content: decodeURIComponent(fixtureVtt('yerel dosya').split(',')[1]!),
+        },
+        200,
+      ),
     watch: async (hallId) => {
       hall(hallId);
       if (variant === 'error') {

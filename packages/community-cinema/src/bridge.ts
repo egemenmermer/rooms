@@ -7,6 +7,7 @@ import type {
   CinemaAudioTrack,
   CinemaCategory,
   CinemaDetails,
+  CinemaExternalSubtitle,
   CinemaItem,
   CinemaProgramme,
   CinemaStatus,
@@ -66,6 +67,15 @@ export type CinemaWatchSource = {
 
 export type CinemaSubtitleSource = CinemaSubtitleTrack & { src: string };
 
+/** A subtitle found online; `src` is a WebVTT file on `rooms-cinema:`. */
+export type CinemaExternalSubtitleSource = CinemaExternalSubtitle & { src: string };
+
+export type CinemaExternalSubtitleSources = {
+  /** False when the owner has not added a SubDL key. */
+  available: boolean;
+  subtitles: CinemaExternalSubtitleSource[];
+};
+
 /** Error messages the bridge rejects with; the UI maps them to Turkish copy. */
 export type CinemaErrorCode =
   | 'CINEMA_UNAVAILABLE'
@@ -85,7 +95,9 @@ export type CinemaErrorCode =
   | 'CINEMA_STREAM_FAILED'
   /** The relay session ended (the hall moved on or it went idle); call watch() again. */
   | 'CINEMA_SESSION_ENDED'
-  | 'CINEMA_RATE_LIMITED';
+  | 'CINEMA_RATE_LIMITED'
+  | 'CINEMA_SUBTITLE_KEY_INVALID'
+  | 'CINEMA_SUBTITLE_UNAVAILABLE';
 
 export interface CinemaBridge {
   status(communityId: string): Promise<CinemaStatus>;
@@ -111,4 +123,10 @@ export interface CinemaBridge {
   watch(hallId: string): Promise<CinemaWatchSource>;
   /** Whoever holds the remote: the audio stream of the playing item, for the whole hall. */
   setAudio(hallId: string, ref: string, track: number): Promise<void>;
+  /** Owner: the community's own SubDL API key, verified first; null removes it. */
+  setSubtitleKey(communityId: string, key: string | null): Promise<CinemaStatus>;
+  /** Subtitles found online for a film or episode (Turkish first). */
+  subtitles(hallId: string, ref: string): Promise<CinemaExternalSubtitleSources>;
+  /** A subtitle file this viewer picks from disk, converted to WebVTT; null if cancelled. */
+  chooseSubtitleFile(): Promise<{ name: string; content: string } | null>;
 }

@@ -1,6 +1,6 @@
 import './community-cinema.css';
 import { useEffect, useState } from 'react';
-import { Eye, EyeOff, LoaderCircle, Plug, RefreshCw, Trash2, Unplug } from 'lucide-react';
+import { Captions, Eye, EyeOff, LoaderCircle, Plug, RefreshCw, Trash2, Unplug } from 'lucide-react';
 import { Modal } from '@rooms/design';
 import type { CinemaSourceInput } from '../../../../packages/community-cinema/src/bridge';
 import type { CinemaStatus } from '../../../../packages/community-cinema/src/types';
@@ -48,7 +48,9 @@ export function CinemaSettings({ notify }: { notify(message: string): void }) {
   const cinema = useCommunityCinema(15_000);
   const channels = useCommunity((s) => s.channels);
   const bridge = getCinemaBridge();
-  const [busy, setBusy] = useState<'hall' | 'connect' | 'reload' | 'disconnect' | null>(null);
+  const [busy, setBusy] = useState<
+    'hall' | 'connect' | 'reload' | 'disconnect' | 'subtitles' | null
+  >(null);
   const [error, setError] = useState('');
   const [confirm, setConfirm] = useState(false);
   const status = cinema.status;
@@ -158,6 +160,20 @@ export function CinemaSettings({ notify }: { notify(message: string): void }) {
           }
         />
       )}
+      <hr />
+      <SubtitleSection
+        enabled={status.subtitleSearch}
+        owner={owner}
+        busy={busy === 'subtitles'}
+        disabled={!!busy}
+        onSave={(key) =>
+          run(
+            'subtitles',
+            () => bridge.setSubtitleKey(communityId, key),
+            key ? 'SubDL anahtarı doğrulandı ve kaydedildi.' : 'SubDL anahtarı kaldırıldı.',
+          )
+        }
+      />
       {error && (
         <p className="cs-error" role="alert">
           {error}
@@ -181,6 +197,94 @@ export function CinemaSettings({ notify }: { notify(message: string): void }) {
         />
       )}
     </div>
+  );
+}
+
+/** Online subtitles for films without their own: the owner's SubDL key, kept on the server. */
+function SubtitleSection({
+  enabled,
+  owner,
+  busy,
+  disabled,
+  onSave,
+}: {
+  enabled: boolean;
+  owner: boolean;
+  busy: boolean;
+  disabled: boolean;
+  onSave(key: string | null): Promise<boolean>;
+}) {
+  const [key, setKey] = useState('');
+  const [reveal, setReveal] = useState(false);
+  const valid = /^[A-Za-z0-9_-]{8,128}$/.test(key.trim());
+  return (
+    <section className="cs-section">
+      <h2>Altyazılar</h2>
+      <p>
+        Kendi altyazısı olmayan filmler ve bölümler için salon, SubDL'de Türkçe ve İngilizce altyazı
+        arar. Herkes altyazısını kendisi seçer; dilerse kendi dosyasını da yükler.
+      </p>
+      <p className="cs-note inline">
+        <Captions size={15} />
+        {enabled ? 'Çevrimiçi altyazı araması açık.' : 'Çevrimiçi altyazı araması kapalı.'}
+      </p>
+      {owner && (
+        <form
+          className="cs-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (valid) void onSave(key.trim()).then((ok) => ok && setKey(''));
+          }}
+        >
+          <label className="cs-field">
+            <span>{enabled ? 'Yeni SubDL API anahtarı' : 'SubDL API anahtarı'}</span>
+            <span className="cs-password">
+              <input
+                type={reveal ? 'text' : 'password'}
+                value={key}
+                autoComplete="off"
+                spellCheck={false}
+                disabled={disabled}
+                onChange={(event) => setKey(event.target.value)}
+              />
+              <button
+                type="button"
+                aria-label={reveal ? 'Anahtarı gizle' : 'Anahtarı göster'}
+                disabled={disabled}
+                onClick={() => setReveal(!reveal)}
+              >
+                {reveal ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </span>
+            <small>
+              Anahtarı{' '}
+              <a href="https://subdl.com/api-doc" target="_blank" rel="noreferrer noopener">
+                SubDL’in API sayfasından
+              </a>{' '}
+              ücretsiz alabilirsin. Anahtar sunucuda şifreli saklanır, kimseye gösterilmez; aramalar
+              senin hesabının günlük sınırını kullanır.
+            </small>
+          </label>
+          <div className="cs-actions">
+            <button className="button primary" disabled={disabled || !valid}>
+              {busy ? <LoaderCircle size={16} className="spin" /> : <Captions size={16} />}
+              {busy ? 'Doğrulanıyor…' : 'Doğrula ve kaydet'}
+            </button>
+            {enabled && (
+              <button
+                type="button"
+                className="button secondary"
+                disabled={disabled}
+                onClick={() => void onSave(null)}
+              >
+                <Trash2 size={16} />
+                Anahtarı kaldır
+              </button>
+            )}
+          </div>
+        </form>
+      )}
+    </section>
   );
 }
 

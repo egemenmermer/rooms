@@ -50,6 +50,13 @@ export type ImportOptions = {
 
 export class CinemaError extends Error {}
 
+/** A TMDB id as panels send it: a number or a numeric string; "0" and junk mean none. */
+function tmdbOf(value: unknown) {
+  const id =
+    typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : '';
+  return /^[1-9]\d{0,9}$/.test(id) ? id : null;
+}
+
 const fail = (code: string): never => {
   throw new CinemaError(code);
 };
@@ -299,6 +306,8 @@ export class Importer {
       director: clip(asString(row.director), 200),
       durationSec: runtime ? runtime * 60 : null,
       backdrop: backdrop ? artId(backdrop) : null,
+      // Unknown (left out) when the row has none: a film's own info is asked once on demand.
+      tmdbId: kind === 'live' ? null : (tmdbOf(row.tmdb ?? row.tmdb_id) ?? undefined),
     };
   }
 
@@ -439,6 +448,7 @@ export class Importer {
       genre: clip(asString(info.genre), 200),
       cast: clip(asString(info.cast), 500),
       director: clip(asString(info.director), 200),
+      tmdbId: tmdbOf(info.tmdb ?? info.tmdb_id),
     };
   }
 
@@ -466,6 +476,7 @@ export class Importer {
       director: clip(asString(info.director), 200),
       durationSec: asPositiveInt(info.duration_secs),
       backdrop,
+      tmdbId: tmdbOf(info.tmdb_id ?? info.tmdb),
     };
   }
 
