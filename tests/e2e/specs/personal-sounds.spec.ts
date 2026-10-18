@@ -37,6 +37,20 @@ async function tapCues(page: Page) {
     };
   });
 }
+const classicCues = (page: Page) =>
+  page.evaluate(
+    (gain) => (window.__e2eCues ?? []).filter((cue) => Math.abs(cue.volume - gain) < 0.001).length,
+    PERSONAL_SOUND_POLICY.classicGain,
+  );
+/**
+ * Joins with the cue tap in place and waits for the listener's own entrance cue, so the roster
+ * baseline is set before anyone else arrives; people already there at that moment are silent.
+ */
+async function joinListening(voice: VoiceView, room: string) {
+  await tapCues(voice.page);
+  await voice.join(room);
+  await expect.poll(() => classicCues(voice.page), { timeout: 15000 }).toBe(1);
+}
 const personalCues = (page: Page) =>
   page.evaluate(
     (gain) => (window.__e2eCues ?? []).filter((cue) => Math.abs(cue.volume - gain) < 0.001),
@@ -84,21 +98,21 @@ test.describe('personal entrance and leave sounds', () => {
 
     const ownerVoice = new VoiceView(owner);
     const guestVoice = new VoiceView(guest);
-    await guestVoice.join(run.channels.voice.name);
-    await tapCues(guest.page);
+    await joinListening(guestVoice, run.channels.voice.name);
     await ownerVoice.join(run.channels.voice.name);
-    const joinedAt = Date.now();
     await expect(guestVoice.participant(run.owner.username)).toBeVisible();
     await expect
       .poll(() => personalCues(guest.page), { timeout: 15000 })
       .toEqual([{ volume: PERSONAL_SOUND_POLICY.personalGain, bytes: fanfar }]);
+    // The listener's clock decides a short stay, and it saw the join a few seconds after the owner.
+    const heardAt = Date.now();
 
     // A change while connected reaches the others through a live attribute update.
     await owner.page.evaluate(() =>
       window.rooms!.personalSounds!.assign({ enter: 'p.fanfar', leave: 'p.hoscakal' }),
     );
     // Leaving within the short-stay window would play the classic cue instead.
-    const stay = PERSONAL_SOUND_POLICY.shortStayClassicMs + 2000 - (Date.now() - joinedAt);
+    const stay = PERSONAL_SOUND_POLICY.shortStayClassicMs + 2000 - (Date.now() - heardAt);
     if (stay > 0) await owner.page.waitForTimeout(stay);
     await ownerVoice.leave();
     await expect(guestVoice.participant(run.owner.username)).toHaveCount(0, { timeout: 20000 });
@@ -130,20 +144,11 @@ test.describe('personal entrance and leave sounds', () => {
 
     const ownerVoice = new VoiceView(owner);
     const guestVoice = new VoiceView(guest);
-    await guestVoice.join(run.channels.voice.name);
-    await tapCues(guest.page);
+    await joinListening(guestVoice, run.channels.voice.name);
     await ownerVoice.join(run.channels.voice.name);
     await expect(guestVoice.participant(run.owner.username)).toBeVisible();
-    await expect
-      .poll(
-        () =>
-          guest.page.evaluate(
-            (gain) => (window.__e2eCues ?? []).some((cue) => Math.abs(cue.volume - gain) < 0.001),
-            PERSONAL_SOUND_POLICY.classicGain,
-          ),
-        { timeout: 15000 },
-      )
-      .toBe(true);
+    // The owner's entrance is announced, with the classic cue.
+    await expect.poll(() => classicCues(guest.page), { timeout: 15000 }).toBe(2);
     expect(await personalCues(guest.page)).toEqual([]);
   });
 });
