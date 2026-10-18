@@ -45,6 +45,7 @@ Bunlar farklı sistemlerdir. Sosyal websocket'in çalışması medyanın erişil
 | Etkinlik/oyun durumu | Dosya veya PostgreSQL kullanan tek yetkili Activities süreci |
 | Müzik kuyruğu/kaynak yaşam döngüsü | İsteğe bağlı müzik servisi; dinleyici ses seviyesi yereldir |
 | Topluluk Sineması hesabı, kataloğu ve aktarımları | İsteğe bağlı sinema servisi; hesap ve katalog şifreli, aktarım yalnızca bellekte ([Topluluk Sineması](COMMUNITY_CINEMA.md)) |
+| Kişisel giriş ve çıkış sesleri | Erişim servisi `/state/personal-sounds`; seçim LiveKit iznine sunucu özelliği olarak eklenir, çalma dinleyicide yereldir ([Giriş sesi](PERSONAL_SOUNDS.md)) |
 | Agent görevleri/izinleri/şifreli yapılandırma | İsteğe bağlı yalıtılmış Agent servisi |
 
 Kaynak kod kopyası veritabanı yedeği değildir. Her kalıcı depoyu uyumlu yapılandırma ve şifreleme anahtarlarıyla yedekle; sürüm yükseltmeden geri yüklemeyi doğrula. Aktarım şifrelemesi E2EE değildir; uçtan uca şifreleme yapılandırılmamıştır.

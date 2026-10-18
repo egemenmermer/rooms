@@ -200,6 +200,10 @@ services:
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?}
       ROOMS_REGISTRATION_INVITES_FILE: /state/registration-invites.json
       ROOMS_SOUNDBOARD_DIRECTORY: /state/soundboard
+      ROOMS_PERSONAL_SOUNDS_DIRECTORY: /state/personal-sounds
+      # Instance admin: `0` turns personal sound uploads off; presets stay available.
+      ROOMS_PERSONAL_SOUND_UPLOADS: ${ROOMS_PERSONAL_SOUND_UPLOADS:-1}
+      ROOMS_PERSONAL_SOUNDS_MAX_MB: ${ROOMS_PERSONAL_SOUNDS_MAX_MB:-512}
       ROOMS_MUSIC_PLAYLISTS_DIRECTORY: /state/music-playlists
       ROOMS_ACCOUNT_INVITE_MONGO_URL: mongodb://rooms_inviter:${MONGO_INVITER_PASSWORD}@database:27017/revolt?authSource=revolt
       ROOMS_SOCIAL_READ_MONGO_URL: mongodb://rooms_reader:${MONGO_READER_PASSWORD}@database:27017/revolt?authSource=revolt

@@ -10,6 +10,7 @@ ROOMS'u kullanmak için herkesin sunucu kurması gerekmez. Var olan bir toplulu�
 - [Sohbet ve DJ](CHAT_DJ_FOLLOWUP.md): kanallar, fotoğraflar, kuyruk ve geçmiş.
 - [Oyun kuralları](GAME_RULES.md): Holdem, Blackjack, Batak ve 101 Okey.
 - [Uzaktan kontrol](REMOTE_CONTROL.md): yayıncı onayı, kontrolü bırakma ve platform sınırları.
+- [Giriş sesi](PERSONAL_SOUNDS.md): kişisel giriş ve çıkış sesleri, kim neyi duyar, sınırlar ve dinleyici ayarları.
 - [Kişisel medya motorları](PERSONAL_PLAYBACK_ENGINES.md): Standart/VLC yolu ve doğrulama geçmişi.
 
 ## Topluluk yöneticileri için

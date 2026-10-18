@@ -1,4 +1,5 @@
 import { registerSoundboard } from './soundboard';
+import { registerPersonalSounds } from './personal-sounds';
 import { registerMusicGateway } from './music-gateway';
 import { registerMusicPlaylists } from './music-playlists';
 import { registerDmCalls } from './dm-calls';
@@ -30,6 +31,10 @@ import {
 
 export interface AccessConfig {
   soundboardDirectory?: string;
+  personalSoundsDirectory?: string;
+  /** False when the instance administrator turned personal sound uploads off; presets stay. */
+  personalSoundUploads?: boolean;
+  personalSoundsMaxBytes?: number;
   musicPlaylistsDirectory?: string;
   musicName?: string;
   musicUrl?: string;
@@ -231,6 +236,52 @@ export async function createAccessServer(config: AccessConfig) {
         canUpload: (value.permissions & Permissions.SPEAK) !== 0n,
         canManage: value.canManage,
       };
+    },
+  });
+  const personalSounds = registerPersonalSounds(server, {
+    directory: config.personalSoundsDirectory,
+    uploads: config.personalSoundUploads ?? true,
+    maxBytes: config.personalSoundsMaxBytes ?? 512 * 1024 * 1024,
+    currentUser: (token) =>
+      new StoatClient(
+        config.stoatUrl ?? 'http://127.0.0.1:3022',
+        token,
+        socialOptions,
+      ).getCurrentUser(),
+    authorize: async (token, channelId) => ({
+      userId: (await authorize(token, channelId)).user.id,
+    }),
+    // The owner's current membership, read with the listener's session.
+    canView: async (token, channelId, userId) => {
+      const client = new StoatClient(
+        config.stoatUrl ?? 'http://127.0.0.1:3022',
+        token,
+        socialOptions,
+      );
+      const context = reader ? await reader.read(channelId, userId) : null;
+      const channel = context?.channel ?? (await client.getChannel(channelId));
+      if (typeof channel.server !== 'string') return false;
+      const [rawServer, rawMember] = context
+        ? [context.server, context.member]
+        : await Promise.all([
+            client.getServer(channel.server),
+            client.getMember(channel.server, userId),
+          ]);
+      const permissions = stoatChannelPermissions(
+        rawServer as StoatServer,
+        channel as StoatChannel,
+        rawMember as StoatMember,
+        userId,
+      );
+      return (permissions & Permissions.VIEW_CHANNEL) !== 0n;
+    },
+    // Attributes merge, so rooms.deafened stays; a grant whose holder already left fails quietly.
+    onAssignChanged: (userId, attributes) => {
+      for (const grant of grants.values())
+        if (grant.userId === userId)
+          void roomService
+            .updateParticipant(roomName(grant.channelId), userId, { attributes })
+            .catch(() => {});
     },
   });
   registerMusicPlaylists(server, {
@@ -772,10 +823,12 @@ export async function createAccessServer(config: AccessConfig) {
     const token = tokenOf(request.headers.authorization);
     const { user, permissions } = await authorize(token, channelId);
     remoteControl?.revoke(channelId, user.id, true);
+    const attributes = await personalSounds.attributes(user.id);
     const access = new AccessToken(config.apiKey, config.apiSecret, {
       identity: user.id,
       name: user.displayName,
       ttl: 300,
+      ...(Object.keys(attributes).length ? { attributes } : {}),
     });
     access.addGrant({
       roomJoin: true,

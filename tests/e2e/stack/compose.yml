@@ -168,6 +168,7 @@ services:
       ROOMS_ACCOUNT_INVITE_MONGO_URL: mongodb://database:27017/revolt
       ROOMS_SOCIAL_READ_MONGO_URL: mongodb://database:27017/revolt
       ROOMS_SOUNDBOARD_DIRECTORY: /state/soundboard
+      ROOMS_PERSONAL_SOUNDS_DIRECTORY: /state/personal-sounds
       ROOMS_MUSIC_PLAYLISTS_DIRECTORY: /state/music-playlists
       ROOMS_MUSIC_NAME: DJ
     depends_on:
