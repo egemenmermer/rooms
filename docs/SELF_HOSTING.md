@@ -214,6 +214,9 @@ PowerShell'de eşdeğer dosya işlemleri için `New-Item -ItemType Directory -Fo
 | `LIVEKIT_PUBLIC_URL` | İstemcinin ulaşacağı medya adresi; yerelde `ws://127.0.0.1:7880`, uzakta `wss://…` |
 | `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | Eşleşen kendi LiveKit kimlik bilgilerin |
 | `ROOMS_SOUNDBOARD_DIRECTORY` | Yazılabilir kalıcı soundboard dizini |
+| `ROOMS_PERSONAL_SOUNDS_DIRECTORY` | Yazılabilir kalıcı giriş sesi dizini; varsayılan `/state/personal-sounds` |
+| `ROOMS_PERSONAL_SOUND_UPLOADS` | `0` ise üyeler ses yükleyemez; ROOMS'un hazır sesleri seçilebilir kalır |
+| `ROOMS_PERSONAL_SOUNDS_MAX_MB` | Yüklenen giriş seslerinin toplam üst sınırı (MB); varsayılan 512 |
 | `ROOMS_ACTIVITY_DATA` | PostgreSQL yoksa dosya tabanlı etkinlik dizini |
 | `ROOMS_ACTIVITY_DATABASE_URL` | İsteğe bağlı Activities PostgreSQL bağlantısı |
 | `ROOMS_REGISTRATION_INVITES_FILE` | Kalıcı kayıt bileti işlem defteri |
@@ -307,7 +310,10 @@ Temel giriş, sohbet, izinler ve medya çalıştıktan sonra ekle:
 | Kayıt durumu | `ROOMS_REGISTRATION_INVITES_FILE` ve kilit durumu | Kullanılmış/belirsiz durumları koru |
 | Etkinlikler | `ROOMS_ACTIVITY_DATA` veya PostgreSQL | Uyumlu seri hale getirilmiş durum |
 | Soundboard | `ROOMS_SOUNDBOARD_DIRECTORY` | Dosyaları ve sahipliği koru |
+| Giriş sesleri | `ROOMS_PERSONAL_SOUNDS_DIRECTORY` | Kişi klasörlerini olduğu gibi koru |
 | Agent/yapılandırma | Yapılandırılmış veri dizini ve şifreleme anahtarı | Veri ile eşleşen anahtarı ayrı ve korumalı sakla |
+
+**Giriş sesleri.** Her üyenin giriş/çıkış sesleri kendi klasöründe (`<dizin>/<kullanıcı kimliği>/`) durur: seçimler ve yükleme onayının zamanı `profile.json` içinde, sesler ise sunucunun ses düzeyini eşitlediği en fazla 4 saniyelik WAV dosyaları olarak saklanır; yüklenen özgün dosya tutulmaz. Hızlı kurulumda dizin `/opt/rooms/deploy/data/access/personal-sounds` olur ve `rooms backup` yedeğine girer. Yüklemeyi kapatmak için `/opt/rooms/deploy/.env` dosyasına `ROOMS_PERSONAL_SOUND_UPLOADS=0`, toplam alanı değiştirmek için `ROOMS_PERSONAL_SOUNDS_MAX_MB=<MB>` ekleyip `sudo rooms up` çalıştır. Bir kişinin bütün seslerini kaldırmak için o kişinin klasörünü sil; bir sonraki ses bağlantısından itibaren onun için klasik ROOMS sesi çalar.
 
 Activities, başlangıçta PostgreSQL'de mevcut `rooms_activity_state` tablosunu oluşturur. Bu, tam sürümlü migration/geri dönüş sistemi değildir. Tek yetkili Activities süreci kullan; ortak PostgreSQL bağımsız komut işlemcilerini kendiliğinden güvenli yapmaz.
 
