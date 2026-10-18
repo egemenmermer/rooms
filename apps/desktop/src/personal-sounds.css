@@ -1,0 +1,254 @@
+/* Giriş sesi: settings rows, picker and the on-device trim. Motion is pointer-only and opt-out. */
+.personal-sounds {
+  margin-top: 24px;
+}
+.personal-sound-row,
+.personal-sound-option,
+.personal-sound-trial {
+  position: relative;
+}
+.personal-sound-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.personal-sound-name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: #f2f3f7;
+  margin-right: 2px;
+}
+.reference-settings .personal-sound-actions .button {
+  min-height: 32px;
+  padding: 6px 12px;
+}
+.personal-sound-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: #c5c0ff;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition-property: transform;
+  transition-timing-function: linear;
+  pointer-events: none;
+}
+.personal-sound-level {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #b1b5c2;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.personal-sound-level > span {
+  min-width: 34px;
+  text-align: right;
+}
+.reference-settings .personal-sound-level input[type='range'] {
+  width: 150px;
+  margin: 0;
+}
+.reference-settings .personal-sound-error,
+.reference-settings .personal-sound-retry {
+  margin: 12px 0 0;
+}
+.personal-sound-retry > .button {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.modal.personal-sound-modal {
+  width: 500px;
+}
+.personal-sound-group + .personal-sound-group {
+  margin-top: 16px;
+}
+.personal-sound-group > h3 {
+  font-size: 11px;
+  font-weight: 650;
+  color: #9197a7;
+  margin: 0 0 8px;
+}
+.personal-sound-options {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.personal-sound-option {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 0 4px 0 0;
+  border: 1px solid #383c47;
+  border-radius: 8px;
+  background: #1b1d22;
+  overflow: hidden;
+}
+.personal-sound-option.selected {
+  border-color: #b9b2ff;
+  background: #8b83ff12;
+}
+.personal-sound-pick {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border-radius: 7px;
+  text-align: left;
+  font-size: 12px;
+  color: #f2f3f7;
+}
+.personal-sound-pick > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.personal-sound-pick > small {
+  flex-shrink: 0;
+  color: #9197a7;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.personal-sound-pick > svg {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: #c5c0ff;
+}
+@media (hover: hover) and (pointer: fine) {
+  .personal-sound-pick:hover:not(:disabled) {
+    background: #ffffff08;
+  }
+}
+.personal-sound-confirm {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 12px;
+  font-size: 12px;
+  color: #ffafb7;
+}
+.personal-sound-confirm > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reference-settings .personal-sound-confirm .button {
+  min-height: 30px;
+  padding: 4px 11px;
+  font-size: 11px;
+}
+
+.personal-sound-upload {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #383c47;
+}
+.personal-sound-upload > .button {
+  justify-self: start;
+}
+.personal-sound-upload .ref-settings-note {
+  margin: 0;
+}
+.personal-sound-draft {
+  display: grid;
+  gap: 10px;
+}
+.personal-sound-draft .field-label {
+  margin: 0;
+}
+.reference-settings .personal-sound-draft input[type='range'] {
+  margin: 8px 0 0;
+}
+.personal-sound-wave {
+  position: relative;
+  height: 44px;
+  border: 1px solid #383c47;
+  border-radius: 6px;
+  background: #141518;
+  overflow: hidden;
+}
+.personal-sound-wave canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.personal-sound-wave > i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border: 1px solid #b9b2ff;
+  border-radius: 5px;
+  background: #8b83ff14;
+  pointer-events: none;
+}
+.personal-sound-trial {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 6px;
+}
+.personal-sound-trial .ref-settings-note {
+  margin: 0;
+}
+.personal-sound-rights {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 11px;
+  line-height: 1.55;
+  color: #b1b5c2;
+}
+.personal-sound-rights input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 1px 0 0;
+  accent-color: #8b83ff;
+}
+.personal-sound-draft .button-row {
+  align-items: center;
+}
+.personal-sound-problem {
+  font-size: 11px;
+  line-height: 1.55;
+  color: #ffafb7;
+}
+.personal-sound-status {
+  margin-top: 12px;
+  font-size: 11px;
+  color: #8fe1bb;
+}
+
+/* Keyboard and reduced-motion actions stay instant; .button/.icon-button use the app-wide press. */
+html[data-input='pointer'][data-motion='full'] .personal-sound-pick {
+  transition:
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 160ms ease-out;
+}
+html[data-input='pointer'][data-motion='full'] .personal-sound-pick:active:not(:disabled) {
+  transform: scale(0.97);
+}
+html[data-input='pointer'][data-motion='full'] .personal-sound-option {
+  transition:
+    border-color 160ms ease-out,
+    background-color 160ms ease-out;
+}
