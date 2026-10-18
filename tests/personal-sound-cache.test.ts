@@ -122,3 +122,33 @@ it('warms up one clip at a time and follows the newest list', async () => {
   expect(read).toHaveBeenCalledTimes(2);
   expect(await cache.resolve(at('p.c'))).toBe('blob:clip-2');
 });
+it('warms a bounded set once, however often the same roster arrives', async () => {
+  const read = vi
+      .fn<() => Promise<string>>()
+      .mockRejectedValueOnce(new Error('RATE_LIMITED'))
+      .mockResolvedValue(clip),
+    cache = cacheWith(read);
+  // More distinct leave sounds than the cache holds, re-sent with every speaking update.
+  const present = Array.from({ length: 25 }, (_, i) => at(`p.s${i}`, `u${i}`));
+  for (let s = 0; s < 120; s++) {
+    cache.prefetch(present);
+    await vi.advanceTimersByTimeAsync(1000);
+  }
+  // The cache minus the reserve; the failure is not retried while the list stays the same.
+  expect(read).toHaveBeenCalledTimes(16);
+  expect(revoked).toEqual([]);
+});
+it('keeps warmed clips ahead of on-demand clips when evicting', async () => {
+  const read = vi.fn(async () => clip),
+    cache = cacheWith(read);
+  const warm = Array.from({ length: 16 }, (_, i) => at(`p.w${i}`, `u${i}`));
+  cache.prefetch(warm);
+  await vi.advanceTimersByTimeAsync(16 * 300);
+  expect(read).toHaveBeenCalledTimes(16);
+  for (let i = 0; i < 8; i++) await cache.resolve(at(`p.d${i}`));
+  cache.prefetch(warm);
+  await cache.resolve(at('p.d8'));
+  expect(revoked).toEqual(['blob:clip-17']);
+  for (const request of warm) await cache.resolve(request);
+  expect(read).toHaveBeenCalledTimes(25);
+});

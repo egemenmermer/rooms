@@ -14,6 +14,8 @@ export const PERSONAL_SOUND_CACHE_LIMITS = {
   bytes: 10_000_000,
   failureMs: 60_000,
   prefetchGapMs: 300,
+  /** Entries warming never claims, so it cannot evict what it warmed itself. */
+  prefetchReserve: 8,
 };
 const bridgeRead = (): Read | undefined => {
   const bridge = window.rooms?.personalSounds;
@@ -33,6 +35,7 @@ export class PersonalSoundCache {
   private readonly failed = new Map<string, number>();
   private queue: PersonalSoundRequest[] = [];
   private prefetching = false;
+  private warming = '';
   constructor(
     private readonly read: () => Read | undefined = bridgeRead,
     private readonly limits = PERSONAL_SOUND_CACHE_LIMITS,
@@ -54,17 +57,14 @@ export class PersonalSoundCache {
     this.failed.clear();
     this.queue = [];
     this.prefetching = false;
+    this.warming = '';
     this.bytes = 0;
   }
   /** The clip's URL, or null when it cannot be had; never rejects. */
   resolve(request: PersonalSoundRequest): Promise<string | null> {
     const key = this.key(request.sound),
-      ready = this.entries.get(key);
-    if (ready) {
-      this.entries.delete(key);
-      this.entries.set(key, ready);
-      return Promise.resolve(ready.url);
-    }
+      ready = this.touch(key);
+    if (ready) return Promise.resolve(ready.url);
     const running = this.pending.get(key);
     if (running) return running;
     const read = this.read();
@@ -91,9 +91,18 @@ export class PersonalSoundCache {
     this.pending.set(key, task);
     return task;
   }
-  /** Background warm-up, one request at a time; a newer list replaces what is still queued. */
+  /**
+   * Background warm-up of the first requests that fit beside the reserve, one at a time. A newer
+   * list replaces what is still queued; the same list again queues nothing.
+   */
   prefetch(requests: PersonalSoundRequest[]) {
-    this.queue = requests.filter((request) => this.wanted(request));
+    const list = requests.slice(0, Math.max(0, this.limits.entries - this.limits.prefetchReserve));
+    // Warmed clips stay the most recent, so on-demand clips evict each other first.
+    for (const request of list) this.touch(this.key(request.sound));
+    const warming = JSON.stringify(list.map((r) => [r.channelId, r.userId, r.sound]));
+    if (warming === this.warming) return;
+    this.warming = warming;
+    this.queue = list.filter((request) => this.wanted(request));
     if (!this.prefetching && this.queue.length) void this.drain(this.generation);
   }
   private async drain(generation: number) {
@@ -118,6 +127,14 @@ export class PersonalSoundCache {
       !this.failing(key) &&
       this.available
     );
+  }
+  private touch(key: string) {
+    const entry = this.entries.get(key);
+    if (entry) {
+      this.entries.delete(key);
+      this.entries.set(key, entry);
+    }
+    return entry;
   }
   private failing(key: string) {
     const at = this.failed.get(key);
