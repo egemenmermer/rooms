@@ -15,6 +15,7 @@ import { CinemaSettings } from './cinema/CinemaSettings';
 import { SettingsConnection } from './SettingsConnection';
 import { AssistantManagement } from './AssistantManagement';
 import { VoiceAvatar } from './VoiceAvatar';
+import { PersonalSoundSettings } from './PersonalSoundSettings';
 import './reference-settings.css';
 import { AgentReferenceSettingsContent, AgentSettings } from './Agent';
 import { PersonalProviders } from './Providers';
@@ -1244,6 +1245,40 @@ export default function Settings({
                         onChange={(value) => setPreference('roomEventSounds', value)}
                       />
                     </Row>
+                    <Row
+                      title="Kişisel giriş sesleri"
+                      description={
+                        p.roomEventSounds
+                          ? 'Kapalıyken herkes için klasik ses çalar.'
+                          : 'Önce oda giriş ve çıkış seslerini aç.'
+                      }
+                    >
+                      <Toggle
+                        label="Kişisel giriş sesleri"
+                        disabled={!p.roomEventSounds}
+                        value={p.personalSounds}
+                        onChange={(value) => setPreference('personalSounds', value)}
+                      />
+                    </Row>
+                    <Row
+                      title="Efekt ses düzeyi"
+                      description="Yalnızca bu cihazda; konuşmayı bastırmaz."
+                    >
+                      <label className="personal-sound-level">
+                        <input
+                          type="range"
+                          aria-label="Efekt ses düzeyi"
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          value={p.soundEffectsLevel}
+                          onChange={(e) =>
+                            setPreference('soundEffectsLevel', Number(e.target.value))
+                          }
+                        />
+                        <span>{Math.round(p.soundEffectsLevel * 100)}%</span>
+                      </label>
+                    </Row>
                     <label className="field-label">
                       Hoparlör veya kulaklık
                       <select
@@ -1274,6 +1309,7 @@ export default function Settings({
                     <p className="ref-settings-note">Test sesi yalnızca bu cihazda çalar.</p>
                   </section>
                 </div>
+                <PersonalSoundSettings outputId={p.outputId} level={p.soundEffectsLevel} />
                 <div className="ref-settings-grid ref-audio-lower">
                   <section>
                     <h2>Konuşma davranışı</h2>
