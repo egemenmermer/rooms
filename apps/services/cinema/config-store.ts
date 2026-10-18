@@ -40,6 +40,8 @@ export type CommunityConfig = {
   connectedBy: string | null;
   /** Streams relayed at once; never more than the account allows. */
   relaySlots: number;
+  /** The owner's own SubDL API key for subtitle search; never sent to clients. */
+  subtitleKey?: string | null;
 };
 
 /**
@@ -82,6 +84,7 @@ export class ConfigStore {
         connectedAt: null,
         connectedBy: null,
         relaySlots: 1,
+        subtitleKey: null,
       }
     );
   }

@@ -71,7 +71,9 @@ Sunucu 2 vCPU / 3,7 GB RAM'dir, bu yüzden video **dönüştürülmez**.
 
 ## Altyazılar
 
-Film ve dizi bölümlerindeki gömülü metin altyazıları (SubRip, ASS/SSA, mov_text, WebVTT) salonda gösterilir. Altyazıyı her izleyici kendisi seçer; seçim başkasının ekranını değiştirmez.
+Film ve dizi bölümlerinde altyazının üç kaynağı vardır: dosyanın kendi gömülü metin altyazıları (SubRip, ASS/SSA, mov_text, WebVTT), SubDL'de bulunanlar ve izleyicinin kendi dosyası. Altyazıyı her izleyici kendisi seçer; seçim başkasının ekranını değiştirmez.
+
+### Gömülü altyazılar
 
 - **Çıkarma.** Röle, aynı ffmpeg sürecinde her metin altyazısını ayrı bir WebVTT dosyasına (`sub<n>.vtt`) yazar. Sağlayıcıya ikinci bir bağlantı açılmaz. En fazla 16 iz aktarılır.
 - **Desteklenmeyenler.** Görüntü tabanlı altyazılar (PGS, DVD, DVB) OCR gerektirdiği için aktarılmaz. Canlı kanallarda altyazı yoktur.
@@ -79,7 +81,23 @@ Film ve dizi bölümlerindeki gömülü metin altyazıları (SubRip, ASS/SSA, mo
 - **Okuma hızı.** ffmpeg'in `-readrate` ayarı en yavaş akışı izler. Seyrek bir altyazı akışı neredeyse her zaman en yavaşıdır. Bu yüzden ffmpeg cue'lar arasında sınırsız okur, sonraki cue'da ise dakikalarca bekler. Altyazılı filmlerde okuma hızını loopback vekil belirler:
   - HLS çıktısı, ffmpeg başladığından beri geçen süreyi en fazla 15 saniye önde tutar.
   - İlk segmentten sonra baytlar, kaynağın ortalama bit hızının en fazla 1,5 katıyla geçer (2 saniyelik kova). Bu sınır olmasa vekil beklerken biriken veri ffmpeg'e loopback hızında akardı.
-- **Arayüz.** Kontrol çubuğundaki altyazı menüsünde "Kapalı" ve izler yer alır. Salon başka bir dil duyuyorsa ve Türkçe altyazı varsa, Türkçe kendiliğinden açılır. Türkçe seste yalnız zorunlu Türkçe altyazı açılır. Altyazıyı kapatan izleyiciye bir daha kendiliğinden açılmaz.
+
+### Çevrimiçi altyazılar (SubDL)
+
+- **Anahtar.** Topluluk sahibi Sunucu ayarları → Sinema → Altyazılar bölümüne kendi ücretsiz SubDL API anahtarını girer. Servis anahtarı bir aramayla doğrular ve IPTV bilgileri gibi şifreli yapılandırmada saklar. Anahtar hiçbir yanıtta ve günlükte yer almaz; üyeler yalnızca aramanın açık olup olmadığını görür.
+- **Arama.** Servis, filmi veya bölümü TMDB kimliğiyle arar. Xtream satırlarında kimlik yoksa filmin `get_vod_info` yanıtına bir kez bakılır. Kimlik bulunamazsa ad ve yıl kullanılır. Türkçe ve İngilizce altyazılardan en fazla beşer tanesi listelenir; sonuç 12 saat önbellekte tutulur.
+- **İndirme.** İzleyici bir altyazı seçtiğinde servis yalnızca o öğenin son aramasındaki kimliği indirir. Zip'ten SubRip, ASS/SSA veya WebVTT dosyasını alır; sezon paketlerinde istenen bölümü seçer. UTF-8 olmayan dosyalar Windows-1254 kabul edilir. Sonuç WebVTT'ye çevrilir ve yaklaşık 16 MB'lık bellek önbelleğinde tutulur. Masaüstü dosyayı `rooms-cinema://subtitle/<salon>/<öğe>/<kimlik>` adresinden, üyenin Stoat belirteci ana süreçte kalarak alır.
+- **Neden SubDL?** OpenSubtitles'ın entegratör şartları (13 Ekim 2026) indirilen bir altyazının sunucuda tutulup diğer kullanıcılara sunulmasını yasaklıyor ve hesapsız indirme için ücretli plan istiyor. SubDL ise kullanıcının kendi anahtarını uygulamaya girmesine izin veriyor.
+
+### Kendi dosyası ve zamanlama
+
+- **Dosya.** "Dosyadan yükle…" ile izleyici kendi SRT, VTT veya ASS dosyasını (en fazla 2 MB) seçer. Ana süreç dosyayı okuyup WebVTT'ye çevirir; görünüme yalnızca metin geçer, dosya yolu geçmez. Dosya yalnızca o izleyicide görünür.
+- **Zamanlama.** Menüdeki zamanlama satırı altyazıyı yarım saniyelik adımlarla erkene alır veya geciktirir. Bu, farklı bir sürüm için hazırlanmış altyazıları hizalamak içindir ve yalnızca izleyicinin kendisini etkiler.
+
+### Arayüz
+
+- Kontrol çubuğundaki altyazı menüsünde "Kapalı", filmin kendi altyazıları, SubDL'den gelenler, yüklenen dosya, "Dosyadan yükle…" ve zamanlama yer alır. Arama sürerken, anahtar yokken veya altyazı alınamadığında menü bunu açıkça yazar.
+- Salon başka bir dil duyuyorsa Türkçe altyazı kendiliğinden açılır: önce filmin kendi Türkçe izi, yoksa SubDL'deki ilk Türkçe altyazı. Türkçe seste yalnız zorunlu Türkçe altyazı açılır. Altyazıyı kapatan izleyiciye bir daha kendiliğinden açılmaz.
 
 ## Etkinlik protokolü
 
@@ -122,6 +140,9 @@ Salon, `hall` adlı ana etkinliktir; `roomId` salon kanalının kimliğidir. Sı
   - M3U dışa aktarma bağlantısının Xtream'e çevrilmesi
 - `tests/community-cinema-ipc.test.ts`: ana süreç IPC doğrulaması, biletin görünüme gitmemesi, 410 ve hesap değişimi, altyazı izlerinin aynı oturumun `sub<n>.vtt` dosyalarına eşlenmesi.
 - `tests/community-cinema-subtitles.test.ts`: WebVTT okuma ve yazma, yazılmakta olan cue, ffmpeg altyazı çıktıları, eser zamanına çevirme, vekil hız kapısı ve kendiliğinden altyazı seçimi.
+- `tests/community-cinema-online-subtitles.test.ts`: SubRip/ASS okuma, Windows-1254, sınırlı zip okuyucu, taklit SubDL ile arama, sıralama, bölüm süzme, anahtar/sonuç yok/kesinti ayrımı ve zip'ten WebVTT'ye çevirme.
+- `tests/community-cinema-service.test.ts` (çevrimiçi altyazılar): anahtarın yalnız sahipçe girilmesi ve hiçbir yanıtta ya da diskte açık görünmemesi, TMDB kimliğiyle arama, eksik kimlik için `get_vod_info`, bölüm araması, yalnız listelenen kimliklerin bir kez indirilmesi.
+- `tests/caption-file.test.ts`: izleyicinin seçtiği SRT/ASS/VTT dosyasının WebVTT'ye çevrilmesi.
 - `tests/community-cinema-relay-native.test.ts` (`ROOMS_CINEMA_RELAY_NATIVE=1`, ffmpeg 9): seyrek SubRip ve ASS izli bir MKV ile hız sınırı, sarma sonrası zamanlama ve eser zamanındaki cue'lar.
 
 Bunlar birim, taklit servis ve yerel kontrollerdir. Gerçek sağlayıcı hesabı, iki fiziksel bilgisayarda birlikte izleme, Windows ve uzun canlı yayın kabulü ayrıca yapılmalıdır.

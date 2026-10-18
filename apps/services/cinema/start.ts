@@ -7,6 +7,7 @@ import { RelayManager } from './relay';
 import { registerRelayRoutes } from './relay-routes';
 import { SecureFiles } from './secure-file';
 import { createCinemaServer } from './server';
+import { SubtitleSearch } from './subtitles';
 import { CatalogStore, CinemaService } from './service';
 import { issueTicket } from './tickets';
 
@@ -67,6 +68,7 @@ async function main() {
       return (await response.json()) as ActivityResponse;
     },
     image: (url) => importer.image(url),
+    subtitles: new SubtitleSearch({ userAgent }),
     maxRelays: Number(process.env.ROOMS_CINEMA_MAX_RELAYS ?? 1),
     log,
   });

@@ -26,8 +26,19 @@ export {
   type CinemaErrorCode,
   type CinemaItemsQuery,
   type CinemaPage,
+  type CinemaExternalSubtitleSource,
+  type CinemaExternalSubtitleSources,
   type CinemaSourceInput,
   type CinemaSubtitleSource,
   type CinemaWatchSource,
 } from './bridge';
-export { cueText, formatVtt, parseVtt, type SubtitleCue } from './webvtt';
+export {
+  cueText,
+  decodeSubtitle,
+  formatVtt,
+  parseAss,
+  parseSrt,
+  parseVtt,
+  subtitleCues,
+  type SubtitleCue,
+} from './webvtt';

@@ -13,6 +13,7 @@ import {
 } from '../../../packages/community-cinema/src/xtream';
 import type {
   CinemaDetails,
+  CinemaExternalSubtitles,
   CinemaImportProgress,
   CinemaStatus,
   CinemaSubtitleTrack,
@@ -33,6 +34,7 @@ import {
   type ConfigStore,
 } from './config-store';
 import { CinemaError, safeError, type Importer } from './importer';
+import type { SubtitleCandidate, SubtitleQuery } from './subtitles';
 import type { SecureFiles } from './secure-file';
 
 export type RelaySource = { url: string; headers: Record<string, string>; live: boolean };
@@ -64,6 +66,13 @@ export interface RelayPort {
   sessionsOf(communityId: string): RelayInfo[];
   stop(session: string): Promise<void>;
   stopCommunity(communityId: string): Promise<void>;
+}
+
+/** The part of the SubDL client the service drives. */
+export interface SubtitlePort {
+  verify(key: string): Promise<void>;
+  search(key: string, query: SubtitleQuery): Promise<SubtitleCandidate[]>;
+  download(id: string, episode?: { season: number; episode: number }): Promise<string>;
 }
 
 export type TicketIssuer = (claims: { session: string; userId: string; hallId: string }) => {
@@ -160,6 +169,8 @@ export type CinemaServiceOptions = {
   activity(token: string, hallId: string): Promise<ActivityResponse>;
   /** Fetches provider artwork (size and type checked). */
   image(url: string): Promise<{ body: Buffer; type: string }>;
+  /** Subtitle search with the owner's key; absent, films only offer their own subtitles. */
+  subtitles?: SubtitlePort;
   maxRelays?: number;
   log?: (line: string) => void;
   now?: () => number;
@@ -167,6 +178,9 @@ export type CinemaServiceOptions = {
 
 const GUIDE_REFRESH_MS = 12 * 3600_000;
 const CATALOG_REFRESH_MS = 24 * 3600_000;
+const SUBTITLE_LIST_MS = 12 * 3600_000;
+const SUBTITLE_LISTS = 500;
+const SUBTITLE_FILE_BYTES = 16 * 1024 * 1024;
 
 export class CinemaService {
   private readonly jobs = new Map<string, Job>();
@@ -181,6 +195,13 @@ export class CinemaService {
   private readonly art = new Map<string, { body: Buffer; type: string }>();
   private artBytes = 0;
   private readonly artLoads = new Map<string, Promise<{ body: Buffer; type: string }>>();
+  /** `communityId\nref` → the last subtitle search; downloads must come from it. */
+  private readonly subtitleLists = new Map<string, { at: number; list: SubtitleCandidate[] }>();
+  private readonly subtitleSearches = new Map<string, Promise<SubtitleCandidate[]>>();
+  /** `communityId\nref\nid` → WebVTT, least recently used first (about 16 MB). */
+  private readonly subtitleFiles = new Map<string, string>();
+  private readonly subtitleLoads = new Map<string, Promise<string>>();
+  private subtitleBytes = 0;
 
   constructor(private readonly options: CinemaServiceOptions) {}
 
@@ -229,6 +250,7 @@ export class CinemaService {
       },
       importing: this.jobs.get(communityId)?.progress ?? this.failedJob(communityId),
       relaySlots: this.slots(config),
+      subtitleSearch: !!config.subtitleKey && !!this.options.subtitles,
     };
   }
 
@@ -273,6 +295,7 @@ export class CinemaService {
   }
 
   async disconnect(communityId: string) {
+    this.forgetSubtitles(communityId);
     this.jobs.get(communityId)?.abort.abort();
     this.jobs.delete(communityId);
     this.lastJobs.delete(communityId);
@@ -287,6 +310,124 @@ export class CinemaService {
       connectedAt: null,
       connectedBy: null,
     }));
+  }
+
+  /** Owner: verifies and stores (or removes) the community's SubDL API key. */
+  async setSubtitleKey(communityId: string, key: string | null) {
+    const subtitles = this.options.subtitles ?? fail('CINEMA_SUBTITLE_UNAVAILABLE');
+    if (key) await subtitles.verify(key);
+    this.options.configs.update(communityId, (config) => ({ ...config, subtitleKey: key }));
+    this.forgetSubtitles(communityId);
+  }
+
+  private forgetSubtitles(communityId: string) {
+    const prefix = `${communityId}\n`;
+    for (const key of this.subtitleLists.keys())
+      if (key.startsWith(prefix)) this.subtitleLists.delete(key);
+    for (const [key, text] of this.subtitleFiles)
+      if (key.startsWith(prefix)) {
+        this.subtitleFiles.delete(key);
+        this.subtitleBytes -= text.length;
+      }
+  }
+
+  /** Subtitles found online for a film or episode of the hall's catalog. */
+  async externalSubtitles(communityId: string, ref: string): Promise<CinemaExternalSubtitles> {
+    const key = this.options.configs.get(communityId).subtitleKey;
+    this.catalog(communityId);
+    if (!key || !this.options.subtitles) return { available: false, subtitles: [] };
+    const list = await this.subtitleList(communityId, ref, key);
+    return {
+      available: true,
+      subtitles: list.map(({ id, label, language, hearingImpaired }) => ({
+        id,
+        label,
+        language,
+        hearingImpaired,
+      })),
+    };
+  }
+
+  /** One subtitle from the item's last search, as WebVTT on the work's timeline. */
+  async subtitleFile(communityId: string, ref: string, id: string) {
+    const key = this.options.configs.get(communityId).subtitleKey;
+    const subtitles = this.options.subtitles;
+    if (!key || !subtitles) return fail('CINEMA_SUBTITLE_UNAVAILABLE');
+    const list = await this.subtitleList(communityId, ref, key);
+    if (!list.some((candidate) => candidate.id === id)) fail('CINEMA_ITEM_NOT_FOUND');
+    const cacheKey = `${communityId}\n${ref}\n${id}`;
+    const cached = this.subtitleFiles.get(cacheKey);
+    if (cached !== undefined) {
+      this.subtitleFiles.delete(cacheKey);
+      this.subtitleFiles.set(cacheKey, cached);
+      return cached;
+    }
+    let load = this.subtitleLoads.get(cacheKey);
+    if (!load) {
+      const episode = this.catalog(communityId).episode(ref)?.episode;
+      load = subtitles
+        .download(id, episode ? { season: episode.season, episode: episode.episode } : undefined)
+        .finally(() => this.subtitleLoads.delete(cacheKey));
+      this.subtitleLoads.set(cacheKey, load);
+    }
+    const text = await load;
+    if (!this.subtitleFiles.has(cacheKey)) {
+      this.subtitleFiles.set(cacheKey, text);
+      this.subtitleBytes += text.length;
+      for (const [oldKey, old] of this.subtitleFiles) {
+        if (this.subtitleBytes <= SUBTITLE_FILE_BYTES) break;
+        this.subtitleFiles.delete(oldKey);
+        this.subtitleBytes -= old.length;
+      }
+    }
+    return text;
+  }
+
+  private async subtitleList(communityId: string, ref: string, key: string) {
+    const cacheKey = `${communityId}\n${ref}`;
+    const cached = this.subtitleLists.get(cacheKey);
+    if (cached && this.now() - cached.at < SUBTITLE_LIST_MS) return cached.list;
+    let search = this.subtitleSearches.get(cacheKey);
+    if (!search) {
+      search = this.subtitleQuery(communityId, ref)
+        .then((query) => this.options.subtitles!.search(key, query))
+        .finally(() => this.subtitleSearches.delete(cacheKey));
+      this.subtitleSearches.set(cacheKey, search);
+    }
+    const list = await search;
+    this.subtitleLists.delete(cacheKey);
+    this.subtitleLists.set(cacheKey, { at: this.now(), list });
+    for (const oldKey of this.subtitleLists.keys()) {
+      if (this.subtitleLists.size <= SUBTITLE_LISTS) break;
+      this.subtitleLists.delete(oldKey);
+    }
+    return list;
+  }
+
+  /** TMDB id when the provider gave one (asking for it once on older catalogs), else name. */
+  private async subtitleQuery(communityId: string, ref: string): Promise<SubtitleQuery> {
+    const catalog = this.catalog(communityId);
+    const hit = ref.startsWith('e-') ? catalog.episode(ref) : null;
+    // Titles often end in the year, which goes to SubDL on its own.
+    const name = (title: string) => title.replace(/\s*\(\d{4}\)\s*$/, '');
+    if (hit)
+      return {
+        kind: 'tv',
+        tmdbId: hit.series.tmdbId ?? null,
+        name: name(hit.series.title),
+        year: hit.series.year,
+        season: hit.episode.season,
+        episode: hit.episode.episode,
+      };
+    const item = catalog.item(ref);
+    if (item?.kind !== 'movie') return fail('CINEMA_ITEM_NOT_FOUND');
+    const source = this.options.configs.get(communityId).source;
+    if (item.tmdbId === undefined && source?.kind === 'xtream') {
+      const info = await this.options.importer.vodInfo(source, item).catch(() => null);
+      item.tmdbId = info?.tmdbId ?? null;
+      this.options.catalogs.saveSoon(communityId);
+    }
+    return { kind: 'movie', tmdbId: item.tmdbId ?? null, name: name(item.title), year: item.year };
   }
 
   reload(communityId: string, scope: 'all' | 'guide') {
@@ -420,6 +561,7 @@ export class CinemaService {
         item.genre ??= info.genre;
         item.cast ??= info.cast;
         item.director ??= info.director;
+        item.tmdbId ??= info.tmdbId;
         changed = true;
       }
     }
@@ -435,6 +577,7 @@ export class CinemaService {
         item.genre ??= info.genre;
         item.cast ??= info.cast;
         item.director ??= info.director;
+        item.tmdbId ??= info.tmdbId;
         item.durationSec = info.durationSec;
         if (info.backdrop) {
           const id = catalog.registerArt(info.backdrop);

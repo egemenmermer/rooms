@@ -96,6 +96,7 @@ export async function startProvider(now: number) {
                 added: '1710000000',
                 container_extension: 'mkv',
                 stream_icon: 'http://img.provider/kis.jpg',
+                tmdb: '1001001',
               },
               {
                 stream_id: 3002,
@@ -103,6 +104,7 @@ export async function startProvider(now: number) {
                 category_id: '7',
                 rating_5based: 4.5,
                 added: '1690000000',
+                tmdb: '0',
               },
             ]),
           );
@@ -118,6 +120,7 @@ export async function startProvider(now: number) {
                 cover: 'http://img.provider/sk.jpg',
                 plot: 'Bir virüs…',
                 last_modified: '1720000000',
+                tmdb: 5005005,
               },
             ]),
           );
@@ -152,6 +155,7 @@ export async function startProvider(now: number) {
                 plot: 'Kapadokya’da bir otel.',
                 duration_secs: 11760,
                 director: 'Nuri Bilge Ceylan',
+                tmdb_id: 2002002,
               },
             }),
           );

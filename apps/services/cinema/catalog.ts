@@ -27,6 +27,11 @@ export type StoredItem = CinemaItem & {
   director: string | null;
   durationSec: number | null;
   backdrop: string | null;
+  /**
+   * TMDB id from the provider, for subtitle search. Absent: not known yet (older snapshots,
+   * rows without one); null: the provider has none.
+   */
+  tmdbId?: string | null;
 };
 
 export type StoredEpisode = CinemaEpisode & {

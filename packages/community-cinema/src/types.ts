@@ -105,6 +105,8 @@ export type CinemaStatus = {
   importing: CinemaImportProgress | null;
   /** Streams the server may relay at once. */
   relaySlots: number;
+  /** Whether films can look up subtitles (the owner added a SubDL key). The key never leaves. */
+  subtitleSearch: boolean;
 };
 
 export type CinemaWatch = {
@@ -137,6 +139,20 @@ export type CinemaWatch = {
 };
 
 export type CinemaAudioTrack = { index: number; label: string };
+
+/** A subtitle found online for a film or episode (SubDL), opaque to clients. */
+export type CinemaExternalSubtitle = {
+  id: string;
+  label: string;
+  language: 'tur' | 'eng';
+  hearingImpaired: boolean;
+};
+
+export type CinemaExternalSubtitles = {
+  /** False when the owner has not added a SubDL key. */
+  available: boolean;
+  subtitles: CinemaExternalSubtitle[];
+};
 
 export type CinemaSubtitleTrack = {
   index: number;

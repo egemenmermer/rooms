@@ -13,14 +13,17 @@ import {
   ChevronDown,
   ChevronUp,
   Eye,
+  FileUp,
   Languages,
   Maximize,
   Maximize2,
   Minimize,
+  Minus,
   PanelRightClose,
   PanelRightOpen,
   Pause,
   Play,
+  Plus,
   RotateCcw,
   SkipForward,
   Volume1,
@@ -34,7 +37,12 @@ import { clock, expectedPosition } from '../cinema-youtube';
 import { cinemaErrorCopy, cinemaErrorText, getCinemaBridge } from './cinema-bridge';
 import { knownItem } from './catalog-cache';
 import { QualityBadges } from './CinemaArt';
-import { HallPlayer, type PlayerControls, type PlayerSnapshot } from './HallPlayer';
+import {
+  HallPlayer,
+  type PlayerControls,
+  type PlayerSnapshot,
+  type SubtitleOption,
+} from './HallPlayer';
 import { isHallItem, viewerLabel } from './hall-model';
 import { useHall } from './use-hall';
 
@@ -388,11 +396,20 @@ export function HallStage({
                 }}
               />
             )}
-            {hallItem && player && !live && player.subtitleTracks.length > 0 && (
+            {hallItem && player && !live && (
               <SubtitleMenu
-                tracks={player.subtitleTracks}
-                selected={player.subtitle}
-                onPick={(track) => controls.current?.setSubtitle(track)}
+                player={player}
+                onPick={(key) => controls.current?.setSubtitle(key)}
+                onOffset={(seconds) => controls.current?.setSubtitleOffset(seconds)}
+                onFile={() =>
+                  void controls.current
+                    ?.chooseSubtitleFile()
+                    .catch(() =>
+                      hall.notify(
+                        'Altyazı dosyası okunamadı. En fazla 2 MB boyutunda bir SRT, VTT ya da ASS dosyası seç.',
+                      ),
+                    )
+                }
               />
             )}
             <ControlButton
@@ -469,19 +486,52 @@ function AudioMenu({
   );
 }
 
+const onlineNote: Record<PlayerSnapshot['onlineSubtitles'], string | null> = {
+  idle: null,
+  loading: 'Çevrimiçi altyazı aranıyor…',
+  ready: null,
+  unavailable: 'Çevrimiçi altyazı için topluluk sahibinin SubDL anahtarı gerekiyor.',
+  error: 'Çevrimiçi altyazı şu an alınamadı. Biraz sonra yeniden dene.',
+};
+
+const seconds = (value: number) =>
+  `${value > 0 ? '+' : ''}${value.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} sn`;
+
 /** This viewer's subtitles; nobody else's screen changes. */
 function SubtitleMenu({
-  tracks,
-  selected,
+  player,
   onPick,
+  onOffset,
+  onFile,
 }: {
-  tracks: { index: number; label: string }[];
-  selected: number | null;
-  onPick(track: number | null): void;
+  player: PlayerSnapshot;
+  onPick(key: string | null): void;
+  onOffset(seconds: number): void;
+  onFile(): void;
 }) {
   const [open, setOpen] = useState(false);
-  const current = tracks.find((t) => t.index === selected);
-  const options = [{ index: null, label: 'Kapalı' }, ...tracks];
+  const tracks = player.subtitleTracks;
+  const current = tracks.find((t) => t.key === player.subtitle);
+  const group = (origin: SubtitleOption['origin']) => tracks.filter((t) => t.origin === origin);
+  const note =
+    onlineNote[player.onlineSubtitles] ??
+    (player.onlineSubtitles === 'ready' && !group('online').length
+      ? 'Çevrimiçi altyazı bulunamadı.'
+      : null);
+  const option = (track: { key: string | null; label: string }) => (
+    <button
+      key={track.key ?? 'off'}
+      role="menuitemradio"
+      aria-checked={track.key === player.subtitle}
+      onClick={() => {
+        setOpen(false);
+        onPick(track.key);
+      }}
+    >
+      <Check size={14} style={{ opacity: track.key === player.subtitle ? 1 : 0 }} />
+      {track.label}
+    </button>
+  );
   return (
     <span
       className="hall-audio-menu"
@@ -498,25 +548,50 @@ function SubtitleMenu({
         onClick={() => setOpen((value) => !value)}
       >
         <Captions size={17} />
-        <span>{current?.label.split(' · ')[0] ?? 'Kapalı'}</span>
+        <span>{current ? current.label.split(' · ')[0] : 'Kapalı'}</span>
       </button>
       {open && (
-        <span className="hall-audio-list" role="menu">
+        <span className="hall-audio-list hall-subtitle-list" role="menu">
           <small>Yalnızca sende değişir</small>
-          {options.map((track) => (
+          {option({ key: null, label: 'Kapalı' })}
+          {group('embedded').length > 0 && <small>Filmin altyazıları</small>}
+          {group('embedded').map(option)}
+          {group('online').length > 0 && <small>SubDL'den</small>}
+          {group('online').map(option)}
+          {group('file').map(option)}
+          {note && <small className="hall-subtitle-note">{note}</small>}
+          <button
+            onClick={() => {
+              setOpen(false);
+              onFile();
+            }}
+          >
+            <FileUp size={14} />
+            Dosyadan yükle…
+          </button>
+          <span className="hall-subtitle-timing" role="group" aria-label="Altyazı zamanlaması">
+            <span>Zamanlama</span>
             <button
-              key={track.index ?? 'off'}
-              role="menuitemradio"
-              aria-checked={track.index === selected}
-              onClick={() => {
-                setOpen(false);
-                onPick(track.index);
-              }}
+              aria-label="Altyazıyı yarım saniye erkene al"
+              disabled={!current}
+              onClick={() => onOffset(player.subtitleOffset - 0.5)}
             >
-              <Check size={14} style={{ opacity: track.index === selected ? 1 : 0 }} />
-              {track.label}
+              <Minus size={13} />
             </button>
-          ))}
+            <output aria-live="polite">{seconds(player.subtitleOffset)}</output>
+            <button
+              aria-label="Altyazıyı yarım saniye geciktir"
+              disabled={!current}
+              onClick={() => onOffset(player.subtitleOffset + 0.5)}
+            >
+              <Plus size={13} />
+            </button>
+            {player.subtitleOffset !== 0 && (
+              <button aria-label="Zamanlamayı sıfırla" onClick={() => onOffset(0)}>
+                <RotateCcw size={13} />
+              </button>
+            )}
+          </span>
         </span>
       )}
     </span>
