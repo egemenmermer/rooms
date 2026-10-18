@@ -15,7 +15,7 @@ import {
   type RelayPort,
   type SubtitlePort,
 } from '../apps/services/cinema/service';
-import type { SubtitleQuery } from '../apps/services/cinema/subtitles';
+import type { SubtitleCandidate, SubtitleQuery } from '../apps/services/cinema/subtitles';
 import type { CinemaAuthority } from '../apps/services/cinema/authority';
 import {
   PROVIDER_PASSWORD,
@@ -105,6 +105,8 @@ async function setup() {
       stopped.push(communityId);
     },
   };
+  const clock = { offsetMs: 0 };
+  const subtitleResults: SubtitleCandidate[][] = [];
   const subtitleCalls = {
     verify: [] as string[],
     search: [] as (SubtitleQuery & { key: string })[],
@@ -117,6 +119,8 @@ async function setup() {
     },
     async search(key, query) {
       subtitleCalls.search.push({ ...query, key });
+      const queued = subtitleResults.shift();
+      if (queued) return queued;
       return [
         {
           id: '3197651-3213944',
@@ -134,6 +138,7 @@ async function setup() {
   };
   const service = new CinemaService({
     subtitles,
+    now: () => Date.now() + clock.offsetMs,
     configs,
     catalogs,
     importer: new Importer({ userAgent: 'ROOMS-Cinema/test', allowPrivateNetwork: true }),
@@ -201,6 +206,8 @@ async function setup() {
     service,
     catalogs,
     subtitleCalls,
+    subtitleResults,
+    clock,
   };
 }
 
@@ -620,6 +627,24 @@ describe('community cinema online subtitles', () => {
     expect((await s.call('GET', `/v1/halls/${HALL}/subtitles/l-1001`, 'member-token')).status).toBe(
       404,
     );
+  });
+
+  it('asks again after ten minutes when a search found nothing', async () => {
+    await s.connect();
+    await s.call('PUT', `/v1/communities/${COMMUNITY}/subtitles`, 'owner-token', { key: KEY });
+    const list = `/v1/halls/${HALL}/subtitles/m-3001`;
+    s.subtitleResults.push([]);
+    expect((await s.call('GET', list, 'member-token')).body.subtitles).toEqual([]);
+    s.clock.offsetMs = 9 * 60_000;
+    expect((await s.call('GET', list, 'member-token')).body.subtitles).toEqual([]);
+    expect(s.subtitleCalls.search).toHaveLength(1);
+    s.clock.offsetMs = 11 * 60_000;
+    expect((await s.call('GET', list, 'member-token')).body.subtitles).toHaveLength(1);
+    expect(s.subtitleCalls.search).toHaveLength(2);
+    // Found lists stay for hours.
+    s.clock.offsetMs = 3 * 3600_000;
+    await s.call('GET', list, 'member-token');
+    expect(s.subtitleCalls.search).toHaveLength(2);
   });
 
   it("asks a film's own info for a TMDB id it lacks, and searches episodes by series", async () => {

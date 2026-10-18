@@ -111,10 +111,15 @@ describe('SubDL client', () => {
       release_name: 'Film.2026.1080p.WEB-DL',
       lang: 'turkish',
       language: 'TR',
-      url: '/subtitle/11-12.zip',
+      // SubDL appends the caller's key to every download URL.
+      url: '/subtitle/11-12.zip?api_key=owner-key-1',
       hi: false,
     },
-    { release_name: 'Film.2026.English', language: 'EN', url: '/subtitle/21-22.zip' },
+    {
+      release_name: 'Film.2026.English',
+      language: 'EN',
+      url: '/subtitle/21-22.zip?api_key=owner-key-1&x=1',
+    },
     { release_name: 'Film.2026.TR.SDH', language: 'TR', url: '/subtitle/31-32.zip', hi: true },
     { release_name: 'http://spam.example', language: 'TR', url: '/subtitle/41-42.zip' },
     { release_name: 'Wrong', language: 'FR', url: '/subtitle/51-52.zip' },
@@ -147,6 +152,7 @@ describe('SubDL client', () => {
       ['31-32', 'Türkçe · Film.2026.TR.SDH · İşitme engelli'],
       ['21-22', 'İngilizce · Film.2026.English'],
     ]);
+    expect(JSON.stringify(found)).not.toContain('owner-key-1');
     expect(seen[0]!.origin + seen[0]!.pathname).toBe('https://api.subdl.com/api/v1/subtitles');
     expect(Object.fromEntries(seen[0]!.searchParams)).toMatchObject({
       api_key: 'owner-key-1',

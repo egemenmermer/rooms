@@ -179,6 +179,8 @@ export type CinemaServiceOptions = {
 const GUIDE_REFRESH_MS = 12 * 3600_000;
 const CATALOG_REFRESH_MS = 24 * 3600_000;
 const SUBTITLE_LIST_MS = 12 * 3600_000;
+// A search that found nothing is asked again sooner: SubDL may simply not have it yet.
+const SUBTITLE_EMPTY_MS = 10 * 60_000;
 const SUBTITLE_LISTS = 500;
 const SUBTITLE_FILE_BYTES = 16 * 1024 * 1024;
 
@@ -386,11 +388,22 @@ export class CinemaService {
   private async subtitleList(communityId: string, ref: string, key: string) {
     const cacheKey = `${communityId}\n${ref}`;
     const cached = this.subtitleLists.get(cacheKey);
-    if (cached && this.now() - cached.at < SUBTITLE_LIST_MS) return cached.list;
+    const ttl = cached?.list.length ? SUBTITLE_LIST_MS : SUBTITLE_EMPTY_MS;
+    if (cached && this.now() - cached.at < ttl) return cached.list;
     let search = this.subtitleSearches.get(cacheKey);
     if (!search) {
       search = this.subtitleQuery(communityId, ref)
-        .then((query) => this.options.subtitles!.search(key, query))
+        .then(async (query) => {
+          const via = query.tmdbId ? 'tmdb' : 'name';
+          try {
+            const found = await this.options.subtitles!.search(key, query);
+            this.log(`subtitles ${ref}: ${found.length} found by ${via}`);
+            return found;
+          } catch (error) {
+            this.log(`subtitles ${ref}: search by ${via} failed (${safeError(error)})`);
+            throw error;
+          }
+        })
         .finally(() => this.subtitleSearches.delete(cacheKey));
       this.subtitleSearches.set(cacheKey, search);
     }
