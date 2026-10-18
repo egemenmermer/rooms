@@ -120,7 +120,10 @@ describe('presets', () => {
     for (const { id } of PERSONAL_SOUND_PRESETS) {
       expect(isPersonalSoundId(id)).toBe(true);
       const raw = renderPersonalSoundPreset(id);
-      expect(raw).toEqual(renderPersonalSoundPreset(id));
+      // Byte comparison; a deep equal over 96k floats dominates the test's runtime.
+      expect(
+        Buffer.from(raw.buffer).equals(Buffer.from(renderPersonalSoundPreset(id).buffer)),
+      ).toBe(true);
       const result = processPersonalSound(raw);
       expect(result.durationSec).toBeGreaterThan(0.1);
       expect(result.durationSec).toBeLessThanOrEqual(2);
