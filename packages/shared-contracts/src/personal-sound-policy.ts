@@ -80,7 +80,7 @@ export class PersonalCuePolicy {
     }
     return due;
   }
-  /** A new room, account or a rebased roster: forget pending departures and history. */
+  /** A new room or account, or cues that cannot be heard: forget pending departures and history. */
   reset() {
     this.joined.clear();
     this.left.clear();
