@@ -52,16 +52,18 @@ Eski istemciler bilmedikleri özelliği yok sayar ve klasik sesi çalar.
 
 Her dinleyici aynı kuralları uygular; kurallar `packages/shared-contracts/src/personal-sound-policy.ts` dosyasındadır ve iPhone'da birebir aynıdır.
 
-- Sen odaya girerken veya bağlantın yenilenirken içeridekiler için ses çalmaz.
-- Çıkış sesi 1,5 saniye bekler. Kişi bu sürede geri gelirse (yeniden bağlanma) iki ses de çalmaz.
+- Sen odaya girerken veya bağlantın yenilenirken içeridekiler için ses çalmaz. Bağlantının yenilenmesi geçmişi silmez: bekleyen çıkışlar ve bekleme süreleri korunur.
+- Çıkış sesi 1,5 saniye bekler. Kişi bu sürede geri gelirse (yeniden bağlanma) iki ses de çalmaz. Bu bekleme sırasında kişinin sesi indirilir.
 - 30 saniye içinde geri dönen veya 10 saniyeden kısa kalan kişi için klasik ses çalar.
 - Aynı kişinin aynı olay için kişisel sesi en fazla 2 dakikada bir çalar.
-- Oda genelinde 5 saniyede en fazla bir kişisel ses çalar; sesler üst üste binmez. Diğer olaylar kısa klasik sese düşer. 400 ms içindeki klasik sesler tek ses olur.
+- Oda genelinde 5 saniyede en fazla bir kişisel ses çalar. Bir kişisel ses hâlâ çalıyorsa yenisi başlamaz, yerine klasik ses çalar. 400 ms içindeki klasik sesler tek ses olur.
 - 1,5 saniyede hazır olmayan kişisel ses atılır; yerine klasik ses çalar. Geç çalma veya kuyruk yoktur.
+- Odadan atılınca veya bağlantı tamamen kopunca bekleyen sesler iptal olur.
+- Çıkış seslerinin anında çalabilmesi için odadakilerin sesleri önceden indirilir; bu en fazla 16 sesle sınırlıdır ve aynı liste tekrar indirilmez.
 
 ## Depolama, gizlilik ve moderasyon
 
-- Sesler erişim servisinde `/state/personal-sounds/<kullanıcı-id>/` altında saklanır (`profile.json` ve `<uuid>.wav`). Herkese açık değildir. Yalnızca aynı ses kanalına bağlanabilen doğrulanmış üyeler indirebilir.
+- Sesler erişim servisinde `/state/personal-sounds/<kullanıcı-id>/` altında saklanır (`profile.json` ve `<uuid>.wav`). Herkese açık değildir. Bir yüklemeyi yalnızca o ses kanalına bağlanabilen doğrulanmış üyeler indirebilir; sesin sahibi de o kanalı görebiliyor olmalıdır. Yükleme, oturum doğrulanmadan okunmaz.
 - Silinen ses hemen kaldırılır; atanmışsa o olay klasik sese döner.
 - Sunucu ayarları ve yönetici işlemleri [sunucu rehberindedir](SELF_HOSTING.md): yüklemeyi kapatma, toplam alan sınırı ve bir kişinin seslerini silme.
 - Hesap silindiğinde sesler şimdilik kendiliğinden temizlenmez; yönetici klasörü elle siler.
@@ -69,4 +71,6 @@ Her dinleyici aynı kuralları uygular; kurallar `packages/shared-contracts/src/
 
 ## Doğrulama durumu
 
-Birim ve HTTP testleri bu sürümle gelir. İki fiziksel masaüstü ve bir iPhone ile gerçek oda kabulü ayrıca yapılmalıdır: duyulabilirlik ve ses düzeyi, yeniden bağlanma, ekran paylaşımı sürerken çalma, Windows'ta çalma, iPhone hoparlöründe yankı, Bluetooth ve kilitli ekran. Bunlar doğrulanmadan çalıştığı söylenmemelidir.
+- **Birim ve HTTP testleri** bu sürümle gelir. Ses işleme, politika, erişim servisi rotaları, masaüstü çalma ve ayarlar, iPhone RoomsCore kapsanır.
+- **Servis entegrasyonu (3. seviye):** `tests/e2e/specs/personal-sounds.spec.ts`, yerel yığında iki gerçek Electron istemcisiyle gerçek erişim servisi ve LiveKit v1.9.12'ye karşı çalışır. Doğrulananlar: Ayarlar'dan seçilen ses, LiveKit özelliği olarak diğer üyeye ulaşır ve o üye sahibin sesini çalar. Oda içindeyken yapılan değişiklik canlı uygulanır. Kişisel sesleri kapatan dinleyici klasik sesi duyar. Sesler Chromium'un sentetik çıkışına çalar; kulakla dinlenmez.
+- **Henüz yapılmadı (4. seviye):** iki fiziksel masaüstü ve bir iPhone ile gerçek oda kabulü. Duyulabilirlik ve ses düzeyi, gerçek ağda yeniden bağlanma, ekran paylaşımı sürerken çalma, Windows'ta çalma, iPhone hoparlöründe yankı, Bluetooth ve kilitli ekran ayrıca denenmelidir. Bunlar doğrulanmadan çalıştığı söylenmemelidir.
