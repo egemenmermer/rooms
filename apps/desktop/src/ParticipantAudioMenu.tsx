@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRealtime, setParticipantVolume } from './realtime';
+import { setPersonalSoundMuted, usePersonalSoundMutes } from './personal-sound-mutes';
 import './participant-audio-menu.css';
 /** Playback controls belong to this listener, never to the server participant. */
 export function ParticipantAudioMenu() {
@@ -12,6 +13,7 @@ export function ParticipantAudioMenu() {
   const live = useRef(voice);
   live.current = voice;
   const person = voice.participants.find((p) => p.id === target?.id && !p.local);
+  const soundMuted = usePersonalSoundMutes((state) => !!target && state.muted.includes(target.id));
   useEffect(() => {
     const open = (event: MouseEvent | KeyboardEvent) => {
       if (
@@ -35,7 +37,7 @@ export function ParticipantAudioMenu() {
       setTarget({
         id: person.id,
         x: Math.max(8, Math.min(innerWidth - 248, pointer ? event.clientX : rect.left)),
-        y: Math.max(40, Math.min(innerHeight - 170, pointer ? event.clientY : rect.bottom)),
+        y: Math.max(40, Math.min(innerHeight - 210, pointer ? event.clientY : rect.bottom)),
       });
     };
     document.addEventListener('contextmenu', open);
@@ -96,6 +98,11 @@ export function ParticipantAudioMenu() {
       >
         {person.volume === 0 ? 'Sesini aç' : 'Sesini kapat'} <small>Yalnızca bende</small>
       </button>
+      {(person.sounds?.enter || person.sounds?.leave || soundMuted) && (
+        <button onClick={() => setPersonalSoundMuted(person.id, !soundMuted)}>
+          {soundMuted ? 'Giriş sesini aç' : 'Giriş sesini sustur'} <small>Yalnızca bende</small>
+        </button>
+      )}
       <label>
         Ses düzeyi <span>{Math.round(person.volume * 100)}%</span>
         <input

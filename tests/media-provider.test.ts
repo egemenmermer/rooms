@@ -555,6 +555,32 @@ it('follows a move only when the server sends it, and says when a moderator disc
   emit(RoomEvent.Disconnected, DisconnectReason.PARTICIPANT_REMOVED);
   expect(provider.snapshot().error).toBe('A moderator disconnected you from the voice room.');
 });
+it('reads personal sounds only from well-formed server attributes and follows their changes', async () => {
+  const { provider, room, emit } = fixture();
+  await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+  const upload = '6f1c2a3b-1234-4abc-8def-0123456789ab';
+  const bob = {
+    identity: 'bob',
+    name: 'Bob',
+    trackPublications: new Map(),
+    attributes: {
+      'rooms.sound.enter': 'p.fanfar',
+      'rooms.sound.leave': '../../me/assign',
+    } as Record<string, string>,
+  };
+  room.remoteParticipants.set('bob', bob);
+  emit(RoomEvent.ParticipantConnected, bob);
+  const person = (id: string) => provider.snapshot().participants.find((p) => p.id === id);
+  expect(person('bob')?.sounds).toEqual({ enter: 'p.fanfar' });
+  expect(person('alice')?.sounds).toBeUndefined();
+  bob.attributes = { 'rooms.sound.enter': 'p.fanfar', 'rooms.sound.leave': upload };
+  emit(RoomEvent.ParticipantAttributesChanged, { 'rooms.sound.leave': upload }, bob);
+  expect(person('bob')?.sounds).toEqual({ enter: 'p.fanfar', leave: upload });
+  bob.attributes = { 'rooms.sound.enter': '', 'rooms.sound.leave': 'P.FANFAR' };
+  emit(RoomEvent.ParticipantAttributesChanged, { 'rooms.sound.enter': '' }, bob);
+  expect(person('bob')?.sounds).toBeUndefined();
+  await provider.disconnect();
+});
 it('local volume is applied again when a muted participant publishes a replacement track', async () => {
   const { provider, room, emit } = fixture();
   await provider.connectRoom('room', 'token', 'ws://localhost:7880');
