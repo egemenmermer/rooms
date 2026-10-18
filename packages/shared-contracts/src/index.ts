@@ -58,6 +58,7 @@ export interface DesktopBridge {
   remoteControl?: import('./remote-control').RemoteControlBridge;
   hostOps?: import('./hostops').HostOpsBridge;
   soundboard?: import('./soundboard').SoundboardBridge;
+  personalSounds?: import('./personal-sounds').PersonalSoundsBridge;
   desktopWindow: {
     status(): Promise<DesktopWindowPreferences>;
     setPreference(

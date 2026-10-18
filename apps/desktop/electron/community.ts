@@ -12,6 +12,15 @@ import {
   soundboardClipSchema,
 } from '../../../packages/shared-contracts/src/soundboard';
 import {
+  PERSONAL_SOUND_LIMITS,
+  personalSoundAssignSchema,
+  personalSoundIdSchema,
+  personalSoundProfileSchema,
+  personalSoundSchema,
+  personalSoundUploadSchema,
+  personalSoundUserIdSchema,
+} from '../../../packages/shared-contracts/src/personal-sounds';
+import {
   musicCommandSchema,
   musicSnapshotSchema,
   musicSearchQuerySchema,
@@ -1243,6 +1252,98 @@ export async function setupCommunity(
   handle('rooms:soundboard-remove', async (channel, clip) => {
     await soundboardRequest(channel, 'DELETE', clip);
   });
+  /** Personal sounds belong to the account, so only playback reads are scoped to a voice channel. */
+  async function personalSoundsRequest(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    path: string,
+    input?: unknown,
+    audio = false,
+  ) {
+    const current = requireClient(),
+      token = current.getToken()!;
+    const response = await fetch(
+      `${new URL(current.instanceUrl).origin}/rooms-access/v1/personal-sounds/${path}`,
+      {
+        method,
+        headers: {
+          Authorization: token,
+          ...(input === undefined ? {} : { 'Content-Type': 'application/json' }),
+        },
+        body: input === undefined ? undefined : JSON.stringify(input),
+        redirect: 'error',
+        signal: AbortSignal.timeout(15000),
+      },
+    );
+    const valid = () => current === client && current.getToken() === token;
+    if (!valid()) throw new SocialInputError('Oturum değişti.');
+    if (!response.ok) {
+      const error = (await response.json().catch(() => null))?.error;
+      const messages: Record<string, string> = {
+        PERSONAL_SOUNDS_NOT_CONFIGURED: 'Bu sunucuda giriş sesleri henüz açılmadı.',
+        PERSONAL_SOUND_UPLOADS_DISABLED:
+          'Sunucu yöneticisi ses yüklemeyi kapattı. ROOMS seslerinden birini seçebilirsin.',
+        PERSONAL_SOUND_INVALID_AUDIO: 'Ses dosyası okunamadı. En fazla 4 saniyelik bir kesit seç.',
+        PERSONAL_SOUND_SILENT: 'Seçtiğin kesit neredeyse sessiz. Başka bir bölüm seç.',
+        PERSONAL_SOUND_LIBRARY_FULL: `En fazla ${PERSONAL_SOUND_LIMITS.maxSounds} ses saklayabilirsin. Önce birini sil.`,
+        PERSONAL_SOUND_STORAGE_LIMIT: 'Sunucudaki ses alanı doldu. Yöneticiye haber ver.',
+        PERSONAL_SOUND_NOT_FOUND: 'Bu ses artık yok.',
+      };
+      throw new SocialInputError(messages[error] ?? 'Giriş sesleri alınamadı. Yeniden dene.');
+    }
+    if (audio) {
+      const reader = response.body?.getReader();
+      if (!reader) throw new SocialInputError('Ses dosyası alınamadı.');
+      const chunks: Buffer[] = [];
+      let size = 0;
+      try {
+        while (true) {
+          const value = await reader.read();
+          if (value.done) break;
+          size += value.value.byteLength;
+          if (size > PERSONAL_SOUND_LIMITS.maxClipBytes)
+            throw new SocialInputError('Ses dosyası çok büyük.');
+          chunks.push(Buffer.from(value.value));
+        }
+      } finally {
+        await reader.cancel().catch(() => {});
+      }
+      if (!valid()) throw new SocialInputError('Oturum değişti.');
+      return Buffer.concat(chunks).toString('base64');
+    }
+    const value = await response.json();
+    if (!valid()) throw new SocialInputError('Oturum değişti.');
+    return value;
+  }
+  const soundPath = (soundId: unknown) => encodeURIComponent(personalSoundIdSchema.parse(soundId));
+  handle('rooms:personal-sounds-profile', async () =>
+    personalSoundProfileSchema.parse(await personalSoundsRequest('GET', 'me')),
+  );
+  handle('rooms:personal-sounds-upload', async (input) =>
+    personalSoundSchema.parse(
+      await personalSoundsRequest('POST', 'me/sounds', personalSoundUploadSchema.parse(input)),
+    ),
+  );
+  handle('rooms:personal-sounds-remove', async (soundId) =>
+    personalSoundProfileSchema.parse(
+      await personalSoundsRequest('DELETE', `me/sounds/${soundPath(soundId)}`),
+    ),
+  );
+  handle('rooms:personal-sounds-assign', async (value) =>
+    personalSoundProfileSchema.parse(
+      await personalSoundsRequest('PUT', 'me/assign', personalSoundAssignSchema.parse(value)),
+    ),
+  );
+  handle('rooms:personal-sounds-preview', (soundId) =>
+    personalSoundsRequest('GET', `me/sounds/${soundPath(soundId)}`, undefined, true),
+  );
+  handle('rooms:personal-sounds-read', (channelId, userId, soundId) =>
+    personalSoundsRequest(
+      'GET',
+      `${encodeURIComponent(id.parse(channelId))}/${encodeURIComponent(personalSoundUserIdSchema.parse(userId))}/${soundPath(soundId)}`,
+      undefined,
+      true,
+    ),
+  );
   async function musicRequest(channelId: string, command?: unknown, search?: string) {
     const current = requireClient(),
       room = id.parse(channelId),

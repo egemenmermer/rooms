@@ -150,6 +150,15 @@ const bridge: DesktopBridge = {
     read: (id, clip) => ipcRenderer.invoke('rooms:soundboard-read', id, clip),
     remove: (id, clip) => ipcRenderer.invoke('rooms:soundboard-remove', id, clip),
   },
+  personalSounds: {
+    profile: () => ipcRenderer.invoke('rooms:personal-sounds-profile'),
+    upload: (input) => ipcRenderer.invoke('rooms:personal-sounds-upload', input),
+    remove: (soundId) => ipcRenderer.invoke('rooms:personal-sounds-remove', soundId),
+    assign: (value) => ipcRenderer.invoke('rooms:personal-sounds-assign', value),
+    preview: (soundId) => ipcRenderer.invoke('rooms:personal-sounds-preview', soundId),
+    read: (channelId, userId, soundId) =>
+      ipcRenderer.invoke('rooms:personal-sounds-read', channelId, userId, soundId),
+  },
   music: {
     lyrics: (channel, track) => ipcRenderer.invoke('rooms:music-lyrics', channel, track),
     playlists: (channel) => ipcRenderer.invoke('rooms:music-playlists', channel),
