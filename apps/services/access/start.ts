@@ -5,8 +5,15 @@ const required = (name: string) => {
   return value;
 };
 async function start() {
+  const personalSoundsMegabytes = Number(process.env.ROOMS_PERSONAL_SOUNDS_MAX_MB || 512);
+  if (!(personalSoundsMegabytes >= 0))
+    throw new Error('Invalid service configuration: ROOMS_PERSONAL_SOUNDS_MAX_MB');
   const server = await createAccessServer({
     soundboardDirectory: process.env.ROOMS_SOUNDBOARD_DIRECTORY ?? '/state/soundboard',
+    personalSoundsDirectory:
+      process.env.ROOMS_PERSONAL_SOUNDS_DIRECTORY ?? '/state/personal-sounds',
+    personalSoundUploads: process.env.ROOMS_PERSONAL_SOUND_UPLOADS !== '0',
+    personalSoundsMaxBytes: personalSoundsMegabytes * 1024 * 1024,
     musicPlaylistsDirectory:
       process.env.ROOMS_MUSIC_PLAYLISTS_DIRECTORY ?? '/state/music-playlists',
     musicName: process.env.ROOMS_MUSIC_NAME,
