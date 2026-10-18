@@ -137,11 +137,14 @@ export function RoomEventSounds() {
       epoch = 0,
       account = scopeOf(),
       room = '',
+      classicAt = -Infinity,
       timer: ReturnType<typeof setTimeout> | undefined;
     cache.setScope(account);
     /** Personal clips remember their actor so a mute or the preference can stop just them. */
     const players = new Map<HTMLAudioElement, { gain: number; actor?: string }>();
     const deadlines = new Set<ReturnType<typeof setTimeout>>();
+    /** Departures the policy still holds, mirrored so a reconnect baseline can settle them. */
+    const leaving = new Map<string, number>();
     const stopPersonal = (actor?: string) => {
       for (const [player, info] of players)
         if (info.actor && (actor === undefined || info.actor === actor)) {
@@ -158,6 +161,8 @@ export function RoomEventSounds() {
       clearTimeout(timer);
       timer = undefined;
       policy.reset();
+      leaving.clear();
+      classicAt = -Infinity;
       cache.prefetch([]);
     };
     const audible = () =>
@@ -196,8 +201,16 @@ export function RoomEventSounds() {
         failed?.();
       }
     };
-    const classic = (kind: RoomCue) =>
+    /** Stand-ins and policy classics share one coalescing window. */
+    const classic = (kind: RoomCue) => {
+      const now = performance.now();
+      if (now - classicAt < PERSONAL_SOUND_POLICY.classicCoalesceMs) return;
+      classicAt = now;
       output(roomCueSource(kind), PERSONAL_SOUND_POLICY.classicGain);
+    };
+    /** A clip that started late can outlast the room window; the next one never plays over it. */
+    const personalPlaying = () =>
+      [...players].some(([player, info]) => info.actor && !player.paused && !player.ended);
     /** A clip that misses the deadline is replaced by the classic cue and never played late. */
     const personal = (decision: Extract<CueDecision, { play: 'personal' }>) => {
       const at = epoch;
@@ -220,7 +233,7 @@ export function RoomEventSounds() {
           settled = true;
           clearTimeout(deadline);
           deadlines.delete(deadline);
-          if (url && allow(decision.actor))
+          if (url && allow(decision.actor) && !personalPlaying())
             output(url, PERSONAL_SOUND_POLICY.personalGain, decision.actor, () =>
               classic(decision.kind),
             );
@@ -241,7 +254,10 @@ export function RoomEventSounds() {
         () => {
           timer = undefined;
           if (!audible()) return;
-          decide(policy.tick(performance.now(), allow));
+          const now = performance.now();
+          decide(policy.tick(now, allow));
+          for (const [actor, at] of leaving)
+            if (now - at >= PERSONAL_SOUND_POLICY.leaveHoldMs) leaving.delete(actor);
           arm();
         },
         Math.max(0, due - performance.now()),
@@ -252,33 +268,53 @@ export function RoomEventSounds() {
         voice = useVoiceContext.getState(),
         snapshot = provider.snapshot(),
         prefs = useRooms.getState().preferences;
+      const status =
+        voice.busy ||
+        (snapshot.status === 'connected' && !snapshot.participants.some((p) => p.local))
+          ? 'connecting'
+          : snapshot.status;
       const { cues, rebased } = tracker.current.update({
         scope,
         channel: snapshot.roomId,
-        status:
-          voice.busy ||
-          (snapshot.status === 'connected' && !snapshot.participants.some((p) => p.local))
-            ? 'connecting'
-            : snapshot.status,
+        status,
         participants: snapshot.participants,
       });
-      const nextRoom = JSON.stringify([scope, snapshot.roomId]);
+      // A disconnect (kick or loss) keeps the room id but ends the room for this listener. A
+      // reconnect inside the room keeps the policy, so held departures and cooldowns survive it.
+      const nextRoom = JSON.stringify([
+        scope,
+        snapshot.status === 'error' ? null : snapshot.roomId,
+      ]);
       if (nextRoom !== room) {
         room = nextRoom;
         stop();
       }
-      if (rebased) policy.reset();
       if (!prefs.roomEventSounds || snapshot.deafened || !useCommunity.getState().user) {
         stop();
         return;
       }
       if (!prefs.personalSounds) stopPersonal();
       for (const [player, info] of players) player.volume = info.gain * prefs.soundEffectsLevel;
-      const now = performance.now();
-      for (const cue of cues) decide(policy.push(cue, now, allow));
+      const now = performance.now(),
+        channelId = voice.channelId;
+      // Someone whose departure is still held and who is back in a reconnect baseline returned in
+      // time; the baseline itself never plays.
+      if (rebased && status === 'connected')
+        for (const p of snapshot.participants)
+          if (leaving.delete(p.id))
+            policy.push({ kind: 'enter', actor: p.id, local: false }, now, allow);
+      for (const cue of cues) {
+        if (!cue.local && cue.kind === 'enter') leaving.delete(cue.actor);
+        if (!cue.local && cue.kind === 'leave') {
+          leaving.set(cue.actor, now);
+          // The leaver's clip gets the whole hold to arrive.
+          if (cue.sound && channelId && allow(cue.actor))
+            void cache.resolve({ channelId, userId: cue.actor, sound: cue.sound });
+        }
+        decide(policy.push(cue, now, allow));
+      }
       arm();
       // Departures should play at once, so the sounds of the people present are warmed up early.
-      const channelId = voice.channelId;
       cache.prefetch(
         channelId && !voice.busy && snapshot.status === 'connected'
           ? snapshot.participants.flatMap((p) =>

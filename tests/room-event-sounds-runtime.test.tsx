@@ -15,7 +15,13 @@ const f = vi.hoisted(() => ({
   play: vi.fn(),
   sink: vi.fn(),
   pause: vi.fn(),
-  audios: [] as { src: string; volume: number; paused: boolean }[],
+  audios: [] as {
+    src: string;
+    volume: number;
+    paused: boolean;
+    ended?: boolean;
+    onended: (() => void) | null;
+  }[],
   urls: 0,
   revoked: [] as string[],
 }));
@@ -307,4 +313,136 @@ it('leaving the room stops a personal clip and still plays the own leave cue', a
   await tick();
   expect(played()).toEqual([0.55]);
   expect(f.audios.at(-1)?.paused).toBe(false);
+});
+/** The clip reaches its end the way a media element reports it. */
+const finish = (audio: (typeof f.audios)[number]) => {
+  audio.paused = true;
+  audio.ended = true;
+  audio.onended?.();
+};
+const later = (ms: number | null) => () =>
+  new Promise<string>((resolve) => {
+    if (ms !== null) setTimeout(() => resolve(clip), ms);
+  });
+it('a big room warms a bounded set once, and a departure outside it gets the whole hold', async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal('rooms', { personalSounds: { read } });
+  render(<RoomEventSounds />);
+  const people = Array.from({ length: 25 }, (_, i) => ({
+    id: `p${i}`,
+    sounds: { leave: `p.s${i}` },
+  }));
+  // Speaking and quality updates resend the same roster all the time.
+  for (let s = 0; s < 120; s++) {
+    await roster([self, ...people]);
+    await tick(1000);
+  }
+  expect(read).toHaveBeenCalledTimes(16);
+  read.mockImplementationOnce(later(2000));
+  await roster([self, ...people.filter((p) => p.id !== 'p20')]);
+  expect(read).toHaveBeenCalledTimes(17);
+  expect(read).toHaveBeenLastCalledWith('room', 'p20', 'p.s20');
+  await tick(1999);
+  expect(played()).toEqual([0.55]);
+  await tick(1);
+  expect(played()).toEqual([0.55, 0.45]);
+});
+it('a late clip still playing turns the next personal sound into the classic cue', async () => {
+  await start();
+  read.mockImplementationOnce(later(1450));
+  const ada = { id: 'ada', sounds: { enter: 'p.fanfar' } };
+  await roster([self, { id: 'friend' }, ada]);
+  await tick(1450);
+  expect(played()).toEqual([0.55, 0.45]);
+  // The room window has passed, but a 4 s clip that started late is still playing.
+  await tick(3550);
+  await roster([self, { id: 'friend' }, ada, { id: 'bo', sounds: { enter: 'p.portal' } }]);
+  expect(played()).toEqual([0.55, 0.45, 0.55]);
+  finish(f.audios[1]);
+  await tick(5000);
+  await roster([
+    self,
+    { id: 'friend' },
+    ada,
+    { id: 'bo', sounds: { enter: 'p.portal' } },
+    { id: 'cy', sounds: { enter: 'p.kapi' } },
+  ]);
+  expect(played()).toEqual([0.55, 0.55, 0.45]);
+});
+it.each([
+  ['a pending clip', 1000],
+  ['its classic stand-in', null],
+])('%s never plays after the listener is disconnected', async (_, ms) => {
+  await start();
+  read.mockImplementationOnce(later(ms));
+  await roster([self, { id: 'friend' }, { id: 'ada', sounds: { enter: 'p.fanfar' } }]);
+  await tick(300);
+  // LiveKit Disconnected (kick or network loss) keeps the room id with an empty roster.
+  await roster([], { status: 'error' });
+  const before = f.audios.length;
+  await tick(5000);
+  expect(f.audios.length).toBe(before);
+  expect(played()).toEqual([]);
+});
+it('a listener reconnect inside the hold still plays the departure', async () => {
+  await start();
+  await roster([self, { id: 'friend' }, { id: 'ada', sounds: { leave: 'p.kapanis' } }]);
+  await tick(20_000);
+  await roster([self, { id: 'friend' }]);
+  await tick(500);
+  await roster([self, { id: 'friend' }], { status: 'reconnecting' });
+  await tick(300);
+  await roster([self, { id: 'friend' }]);
+  await tick(699);
+  expect(played()).toEqual([0.55, 0.55]);
+  await tick(1);
+  expect(played()).toEqual([0.55, 0.55, 0.45]);
+});
+it('a departure stays silent when the person is back in the reconnect baseline', async () => {
+  await start();
+  const ada = { id: 'ada', sounds: { leave: 'p.kapanis' } };
+  await roster([self, { id: 'friend' }, ada]);
+  await tick(20_000);
+  await roster([self, { id: 'friend' }]);
+  await tick(500);
+  await roster([self], { status: 'reconnecting' });
+  await tick(300);
+  await roster([self, { id: 'friend' }, ada]);
+  await tick(5000);
+  expect(played()).toEqual([0.55, 0.55]);
+  // She never left: her real departure later is neither a short stay nor a rejoin.
+  await roster([self, { id: 'friend' }]);
+  await tick(1500);
+  expect(played()).toEqual([0.55, 0.55, 0.45]);
+});
+it('cooldowns survive a reconnect', async () => {
+  await start();
+  const ada = { id: 'ada', sounds: { enter: 'p.fanfar' } };
+  await roster([self, { id: 'friend' }, ada]);
+  expect(played()).toEqual([0.55, 0.45]);
+  finish(f.audios[1]);
+  await tick(6000);
+  await roster([self, { id: 'friend' }, ada], { status: 'reconnecting' });
+  await tick(300);
+  await roster([self, { id: 'friend' }, ada]);
+  await tick(14_000);
+  await roster([self, { id: 'friend' }]);
+  await tick(40_000);
+  // Past the rejoin window but inside the two-minute cooldown of her first entrance.
+  await roster([self, { id: 'friend' }, ada]);
+  expect(played()).toEqual([0.55, 0.55, 0.55]);
+});
+it('a classic stand-in and a classic cue inside the coalescing window play once', async () => {
+  read.mockImplementationOnce(later(null));
+  await start();
+  const ada = { id: 'ada', sounds: { enter: 'p.fanfar' } };
+  await roster([self, { id: 'friend' }, ada]);
+  await tick(1500);
+  expect(played()).toEqual([0.55, 0.55]);
+  await tick(100);
+  await roster([self, { id: 'friend' }, ada, { id: 'bo' }]);
+  expect(played()).toEqual([0.55, 0.55]);
+  await tick(400);
+  await roster([self, { id: 'friend' }, ada, { id: 'bo' }, { id: 'cy' }]);
+  expect(played()).toEqual([0.55, 0.55, 0.55]);
 });
