@@ -11,22 +11,27 @@ declare global {
 }
 
 /**
- * Records every cue the renderer actually starts, with the clip's size. Personal clips play at
- * `personalGain`, classic cues at `classicGain` (effects level 100%).
+ * Records every cue the renderer actually starts, with the size of the clip behind its blob URL
+ * (the app's CSP blocks fetching blob URLs back). Personal clips play at `personalGain`, classic
+ * cues at `classicGain` (effects level 100%).
  */
 async function tapCues(page: Page) {
   await page.evaluate(() => {
     if (window.__e2eCues) return;
-    const cues: { volume: number; bytes: number }[] = [];
+    const cues: { volume: number; bytes: number }[] = [],
+      sizes = new Map<string, number>();
     window.__e2eCues = cues;
+    const create = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      const url = create(object);
+      if (object instanceof Blob) sizes.set(url, object.size);
+      return url;
+    };
     const play = HTMLMediaElement.prototype.play;
     HTMLMediaElement.prototype.play = function (this: HTMLMediaElement) {
       const started = play.call(this);
       void started
-        .then(async () => {
-          const blob = await (await fetch(this.currentSrc || this.src)).blob();
-          cues.push({ volume: this.volume, bytes: blob.size });
-        })
+        .then(() => cues.push({ volume: this.volume, bytes: sizes.get(this.src) ?? -1 }))
         .catch(() => {});
       return started;
     };
@@ -60,12 +65,16 @@ test.describe('personal entrance and leave sounds', () => {
     const picker = owner.page.getByRole('dialog', { name: 'Giriş sesi seç' });
     await picker
       .getByRole('list', { name: 'ROOMS sesleri' })
-      .getByRole('button', { name: /^Fanfar/ })
+      .getByRole('button', { name: /^Fanfar \d/ })
       .click();
     await expect(
-      picker.getByRole('list', { name: 'ROOMS sesleri' }).getByRole('button', { name: /^Fanfar/ }),
+      picker
+        .getByRole('list', { name: 'ROOMS sesleri' })
+        .getByRole('button', { name: /^Fanfar \d/ }),
     ).toHaveAttribute('aria-pressed', 'true');
     await owner.page.keyboard.press('Escape');
+    await expect(picker).toHaveCount(0);
+    await owner.goto('/home');
     await owner.page.evaluate(() =>
       window.rooms!.personalSounds!.assign({ enter: 'p.fanfar', leave: 'p.kapanis' }),
     );
@@ -117,6 +126,7 @@ test.describe('personal entrance and leave sounds', () => {
       'aria-checked',
       'false',
     );
+    await guest.goto('/home');
 
     const ownerVoice = new VoiceView(owner);
     const guestVoice = new VoiceView(guest);

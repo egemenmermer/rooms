@@ -24,6 +24,8 @@ export const PERSONAL_SOUND_LIMITS = {
   maxSounds: 6,
   /** Source files are decoded on the device and never uploaded. */
   maxSourceBytes: 20_000_000,
+  /** Decoded sources are held while a window is chosen; longer files would cost hundreds of MB. */
+  maxSourceDurationSec: 300,
   /** Canonical mono PCM16 WAV at `acceptDurationSec`. */
   maxClipBytes: 44 + Math.ceil(4.05 * 48000) * 2,
   maxNameLength: 40,
