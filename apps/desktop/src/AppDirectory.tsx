@@ -107,7 +107,8 @@ export const directoryItems: DirectoryItem[] = [
     run: (open) => open('/together?tab=polls'),
   },
 ];
-const featured = ['cinema', 'holdem', '101', 'board'];
+/** Highlight order; the first four a surface offers fill the two-by-two grid. */
+const featured = ['cinema', 'holdem', '101', 'board', 'poll'];
 const sections: Section[] = [
   'Uygulamalar',
   'Birlikte izle',
@@ -136,14 +137,18 @@ function Tile({ item, large = false }: { item: DirectoryItem; large?: boolean })
 /**
  * Discord-style catalogue of what can be opened in this room: apps, watch-together, games and
  * tools, searchable. `apps` adds the bots that also have their own buttons (DJ, Asistan).
+ * `roomCinema` offers the older per-room cinema (`/cinema/room`); the header launcher leaves it
+ * out because the community Sinema hall replaced it there.
  */
 export function AppDirectory({
   onClose,
   apps = true,
+  roomCinema = true,
   header,
 }: {
   onClose(): void;
   apps?: boolean;
+  roomCinema?: boolean;
   header?: ReactNode;
 }) {
   const navigate = useNavigate(),
@@ -154,8 +159,19 @@ export function AppDirectory({
   const primary = activity.room?.primary;
   const [query, setQuery] = useState('');
   const items = useMemo(
-    () => directoryItems.filter((item) => apps || item.section !== 'Uygulamalar'),
-    [apps],
+    () =>
+      directoryItems.filter(
+        (item) => (apps || item.section !== 'Uygulamalar') && (roomCinema || item.id !== 'cinema'),
+      ),
+    [apps, roomCinema],
+  );
+  const highlights = useMemo(
+    () =>
+      featured
+        .map((id) => items.find((item) => item.id === id))
+        .filter((item): item is DirectoryItem => !!item)
+        .slice(0, 4),
+    [items],
   );
   const matches = useMemo(() => {
     const words = fold(query.trim()).split(/\s+/).filter(Boolean);
@@ -240,17 +256,15 @@ export function AppDirectory({
           <>
             <h3>Öne çıkanlar</h3>
             <div className="appdir-featured">
-              {featured
-                .map((id) => items.find((item) => item.id === id)!)
-                .map((item) => (
-                  <button key={item.id} className="appdir-card" onClick={() => launch(item)}>
-                    <Tile item={item} large />
-                    <span>
-                      <strong>{item.name}</strong>
-                      <small>{item.detail}</small>
-                    </span>
-                  </button>
-                ))}
+              {highlights.map((item) => (
+                <button key={item.id} className="appdir-card" onClick={() => launch(item)}>
+                  <Tile item={item} large />
+                  <span>
+                    <strong>{item.name}</strong>
+                    <small>{item.detail}</small>
+                  </span>
+                </button>
+              ))}
             </div>
             {sections.map((section) => {
               const list = items.filter((item) => item.section === section);

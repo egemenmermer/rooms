@@ -43,11 +43,12 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
   const position = Math.max(0, Math.floor(activity.room?.timeline.positionSec ?? 0));
   const positionLabel = `${Math.floor(position / 60)}:${String(position % 60).padStart(2, '0')}`;
   const roomCount = activity.room?.participants.length;
-  // Nothing running: the searchable catalogue; the DJ keeps its own button.
+  // Nothing running: the searchable catalogue; the DJ keeps its own button. The old room cinema
+  // is no longer started from here; the community Sinema hall has its own sidebar entry.
   if (!primary && !forbidden)
     return (
       <Modal title="Etkinlikler" hideHeading onClose={onClose} className="appdir-modal">
-        <AppDirectory apps={false} onClose={onClose} />
+        <AppDirectory apps={false} roomCinema={false} onClose={onClose} />
       </Modal>
     );
   return (

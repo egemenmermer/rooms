@@ -26,6 +26,7 @@ const f = vi.hoisted(() => ({
     refresh: vi.fn(),
     clearError: vi.fn(),
   },
+  cinema: { available: false, status: null, hallId: null } as Record<string, unknown>,
 }));
 vi.mock('../apps/desktop/src/realtime', () => ({
   useRealtime: () => f.voice,
@@ -43,7 +44,11 @@ vi.mock('../apps/desktop/src/MusicDJ', () => ({
 }));
 vi.mock('../apps/desktop/src/voice-directory', () => ({ useVoiceDirectory: () => ({}) }));
 vi.mock('../apps/desktop/src/Soundboard', () => ({ SoundboardButton: () => null }));
-import { ActivityLauncher } from '../apps/desktop/src/Activities';
+vi.mock('../apps/desktop/src/cinema/cinema-status', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../apps/desktop/src/cinema/cinema-status')>()),
+  useCommunityCinema: () => f.cinema,
+}));
+import { ActivityLauncher, activityRoute } from '../apps/desktop/src/Activities';
 import { MinimalSidebar } from '../apps/desktop/src/MinimalSidebar';
 import { PushToTalkNotice } from '../apps/desktop/src/PushToTalk';
 import { useCommunity } from '../apps/desktop/src/community';
@@ -101,6 +106,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   f.voice.participants = [];
   f.activity.room = null;
+  f.cinema = { available: false, status: null, hallId: null };
   useCommunity.setState({
     user: { id: 'me', username: 'me', displayName: 'Me', avatar: null },
     serverUrl: 'https://local.example',
@@ -157,8 +163,36 @@ it('keeps ending the shared player for the host only', () => {
 it('does not offer the DJ as an activity; it already has its own button', () => {
   f.activity.room = { ...watchTogether([]), primary: null };
   launcher();
-  expect(screen.getAllByRole('button', { name: /Sinema/ }).length).toBeGreaterThan(0);
+  expect(screen.getAllByRole('button', { name: /Texas Hold’em/ }).length).toBeGreaterThan(0);
   expect(screen.queryByRole('button', { name: /DJ Recep/ })).toBeNull();
+});
+
+it('no longer offers the old room cinema; the Sinema hall stays in the sidebar', () => {
+  f.activity.room = { ...watchTogether([]), primary: null };
+  launcher();
+  expect(screen.queryByRole('button', { name: /Sinema/ })).toBeNull();
+  expect(screen.queryByText(/YouTube videolarını birlikte izle/)).toBeNull();
+  // Watching together still offers screen sharing, and the highlights keep a full grid.
+  expect(screen.getByRole('heading', { name: 'Birlikte izle' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: /Ekran paylaş/ })).toBeTruthy();
+  expect(
+    [...document.querySelectorAll('.appdir-featured .appdir-card strong')].map(
+      (n) => n.textContent,
+    ),
+  ).toEqual(['Texas Hold’em', '101 Okey', 'Beyaz tahta', 'Anket']);
+  const search = screen.getByRole('textbox', { name: 'Uygulama ve etkinlik ara' });
+  fireEvent.change(search, { target: { value: 'sinema' } });
+  expect(screen.getByText('“sinema” için bir şey bulunamadı.')).toBeTruthy();
+  fireEvent.keyDown(search, { key: 'Enter' });
+  expect(screen.getByTestId('route').textContent).toBe('/voice');
+  cleanup();
+
+  f.cinema = { available: true, status: { isOwner: false }, hallId: 'hall' };
+  sidebar();
+  fireEvent.click(screen.getByRole('button', { name: 'Sinema salonu' }));
+  expect(screen.getByTestId('route').textContent).toBe('/cinema');
+  // A hall already playing in the room is still joined at the hall.
+  expect(activityRoute('hall')).toBe('/cinema');
 });
 
 it('shows the running activity under the joined room and opens it from the sidebar', () => {
