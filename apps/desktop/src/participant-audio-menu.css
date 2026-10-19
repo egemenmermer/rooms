@@ -52,3 +52,36 @@
   margin-top: 10px;
   accent-color: var(--accent, #9384ff);
 }
+/* The same controls at the top of the room list's member menu. */
+.voice-member-audio > strong {
+  display: block;
+  overflow: hidden;
+  padding: 6px 12px 4px;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.channel-context-menu .voice-member-audio button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.voice-member-audio small {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+.voice-member-audio label {
+  display: block;
+  padding: 8px 12px 4px;
+  font-size: 12px;
+}
+.voice-member-audio label span {
+  float: right;
+  color: var(--text-secondary);
+}
+.voice-member-audio input {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  accent-color: var(--accent, #9384ff);
+}

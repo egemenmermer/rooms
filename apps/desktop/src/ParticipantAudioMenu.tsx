@@ -1,19 +1,65 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import type { MediaParticipant } from '@rooms/media';
 import { useRealtime, setParticipantVolume } from './realtime';
 import { setPersonalSoundMuted, usePersonalSoundMutes } from './personal-sound-mutes';
 import './participant-audio-menu.css';
+/** The level each person had before this listener muted them, whichever menu muted them. */
+const restoreLevels = new Map<string, number>();
+/**
+ * This listener's playback controls for one person: mute for me, their entrance sound and
+ * their level. Shared by the tile menu and the room list's member menu.
+ */
+export function ParticipantAudioControls({
+  person,
+}: {
+  person: Pick<MediaParticipant, 'id' | 'name' | 'volume' | 'sounds'>;
+}) {
+  const soundMuted = usePersonalSoundMutes((state) => state.muted.includes(person.id));
+  const volume = (value: number) => {
+    if (value > 0) restoreLevels.set(person.id, value);
+    setParticipantVolume(person.id, value);
+  };
+  return (
+    <>
+      <strong>{person.name}</strong>
+      <button
+        onClick={() => {
+          if (person.volume > 0) restoreLevels.set(person.id, person.volume);
+          volume(person.volume === 0 ? (restoreLevels.get(person.id) ?? 1) : 0);
+        }}
+      >
+        {person.volume === 0 ? 'Sesini aç' : 'Sesini kapat'} <small>Yalnızca bende</small>
+      </button>
+      {(person.sounds?.enter || person.sounds?.leave || soundMuted) && (
+        <button onClick={() => setPersonalSoundMuted(person.id, !soundMuted)}>
+          {soundMuted ? 'Giriş sesini aç' : 'Giriş sesini sustur'} <small>Yalnızca bende</small>
+        </button>
+      )}
+      <label>
+        Ses düzeyi <span>{Math.round(person.volume * 100)}%</span>
+        <input
+          aria-label={`${person.name} ses düzeyi`}
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={person.volume}
+          onChange={(e) => volume(Number(e.target.value))}
+        />
+      </label>
+    </>
+  );
+}
 /** Playback controls belong to this listener, never to the server participant. */
 export function ParticipantAudioMenu() {
   const voice = useRealtime(),
     [target, setTarget] = useState<{ id: string; x: number; y: number } | null>(null);
   const menu = useRef<HTMLDivElement>(null),
-    origin = useRef<HTMLElement | null>(null),
-    restore = useRef(new Map<string, number>());
+    origin = useRef<HTMLElement | null>(null);
   const live = useRef(voice);
   live.current = voice;
   const person = voice.participants.find((p) => p.id === target?.id && !p.local);
-  const soundMuted = usePersonalSoundMutes((state) => !!target && state.muted.includes(target.id));
   useEffect(() => {
     const open = (event: MouseEvent | KeyboardEvent) => {
       if (
@@ -49,7 +95,7 @@ export function ParticipantAudioMenu() {
   }, []);
   useEffect(() => {
     setTarget(null);
-    restore.current.clear();
+    restoreLevels.clear();
   }, [voice.channelId]);
   useEffect(() => {
     if (!target) return;
@@ -76,10 +122,6 @@ export function ParticipantAudioMenu() {
     };
   }, [target, !!person, voice.status]);
   if (!target || !person) return null;
-  const volume = (value: number) => {
-    if (value > 0) restore.current.set(person.id, value);
-    setParticipantVolume(person.id, value);
-  };
   return createPortal(
     <div
       ref={menu}
@@ -89,32 +131,7 @@ export function ParticipantAudioMenu() {
       className="participant-audio-menu"
       style={{ left: target.x, top: target.y }}
     >
-      <strong>{person.name}</strong>
-      <button
-        onClick={() => {
-          if (person.volume > 0) restore.current.set(person.id, person.volume);
-          volume(person.volume === 0 ? (restore.current.get(person.id) ?? 1) : 0);
-        }}
-      >
-        {person.volume === 0 ? 'Sesini aç' : 'Sesini kapat'} <small>Yalnızca bende</small>
-      </button>
-      {(person.sounds?.enter || person.sounds?.leave || soundMuted) && (
-        <button onClick={() => setPersonalSoundMuted(person.id, !soundMuted)}>
-          {soundMuted ? 'Giriş sesini aç' : 'Giriş sesini sustur'} <small>Yalnızca bende</small>
-        </button>
-      )}
-      <label>
-        Ses düzeyi <span>{Math.round(person.volume * 100)}%</span>
-        <input
-          aria-label={`${person.name} ses düzeyi`}
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          value={person.volume}
-          onChange={(e) => volume(Number(e.target.value))}
-        />
-      </label>
+      <ParticipantAudioControls person={person} />
     </div>,
     document.body,
   );

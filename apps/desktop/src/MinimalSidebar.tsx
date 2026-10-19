@@ -278,6 +278,8 @@ export function MinimalSidebar({
                         );
                       }}
                       onDragEnd={() => setDropRoom(null)}
+                      // Without moderation rights the shared volume menu opens on its own.
+                      // With them, the member menu carries that volume too.
                       onContextMenu={(event) => {
                         if (!moderates || p.id === c.user?.id) return;
                         event.preventDefault();
@@ -288,6 +290,24 @@ export function MinimalSidebar({
                           from: ch.id,
                           x: event.clientX,
                           y: event.clientY,
+                        });
+                      }}
+                      onKeyDown={(event) => {
+                        if (
+                          !moderates ||
+                          p.id === c.user?.id ||
+                          (event.key !== 'ContextMenu' && !(event.key === 'F10' && event.shiftKey))
+                        )
+                          return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        const rect = event.currentTarget.getBoundingClientRect();
+                        setMemberMenu({
+                          id: p.id,
+                          name: p.name,
+                          from: ch.id,
+                          x: rect.left,
+                          y: rect.bottom,
                         });
                       }}
                     >

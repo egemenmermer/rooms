@@ -5,6 +5,8 @@ import type { SocialChannel } from '@rooms/social';
 import { queryClient } from './query-client';
 import { useCommunity } from './community';
 import { uiError } from './i18n';
+import { ParticipantAudioControls } from './ParticipantAudioMenu';
+import { useRealtime } from './realtime';
 
 export const VOICE_MEMBER_DRAG = 'application/x-rooms-voice-member';
 export interface VoiceMemberTarget {
@@ -97,7 +99,10 @@ const confirmText: Record<Confirm, { title: string; body: string; action: string
   },
 };
 
-/** Right-click menu for a person in a voice room, with only the actions this account may take. */
+/**
+ * Right-click menu for a person in a voice room: this listener's volume for them when they are
+ * heard here, then only the actions this account may take.
+ */
 export function VoiceMemberMenu({
   target,
   x,
@@ -118,18 +123,27 @@ export function VoiceMemberMenu({
   notify(message: string): void;
 }) {
   const ref = useRef<HTMLDivElement>(null),
-    spaceId = useCommunity((s) => s.activeSpaceId);
+    spaceId = useCommunity((s) => s.activeSpaceId),
+    voice = useRealtime();
+  // Volume is local playback: only someone heard in the room this listener is connected to.
+  const heard =
+    voice.status === 'connected' && voice.channelId === target.from
+      ? voice.participants.find((p) => p.id === target.id && !p.local)
+      : undefined;
   const [confirm, setConfirm] = useState<Confirm | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
+  // Callers pass a new onClose each render (volume changes re-render them); focus stays put.
+  const close = useRef(onClose);
+  close.current = onClose;
   useEffect(() => {
     if (confirm) return;
     ref.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
     const outside = (event: PointerEvent) => {
-      if (!ref.current?.contains(event.target as Node)) onClose();
+      if (!ref.current?.contains(event.target as Node)) close.current();
     };
     const escape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') close.current();
     };
     document.addEventListener('pointerdown', outside);
     document.addEventListener('keydown', escape);
@@ -137,7 +151,7 @@ export function VoiceMemberMenu({
       document.removeEventListener('pointerdown', outside);
       document.removeEventListener('keydown', escape);
     };
-  }, [confirm, onClose]);
+  }, [confirm]);
   const others = rooms.filter((room) => room.id !== target.from);
   const act = async (task: () => Promise<unknown>, done: string) => {
     setBusy(true);
@@ -199,9 +213,21 @@ export function VoiceMemberMenu({
       aria-label={`${target.name} için işlemler`}
       style={{
         left: Math.max(8, Math.min(x, window.innerWidth - 248)),
-        top: Math.max(8, Math.min(y, window.innerHeight - 320)),
+        top: Math.max(8, Math.min(y, window.innerHeight - (heard ? 460 : 320))),
       }}
     >
+      {heard && (
+        <>
+          <div
+            className="voice-member-audio"
+            role="group"
+            aria-label={`${heard.name} ses kontrolü`}
+          >
+            <ParticipantAudioControls person={heard} />
+          </div>
+          <hr />
+        </>
+      )}
       <button
         role="menuitem"
         onClick={() => {

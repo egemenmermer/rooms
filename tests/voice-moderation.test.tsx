@@ -1,8 +1,17 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 const f = vi.hoisted(() => ({
+  volume: vi.fn(),
+  directory: {
+    rooms: [] as {
+      channelId: string;
+      participants: { id: string; name: string; muted: boolean }[];
+    }[],
+    loading: false,
+    error: null,
+  },
   snapshot: {
     status: 'connected',
     channelId: 'hall',
@@ -29,9 +38,10 @@ vi.mock('../apps/desktop/src/realtime', () => ({
   toggleCamera: vi.fn(),
   startRoomAudio: vi.fn(),
   stopScreen: vi.fn(),
+  setParticipantVolume: f.volume,
 }));
 vi.mock('../apps/desktop/src/voice-directory', () => ({
-  useVoiceDirectory: () => ({ rooms: [], loading: false, error: null }),
+  useVoiceDirectory: () => f.directory,
 }));
 vi.mock('../apps/desktop/src/Soundboard', () => ({ SoundboardButton: () => null }));
 vi.mock('../apps/desktop/src/activity', () => ({ useActivityRoom: () => ({ room: null }) }));
@@ -55,6 +65,8 @@ const bridge = {
 afterEach(() => {
   cleanup();
   queryClient.clear();
+  f.volume.mockClear();
+  f.directory.rooms = [];
 });
 beforeEach(() => {
   bridge.moderate.mockClear();
@@ -178,4 +190,35 @@ it('shows no moderation to someone without rights', async () => {
   expect(occupant('ece').getAttribute('draggable')).toBe('false');
   fireEvent.contextMenu(occupant('ece'));
   expect(screen.queryByRole('menu')).toBeNull();
+});
+
+it('gives a moderator the same per-listener volume as the tile menu', async () => {
+  await mount();
+  fireEvent.contextMenu(occupant('ece'), { clientX: 40, clientY: 60 });
+  const menu = screen.getByRole('menu', { name: 'Ece için işlemler' });
+  const audio = within(menu).getByRole('group', { name: 'Ece ses kontrolü' });
+  fireEvent.change(within(audio).getByRole('slider', { name: 'Ece ses düzeyi' }), {
+    target: { value: '0.3' },
+  });
+  expect(f.volume).toHaveBeenLastCalledWith('ece', 0.3);
+  fireEvent.click(within(audio).getByRole('button', { name: /Sesini kapat/ }));
+  expect(f.volume).toHaveBeenLastCalledWith('ece', 0);
+  // The moderation this account may do stays below the volume.
+  expect(within(menu).getByRole('menuitem', { name: 'Topluluktan çıkar' })).toBeTruthy();
+  // The menu key opens the same menu; nothing else opens beside it.
+  fireEvent.keyDown(document, { key: 'Escape' });
+  expect(screen.queryByRole('menu')).toBeNull();
+  fireEvent.keyDown(occupant('ece'), { key: 'ContextMenu' });
+  expect(screen.getByRole('slider', { name: 'Ece ses düzeyi' })).toBeTruthy();
+});
+
+it('offers no volume for someone in a room this listener does not hear', async () => {
+  f.directory.rooms = [
+    { channelId: 'lounge', participants: [{ id: 'can', name: 'Can', muted: false }] },
+  ];
+  await mount();
+  fireEvent.contextMenu(occupant('can'));
+  const menu = screen.getByRole('menu', { name: 'Can için işlemler' });
+  expect(within(menu).queryByRole('slider')).toBeNull();
+  expect(within(menu).getByRole('menuitem', { name: 'Profili aç' })).toBeTruthy();
 });
