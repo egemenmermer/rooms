@@ -50,6 +50,7 @@ export function CinemaYouTubeStage({
   onEnded,
   onOpenSource,
   onUnembeddable,
+  keyboard = true,
 }: {
   item: QueueItem & { media: { kind: 'youtube' } };
   timeline: Timeline;
@@ -67,6 +68,8 @@ export function CinemaYouTubeStage({
   onOpenSource(): void;
   /** The owner keeps this video off other sites; the cinema switches to a browser share. */
   onUnembeddable?(videoId: string): void;
+  /** False while another page is in front (a corner player): Space and arrows stay theirs. */
+  keyboard?: boolean;
 }) {
   const videoId = item.media.videoId;
   const frame = useRef<HTMLIFrameElement>(null);
@@ -287,6 +290,7 @@ export function CinemaYouTubeStage({
   keys.current = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement | null;
     if (
+      !keyboard ||
       event.metaKey ||
       event.ctrlKey ||
       event.altKey ||

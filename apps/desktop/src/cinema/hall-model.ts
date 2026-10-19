@@ -5,6 +5,7 @@ import type {
   SharedMedia,
 } from '../../../../packages/activity-protocol/src';
 import type { CinemaItem, CinemaProgramme } from '../../../../packages/community-cinema/src/types';
+import { clock } from '../cinema-youtube';
 
 export type HallMedia = Extract<SharedMedia, { kind: 'community-media' }>;
 export type HallItem = QueueItem & { media: HallMedia };
@@ -147,12 +148,40 @@ export function editingTarget(target: EventTarget | null) {
   );
 }
 
-/** Space, arrows and digits belong to a focused control (button, tab, link, list option). */
+/** Space and digits belong to a focused control (button, tab, link, list option). */
 export function controlTarget(target: EventTarget | null) {
   const element = target as HTMLElement | null;
   return !!element?.closest?.(
     'button,a[href],[role="tab"],[role="option"],[role="menuitem"],[role="slider"],summary',
   );
+}
+
+/**
+ * Arrows belong only to widgets that move with them: sliders, lists, menus, radio groups.
+ * A focused button or tab does not use them, so right after clicking play, the volume or the
+ * Salon tab, ←/→ still seek and ↑/↓ still zap.
+ */
+export function arrowTarget(target: EventTarget | null) {
+  const element = target as HTMLElement | null;
+  return !!element?.closest?.(
+    '[role="slider"],[role="listbox"],[role="option"],[role="menu"],[role="menuitem"],[role="menuitemradio"],[role="menuitemcheckbox"],[role="radiogroup"],[role="radio"],[role="grid"],[role="tree"]',
+  );
+}
+
+/** ←/→ move a film or episode by this many seconds. */
+export const SEEK_STEP_SEC = 10;
+/** Repeated ←/→ presses add up before the hall seeks once for everyone. */
+export const SEEK_SETTLE_MS = 400;
+
+/** Where a keyboard seek lands: not before the start, not past the last second. */
+export function seekTarget(positionSec: number, durationSec: number | null) {
+  const end = durationSec && durationSec > 1 ? durationSec - 1 : Infinity;
+  return Math.max(0, Math.min(end, positionSec));
+}
+
+/** The OSD of a pending ←/→ seek, e.g. `20 sn ileri · 21:10`. */
+export function seekNote(offsetSec: number, targetSec: number) {
+  return `${Math.abs(offsetSec)} sn ${offsetSec < 0 ? 'geri' : 'ileri'} · ${clock(targetSec)}`;
 }
 
 /** The palette shortcut as this platform writes it. */

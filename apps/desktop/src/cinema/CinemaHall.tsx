@@ -21,13 +21,16 @@ import { VoiceAvatar } from '../VoiceAvatar';
 import { storeVolume, storedVolume } from '../cinema-youtube';
 import { CinemaArt, QualityBadges } from './CinemaArt';
 import { knownItem, useAllItems, useBridgeRead } from './catalog-cache';
+import { cinemaErrorText } from './cinema-bridge';
 import { useCommunityCinema } from './cinema-status';
 import { cachedGuide, useGuides, useNow } from './guide-cache';
+import { hallPageClosed, hallPageOpened } from './hall-background';
 import { HallPanel, type PanelTab } from './HallPanel';
 import type { PlayerControls } from './HallPlayer';
 import { HallStage, type StageOsd } from './HallStage';
 import {
   ARROW_ZAP_MS,
+  arrowTarget,
   controlTarget,
   didThis,
   editingTarget,
@@ -40,6 +43,10 @@ import {
   programmeAfter,
   programmeAt,
   programmeProgress,
+  SEEK_SETTLE_MS,
+  SEEK_STEP_SEC,
+  seekNote,
+  seekTarget,
   timeRange,
   type HallTab,
 } from './hall-model';
@@ -179,19 +186,23 @@ function HallLayout() {
     });
   }, []);
 
-  // Watching means taking a seat: join while something plays, leave with the page.
+  // Watching means taking a seat: join while something plays. Closing the page leaves the
+  // seat, unless what plays carries on in the corner player (e.g. after joining a voice room).
   const joined = useRef(false);
   joined.current = hall.joined;
+  const latestHall = useRef(hall);
+  latestHall.current = hall;
   useEffect(() => {
     if (hall.connected && hall.primary && !hall.joined) hall.quiet({ type: 'join' });
   }, [hall.connected, hall.primary, hall.joined, hall.quiet]);
-  useEffect(
-    () => () => {
-      if (joined.current) hall.quiet({ type: 'leave' });
-    },
-    // Leave once, when the hall closes.
-    [],
-  );
+  useEffect(() => {
+    hallPageOpened();
+    return () => {
+      const watching = joined.current && !!latestHall.current.current;
+      if (!hallPageClosed(hall.hallId, watching) && joined.current) hall.quiet({ type: 'leave' });
+    };
+    // Once: when the hall page opens and closes.
+  }, []);
 
   // OSD fades after a few seconds; a new zap restarts it.
   useEffect(() => {
@@ -264,10 +275,58 @@ function HallLayout() {
     },
     [hall, zapItems, show, describe],
   );
+  // ←/→ on a film: presses add up on the OSD, then one remote-gated seek goes to everyone.
+  const duration = useRef<number | null>(null);
+  const rememberDuration = useCallback((value: number | null) => {
+    duration.current = value;
+  }, []);
+  const pendingSeek = useRef<{
+    itemId: string;
+    offset: number;
+    timer: ReturnType<typeof setTimeout>;
+  } | null>(null);
+  const seekBy = useCallback(
+    (step: number) => {
+      const item = hall.current;
+      if (!item) return;
+      if (!hall.canDirect) {
+        show({ number: null, title: '', detail: null, note: 'Kumanda ev sahibinde' });
+        return;
+      }
+      const pending = pendingSeek.current?.itemId === item.id ? pendingSeek.current : null;
+      if (pendingSeek.current) clearTimeout(pendingSeek.current.timer);
+      const offset = (pending?.offset ?? 0) + step;
+      show({
+        number: null,
+        title: '',
+        detail: null,
+        note: seekNote(offset, seekTarget(currentPosition(hall) + offset, duration.current)),
+      });
+      pendingSeek.current = {
+        itemId: item.id,
+        offset,
+        timer: setTimeout(() => {
+          pendingSeek.current = null;
+          const now = latestHall.current;
+          const timeline = now.room?.timeline;
+          // The hall may have moved on, or the remote changed hands, while the presses settled.
+          if (!timeline || now.current?.id !== item.id || !now.canDirect) return;
+          now.run({
+            type: 'playback',
+            playing: timeline.playing,
+            positionSec: seekTarget(currentPosition(now) + offset, duration.current),
+            rate: 1,
+          });
+        }, SEEK_SETTLE_MS),
+      };
+    },
+    [hall, show],
+  );
   useEffect(
     () => () => {
       if (pendingZap.current) clearTimeout(pendingZap.current.timer);
       if (digits.current) clearTimeout(digits.current.timer);
+      if (pendingSeek.current) clearTimeout(pendingSeek.current.timer);
     },
     [],
   );
@@ -354,7 +413,10 @@ function HallLayout() {
           togglePanel();
           return;
       }
-      if (!stage || controlTarget(event.target)) return;
+      if (!stage) return;
+      // Arrows yield only to widgets that move with them; Space and digits to any control.
+      if (event.key.startsWith('Arrow') ? arrowTarget(event.target) : controlTarget(event.target))
+        return;
       if (live && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
         event.preventDefault();
         zap(event.key === 'ArrowDown' ? 1 : -1);
@@ -365,15 +427,21 @@ function HallLayout() {
         event.preventDefault();
         if (live) controls.current?.toggleLocalPause();
         else if (hall.canDirect && timeline) shared(!timeline.playing, currentPosition(hall));
+        else if (!hall.canDirect)
+          show({ number: null, title: '', detail: null, note: 'Kumanda ev sahibinde' });
       } else if (
-        !live &&
         isHallItem(hall.current) &&
-        (event.key === 'ArrowLeft' || event.key === 'ArrowRight') &&
-        hall.canDirect &&
-        timeline
+        (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
       ) {
         event.preventDefault();
-        shared(timeline.playing, currentPosition(hall) + (event.key === 'ArrowRight' ? 10 : -10));
+        if (live)
+          show({
+            number: null,
+            title: '',
+            detail: null,
+            note: cinemaErrorText('LIVE_PLAYBACK_FIXED'),
+          });
+        else seekBy(event.key === 'ArrowRight' ? SEEK_STEP_SEC : -SEEK_STEP_SEC);
       }
     };
     window.addEventListener('keydown', key);
@@ -537,6 +605,7 @@ function HallLayout() {
                 onTogglePanel={() => togglePanel()}
                 onExpand={() => goTo('stage')}
                 onZap={zap}
+                onDuration={rememberDuration}
               />
             </div>
           )}

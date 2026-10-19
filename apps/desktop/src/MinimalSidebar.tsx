@@ -42,6 +42,7 @@ import { UserProfileDialog } from './SocialSurfaces';
 import type { SocialUser } from '@rooms/social';
 import { uiError } from './i18n';
 import { UpdateNotice } from './UpdateNotice';
+import { HallBackground } from './cinema/HallBackground';
 import { HallSidebarRow } from './cinema/HallSidebarRow';
 import { useCommunityCinema } from './cinema/cinema-status';
 import {
@@ -477,6 +478,8 @@ export function MinimalSidebar({
         </div>
       </aside>
       <SoundboardButton showTrigger={false} />
+      {/* Like the soundboard, the corner cinema outlives page changes (e.g. joining voice). */}
+      <HallBackground notify={notify} />
       {memberMenu && (
         <VoiceMemberMenu
           target={memberMenu}
