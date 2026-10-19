@@ -48,6 +48,8 @@ import { OpenPalette } from './OpenPalette';
 import { HallContext, useHall, useHallState } from './use-hall';
 import { VodTab, type VodView } from './VodTab';
 import { YouTubeTab } from './YouTubeTab';
+import { RmdbTab } from './RmdbTab';
+import type { RmdbView } from './rmdb-model';
 
 type View = 'stage' | HallTab;
 
@@ -57,6 +59,7 @@ const tabs: { id: View; label: string }[] = [
   { id: 'movies', label: 'Filmler' },
   { id: 'series', label: 'Diziler' },
   { id: 'youtube', label: 'YouTube' },
+  { id: 'rmdb', label: 'RMDB' },
 ];
 
 /** The community cinema hall: one shared screen, a catalog to open things from, and the hall's chat. */
@@ -139,6 +142,7 @@ function HallLayout() {
     movies: { mode: 'home' },
     series: { mode: 'home' },
   });
+  const [rmdb, setRmdb] = useState<RmdbView>({ mode: 'home' });
   const [panel, setPanel] = useState<{ open: boolean; tab: PanelTab }>(() => ({
     open: readPanel(),
     tab: 'chat',
@@ -470,6 +474,7 @@ function HallLayout() {
               onClick={() => {
                 if (tab.id === view && vodKey === tab.id)
                   setVod((value) => ({ ...value, [tab.id]: { mode: 'home' } }));
+                if (tab.id === view && tab.id === 'rmdb') setRmdb({ mode: 'home' });
                 goTo(tab.id);
               }}
             >
@@ -499,7 +504,7 @@ function HallLayout() {
             </div>
           ) : (
             <div className={`hall-browse ${hall.current ? 'with-mini' : ''}`}>
-              {!connected && view !== 'youtube' ? (
+              {!connected && view !== 'youtube' && view !== 'rmdb' ? (
                 <NotConnected />
               ) : view === 'live' ? (
                 <LiveTab
@@ -512,7 +517,13 @@ function HallLayout() {
                   kind={view === 'movies' ? 'movie' : 'series'}
                   view={vod[view]}
                   onView={(value) => setVod((current) => ({ ...current, [view]: value }))}
+                  onRmdb={(workId) => {
+                    setRmdb({ mode: 'details', workId });
+                    goTo('rmdb');
+                  }}
                 />
+              ) : view === 'rmdb' ? (
+                <RmdbTab view={rmdb} onView={setRmdb} onBrowse={goTo} />
               ) : (
                 <YouTubeTab />
               )}

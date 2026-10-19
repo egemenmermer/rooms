@@ -4,14 +4,23 @@ import type {
   QueueItem,
   RoomSnapshot,
 } from '../../../../packages/activity-protocol/src';
-import type {
-  CatalogKind,
-  CinemaCategory,
-  CinemaDetails,
-  CinemaEpisode,
-  CinemaItem,
-  CinemaProgramme,
-  CinemaStatus,
+import {
+  RMDB_REVIEW_MAX,
+  type CatalogKind,
+  type CinemaCategory,
+  type CinemaDetails,
+  type CinemaEpisode,
+  type CinemaItem,
+  type CinemaProgramme,
+  type CinemaStatus,
+  type RmdbDiaryEntry,
+  type RmdbEpisodeProgress,
+  type RmdbEpisodeRef,
+  type RmdbPerson,
+  type RmdbProgress,
+  type RmdbReview,
+  type RmdbWorkDetails,
+  type RmdbWorkSummary,
 } from '../../../../packages/community-cinema/src/types';
 import type {
   CinemaBridge,
@@ -25,8 +34,9 @@ import { installDevelopmentRuntime, mediaBridge, mediaProvider } from '../runtim
 import { useCommunity } from '../community';
 
 /**
- * S80 · DEV-only community cinema. Every channel, film and programme below is invented sample
- * data with generated artwork; nothing reaches a cinema service, a relay or a provider.
+ * S80 · DEV-only community cinema. Every channel, film, programme and RMDB rating, review and
+ * diary line below is invented sample data with generated artwork; nothing reaches a cinema
+ * service, a relay or a provider. `rmdb_empty` shows an RMDB nobody has used yet.
  */
 export const COMMUNITY_CINEMA_FIXTURE_VARIANTS = [
   'default',
@@ -38,6 +48,7 @@ export const COMMUNITY_CINEMA_FIXTURE_VARIANTS = [
   'importing',
   'error',
   'remote',
+  'rmdb_empty',
 ] as const;
 export type CommunityCinemaFixtureVariant = (typeof COMMUNITY_CINEMA_FIXTURE_VARIANTS)[number];
 
@@ -362,6 +373,350 @@ function buildCatalog(now: number) {
 const fold = (text: string) =>
   text.toLocaleLowerCase('tr').normalize('NFKD').replace(/\p{M}/gu, '').replace(/ı/g, 'i');
 
+/** A DEMO RMDB entry as the fixture keeps it; `ref` is null once the title left the catalog. */
+type DemoWork = {
+  id: string;
+  ref: string | null;
+  kind: 'movie' | 'series';
+  title: string;
+  year: number | null;
+  genre: string | null;
+  art: string | null;
+  backdrop: string | null;
+  plot: string | null;
+  director: string | null;
+  cast: string | null;
+  durationSec: number | null;
+  addedAt: number;
+  touchedAt: number;
+  progress: RmdbProgress | null;
+  reviews: RmdbReview[];
+  diary: RmdbDiaryEntry[];
+  episodes: RmdbEpisodeProgress[];
+  watchlist: { by: RmdbPerson; at: number } | null;
+};
+
+const demoPeople = {
+  deniz: { userId: 'demo-deniz', name: 'Deniz' },
+  ece: { userId: 'demo-ece', name: 'Ece' },
+  can: { userId: 'demo-can', name: 'Can' },
+  zeynep: { userId: 'demo-zeynep', name: 'Zeynep' },
+  mert: { userId: 'demo-mert', name: 'Mert' },
+} satisfies Record<string, RmdbPerson>;
+
+/**
+ * DEMO RMDB for S80: invented ratings, reviews and diary lines by the fixture's demo members
+ * over the fixture catalog, plus one title that is no longer in it. Never real member data.
+ */
+function demoRmdb(now: number, catalog: ReturnType<typeof buildCatalog>): DemoWork[] {
+  const { deniz, ece, can, zeynep, mert } = demoPeople;
+  const hour = 3_600_000;
+  let line = 0;
+  const review = (
+    author: RmdbPerson,
+    rating: number | null,
+    text: string,
+    at: number,
+    extra: Partial<RmdbReview> = {},
+  ): RmdbReview => ({
+    author,
+    rating,
+    text,
+    spoiler: false,
+    liked: false,
+    createdAt: at,
+    updatedAt: at,
+    ...extra,
+  });
+  const hallWatch = (
+    at: number,
+    viewers: RmdbPerson[],
+    finished = true,
+    episode: RmdbEpisodeRef | null = null,
+    positionSec: number | null = null,
+  ): RmdbDiaryEntry => ({
+    id: `d-demo-${++line}`,
+    watchedAt: at,
+    viewers,
+    episode,
+    finished,
+    positionSec,
+    source: 'hall',
+    loggedBy: null,
+  });
+  const handLog = (at: number, by: RmdbPerson): RmdbDiaryEntry => ({
+    id: `d-demo-${++line}`,
+    watchedAt: at,
+    viewers: [by],
+    episode: null,
+    finished: true,
+    positionSec: null,
+    source: 'manual',
+    loggedBy: by,
+  });
+  const base = (ref: string, id: string, addedAt: number) => {
+    const entry = catalog.details.get(ref)!;
+    return {
+      id,
+      ref,
+      kind: entry.item.kind as 'movie' | 'series',
+      title: entry.item.title,
+      year: entry.item.year,
+      genre: entry.genre,
+      art: entry.item.art,
+      backdrop: entry.backdrop,
+      plot: entry.plot,
+      director: entry.director,
+      cast: entry.cast,
+      durationSec: entry.durationSec,
+      addedAt,
+      touchedAt: addedAt,
+      progress: null,
+      reviews: [],
+      diary: [],
+      episodes: [],
+      watchlist: null,
+    } satisfies DemoWork;
+  };
+  const film = (ref: string, at: number, position: number | 'end'): RmdbProgress => {
+    const duration = catalog.details.get(ref)!.durationSec ?? 6000;
+    return {
+      positionSec: position === 'end' ? duration - 40 : position,
+      durationSec: duration,
+      finished: position === 'end',
+      episode: null,
+      updatedAt: at,
+    };
+  };
+  const episodeOf = (ref: string, season: number, episode: number) =>
+    catalog.details
+      .get(ref)!
+      .seasons.find((value) => value.season === season)!
+      .episodes.find((value) => value.episode === episode)!;
+  const episodeRef = (ref: string, season: number, episode: number): RmdbEpisodeRef => ({
+    season,
+    episode,
+    title: episodeOf(ref, season, episode).title,
+  });
+  /** A run of watched episodes; the last one stops at `lastAt` seconds unless it is null. */
+  const binge = (
+    ref: string,
+    list: [season: number, episode: number][],
+    startAt: number,
+    viewers: RmdbPerson[],
+    lastAt: number | null = null,
+  ) => {
+    const episodes: RmdbEpisodeProgress[] = [];
+    const diary: RmdbDiaryEntry[] = [];
+    list.forEach(([season, episode], index) => {
+      const last = index === list.length - 1;
+      const at = startAt + index * 0.8 * day;
+      const duration = episodeOf(ref, season, episode).durationSec ?? 2700;
+      const finished = !(last && lastAt !== null);
+      episodes.push({
+        ...episodeRef(ref, season, episode),
+        positionSec: finished ? duration - 30 : lastAt!,
+        durationSec: duration,
+        finished,
+        watchedAt: at,
+      });
+      diary.push(
+        hallWatch(
+          at,
+          viewers,
+          finished,
+          episodeRef(ref, season, episode),
+          finished ? duration - 30 : lastAt,
+        ),
+      );
+    });
+    const last = episodes[episodes.length - 1]!;
+    const progress: RmdbProgress = {
+      positionSec: last.positionSec,
+      durationSec: last.durationSec,
+      finished: last.finished,
+      episode: { season: last.season, episode: last.episode, title: last.title },
+      updatedAt: last.watchedAt + hour,
+    };
+    return { episodes, diary, progress };
+  };
+  const range = (season: number, from: number, to: number) =>
+    Array.from({ length: to - from + 1 }, (_, i): [number, number] => [season, from + i]);
+
+  const mahalle = binge(
+    's-5001',
+    [...range(1, 1, 6), ...range(2, 1, 3)],
+    now - 9 * day,
+    [ece, deniz, mert],
+    730,
+  );
+  const kayip = binge('s-5003', range(1, 1, 8), now - 11 * day, [zeynep, deniz, can]);
+  const kopru = binge('s-5002', range(1, 1, 2), now - 13 * day, [can, deniz]);
+  const vardiya = binge('s-5005', range(1, 1, 7), now - 45 * day, [ece, zeynep, deniz]);
+  return [
+    {
+      ...base('m-3003', 'w-demo-mavi-saat', now - 19 * day),
+      touchedAt: now - 2 * day + 4 * hour,
+      progress: film('m-3003', now - 2 * day + 2 * hour, 'end'),
+      reviews: [
+        review(
+          deniz,
+          8,
+          'İkinci izleyişte daha da güzeldi. İskele sahnesi hâlâ aklımda.',
+          now - 2 * day + 3 * hour,
+          { liked: true },
+        ),
+        review(
+          ece,
+          9,
+          'Son sahnede salonda kimse konuşmadı. Müzikleri de ayrıca çok iyi.',
+          now - 18 * day,
+          { liked: true },
+        ),
+        review(can, 8, 'Görüntüler harika; ortası biraz uzamış ama değdi.', now - 18 * day - hour),
+        review(zeynep, 10, '', now - 17 * day, { liked: true }),
+        review(mert, 7, 'Herkes kadar sevmedim ama güzel bir akşamdı.', now - 2 * day + 4 * hour),
+      ],
+      diary: [
+        hallWatch(now - 2 * day, [deniz, mert]),
+        hallWatch(now - 19 * day, [ece, can, deniz, zeynep]),
+        handLog(now - 60 * day, ece),
+      ],
+    },
+    {
+      ...base('m-3015', 'w-demo-gecenin-kiyisinda', now - day),
+      touchedAt: now - day + 2 * hour,
+      progress: film('m-3015', now - day + hour, 2530),
+      reviews: [
+        review(
+          zeynep,
+          9,
+          'Yarısındayız ama şimdiden favorim. Kimse sonunu söylemesin!',
+          now - day + 2 * hour,
+        ),
+        review(ece, 8, '', now - day + 2 * hour),
+      ],
+      diary: [hallWatch(now - day, [ece, can, deniz], false, null, 2530)],
+    },
+    {
+      ...base('s-5001', 'w-demo-mahalle', now - 9 * day),
+      touchedAt: mahalle.progress.updatedAt,
+      ...mahalle,
+      reviews: [
+        review(mert, 9, 'Apartman toplantısı bölümü efsane.', now - 5 * day, { liked: true }),
+        review(ece, 8, '', now - 6 * day),
+      ],
+    },
+    {
+      ...base('m-3001', 'w-demo-son-vapur', now - 6 * day),
+      touchedAt: now - 6 * day + hour,
+      progress: film('m-3001', now - 6 * day, 'end'),
+      reviews: [review(mert, 7, 'Biraz yavaş ama görüntüler çok güzel.', now - 6 * day + hour)],
+      diary: [hallWatch(now - 6 * day - 2 * hour, [deniz, ece, mert])],
+    },
+    {
+      ...base('m-3006', 'w-demo-deniz-feneri', now - 3 * day),
+      watchlist: { by: zeynep, at: now - 3 * day },
+    },
+    {
+      ...base('m-3009', 'w-demo-eski-defter', now - 4 * day),
+      touchedAt: now - 4 * day,
+      progress: film('m-3009', now - 4 * day, 900),
+      diary: [hallWatch(now - 4 * day - hour, [deniz, mert], false, null, 900)],
+    },
+    {
+      ...base('s-5003', 'w-demo-kayip-sehir', now - 11 * day),
+      touchedAt: kayip.progress.updatedAt,
+      ...kayip,
+      reviews: [
+        review(zeynep, 10, 'Sezon finali! Sesimiz bütün apartmana gitti.', now - 5 * day, {
+          liked: true,
+        }),
+        review(deniz, 9, '', now - 5 * day + hour),
+      ],
+    },
+    {
+      ...base('m-3007', 'w-demo-sessiz-sokak', now - 9 * day),
+      touchedAt: now - 9 * day + 2 * hour,
+      progress: film('m-3007', now - 9 * day, 'end'),
+      reviews: [
+        review(
+          can,
+          8,
+          'Katil baştan beri karşı komşuymuş; son sahnedeki ayna her şeyi açıklıyor.',
+          now - 9 * day + hour,
+          { spoiler: true },
+        ),
+        review(
+          ece,
+          6,
+          'Gerilimi iyi kurulmuş ama sonu biraz aceleye gelmiş.',
+          now - 9 * day + 2 * hour,
+        ),
+      ],
+      diary: [hallWatch(now - 9 * day - hour, [can, zeynep, deniz, ece])],
+    },
+    {
+      ...base('m-3010', 'w-demo-ruzgarin-kizi', now - day - 5 * hour),
+      watchlist: { by: deniz, at: now - day - 5 * hour },
+    },
+    {
+      ...base('s-5002', 'w-demo-koprualti', now - 13 * day),
+      touchedAt: kopru.progress.updatedAt,
+      ...kopru,
+      reviews: [review(can, 6, 'Fena değil, ikinci bölümde açıldı.', now - 12 * day)],
+    },
+    {
+      ...base('s-5007', 'w-demo-ayna', now - 8 * day),
+      watchlist: { by: ece, at: now - 8 * day },
+    },
+    {
+      ...base('s-5005', 'w-demo-gece-vardiyasi', now - 45 * day),
+      touchedAt: vardiya.progress.updatedAt,
+      ...vardiya,
+      reviews: [
+        review(ece, 8, 'Final tam yerindeydi.', now - 38 * day, { liked: true }),
+        review(zeynep, 7, '', now - 38 * day),
+      ],
+    },
+    {
+      id: 'w-demo-kuzey-treni',
+      ref: null,
+      kind: 'movie',
+      title: 'Kuzey Treni',
+      year: 2019,
+      genre: 'Dram',
+      art: art('poster', 'Kuzey Treni', 200),
+      backdrop: art('backdrop', 'Kuzey Treni', 200),
+      plot: 'Kışın son treniyle kuzeye giden iki kardeş, yolda eski bir aile sırrıyla yüzleşir.',
+      director: 'Selin Aydın',
+      cast: 'Ozan Er, Melis Kaya',
+      durationSec: 6300,
+      addedAt: now - 70 * day,
+      touchedAt: now - 69 * day,
+      progress: {
+        positionSec: 6260,
+        durationSec: 6300,
+        finished: true,
+        episode: null,
+        updatedAt: now - 70 * day,
+      },
+      reviews: [
+        review(
+          ece,
+          9,
+          'Katalogdan kalktı ama kaydı burada duruyor; iyi ki izlemişiz.',
+          now - 69 * day,
+        ),
+        review(can, 8, '', now - 69 * day),
+      ],
+      diary: [hallWatch(now - 70 * day, [ece, can, zeynep, mert, deniz])],
+      episodes: [],
+      watchlist: null,
+    },
+  ];
+}
+
 export function createCommunityCinemaFixtureBridge(
   variant: CommunityCinemaFixtureVariant,
   now = Date.now(),
@@ -407,6 +762,90 @@ export function createCommunityCinemaFixtureBridge(
     if (hallId !== status.hallChannelId) throw new Error('CINEMA_HALL_REQUIRED');
     if (!status.connected) throw new Error('CINEMA_NOT_CONNECTED');
   };
+
+  // DEMO RMDB: lives apart from the IPTV account, like the service's own record.
+  const viewer: RmdbPerson = demoPeople.deniz;
+  let works = variant === 'rmdb_empty' ? [] : demoRmdb(now, catalog);
+  let logs = 0;
+  const rmdbHall = (hallId: string) => {
+    if (hallId !== status.hallChannelId) throw new Error('CINEMA_HALL_REQUIRED');
+  };
+  const work = (workId: string) => {
+    const found = works.find((value) => value.id === workId);
+    if (!found) throw new Error('CINEMA_RMDB_NOT_FOUND');
+    return found;
+  };
+  const owner = () => {
+    if (!status.isOwner) throw new Error('CINEMA_OWNER_REQUIRED');
+  };
+  const summaryOf = (value: DemoWork): RmdbWorkSummary => {
+    const ratings = value.reviews.map((r) => r.rating).filter((r): r is number => r !== null);
+    const mine = value.reviews.find((r) => r.author.userId === viewer.userId);
+    return {
+      id: value.id,
+      kind: value.kind,
+      title: value.title,
+      year: value.year,
+      genre: value.genre,
+      art: value.art,
+      averageRating: ratings.length
+        ? Math.round((ratings.reduce((sum, r) => sum + r, 0) / ratings.length) * 10) / 10
+        : null,
+      ratingCount: ratings.length,
+      reviewCount: value.reviews.filter((r) => r.text).length,
+      likeCount: value.reviews.filter((r) => r.liked).length,
+      progress: value.progress,
+      watchCount: value.diary.length,
+      lastWatchedAt: value.diary.length ? Math.max(...value.diary.map((d) => d.watchedAt)) : null,
+      addedAt: value.addedAt,
+      onWatchlist: !!value.watchlist,
+      mine: { rating: mine?.rating ?? null, liked: mine?.liked ?? false },
+    };
+  };
+  /** What the catalog can open now, as the service decides it (5 s of context on resume). */
+  const resumeOf = (value: DemoWork): RmdbWorkDetails['resume'] => {
+    const entry = status.connected && value.ref ? catalog.details.get(value.ref) : undefined;
+    if (!entry) return null;
+    const progress = value.progress;
+    const at = (seconds: number) => Math.max(0, Math.floor(seconds) - 5);
+    if (value.kind === 'movie')
+      return {
+        ref: entry.item.ref,
+        title: entry.item.title,
+        positionSec: progress && !progress.finished ? at(progress.positionSec) : 0,
+        art: entry.item.art,
+        episode: null,
+      };
+    const episodes = entry.seasons.flatMap((season) => season.episodes);
+    const stop = progress?.episode ?? null;
+    const index = stop
+      ? episodes.findIndex((e) => e.season === stop.season && e.episode === stop.episode)
+      : 0;
+    if (index < 0) return null;
+    const next = !!stop && progress!.finished;
+    const target = episodes[next ? index + 1 : index];
+    if (!target) return null;
+    return {
+      ref: target.ref,
+      title: `${entry.item.title} · ${target.season}. Sezon ${target.episode}. Bölüm`,
+      positionSec: stop && !next ? at(progress!.positionSec) : 0,
+      art: target.art ?? entry.item.art,
+      episode: { season: target.season, episode: target.episode, title: target.title || null },
+    };
+  };
+  const detailsOf = (value: DemoWork): RmdbWorkDetails => ({
+    ...summaryOf(value),
+    plot: value.plot,
+    director: value.director,
+    cast: value.cast,
+    durationSec: value.durationSec,
+    backdrop: value.backdrop,
+    reviews: [...value.reviews].sort((a, b) => b.updatedAt - a.updatedAt),
+    diary: [...value.diary].sort((a, b) => b.watchedAt - a.watchedAt),
+    episodes: [...value.episodes].sort((a, b) => a.season - b.season || a.episode - b.episode),
+    watchlist: value.watchlist,
+    resume: resumeOf(value),
+  });
   return {
     status: () => delay(status, 60),
     setHall: async (_communityId, channelId) => {
@@ -527,6 +966,138 @@ export function createCommunityCinemaFixtureBridge(
         },
         400,
       );
+    },
+    rmdb: async (hallId) => {
+      rmdbHall(hallId);
+      return delay([...works].sort((a, b) => b.touchedAt - a.touchedAt).map(summaryOf), 120);
+    },
+    rmdbWork: async (hallId, workId) => {
+      rmdbHall(hallId);
+      return delay(detailsOf(work(workId)), 100);
+    },
+    rmdbAdd: async (hallId, ref, watchlist) => {
+      rmdbHall(hallId);
+      if (!status.connected) throw new Error('CINEMA_NOT_CONNECTED');
+      if (!/^[ms]-/.test(ref)) throw new Error('CINEMA_RMDB_INVALID');
+      const entry = catalog.details.get(ref);
+      if (!entry) throw new Error('CINEMA_ITEM_NOT_FOUND');
+      const at = Date.now();
+      let found = works.find(
+        (value) =>
+          value.ref === ref ||
+          (value.kind === entry.item.kind &&
+            fold(value.title) === fold(entry.item.title) &&
+            (value.year === null || entry.item.year === null || value.year === entry.item.year)),
+      );
+      if (!found) {
+        found = {
+          id: `w-demo-${hex(ref)}`,
+          ref,
+          kind: entry.item.kind as 'movie' | 'series',
+          title: entry.item.title,
+          year: entry.item.year,
+          genre: entry.genre,
+          art: entry.item.art,
+          backdrop: entry.backdrop,
+          plot: entry.plot,
+          director: entry.director,
+          cast: entry.cast,
+          durationSec: entry.durationSec,
+          addedAt: at,
+          touchedAt: at,
+          progress: null,
+          reviews: [],
+          diary: [],
+          episodes: [],
+          watchlist: null,
+        };
+        works.push(found);
+      }
+      if (watchlist && !found.watchlist) found.watchlist = { by: viewer, at };
+      found.touchedAt = at;
+      return delay(detailsOf(found), 160);
+    },
+    rmdbReview: async (hallId, workId, input) => {
+      rmdbHall(hallId);
+      const value = work(workId);
+      if (
+        input &&
+        ((input.rating !== null &&
+          !(Number.isInteger(input.rating) && input.rating >= 1 && input.rating <= 10)) ||
+          input.text.length > RMDB_REVIEW_MAX)
+      )
+        throw new Error('CINEMA_RMDB_INVALID');
+      const at = Date.now();
+      const previous = value.reviews.find((r) => r.author.userId === viewer.userId);
+      value.reviews = value.reviews.filter((r) => r.author.userId !== viewer.userId);
+      const text = input?.text.trim() ?? '';
+      if (input && (input.rating !== null || text || input.liked))
+        value.reviews.push({
+          author: viewer,
+          rating: input.rating,
+          text,
+          spoiler: !!text && input.spoiler,
+          liked: input.liked,
+          createdAt: previous?.createdAt ?? at,
+          updatedAt: at,
+        });
+      value.touchedAt = at;
+      return delay(detailsOf(value), 140);
+    },
+    rmdbRemoveReview: async (hallId, workId, userId) => {
+      rmdbHall(hallId);
+      owner();
+      const value = work(workId);
+      if (!value.reviews.some((r) => r.author.userId === userId))
+        throw new Error('CINEMA_RMDB_NOT_FOUND');
+      value.reviews = value.reviews.filter((r) => r.author.userId !== userId);
+      return delay(detailsOf(value), 120);
+    },
+    rmdbWatchlist: async (hallId, workId, on) => {
+      rmdbHall(hallId);
+      const value = work(workId);
+      value.watchlist = on ? (value.watchlist ?? { by: viewer, at: Date.now() }) : null;
+      value.touchedAt = Date.now();
+      return delay(detailsOf(value), 100);
+    },
+    rmdbLog: async (hallId, workId, watchedAt) => {
+      rmdbHall(hallId);
+      const value = work(workId);
+      const at = watchedAt ?? Date.now();
+      if (!Number.isFinite(at) || at > Date.now() + 60_000 || at < Date.UTC(1900, 0))
+        throw new Error('CINEMA_RMDB_INVALID');
+      value.diary.push({
+        id: `d-demo-log-${++logs}`,
+        watchedAt: at,
+        viewers: [viewer],
+        episode: null,
+        finished: true,
+        positionSec: null,
+        source: 'manual',
+        loggedBy: viewer,
+      });
+      value.touchedAt = Date.now();
+      return delay(detailsOf(value), 140);
+    },
+    rmdbRemoveLog: async (hallId, workId, entryId) => {
+      rmdbHall(hallId);
+      const value = work(workId);
+      const entry = value.diary.find((d) => d.id === entryId);
+      if (!entry) throw new Error('CINEMA_RMDB_NOT_FOUND');
+      if (
+        !status.isOwner &&
+        !(entry.source === 'manual' && entry.loggedBy?.userId === viewer.userId)
+      )
+        throw new Error('CINEMA_ACCESS_DENIED');
+      value.diary = value.diary.filter((d) => d.id !== entryId);
+      return delay(detailsOf(value), 120);
+    },
+    rmdbRemove: async (hallId, workId) => {
+      rmdbHall(hallId);
+      owner();
+      work(workId);
+      works = works.filter((value) => value.id !== workId);
+      await delay(null, 140);
     },
     chooseSubtitleFile: async () =>
       delay(

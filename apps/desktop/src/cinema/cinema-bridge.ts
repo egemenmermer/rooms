@@ -58,6 +58,8 @@ const copy: Record<CinemaErrorCode, string> = {
   CINEMA_SUBTITLE_KEY_INVALID: 'SubDL bu API anahtarını kabul etmedi. Anahtarı kontrol et.',
   CINEMA_SUBTITLE_UNAVAILABLE:
     'Altyazı servisine şu an ulaşılamadı ya da günlük indirme sınırı doldu. Biraz sonra yeniden dene.',
+  CINEMA_RMDB_NOT_FOUND: "Bu kayıt artık RMDB'de yok.",
+  CINEMA_RMDB_INVALID: 'Puan veya yorum kaydedilemedi; uzunluğu ve tarihi kontrol et.',
 };
 
 /** The bridge code inside an error, if any (IPC wraps messages). */

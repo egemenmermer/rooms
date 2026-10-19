@@ -9,6 +9,7 @@ import { ConfigStore } from '../apps/services/cinema/config-store';
 import { CinemaError, Importer } from '../apps/services/cinema/importer';
 import { SecureFiles } from '../apps/services/cinema/secure-file';
 import { createCinemaServer } from '../apps/services/cinema/server';
+import { Rmdb, RmdbStore } from '../apps/services/cinema/rmdb';
 import {
   CatalogStore,
   CinemaService,
@@ -136,8 +137,10 @@ async function setup() {
       return 'WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nMerhaba\n\n';
     },
   };
+  const rmdb = new Rmdb(new RmdbStore(dir, files), () => Date.now() + clock.offsetMs);
   const service = new CinemaService({
     subtitles,
+    rmdb,
     now: () => Date.now() + clock.offsetMs,
     configs,
     catalogs,
@@ -208,6 +211,7 @@ async function setup() {
     subtitleCalls,
     subtitleResults,
     clock,
+    rmdb,
   };
 }
 
@@ -667,5 +671,197 @@ describe('community cinema online subtitles', () => {
       headers: { authorization: 'Bearer member-token' },
     });
     expect(s.subtitleCalls.download.at(-1)).toBe('3197651-3213944@1x1');
+  });
+});
+
+describe('RMDB in the cinema service', () => {
+  let s: Setup;
+  beforeEach(async () => {
+    s = await setup();
+    await s.connect();
+    s.send('member', { type: 'join' });
+    s.send('member', { type: 'start', activity: 'hall', title: 'Sinema' });
+  });
+  afterEach(async () => {
+    await s.server.close();
+    await s.provider.close();
+    rmSync(s.dir, { recursive: true, force: true });
+  });
+
+  const rmdb = (
+    method: 'GET' | 'PUT' | 'POST' | 'DELETE',
+    path: string,
+    token = 'member-token',
+    body?: unknown,
+  ) => s.call(method, `/v1/halls/${HALL}/rmdb${path}`, token, body);
+  /** The hall plays `ref` from `from` for `seconds`; each viewer's player asks to watch. */
+  const playFor = async (seconds: number, from: number, tokens = ['member-token']) => {
+    s.clock.offsetMs += seconds * 1000;
+    s.send('member', { type: 'playback', playing: true, positionSec: from + seconds, rate: 1 });
+    for (const token of tokens) {
+      const watch = await s.call('POST', `/v1/halls/${HALL}/watch`, token);
+      expect(watch.status).toBe(200);
+    }
+  };
+
+  it('logs what the hall watched and keeps it, with its poster, after the account is removed', async () => {
+    s.send('member', {
+      type: 'queue.add',
+      itemId: 'f1',
+      media: { kind: 'community-media', ref: 'm-3001', title: 'Kış Uykusu', live: false },
+      start: true,
+    });
+    await s.call('POST', `/v1/halls/${HALL}/watch`, 'member-token');
+    await playFor(200, 0, ['member-token', 'owner-token']);
+    expect((await rmdb('GET', '')).body).toEqual([]);
+    await playFor(200, 200);
+    const [work] = (await rmdb('GET', '')).body;
+    expect(work).toMatchObject({ kind: 'movie', watchCount: 1, progress: { finished: false } });
+    expect(work.progress.positionSec).toBeGreaterThanOrEqual(399);
+    // A ticket renewal is one more look at the hall.
+    const current = await s.call('POST', `/v1/halls/${HALL}/watch`, 'member-token');
+    s.clock.offsetMs += 120_000;
+    s.send('member', { type: 'playback', playing: true, positionSec: 520, rate: 1 });
+    await s.service.renew('member-token', HALL, COMMUNITY, 'member', current.body.session);
+    expect((await rmdb('GET', '')).body[0].progress.positionSec).toBeGreaterThanOrEqual(519);
+    const details = (await rmdb('GET', `/${work.id}`, 'owner-token')).body;
+    expect(details.diary[0].viewers.map((v: { userId: string }) => v.userId).sort()).toEqual([
+      'member',
+      'owner',
+    ]);
+    expect(details.resume).toMatchObject({ ref: 'm-3001', positionSec: expect.any(Number) });
+    expect(details.resume.positionSec).toBeGreaterThan(390);
+    // Wait for the artwork copy the hall's first log started.
+    for (let i = 0; i < 100 && !s.rmdb.store.hasArt(COMMUNITY, work.art); i++)
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(s.rmdb.store.hasArt(COMMUNITY, work.art)).toBe(true);
+
+    await s.call('DELETE', `/v1/communities/${COMMUNITY}/source`, 'owner-token');
+    const kept = await rmdb('GET', `/${work.id}`);
+    expect(kept.status).toBe(200);
+    expect(kept.body).toMatchObject({ id: work.id, title: work.title, resume: null });
+    const poster = await s.server.inject({
+      method: 'GET',
+      url: `/v1/halls/${HALL}/art/${work.art}`,
+      headers: { authorization: 'Bearer member-token' },
+    });
+    expect(poster.statusCode).toBe(200);
+    expect(poster.body).toBe('png');
+    expect(s.rmdb.store.readArt(COMMUNITY, work.art)?.body.toString()).toBe('png');
+    // Without the account a title cannot be added, but reviews still work.
+    expect((await rmdb('POST', '', 'member-token', { ref: 'm-3002' })).body).toEqual({
+      error: 'CINEMA_NOT_CONNECTED',
+    });
+    const reviewed = await rmdb('PUT', `/${work.id}/review`, 'member-token', {
+      rating: 9,
+      text: 'Hâlâ burada',
+      spoiler: false,
+      liked: true,
+    });
+    expect(reviewed.body).toMatchObject({ averageRating: 9, mine: { rating: 9, liked: true } });
+  });
+
+  it('adds titles by hand, shares İzlenecekler and resumes series where the hall stopped', async () => {
+    const added = await rmdb('POST', '', 'member-token', { ref: 'm-3001', watchlist: true });
+    expect(added.status).toBe(200);
+    expect(added.body).toMatchObject({
+      kind: 'movie',
+      onWatchlist: true,
+      watchlist: { by: { userId: 'member' } },
+      resume: { ref: 'm-3001', positionSec: 0, episode: null },
+    });
+    const again = await rmdb('POST', '', 'owner-token', { ref: 'm-3001' });
+    expect(again.body.id).toBe(added.body.id);
+    expect((await rmdb('POST', '', 'member-token', { ref: 'l-1001' })).body).toEqual({
+      error: 'CINEMA_ITEM_NOT_FOUND',
+    });
+    expect((await rmdb('POST', '', 'member-token', { ref: 'e-77001' })).body).toEqual({
+      error: 'CINEMA_ITEM_NOT_FOUND',
+    });
+
+    s.send('member', {
+      type: 'queue.add',
+      itemId: 'e1',
+      media: {
+        kind: 'community-media',
+        ref: 'e-77001',
+        title: 'Sıcak Kafa · 1. Sezon 1. Bölüm',
+        live: false,
+      },
+      start: true,
+    });
+    await s.call('GET', `/v1/halls/${HALL}/details/s-5001`, 'member-token');
+    await s.call('POST', `/v1/halls/${HALL}/watch`, 'member-token');
+    await playFor(320, 0);
+    const series = (await rmdb('GET', '')).body.find((w: { kind: string }) => w.kind === 'series');
+    expect(series.progress.episode).toMatchObject({ season: 1, episode: 1 });
+    let details = (await rmdb('GET', `/${series.id}`)).body;
+    expect(details.resume).toMatchObject({
+      ref: 'e-77001',
+      positionSec: 315,
+      episode: { season: 1, episode: 1 },
+    });
+    expect(details.diary[0]).toMatchObject({ source: 'hall', finished: false, positionSec: 320 });
+    expect(details.resume.title).toBe('Sıcak Kafa · 1. Sezon 1. Bölüm');
+    // The fake relay reports 600 s: past 90 % the next episode is offered from the start.
+    await playFor(240, 320);
+    details = (await rmdb('GET', `/${series.id}`)).body;
+    expect(details.progress.finished).toBe(true);
+    expect(details.resume).toMatchObject({
+      ref: 'e-77002',
+      positionSec: 0,
+      episode: { season: 1, episode: 2 },
+    });
+    expect(details.episodes).toEqual([
+      expect.objectContaining({ season: 1, episode: 1, finished: true }),
+    ]);
+  });
+
+  it('checks who may change what', async () => {
+    const work = (await rmdb('POST', '', 'member-token', { ref: 'm-3001' })).body;
+    expect((await rmdb('GET', '', 'outsider-token')).body).toEqual({
+      error: 'CINEMA_ACCESS_DENIED',
+    });
+    expect((await s.call('GET', `/v1/halls/${OTHER_CHANNEL}/rmdb`, 'owner-token')).body).toEqual({
+      error: 'CINEMA_HALL_REQUIRED',
+    });
+    const invalid = await rmdb('PUT', `/${work.id}/review`, 'member-token', {
+      rating: 11,
+      text: '',
+      spoiler: false,
+      liked: false,
+    });
+    expect(invalid).toMatchObject({ status: 400, body: { error: 'CINEMA_RMDB_INVALID' } });
+    expect((await rmdb('PUT', `/${work.id}/review`, 'member-token', { rating: 4 })).body).toEqual({
+      error: 'CINEMA_RMDB_INVALID',
+    });
+    await rmdb('PUT', `/${work.id}/review`, 'member-token', {
+      rating: 4,
+      text: 'Sonu belli',
+      spoiler: true,
+      liked: false,
+    });
+    // Members cannot remove each other's reviews or works; the owner can.
+    expect((await rmdb('DELETE', `/${work.id}/reviews/member`, 'member-token')).body).toEqual({
+      error: 'CINEMA_OWNER_REQUIRED',
+    });
+    expect((await rmdb('DELETE', `/${work.id}`, 'member-token')).body).toEqual({
+      error: 'CINEMA_OWNER_REQUIRED',
+    });
+    const removedReview = await rmdb('DELETE', `/${work.id}/reviews/member`, 'owner-token');
+    expect(removedReview.body).toMatchObject({ reviews: [], ratingCount: 0 });
+    const logged = await rmdb('POST', `/${work.id}/diary`, 'member-token', {});
+    expect(logged.body.diary[0]).toMatchObject({
+      source: 'manual',
+      loggedBy: { userId: 'member' },
+    });
+    expect(
+      (await rmdb('DELETE', `/${work.id}/diary/${logged.body.diary[0].id}`, 'owner-token')).body
+        .diary,
+    ).toEqual([]);
+    expect((await rmdb('DELETE', `/${work.id}`, 'owner-token')).body).toEqual({ removed: true });
+    expect((await rmdb('GET', `/${work.id}`)).body).toEqual({ error: 'CINEMA_RMDB_NOT_FOUND' });
+    // Nothing in any answer gives the provider account away.
+    expect((await rmdb('GET', '', 'owner-token')).raw).not.toContain(PROVIDER_USER);
   });
 });

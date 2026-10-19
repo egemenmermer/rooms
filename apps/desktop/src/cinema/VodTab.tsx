@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeft, ChevronRight, Info, ListPlus, Play, Star } from 'lucide-react';
 import type {
   CatalogKind,
@@ -10,6 +10,7 @@ import { cinemaArt } from './cinema-bridge';
 import { CinemaArt, QualityBadges } from './CinemaArt';
 import { rememberItems, useBridgeRead, useCategories, useItems } from './catalog-cache';
 import { minutesLabel } from './hall-model';
+import { RmdbCatalogActions } from './RmdbCatalogActions';
 import { useHall } from './use-hall';
 
 type VodKind = Extract<CatalogKind, 'movie' | 'series'>;
@@ -25,10 +26,13 @@ export function VodTab({
   kind,
   view,
   onView,
+  onRmdb,
 }: {
   kind: VodKind;
   view: VodView;
   onView(view: VodView): void;
+  /** Shows a work in the RMDB tab. */
+  onRmdb?(workId: string): void;
 }) {
   if (view.mode === 'details')
     return (
@@ -37,6 +41,7 @@ export function VodTab({
         refId={view.ref}
         onBack={() => onView({ mode: 'home' })}
         onOpen={(ref) => onView({ mode: 'details', ref })}
+        onRmdb={onRmdb}
       />
     );
   if (view.mode === 'grid')
@@ -222,31 +227,56 @@ function Row({
   const hall = useHall();
   const now = Date.now();
   return (
+    <HallRow title={title} count={count} sectionRef={sectionRef} onAll={onAll} loading={!items}>
+      {items?.map((item) => (
+        <Poster
+          key={item.ref}
+          item={item}
+          fresh={!!item.addedAt && now - item.addedAt < NEW_DAYS * 86_400_000}
+          onOpen={() => onOpen(item.ref)}
+          hallId={hall.hallId}
+        />
+      ))}
+    </HallRow>
+  );
+}
+
+/** A titled, horizontally scrolling row of posters; shimmering placeholders while `loading`. */
+export function HallRow({
+  title,
+  count,
+  sectionRef,
+  onAll,
+  loading = false,
+  children,
+}: {
+  title: string;
+  count?: number;
+  sectionRef?: React.Ref<HTMLElement>;
+  onAll?(): void;
+  loading?: boolean;
+  children?: ReactNode;
+}) {
+  return (
     <section className="hall-row" ref={sectionRef} aria-label={title}>
       <header>
         <h3>
           {title}
           {count !== undefined && <small>{count}</small>}
         </h3>
-        <button className="hall-text-button" onClick={onAll}>
-          Tümünü gör
-          <ChevronRight size={15} />
-        </button>
+        {onAll && (
+          <button className="hall-text-button" onClick={onAll}>
+            Tümünü gör
+            <ChevronRight size={15} />
+          </button>
+        )}
       </header>
       <div className="hall-row-track">
-        {items
-          ? items.map((item) => (
-              <Poster
-                key={item.ref}
-                item={item}
-                fresh={!!item.addedAt && now - item.addedAt < NEW_DAYS * 86_400_000}
-                onOpen={() => onOpen(item.ref)}
-                hallId={hall.hallId}
-              />
-            ))
-          : Array.from({ length: 7 }, (_, index) => (
+        {loading
+          ? Array.from({ length: 7 }, (_, index) => (
               <span key={index} className="hall-skeleton poster" />
-            ))}
+            ))
+          : children}
       </div>
     </section>
   );
@@ -264,22 +294,52 @@ function Poster({
   onOpen(): void;
 }) {
   return (
-    <button className="hall-poster" onClick={onOpen} title={item.title}>
+    <PosterCard
+      hallId={hallId}
+      art={item.art}
+      title={item.title}
+      meta={[
+        item.year,
+        item.rating !== null
+          ? `★ ${item.rating.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')}
+      onOpen={onOpen}
+    >
+      {fresh && <span className="hall-new-badge">Yeni</span>}
+    </PosterCard>
+  );
+}
+
+/** A poster button with its title and one line under it; `children` sit on the artwork. */
+export function PosterCard({
+  hallId,
+  art,
+  title,
+  meta,
+  label,
+  onOpen,
+  children,
+}: {
+  hallId: string;
+  art: string | null;
+  title: string;
+  meta: string;
+  /** The accessible name, when the card says more than its title. */
+  label?: string;
+  onOpen(): void;
+  children?: ReactNode;
+}) {
+  return (
+    <button className="hall-poster" onClick={onOpen} title={title} aria-label={label}>
       <span className="hall-poster-frame">
-        <CinemaArt hallId={hallId} art={item.art} title={item.title} shape="poster" />
-        {fresh && <span className="hall-new-badge">Yeni</span>}
+        <CinemaArt hallId={hallId} art={art} title={title} shape="poster" />
+        {children}
       </span>
-      <strong>{item.title}</strong>
-      <small>
-        {[
-          item.year,
-          item.rating !== null
-            ? `★ ${item.rating.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}`
-            : null,
-        ]
-          .filter(Boolean)
-          .join(' · ')}
-      </small>
+      <strong>{title}</strong>
+      <small>{meta}</small>
     </button>
   );
 }
@@ -359,11 +419,13 @@ function VodDetails({
   refId,
   onBack,
   onOpen,
+  onRmdb,
 }: {
   kind: VodKind;
   refId: string;
   onBack(): void;
   onOpen(ref: string): void;
+  onRmdb?(workId: string): void;
 }) {
   const hall = useHall();
   const details = useBridgeRead<CinemaDetails>(`${hall.hallId}:details:${refId}`, (bridge) =>
@@ -377,7 +439,6 @@ function VodDetails({
   const seasons = data?.seasons ?? [];
   const activeSeason = seasons.find((value) => value.season === season) ?? seasons[0] ?? null;
   const steer = hall.canDirect || !hall.primary;
-  const backdrop = cinemaArt(hall.hallId, data?.backdrop ?? data?.item.art);
   const playingRef = hall.current?.media.kind === 'community-media' ? hall.current.media.ref : null;
   return (
     <div className="hall-vod details-view">
@@ -391,74 +452,53 @@ function VodDetails({
         <p className="hall-empty-note">{details.error ?? 'Ayrıntılar alınamadı.'}</p>
       ) : (
         <>
-          <section className="hall-details-head">
-            {backdrop && (
-              <img className="hall-hero-backdrop" src={backdrop} alt="" draggable={false} />
-            )}
-            <div className="hall-hero-shade" />
-            <div className="hall-details-body">
-              <CinemaArt
-                hallId={hall.hallId}
-                art={data.item.art}
-                title={data.item.title}
-                shape="poster"
-              />
-              <div className="hall-hero-text">
-                <span className="hall-eyebrow">{kind === 'movie' ? 'Film' : 'Dizi'}</span>
-                <h2>{data.item.title}</h2>
-                <Meta item={data.item} details={data} />
-                {data.plot && <p>{data.plot}</p>}
-                <dl className="hall-credits">
-                  {data.director && (
-                    <>
-                      <dt>Yönetmen</dt>
-                      <dd>{data.director}</dd>
-                    </>
-                  )}
-                  {data.cast && (
-                    <>
-                      <dt>Oyuncular</dt>
-                      <dd>{data.cast}</dd>
-                    </>
-                  )}
-                </dl>
-                {!!data.versions?.length && (
-                  <div className="hall-versions" role="radiogroup" aria-label="Kalite">
-                    <span>Kalite</span>
-                    {[{ ref: data.item.ref, badges: data.item.badges }, ...data.versions].map(
-                      (version) => (
-                        <button
-                          key={version.ref}
-                          role="radio"
-                          aria-checked={version.ref === data.item.ref}
-                          className={version.ref === data.item.ref ? 'selected' : ''}
-                          onClick={() => version.ref !== data.item.ref && onOpen(version.ref)}
-                        >
-                          {version.badges.join(' ') || 'Standart'}
-                        </button>
-                      ),
-                    )}
-                  </div>
-                )}
-                {kind === 'movie' && (
-                  <div className="hall-detail-actions">
+          <DetailsHead
+            hallId={hall.hallId}
+            backdrop={data.backdrop}
+            art={data.item.art}
+            title={data.item.title}
+          >
+            <span className="hall-eyebrow">{kind === 'movie' ? 'Film' : 'Dizi'}</span>
+            <h2>{data.item.title}</h2>
+            <Meta item={data.item} details={data} />
+            {data.plot && <p>{data.plot}</p>}
+            <Credits director={data.director} cast={data.cast} />
+            {!!data.versions?.length && (
+              <div className="hall-versions" role="radiogroup" aria-label="Kalite">
+                <span>Kalite</span>
+                {[{ ref: data.item.ref, badges: data.item.badges }, ...data.versions].map(
+                  (version) => (
                     <button
-                      className="button primary"
-                      disabled={playingRef === data.item.ref}
-                      onClick={() => void hall.openItem(data.item)}
+                      key={version.ref}
+                      role="radio"
+                      aria-checked={version.ref === data.item.ref}
+                      className={version.ref === data.item.ref ? 'selected' : ''}
+                      onClick={() => version.ref !== data.item.ref && onOpen(version.ref)}
                     >
-                      {steer ? <Play size={16} /> : <ListPlus size={16} />}
-                      {playingRef === data.item.ref
-                        ? 'Salonda açık'
-                        : steer
-                          ? 'Salonda oynat'
-                          : 'Sıraya öner'}
+                      {version.badges.join(' ') || 'Standart'}
                     </button>
-                  </div>
+                  ),
                 )}
               </div>
+            )}
+            <div className="hall-detail-actions">
+              {kind === 'movie' && (
+                <button
+                  className="button primary"
+                  disabled={playingRef === data.item.ref}
+                  onClick={() => void hall.openItem(data.item)}
+                >
+                  {steer ? <Play size={16} /> : <ListPlus size={16} />}
+                  {playingRef === data.item.ref
+                    ? 'Salonda açık'
+                    : steer
+                      ? 'Salonda oynat'
+                      : 'Sıraya öner'}
+                </button>
+              )}
+              <RmdbCatalogActions item={data.item} onRmdb={onRmdb} />
             </div>
-          </section>
+          </DetailsHead>
           {kind === 'series' && activeSeason && (
             <section className="hall-episodes" aria-label="Bölümler">
               <div className="hall-season-tabs" role="tablist" aria-label="Sezonlar">
@@ -518,7 +558,53 @@ function VodDetails({
   );
 }
 
-function VodSkeleton() {
+/** Backdrop, poster and a text column: the head of a details page. */
+export function DetailsHead({
+  hallId,
+  backdrop,
+  art,
+  title,
+  children,
+}: {
+  hallId: string;
+  backdrop: string | null;
+  art: string | null;
+  title: string;
+  children: ReactNode;
+}) {
+  const src = cinemaArt(hallId, backdrop ?? art);
+  return (
+    <section className="hall-details-head">
+      {src && <img className="hall-hero-backdrop" src={src} alt="" draggable={false} />}
+      <div className="hall-hero-shade" />
+      <div className="hall-details-body">
+        <CinemaArt hallId={hallId} art={art} title={title} shape="poster" />
+        <div className="hall-hero-text">{children}</div>
+      </div>
+    </section>
+  );
+}
+
+export function Credits({ director, cast }: { director: string | null; cast: string | null }) {
+  return (
+    <dl className="hall-credits">
+      {director && (
+        <>
+          <dt>Yönetmen</dt>
+          <dd>{director}</dd>
+        </>
+      )}
+      {cast && (
+        <>
+          <dt>Oyuncular</dt>
+          <dd>{cast}</dd>
+        </>
+      )}
+    </dl>
+  );
+}
+
+export function VodSkeleton() {
   return (
     <div className="hall-vod" role="status" aria-label="Yükleniyor">
       <span className="hall-skeleton hero" />
