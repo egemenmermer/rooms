@@ -489,9 +489,10 @@ export function HallPlayer({
         return;
       }
       rewatchDelay.current = 4000;
-      if (range && Math.abs(target - work) > 0.75 && Date.now() > seekAt.current) {
+      const seekTo = vodSeekTo(element.currentTime, target - work, range);
+      if (seekTo !== null && Date.now() > seekAt.current) {
         seekAt.current = Date.now() + 1500;
-        element.currentTime = Math.min(range.end - 0.5, Math.max(range.start, want));
+        element.currentTime = seekTo;
       }
       if (shared.playing && element.paused && element.readyState > 2)
         void element.play().catch(() => {});
@@ -677,4 +678,31 @@ function FixtureScene({ title, live, hallId }: { title: string; live: boolean; h
       </span>
     </div>
   );
+}
+
+/** A VOD viewer further than this from the hall (seconds) is moved onto it. */
+const VOD_TOLERANCE_SEC = 0.75;
+/** With the hall past the relay's edge, a viewer plays this far behind that edge (1.5 segments). */
+const VOD_EDGE_MARGIN_SEC = 3;
+
+/**
+ * VOD: where to seek so this viewer meets the hall, or null to keep playing. `drift` is the
+ * hall's position minus this viewer's (positive: behind). The relay can be short of the hall:
+ * the service reuses one up to 30 s behind it, and a slow provider falls further back. Then
+ * chasing the relay's edge only stalls and pulls the viewer back and forth every tick, so the
+ * viewer catches up once to a little behind the edge and plays on while the relay fills.
+ */
+export function vodSeekTo(
+  currentTime: number,
+  drift: number,
+  range: { start: number; end: number } | null,
+): number | null {
+  if (!range || Math.abs(drift) <= VOD_TOLERANCE_SEC) return null;
+  const want = currentTime + drift;
+  if (drift > 0 && want > range.end - VOD_EDGE_MARGIN_SEC) {
+    const floor = Math.max(range.start, range.end - VOD_EDGE_MARGIN_SEC);
+    return floor - currentTime > VOD_TOLERANCE_SEC ? floor : null;
+  }
+  const to = Math.max(range.start, want);
+  return Math.abs(to - currentTime) > VOD_TOLERANCE_SEC ? to : null;
 }
