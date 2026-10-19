@@ -57,7 +57,7 @@ Sunucu 2 vCPU / 3,7 GB RAM'dir, bu yüzden video **dönüştürülmez**.
   - Ses AAC stereoya çevrilir; bu, AC-3/E-AC-3 kanallarının Chromium'da sessiz kalmasını önler.
   - MPEG-2 gibi diğer görüntü kodekleri `CINEMA_CODEC_UNSUPPORTED` ile açıkça reddedilir.
 - **Çıktı.** fMP4 segmentli HLS üretilir ve tmpfs'te tutulur.
-  - Canlı yayında 8 segmentlik kayan pencere ve `EXT-X-PROGRAM-DATE-TIME` kullanılır. İstemciler bu zamana göre aynı hedef gecikmeye hizalanır.
+  - Canlı yayında 8 segmentlik kayan pencere kullanılır. İstemciler rölenin canlı kenarının 3 segment (yaklaşık 6 saniye) gerisine hizalanır (hls.js `liveSyncPosition`). Herkes aynı listeyi okuduğu için izleyiciler en fazla yaklaşık bir segment farkla aynı anı görür ve hedef hiçbir zaman pencerenin dışına düşmez. Duvar saati kullanılmaz: canlı kaynak hız sınırı olmadan okunduğu için sağlayıcının bağlantı başındaki veri yığını PDT'yi gerçek saatin önüne geçirir; eski saat hedefi pencerenin dışında kalıp oynatıcıyı döngüye sokuyordu.
   - Film ve dizide okuma hızı sınırlanır ve yaklaşık 60 saniyelik pencere tutulur (`ROOMS_CINEMA_VOD_WINDOW_SEC`). Sarma işlemi aktarımı yeni konumdan yeniden başlatır.
   - Her liste `EXT-X-PROGRAM-DATE-TIME` taşır ve servis çıktı zamanı 0'ın PDT'sini (`originPdtMs`) bildirir; oynatıcılar eserdeki konumu `offsetSec + (oynatılan tarih − originPdtMs)` olarak hesaplar.
   - İmaj, rölenin test edildiği sürümü kullanır: `mwader/static-ffmpeg:9.0.2` (Debian'ın ffmpeg 5.1'i gereken bayrakları tanımaz).
