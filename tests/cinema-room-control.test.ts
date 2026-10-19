@@ -7,7 +7,7 @@ import {
   type ActivityCommand,
 } from '../packages/activity-protocol/src/index';
 import { applyCommand, emptyRoom, pruneDisconnected } from '../apps/services/activities/engine';
-import { parseYouTubeVideo, queueProgress, clock } from '../apps/desktop/src/cinema-youtube';
+import { parseYouTubeVideo, clock } from '../apps/desktop/src/cinema-youtube';
 
 const video = (id: string) => ({
   kind: 'youtube' as const,
@@ -210,15 +210,9 @@ describe('cinema link helpers', () => {
     ])
       expect(parseYouTubeVideo(link)).toBeNull();
   });
-  it('formats long durations and splits watched items from the rest', () => {
+  it('formats long durations', () => {
     expect(clock(65)).toBe('1:05');
     expect(clock(3725)).toBe('1:02:05');
-    const { state, send } = setup();
-    send('host', { type: 'queue.select', itemId: 'b', play: true });
-    const progress = queueProgress(state);
-    expect(progress.current?.id).toBe('b');
-    expect(progress.next).toBeNull();
-    expect(progress.watched.map((item) => item.id)).toEqual(['a']);
   });
 });
 

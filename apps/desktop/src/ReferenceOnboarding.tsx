@@ -5,17 +5,18 @@ import {
   ArrowLeft,
   ArrowRight,
   ChevronRight,
-  LockKeyhole,
   Mail,
   Mic,
   Monitor,
   Users,
   Video,
 } from 'lucide-react';
-import type { SocialInvite } from '@rooms/social';
+import { inviteAppLink, inviteShareLink, parseInviteLink, type SocialInvite } from '@rooms/social';
 import type { SocialBridge, SocialPasswordRecoveryCapabilities } from '@rooms/contracts';
 import { PasswordResetPane } from './PasswordResetPane';
-import { ConnectionPane } from './ConnectionPane';
+import { ConnectionPane, sameInviteServer } from './ConnectionPane';
+import { SelfHostSteps } from './SelfHostSteps';
+import { START_PANEL_ID, StartTabs, startTabId } from './StartTabs';
 import { VoiceAvatar } from './VoiceAvatar';
 import { useCommunity } from './community';
 import { useRooms } from './store';
@@ -23,14 +24,26 @@ import { uiError } from './i18n';
 import './reference-onboarding.css';
 
 export type ReferenceOnboardingMode =
-  'welcome' | 'signin' | 'register' | 'recovery' | 'invite' | 'profile' | 'devices';
+  'welcome' | 'signin' | 'register' | 'selfhost' | 'recovery' | 'invite' | 'profile' | 'devices';
+
+export const SESSION_EXPIRED_MESSAGE = 'Oturumunun süresi doldu. Çıkış yapıp yeniden giriş yap.';
+
+/**
+ * Tab the start screen opens on: an invitation always means signing up; someone who has used a
+ * server before (or whose session expired) most likely wants to sign in again.
+ */
+export function defaultStartTab(params: URLSearchParams): 'register' | 'signin' {
+  if (params.get('invite')) return 'register';
+  const c = useCommunity.getState();
+  const expired = !c.user && c.status === 'error' && c.error === SESSION_EXPIRED_MESSAGE;
+  return expired || useRooms.getState().preferences.serverUrl.trim() ? 'signin' : 'register';
+}
 export interface ReferenceOnboardingProps {
   mode: ReferenceOnboardingMode;
   onNavigate(mode: ReferenceOnboardingMode): void;
   onComplete?(): void;
   onOpenSettings?(tab: 'profile' | 'audio'): void;
 }
-const normalizeServer = (value: string) => value.trim().replace(/\/+$/, '');
 
 /** Account-neutral recovery request; reset link ingress is a separate main-only operation. */
 export function PasswordRecoveryPane({
@@ -232,15 +245,16 @@ export function ReferenceOnboarding({
       resetBridge.cancelPasswordRecovery,
     ].every((method) => typeof method === 'function');
   const recoveryScope = `${c.serverUrl}:${c.user?.id ?? 'signed-out'}:${c.status}`;
-  const sessionExpired =
-    !c.user &&
-    c.status === 'error' &&
-    c.error === 'Oturumunun süresi doldu. Çıkış yapıp yeniden giriş yap.';
+  const sessionExpired = !c.user && c.status === 'error' && c.error === SESSION_EXPIRED_MESSAGE;
   const [params, setParams] = useSearchParams();
+  const [link, setLink] = useState(() => {
+    const code = params.get('invite') || '',
+      from = params.get('server') || '';
+    return (from && (inviteShareLink(from, code) ?? inviteAppLink(from, code))) || code;
+  });
   const [server, setServer] = useState(
-    () => params.get('server') || useRooms.getState().preferences.serverUrl || defaultServer,
+    () => params.get('server') || c.serverUrl || useRooms.getState().preferences.serverUrl,
   );
-  const [code, setCode] = useState(() => params.get('invite') || '');
   const [invite, setInvite] = useState<SocialInvite | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -279,20 +293,30 @@ export function ReferenceOnboarding({
     };
   }, [mode]);
   const inspect = async () => {
-    if (busy || !code.trim() || !server.trim()) return;
-    const epoch = ++request.current;
-    setBusy(true);
+    if (busy || !link.trim()) return;
+    const parsed = parseInviteLink(link, {
+      fallbackServer: params.get('server') || c.serverUrl || defaultServer,
+    });
     setError('');
     setInvite(null);
+    if (!parsed) {
+      setError(
+        'Bu bir ROOMS davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.',
+      );
+      return;
+    }
+    const epoch = ++request.current;
+    setBusy(true);
     try {
       if (!window.rooms)
         throw new Error('Davetler yalnızca masaüstü uygulamasında doğrulanabilir.');
-      const result = await window.rooms.social.inspectInvite(normalizeServer(server), code.trim());
+      const result = await window.rooms.social.inspectInvite(parsed.serverUrl, parsed.code);
       if (epoch !== request.current) return;
+      setServer(parsed.serverUrl);
       setInvite(result);
       const next = new URLSearchParams(params);
-      next.set('invite', code.trim());
-      next.set('server', normalizeServer(server));
+      next.set('invite', parsed.code);
+      next.set('server', parsed.serverUrl);
       setParams(next, { replace: true });
     } catch (e) {
       if (epoch === request.current) setError(uiError(e));
@@ -337,19 +361,27 @@ export function ReferenceOnboarding({
   };
   const expires = invite?.expiresAt ? Date.parse(invite.expiresAt) : NaN;
   const expired = Number.isFinite(expires) && expires <= Date.now();
-  const sameServer = normalizeServer(c.serverUrl || '') === normalizeServer(server);
+  const sameServer = sameInviteServer(c.serverUrl || '', server || '');
   const configure = (tab: 'profile' | 'audio') => onOpenSettings?.(tab);
   const settingsReason = onOpenSettings ? undefined : 'Ayarlar bu görünümde henüz bağlanmadı.';
   return (
     <ReferenceAuthFrame mode={mode}>
-      {mode === 'signin' || mode === 'register' ? (
-        <ConnectionPane
-          referenceMode={mode}
-          sessionExpired={sessionExpired}
-          onAuthenticated={() => onNavigate('profile')}
-          onAccessChange={onNavigate}
-          onRecovery={() => onNavigate('recovery')}
-        />
+      {mode === 'signin' || mode === 'register' || mode === 'selfhost' ? (
+        <div className="ref-start">
+          <StartTabs active={mode} onSelect={onNavigate} />
+          <div role="tabpanel" id={START_PANEL_ID} aria-labelledby={startTabId(mode)}>
+            {mode === 'selfhost' ? (
+              <SelfHostSteps onSignIn={() => onNavigate('signin')} />
+            ) : (
+              <ConnectionPane
+                referenceMode={mode}
+                sessionExpired={sessionExpired}
+                onAuthenticated={() => onNavigate('profile')}
+                onRecovery={() => onNavigate('recovery')}
+              />
+            )}
+          </div>
+        </div>
       ) : (
         <section className="ref-auth-form" aria-busy={busy}>
           {(mode === 'profile' || mode === 'devices') && (
@@ -361,21 +393,6 @@ export function ReferenceOnboarding({
               <i className={mode === 'devices' ? 'active' : ''} />
               <i />
             </div>
-          )}
-          {mode === 'welcome' && (
-            <>
-              <h2>Giriş</h2>
-              <button className="button primary full" onClick={() => onNavigate('signin')}>
-                <ArrowRight size={16} />
-                Giriş yap
-              </button>
-              <button className="button secondary full" onClick={() => onNavigate('register')}>
-                Hesap oluştur
-              </button>
-              <div className="ref-auth-footer">
-                <button onClick={() => onNavigate('invite')}>Davet aç</button>
-              </div>
-            </>
           )}
           {mode === 'recovery' &&
             (recoveryView === 'reset' ? (
@@ -397,7 +414,11 @@ export function ReferenceOnboarding({
           {mode === 'invite' && (
             <>
               <h2>{expired ? 'Davetin süresi doldu' : 'Topluluk daveti'}</h2>
-              <p>{invite ? 'Topluluk davetini incele.' : 'Arkadaşından gelen davet kodunu aç.'}</p>
+              <p>
+                {invite
+                  ? 'Topluluk davetini incele.'
+                  : 'Arkadaşından gelen davet bağlantısını yapıştır.'}
+              </p>
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -406,43 +427,24 @@ export function ReferenceOnboarding({
               >
                 <fieldset disabled={busy}>
                   <label className="field-label">
-                    Davet kodu
+                    Davet bağlantısı
                     <input
                       required
                       autoComplete="off"
-                      maxLength={128}
+                      autoCapitalize="none"
+                      maxLength={4096}
                       spellCheck={false}
-                      value={code}
+                      value={link}
+                      placeholder="https://…/davet/…"
                       onChange={(e) => {
-                        setCode(e.target.value);
+                        setLink(e.target.value);
                         setInvite(null);
                         setError('');
                       }}
                     />
                   </label>
-                  <details className="ref-auth-server" open={!defaultServer}>
-                    <summary>Sunucu adresi</summary>
-                    <label className="field-label">
-                      Sunucu adresi
-                      <input
-                        required
-                        type="url"
-                        autoCapitalize="none"
-                        spellCheck={false}
-                        value={server}
-                        onChange={(e) => {
-                          setServer(e.target.value);
-                          setInvite(null);
-                          setError('');
-                        }}
-                      />
-                    </label>
-                  </details>
-                  <button
-                    className="button secondary full"
-                    disabled={busy || !code.trim() || !server.trim()}
-                  >
-                    {busy ? 'Davet açılıyor…' : 'Davetimi aç'}
+                  <button className="button secondary full" disabled={busy || !link.trim()}>
+                    {busy ? 'Davet açılıyor…' : 'Daveti aç'}
                     <ChevronRight size={16} />
                   </button>
                 </fieldset>
@@ -456,52 +458,52 @@ export function ReferenceOnboarding({
                   {invite.channel?.name && <p>#{invite.channel.name}</p>}
                   {expired ? (
                     <div className="ref-auth-notice">Arkadaşından yeni bir davet iste.</div>
-                  ) : (
+                  ) : c.user ? (
                     <>
-                      <div className="ref-auth-notice">
-                        <LockKeyhole size={15} />
-                        Bu topluluğa katılmak için hesabınla giriş yap.
-                      </div>
-                      {c.user ? (
+                      <button
+                        className="button primary full"
+                        disabled={busy || !sameServer}
+                        onClick={() => void join()}
+                      >
+                        Daveti kabul et
+                        <ArrowRight size={16} />
+                      </button>
+                      {!sameServer && (
                         <>
+                          <p className="ref-auth-help">
+                            Bu davet başka bir sunucuda. Çıkış yapınca davetle kayıt olabilir ya da
+                            o sunucudaki hesabınla giriş yapabilirsin.
+                          </p>
+                          {/* Signed out, App sends /setup/invite with these params to Kayıt ol. */}
                           <button
-                            className="button primary full"
-                            disabled={busy || !sameServer}
-                            onClick={() => void join()}
+                            className="button secondary full"
+                            disabled={busy}
+                            onClick={() => {
+                              setBusy(true);
+                              void c
+                                .logout()
+                                .catch((e) => setError(uiError(e)))
+                                .finally(() => setBusy(false));
+                            }}
                           >
-                            Daveti kabul et
+                            Çıkış yap ve davetle devam et
                             <ArrowRight size={16} />
                           </button>
-                          {!sameServer && (
-                            <p className="ref-auth-help">
-                              Hesabın farklı sunucuda. Giriş ekranından çıkış yapıp davetin
-                              sunucusunda giriş yap.
-                            </p>
-                          )}
                         </>
-                      ) : (
-                        <button
-                          className="button primary full"
-                          onClick={() => onNavigate('signin')}
-                        >
-                          Giriş yap ve katıl
-                          <ArrowRight size={16} />
-                        </button>
                       )}
-                      <button
-                        className="ref-auth-back"
-                        onClick={() => onNavigate(c.user ? 'signin' : 'register')}
-                      >
-                        {c.user ? 'Hesap değiştir' : 'Davetle hesap oluştur'}
-                      </button>
                     </>
+                  ) : (
+                    <button className="button primary full" onClick={() => onNavigate('register')}>
+                      Kayıt ol ve katıl
+                      <ArrowRight size={16} />
+                    </button>
                   )}
                 </div>
               )}
               <button
                 className="ref-auth-back"
-                disabled={busy}
-                onClick={() => onNavigate('welcome')}
+                disabled={busy || !onComplete}
+                onClick={() => onComplete?.()}
               >
                 <ArrowLeft size={14} />
                 Geri dön

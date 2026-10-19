@@ -13,7 +13,16 @@ import { useActivityRoom } from '../activity';
 import { useCommunity } from '../community';
 import { useRealtime } from '../realtime';
 import { cinemaErrorText } from './cinema-bridge';
-import { hallMedia, hallProgress, openNowCommands, suggestCommands } from './hall-model';
+import {
+  hallMedia,
+  hallProgress,
+  isHallItem,
+  openNowCommands,
+  resumeCommands,
+  resumeMedia,
+  suggestCommands,
+  type HallResume,
+} from './hall-model';
 
 export type HallActions = ReturnType<typeof useHallState>;
 
@@ -88,6 +97,45 @@ export function useHallState({
     },
     [canDirect, sendAll, notify],
   );
+  // The room as last rendered, a moment after a command: waits until it shows `ref`.
+  const showing = useCallback(async (ref: string) => {
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const { current } = hallProgress(roomRef.current);
+      if (isHallItem(current) && current.media.ref === ref) return true;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    return false;
+  }, []);
+  /**
+   * RMDB: open a film or episode where the hall stopped. With the remote it opens now and then
+   * seeks; `playback` names no item, so the seek goes out only while the hall still shows this
+   * title. Without the remote it is suggested to the queue and starts from the beginning.
+   */
+  const resume = useCallback(
+    async (target: HallResume) => {
+      if (opening.current === target.ref) return;
+      opening.current = target.ref;
+      try {
+        const plan = resumeCommands(roomRef.current, target, crypto.randomUUID(), canDirect);
+        await sendAll(plan.open);
+        if (plan.suggested) {
+          notify(`${resumeMedia(target).title} sıraya önerildi; açılınca baştan başlar.`);
+          return;
+        }
+        if (!plan.seek) return;
+        if (!(await showing(target.ref))) {
+          notify('Salon bu arada başka bir şeye geçti; kaldığı yere sarılmadı.');
+          return;
+        }
+        await send(plan.seek);
+      } catch (error) {
+        notify(cinemaErrorText(error));
+      } finally {
+        opening.current = null;
+      }
+    },
+    [canDirect, send, sendAll, notify, showing],
+  );
   const openItem = useCallback((item: CinemaItem) => open(hallMedia(item)), [open]);
   const openEpisode = useCallback(
     (series: CinemaItem, episode: CinemaEpisode) =>
@@ -132,6 +180,7 @@ export function useHallState({
       open,
       openItem,
       openEpisode,
+      resume,
       nameOf,
       notify,
     }),
@@ -157,6 +206,7 @@ export function useHallState({
       open,
       openItem,
       openEpisode,
+      resume,
       nameOf,
       notify,
     ],

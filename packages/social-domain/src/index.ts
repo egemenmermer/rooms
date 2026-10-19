@@ -49,6 +49,21 @@ export interface SocialInvite {
   space: SocialSpace | null;
   channel: SocialChannel | null;
   expiresAt: string | null;
+  /** Signup links accept several people; absent on upstream community invitations. */
+  maxUses?: number;
+  uses?: number;
+}
+/** Owner view of one active signup link; the token itself is never listed. */
+export interface SocialInviteLinkSummary {
+  id: string;
+  createdAt: string;
+  expiresAt: string;
+  maxUses: number;
+  uses: number;
+  pending: number;
+  source: 'app' | 'admin' | 'script' | 'legacy';
+  createdBy: string | null;
+  state: 'active' | 'full';
 }
 /** Native desktop events carry the auth-session generation that produced them. */
 export interface GatewayEvent {
@@ -191,12 +206,14 @@ export interface SocialCommunityManagement {
   roles: SocialCommunityRole[];
   grantablePermissions: SocialRolePermissionKey[];
   members: SocialManagedMember[];
-  invites: {
-    source: 'rooms-broker';
-    state: 'unsupported';
-    managementSupported: false;
-    reason: string;
-  };
+  invites:
+    | { source: 'rooms-broker'; state: 'supported'; managementSupported: true }
+    | {
+        source: 'rooms-broker';
+        state: 'unsupported';
+        managementSupported: false;
+        reason: string;
+      };
   concurrency: 'last-write-wins';
 }
 export interface SocialMemberRoleChange {
@@ -208,3 +225,4 @@ export interface SocialMemberRemoval {
   spaceId: string;
   userId: string;
 }
+export * from './invite-links';

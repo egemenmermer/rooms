@@ -13,6 +13,7 @@ import {
   type SocialChannel,
   type SocialMessage,
   type SocialInvite,
+  type SocialInviteLinkSummary,
   type SocialAttachment,
   type SocialFriend,
   type SocialMember,
@@ -75,6 +76,15 @@ const directMessageErrors: Record<string, string> = {
   DM_FRIEND_INCOMING: 'This person sent you a friend request. Accept it to send a private message.',
   DM_BLOCKED: 'You cannot send private messages to a blocked user.',
 };
+const inviteErrors: Record<string, string> = {
+  INVITE_ALREADY_CLAIMED: 'This invitation link has reached its limit. Ask for a new link.',
+  INVITE_EXPIRED: 'This invitation link has expired. Ask for a new link.',
+  INVITE_REVOKED: 'This invitation link was cancelled. Ask for a new link.',
+  INVITE_NOT_FOUND: 'This invitation link was not found. It may have expired or been cancelled.',
+  INVITE_LIMIT_REACHED:
+    'This community already has many active invitation links. Cancel one under Community management, Invitations.',
+  REGISTRATION_BUSY: 'Another signup is in progress. Try again in a moment.',
+};
 const ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
 /** Video types the desktop chat plays inline; QuickTime covers Mac recordings and iPhone videos. */
 export const INLINE_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
@@ -86,6 +96,7 @@ export class StoatError extends Error {
     super(
       roleErrorMessages[code] ??
         directMessageErrors[code] ??
+        inviteErrors[code] ??
         (code === 'REGISTRATION_REQUIRES_SIGN_IN'
           ? 'Account creation could not be completed. If you already have an account, sign in instead. Contact the server administrator if you cannot sign in.'
           : code === 'REGISTRATION_UNCERTAIN'
@@ -642,19 +653,25 @@ export class StoatClient {
     return this.getCurrentUser();
   }
   /** Called only by the trusted registration broker after claiming its own durable signup ticket. */
-  async registerUpstream(input: {
-    email: string;
-    password: string;
-    username: string;
-    inviteCode: string;
-    accountInviteCode: string;
-  }) {
+  async registerUpstream(
+    input: {
+      email: string;
+      password: string;
+      username: string;
+      inviteCode: string;
+      accountInviteCode: string;
+    },
+    hooks: { onStage?(stage: 'account-create' | 'account-created'): void } = {},
+  ) {
     await this.inspectUpstreamInvite(input.inviteCode);
+    // The broker uses these stages to tell a definite rejection from an uncertain account.
+    hooks.onStage?.('account-create');
     await this.request('/auth/account/create', 'POST', {
       email: input.email,
       password: input.password,
       invite: input.accountInviteCode,
     });
+    hooks.onStage?.('account-created');
     await this.authenticate(input.email, input.password);
     const onboarding = await this.request<{ onboarding: boolean }>('/onboard/hello');
     if (onboarding.onboarding)
@@ -1579,6 +1596,16 @@ export class StoatClient {
           permissions: rolePermissionValues(role.permissions),
         }))
         .sort((a, b) => a.rank - b.rank || a.id.localeCompare(b.id));
+      // Invitation links are created by the owner only, so only the owner manages them.
+      result.invites =
+        context.server.owner === context.self._id
+          ? { source: 'rooms-broker', state: 'supported', managementSupported: true }
+          : {
+              source: 'rooms-broker',
+              state: 'unsupported',
+              managementSupported: false,
+              reason: 'Only the community owner can manage invitation links.',
+            };
       this.assertManagementContext(context.epoch, context.session);
       result.access = 'allowed';
       return result;
@@ -2021,6 +2048,70 @@ export class StoatClient {
     if (!response.ok)
       throw new StoatError(response.status, String(data.error ?? 'INVITE_UNAVAILABLE'));
     return data as SocialInvite;
+  }
+  private async broker<T>(
+    path: string,
+    init: { method?: string; body?: unknown; timeoutMs?: number } = {},
+  ): Promise<T> {
+    let response: Response;
+    try {
+      response = await fetch(`${new URL(this.instanceUrl).origin}/rooms-access${path}`, {
+        method: init.method ?? 'GET',
+        headers: {
+          ...(init.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+          Authorization: `Bearer ${this.token ?? ''}`,
+        },
+        body: init.body === undefined ? undefined : JSON.stringify(init.body),
+        redirect: 'error',
+        signal: AbortSignal.timeout(init.timeoutMs ?? 15000),
+      });
+    } catch {
+      throw new StoatError(503, 'NETWORK_UNAVAILABLE');
+    }
+    const data = (await response.json().catch(() => ({}))) as Raw;
+    if (!response.ok)
+      throw new StoatError(response.status, String(data.error ?? 'INVITE_UNAVAILABLE'));
+    return data as T;
+  }
+  /** Active invitation links of a space; only its owner may list them. */
+  async listInviteLinks(spaceId: string): Promise<SocialInviteLinkSummary[]> {
+    const data = await this.broker<{ invites?: unknown }>(`/v1/spaces/${checked(spaceId)}/invites`);
+    if (!Array.isArray(data.invites) || data.invites.length > 200)
+      throw new StoatError(502, 'INVALID_INVITES_RESPONSE');
+    return data.invites.map((raw: Raw) => {
+      if (
+        typeof raw?.id !== 'string' ||
+        !/^[a-f0-9]{16}$/.test(raw.id) ||
+        !Number.isInteger(raw.maxUses) ||
+        !Number.isInteger(raw.uses) ||
+        !Number.isInteger(raw.pending) ||
+        typeof raw.expiresAt !== 'string' ||
+        typeof raw.createdAt !== 'string'
+      )
+        throw new StoatError(502, 'INVALID_INVITES_RESPONSE');
+      return {
+        id: raw.id,
+        createdAt: raw.createdAt,
+        expiresAt: raw.expiresAt,
+        maxUses: raw.maxUses,
+        uses: raw.uses,
+        pending: raw.pending,
+        source: ['app', 'admin', 'script', 'legacy'].includes(raw.source) ? raw.source : 'legacy',
+        createdBy:
+          typeof raw.createdBy === 'string' && SOCIAL_ID_PATTERN.test(raw.createdBy)
+            ? raw.createdBy
+            : null,
+        state: raw.state === 'full' ? 'full' : 'active',
+      };
+    });
+  }
+  async revokeInviteLink(spaceId: string, inviteId: string) {
+    if (!/^[a-f0-9]{16}$/.test(inviteId)) throw new StoatError(400, 'INVALID_ID');
+    await this.broker(`/v1/spaces/${checked(spaceId)}/invites/${inviteId}`, { method: 'DELETE' });
+  }
+  /** Broker-only: removes the upstream invitation behind a revoked link. */
+  async deleteUpstreamInvite(code: string) {
+    await this.request(`/invites/${checked(code)}`, 'DELETE');
   }
   /** Broker-only perpetual upstream invitation; its code never enters the native/renderer result. */
   async createUpstreamInvite(channelId: string) {

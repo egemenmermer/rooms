@@ -123,8 +123,12 @@
   padding: 4px 6px;
   border-radius: 5px;
 }
+/* Its content is all overlaid, so the tile needs its own 16:9 box; without it a remote share
+   collapsed to a border-thin row under the participants. */
 .room-share-preview {
   position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
   min-height: 0;
   overflow: hidden;
   border: 1px solid #373844;
@@ -133,6 +137,10 @@
   color: #eee;
   padding: 0;
   cursor: pointer;
+}
+/* With cameras in focus layout, a shared screen joins the side column like a participant. */
+.familiar-room .focus-grid .room-share-preview {
+  grid-column: 2;
 }
 .minimal-room-ui.voice-mode .familiar-room.is-screen {
   height: 100%;
@@ -179,8 +187,6 @@
 /* A remote stream is only advertised until the listener chooses to watch it. */
 .room-share-preview .room-share-invite {
   inset: 0;
-  bottom: auto;
-  left: auto;
   flex-direction: column;
   justify-content: center;
   gap: 8px;

@@ -5,10 +5,11 @@ import type {
   SharedMedia,
 } from '../../../../packages/activity-protocol/src';
 import type { CinemaItem, CinemaProgramme } from '../../../../packages/community-cinema/src/types';
+import { clock } from '../cinema-youtube';
 
 export type HallMedia = Extract<SharedMedia, { kind: 'community-media' }>;
 export type HallItem = QueueItem & { media: HallMedia };
-export type HallTab = 'live' | 'movies' | 'series' | 'youtube';
+export type HallTab = 'live' | 'movies' | 'series' | 'youtube' | 'rmdb';
 
 export const HALL_TITLE = 'Sinema salonu';
 
@@ -93,6 +94,47 @@ export function suggestCommands(room: RoomSnapshot | null, media: SharedMedia, i
   return commands;
 }
 
+/** A film or episode the hall can pick up again (RMDB's `resume`). */
+export type HallResume = { ref: string; title: string; positionSec: number; art: string | null };
+
+/** The queue entry for a resume target; never live, art only when the protocol accepts it. */
+export function resumeMedia(target: HallResume): HallMedia {
+  return {
+    kind: 'community-media',
+    ref: target.ref,
+    title: (target.title.trim() || 'Adsız').slice(0, 240),
+    live: false,
+    art: target.art && /^[a-f0-9]{16,64}$/.test(target.art) ? target.art : null,
+  };
+}
+
+/** The protocol's `playback` position limit. */
+const MAX_POSITION_SEC = 86_400;
+
+/**
+ * How the hall picks a title up again. The protocol cannot start an item at a position, so with
+ * the remote it is opened now (`open`) and then moved there by a separate `playback` command
+ * (`seek`); the caller sends the seek only while the hall still shows that title. Without the
+ * remote the title is only suggested to the queue, and it will start from the beginning.
+ */
+export function resumeCommands(
+  room: RoomSnapshot | null,
+  target: HallResume,
+  itemId: string,
+  canDirect: boolean,
+): { open: ActivityCommand[]; seek: ActivityCommand | null; suggested: boolean } {
+  const media = resumeMedia(target);
+  // Nobody runs the hall yet: whoever opens it starts it and holds the remote.
+  if (!canDirect && room?.primary)
+    return { open: suggestCommands(room, media, itemId), seek: null, suggested: true };
+  const positionSec = Math.min(MAX_POSITION_SEC, Math.max(0, Math.floor(target.positionSec)));
+  return {
+    open: openNowCommands(room, media, itemId),
+    seek: positionSec > 0 ? { type: 'playback', playing: true, positionSec, rate: 1 } : null,
+    suggested: false,
+  };
+}
+
 const timeFormat = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' });
 const dayFormat = new Intl.DateTimeFormat('tr-TR', {
   weekday: 'long',
@@ -147,12 +189,40 @@ export function editingTarget(target: EventTarget | null) {
   );
 }
 
-/** Space, arrows and digits belong to a focused control (button, tab, link, list option). */
+/** Space and digits belong to a focused control (button, tab, link, list option). */
 export function controlTarget(target: EventTarget | null) {
   const element = target as HTMLElement | null;
   return !!element?.closest?.(
     'button,a[href],[role="tab"],[role="option"],[role="menuitem"],[role="slider"],summary',
   );
+}
+
+/**
+ * Arrows belong only to widgets that move with them: sliders, lists, menus, radio groups.
+ * A focused button or tab does not use them, so right after clicking play, the volume or the
+ * Salon tab, ←/→ still seek and ↑/↓ still zap.
+ */
+export function arrowTarget(target: EventTarget | null) {
+  const element = target as HTMLElement | null;
+  return !!element?.closest?.(
+    '[role="slider"],[role="listbox"],[role="option"],[role="menu"],[role="menuitem"],[role="menuitemradio"],[role="menuitemcheckbox"],[role="radiogroup"],[role="radio"],[role="grid"],[role="tree"]',
+  );
+}
+
+/** ←/→ move a film or episode by this many seconds. */
+export const SEEK_STEP_SEC = 10;
+/** Repeated ←/→ presses add up before the hall seeks once for everyone. */
+export const SEEK_SETTLE_MS = 400;
+
+/** Where a keyboard seek lands: not before the start, not past the last second. */
+export function seekTarget(positionSec: number, durationSec: number | null) {
+  const end = durationSec && durationSec > 1 ? durationSec - 1 : Infinity;
+  return Math.max(0, Math.min(end, positionSec));
+}
+
+/** The OSD of a pending ←/→ seek, e.g. `20 sn ileri · 21:10`. */
+export function seekNote(offsetSec: number, targetSec: number) {
+  return `${Math.abs(offsetSec)} sn ${offsetSec < 0 ? 'geri' : 'ileri'} · ${clock(targetSec)}`;
 }
 
 /** The palette shortcut as this platform writes it. */

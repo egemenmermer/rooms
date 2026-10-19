@@ -31,6 +31,7 @@ import type {
   SocialUser,
 } from '@rooms/social';
 import { VoiceAvatar } from './VoiceAvatar';
+import { inviteLinkFor } from './InviteLinkCard';
 import { uiError } from './i18n';
 
 /** These components receive authorized projections and operations from the native adapter owner. */
@@ -623,7 +624,7 @@ export function CommunityManagement(props: CommunityManagementProps) {
   };
   const inviteLink =
     createdInvite && props.serverUrl
-      ? `rooms://invite?server=${encodeURIComponent(props.serverUrl)}&code=${encodeURIComponent(createdInvite.code)}`
+      ? inviteLinkFor(props.serverUrl, createdInvite.code)
       : (createdInvite?.code ?? '');
   if (props.access === 'denied')
     return <ChannelAccessState kind="community-denied" onReturn={props.onReturn} />;

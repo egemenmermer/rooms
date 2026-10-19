@@ -343,7 +343,8 @@ function HallPeople() {
           const remote = !host && mode === 'host' && controllers.includes(person.userId);
           const manageable = hall.isHost && person.userId !== hall.me;
           return (
-            <li key={person.userId}>
+            // Right click opens this listener's volume for someone also heard in their voice room.
+            <li key={person.userId} data-voice-participant-id={person.userId}>
               <span className="hall-person-avatar">
                 <VoiceAvatar id={person.userId} name={person.displayName} />
               </span>

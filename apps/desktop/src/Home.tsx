@@ -42,14 +42,6 @@ export function Home({
     );
   const voices = c.channels.filter((channel) => channel.type === 2),
     space = c.spaces.find((s) => s.id === c.activeSpaceId);
-  const activityPath =
-    primary?.activity === 'cinema'
-      ? '/cinema/room'
-      : primary?.activity === 'youtube'
-        ? '/cinema/room'
-        : primary?.activity === 'screen'
-          ? '/voice?view=share'
-          : '/games';
   const currentDate =
     import.meta.env.DEV && new URLSearchParams(location.search).has('fixture')
       ? new Date('2026-10-10T18:00:00Z')
@@ -83,7 +75,7 @@ export function Home({
           </span>
           <h2>Topluluk yok</h2>
           <button className="button primary" onClick={() => navigate('/setup/invite')}>
-            Davet aç
+            Davet bağlantısı aç
           </button>
         </div>
       </div>

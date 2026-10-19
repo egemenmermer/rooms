@@ -2,67 +2,105 @@ import { readFile } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
 import { test, expect } from '../support/fixtures';
 import { stack } from '../support/env';
-import { inviteDigest } from '../../../apps/services/access/registration';
+import {
+  RegistrationGate,
+  inviteDigest,
+  inviteId,
+} from '../../../apps/services/access/registration';
 import { issueSignupTicket, newcomerCredentials } from '../support/seed';
 
 async function fillRegistration(
   page: Page,
-  input: { code: string; username: string; email: string; password: string },
+  input: { link: string; username: string; email: string; password: string },
 ) {
-  await expect(page.getByRole('heading', { name: 'Giriş', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Giriş yap', exact: true }).click();
-  await page.getByRole('button', { name: 'Davetle hesap oluştur', exact: true }).click();
+  // First launch opens the start tabs on Kayıt ol.
+  await page.getByRole('tab', { name: 'Kayıt ol', exact: true }).click({ timeout: 30000 });
   await expect(page.getByRole('heading', { name: 'Hesap oluştur', exact: true })).toBeVisible();
-  await page.getByLabel('Topluluk davet kodu', { exact: true }).fill(input.code);
+  await expect(page.getByLabel('Sunucu adresi', { exact: true })).toHaveCount(0);
+  await page.getByLabel('Davet bağlantısı', { exact: true }).fill(input.link);
   await page.getByLabel('Kullanıcı adı', { exact: true }).fill(input.username);
   await page.getByLabel('E-posta adresi').fill(input.email);
   await page.getByPlaceholder('En az 8 karakter').fill(input.password);
-  const server = page.getByLabel('Sunucu adresi', { exact: true });
-  if (!(await server.isVisible()))
-    await page.getByText('Sunucu ve davet seçenekleri', { exact: true }).click();
-  await server.fill(stack.serverUrl);
   await page.getByRole('button', { name: 'Hesap oluştur ve katıl' }).click();
 }
 
-const ledgerState = async (code: string) => {
-  const ledger = JSON.parse(await readFile(stack.registrationLedger, 'utf8'));
-  return ledger.invites[inviteDigest(code)]?.state as string | undefined;
+const ledgerText = () => readFile(stack.registrationLedger, 'utf8');
+const usedClaims = async (code: string) => {
+  const ledger = JSON.parse(await ledgerText());
+  const claims = ledger.invites[inviteDigest(code)]?.claims ?? {};
+  return Object.values(claims as Record<string, { state: string }>).filter(
+    (claim) => claim.state === 'used',
+  ).length;
 };
+const profile = (page: Page) => page.getByRole('heading', { name: 'Profil', exact: true });
 
-test.describe('invite-only registration through the access broker', () => {
-  test('a signup ticket creates an account that lands in the community', async ({
-    clients,
-    run,
-  }) => {
+test.describe('invitation-link registration through the access broker', () => {
+  test('one link signs up several friends who land in the community', async ({ clients, run }) => {
     const ticket = await issueSignupTicket(run.space.inviteCode);
-    const newcomer = newcomerCredentials(run.runId);
-    const client = await clients.launch('newcomer');
-    await fillRegistration(client.page, { code: ticket.code, ...newcomer });
-
-    await expect(client.page.getByRole('heading', { name: 'Profil', exact: true })).toBeVisible({
-      timeout: 30000,
-    });
-    await client.page.getByRole('button', { name: 'Şimdilik atla', exact: true }).click();
-    await client.enterCommunity();
+    const first = await clients.launch('newcomer');
+    await fillRegistration(first.page, { link: ticket.link, ...newcomerCredentials(run.runId) });
+    await expect(profile(first.page)).toBeVisible({ timeout: 30000 });
+    await first.page.getByRole('button', { name: 'Şimdilik atla', exact: true }).click();
+    await first.enterCommunity();
     await expect(
-      client.nav.getByRole('button', { name: run.channels.text.name, exact: true }),
+      first.nav.getByRole('button', { name: run.channels.text.name, exact: true }),
     ).toBeVisible();
-    expect(await ledgerState(ticket.code)).toBe('used');
+
+    const second = await clients.launch('secondfriend');
+    await fillRegistration(second.page, { link: ticket.link, ...newcomerCredentials(run.runId) });
+    await expect(profile(second.page)).toBeVisible({ timeout: 30000 });
+    expect(await usedClaims(ticket.code)).toBe(2);
   });
 
-  test('a used ticket cannot create a second account', async ({ clients, run }) => {
-    const ticket = await issueSignupTicket(run.space.inviteCode);
+  test('a full link refuses the next person', async ({ clients, run }) => {
+    const ticket = await issueSignupTicket(run.space.inviteCode, { maxUses: 1 });
     const first = await clients.launch('firstclaim');
-    await fillRegistration(first.page, { code: ticket.code, ...newcomerCredentials(run.runId) });
-    await expect(first.page.getByRole('heading', { name: 'Profil', exact: true })).toBeVisible({
-      timeout: 30000,
-    });
+    await fillRegistration(first.page, { link: ticket.link, ...newcomerCredentials(run.runId) });
+    await expect(profile(first.page)).toBeVisible({ timeout: 30000 });
 
     const second = await clients.launch('secondclaim');
-    await fillRegistration(second.page, { code: ticket.code, ...newcomerCredentials(run.runId) });
+    await fillRegistration(second.page, { link: ticket.link, ...newcomerCredentials(run.runId) });
     await expect(second.page.getByRole('alert').first()).toBeVisible();
-    await expect(second.page.getByRole('heading', { name: 'Profil', exact: true })).toHaveCount(0);
-    expect(await ledgerState(ticket.code)).toBe('used');
+    await expect(profile(second.page)).toHaveCount(0);
+    expect(await usedClaims(ticket.code)).toBe(1);
+  });
+
+  test('a cancelled link refuses signup', async ({ clients, run }) => {
+    const ticket = await issueSignupTicket(run.space.inviteCode, { spaceId: run.space.id });
+    await new RegistrationGate(stack.registrationLedger).revoke(
+      run.space.id,
+      inviteId(inviteDigest(ticket.code)),
+    );
+    const client = await clients.launch('cancelled');
+    await fillRegistration(client.page, { link: ticket.link, ...newcomerCredentials(run.runId) });
+    await expect(client.page.getByRole('alert').first()).toBeVisible();
+    await expect(profile(client.page)).toHaveCount(0);
+  });
+
+  test('an app opened from the link hides the link field', async ({ clients, run }) => {
+    const ticket = await issueSignupTicket(run.space.inviteCode);
+    const client = await clients.launch('deeplink');
+    const params = new URLSearchParams({ server: stack.serverUrl, invite: ticket.code });
+    await client.page.evaluate(
+      (search) => (location.hash = `/setup/register?${search}`),
+      `${params}`,
+    );
+    await expect(client.page.getByRole('heading', { name: run.space.name })).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(client.page.getByLabel('Davet bağlantısı', { exact: true })).toHaveCount(0);
+  });
+
+  test('the landing page is served without spending the link', async ({ run }) => {
+    const ticket = await issueSignupTicket(run.space.inviteCode);
+    const before = await ledgerText();
+    for (let i = 0; i < 5; i++) {
+      const response = await fetch(ticket.link);
+      expect(response.status).toBe(200);
+      expect(response.headers.get('cache-control')).toBe('no-store');
+      expect(await response.text()).toContain('rooms://invite?');
+    }
+    expect(await ledgerText()).toBe(before);
   });
 
   test('the public proxy refuses direct upstream account creation', async () => {

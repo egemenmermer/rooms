@@ -103,3 +103,34 @@ it('shows viewers a paused screen they cannot start, and lets a controller skip'
   });
   expect(view.send).not.toHaveBeenCalled();
 });
+
+it('leaves Space and arrows to the page in front while it plays in a corner', async () => {
+  const send = vi.fn();
+  const props = {
+    item,
+    timeline: playing(40),
+    serverOffsetMs: 0,
+    next,
+    canDirect: true,
+    directReason: 'Kumanda hostta.',
+    connected: true,
+    addedBy: 'Ece',
+    fullscreen: false,
+    send,
+    quiet: vi.fn(),
+    onToggleFullscreen: vi.fn(),
+    onEnded: vi.fn(),
+    onOpenSource: vi.fn(),
+  };
+  let view!: ReturnType<typeof render>;
+  await act(async () => {
+    view = render(<CinemaYouTubeStage {...props} keyboard={false} />);
+  });
+  fireEvent.keyDown(document.body, { key: ' ' });
+  fireEvent.keyDown(document.body, { key: 'ArrowRight' });
+  expect(send).not.toHaveBeenCalled();
+  // In front, on the hall page, the same keys act for the hall.
+  view.rerender(<CinemaYouTubeStage {...props} />);
+  fireEvent.keyDown(document.body, { key: 'ArrowRight' });
+  expect(send).toHaveBeenCalledWith(expect.objectContaining({ type: 'playback', rate: 1 }));
+});

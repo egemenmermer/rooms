@@ -1,0 +1,44 @@
+/* The hall in a corner of the app while its page is closed (same place as other mini players). */
+.hall-background {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 90;
+  width: min(320px, calc(100vw - 40px));
+  aspect-ratio: 16 / 9;
+}
+/* Above the voice controls while they are on screen, never over "Odadan ayrıl". */
+body:has(.real-voice-dock) .hall-background {
+  bottom: 88px;
+}
+.hall-background .hall-screen-host {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.hall-background-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 25;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+.hall-background:hover .hall-background-actions,
+.hall-background:focus-within .hall-background-actions {
+  opacity: 1;
+}
+.hall-background-actions .hall-icon-button {
+  background: var(--cinema-scrim);
+  color: var(--cinema-on-video);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hall-background-actions {
+    transition: none;
+  }
+}
+html[data-motion='reduce'] .hall-background-actions {
+  transition: none;
+}

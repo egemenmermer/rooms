@@ -7,7 +7,6 @@ import {
   MonitorUp,
   Music2,
   PenTool,
-  Popcorn,
   Search,
   type LucideIcon,
 } from 'lucide-react';
@@ -16,7 +15,7 @@ import { openMusicDJ, openRoomActivity } from './MusicDJ';
 import { useRealtime } from './realtime';
 import { useCommunity } from './community';
 import { useActivityRoom } from './activity';
-import { activityRoute } from './Activities';
+import { activityRoute, openActivity } from './activity-route';
 import './app-directory.css';
 
 type Section = 'Uygulamalar' | 'Birlikte izle' | 'Kart oyunları' | 'Masa oyunları' | 'Araçlar';
@@ -65,16 +64,6 @@ export const directoryItems: DirectoryItem[] = [
     run: (open) => open('/agent'),
   },
   {
-    id: 'cinema',
-    name: 'Sinema',
-    detail: 'YouTube videolarını birlikte izle, sıraya ekle.',
-    section: 'Birlikte izle',
-    keywords: 'youtube film video izle sinema',
-    icon: Popcorn,
-    tint: '#c2593a',
-    run: (open) => open('/cinema/room'),
-  },
-  {
     id: 'screen',
     name: 'Ekran paylaş',
     detail: 'Pencere, oyun ya da tarayıcı; Instagram ve diğer siteler.',
@@ -107,7 +96,7 @@ export const directoryItems: DirectoryItem[] = [
     run: (open) => open('/together?tab=polls'),
   },
 ];
-const featured = ['cinema', 'holdem', '101', 'board'];
+const featured = ['holdem', '101', 'board', 'poll'];
 const sections: Section[] = [
   'Uygulamalar',
   'Birlikte izle',
@@ -156,6 +145,13 @@ export function AppDirectory({
   const items = useMemo(
     () => directoryItems.filter((item) => apps || item.section !== 'Uygulamalar'),
     [apps],
+  );
+  const highlights = useMemo(
+    () =>
+      featured
+        .map((id) => items.find((item) => item.id === id))
+        .filter((item): item is DirectoryItem => !!item),
+    [items],
   );
   const matches = useMemo(() => {
     const words = fold(query.trim()).split(/\s+/).filter(Boolean);
@@ -214,7 +210,7 @@ export function AppDirectory({
           <button
             className="appdir-live"
             onClick={() => {
-              open(activityRoute(primary.activity));
+              openActivity(primary.activity, navigate);
               onClose();
             }}
           >
@@ -225,9 +221,13 @@ export function AppDirectory({
                 {(gameNames as Record<string, string>)[primary.title] ?? primary.title}
               </strong>
             </span>
-            <em>
-              Katıl <ArrowRight size={14} />
-            </em>
+            {activityRoute(primary.activity) ? (
+              <em>
+                Katıl <ArrowRight size={14} />
+              </em>
+            ) : (
+              <em>Eski Sinema · ayrıntılar</em>
+            )}
           </button>
         )}
         {matches ? (
@@ -240,17 +240,15 @@ export function AppDirectory({
           <>
             <h3>Öne çıkanlar</h3>
             <div className="appdir-featured">
-              {featured
-                .map((id) => items.find((item) => item.id === id)!)
-                .map((item) => (
-                  <button key={item.id} className="appdir-card" onClick={() => launch(item)}>
-                    <Tile item={item} large />
-                    <span>
-                      <strong>{item.name}</strong>
-                      <small>{item.detail}</small>
-                    </span>
-                  </button>
-                ))}
+              {highlights.map((item) => (
+                <button key={item.id} className="appdir-card" onClick={() => launch(item)}>
+                  <Tile item={item} large />
+                  <span>
+                    <strong>{item.name}</strong>
+                    <small>{item.detail}</small>
+                  </span>
+                </button>
+              ))}
             </div>
             {sections.map((section) => {
               const list = items.filter((item) => item.section === section);

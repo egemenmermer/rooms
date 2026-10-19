@@ -33,8 +33,7 @@ import {
 } from './realtime';
 import { silencedHere } from './participant-audio';
 import { useActivityRoom } from './activity';
-import { activityRoute } from './Activities';
-import { openRoomActivity } from './MusicDJ';
+import { openActivity, retiredActivity } from './activity-route';
 import { useVoiceDirectory } from './voice-directory';
 import { VoiceAvatar } from './VoiceAvatar';
 import { QuietMenu } from './QuietMenu';
@@ -43,6 +42,7 @@ import { UserProfileDialog } from './SocialSurfaces';
 import type { SocialUser } from '@rooms/social';
 import { uiError } from './i18n';
 import { UpdateNotice } from './UpdateNotice';
+import { HallBackground } from './cinema/HallBackground';
 import { HallSidebarRow } from './cinema/HallSidebarRow';
 import { useCommunityCinema } from './cinema/cinema-status';
 import {
@@ -53,7 +53,13 @@ import {
   type VoiceMemberTarget,
 } from './VoiceModeration';
 /** A running activity in the joined room, one click from the room list. */
-function RoomActivityRow({ roomId, onOpen }: { roomId: string; onOpen(path: string): void }) {
+function RoomActivityRow({
+  roomId,
+  onOpen,
+}: {
+  roomId: string;
+  onOpen(kind: Parameters<typeof openActivity>[0]): void;
+}) {
   const activity = useActivityRoom(roomId),
     me = useCommunity((s) => s.user?.id);
   const room = activity.status === 'connected' ? activity.room : null;
@@ -61,12 +67,14 @@ function RoomActivityRow({ roomId, onOpen }: { roomId: string; onOpen(path: stri
   if (!room || !primary) return null;
   const joined = room.participants.some((p) => p.userId === me);
   const count = room.participants.length;
+  // An old-cinema session has no page here; the click opens the launcher that explains it.
+  const action = retiredActivity(primary.activity) ? 'Eski Sinema' : joined ? 'Aç' : 'Katıl';
   return (
     <button
       className="minimal-activity"
       title={`${primary.title} · ${count} kişi`}
-      aria-label={`${primary.title} sürüyor, ${count} kişi. ${joined ? 'Aç' : 'Katıl'}`}
-      onClick={() => onOpen(activityRoute(primary.activity))}
+      aria-label={`${primary.title} sürüyor, ${count} kişi. ${action}`}
+      onClick={() => onOpen(primary.activity)}
     >
       {['cinema', 'youtube', 'screen'].includes(primary.activity) ? (
         <Film size={13} />
@@ -74,7 +82,7 @@ function RoomActivityRow({ roomId, onOpen }: { roomId: string; onOpen(path: stri
         <Gamepad2 size={13} />
       )}
       <span>{primary.title}</span>
-      <small>{joined ? 'Aç' : 'Katıl'}</small>
+      <small>{action}</small>
     </button>
   );
 }
@@ -271,6 +279,8 @@ export function MinimalSidebar({
                         );
                       }}
                       onDragEnd={() => setDropRoom(null)}
+                      // Without moderation rights the shared volume menu opens on its own.
+                      // With them, the member menu carries that volume too.
                       onContextMenu={(event) => {
                         if (!moderates || p.id === c.user?.id) return;
                         event.preventDefault();
@@ -281,6 +291,24 @@ export function MinimalSidebar({
                           from: ch.id,
                           x: event.clientX,
                           y: event.clientY,
+                        });
+                      }}
+                      onKeyDown={(event) => {
+                        if (
+                          !moderates ||
+                          p.id === c.user?.id ||
+                          (event.key !== 'ContextMenu' && !(event.key === 'F10' && event.shiftKey))
+                        )
+                          return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        const rect = event.currentTarget.getBoundingClientRect();
+                        setMemberMenu({
+                          id: p.id,
+                          name: p.name,
+                          from: ch.id,
+                          x: rect.left,
+                          y: rect.bottom,
                         });
                       }}
                     >
@@ -303,10 +331,7 @@ export function MinimalSidebar({
                   );
                 })}
                 {r.channelId === ch.id && r.status === 'connected' && (
-                  <RoomActivityRow
-                    roomId={ch.id}
-                    onOpen={(path) => openRoomActivity(path, navigate)}
-                  />
+                  <RoomActivityRow roomId={ch.id} onOpen={(kind) => openActivity(kind, navigate)} />
                 )}
                 {!(r.channelId === ch.id && r.status === 'connected') &&
                   (directory.error ||
@@ -453,6 +478,8 @@ export function MinimalSidebar({
         </div>
       </aside>
       <SoundboardButton showTrigger={false} />
+      {/* Like the soundboard, the corner cinema outlives page changes (e.g. joining voice). */}
+      <HallBackground notify={notify} />
       {memberMenu && (
         <VoiceMemberMenu
           target={memberMenu}

@@ -25,7 +25,7 @@ Bu paket, **gerçek ROOMS masaüstü istemcilerini** (Electron main + görünüm
 | Kanıtlanan | Nasıl |
 | --- | --- |
 | Gerçek Stoat hesabı, oturum, ağ geçidi olayları | Sabit `ghcr.io/stoatchat/*:v0.15.5` imajları, iki veya daha fazla ayrı Electron profili |
-| Davetli kayıt ve tek kullanımlık bilet | Gerçek erişim servisi (`access.cjs`) ve kalıcı bilet defteri |
+| Davet bağlantısıyla kayıt, kişi sınırı ve iptal | Gerçek erişim servisi (`access.cjs`), kalıcı davet defteri ve `/davet` sayfası |
 | Üyelik/izin sınırları | Topluluk dışı gerçek hesap; erişim ve Activities servislerinin 4xx yanıtları |
 | Ses ve kamera aktarımı | Erişim servisinin LiveKit yetkisi, LiveKit v1.9.12 SFU, WebRTC `inbound-rtp` paket sayıları |
 | Ortak etkinlik durumu | PostgreSQL kullanan gerçek Activities servisi; iki istemci arasında anket ve oy |
@@ -37,6 +37,7 @@ Bu paket, **gerçek ROOMS masaüstü istemcilerini** (Electron main + görünüm
 - Ekran paylaşımı. macOS Ekran Kaydı izni ve `desktopCapturer` gerekir; test bilerek atlanır.
 - HTTPS/WSS, TLS, NAT/TURN ve gerçek sunucu kaynak sınırları. Yığın yalnız loopback HTTP kullanır.
 - İmzalı paket, kurulum ve otomatik güncelleme. Testler `pnpm build` çıktısını `electron .` ile açar.
+- Davet sayfasındaki **ROOMS'ta aç** düğmesinin işletim sistemi üzerinden uygulamayı açması. Test, kayıt ekranını bağlantının parametreleriyle doğrudan açar; davet akışının gerçek cihaz kabulü ayrıca gerekir.
 - YouTube, müzik/DJ, Agent, HostOps, uzaktan kontrol ve APNs. Bunlar HTTPS kaynağı, sağlayıcı hesabı veya ayrı servis ister; aşağıdaki [kapsam](#kapsam) tablosuna bak.
 
 Bir PR'da sonuç bildirirken bu sınırları açıkça yaz. Bu paketin geçmesi üretim sunucusunun veya fiziksel cihaz kabulünün geçtiği anlamına gelmez.
@@ -87,7 +88,7 @@ tests/e2e/
 ├── support/
 │   ├── env.ts                # Hedef adresler; yalnız 127.0.0.1 kabul edilir
 │   ├── stoat-api.ts          # Düzenleme ve doğrulama için ham Stoat REST istemcisi
-│   ├── seed.ts               # Hesap, topluluk, kanal, davet ve kayıt bileti üretimi
+│   ├── seed.ts               # Hesap, topluluk, kanal, davet ve davet bağlantısı üretimi
 │   ├── global-setup.ts       # Derleme/yığın kontrolü ve çalışma başına tohumlama
 │   ├── client.ts             # RoomsClient: bir Electron süreci + izole profil
 │   ├── headless-main.cjs     # Yalnız testte yüklenen, pencereleri gizleyen main kancası
@@ -130,7 +131,7 @@ Adresler (hepsi `127.0.0.1`):
 
 Sırlar (`RabbitMQ`, `MinIO`, `PostgreSQL`, LiveKit anahtarı, dosya şifreleme anahtarı, VAPID) ilk `up` sırasında rastgele üretilir, `.local/e2e/stack/` altında 0600 izinle saklanır ve hiçbir zaman yazdırılmaz. `reset` hepsini siler.
 
-Kayıt üretimde olduğu gibi davetle sınırlıdır (`invite_only = true`). Test hesapları ham API'de, üst sistem hesap daveti MongoDB'ye eklenerek oluşturulur. Bu, yöneticinin [ilk hesap adımının](SELF_HOSTING.md#5-i̇lk-hesap-ve-davetler) yerel karşılığıdır. ROOMS kayıt bileti ise erişim servisinin kendi `issueRegistrationInvite` fonksiyonuyla üretilir; arayüzden kayıt testi bu bileti tüketir.
+Kayıt üretimde olduğu gibi davetle sınırlıdır (`invite_only = true`). Test hesapları ham API'de, üst sistem hesap daveti MongoDB'ye eklenerek oluşturulur. Bu, yöneticinin [ilk hesap adımının](SELF_HOSTING.md#5-i̇lk-hesap-ve-davetler) yerel karşılığıdır. ROOMS davet bağlantısı ise `seed.ts` içindeki `issueSignupTicket` ile, erişim servisinin kendi `issueRegistrationInvite` fonksiyonu kullanılarak çok kullanımlık kayıt olarak deftere yazılır; yardımcı `{ code, link, … }` döndürür (`link` = `http://127.0.0.1:4100/davet/<code>`). Arayüzden kayıt testi bu bağlantıyı kullanır; erişim servisi her kayıtta MongoDB'ye yeni bir hesap daveti ekler.
 
 ## Bir test çalışmasının yaşam döngüsü
 
@@ -146,7 +147,7 @@ Kayıt üretimde olduğu gibi davetle sınırlıdır (`invite_only = true`). Tes
 | Alan | Dosya | Doğrulanan davranış |
 | --- | --- | --- |
 | Oturum | `auth.spec.ts` | İlk giriş, profil adımı ve üst sistemde kaydedilen görünen ad; yanlış şifre; yeniden açılışta oturum; çıkış sonrası oturumun unutulması |
-| Kayıt | `registration.spec.ts` | Biletle hesap oluşturup topluluğa düşme; kullanılmış biletin reddi ve defter durumu; vekilin doğrudan hesap oluşturmayı reddetmesi |
+| Kayıt | `registration.spec.ts` | Tek bağlantıyla iki kişinin **Kayıt ol** sekmesinden hesap açıp topluluğa düşmesi ve defterde iki kullanım; tek kişilik (`maxUses: 1`) bağlantının ikinci kişiyi reddi; iptal edilmiş bağlantının reddi (iptal doğrudan defterde yapılır, **Davetler** sekmesi sınanmaz); bağlantıdan açılan kayıt ekranında davet alanının gizlenmesi; `/davet` sayfasının beş istekte de 200, `no-store` ve `rooms://` bağlantısıyla dönmesi ve defterin değişmemesi; vekilin doğrudan hesap oluşturmayı reddetmesi |
 | Sohbet | `chat.spec.ts` | İki yönlü canlı mesaj; düzenle/sil yayılımı; başkasının mesajını silememe; iki üyenin ortak reaksiyonu, sayımı ve üst sistemde emojinin kendisiyle saklanması; yeniden açılışta geçmiş |
 | Kanallar | `channels.spec.ts` | Sahibin oluşturduğu metin/ses kanallarının üyeye canlı düşmesi; üst sistemde ses yeteneği; art arda oluşturmanın 5 sn içinde bitmesi; menüden yeniden adlandırma ve silme; üyeye yetki açıklaması |
 | Arkadaşlar ve DM | `friends-dm.spec.ts` | `ad#1234` ile istek, kabul, özel mesaj alışverişi; arkadaş olmayana kuralın açıklanması |
@@ -160,7 +161,7 @@ Kapsam dışı ve neden:
 | Alan | Neden |
 | --- | --- |
 | Ekran paylaşımı | macOS Ekran Kaydı izni gerekir; `voice.spec.ts` içinde nedeniyle atlanır |
-| Birlikte izle / YouTube | İstemci yalnız HTTPS topluluk kaynağında oynatıcı açar |
+| Sinema salonu / YouTube | İsteğe bağlı sinema servisi gerekir; YouTube oynatıcısı yalnız HTTPS topluluk kaynağında açılır |
 | DJ / müzik | Ayrı müzik servisi, kaynak köprüsü ve sağlayıcı erişimi |
 | Agent, HostOps, uzaktan kontrol | Ayrı yetkili servisler ve fiziksel onay akışları |
 | Oyunların oynanması | Masalar 2–4 oyunculu sıra ister; yalnız masa durumu sınanır. Kurallar `tests/games*.test.ts` içinde |
@@ -196,7 +197,7 @@ test('bir üyenin mesajı diğerine ulaşır', async ({ owner, guest, run }) => 
 Kurallar:
 
 - **Arayüzü kullanıcı gibi sür.** Rol ve erişilebilir adla seç (`getByRole('button', { name: 'Mesajı gönder' })`). Sınıf adı veya `data-*` seçicisinden kaçın; arayüz Türkçedir ve etiketler kararlıdır.
-- **Düzenlemeyi API ile, doğrulamayı arayüzle yap.** Hesap, kanal ve üyelik hazırlığı için `seed.ts` ve `StoatApi` kullan. Test edilen davranışı ise pencereden yürüt. Üst sistemde iz bırakan sonuçları (`display_name`, kanal türü, bilet durumu) ayrıca API ile doğrula.
+- **Düzenlemeyi API ile, doğrulamayı arayüzle yap.** Hesap, kanal ve üyelik hazırlığı için `seed.ts` ve `StoatApi` kullan. Test edilen davranışı ise pencereden yürüt. Üst sistemde iz bırakan sonuçları (`display_name`, kanal türü, defterdeki davet kullanımı) ayrıca API ile doğrula.
 - **Benzersiz veri kullan.** Mesaj ve kanal adlarında `uniqueText()` kullan. İlişki değiştiren testlerde `provisionAccount()` ile yeni hesap aç; ortak `owner`/`guest` ilişkilerini değiştirme.
 - **Sabit bekleme yazma.** `waitForTimeout` yerine `expect(...).toBeVisible()` ve `expect.poll()` kullan.
 - **Medyayı paketle kanıtla.** Ses ve görüntü için `VoiceView.tapPeerConnections()` katılımdan önce çağrılır; `expectMediaFlowing()` gelen RTP paketlerini sayar.

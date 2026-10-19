@@ -5,13 +5,16 @@
  *   bootstrap  Create the owner account, community, voice channel and upstream invite.
  *              Reads `email=`, `password=`, `username=` and `communityName=` lines on stdin
  *              so the password never appears in process arguments.
- *   invite     Issue single-use ROOMS signup tickets for the bootstrapped community.
+ *   invite     Issue multi-use ROOMS invitation links (https://<domain>/davet/<token>) for the
+ *              bootstrapped community. Each signup seeds its own account invitation.
  *   status     Print the non-secret bootstrap state.
  */
 import { randomBytes } from 'node:crypto';
 import { mkdir, open, readFile, rename } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { MongoClient } from 'mongodb';
+import { inviteShareLink } from '@rooms/social';
+import { StoatError } from '@rooms/stoat';
 import { issueRegistrationInvite } from '../access/registration';
 
 interface AdminState {
@@ -192,21 +195,35 @@ async function invite(args: Record<string, string>) {
   const publicUrl = env('ROOMS_PUBLIC_URL').replace(/\/+$/, '');
   const count = Number(args.count ?? 1);
   const days = Number(args.days ?? 7);
-  if (!Number.isInteger(count) || count < 1 || count > 50)
-    throw new AdminError('--count must be 1–50.');
+  const uses = Number(args.uses ?? 10);
+  if (!Number.isInteger(count) || count < 1 || count > 20)
+    throw new AdminError('--count must be 1–20.');
   if (!Number.isInteger(days) || days < 1 || days > 7) throw new AdminError('--days must be 1–7.');
+  if (!Number.isInteger(uses) || uses < 1 || uses > 50)
+    throw new AdminError('--uses must be 1–50.');
   for (let index = 0; index < count; index++) {
-    const accountCode = await seedAccountInvite();
-    const issued = await issueRegistrationInvite(
-      ledgerPath(),
-      accountCode,
-      state.communityCode,
-      days * 86400,
-    );
-    const link = new URL('rooms://invite');
-    link.searchParams.set('server', publicUrl);
-    link.searchParams.set('code', issued.code);
-    console.log(`${link.toString()}\t(son geçerlilik: ${issued.expiresAt})`);
+    const issued = await issueRegistrationInvite(ledgerPath(), {
+      communityInviteCode: state.communityCode,
+      spaceId: state.spaceId,
+      source: 'admin',
+      maxUses: uses,
+      seconds: days * 86400,
+    }).catch((error) => {
+      if (error instanceof StoatError && error.code === 'INVITE_LIMIT_REACHED')
+        throw new AdminError(
+          'This community already has 20 active invitation links. Cancel one in the app under Topluluk yönetimi → Davetler.',
+        );
+      if (error instanceof StoatError && error.code === 'REGISTRATION_BUSY')
+        throw new AdminError('Another signup is updating the invitation ledger. Try again.');
+      throw error;
+    });
+    const link = inviteShareLink(publicUrl, issued.code);
+    if (!link) throw new AdminError('ROOMS_PUBLIC_URL must be an https address.');
+    const expires = new Intl.DateTimeFormat('tr-TR', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date(issued.expiresAt));
+    console.log(`${link}\t(${days} gün · ${issued.maxUses} kişi · son geçerlilik: ${expires})`);
   }
 }
 
@@ -242,7 +259,7 @@ const commands: Record<string, () => Promise<void>> = {
 };
 const run = commands[command ?? ''];
 if (!run) {
-  console.error('Usage: admin.cjs <bootstrap|invite|status> [--count=N] [--days=N]');
+  console.error('Usage: admin.cjs <bootstrap|invite|status> [--count=N] [--days=N] [--uses=N]');
   process.exitCode = 2;
 } else {
   run().catch((error) => {

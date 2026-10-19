@@ -5,6 +5,7 @@ import { ArrowRight, Globe, LoaderCircle, ShieldCheck, Users } from 'lucide-reac
 import { Modal } from '@rooms/design';
 import type { SocialInvite } from '@rooms/social';
 import { useCommunity } from './community';
+import { sameInviteServer } from './ConnectionPane';
 import './onboarding.css';
 
 export function InviteLanding({
@@ -24,7 +25,7 @@ export function InviteLanding({
   const [busy, setBusy] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const errorRef = useRef<HTMLDivElement>(null);
-  const sameServer = c.serverUrl.replace(/\/+$/, '') === invite.serverUrl.replace(/\/+$/, '');
+  const sameServer = sameInviteServer(c.serverUrl, invite.serverUrl);
   let host = invite.serverUrl;
   try {
     host = new URL(invite.serverUrl).host;
@@ -58,11 +59,16 @@ export function InviteLanding({
     if (error) errorRef.current?.focus();
   }, [error]);
 
-  const openAccess = (registration = false) => {
-    navigate(
-      `/settings?tab=connections&server=${encodeURIComponent(invite.serverUrl)}&invite=${encodeURIComponent(invite.code)}&access=${registration ? 'register' : 'login'}`,
-    );
-    onClose();
+  // Signing out keeps this invitation pending; the app then opens Kayıt ol with it pre-filled.
+  const switchServer = async () => {
+    setBusy(true);
+    try {
+      await c.logout();
+    } catch (err) {
+      setError(uiError(err));
+    } finally {
+      setBusy(false);
+    }
   };
   const accept = async () => {
     if (busy || loading || !preview) return;
@@ -111,12 +117,12 @@ export function InviteLanding({
           Son kullanım: {new Date(preview.expiresAt).toLocaleString('tr-TR')}
         </p>
       )}
-      {c.user && !sameServer && (
+      {!sameServer && (
         <div className="settings-note">
           <ShieldCheck size={18} />
           <p>
-            Farklı bir sunucuda oturumun açık. Bağlantı ayarlarından çıkış yapıp bu davetin
-            sunucusunda giriş yap.
+            Farklı bir sunucuda oturumun açık. Bu davete katılmak için çıkış yap; ardından davetle
+            kayıt olabilir ya da o sunucudaki hesabınla giriş yapabilirsin.
           </p>
         </div>
       )}
@@ -133,16 +139,10 @@ export function InviteLanding({
           </button>
         </div>
       )}
-      {!c.user && preview && (
-        <p className="invitation-access-note">
-          Zaten hesabın varsa giriş yaparak katılabilirsin. İlk kez geliyorsan davetinle bir hesap
-          oluştur.
-        </p>
-      )}
       <button
         className="button primary full"
-        disabled={loading || busy || !preview || (!!c.user && !sameServer)}
-        onClick={() => (c.user ? void accept() : openAccess())}
+        disabled={loading || busy || !preview || !sameServer}
+        onClick={() => void accept()}
       >
         {busy ? (
           <>
@@ -151,23 +151,18 @@ export function InviteLanding({
           </>
         ) : (
           <>
-            {c.user ? 'Daveti kabul et' : 'Hesabımla giriş yap'}
+            Daveti kabul et
             <ArrowRight size={16} />
           </>
         )}
       </button>
-      {!c.user && preview && (
+      {!sameServer && (
         <button
           className="button secondary full"
-          disabled={loading || busy}
-          onClick={() => openAccess(true)}
+          disabled={busy}
+          onClick={() => void switchServer()}
         >
-          Davetle hesap oluştur
-        </button>
-      )}
-      {c.user && !sameServer && (
-        <button className="button secondary full" onClick={() => openAccess()}>
-          Bağlantı ayarlarını aç
+          Çıkış yap ve davetle devam et
           <ArrowRight size={15} />
         </button>
       )}

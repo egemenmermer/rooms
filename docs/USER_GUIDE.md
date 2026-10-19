@@ -19,8 +19,8 @@
 Topluluğu yöneten kişiden şunları al:
 
 1. Uyumlu ROOMS uygulaması veya kaynak koddan çalıştırma adımları. Hazır masaüstü paketleri [sürümler sayfasındadır](https://github.com/egemenmermer/rooms/releases/latest).
-2. Topluluğun sunucu adresi; genellikle bir HTTPS adresidir.
-3. Yeni hesap için davet veya mevcut hesabının bu sunucuda bulunduğuna dair bilgi.
+2. Yeni hesap için davet bağlantısı: `https://<sunucu>/davet/…`. Bağlantı sunucuyu da belirler.
+3. O sunucuda zaten hesabın varsa topluluğun sunucu adresi; genellikle bir HTTPS adresidir.
 
 Evrensel bir ROOMS hesabı yoktur. Başka bir topluluğun sunucusuna bağlanmak hesabını, mesajlarını veya izinlerini otomatik taşımaz. GitHub hesabın da ROOMS hesabı değildir.
 
@@ -29,14 +29,19 @@ Platform ve imza bilgisini indirdiğin sürümün notlarından kontrol et. Issue
 ## Topluluğa katıl
 
 1. Platformuna uygun masaüstü paketini kurup aç veya [kaynaktan çalıştır](DEVELOPMENT.md).
-2. Yöneticinin davet bağlantısını aç ya da başlangıç ekranında sunucu adresini gir. Uygulama davetleri `rooms:` şemasını kullanabilir; işletim sisteminin bunları açabilmesi, protokolü kaydeden bir masaüstü paketinin kurulmasına bağlıdır.
-3. O sunucuda hesabın varsa giriş yap. Yoksa yönetici tarafından verilen kayıt davetiyle hesabını oluştur. Upstream Stoat daveti ve ROOMS kayıt bileti farklıdır; yöneticiden ROOMS davetini iste.
-4. Profil ve cihaz kurulumunu takip et. Mikrofon, kamera ve ekran erişimini yalnızca ilgili özelliği kullanırken ver.
-5. Erişebildiğin topluluğu ve kanalı seç. Görebildiklerin ve yapabileceklerin üyeliğine ve rolüne bağlıdır.
+2. Davet bağlantısını tarayıcıda aç. Sayfada **Uygulamayı indir** ve **ROOMS'ta aç** düğmeleri vardır. **ROOMS'ta aç**, `rooms:` protokolünü kaydeden kurulu bir masaüstü paketi ister.
+3. Uygulama **Kayıt ol** sekmesinde açılır. Bağlantıdan geldiysen davet kartında topluluğun adını ve son geçerlilik zamanını görürsün; kullanıcı adı, e-posta ve şifre girmen yeterli. Düğme uygulamayı açmadıysa bağlantının tamamını **Davet bağlantısı** alanına yapıştır. Sunucu adresi girmen gerekmez.
+4. O sunucuda zaten hesabın varsa **Giriş yap** sekmesine geç. E-posta ve şifreni gir; sunucu, altta küçük **Sunucu: …** kutusundadır; değiştirmek için ona tıkla. Bağlantıdan geldiysen girişten sonra topluluğa katılırsın.
+5. Profil ve cihaz kurulumunu takip et. Mikrofon, kamera ve ekran erişimini yalnızca ilgili özelliği kullanırken ver.
+6. Erişebildiğin topluluğu ve kanalı seç. Görebildiklerin ve yapabileceklerin üyeliğine ve rolüne bağlıdır.
 
-Davetin süresi dolmuşsa, kullanılmışsa veya kayıt yarıda kaldıysa yöneticiden durumu inceleyip uygun bir yenisini vermesini iste. Sürekli yeniden denemek, kısmen oluşturulmuş bir hesabı güvenle onarmaz.
+Uygulama ilk açılışta veya davet bağlantısıyla **Kayıt ol**, daha önce bir sunucu kullandıysan **Giriş yap** sekmesinde açılır. Üçüncü sekme **Kendi sunucunu kur**, kendi topluluğunu kurmak için kısa adımları gösterir; ayrıntılar [sunucu rehberindedir](SELF_HOSTING.md#hızlı-kurulum-tek-komut).
 
-Kaynaktan alınan derleme hazır sunucu adresi olmadan başlar. Bu beklenen davranıştır; yöneticinin adresini gir. Boş alan, eksik bir merkezî ROOMS hizmeti olduğu anlamına gelmez.
+Başka bir sunucuda oturumun açıkken davet bağlantısı açarsan **Çıkış yap ve davetle devam et** seçeneği çıkar. Seni bağlantısı dolu **Kayıt ol** sekmesine götürür. Eski `rooms://invite?…` bağlantıları da çalışır.
+
+Bir davet bağlantısı birden çok kişiye gönderilebilir; varsayılan olarak 7 gün ve 10 kişi geçerlidir. Süresi dolmuşsa, kişi sınırı dolmuşsa veya iptal edildiyse seni davet edenden yeni bağlantı iste. Kayıt yarıda kaldıysa önce **Giriş yap** ile dene; hesabın oluşmuş olabilir. Sürekli yeniden denemek, kısmen oluşturulmuş bir hesabı güvenle onarmaz.
+
+Kaynaktan alınan derleme hazır sunucu adresi olmadan başlar. Bu beklenen davranıştır; davet bağlantısını kullan veya **Giriş yap** sekmesinde yöneticinin adresini gir. Boş alan, eksik bir merkezî ROOMS hizmeti olduğu anlamına gelmez.
 
 ## Ekranları tanı
 
@@ -80,6 +85,8 @@ Ses gelmiyor veya görüşme bağlanmıyorsa [medya sorun giderme](TROUBLESHOOTI
 
 Etkinlikler ve oyunlar, yöneticinin Activities servisini gerektirir. Sayfa görünse bile servis veya izin eksikliği nedeniyle kullanılamayabilir.
 
+Film ve yayınlar topluluğun **Sinema** salonunda izlenir. Salon kenar çubuğundaki **Sinema** satırından açılır ve isteğe bağlı sinema servisini gerektirir ([Topluluk Sineması](COMMUNITY_CINEMA.md)). Ses odasındaki eski oda sineması (YouTube sırası ve kendi dosyanla senkron izleme) masaüstü uygulamadan kaldırıldı. Eski bir uygulamanın veya iPhone'un odada başlattığı böyle bir oturum **Etkinlikler**'de görünür; bu sürümde açılmaz, yalnızca oturumun hostu bitirebilir.
+
 Topluluk DJ'i ayrı müzik servisi ve desteklenen kaynak erişimi ister. Kuyruk oda/servis tarafından yönetilir; DJ panelini kapatmak kuyruğu iptal etmek için tasarlanmamıştır. Katılımcı ses seviyesi senin dinleme tercihindir. Ortak listelerde düzenleme ve çalma yetkileri topluluğun izinlerine bağlıdır.
 
 Kişisel medya bağlantıları, sana ait yetkili sağlayıcı erişimini kullanır. İçerik başka programda oynasa bile sağlayıcı bu oynatma yolunu reddedebilir. Kimlik bilgilerini veya kişisel yayın adreslerini herkese açık raporlarda paylaşma.
@@ -89,6 +96,8 @@ Kişisel medya bağlantıları, sana ait yetkili sağlayıcı erişimini kullan�
 ## Roller ve yönetim
 
 Yetkili bir yönetici **Ayarlar → Üyeler ve roller → Roller** bölümünde rol adı, renk ve temel izinleri düzenleyebilir. Kanka, Yayıncı ve Moderatör şablonları düzenlenebilir taslaklardır; seçmek kendiliğinden üyeye yetki vermez. Kaydedilen rol ayrıca üyeye atanır. Ayrıntılar [rol rehberindedir](COMMUNITY_ROLES.md).
+
+Topluluk sahibi **Davet oluştur** ile bir davet bağlantısı oluşturur (7 gün, 10 kişi). Bağlantı yalnızca oluşturulduğu anda kopyalanabilir; kaybettiysen yenisini oluştur. Etkin bağlantılar **Ayarlar → Üyeler ve roller → Davetler** bölümündedir: kullanım (ör. 3/10 kişi), son geçerlilik, oluşturan ve Etkin/Dolu durumu. **İptal et** bağlantıyı hemen kapatır; bağlantıyla katılmış olanlar toplulukta kalır. Bir toplulukta en fazla 20 etkin bağlantı olabilir. Bağlantıyı bilen herkes kayıt olabilir; yalnızca davet etmek istediğin kişilerle paylaş.
 
 Sunucu izleme/terminal gibi yönetim özellikleri normal üyelikten ayrı yetki ister. Core sunucu ile Agent makinesi farklı sistemler olabilir; seçtiğin makineye dikkat et. [Sunucu yönetimi](SERVER_OPERATIONS.md) belgesini izle.
 
@@ -106,4 +115,4 @@ Varsayılan DJ görseli topluluğa göre değişebilir. Yöneticiler her üyeye 
 
 Topluluk yöneticisini, sunucuda tutulan verinin yöneticisi olarak değerlendir. Aktarım sırasında şifreleme, uçtan uca şifreleme değildir; burada E2EE yapılandırılmamıştır. Saklama, yedekleme, hesap kurtarma, dışa aktarma ve silme konusunda yöneticine danış.
 
-Sorunda uygulama sürümünü, işletim sistemini, yaptığın işlemi ve görünen hatayı kaydet. Ekran görüntüsü paylaşmadan önce özel mesajları, hesap adreslerini, davetleri ve sağlayıcı bilgilerini kaldır. Topluluk/hesap sorunları için yöneticiye; tekrarlanabilir kaynak kod hataları için depoya başvur. Hassas güvenlik raporlarında [SECURITY.md](../SECURITY.md) yolunu izle.
+Sorunda uygulama sürümünü, işletim sistemini, yaptığın işlemi ve görünen hatayı kaydet. Ekran görüntüsü paylaşmadan önce özel mesajları, hesap adreslerini, davet bağlantılarını ve sağlayıcı bilgilerini kaldır. Topluluk/hesap sorunları için yöneticiye; tekrarlanabilir kaynak kod hataları için depoya başvur. Hassas güvenlik raporlarında [SECURITY.md](../SECURITY.md) yolunu izle.

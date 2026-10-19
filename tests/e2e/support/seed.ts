@@ -53,14 +53,21 @@ export async function provisionAccount(runId: string, label: string): Promise<Se
   });
 }
 
-/** Single-use ROOMS signup ticket bound to the community invite, as an administrator issues it. */
-export async function issueSignupTicket(communityInviteCode: string) {
-  return issueRegistrationInvite(
-    stack.registrationLedger,
-    await issueAccountInvite(),
+/**
+ * Multi-use ROOMS invitation link bound to the community invite, as an administrator issues it.
+ * The access broker seeds one account invitation per signup, so nothing is pre-seeded here.
+ */
+export async function issueSignupTicket(
+  communityInviteCode: string,
+  options: { maxUses?: number; spaceId?: string } = {},
+) {
+  const ticket = await issueRegistrationInvite(stack.registrationLedger, {
     communityInviteCode,
-    3600,
-  );
+    source: 'script',
+    seconds: 3600,
+    ...options,
+  });
+  return { ...ticket, link: `${stack.serverUrl}/davet/${ticket.code}` };
 }
 
 /** Credentials for an account that does not exist yet; used to drive UI registration. */

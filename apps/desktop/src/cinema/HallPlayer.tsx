@@ -25,8 +25,8 @@ import { expectedPosition } from '../cinema-youtube';
 import { cinemaErrorCode, getCinemaBridge } from './cinema-bridge';
 import type { HallItem } from './hall-model';
 
-/** Everyone in the hall watches this far behind the server clock on live channels. */
-export const LIVE_LATENCY_MS = 10_000;
+/** Live channels play this many relay segments behind the relay's live edge. */
+const LIVE_SYNC_SEGMENTS = 3;
 const SYNC_EVERY_MS = 1000;
 const SUBTITLE_POLL_MS = 5000;
 const SUBTITLE_TICK_MS = 250;
@@ -186,9 +186,15 @@ function workPosition(element: HTMLVideoElement, source: CinemaWatchSource, hls:
     : source.offsetSec + element.currentTime;
 }
 
-/** Live drift in seconds (positive: this viewer is behind the hall's shared target). */
-export function liveDrift(playingDateMs: number, nowMs: number, serverOffsetMs: number) {
-  return (nowMs + serverOffsetMs - LIVE_LATENCY_MS - playingDateMs) / 1000;
+/**
+ * Live drift in seconds (positive: this viewer is behind the hall). The hall's moment is
+ * hls.js `liveSyncPosition`: the relay's live edge minus the sync latency. Every viewer reads
+ * the same relay playlist, so it lands everyone within about a segment, and it always lies
+ * inside the relay's window. The wall clock is not used: the relay stamps PROGRAM-DATE-TIME
+ * from the media it received, which runs ahead of the clock after a provider's connect burst.
+ */
+export function liveDrift(currentTime: number, syncPosition: number) {
+  return syncPosition - currentTime;
 }
 
 /** The playback rate that closes a live drift gently, or null to jump. */
@@ -200,8 +206,25 @@ export function liveRate(drift: number): number | null {
 }
 
 /**
+ * One live tick: where to jump (when `canSeek`), the rate to play at, and whether the viewer
+ * fell behind. Live never jumps back: after an upstream stall the sync position drops a few
+ * seconds behind a viewer waiting at the edge, and jumping back there would replay those
+ * seconds on every stall. Playing slightly slower brings that viewer back to the hall instead.
+ */
+export function liveStep(currentTime: number, syncPosition: number, canSeek: boolean) {
+  const drift = liveDrift(currentTime, syncPosition);
+  if (drift < -0.5) return { seekTo: null, rate: 0.95, behindLive: false };
+  const rate = liveRate(drift);
+  return {
+    seekTo: rate === null && canSeek ? syncPosition : null,
+    rate: rate ?? 1,
+    behindLive: drift > 6,
+  };
+}
+
+/**
  * Plays the relayed hall stream. The room timeline is the authority for VOD; live channels
- * align on EXT-X-PROGRAM-DATE-TIME so every viewer sees the same moment.
+ * align on the relay's live edge so every viewer sees the same moment.
  */
 export function HallPlayer({
   hallId,
@@ -343,7 +366,7 @@ export function HallPlayer({
       const instance = new Hls({
         enableWorker: true,
         backBufferLength: 30,
-        liveSyncDurationCount: 3,
+        liveSyncDurationCount: LIVE_SYNC_SEGMENTS,
         maxLiveSyncPlaybackRate: 1,
       });
       hls.current = instance;
@@ -447,29 +470,16 @@ export function HallPlayer({
           update({ behindLive: true });
           return;
         }
-        const date = hls.current?.playingDate?.getTime();
-        if (date) {
-          const drift = liveDrift(date, Date.now(), offset);
-          const rate = liveRate(drift);
-          const range = seekRange(element);
-          // The shared target can fall outside what the relay holds (a fresh relay has only a
-          // few seconds). Aim for the nearest playable point and never seek in a loop.
-          const target = range
-            ? Math.min(range.end - 1, Math.max(range.start + 0.5, element.currentTime + drift))
-            : element.currentTime;
-          const gap = target - element.currentTime;
-          if (rate === null && Math.abs(gap) > 1 && Date.now() > seekAt.current) {
+        const sync = hls.current?.liveSyncPosition;
+        if (sync != null) {
+          const step = liveStep(element.currentTime, sync, Date.now() > seekAt.current);
+          if (step.seekTo !== null) {
             seekAt.current = Date.now() + 3000;
-            element.currentTime = target;
-            element.playbackRate = 1;
-          } else if (rate !== null && Math.abs(gap) > 0.25) element.playbackRate = rate;
-          else element.playbackRate = 1;
-          update({ behindLive: drift > 6 });
-        } else {
-          const edge = hls.current?.liveSyncPosition;
-          if (edge && element.currentTime < edge - 4) element.currentTime = edge;
-          update({ behindLive: false });
-        }
+            element.currentTime = step.seekTo;
+          }
+          element.playbackRate = step.rate;
+          update({ behindLive: step.behindLive });
+        } else update({ behindLive: false });
         if (element.paused && element.readyState > 2) void element.play().catch(() => {});
         return;
       }
@@ -489,9 +499,10 @@ export function HallPlayer({
         return;
       }
       rewatchDelay.current = 4000;
-      if (range && Math.abs(target - work) > 0.75 && Date.now() > seekAt.current) {
+      const seekTo = vodSeekTo(element.currentTime, target - work, range);
+      if (seekTo !== null && Date.now() > seekAt.current) {
         seekAt.current = Date.now() + 1500;
-        element.currentTime = Math.min(range.end - 0.5, Math.max(range.start, want));
+        element.currentTime = seekTo;
       }
       if (shared.playing && element.paused && element.readyState > 2)
         void element.play().catch(() => {});
@@ -677,4 +688,31 @@ function FixtureScene({ title, live, hallId }: { title: string; live: boolean; h
       </span>
     </div>
   );
+}
+
+/** A VOD viewer further than this from the hall (seconds) is moved onto it. */
+const VOD_TOLERANCE_SEC = 0.75;
+/** With the hall past the relay's edge, a viewer plays this far behind that edge (1.5 segments). */
+const VOD_EDGE_MARGIN_SEC = 3;
+
+/**
+ * VOD: where to seek so this viewer meets the hall, or null to keep playing. `drift` is the
+ * hall's position minus this viewer's (positive: behind). The relay can be short of the hall:
+ * the service reuses one up to 30 s behind it, and a slow provider falls further back. Then
+ * chasing the relay's edge only stalls and pulls the viewer back and forth every tick, so the
+ * viewer catches up once to a little behind the edge and plays on while the relay fills.
+ */
+export function vodSeekTo(
+  currentTime: number,
+  drift: number,
+  range: { start: number; end: number } | null,
+): number | null {
+  if (!range || Math.abs(drift) <= VOD_TOLERANCE_SEC) return null;
+  const want = currentTime + drift;
+  if (drift > 0 && want > range.end - VOD_EDGE_MARGIN_SEC) {
+    const floor = Math.max(range.start, range.end - VOD_EDGE_MARGIN_SEC);
+    return floor - currentTime > VOD_TOLERANCE_SEC ? floor : null;
+  }
+  const to = Math.max(range.start, want);
+  return Math.abs(to - currentTime) > VOD_TOLERANCE_SEC ? to : null;
 }

@@ -154,7 +154,27 @@ export class Catalog {
   versions(ref: string) {
     const item = this.byRef.get(ref);
     if (!item || item.kind === 'live') return [];
-    const key = (value: StoredItem) => `${value.kind}\n${normalizeForSearch(value.title)}`;
+    return this.titled(item.kind, item.title)
+      .filter(
+        (other) =>
+          other.ref !== ref &&
+          (other.year === null || item.year === null || other.year === item.year),
+      )
+      .slice(0, 8);
+  }
+
+  /** A film or series with this title (and year when both have one), e.g. for RMDB. */
+  findTitle(kind: 'movie' | 'series', title: string, year: number | null) {
+    return (
+      this.titled(kind, title).find(
+        (item) => item.year === null || year === null || item.year === year,
+      ) ?? null
+    );
+  }
+
+  private titled(kind: CatalogKind, title: string) {
+    const key = (value: { kind: CatalogKind; title: string }) =>
+      `${value.kind}\n${normalizeForSearch(value.title)}`;
     if (!this.versionIndex) {
       this.versionIndex = new Map();
       for (const value of [...this.byKind.movie, ...this.byKind.series]) {
@@ -163,13 +183,7 @@ export class Catalog {
         else this.versionIndex.set(key(value), [value]);
       }
     }
-    return (this.versionIndex.get(key(item)) ?? [])
-      .filter(
-        (other) =>
-          other.ref !== ref &&
-          (other.year === null || item.year === null || other.year === item.year),
-      )
-      .slice(0, 8);
+    return this.versionIndex.get(key({ kind, title })) ?? [];
   }
 
   list(query: ListQuery) {

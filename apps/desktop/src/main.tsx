@@ -65,11 +65,6 @@ async function bootstrap() {
       await installReferenceFixture('S19', 'default');
       const player = await import('./dev/personal-playback-fixture');
       player.installPersonalPlaybackFixture(params.get('variant') || 'default');
-    } else if (/^S2[4-8]$/.test(fixture)) {
-      await installReferenceFixture('S19', 'default');
-      const cinema = await import('./dev/cinema-fixture');
-      cinema.cinemaFixtureVariant(fixture, params.get('variant') || 'default');
-      cinema.installCinemaFixture(fixture, params.get('variant') || 'default');
     } else if (fixture === 'S80') {
       await installReferenceFixture('S19', 'default');
       const hall = await import('./dev/community-cinema-fixture');
@@ -77,7 +72,7 @@ async function bootstrap() {
     } else if (fixture === 'S30') {
       await installReferenceFixture('S19', 'default');
       const mini = await import('./dev/mini-playback-fixture');
-      mini.installMiniPlaybackFixture(params.get('variant') || 'default');
+      mini.installMiniPlaybackFixture(params.get('variant') || 'personal');
     } else if (/^S3[3-9]$/.test(fixture)) {
       await installReferenceFixture('S19', 'default');
       const personal = await import('./dev/personal-media-fixture');
@@ -113,7 +108,7 @@ async function bootstrap() {
     if (/^S5[678]$/.test(fixture) || fixture === 'S68' || fixture === 'S70' || fixture === 'S71')
       installMediaFixture('S10', 'default');
     if (fixture === 'S29') installMediaFixture('S19', 'default');
-    if (fixture === 'S30' && ['personal', 'live'].includes(params.get('variant') || 'default'))
+    if (fixture === 'S30' && ['personal', 'live'].includes(params.get('variant') || 'personal'))
       installMediaFixture('S19', 'default');
     if (fixture === 'S67' || fixture === 'S66' || /^S(59|60|61|62|63)$/.test(fixture))
       installMediaFixture('S10', 'default');

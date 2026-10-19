@@ -7,6 +7,7 @@ import type { ConnectionStatus, SocialSession } from '@rooms/contracts';
 import type {
   SocialChannel,
   SocialInvite,
+  SocialInviteLinkSummary,
   SocialMessage,
   SocialSpace,
   SocialUser,
@@ -57,6 +58,8 @@ export interface CommunityState {
   deleteMessage(id: string): Promise<void>;
   loadOlder(): Promise<void>;
   createInvite(channelId: string): Promise<SocialInvite>;
+  listInvites(spaceId: string): Promise<SocialInviteLinkSummary[]>;
+  revokeInvite(spaceId: string, inviteId: string): Promise<void>;
   acceptInvite(code: string): Promise<void>;
   createDM(recipientId: string): Promise<void>;
   markRead(channelId: string, messageId: string): Promise<void>;
@@ -509,6 +512,17 @@ export const useCommunity = create<CommunityState>((set, get) => ({
     const invite = await bridge().createInvite(channelId);
     if (!session.valid()) throw new Error('Oturum değişti. Davet sonucu gösterilmedi.');
     return invite;
+  },
+  listInvites: async (spaceId) => {
+    const session = captureSession();
+    const invites = await bridge().listInvites(spaceId);
+    if (!session.valid()) throw new Error('Oturum değişti. Davet listesi gösterilmedi.');
+    return invites;
+  },
+  revokeInvite: async (spaceId, inviteId) => {
+    const session = captureSession();
+    await bridge().revokeInvite(spaceId, inviteId);
+    if (!session.valid()) throw new Error('Oturum değişti. Davet iptali doğrulanamadı.');
   },
   acceptInvite: async (code) => {
     const session = captureSession();

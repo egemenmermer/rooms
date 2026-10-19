@@ -1207,6 +1207,11 @@ export default function Settings({
                           ))}
                       </select>
                     </label>
+                    {realtime.status === 'connected' && realtime.inputDevice && (
+                      <p className="ref-settings-note" role="status">
+                        Odada duyulan mikrofon: {realtime.inputDevice}
+                      </p>
+                    )}
                     <Row
                       title="Giriş seviyesi"
                       description="Mikrofon denemesinde ölçülen yerel seviye."

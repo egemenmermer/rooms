@@ -73,25 +73,6 @@ try {
     .filter({ hasText: 'Birlikte gerçek bir not.' })
     .waitFor({ timeout: 15000 });
   await shot(b.page, 'whiteboard-two-client-service');
-  await go(a.page, '/cinema/room', '.cinema-stage');
-  await go(b.page, '/cinema/room', '.cinema-stage');
-  await a.page.getByRole('button', { name: 'Ortak sinemayı başlat', exact: true }).click();
-  await a.page.waitForTimeout(700);
-  await a.page.getByRole('button', { name: 'Mavi saati oynat', exact: true }).click();
-  await b.page.waitForFunction(() => document.querySelector('video')?.currentTime > 0, {
-    timeout: 15000,
-  });
-  await a.page.getByRole('button', { name: 'Videoyu duraklat', exact: true }).click();
-  await b.page.waitForFunction(() => document.querySelector('video')?.paused === true, {
-    timeout: 15000,
-  });
-  await a.page.getByRole('slider', { name: 'Oynatma konumu', exact: true }).fill('14');
-  await b.page.waitForFunction(
-    () => Math.abs(document.querySelector('video').currentTime - 14) < 1.5,
-    { timeout: 15000 },
-  );
-  await shot(a.page, 'cinema-alice-shared-service');
-  await shot(b.page, 'cinema-bob-shared-service');
   console.log(
     JSON.stringify(
       {
@@ -102,7 +83,6 @@ try {
           'fold and hand history',
           'cross-client poll vote',
           'cross-client whiteboard note',
-          'cross-client cinema play pause seek',
         ],
         pageErrors: errors,
       },

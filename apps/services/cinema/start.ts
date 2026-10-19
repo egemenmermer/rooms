@@ -5,6 +5,7 @@ import { ConfigStore } from './config-store';
 import { Importer, safeError } from './importer';
 import { RelayManager } from './relay';
 import { registerRelayRoutes } from './relay-routes';
+import { Rmdb, RmdbStore } from './rmdb';
 import { SecureFiles } from './secure-file';
 import { createCinemaServer } from './server';
 import { SubtitleSearch } from './subtitles';
@@ -32,6 +33,8 @@ async function main() {
       .filter((config) => config.source)
       .map((c) => c.communityId),
   );
+  // Separate from the account and catalog files: removing the account keeps RMDB.
+  const rmdb = new Rmdb(new RmdbStore(state, files));
   const importer = new Importer({ userAgent, allowPrivateNetwork });
   const relays = new RelayManager({
     directory: process.env.ROOMS_CINEMA_HLS ?? join(state, 'hls'),
@@ -69,6 +72,7 @@ async function main() {
     },
     image: (url) => importer.image(url),
     subtitles: new SubtitleSearch({ userAgent }),
+    rmdb,
     maxRelays: Number(process.env.ROOMS_CINEMA_MAX_RELAYS ?? 1),
     log,
   });
@@ -91,7 +95,9 @@ async function main() {
   server.addHook('onClose', async () => {
     await relays.close();
     catalogs.flush();
+    rmdb.store.flush();
     await catalogs.settled();
+    await rmdb.store.settled();
     await authority.close();
   });
   await server.listen({

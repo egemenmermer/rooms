@@ -73,6 +73,8 @@ export function HallStage({
   onTogglePanel,
   onExpand,
   onZap,
+  onDuration,
+  keyboard = true,
 }: {
   mode: 'stage' | 'mini';
   fullscreen: boolean;
@@ -88,6 +90,10 @@ export function HallStage({
   onTogglePanel(): void;
   onExpand(): void;
   onZap(step: 1 | -1): void;
+  /** The playing film's length as the player knows it (null for live or before it loads). */
+  onDuration?(durationSec: number | null): void;
+  /** False for the corner player outside the hall page: window keys stay with that page. */
+  keyboard?: boolean;
 }) {
   const hall = useHall();
   const { current, room, activity, canDirect, directReason } = hall;
@@ -133,6 +139,7 @@ export function HallStage({
     [hall.quiet],
   );
   const durationSec = player?.durationSec ?? null;
+  useEffect(() => onDuration?.(live ? null : durationSec), [onDuration, live, durationSec]);
   const positionSec =
     hallItem && !live && timeline
       ? (seekDraft ??
@@ -180,6 +187,7 @@ export function HallStage({
             connected={hall.connected}
             addedBy={hall.nameOf(youtube.addedBy)}
             fullscreen={fullscreen}
+            keyboard={keyboard}
             send={hall.run}
             quiet={hall.quiet}
             onToggleFullscreen={onToggleFullscreen}

@@ -74,3 +74,30 @@ it('puts what is already running in the room first', () => {
   fireEvent.click(screen.getByRole('button', { name: /Şu an odada Texas Hold’em/ }));
   expect(screen.getByTestId('route').textContent).toBe('/games');
 });
+
+const highlights = () =>
+  [...document.querySelectorAll('.appdir-featured .appdir-card strong')].map((n) => n.textContent);
+
+it('no longer offers the old room cinema and still fills the highlight grid', () => {
+  mount();
+  expect(screen.queryByRole('button', { name: /Sinema/ })).toBeNull();
+  expect(highlights()).toEqual(['Texas Hold’em', '101 Okey', 'Beyaz tahta', 'Anket']);
+  const search = screen.getByRole('textbox', { name: 'Uygulama ve etkinlik ara' });
+  fireEvent.change(search, { target: { value: 'sinema' } });
+  expect(screen.getByText('“sinema” için bir şey bulunamadı.')).toBeTruthy();
+  fireEvent.keyDown(search, { key: 'Enter' });
+  expect(screen.getByTestId('route').textContent).toBe('/chat');
+  expect(onClose).not.toHaveBeenCalled();
+});
+
+it('sends an old-cinema session from an older client to the launcher that explains it', () => {
+  f.activity = { room: { primary: { activity: 'youtube', title: 'Birlikte izle' } } };
+  const opened = vi.fn();
+  window.addEventListener('rooms:open-activity-launcher', opened);
+  mount();
+  fireEvent.click(screen.getByRole('button', { name: /Şu an odada Birlikte izle Eski Sinema/ }));
+  window.removeEventListener('rooms:open-activity-launcher', opened);
+  expect(opened).toHaveBeenCalledOnce();
+  expect(onClose).toHaveBeenCalled();
+  expect(screen.getByTestId('route').textContent).toBe('/chat');
+});

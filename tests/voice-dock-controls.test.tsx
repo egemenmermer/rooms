@@ -99,26 +99,23 @@ function CurrentRoute() {
     </output>
   );
 }
-it.each(['/media', '/cinema/room'])(
-  'keeps the personal player visible after explicit capture from %s',
-  async (path) => {
-    render(
-      <MemoryRouter initialEntries={[path]}>
-        <RealVoiceDock openLauncher={() => {}} notify={() => {}} />
-        <CurrentRoute />
-      </MemoryRouter>,
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Ekran paylaş' }));
-    fireEvent.click(await screen.findByRole('button', { name: /DEMO window/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Seçili kaynağı paylaş' }));
-    await waitFor(() =>
-      expect(screen.queryByRole('button', { name: 'Seçili kaynağı paylaş' })).toBeNull(),
-    );
-    expect(f.start).toHaveBeenCalledOnce();
-    await waitFor(() =>
-      expect(screen.getByTestId('capture-route').textContent).toBe(
-        path === '/media' ? '/media' : '/cinema/room?view=screen',
-      ),
-    );
-  },
-);
+// The personal player stays visible; anywhere else the shared screen opens in the voice room.
+it.each([
+  ['/media', '/media'],
+  ['/chat', '/voice?view=share'],
+])('after explicit capture from %s shows %s', async (path, expected) => {
+  render(
+    <MemoryRouter initialEntries={[path]}>
+      <RealVoiceDock openLauncher={() => {}} notify={() => {}} />
+      <CurrentRoute />
+    </MemoryRouter>,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Ekran paylaş' }));
+  fireEvent.click(await screen.findByRole('button', { name: /DEMO window/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Seçili kaynağı paylaş' }));
+  await waitFor(() =>
+    expect(screen.queryByRole('button', { name: 'Seçili kaynağı paylaş' })).toBeNull(),
+  );
+  expect(f.start).toHaveBeenCalledOnce();
+  await waitFor(() => expect(screen.getByTestId('capture-route').textContent).toBe(expected));
+});

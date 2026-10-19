@@ -70,3 +70,14 @@ it('keeps registration and invitation budgets separate from the raised media bud
     await server.close();
   }
 });
+it('bounds the public invitation landing page separately from the API budget', async () => {
+  const server = await createAccessServer(config);
+  try {
+    for (let i = 0; i < 60; i++)
+      expect((await server.inject('/davet/not-a-token')).statusCode).toBe(404);
+    expect((await server.inject('/davet/not-a-token')).statusCode).toBe(429);
+    expect((await server.inject('/health')).statusCode).toBe(200);
+  } finally {
+    await server.close();
+  }
+});

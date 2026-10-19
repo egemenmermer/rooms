@@ -23,6 +23,8 @@
 
 Kendi arkadaş grubun için ROOMS sunucusunu yaklaşık 15 dakikada kurabilirsin. Sohbet, ses, ekran paylaşımı ve ortak etkinlikler bu kurulumla gelir; müzik (DJ), Agent ve sunucu yönetim paneli isteğe bağlıdır ve dahil değildir.
 
+Uygulamanın başlangıç ekranındaki **Kendi sunucunu kur** sekmesi aynı adımları kısaca gösterir: sunucu kirala, DuckDNS adresi al, portları aç, kurulum komutunu çalıştır, giriş yapıp davet oluştur.
+
 ### Gerekenler
 
 | Gereken | Not |
@@ -51,30 +53,44 @@ Betik sırasıyla şunları yapar:
 2. Alan adını ve sertifika e-postasını sorar; tüm parolaları ve anahtarları sunucuda rastgele üretir.
 3. Servisleri başlatır. HTTPS sertifikası Let's Encrypt'ten otomatik alınır ve yenilenir.
 4. **Topluluk sahibi** hesabını (e-posta, kullanıcı adı, parola) ve ilk topluluğu, ses kanalıyla birlikte oluşturur.
-5. Tek kullanımlık ilk davet bağlantını yazdırır.
+5. İlk davet bağlantını yazdırır (7 gün, 10 kişi).
 
 ### 3. Uygulamadan bağlan
 
 1. [ROOMS uygulamasını indir](https://github.com/egemenmermer/rooms/releases/latest) ve aç.
-2. Sunucu adresi olarak `https://alan-adin` gir ve sahip hesabınla giriş yap.
-3. Arkadaşlarını uygulamanın içinden davet et veya sunucuda yeni bağlantı üret:
+2. **Giriş yap** sekmesinde sunucu olarak `https://alan-adin` gir ve sahip hesabınla giriş yap.
+3. Arkadaşlarını uygulamadaki **Davet oluştur** ile davet et veya sunucuda yeni bağlantı üret:
 
 ```sh
-sudo rooms invite              # bir bağlantı
-sudo rooms invite --count=5    # beş bağlantı, her biri tek kullanımlık ve 7 gün geçerli
+sudo rooms invite                     # bir bağlantı: 7 gün, 10 kişi
+sudo rooms invite --uses=3 --days=2   # 3 kişilik, 2 gün geçerli bağlantı
+sudo rooms invite --count=5           # beş ayrı bağlantı
 ```
 
-Bağlantı `rooms://invite?...` biçimindedir. Arkadaşın uygulamayı kurduktan sonra bağlantıyı açınca ROOMS kayıt ekranına gider. Bağlantı açılmazsa uygulamada sunucu adresini girip davet kodunu yapıştırabilir.
+`--uses` 1–50, `--days` 1–7, `--count` 1–20 arasındadır. Her satır `https://alan-adin/davet/<token>  (7 gün · 10 kişi · son geçerlilik: …)` biçimindedir.
+
+Tek bir bağlantıyı birden çok arkadaşına gönderebilirsin. Arkadaşın bağlantıyı tarayıcıda açar; sayfada **Uygulamayı indir** ve **ROOMS'ta aç** düğmeleri vardır. Düğme uygulamayı açmazsa bağlantıyı uygulamadaki **Kayıt ol** sekmesine yapıştırması yeterlidir; sunucu adresini bağlantı belirler.
+
+- **Kullanım:** bağlantıyı açmak kullanım harcamaz. Bir kullanım yalnızca başarılı kayıtta veya üye olmayan mevcut bir hesap katıldığında sayılır. Zaten üye olan biri bağlantıyı yeniden açarsa hak harcanmaz.
+- **Kopyalama:** bağlantı yalnızca oluşturulduğu anda gösterilir; sunucu yalnızca SHA-256 özetini saklar. Kaybettiysen yenisini oluştur.
+- **Yönetim:** etkin bağlantıları uygulamada **Ayarlar → Üyeler ve roller → Davetler** bölümünde görürsün: kullanım (ör. 3/10 kişi), son geçerlilik, oluşturan ve Etkin/Dolu durumu; `rooms invite` ile üretilenlerde oluşturan "Sunucu" görünür. **İptal et** bağlantıyı hemen kapatır; bağlantıyla katılmış olanlar toplulukta kalır. Bir toplulukta en fazla 20 etkin bağlantı olabilir.
+
+Bilinen sınırlar:
+
+- Bağlantı, kayıt hakkını adresin içinde taşır. Kısa süre, kişi sınırı ve iptal bu riski sınırlar; sayfa arama motorlarına kapalıdır (`noindex`) ve yönlendiren adresi göndermez (`no-referrer`). Bağlantıyı yine de herkese açık yerlerde paylaşma.
+- **Uygulamayı indir** düğmesi GitHub'daki `releases/latest` adresine gider. GitHub bu adreste ön sürümleri göstermez; RC paketleri "latest" olarak işaretlenmediyse arkadaşın eski bir sürüm görebilir.
+- Süresi dolan bağlantının üst sistem topluluk daveti Stoat'ta kalır; yalnızca iptal edilen bağlantınınki silinir.
+- Davet bağlantısı akışının iki fiziksel bilgisayarla gerçek cihaz kabulü henüz yapılmadı.
 
 ### Günlük yönetim
 
 | Komut | Ne yapar? |
 | --- | --- |
 | `sudo rooms status` | Servisleri ve sunucunun dışarıdan erişilebilir olup olmadığını gösterir |
-| `sudo rooms invite` | Yeni tek kullanımlık davet bağlantısı üretir |
+| `sudo rooms invite` | Yeni davet bağlantısı üretir (varsayılan 7 gün, 10 kişi; `--uses`, `--days`, `--count`) |
 | `sudo rooms logs [servis]` | Günlükleri izler (örnek: `rooms logs access`) |
 | `sudo rooms backup` | Veritabanı, dosyalar ve yapılandırmanın yedeğini `/opt/rooms/deploy/backups` altına alır |
-| `sudo rooms update` | Önce yedek alır, sonra en son sürüme günceller |
+| `sudo rooms update` | Önce yedek alır, sonra en son sürüme günceller ve Caddy'yi yeniden başlatır |
 | `sudo rooms restart` / `stop` | Servisleri yeniden başlatır / durdurur (veriler korunur) |
 
 Yedek dosyası parolaları ve mesajları içerir. Onu sunucunun dışında güvenli bir yere kopyala ve ara sıra geri yüklemeyi dene.
@@ -83,7 +99,8 @@ Yedek dosyası parolaları ve mesajları içerir. Onu sunucunun dışında güve
 
 - **Sertifika alınamıyor:** Alan adının A kaydı sunucu IP'sini göstermeli ve 80/443 portları açık olmalı. Düzelttikten sonra `sudo rooms restart` çalıştır.
 - **Mesajlar çalışıyor, ses bağlanmıyor:** `7881/tcp` ve `7882/udp` portlarını sağlayıcının güvenlik duvarında aç. Sunucuda `ufw` etkinse `sudo rooms firewall` çalıştır.
-- **Başka bir sorun:** `sudo rooms status` ve `sudo rooms logs` çıktısıyla [sorun giderme rehberine](TROUBLESHOOTING.md) bak veya GitHub'da issue aç. Parola, token veya davet kodu paylaşma.
+- **Davet bağlantısı tarayıcıda ROOMS sayfasını açmıyor:** sayfa `/davet` yolundan sunulur. Bu yol gelmeden önce kurulmuş bir sunucuyu güncellediysen bir kez `sudo rooms restart` çalıştır; Caddy yeni yolu yeniden başlayınca okur.
+- **Başka bir sorun:** `sudo rooms status` ve `sudo rooms logs` çıktısıyla [sorun giderme rehberine](TROUBLESHOOTING.md) bak veya GitHub'da issue aç. Parola, token veya davet bağlantısı paylaşma.
 
 Hızlı kurulum tek sunucu ve küçük-orta bir arkadaş grubu içindir. Yüzlerce eşzamanlı kullanıcı, ayrı medya sunucusu veya müzik/Agent gibi isteğe bağlı servisler için aşağıdaki ayrıntılı kurulumu kullan.
 
@@ -219,8 +236,10 @@ PowerShell'de eşdeğer dosya işlemleri için `New-Item -ItemType Directory -Fo
 | `ROOMS_PERSONAL_SOUNDS_MAX_MB` | Yüklenen giriş seslerinin toplam üst sınırı (MB); varsayılan 512 |
 | `ROOMS_ACTIVITY_DATA` | PostgreSQL yoksa dosya tabanlı etkinlik dizini |
 | `ROOMS_ACTIVITY_DATABASE_URL` | İsteğe bağlı Activities PostgreSQL bağlantısı |
-| `ROOMS_REGISTRATION_INVITES_FILE` | Kalıcı kayıt bileti işlem defteri |
-| `ROOMS_ACCOUNT_INVITE_MONGO_URL` | Hesap daveti oluşturma için kapsamlı Mongo bağlantısı |
+| `ROOMS_REGISTRATION_INVITES_FILE` | Kalıcı davet bağlantısı defteri |
+| `ROOMS_ACCOUNT_INVITE_MONGO_URL` | Her kayıtta yeni üst sistem hesap daveti eklemek için kapsamlı Mongo bağlantısı; yoksa uygulamadan davet oluşturulamaz |
+| `ROOMS_PUBLIC_URL` | `/davet` sayfasındaki **ROOMS'ta aç** bağlantısının herkese açık HTTPS adresi; yoksa isteğin `Host` başlığı kullanılır |
+| `ROOMS_DOWNLOAD_URL` | `/davet` sayfasındaki **Uygulamayı indir** adresi; varsayılan GitHub `releases/latest` (ön sürümleri göstermez) |
 | `ROOMS_SOCIAL_READ_MONGO_URL` | İsteğe bağlı sınırlı sosyal yetki okuma bağlantısı |
 
 Yerel kayıt için özel ortam dosyana şunları ekle. `.local/stoat/broker.env` bunlar için referanstır; Node bu dosyayı kendiliğinden yüklemez:
@@ -250,24 +269,28 @@ Aynı ortam ortak değerleri sağlayabilir; süreçler kendi port ayarlarını k
 
 1. Sabit üst sistem kurulumun desteklediği yönetim/API yolu ile ilk hesabı, topluluğu ve kanalları oluştur. Üretilen `.local/stoat/Guides.md` ve üst sistem API belgelerine bak. Hesap akışın gerektiriyorsa posta/kurtarmayı yapılandır.
 2. Sahibi olduğun topluluk için üst sistem daveti edin ve özel tut. Herkese açık ROOMS ters vekil ham hesap oluşturmayı bilerek kapatır; geçici kurulum istisnasını açık bırakma.
-3. Erişim aracısının ve kalıcı bilet dosyasının hazır olduğunu doğrula.
-4. ROOMS kayıt bileti üret:
+3. Erişim aracısının ve kalıcı davet defterinin hazır olduğunu doğrula.
+4. Tek kullanımlık ilk davetini üret:
 
 ```sh
 node scripts/stoat-issue-invite.mjs --community-code=YOUR_AUTHORIZED_COMMUNITY_CODE --expires-in=86400
 ```
 
-Yer tutucuyu kendi yetkili üst sistem davetinle değiştir. Betik sahip olunan Docker Compose veritabanında üst sistem hesap daveti oluşturur, ROOMS biletini özet anahtarıyla saklar. Kodu konsola yazmak yerine özel `.local/stoat/signup-invite-*.json` teslim dosyası üretir.
+Yer tutucuyu kendi yetkili üst sistem davetinle değiştir. Betik sahip olunan Docker Compose veritabanında üst sistem hesap daveti oluşturur ve davet defterine (sürüm 2) tek kullanımlık bir kayıt yazar; defterde yalnızca token'ın SHA-256 özeti durur. `--expires-in` en fazla 604800 saniyedir (7 gün). Token'ı konsola yazmak yerine özel `.local/stoat/signup-invite-*.json` teslim dosyası üretir. Dosyada 64 karakterlik `inviteCode` ve `rooms://` biçimindeki `appLink` bulunur.
 
-Teslim dosyasının `serverUrl` alanı yereldir; uzak üyeye kendi herkese açık topluluk adresini ver. Doğru sunucu adresini ve bileti hedef üyeyle özel paylaş. Biletleri veya üst sistem kodlarını GitHub belgelerinde/görüntülerinde yayımlama.
+Teslim dosyasının `serverUrl` ve `appLink` alanları yereldir. Uzak üyeye kendi herkese açık adresinle `https://<adresin>/davet/<inviteCode>` bağlantısını ver; bu sayfa için ters vekilin `/davet/*` yolunu erişim servisine iletmesi gerekir ([7. adım](#7-dış-ağdan-erişim)). Yerel denemede `appLink` değerini veya `http://127.0.0.1:3021/davet/<inviteCode>` adresini doğrudan **Kayıt ol** sekmesindeki **Davet bağlantısı** alanına yapıştırabilirsin. `pnpm stoat:setup` vekili `/davet/*` yolunu yerel erişim servisine iletir; bu yol, kurulumu bu sürümle yeniden ürettiğinde gelir. Bağlantıyı yalnızca hedef üyeyle paylaş. Bağlantıları veya üst sistem kodlarını GitHub belgelerinde/görüntülerinde yayımlama.
 
-Bilet tek kullanımlık ve sürelidir. Çökme veya belirsiz üst sistem sonucu `claiming`/`failed` bırakır. Eski kilidi kurtarmadan veya bileti değiştirmeden hesabın oluşturulup oluşturulmadığını incele. Belirsiz bileti gelişigüzel yeniden kullanılabilir yapma. Tek yetkili aracı/işlem defteri kullan; ayrı dosyalı bağımsız kopyalar güvenli kayıt ölçekleme yolu değildir.
+Sahip hesabıyla giriş yaptıktan sonra çok kullanımlık bağlantıları uygulamadaki **Davet oluştur** ile üret. Bunun için `ROOMS_ACCOUNT_INVITE_MONGO_URL` gerekir; erişim servisi her kayıtta üst sistemde yeni bir hesap daveti ekler. Betikle üretilen davetler bir topluluğa bağlı olmadığından **Davetler** listesinde görünmez ve uygulamadan iptal edilemez; kısa süre ver.
+
+Her kullanım, dış hesap çağrısından önce defterde `claiming` olarak ayrılır. Başarı `used` olur. Üst sistemde kesinlikle hiçbir şey oluşmadıysa kullanım `released` olarak geri verilir. Sonuç belirsizse `uncertain` kalır ve kullanım sayılır; hesap oluşmuş olabilir. Çökme sonrası kalan `claiming` de kullanım sayılır. 30 saniyeden eski kilit dosyası kendiliğinden kaldırılır. Belirsiz kullanımı elle geri açma; kişi önce giriş yapmayı denesin, gerekirse yeni bağlantı ver. Tek yetkili aracı/işlem defteri kullan; ayrı dosyalı bağımsız kopyalar güvenli kayıt ölçekleme yolu değildir.
+
+Eski sürüm 1 defter ilk yazmada sürüm 2'ye çevrilir; özgün dosya bir kez `<defter>.v1.bak` olarak yanına kopyalanır. Süresi dolalı 30 günden fazla olan kayıtlar her yazmada defterden silinir.
 
 Ayrıntılı entegrasyon notları üst sistem kabul açıklarını kaydeder. API yolunun belgelenmesi, kendi ilk hesap/kayıt akışının denendiği anlamına gelmez.
 
 ## 6. Masaüstü istemcisini bağla
 
-Uyumlu masaüstü derlemesini aç veya kur. Aynı makinede yerel ters vekil adresini; uzak üyelerde gerçek herkese açık HTTPS kaynak adresini gir. Önceki adımın hesabını/davetini kullan.
+Uyumlu masaüstü derlemesini aç veya kur. **Giriş yap** sekmesinde aynı makinede yerel ters vekil adresini; uzak üyelerde gerçek herkese açık HTTPS kaynak adresini gir. Yeni üye, önceki adımın davet bağlantısını **Kayıt ol** sekmesine yapıştırır; sunucuyu bağlantı belirler.
 
 `VITE_ROOMS_DEFAULT_SERVER`, **derleme sırasında** isteğe bağlı sunucu ön ayarıdır. Zorunlu değildir ve kimlik bilgisi içermez. Kayıtlı tercihler ve davetler de etkilidir. [Geliştirme](DEVELOPMENT.md) ve [kullanım](USER_GUIDE.md) rehberlerine bak.
 
@@ -283,6 +306,7 @@ Herkese açık ters vekil, Stoat API/olay/dosya rotalarını korumalı ve ROOMS 
 | --- | --- | --- |
 | `/api/*`, `/ws`, dosya/proxy yolları | Sabit üst sistem rotaları | Doğrudan hesap oluşturma engeli korunur |
 | `/rooms-access/*` | Erişim 3002 | Ön ek kaldırılarak iletilir |
+| `/davet/*` | Erişim 3002 | Davet sayfası; yol olduğu gibi iletilir, token yolda kalır |
 | `/rooms-activities/*` | Activities 3031 | Ön ek kaldırılarak iletilir |
 | `/rooms-cinema/*` | Sinema 3050 | İsteğe bağlı; ön ek kaldırılarak iletilir ([Topluluk Sineması](COMMUNITY_CINEMA.md)) |
 | `/rooms-branding/*` | Dekoratif statik dosyaların | İsteğe bağlı |
@@ -307,7 +331,7 @@ Temel giriş, sohbet, izinler ve medya çalıştıktan sonra ekle:
 | --- | --- | --- |
 | Sosyal hesaplar/mesajlar | Stoat veritabanı veri birimleri | Uyumlu üst sistem yedek/geri yükleme |
 | Yüklenen dosyalar | Stoat nesne deposu veri birimleri | İlgili üstveri ve anahtarlarla birlikte yedek |
-| Kayıt durumu | `ROOMS_REGISTRATION_INVITES_FILE` ve kilit durumu | Kullanılmış/belirsiz durumları koru |
+| Kayıt durumu | `ROOMS_REGISTRATION_INVITES_FILE` (varsa `.v1.bak` yedeği) | Kullanım sayılarını ve belirsiz kayıtları koru |
 | Etkinlikler | `ROOMS_ACTIVITY_DATA` veya PostgreSQL | Uyumlu seri hale getirilmiş durum |
 | Soundboard | `ROOMS_SOUNDBOARD_DIRECTORY` | Dosyaları ve sahipliği koru |
 | Giriş sesleri | `ROOMS_PERSONAL_SOUNDS_DIRECTORY` | Kişi klasörlerini olduğu gibi koru |
@@ -336,7 +360,7 @@ Bunlar servis sağlık kontrolleridir; tam kabul testi değildir. Yeniden başla
 
 ## Başkalarını davet etmeden önce
 
-- Herkese açık kaynak adresi üzerinden iki gerçek hesap kayıt/giriş yapıp mesajlaşabilir.
+- İki gerçek kişi davet bağlantısıyla herkese açık adres üzerinden kayıt olup mesajlaşabilir; bağlantı sayfası tarayıcıda açılır ve **ROOMS'ta aç** uygulamayı başlatır.
 - Yetkisiz dış hesap kanalları okuyamaz veya medya/etkinlik yetkisi alamaz.
 - Farklı ağdaki iki fiziksel cihaz birbirini duyabilir ve seçilen ekranı paylaşabilir.
 - Mikrofon/sağırlaştırma, ayrılma/katılma, yeniden bağlantı ve üyelik iptali çalışır.

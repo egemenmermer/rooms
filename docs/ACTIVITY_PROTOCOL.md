@@ -35,7 +35,7 @@ Komutlar oda içinde sırayla uygulanır. Beklenen sürüm uyuşmazsa HTTP 409 `
 
 Ortak kuyruk medyası resmî YouTube video kimliği veya bağımsız kaynağa ait opak referans ve görünen başlık içerir. Kesin şema özel dosyaları, sağlayıcı URL'lerini, kimlik bilgilerini ve kişisel medya bağlantılarını kabul etmez. Bu sistem üstveri eşzamanlaması yapar; medya kaynağı değildir. Katılımcı izinli kaynağını bağımsız çözmelidir. Gerçek YouTube IFrame oynatımı ve iki oynatıcı arasındaki kayma düzeltmesi ayrı masaüstü kabul testleri gerektirir.
 
-Oda başına bir ana Sinema, YouTube veya Ekran etkinliği bulunabilir. Anketler ve beyaz tahta birlikte kullanılabilir. Ev sahibi ayrılırsa veya 30 saniyelik etkinlik kirası biterse bağlı uygun katılımcıların en eskisi ev sahibi olur. Ekran kaynağının sahipliği devrolmaz; yeni ev sahibi `awaiting-source` görür. Uygun katılımcı kalmazsa ana etkinlik biter. İzleme, ses odasında bulunmak anlamına gelmez.
+Oda başına bir ana Sinema, YouTube veya Ekran etkinliği bulunabilir. Güncel masaüstü istemci `cinema` ve `youtube` oda etkinliklerini açmaz: eski istemcinin veya iPhone'un başlattığı oturumu açıklar ve yalnızca hostun bitirmesine izin verir. Servis bu türleri eski istemciler için kabul etmeye devam eder. Anketler ve beyaz tahta birlikte kullanılabilir. Ev sahibi ayrılırsa veya 30 saniyelik etkinlik kirası biterse bağlı uygun katılımcıların en eskisi ev sahibi olur. Ekran kaynağının sahipliği devrolmaz; yeni ev sahibi `awaiting-source` görür. Uygun katılımcı kalmazsa ana etkinlik biter. İzleme, ses odasında bulunmak anlamına gelmez.
 
 ## Kalıcılık ve dağıtım
 

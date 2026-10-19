@@ -25,11 +25,6 @@ const referenceRoutes = {
   S21: '/voice',
   S22: '/voice?view=share',
   S23: '/voice',
-  S24: '/cinema/room?view=start',
-  S25: '/cinema/room?view=personal',
-  S26: '/cinema/room?view=personal',
-  S27: '/cinema/room?view=screen',
-  S28: '/cinema/room?view=queue',
   S29: '/media?player=1',
   S59: '/settings?tab=agent',
   S60: '/settings?tab=connections',
@@ -42,11 +37,9 @@ const targetRoute = insetPlayer
   ? '/media?player=1'
   : ['S33', 'S34', 'S35', 'S37', 'S38'].includes(id)
     ? '/media'
-    : id === 'S30' && ['default', 'compact'].includes(variant)
-      ? '/cinema/room?view=personal'
-      : id === 'S30'
-        ? '/chat'
-        : (referenceRoutes[id] ?? route);
+    : id === 'S30'
+      ? '/chat'
+      : (referenceRoutes[id] ?? route);
 if (
   !/^S\d{2}$/.test(id) ||
   !/^[a-zA-Z0-9_-]+$/.test(variant) ||
@@ -107,7 +100,6 @@ try {
       'S72',
     ].includes(id) ||
     /^S1[2-8]$/.test(id) ||
-    /^S2[4-8]$/.test(id) ||
     /^S(4[0-9]|5[0-4])$/.test(id)
       ? id
       : null;
@@ -236,37 +228,10 @@ try {
   }
   if (id === 'S29')
     await page.locator('.personal-playback-runtime.foreground .ref-personal-player').waitFor();
-  if (id === 'S24') await page.locator('.reference-cinema-start').waitFor();
-  if (id === 'S25' || id === 'S26') {
-    // CinemaPlayback is mounted outside the lazy route and can satisfy a stage
-    // selector while the actual Cinema page is still showing Suspense fallback.
-    await page.locator('.loading-view').waitFor({ state: 'detached' });
-    await page.locator('.cinema-persistent .cinema-stage').waitFor();
-  }
-  if (id === 'S25' && ['default', 'buffering', 'host_left', 'source_missing'].includes(variant))
-    await page.locator('.cinema-source-check-modal').waitFor({ state: 'detached' });
-  if (id === 'S27') await page.locator('.reference-cinema-page').waitFor();
-  if (id === 'S27' && variant === 'presenter')
-    await page.locator('.reference-cinema-screen-stage').waitFor();
-  if (id === 'S28') {
-    await page.locator('.reference-cinema-queue-layout').waitFor();
-    if (variant === 'keyboard') {
-      await page.locator('.reference-cinema-queue-layout input').focus();
-      await page.keyboard.press('Tab');
-    }
-  }
   if (id === 'S30') {
-    if (['default', 'compact'].includes(variant)) {
-      await page.locator('.cinema-persistent .cinema-stage').waitFor();
-      await page.getByRole('button', { name: 'Sohbeti aç', exact: true }).click();
-    }
     await page
-      .locator(
-        '.personal-playback-runtime.s30-mini-active .mini-playback-chrome, .cinema-mini .mini-playback-chrome',
-      )
+      .locator('.personal-playback-runtime.s30-mini-active .mini-playback-chrome')
       .waitFor();
-    if (variant === 'compact')
-      await page.locator('.cinema-mini .mini-playback-chrome.compact').waitFor();
     if (variant === 'live')
       await page
         .locator(

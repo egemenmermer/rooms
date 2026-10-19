@@ -34,12 +34,10 @@ test.describe('sign-in, first-run setup and sessions', () => {
   test('a wrong password is rejected without signing in', async ({ clients, run }) => {
     const client = await clients.launch('wrongpassword');
     const page = client.page;
-    await expect(page.getByRole('heading', { name: 'Giriş', exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Giriş yap', exact: true }).click();
+    await page.getByRole('tab', { name: 'Giriş yap', exact: true }).click();
     const server = page.getByLabel('Sunucu adresi', { exact: true });
     await page.getByLabel('E-posta adresi').waitFor();
-    if (!(await server.isVisible()))
-      await page.getByText('Sunucu ve davet seçenekleri', { exact: true }).click();
+    if (!(await server.isVisible())) await page.locator('details.ref-auth-server summary').click();
     await server.fill(stack.serverUrl);
     await page.getByLabel('E-posta adresi').fill(run.owner.email);
     await page.getByPlaceholder('Şifren', { exact: true }).fill('definitely-not-the-password');
@@ -52,7 +50,7 @@ test.describe('sign-in, first-run setup and sessions', () => {
   test('the session is restored after restarting the app', async ({ clients, owner }) => {
     const reopened = await clients.restart(owner);
     await expect(reopened.nav).toBeVisible({ timeout: 30000 });
-    await expect(reopened.page.getByRole('heading', { name: 'Giriş', exact: true })).toHaveCount(0);
+    await expect(reopened.page.getByRole('tablist', { name: 'Başlangıç' })).toHaveCount(0);
   });
 
   test('signing out forgets the session across restarts', async ({ clients, guest }) => {
@@ -60,12 +58,12 @@ test.describe('sign-in, first-run setup and sessions', () => {
     await guest.page.getByRole('button', { name: 'Oturumu kapat', exact: true }).click();
     const confirm = guest.page.getByRole('dialog');
     await confirm.getByRole('button', { name: 'Çıkış yap', exact: true }).click();
-    await expect(guest.page.getByRole('heading', { name: 'Giriş', exact: true })).toBeVisible({
+    await expect(guest.page.getByRole('tablist', { name: 'Başlangıç' })).toBeVisible({
       timeout: 30000,
     });
 
     const reopened = await clients.restart(guest);
-    await expect(reopened.page.getByRole('heading', { name: 'Giriş', exact: true })).toBeVisible({
+    await expect(reopened.page.getByRole('tablist', { name: 'Başlangıç' })).toBeVisible({
       timeout: 30000,
     });
   });

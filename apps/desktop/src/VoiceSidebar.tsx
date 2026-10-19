@@ -1,4 +1,4 @@
-import { openRoomActivity } from './MusicDJ';
+import { openActivity } from './activity-route';
 import { useEffect, useRef, useState } from 'react';
 import { ChannelTools } from './ChannelTools';
 import { useActivityRoom } from './activity';
@@ -257,21 +257,10 @@ export function VoiceSidebar({
               {(r.channelId === ch.id || (emptyVoiceFixture && ch.name === 'Salon')) && primary && (
                 <button
                   className="sidebar-activity-link"
-                  onClick={() =>
-                    openRoomActivity(
-                      primary.activity === 'youtube'
-                        ? '/cinema/room'
-                        : primary.activity === 'cinema'
-                          ? '/cinema/room'
-                          : primary.activity === 'screen'
-                            ? '/voice?view=share'
-                            : '/games',
-                      navigate,
-                    )
-                  }
+                  onClick={() => openActivity(primary.activity, navigate)}
                 >
                   <ReferenceIcon name="film" size={12} />
-                  {primary.activity === 'cinema' ? 'Cinema' : primary.title} sürüyor
+                  {primary.title} sürüyor
                   <i />
                 </button>
               )}

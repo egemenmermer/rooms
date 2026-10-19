@@ -18,7 +18,11 @@ test('desktop shell isolates native APIs and supports current signed-out onboard
   const profile = await app.evaluate(({ app }) => app.getPath('userData'));
   try {
     const page = await app.firstWindow();
-    await expect(page.getByRole('heading', { name: 'Giriş', exact: true })).toBeVisible();
+    // A first launch opens the start tabs on Kayıt ol.
+    await expect(page.getByRole('tab', { name: 'Kayıt ol', exact: true })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     expect(
       await page.evaluate(() => ({
         node: typeof (window as any).require,
@@ -28,19 +32,30 @@ test('desktop shell isolates native APIs and supports current signed-out onboard
     await expect(
       page.evaluate(() => (window as any).rooms.windowAction('invalid')),
     ).rejects.toThrow();
-    await page.getByRole('button', { name: 'Giriş yap', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Hesap oluştur', exact: true })).toBeVisible();
+    await page.getByLabel('Davet bağlantısı', { exact: true }).fill('!!!');
+    await expect(page.getByText(/Bu bir ROOMS davet bağlantısı değil/)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Hesap oluştur ve katıl' })).toBeDisabled();
+    await page.getByRole('tab', { name: 'Kayıt ol', exact: true }).press('ArrowRight');
+    await expect(page.getByRole('tab', { name: 'Giriş yap', exact: true })).toBeFocused();
     await expect(page.getByLabel('E-posta adresi')).toBeVisible();
     await expect(page.getByPlaceholder('Şifren', { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Davetle hesap oluştur', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Hesap oluştur', exact: true })).toBeVisible();
-    await expect(page.getByLabel('Topluluk davet kodu', { exact: true })).toBeVisible();
+    await page.getByRole('tab', { name: 'Kendi sunucunu kur', exact: true }).click();
+    await expect(page.getByRole('link', { name: 'Hetzner Cloud: siteye git' })).toBeVisible();
+    await expect(page.getByLabel('Kurulum komutu', { exact: true })).toContainText(
+      'deploy/install.sh',
+    );
+    await page.getByRole('button', { name: /Giriş yap sekmesine geç/ }).click();
+    await expect(page.getByRole('tab', { name: 'Giriş yap', exact: true })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    // Signed out, the invitation screen is a signup: it lands on Kayıt ol.
     await page.evaluate(() => (location.hash = '/setup/invite'));
-    await expect(page.getByRole('heading', { name: 'Topluluk daveti' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Davetimi aç', exact: true })).toBeDisabled();
-    await page.getByLabel('Sunucu adresi', { exact: true }).fill('https://community.example.test');
-    await page.getByLabel('Davet kodu', { exact: true }).fill('!!!');
-    await page.getByRole('button', { name: 'Davetimi aç', exact: true }).click();
-    await expect(page.getByRole('alert')).toBeVisible(); // Native syntax rejection, no signup or valid invitation consumption.
+    await expect(page.getByRole('tab', { name: 'Kayıt ol', exact: true })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     await page.evaluate(() => (location.hash = '/settings?tab=appearance'));
     await expect(
       page.getByRole('heading', { name: 'Görünüm ve erişilebilirlik', exact: true }),
@@ -50,21 +65,12 @@ test('desktop shell isolates native APIs and supports current signed-out onboard
     await page.getByRole('button', { name: 'Vazgeç', exact: true }).click();
     await expect(page.getByRole('region', { name: 'Kaydedilmemiş ayarlar' })).toHaveCount(0);
     await page.getByRole('button', { name: 'Ayarları kapat', exact: true }).click();
-    await page.evaluate(() => (location.hash = '/cinema/room'));
-    await expect(page.locator('.cozy-heading h2')).toHaveText('Sinema');
-    // Signed out there is no room: the closed curtain explains it and sources stay unavailable.
-    await expect(
-      page.getByRole('heading', { name: 'Önce bir odaya gir', exact: true }),
-    ).toBeVisible();
-    await page.getByRole('button', { name: 'Bir şey aç', exact: true }).click();
-    const picker = page.getByRole('dialog', { name: 'Bir şey aç' });
-    await expect(
-      picker.getByRole('button', { name: /Ekranı ya da pencereyi paylaş/ }),
-    ).toBeDisabled();
-    await expect(
-      picker.getByRole('textbox', { name: 'YouTube bağlantısı veya arama' }),
-    ).toBeDisabled();
-    await page.keyboard.press('Escape');
+    // The old room cinema is gone; its saved links fall through to the start screen.
+    for (const old of ['/cinema/room', '/watch/youtube']) {
+      await page.evaluate((hash) => (location.hash = hash), old);
+      await expect.poll(() => page.evaluate(() => location.hash)).not.toBe(`#${old}`);
+      await expect(page.locator('.cozy-cinema')).toHaveCount(0);
+    }
     await expect(page.locator('video, iframe')).toHaveCount(0);
     await page.evaluate(() => (location.hash = '/chat'));
     await expect(page.locator('.chat-transcript')).toHaveCount(0);
@@ -102,9 +108,10 @@ test('two real Stoat desktop accounts exchange events and join one authorized ro
       apps.push(app);
       profiles.push(await app.evaluate(({ app }) => app.getPath('userData')));
       const page = await app.firstWindow();
-      await expect(page.getByRole('heading', { name: 'Giriş', exact: true })).toBeVisible();
-      await page.getByRole('button', { name: 'Giriş yap', exact: true }).click();
-      await page.getByText('Sunucu ve davet seçenekleri', { exact: true }).click();
+      await page.getByRole('tab', { name: 'Giriş yap', exact: true }).click();
+      const server = page.locator('details.ref-auth-server');
+      if (!(await server.evaluate((element) => (element as HTMLDetailsElement).open)))
+        await server.locator('summary').click();
       await page.getByLabel('Sunucu adresi', { exact: true }).fill(fixtures.base);
       await page.getByLabel('E-posta adresi').fill(fixtures[who].email);
       await page.getByPlaceholder('Şifren', { exact: true }).fill(fixtures[who].password);
@@ -138,8 +145,8 @@ test('two real Stoat desktop accounts exchange events and join one authorized ro
     await winner.evaluate((id) => (window as any).rooms.media.presenter(id, 'release'), channelId);
     await other.evaluate((id) => (window as any).rooms.media.presenter(id, 'acquire'), channelId);
     await other.evaluate((id) => (window as any).rooms.media.presenter(id, 'release'), channelId);
-    await owner.evaluate(() => (location.hash = '/cinema/room'));
-    await expect(owner.locator('.cozy-heading h2')).toHaveText('Sinema');
+    await owner.evaluate(() => (location.hash = '/games'));
+    await expect(owner.getByRole('heading', { name: 'Kıraathane', exact: true })).toBeVisible();
     await expect(
       owner.getByRole('button', { name: 'Sesten ayrıl', exact: true }).first(),
     ).toBeVisible();
@@ -147,7 +154,7 @@ test('two real Stoat desktop accounts exchange events and join one authorized ro
       await page.getByRole('button', { name: 'Sesten ayrıl', exact: true }).first().click();
     await expect(owner.locator('.real-voice-dock')).toHaveCount(0);
     console.log(
-      'PASS: distinct native sessions, actual gateway delivery, broker-authorized voice and persistent Cinema voice. Physical capture not exercised.',
+      'PASS: distinct native sessions, actual gateway delivery, broker-authorized voice kept across pages. Physical capture not exercised.',
     );
   } finally {
     for (const app of apps) await app.close();

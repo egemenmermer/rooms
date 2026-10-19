@@ -1,11 +1,11 @@
 import { queryClient } from './query-client';
 import { CommunityRoles } from './CommunityRoles';
+import { CommunityInvitesTab } from './CommunityInvitesTab';
 import './reference-community-management.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
   Check,
-  Link2,
   LockKeyhole,
   Ban,
   LogOut,
@@ -496,35 +496,20 @@ function ManagementScope({
           mutate={changeCommunityRole}
         />
       ) : tab === 'invites' ? (
-        <div className="rcm-invites">
-          <h2>Aktif davetler</h2>
-          <div className="rcm-unavailable">
-            <Link2 size={24} />
-            <div>
-              <strong>Davet yönetimi henüz uygulanmadı</strong>
-              <p>{snapshot.invites.reason}</p>
-            </div>
-          </div>
-          <div className="rcm-invite-actions">
-            <button
-              className="button secondary"
-              disabled
-              title="ROOMS davet aracısında yetkili davet listeleme ve iptal etme yöntemi henüz yok"
-            >
-              Daveti iptal et
-            </button>
-            {onCreateInvite && (
-              <button
-                className="button secondary"
-                disabled={fixtureMode}
-                title={fixtureMode ? fixtureReason : undefined}
-                onClick={onCreateInvite}
-              >
-                Yeni hesap daveti oluştur
-              </button>
-            )}
-          </div>
-        </div>
+        <CommunityInvitesTab
+          spaceId={snapshot.spaceId}
+          capability={snapshot.invites}
+          members={snapshot.members}
+          bridge={fixtureMode ? null : community}
+          disabledReason={
+            fixtureMode
+              ? fixtureReason
+              : !connected
+                ? 'Topluluk bağlantısı bekleniyor. Bağlantı gelince yeniden dene.'
+                : undefined
+          }
+          onCreateInvite={onCreateInvite}
+        />
       ) : (
         <>
           <div className="rcm-search-row">

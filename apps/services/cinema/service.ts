@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import {
   directsSession,
@@ -6,6 +7,7 @@ import {
 } from '../../../packages/activity-protocol/src/index';
 import { maskServer } from '../../../packages/community-cinema/src/mask';
 import { detectXtreamExport } from '../../../packages/community-cinema/src/m3u';
+import { normalizeForSearch } from '../../../packages/community-cinema/src/normalize';
 import {
   liveExtension,
   xtreamUrls,
@@ -18,6 +20,9 @@ import type {
   CinemaStatus,
   CinemaSubtitleTrack,
   CinemaWatch,
+  RmdbPerson,
+  RmdbReviewInput,
+  RmdbWorkDetails,
 } from '../../../packages/community-cinema/src/types';
 import {
   Catalog,
@@ -34,6 +39,7 @@ import {
   type ConfigStore,
 } from './config-store';
 import { CinemaError, safeError, type Importer } from './importer';
+import { tmdbOf, type Rmdb, type RmdbMeta, type StoredWork } from './rmdb';
 import type { SubtitleCandidate, SubtitleQuery } from './subtitles';
 import type { SecureFiles } from './secure-file';
 
@@ -171,6 +177,8 @@ export type CinemaServiceOptions = {
   image(url: string): Promise<{ body: Buffer; type: string }>;
   /** Subtitle search with the owner's key; absent, films only offer their own subtitles. */
   subtitles?: SubtitlePort;
+  /** The community's record of what the hall watched; absent, nothing is recorded. */
+  rmdb?: Rmdb;
   maxRelays?: number;
   log?: (line: string) => void;
   now?: () => number;
@@ -629,9 +637,11 @@ export class CinemaService {
     };
   }
 
-  /** Provider artwork through the service, cached in memory (about 48 MB). */
+  /**
+   * Provider artwork through the service, cached in memory (about 48 MB). RMDB's own copies
+   * come first: they outlive the account and its catalog.
+   */
   async image(communityId: string, id: string) {
-    const url = this.catalog(communityId).artUrl(id) ?? fail('CINEMA_ITEM_NOT_FOUND');
     const key = `${communityId}:${id}`;
     const cached = this.art.get(key);
     if (cached) {
@@ -639,6 +649,10 @@ export class CinemaService {
       this.art.set(key, cached);
       return cached;
     }
+    const store = this.options.rmdb?.store;
+    const kept = store?.hasArt(communityId, id) ? store.readArt(communityId, id) : null;
+    if (kept) return this.remember(key, kept);
+    const url = this.catalog(communityId).artUrl(id) ?? fail('CINEMA_ITEM_NOT_FOUND');
     let load = this.artLoads.get(key);
     if (!load) {
       load = this.options.image(url).finally(() => this.artLoads.delete(key));
@@ -646,6 +660,10 @@ export class CinemaService {
     }
     const image = await load;
     if (this.art.has(key)) return image;
+    return this.remember(key, image);
+  }
+
+  private remember(key: string, image: { body: Buffer; type: string }) {
     this.art.set(key, image);
     this.artBytes += image.body.length;
     for (const [oldKey, old] of this.art) {
@@ -654,6 +672,13 @@ export class CinemaService {
       this.artBytes -= old.body.length;
     }
     return image;
+  }
+
+  private forgetImage(key: string) {
+    const image = this.art.get(key);
+    if (!image) return;
+    this.art.delete(key);
+    this.artBytes -= image.body.length;
   }
 
   private relaySource(
@@ -707,17 +732,28 @@ export class CinemaService {
    * A fresh ticket for a running relay session, without acquiring or restarting
    * anything: the session must still play the hall's current item.
    */
-  async renew(token: string, hallId: string, communityId: string, userId: string, session: string) {
+  async renew(
+    token: string,
+    hallId: string,
+    communityId: string,
+    userId: string,
+    session: string,
+    name = userId,
+  ) {
     const config = this.options.configs.get(communityId);
     if (!config.source) fail('CINEMA_NOT_CONNECTED');
     if (config.hallChannelId !== hallId) fail('CINEMA_HALL_REQUIRED');
     const entry = this.sessionRefs.get(session);
-    const running = this.options.relays.sessionsOf(communityId).some((r) => r.session === session);
-    if (!entry || entry.communityId !== communityId || !running) fail('CINEMA_SESSION_ENDED');
-    const room = (await this.options.activity(token, hallId)).room;
+    const relay = this.options.relays.sessionsOf(communityId).find((r) => r.session === session);
+    if (!entry || entry.communityId !== communityId || !relay) fail('CINEMA_SESSION_ENDED');
+    const response = await this.options.activity(token, hallId);
+    const room = response.room;
     const current = room.queue.find((item) => item.id === room.timeline.itemId)?.media;
     if (current?.kind !== 'community-media' || current.ref !== entry!.ref)
-      fail('CINEMA_SESSION_ENDED');
+      return fail('CINEMA_SESSION_ENDED');
+    // A renewal means this member's player is still fetching: one more look for RMDB.
+    if (!relay!.live)
+      this.record(communityId, response, current.ref, { userId, name }, relay!.durationSec);
     const ticket = this.options.tickets({ session, userId, hallId });
     return { ...ticket, ttlMs: Math.max(0, ticket.expiresAt - Date.now()) };
   }
@@ -727,6 +763,7 @@ export class CinemaService {
     hallId: string,
     communityId: string,
     userId: string,
+    name = userId,
   ): Promise<CinemaWatch> {
     const config = this.options.configs.get(communityId);
     if (!config.source) fail('CINEMA_NOT_CONNECTED');
@@ -789,6 +826,8 @@ export class CinemaService {
       this.sessionRefs.set(chosen.session, { communityId, ref: current.ref, audio });
       return chosen;
     });
+    if (!info.live)
+      this.record(communityId, response, current.ref, { userId, name }, info.durationSec);
     const ticket = this.options.tickets({ session: info.session, userId, hallId });
     return {
       session: info.session,
@@ -840,6 +879,240 @@ export class CinemaService {
     });
     return { audioTrack: track };
   }
+
+  /**
+   * Gives RMDB one look at the hall: the timeline the service read from the activity
+   * service with a member's token, so no client claims its own progress. Films and
+   * episodes only; live channels are not recorded.
+   */
+  private record(
+    communityId: string,
+    response: ActivityResponse,
+    ref: string,
+    viewer: RmdbPerson,
+    durationSec: number | null,
+  ) {
+    const rmdb = this.options.rmdb;
+    const source = this.options.configs.get(communityId).source;
+    const timeline = response.room.timeline;
+    if (!rmdb || !source || !timeline.itemId) return;
+    try {
+      const catalog = this.options.catalogs.get(communityId);
+      const item = catalog.item(ref);
+      const hit = item ? null : catalog.episode(ref);
+      const work = item ?? hit?.series;
+      if (!work || work.kind === 'live') return;
+      const created = rmdb.observe({
+        communityId,
+        itemId: timeline.itemId,
+        workRef: work.ref,
+        playing: timeline.playing,
+        positionSec: playbackPosition(timeline, response.serverTimeMs),
+        durationSec: durationSec ?? item?.durationSec ?? hit?.episode.durationSec ?? null,
+        episode: hit
+          ? {
+              season: hit.episode.season,
+              episode: hit.episode.episode,
+              title: hit.episode.title || null,
+            }
+          : null,
+        viewer,
+        account: accountOf(source),
+        meta: () => metaOf(work),
+        at: this.now(),
+      });
+      if (created) void this.keepWork(communityId, created.id, work.ref);
+    } catch (error) {
+      this.log(`rmdb record failed: ${safeError(error)}`);
+    }
+  }
+
+  /** Completes a work the hall just added from the catalog and keeps its artwork. */
+  private async keepWork(communityId: string, workId: string, ref: string) {
+    try {
+      await this.details(communityId, ref);
+      const item = this.options.catalogs.get(communityId).item(ref);
+      if (item) this.options.rmdb!.enrich(communityId, workId, metaOf(item));
+    } catch {
+      // The provider did not answer: the entry keeps what the catalog listed.
+    }
+    await this.keepArt(communityId, workId);
+  }
+
+  /** Copies a work's poster and backdrop into RMDB while the catalog can still fetch them. */
+  private async keepArt(communityId: string, workId: string) {
+    const rmdb = this.options.rmdb!;
+    try {
+      const work = rmdb.get(communityId, workId);
+      for (const [id, poster] of [
+        [work.art, true],
+        [work.backdrop, false],
+      ] as const)
+        if (id && !rmdb.store.hasArt(communityId, id))
+          await rmdb.store.writeArt(communityId, id, await this.image(communityId, id), poster);
+    } catch (error) {
+      this.log(`rmdb artwork copy failed: ${safeError(error)}`);
+    }
+  }
+
+  /**
+   * What the current catalog can open for a work, or null: the stored ref when the same
+   * account still lists the same title, otherwise the same title by name and year (a
+   * reconnected or different account).
+   */
+  private async resumeOf(communityId: string, work: StoredWork) {
+    const source = this.options.configs.get(communityId).source;
+    if (!source) return null;
+    const catalog = this.options.catalogs.get(communityId);
+    let item = work.source?.account === accountOf(source) ? catalog.item(work.source.ref) : null;
+    // Another panel can reuse a ref for a different title.
+    if (
+      item &&
+      (item.kind !== work.kind || normalizeForSearch(item.title) !== normalizeForSearch(work.title))
+    )
+      item = null;
+    item ??= catalog.findTitle(work.kind, work.title, work.year);
+    if (!item) return null;
+    const progress = work.progress;
+    // A few seconds of context before the point where the hall stopped.
+    const resumeAt = (seconds: number) => Math.max(0, Math.floor(seconds) - 5);
+    if (work.kind === 'movie')
+      return {
+        ref: item.ref,
+        title: item.title,
+        positionSec: progress && !progress.finished ? resumeAt(progress.positionSec) : 0,
+        art: item.art,
+        episode: null,
+      };
+    if (!catalog.episodes(item.ref)) await this.details(communityId, item.ref).catch(() => null);
+    const episodes = [...(catalog.episodes(item.ref) ?? [])].sort(
+      (a, b) => a.season - b.season || a.episode - b.episode,
+    );
+    const at = progress?.episode ?? null;
+    const index = at
+      ? episodes.findIndex((e) => e.season === at.season && e.episode === at.episode)
+      : 0;
+    if (index < 0) return null;
+    const next = at && progress!.finished;
+    const target = episodes[next ? index + 1 : index];
+    if (!target) return null;
+    return {
+      ref: target.ref,
+      title: `${item.title} · ${target.season}. Sezon ${target.episode}. Bölüm`.slice(0, 240),
+      positionSec: at && !next ? resumeAt(progress!.positionSec) : 0,
+      art: target.art ?? item.art,
+      episode: { season: target.season, episode: target.episode, title: target.title || null },
+    };
+  }
+
+  private rmdb() {
+    return this.options.rmdb ?? fail('CINEMA_UNAVAILABLE');
+  }
+
+  rmdbList(communityId: string, viewerId: string) {
+    return this.rmdb().list(communityId, viewerId);
+  }
+
+  async rmdbWork(communityId: string, workId: string, viewerId: string) {
+    const rmdb = this.rmdb();
+    const resume = await this.resumeOf(communityId, rmdb.get(communityId, workId)).catch(
+      () => null,
+    );
+    return rmdb.details(communityId, workId, viewerId, resume);
+  }
+
+  /** A member adds a catalog film or series by hand. */
+  async rmdbAdd(communityId: string, ref: string, by: RmdbPerson, watchlist: boolean) {
+    const rmdb = this.rmdb();
+    const catalog = this.catalog(communityId);
+    const found = catalog.item(ref);
+    if (!found || found.kind === 'live') return fail('CINEMA_ITEM_NOT_FOUND');
+    // Plot, TMDB id and episodes are fetched on first details; RMDB keeps them.
+    await this.details(communityId, ref).catch(() => null);
+    const item = catalog.item(ref) ?? found;
+    const source = this.options.configs.get(communityId).source!;
+    const { work, created } = rmdb.add(
+      communityId,
+      metaOf(item),
+      { ref, account: accountOf(source) },
+      by,
+      watchlist,
+    );
+    if (!created) rmdb.enrich(communityId, work.id, metaOf(item));
+    await this.keepArt(communityId, work.id);
+    return this.rmdbWork(communityId, work.id, by.userId);
+  }
+
+  rmdbReview(
+    communityId: string,
+    workId: string,
+    author: RmdbPerson,
+    input: RmdbReviewInput | null,
+  ): Promise<RmdbWorkDetails> {
+    this.rmdb().review(communityId, workId, author, input);
+    return this.rmdbWork(communityId, workId, author.userId);
+  }
+
+  rmdbRemoveReview(communityId: string, workId: string, userId: string, viewerId: string) {
+    this.rmdb().removeReview(communityId, workId, userId);
+    return this.rmdbWork(communityId, workId, viewerId);
+  }
+
+  rmdbWatchlist(communityId: string, workId: string, by: RmdbPerson, on: boolean) {
+    this.rmdb().watchlist(communityId, workId, by, on);
+    return this.rmdbWork(communityId, workId, by.userId);
+  }
+
+  rmdbLog(communityId: string, workId: string, by: RmdbPerson, watchedAt?: number) {
+    this.rmdb().log(communityId, workId, by, watchedAt ?? this.now());
+    return this.rmdbWork(communityId, workId, by.userId);
+  }
+
+  rmdbRemoveLog(
+    communityId: string,
+    workId: string,
+    entryId: string,
+    by: RmdbPerson,
+    isOwner: boolean,
+  ) {
+    this.rmdb().removeLog(communityId, workId, entryId, by, isOwner);
+    return this.rmdbWork(communityId, workId, by.userId);
+  }
+
+  /** Owner: a work goes with its reviews, diary and artwork copies. */
+  rmdbRemove(communityId: string, workId: string) {
+    const rmdb = this.rmdb();
+    for (const id of rmdb.remove(communityId, workId)) {
+      rmdb.store.removeArt(communityId, id);
+      this.forgetImage(`${communityId}:${id}`);
+    }
+  }
+}
+
+/** Which IPTV account plays a title. RMDB compares it and never sends it anywhere. */
+export function accountOf(source: CinemaSource) {
+  const identity =
+    source.kind === 'xtream'
+      ? [source.kind, source.server, source.username]
+      : [source.kind, source.url];
+  return createHash('sha256').update(JSON.stringify(identity)).digest('hex').slice(0, 16);
+}
+
+/** The catalog's facts about a film or series, as RMDB keeps them. */
+function metaOf(item: StoredItem): RmdbMeta {
+  return {
+    kind: item.kind === 'series' ? 'series' : 'movie',
+    title: item.title,
+    year: item.year,
+    genre: item.genre,
+    plot: item.plot || null,
+    director: item.director,
+    cast: item.cast,
+    durationSec: item.kind === 'movie' ? item.durationSec : null,
+    tmdbId: tmdbOf(item.tmdbId),
+    art: item.art,
+    backdrop: item.backdrop,
+  };
 }
 
 /** Accepts the bridge input; an M3U `get.php?username=…` export becomes an Xtream source. */

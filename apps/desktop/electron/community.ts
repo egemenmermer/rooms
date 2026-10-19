@@ -1091,6 +1091,18 @@ export async function setupCommunity(
   handle('rooms:social-create-invite', (channelId) =>
     requireClient().createInvite(id.parse(channelId)),
   );
+  handle('rooms:social-list-invites', (spaceId) =>
+    requireClient().listInviteLinks(id.parse(spaceId)),
+  );
+  handle('rooms:social-revoke-invite', (spaceId, inviteId) =>
+    requireClient().revokeInviteLink(
+      id.parse(spaceId),
+      z
+        .string()
+        .regex(/^[a-f0-9]{16}$/)
+        .parse(inviteId),
+    ),
+  );
   handle('rooms:social-inspect-invite', (url, inviteCode) =>
     new StoatClient(z.string().max(2048).parse(url)).inspectInvite(code.parse(inviteCode)),
   );

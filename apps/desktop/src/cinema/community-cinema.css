@@ -2809,3 +2809,768 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
 html[data-motion='reduce'] .hall-screen-host {
   transition: none !important;
 }
+
+/* RMDB: the community's own film diary. Stars stay amber like the catalog rating; progress,
+   hearts and this member's own marks are ROOMS purple. Red still only means LIVE. */
+.rmdb-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-16);
+  margin-bottom: 24px;
+}
+.rmdb-head h2 {
+  margin: 0;
+  font: var(--font-weight-display) var(--font-size-display) / var(--line-height-display)
+    var(--font-family);
+  letter-spacing: 0.02em;
+}
+.rmdb-head p {
+  margin: 2px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 13.5px;
+}
+.rmdb-head p span {
+  color: var(--color-text-muted);
+}
+.rmdb-row-note {
+  margin: 0;
+  padding: 16px 18px;
+  border: 1px dashed var(--cinema-line-strong);
+  border-radius: 12px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.rmdb-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 520px;
+  margin: 40px auto;
+  text-align: center;
+}
+.rmdb-empty h3 {
+  margin: 6px 0 0;
+  font: var(--font-weight-h1) var(--font-size-h2) / var(--line-height-h2) var(--font-family);
+}
+.rmdb-empty p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.rmdb-empty .hall-detail-actions {
+  justify-content: center;
+  margin-top: 6px;
+}
+
+/* Poster marks: İzlenecekler, this member's heart, and how far the hall got. */
+.rmdb-badges {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  display: flex;
+  gap: 4px;
+}
+.rmdb-badge {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--cinema-scrim);
+  color: var(--cinema-on-video);
+}
+.rmdb-badge.liked {
+  color: var(--color-action-primary);
+}
+.rmdb-progress {
+  position: relative;
+  display: block;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.12);
+}
+.rmdb-progress::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-action-primary);
+  transform: scaleX(var(--progress, 0));
+  transform-origin: left;
+}
+.rmdb-progress.on-poster {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  height: 4px;
+  background: rgb(0 0 0 / 0.55);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+/* Stars: an outline with an amber fill, cut in half for half steps. */
+.rmdb-stars {
+  display: inline-flex;
+  gap: 1px;
+  vertical-align: middle;
+}
+.rmdb-star {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: var(--star, 14px);
+  height: var(--star, 14px);
+}
+.rmdb-star > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.rmdb-star-back {
+  color: rgb(255 255 255 / 0.2);
+}
+.rmdb-star-front {
+  color: var(--color-status-warning);
+}
+.rmdb-star[data-fill='half'] .rmdb-star-front {
+  clip-path: inset(0 50% 0 0);
+}
+.rmdb-picker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.rmdb-picker {
+  display: inline-flex;
+  gap: 4px;
+}
+.rmdb-picker .rmdb-star-back {
+  color: rgb(255 255 255 / 0.28);
+}
+.rmdb-half {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 50%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.rmdb-half.left {
+  left: 0;
+  border-radius: 4px 0 0 4px;
+}
+.rmdb-half.right {
+  right: 0;
+  border-radius: 0 4px 4px 0;
+}
+.rmdb-half:focus-visible {
+  outline: 2px solid var(--color-action-focus);
+  outline-offset: 1px;
+}
+.rmdb-half:disabled {
+  cursor: default;
+}
+.rmdb-picker-value {
+  min-width: 56px;
+  color: var(--color-text-secondary);
+  font: 600 14px / 20px var(--font-family);
+  font-variant-numeric: tabular-nums;
+}
+.rmdb-clear {
+  width: 26px;
+  height: 26px;
+}
+.rmdb-heart {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--cinema-line-strong);
+  border-radius: 10px;
+  background: var(--cinema-fill);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.rmdb-heart:hover:not(:disabled) {
+  background: var(--cinema-fill-hover);
+  color: var(--color-text-primary);
+}
+.rmdb-heart.liked {
+  border-color: transparent;
+  background: var(--cinema-accent-soft);
+  color: var(--color-action-primary);
+}
+.rmdb-heart:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-motion='full'] .rmdb-heart {
+    transition:
+      color 150ms var(--motion-ease-out),
+      background 150ms var(--motion-ease-out);
+  }
+}
+
+/* Details page. */
+.rmdb .hall-meta .rmdb-of {
+  margin-left: 2px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+.rmdb-progress-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 440px;
+}
+.rmdb-progress-note .rmdb-progress {
+  flex: 1;
+  height: 4px;
+}
+.rmdb-progress-note small {
+  color: var(--color-text-secondary);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rmdb-actions {
+  align-items: center;
+  margin-top: 4px;
+}
+.rmdb-remove {
+  margin-left: 4px;
+}
+.rmdb-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.rmdb .hall-text-button.danger {
+  color: var(--color-status-error);
+}
+.rmdb-log {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--cinema-fill);
+  box-shadow: inset 0 0 0 1px var(--cinema-line);
+}
+.rmdb-log label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+.rmdb-log input {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--cinema-line-strong);
+  border-radius: var(--radius-8);
+  background: var(--color-background-sidebar);
+  color: var(--color-text-primary);
+  font: 13px / 20px var(--font-family);
+  color-scheme: dark;
+}
+.rmdb-log .hall-form-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+.rmdb-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  align-items: start;
+  gap: 28px;
+}
+.rmdb-column {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+.rmdb-card {
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--cinema-fill);
+  box-shadow: inset 0 0 0 1px var(--cinema-line);
+}
+.rmdb-card h3,
+.rmdb-section h3 {
+  margin: 0 0 12px;
+  font: 650 15px / 22px var(--font-family);
+}
+.rmdb-card h3 small,
+.rmdb-section h3 small {
+  margin-left: 6px;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.rmdb-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rmdb-card-head h3 {
+  margin: 0;
+}
+.rmdb-muted {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.rmdb-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* My rating and review. */
+.rmdb-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rmdb-textarea {
+  width: 100%;
+  min-height: 96px;
+  padding: 10px 12px;
+  border: 1px solid var(--cinema-line-strong);
+  border-radius: 10px;
+  background: var(--color-background-canvas);
+  color: var(--color-text-primary);
+  font: 14px / 1.55 var(--font-family);
+  resize: vertical;
+  box-sizing: border-box;
+}
+.rmdb-textarea:focus {
+  border-color: var(--color-action-primary);
+  outline: none;
+}
+.rmdb-editor-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+.rmdb-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+.rmdb-check input {
+  accent-color: var(--color-action-primary);
+}
+.rmdb-check:has(input:disabled) {
+  cursor: default;
+  opacity: 0.5;
+}
+.rmdb-counter {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.rmdb-counter.low {
+  color: var(--color-status-warning);
+}
+.rmdb-grow {
+  flex: 1;
+}
+.rmdb-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-status-success);
+  font-size: 12.5px;
+}
+
+/* Reviews. */
+.rmdb-reviews {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rmdb-review {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 10px;
+}
+.rmdb-review + .rmdb-review {
+  border-top: 1px solid var(--cinema-line);
+}
+.rmdb-review.own {
+  border-radius: 12px;
+  background: var(--cinema-accent-soft);
+}
+.rmdb-review.own + .rmdb-review {
+  border-top: 0;
+}
+.rmdb-avatar > * {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+}
+.rmdb-review-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.rmdb-review-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 13px;
+}
+.rmdb-review-head strong {
+  font-weight: 650;
+}
+.rmdb-review-head time {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+.rmdb-review-remove {
+  margin-left: auto;
+  padding: 0 2px;
+  font-size: 12px;
+}
+.rmdb-liked {
+  display: inline-grid;
+  color: var(--color-action-primary);
+}
+.rmdb-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 5px;
+  background: rgb(255 255 255 / 0.07);
+  color: var(--color-text-secondary);
+  font: 650 10.5px / 18px var(--font-family);
+  letter-spacing: 0.03em;
+}
+.rmdb-tag.spoiler {
+  background: color-mix(in srgb, var(--color-status-warning) 14%, transparent);
+  color: var(--color-status-warning);
+}
+.rmdb-review-text {
+  position: relative;
+}
+.rmdb-review-text p {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.rmdb-review-text.hidden {
+  min-height: 44px;
+}
+.rmdb-review-text.hidden p {
+  filter: blur(7px);
+  pointer-events: none;
+  user-select: none;
+}
+.rmdb-spoiler {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--cinema-line-strong);
+  border-radius: 999px;
+  background: var(--color-background-raised);
+  box-shadow: 0 8px 24px -10px rgb(0 0 0 / 0.7);
+  color: var(--color-text-primary);
+  font: var(--font-weight-medium) 12.5px / 1 var(--font-family);
+  white-space: nowrap;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+}
+.rmdb-spoiler:hover {
+  border-color: var(--color-border-default);
+}
+
+/* Community average and its ½–5★ spread. */
+.rmdb-score {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.rmdb-score strong {
+  font: 700 34px / 1 var(--font-family);
+  letter-spacing: -0.01em;
+}
+.rmdb-score > span:not(.rmdb-stars) {
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+.rmdb-score .rmdb-stars {
+  align-self: center;
+  margin-left: 8px;
+}
+.rmdb-histogram {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+  margin-top: 14px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+.rmdb-histogram ol {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  align-items: end;
+  gap: 3px;
+  height: 56px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rmdb-histogram li {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+}
+.rmdb-bar {
+  display: block;
+  width: 100%;
+  height: max(2px, calc(var(--share, 0) * 100%));
+  border-radius: 3px 3px 1px 1px;
+  background: rgb(255 255 255 / 0.16);
+}
+.rmdb-histogram li.mine .rmdb-bar {
+  background: var(--color-action-primary);
+}
+
+/* Series episodes and the diary. */
+.rmdb-season + .rmdb-season {
+  margin-top: 14px;
+}
+.rmdb-season h4 {
+  margin: 0 0 8px;
+  color: var(--color-text-muted);
+  font: 650 11px / 16px var(--font-family);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rmdb-season ol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rmdb-season li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.rmdb-episode-no {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.rmdb-episode-text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.rmdb-episode-text > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rmdb-season small {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rmdb-diary {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rmdb-diary-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0;
+}
+.rmdb-diary-entry:first-child {
+  padding-top: 0;
+}
+.rmdb-diary-entry + .rmdb-diary-entry {
+  border-top: 1px solid var(--cinema-line);
+}
+.rmdb-diary-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 13px;
+}
+.rmdb-diary-when {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+}
+.rmdb-diary-top time {
+  font-weight: 600;
+}
+.rmdb-diary-top time small {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+.rmdb-diary-remove {
+  flex-shrink: 0;
+  padding: 1px 2px;
+  font-size: 12px;
+}
+/* Removal stays out of the way until the row is pointed at or focused. */
+@media (hover: hover) and (pointer: fine) {
+  .rmdb-review .rmdb-review-remove:not(:focus-visible),
+  .rmdb-diary-entry .rmdb-diary-remove:not(.danger, :focus-visible) {
+    opacity: 0;
+  }
+  .rmdb-review:is(:hover, :focus-within) .rmdb-review-remove,
+  .rmdb-diary-entry:is(:hover, :focus-within) .rmdb-diary-remove {
+    opacity: 1;
+  }
+}
+.rmdb-diary-episode {
+  color: var(--color-text-secondary);
+  font-size: 12.5px;
+}
+.rmdb-diary-people {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.rmdb-diary-people small {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rmdb-avatars {
+  display: flex;
+  flex-shrink: 0;
+}
+.rmdb-avatars > :is(span, img) {
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  margin-left: -6px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--cinema-ground);
+  font-size: 8px;
+  object-fit: cover;
+}
+.rmdb-avatars > :first-child {
+  margin-left: 0;
+}
+.rmdb-diary-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.rmdb-diary-state.done {
+  color: var(--color-text-secondary);
+}
+
+/* "Tümü": kind, title filter and sort above the poster grid. */
+.rmdb-grid-head {
+  flex-wrap: wrap;
+}
+.rmdb-segment {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--cinema-fill);
+}
+.rmdb-segment button {
+  height: 26px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--color-text-secondary);
+  font: var(--font-weight-medium) 12.5px / 1 var(--font-family);
+  cursor: pointer;
+}
+.rmdb-segment button.selected {
+  background: var(--color-background-hover);
+  color: var(--color-text-primary);
+}
+.hall-filter.rmdb-filter {
+  flex: 0 1 220px;
+  height: 32px;
+  margin: 0;
+}
+/* The hall's own width decides (the chat panel takes some of it), not the window's. */
+.hall-vod.rmdb {
+  container-type: inline-size;
+}
+@container (max-width: 760px) {
+  .rmdb-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

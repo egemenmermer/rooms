@@ -202,9 +202,9 @@ export function PersonalSidebar({
           <span>Planlanan görevler</span>
         </button>
         {!c.spaces.length && (
-          <button className="room-channel" onClick={invite}>
+          <button className="room-channel" onClick={() => navigate('/setup/invite')}>
             <ReferenceIcon name="plus" size={19} />
-            <span>Davet aç</span>
+            <span>Davet bağlantısı aç</span>
           </button>
         )}
       </div>

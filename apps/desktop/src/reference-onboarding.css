@@ -551,3 +551,171 @@
 .mode-welcome .ref-auth-form {
   min-height: 440px;
 }
+
+/* Start screen: Kayıt ol | Giriş yap | Kendi sunucunu kur. Mirrors the .rcm-tabs pattern. */
+.ref-start {
+  width: 400px;
+  max-width: 100%;
+  /* Top-aligned so the tab bar stays put when panels of different heights swap. */
+  align-self: flex-start;
+  margin-top: clamp(24px, 9vh, 96px);
+  padding-bottom: 24px;
+}
+.ref-start .ref-auth-form {
+  width: 100%;
+}
+.ref-start-tabs {
+  display: flex;
+  gap: 22px;
+  border-bottom: 1px solid #3a404e;
+  margin-bottom: 28px;
+}
+.ref-start-tabs button {
+  padding: 0 0 13px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  color: #a4aabb;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ref-start-tabs button[aria-selected='true'] {
+  border-bottom-color: #a496f1;
+  color: #f0f0f8;
+}
+.ref-start-tabs button:focus-visible {
+  outline: 2px solid #b7aeff;
+  outline-offset: 3px;
+}
+.ref-auth-help.invalid {
+  color: #e9a8ac;
+}
+.ref-auth-invite-compact {
+  padding: 18px 16px;
+  margin: 18px 0;
+}
+.ref-auth-invite-compact .ref-auth-community-icon {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+}
+.ref-auth-invite-compact h3 {
+  font-size: 18px;
+}
+.ref-auth-invite-compact > p {
+  line-height: 1.6;
+}
+.ref-auth-invite-compact .ref-auth-back {
+  margin-top: 12px;
+}
+.ref-auth-invite .ref-auth-invite-server {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 11px;
+}
+.ref-start-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 18px;
+}
+.ref-start-steps > li {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 12px;
+}
+.ref-start-step-number {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #39354e;
+  color: #b7aeff;
+  font-size: 11px;
+  font-weight: 600;
+}
+.ref-start-steps h3 {
+  margin: 2px 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.ref-start-steps p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #a6abb8;
+}
+.ref-start-steps .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 7px 11px;
+  border-radius: 7px;
+  font-size: 12px;
+  text-decoration: none;
+  background: #292d36;
+  border: 1px solid #3c414e;
+  color: #e5e7ef;
+}
+.ref-start-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+}
+.ref-start-command {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 6px 6px 10px;
+  border: 1px solid #343846;
+  border-radius: 7px;
+  background: #1b1d22;
+}
+.ref-start-command code {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #d9dbe5;
+}
+.ref-start-command button {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: #292d36;
+  color: #c9cbd5;
+  cursor: pointer;
+}
+.ref-selfhost .ref-auth-footer a {
+  color: #b7aeff;
+}
+.ref-start-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.ref-auth-form .field-label.ref-auth-field-with-help {
+  margin-bottom: 6px;
+}
+.ref-auth-field-help {
+  margin: 0 0 17px;
+}

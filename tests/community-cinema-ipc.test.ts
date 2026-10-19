@@ -154,6 +154,54 @@ describe('community cinema IPC', () => {
     );
   });
 
+  it('sends RMDB calls to the hall routes after checking ids and reviews', async () => {
+    const work = 'w-AbCdEfGh1234';
+    await expect(s.invoke('rooms:cinema-rmdb-work', 'hall', '../x')).rejects.toThrow();
+    await expect(s.invoke('rooms:cinema-rmdb-add', 'hall', 'http://x', false)).rejects.toThrow();
+    await expect(
+      s.invoke('rooms:cinema-rmdb-review', 'hall', work, {
+        rating: 11,
+        text: '',
+        spoiler: false,
+        liked: false,
+      }),
+    ).rejects.toThrow();
+    await expect(
+      s.invoke('rooms:cinema-rmdb-review', 'hall', work, {
+        rating: 5,
+        text: 'x'.repeat(4001),
+        spoiler: false,
+        liked: false,
+      }),
+    ).rejects.toThrow();
+    await expect(s.invoke('rooms:cinema-rmdb-remove-log', 'hall', work, 'x')).rejects.toThrow();
+    await expect(s.invoke('rooms:cinema-rmdb-log', 'hall', work, -5)).rejects.toThrow();
+    expect(s.requests).toHaveLength(0);
+
+    const review = { rating: 7, text: 'İyi', spoiler: false, liked: true };
+    await s.invoke('rooms:cinema-rmdb', 'hall');
+    await s.invoke('rooms:cinema-rmdb-add', 'hall', 'm-3001', true);
+    await s.invoke('rooms:cinema-rmdb-review', 'hall', work, review);
+    await s.invoke('rooms:cinema-rmdb-review', 'hall', work, null);
+    await s.invoke('rooms:cinema-rmdb-remove-review', 'hall', work, 'member1');
+    await s.invoke('rooms:cinema-rmdb-watchlist', 'hall', work, false);
+    await s.invoke('rooms:cinema-rmdb-log', 'hall', work, undefined);
+    await s.invoke('rooms:cinema-rmdb-remove-log', 'hall', work, 'd-AbCdEfGh1234');
+    await s.invoke('rooms:cinema-rmdb-remove', 'hall', work);
+    const base = `https://rooms.example/rooms-cinema/v1/halls/hall/rmdb`;
+    expect(s.requests.map((r) => [r.init?.method ?? 'GET', r.url, r.init?.body ?? null])).toEqual([
+      ['GET', base, null],
+      ['POST', base, JSON.stringify({ ref: 'm-3001', watchlist: true })],
+      ['PUT', `${base}/${work}/review`, JSON.stringify(review)],
+      ['DELETE', `${base}/${work}/review`, null],
+      ['DELETE', `${base}/${work}/reviews/member1`, null],
+      ['PUT', `${base}/${work}/watchlist`, JSON.stringify({ on: false })],
+      ['POST', `${base}/${work}/diary`, JSON.stringify({})],
+      ['DELETE', `${base}/${work}/diary/d-AbCdEfGh1234`, null],
+      ['DELETE', `${base}/${work}`, null],
+    ]);
+  });
+
   it('gives the renderer a rooms-cinema source and keeps the ticket in main', async () => {
     const source = await s.invoke('rooms:cinema-watch', 'hall');
     expect(source).toEqual({

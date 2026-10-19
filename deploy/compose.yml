@@ -198,6 +198,10 @@ services:
       LIVEKIT_PUBLIC_URL: wss://${ROOMS_DOMAIN:?}/livekit
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:?}
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?}
+      # Origin printed in invitation links and used by the /davet landing page.
+      ROOMS_PUBLIC_URL: https://${ROOMS_DOMAIN:?}
+      # Optional: where the landing page sends people to download the app (default: latest release).
+      ROOMS_DOWNLOAD_URL: ${ROOMS_DOWNLOAD_URL:-}
       ROOMS_REGISTRATION_INVITES_FILE: /state/registration-invites.json
       ROOMS_SOUNDBOARD_DIRECTORY: /state/soundboard
       ROOMS_PERSONAL_SOUNDS_DIRECTORY: /state/personal-sounds

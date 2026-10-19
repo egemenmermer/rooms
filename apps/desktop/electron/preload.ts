@@ -102,6 +102,9 @@ const bridge: DesktopBridge = {
     edit: (channel, id, content) => ipcRenderer.invoke('rooms:social-edit', channel, id, content),
     delete: (channel, id) => ipcRenderer.invoke('rooms:social-delete', channel, id),
     createInvite: (id) => ipcRenderer.invoke('rooms:social-create-invite', id),
+    listInvites: (spaceId) => ipcRenderer.invoke('rooms:social-list-invites', spaceId),
+    revokeInvite: (spaceId, inviteId) =>
+      ipcRenderer.invoke('rooms:social-revoke-invite', spaceId, inviteId),
     inspectInvite: (url, code) => ipcRenderer.invoke('rooms:social-inspect-invite', url, code),
     acceptInvite: (code) => ipcRenderer.invoke('rooms:social-accept-invite', code),
     attachmentImage: (channel, message, file) =>
@@ -252,6 +255,21 @@ const bridge: DesktopBridge = {
       ipcRenderer.invoke('rooms:cinema-subtitle-key', communityId, key),
     subtitles: (hallId, ref) => ipcRenderer.invoke('rooms:cinema-subtitles', hallId, ref),
     chooseSubtitleFile: () => ipcRenderer.invoke('rooms:cinema-subtitle-file'),
+    rmdb: (hallId) => ipcRenderer.invoke('rooms:cinema-rmdb', hallId),
+    rmdbWork: (hallId, workId) => ipcRenderer.invoke('rooms:cinema-rmdb-work', hallId, workId),
+    rmdbAdd: (hallId, ref, watchlist) =>
+      ipcRenderer.invoke('rooms:cinema-rmdb-add', hallId, ref, watchlist),
+    rmdbReview: (hallId, workId, review) =>
+      ipcRenderer.invoke('rooms:cinema-rmdb-review', hallId, workId, review),
+    rmdbRemoveReview: (hallId, workId, userId) =>
+      ipcRenderer.invoke('rooms:cinema-rmdb-remove-review', hallId, workId, userId),
+    rmdbWatchlist: (hallId, workId, on) =>
+      ipcRenderer.invoke('rooms:cinema-rmdb-watchlist', hallId, workId, on),
+    rmdbLog: (hallId, workId, watchedAt) =>
+      ipcRenderer.invoke('rooms:cinema-rmdb-log', hallId, workId, watchedAt),
+    rmdbRemoveLog: (hallId, workId, entryId) =>
+      ipcRenderer.invoke('rooms:cinema-rmdb-remove-log', hallId, workId, entryId),
+    rmdbRemove: (hallId, workId) => ipcRenderer.invoke('rooms:cinema-rmdb-remove', hallId, workId),
   },
   remoteControl: {
     register: (room, track) => ipcRenderer.invoke('rooms:remote-register', room, track),

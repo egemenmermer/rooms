@@ -3,7 +3,7 @@ import { ChatAttachment } from './ChatAttachment';
 import { ScreenShareGallery } from './ScreenShareGallery';
 import { VoiceRoomViewActions } from './VoiceRoomViewActions';
 import { QuietMenu } from './QuietMenu';
-import { openRoomActivity } from './MusicDJ';
+import { openActivity, retiredActivity } from './activity-route';
 import { FriendRequestButton } from './FriendRequestButton';
 import { MediaStage } from './MediaStage';
 import { watchScreen, setScreenVolume } from './realtime';
@@ -22,6 +22,7 @@ import { MessageReminder } from './Reminder';
 import { ChatAgentRequest } from './ChatAgent';
 import { EmojiPicker, GifPicker, isGifMessage } from './ComposerPickers';
 import { AppDirectory } from './AppDirectory';
+import { InviteLinkCard } from './InviteLinkCard';
 import {
   Fragment,
   useCallback,
@@ -37,7 +38,6 @@ import { useActivityRoom } from './activity';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
-  Play,
   AlertCircle,
   Bell,
   Download,
@@ -86,7 +86,13 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 import { Avatar, EmptyState, IconButton, Modal } from '@rooms/design';
-import type { SocialUser, SocialAttachment } from '@rooms/social';
+import {
+  parseInviteLink,
+  type SocialInvite,
+  type SocialUser,
+  type SocialAttachment,
+} from '@rooms/social';
+import { sameInviteServer } from './ConnectionPane';
 import { useCommunity, type CommunityMessage } from './community';
 import {
   useRealtime,
@@ -259,27 +265,6 @@ export function CommunityChat({
       active = false;
     };
   }, []);
-  const [activityArt, setActivityArt] = useState<string | null>(null);
-  useEffect(() => {
-    let active = true;
-    if (import.meta.env.DEV && new URLSearchParams(location.search).has('fixture'))
-      void import('./dev/reference-fixtures').then(() => {
-        if (active) setActivityArt('/__reference/01_brand/cinema-still.svg');
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-  const activityPath =
-    primary?.activity === 'hall'
-      ? '/cinema'
-      : primary?.activity === 'youtube'
-        ? '/cinema/room'
-        : primary?.activity === 'screen'
-          ? '/voice'
-          : primary?.activity === 'cinema'
-            ? '/cinema/room'
-            : '/games';
   const [searchOpen, setSearchOpen] = useState(false),
     [query, setQuery] = useState('');
   const [options, setOptions] = useState<CommunityMessage | null>(null),
@@ -667,24 +652,22 @@ export function CommunityChat({
         <div className="chat-announcement">
           <Film size={20} />
           <div>
-            <strong>
-              {primary.activity === 'cinema'
-                ? `${voice.roomName ?? 'Oda'}’da film gecesi başladı`
-                : primary.title}
-            </strong>
+            <strong>{primary.title}</strong>
             <small>
-              {activity.room?.participants
-                .filter((p) => p.userId !== c.user?.id)
-                .map((p) => p.displayName)
-                .join(', ')}
+              {retiredActivity(primary.activity)
+                ? 'Eski Sinema oturumu · bu sürümde açılmıyor'
+                : activity.room?.participants
+                    .filter((p) => p.userId !== c.user?.id)
+                    .map((p) => p.displayName)
+                    .join(', ')}
             </small>
           </div>
           <button
             className="button secondary small"
-            onClick={() => openRoomActivity(activityPath, navigate)}
+            onClick={() => openActivity(primary.activity, navigate)}
           >
             <ArrowRight size={17} />
-            Etkinliğe dön
+            {retiredActivity(primary.activity) ? 'Ayrıntılar' : 'Etkinliğe dön'}
           </button>
         </div>
       )}
@@ -881,35 +864,6 @@ export function CommunityChat({
             </Fragment>
           );
         })}
-        {primary?.activity === 'cinema' && !query && (
-          <article className="chat-active-card" aria-label="Halen açık Cinema etkinliği">
-            {activityArt ? (
-              <img src={activityArt} alt="" />
-            ) : (
-              <div className="chat-active-art">
-                <Film size={32} />
-              </div>
-            )}
-            <div>
-              <span>
-                <h4>{primary.title}</h4>
-                <p>
-                  Cinema ·{' '}
-                  {activity.room?.cinema?.sources.filter(
-                    (source) =>
-                      source.ready &&
-                      Date.now() + activity.serverOffsetMs - source.updatedAt < 15000,
-                  ).length ?? 0}{' '}
-                  kişi hazır
-                </p>
-              </span>
-              <button className="button primary" onClick={() => navigate('/cinema/room')}>
-                <Play size={17} />
-                Odaya git
-              </button>
-            </div>
-          </article>
-        )}
       </div>
       {unseen && (
         <button
@@ -1526,9 +1480,18 @@ export function CommunitySpaces({ notify }: { notify(message: string): void }) {
           <form
             onSubmit={(e) => {
               e.preventDefault();
+              const link = parseInviteLink(code, { fallbackServer: c.serverUrl });
+              if (!link)
+                return notify(
+                  'Bu bir ROOMS davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.',
+                );
+              if (!sameInviteServer(link.serverUrl, c.serverUrl))
+                return notify(
+                  'Bu davet başka bir sunucuda. Katılmak için çıkış yapıp bağlantıyı yeniden aç.',
+                );
               setBusy(true);
               void c
-                .acceptInvite(code.trim())
+                .acceptInvite(link.code)
                 .then(() => {
                   setCode('');
                   close();
@@ -1538,13 +1501,16 @@ export function CommunitySpaces({ notify }: { notify(message: string): void }) {
             }}
           >
             <label className="field-label">
-              {tr('INVITATION CODE')}
+              Davet bağlantısı
               <input
-                aria-label={tr('Join invitation code')}
                 required
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                placeholder="https://…/davet/…"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                maxLength={128}
+                maxLength={4096}
               />
             </label>
             <button type="submit" className="button primary full" disabled={!code.trim() || busy}>
@@ -1669,6 +1635,33 @@ export function CommunityVoice({
             {p.local ? ' (sen)' : ''}
           </span>
           {video && !camera && <small>kamera kapalı</small>}
+        </span>
+      </button>
+    );
+  };
+  const shareTile = (track: (typeof screens)[number]) => {
+    const presenter = r.participants.find((p) => p.id === track.participantId)?.name ?? 'Katılımcı';
+    return (
+      <button
+        className="room-share-preview"
+        key={track.id}
+        aria-label={`${presenter} ekranını izle`}
+        onClick={() => navigate(`/voice?view=share&screen=${encodeURIComponent(track.id)}`)}
+      >
+        {track.local ? (
+          <MediaStage id={track.id} label="Ekran paylaşımı önizlemesi" />
+        ) : (
+          // Remote streams are not downloaded until this listener chooses to watch.
+          <span className="room-share-invite">
+            <MonitorUp size={30} />
+            <strong>Yayını izle</strong>
+          </span>
+        )}
+        <span>
+          <MonitorUp size={14} />
+          {presenter}
+          {track.local ? ' (sen)' : ''}
+          <small>{viewerSummary(r.participants, track.participantId)}</small>
         </span>
       </button>
     );
@@ -1918,31 +1911,14 @@ export function CommunityVoice({
                 : undefined
             }
           >
-            {shownParticipants.map(tile)}
-            {screens.map((track) => (
-              <button
-                className="room-share-preview"
-                key={track.id}
-                aria-label={`${r.participants.find((p) => p.id === track.participantId)?.name ?? 'Katılımcı'} ekranını izle`}
-                onClick={() => navigate(`/voice?view=share&screen=${encodeURIComponent(track.id)}`)}
-              >
-                {track.local ? (
-                  <MediaStage id={track.id} label="Ekran paylaşımı önizlemesi" />
-                ) : (
-                  // Remote streams are not downloaded until this listener chooses to watch.
-                  <span className="room-share-invite">
-                    <MonitorUp size={30} />
-                    <strong>Yayını izle</strong>
-                  </span>
-                )}
-                <span>
-                  <MonitorUp size={14} />
-                  {r.participants.find((p) => p.id === track.participantId)?.name ?? 'Katılımcı'}
-                  {track.local ? ' (sen)' : ''}
-                  <small>{viewerSummary(r.participants, track.participantId)}</small>
-                </span>
-              </button>
-            ))}
+            {/* A shared screen sits right after its presenter, so it reads as theirs. */}
+            {shownParticipants.flatMap((p) => [
+              tile(p),
+              ...screens.filter((track) => track.participantId === p.id).map(shareTile),
+            ])}
+            {screens
+              .filter((track) => !shownParticipants.some((p) => p.id === track.participantId))
+              .map(shareTile)}
             {familiarRoom && shownParticipants.length === 1 ? (
               <div className="room-activity-tile">
                 <div className="room-activity-illustration" aria-hidden="true">
@@ -2547,12 +2523,7 @@ export function RealVoiceDock({
                   .then(() => {
                     // Keep the selected personal player visible while its window is shared.
                     if (generation.current !== epoch) return;
-                    if (location.pathname !== '/media')
-                      navigate(
-                        location.pathname === '/cinema/room'
-                          ? '/cinema/room?view=screen'
-                          : '/voice?view=share',
-                      );
+                    if (location.pathname !== '/media') navigate('/voice?view=share');
                     close();
                   })
                   .catch((e) => {
@@ -2580,61 +2551,36 @@ export function CommunityInvite({
   notify(message: string): void;
 }) {
   const c = useCommunity();
-  const [code, setCode] = useState('');
+  const [created, setCreated] = useState<SocialInvite | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const channel =
     c.channels.find((ch) => ch.id === c.activeChannelId && ch.type === 0)?.id ??
     c.channels.find((ch) => ch.type === 0)?.id;
+  const space = c.spaces.find((s) => s.id === c.activeSpaceId);
+  // The broker lets only the owner create links; say so instead of failing after a click.
+  const ownerReason =
+    space && c.user && space.ownerId !== c.user.id
+      ? 'Davet bağlantısını yalnızca topluluk sahibi oluşturabilir. Sahibinden bir bağlantı iste.'
+      : '';
   return (
     <Modal title={'Davet olu\u015Ftur'} onClose={onClose}>
       <p className="modal-description">
-        {tr('Bu davetle arkadaşın kendi hesabını açabilir. Tek kullanımlık, 24 saat geçerli.')}
+        Arkadaşların bu bağlantıyla kendi hesaplarını açıp topluluğa katılır.
       </p>
-      {code ? (
-        <>
-          <label className="field-label">
-            {tr('INVITATION CODE')}
-            <input aria-label={tr('Created invitation code')} readOnly value={code} />
-          </label>
-          <button
-            className="button primary full"
-            onClick={() => {
-              void navigator.clipboard
-                .writeText(code)
-                .then(() => notify(tr('Invitation code copied.')))
-                .catch(() =>
-                  setError(tr('Clipboard is unavailable. Select and copy the code above.')),
-                );
-            }}
-          >
-            <Copy size={16} />
-            {tr('Copy invitation code')}
-          </button>
-          <button
-            className="button secondary full"
-            onClick={() => {
-              const link = `rooms://invite?server=${encodeURIComponent(c.serverUrl)}&code=${encodeURIComponent(code)}`;
-              void navigator.clipboard
-                .writeText(link)
-                .then(() => notify(tr('Davet ba\u011Flant\u0131s\u0131 kopyaland\u0131.')))
-                .catch(() => setError(tr('Panoya eri\u015Filemiyor. Davet kodunu kopyala.')));
-            }}
-          >
-            <Link size={16} />
-            {tr('Davet ba\u011Flant\u0131s\u0131n\u0131 kopyala')}
-          </button>
-        </>
+      {created ? (
+        <InviteLinkCard serverUrl={c.serverUrl} invite={created} autoFocus />
       ) : (
         <button
           className="button primary full"
-          disabled={!channel || busy}
+          disabled={!channel || busy || !!ownerReason}
+          title={ownerReason || undefined}
           onClick={() => {
             setBusy(true);
             setError('');
             void c
               .createInvite(channel!)
-              .then((i) => setCode(i.code))
+              .then(setCreated)
               .catch((e) => setError(uiError(e)))
               .finally(() => setBusy(false));
           }}
@@ -2646,6 +2592,7 @@ export function CommunityInvite({
       {!channel && (
         <p className="modal-description">{tr('Open a space with a text channel first.')}</p>
       )}
+      {!created && ownerReason && <p className="modal-description">{ownerReason}</p>}
       {error && (
         <div className="error-pane" role="alert">
           <p>{error}</p>
