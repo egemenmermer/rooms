@@ -1,4 +1,5 @@
 import { SpeakingMeter } from './speaking-meter';
+import { captureMissesInput, inputDeviceLabel } from './input-device';
 import type { NoiseSuppressionMode, NoiseProcessingState } from './noise-suppression';
 import { SoundboardMixer } from './soundboard';
 import {
@@ -77,6 +78,8 @@ export interface MediaSnapshot {
   sharing: boolean;
   audioBlocked: boolean;
   inputDeviceFallback?: boolean;
+  /** OS name of the microphone the room hears; null or absent while unknown. */
+  inputDevice?: string | null;
   participants: MediaParticipant[];
   tracks: MediaTrack[];
   diagnostics: MediaDiagnostics;
@@ -642,6 +645,9 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     room.on(RoomEvent.TrackPublished, () => {
       if (this.room === room) this.applyScreenSubscriptions();
     });
+    room.on(RoomEvent.MediaDevicesChanged, () => {
+      if (this.room === room) void this.followInput(room).catch(() => {});
+    });
     room.on(RoomEvent.ParticipantConnected, (participant) => {
       if (this.room === room) this.announceWatch(participant.identity);
     });
@@ -750,15 +756,73 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       );
     }
   }
-  private async captureMicrophone(room: Room, serial: number, deviceId?: string) {
-    const options = {
-      deviceId: deviceId ?? this.inputDeviceId,
+  private captureOptions(deviceId: string | { exact: string } | undefined) {
+    return {
+      deviceId,
       echoCancellation: true,
       noiseSuppression: false,
       autoGainControl: !this.noiseSuppression || this.noiseMode !== 'strong',
       channelCount: 1,
       sampleRate: 48_000,
     };
+  }
+  /**
+   * The room keeps hearing the microphone the person selected. Chromium resolves "system
+   * default" only when capture opens, and after an unplug LiveKit reopens the default, so a
+   * headset switched on (or back) during a call would stay unused while another microphone
+   * keeps sending, and the headset's own mute switch would silence nothing the room hears.
+   */
+  private followInput(room: Room) {
+    return this.microphoneTask(async () => {
+      const selected = this.inputDeviceId || 'default';
+      const track = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track;
+      if (
+        this.room !== room ||
+        !(track instanceof LocalAudioTrack) ||
+        track.mediaStreamTrack.readyState !== 'live' ||
+        !navigator.mediaDevices?.enumerateDevices
+      )
+        return;
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      if (this.room !== room || (this.inputDeviceId || 'default') !== selected) return;
+      if (captureMissesInput(devices, selected, track.getSourceTrackSettings())) {
+        try {
+          // Mute state survives the restart, and the noise filter restarts on the new input.
+          await track.restartTrack(this.captureOptions({ exact: selected }));
+        } catch (error) {
+          if (this.room !== room) return;
+          // The old capture is already closed: leave the microphone off and say why.
+          await room.localParticipant.setMicrophoneEnabled(false).catch(() => {});
+          this.fail(error);
+          this.sync();
+          return;
+        }
+        if (this.room !== room) return;
+        this.sync();
+      }
+      this.describeInput(room, devices);
+    });
+  }
+  /** Names the microphone the room hears, so settings can show the device actually in use. */
+  private describeInput(room: Room, devices: readonly MediaDeviceInfo[]) {
+    const track = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track;
+    if (this.room !== room || !(track instanceof LocalAudioTrack)) return;
+    try {
+      this.patch({ inputDevice: inputDeviceLabel(devices, track.getSourceTrackSettings()) });
+    } catch {
+      /* The name is a convenience; capture itself is unaffected. */
+    }
+  }
+  private async describeCurrentInput(room: Room) {
+    if (!navigator.mediaDevices?.enumerateDevices) return;
+    try {
+      this.describeInput(room, await navigator.mediaDevices.enumerateDevices());
+    } catch {
+      /* Device names may be unavailable; capture itself is unaffected. */
+    }
+  }
+  private async captureMicrophone(room: Room, serial: number, deviceId?: string) {
+    const options = this.captureOptions(deviceId ?? this.inputDeviceId);
     try {
       return await createLocalAudioTrack(options);
     } catch (error) {
@@ -825,6 +889,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
         }
         this.patch({ error: null });
         this.sync();
+        void this.describeCurrentInput(room);
       } catch (error) {
         if (created) {
           created.stop();
@@ -1134,6 +1199,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       this.inputDeviceId = inputId || undefined;
       this.patch({ error: null, inputDeviceFallback: false });
       this.sync();
+      void this.describeCurrentInput(room);
     } catch (error) {
       this.fail(error);
       throw new Error(this.state.error ?? 'Media operation failed.');
@@ -1285,6 +1351,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       sharing: false,
       audioBlocked: false,
       inputDeviceFallback: false,
+      inputDevice: null,
       participants: [],
       tracks: [],
       diagnostics: emptyDiagnostics(),
