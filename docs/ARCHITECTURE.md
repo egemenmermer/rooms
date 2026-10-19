@@ -45,6 +45,7 @@ Bunlar farklı sistemlerdir. Sosyal websocket'in çalışması medyanın erişil
 | Etkinlik/oyun durumu | Dosya veya PostgreSQL kullanan tek yetkili Activities süreci |
 | Müzik kuyruğu/kaynak yaşam döngüsü | İsteğe bağlı müzik servisi; dinleyici ses seviyesi yereldir |
 | Topluluk Sineması hesabı, kataloğu ve aktarımları | İsteğe bağlı sinema servisi; hesap ve katalog şifreli, aktarım yalnızca bellekte ([Topluluk Sineması](COMMUNITY_CINEMA.md)) |
+| RMDB: salonun izleme kaydı, puan, yorum ve günlük | Sinema servisi `/state/rmdb`; IPTV hesabından ayrı şifreli dosya ve afiş kopyaları, hesap kaldırılınca da kalır ([RMDB](COMMUNITY_CINEMA.md#rmdb)) |
 | Kişisel giriş ve çıkış sesleri | Erişim servisi `/state/personal-sounds`; seçim LiveKit iznine sunucu özelliği olarak eklenir, çalma dinleyicide yereldir ([Giriş sesi](PERSONAL_SOUNDS.md)) |
 | Agent görevleri/izinleri/şifreli yapılandırma | İsteğe bağlı yalıtılmış Agent servisi |
 

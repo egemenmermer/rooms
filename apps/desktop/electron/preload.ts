@@ -255,6 +255,21 @@ const bridge: DesktopBridge = {
       ipcRenderer.invoke('rooms:cinema-subtitle-key', communityId, key),
     subtitles: (hallId, ref) => ipcRenderer.invoke('rooms:cinema-subtitles', hallId, ref),
     chooseSubtitleFile: () => ipcRenderer.invoke('rooms:cinema-subtitle-file'),
+    rmdb: (hallId) => ipcRenderer.invoke('rooms:cinema-rmdb', hallId),
+    rmdbWork: (hallId, workId) => ipcRenderer.invoke('rooms:cinema-rmdb-work', hallId, workId),
+    rmdbAdd: (hallId, ref, watchlist) =>
+      ipcRenderer.invoke('rooms:cinema-rmdb-add', hallId, ref, watchlist),
+    rmdbReview: (hallId, workId, review) =>
+      ipcRenderer.invoke('rooms:cinema-rmdb-review', hallId, workId, review),
+    rmdbRemoveReview: (hallId, workId, userId) =>
+      ipcRenderer.invoke('rooms:cinema-rmdb-remove-review', hallId, workId, userId),
+    rmdbWatchlist: (hallId, workId, on) =>
+      ipcRenderer.invoke('rooms:cinema-rmdb-watchlist', hallId, workId, on),
+    rmdbLog: (hallId, workId, watchedAt) =>
+      ipcRenderer.invoke('rooms:cinema-rmdb-log', hallId, workId, watchedAt),
+    rmdbRemoveLog: (hallId, workId, entryId) =>
+      ipcRenderer.invoke('rooms:cinema-rmdb-remove-log', hallId, workId, entryId),
+    rmdbRemove: (hallId, workId) => ipcRenderer.invoke('rooms:cinema-rmdb-remove', hallId, workId),
   },
   remoteControl: {
     register: (room, track) => ipcRenderer.invoke('rooms:remote-register', room, track),

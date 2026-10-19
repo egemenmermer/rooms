@@ -12,6 +12,9 @@ import type {
   CinemaProgramme,
   CinemaStatus,
   CinemaSubtitleTrack,
+  RmdbReviewInput,
+  RmdbWorkDetails,
+  RmdbWorkSummary,
 } from './types';
 
 export const CINEMA_SCHEME = 'rooms-cinema';
@@ -97,7 +100,11 @@ export type CinemaErrorCode =
   | 'CINEMA_SESSION_ENDED'
   | 'CINEMA_RATE_LIMITED'
   | 'CINEMA_SUBTITLE_KEY_INVALID'
-  | 'CINEMA_SUBTITLE_UNAVAILABLE';
+  | 'CINEMA_SUBTITLE_UNAVAILABLE'
+  /** RMDB has no such work, review or diary entry (removed meanwhile). */
+  | 'CINEMA_RMDB_NOT_FOUND'
+  /** A rating, review or date RMDB does not accept (e.g. text over `RMDB_REVIEW_MAX`). */
+  | 'CINEMA_RMDB_INVALID';
 
 export interface CinemaBridge {
   status(communityId: string): Promise<CinemaStatus>;
@@ -129,4 +136,28 @@ export interface CinemaBridge {
   subtitles(hallId: string, ref: string): Promise<CinemaExternalSubtitleSources>;
   /** A subtitle file this viewer picks from disk, converted to WebVTT; null if cancelled. */
   chooseSubtitleFile(): Promise<{ name: string; content: string } | null>;
+  /** RMDB: every work the hall watched or a member added, most recent activity first. */
+  rmdb(hallId: string): Promise<RmdbWorkSummary[]>;
+  rmdbWork(hallId: string, workId: string): Promise<RmdbWorkDetails>;
+  /**
+   * Adds a catalog film or series by hand (not a live channel or an episode), optionally
+   * onto İzlenecekler. A title RMDB already has returns that entry.
+   */
+  rmdbAdd(hallId: string, ref: string, watchlist: boolean): Promise<RmdbWorkDetails>;
+  /** This member's rating, review and heart; null removes them. */
+  rmdbReview(
+    hallId: string,
+    workId: string,
+    review: RmdbReviewInput | null,
+  ): Promise<RmdbWorkDetails>;
+  /** Owner: removes another member's review. */
+  rmdbRemoveReview(hallId: string, workId: string, userId: string): Promise<RmdbWorkDetails>;
+  /** İzlenecekler is shared by the hall: any member adds or removes. */
+  rmdbWatchlist(hallId: string, workId: string, on: boolean): Promise<RmdbWorkDetails>;
+  /** "İzledim": a diary entry for this member, now unless `watchedAt` (epoch ms, not ahead). */
+  rmdbLog(hallId: string, workId: string, watchedAt?: number): Promise<RmdbWorkDetails>;
+  /** Removes a diary line: a member their own hand logs, the owner any line. */
+  rmdbRemoveLog(hallId: string, workId: string, entryId: string): Promise<RmdbWorkDetails>;
+  /** Owner: removes a work with its reviews, diary and poster. */
+  rmdbRemove(hallId: string, workId: string): Promise<void>;
 }

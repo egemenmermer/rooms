@@ -13,6 +13,7 @@ Kişisel medya (Medyam) bundan ayrıdır ve özel kalır. Sinema'daki yeniden ya
 - [Aktarım](#aktarım)
 - [Altyazılar](#altyazılar)
 - [Etkinlik protokolü](#etkinlik-protokolü)
+- [RMDB](#rmdb)
 - [Kurulum](#kurulum)
 - [Doğrulama](#doğrulama)
 
@@ -111,6 +112,27 @@ Salon, `hall` adlı ana etkinliktir; `roomId` salon kanalının kimliğidir. Sı
 - Filmler ve bölümler ortak zaman çizelgesiyle oynar, sarılır ve duraklatılır.
 - Ev sahibi, kumanda modu ve devir kuralları [etkinlik protokolündeki](ACTIVITY_PROTOCOL.md) gibidir.
 
+## RMDB
+
+RMDB, salonun kendi film ve dizi kaydıdır; Sinema'nın son sekmesidir. Salonda izlenenler kendiliğinden girer, üyeler puan, yorum ve günlük ekler.
+
+- **Ne girer.**
+  - Salonda bir film ya da dizi bölümü en az 5 dakika gerçekten oynayınca yapım kayda girer ve o izlemenin günlük satırı açılır. Sarmalar bu süreye sayılmaz. Canlı kanallar girmez.
+  - Üyeler katalogdaki film ve dizileri elle de ekler. İzlenecekler, salonun ortak listesidir.
+  - RMDB'de zaten olan bir yapımın ilerlemesi ilk andan güncellenir.
+- **Konum nereden gelir.** İstemci kendi ilerlemesini bildirmez. Servis, bir üyenin oynatıcısı aktarım istediğinde (`watch`) ve bileti yenilediğinde (yaklaşık 90 saniyede bir) salon etkinliğini o üyenin belirteciyle okur ve zaman çizelgesindeki konumu kaydeder. Bu yüzden durdurulan bir izlemenin kayıtlı konumu en fazla birkaç dakika geride kalabilir. "Devam et", kayıtlı noktanın 5 saniye öncesinden başlar.
+- **Bitti sayılması.** Eserin (dizide bölümün) %90'ı izlenince izleme bitmiş sayılır. Yapım sıraya yeniden eklenip izlenirse yeni bir günlük satırı açılır. Bitmiş bir bölümde "Devam et" sonraki bölümü baştan açar.
+- **Aynı yapım.** RMDB katalog kimliğini değil kendi kimliğini (`w-…`) kullanır. Aynı yapım önce TMDB kimliğiyle, yoksa Türkçe katlanmış adı ve uyumlu yılıyla tanınır. IPTV hesabı değişse de yeni katalogda aynı ad ve yılla bulunan yapım yeniden açılabilir.
+- **Kalıcılık.**
+  - Kayıtlar, puanlar, yorumlar ve günlük `/state/rmdb/<topluluk>.enc` dosyasında, afiş ve arka plan kopyaları `/state/rmdb/<topluluk>/art/` altında, katalogla aynı anahtarla AES-256-GCM şifreli tutulur.
+  - IPTV hesabını kaldırmak veya değiştirmek RMDB'ye dokunmaz. Kopyalanan afişler hesap yokken de görünür.
+  - Kopyalar topluluk başına 256 MB'a kadar afiş ve arka planı, 512 MB'a kadar yalnız afişi kapsar. En fazla 5000 yapım ve yapım başına 200 günlük satırı tutulur.
+- **Kimin ne yapabildiği.**
+  - Salonu görebilen her üye listeyi ve ayrıntıları görür. Kendi puanını (yarım yıldız adımlarıyla 0,5–5), yorumunu (en fazla 4000 karakter, isterse spoiler işaretiyle) ve kalbini yazar ya da siler. Elle günlük satırı ekler ve kendi eklediği satırı siler.
+  - Sunucu sahibi başkasının yorumunu, herhangi bir günlük satırını ve bir yapımı tümüyle kaldırabilir.
+  - Yazma uçları üye başına dakikada 60 istekle sınırlıdır. Yanıtlarda sağlayıcı adresi, hesap bilgisi veya katalog kimliğinin kaynağı yer almaz.
+- **Uçlar.** `GET` ve `POST /v1/halls/:salon/rmdb`, `GET` ve `DELETE /v1/halls/:salon/rmdb/:yapım`, `PUT` ve `DELETE …/review`, `DELETE …/reviews/:üye`, `PUT …/watchlist`, `POST …/diary`, `DELETE …/diary/:satır`. Masaüstü bunlara `CinemaBridge.rmdb*` yöntemleriyle ana süreç üzerinden ulaşır.
+
 ## Kurulum
 
 `infra/cinema.Dockerfile` imajı ve `infra/cinema-compose.fragment.yml` parçası özel üretim yapılandırmasına eklenir. Ters vekil `/rooms-cinema/*` yolunu ön eki kaldırarak `cinema:3050` adresine iletir.
@@ -146,6 +168,9 @@ Salon, `hall` adlı ana etkinliktir; `roomId` salon kanalının kimliğidir. Sı
 - `tests/community-cinema-online-subtitles.test.ts`: SubRip/ASS okuma, Windows-1254, sınırlı zip okuyucu, taklit SubDL ile arama, sıralama, bölüm süzme, anahtar/sonuç yok/kesinti ayrımı ve zip'ten WebVTT'ye çevirme.
 - `tests/community-cinema-service.test.ts` (çevrimiçi altyazılar): anahtarın yalnız sahipçe girilmesi ve hiçbir yanıtta ya da diskte açık görünmemesi, TMDB kimliğiyle arama, eksik kimlik için `get_vod_info`, bölüm araması, yalnız listelenen kimliklerin bir kez indirilmesi.
 - `tests/caption-file.test.ts`: izleyicinin seçtiği SRT/ASS/VTT dosyasının WebVTT'ye çevrilmesi.
+- `tests/community-cinema-rmdb.test.ts`: RMDB'nin 5 dakika kuralı, sarmaların sayılmaması, %90'da bitiş, yeniden izleme, aynı yapımı tanıma, yorum doğrulaması, günlük yetkileri ve şifreli kalıcılık.
+- `tests/community-cinema-service.test.ts` (RMDB): salonun izlediğinin kayda girmesi, bilet yenilemesiyle ilerleme, hesap kaldırılınca kaydın ve afiş kopyasının kalması, elle ekleme, dizide kaldığı bölümden ve sonraki bölümden devam, yetki matrisi.
+- `tests/community-cinema-ipc.test.ts` (RMDB): ana sürecin kimlikleri ve yorumu istek çıkmadan doğrulaması.
 - `tests/community-cinema-relay-native.test.ts` (`ROOMS_CINEMA_RELAY_NATIVE=1`, ffmpeg 9): seyrek SubRip ve ASS izli bir MKV ile hız sınırı, sarma sonrası zamanlama ve eser zamanındaki cue'lar.
 
 Bunlar birim, taklit servis ve yerel kontrollerdir. Gerçek sağlayıcı hesabı, iki fiziksel bilgisayarda birlikte izleme, Windows ve uzun canlı yayın kabulü ayrıca yapılmalıdır.

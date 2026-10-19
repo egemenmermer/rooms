@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { StoatClient } from '@rooms/stoat';
 import { SOCIAL_ID_PATTERN } from '@rooms/social';
-import { CINEMA_REF_PATTERN } from '../../../packages/community-cinema/src/types';
+import { CINEMA_REF_PATTERN, RMDB_REVIEW_MAX } from '../../../packages/community-cinema/src/types';
 
 /** The account the cinema request was made with; a request finishing in another account fails. */
 export type CinemaAccount = { client: StoatClient; token: string; origin: string };
@@ -13,6 +13,16 @@ const ref = z.string().regex(CINEMA_REF_PATTERN);
 const kind = z.enum(['live', 'movie', 'series']);
 const relayFile = /^[A-Za-z0-9_.-]{1,80}$/;
 const sessionId = /^[A-Za-z0-9_-]{1,80}$/;
+const rmdbWork = z.string().regex(/^w-[A-Za-z0-9_-]{8,40}$/);
+const rmdbEntry = z.string().regex(/^d-[A-Za-z0-9_-]{8,40}$/);
+const rmdbReview = z
+  .object({
+    rating: z.number().int().min(1).max(10).nullable(),
+    text: z.string().max(RMDB_REVIEW_MAX),
+    spoiler: z.boolean(),
+    liked: z.boolean(),
+  })
+  .strict();
 
 const sourceInput = z.discriminatedUnion('kind', [
   z
@@ -291,6 +301,45 @@ export function setupCommunityCinema(options: {
       ref: ref.parse(value),
       track: z.number().int().min(0).max(31).parse(track),
     });
+  });
+
+  // RMDB: the hall's own record of what it watched, with members' ratings and reviews.
+  const work = (hallId: unknown, workId: unknown) =>
+    `${hall(hallId)}/rmdb/${encodeURIComponent(rmdbWork.parse(workId))}`;
+  options.handle('rooms:cinema-rmdb', (hallId) => api('GET', `${hall(hallId)}/rmdb`));
+  options.handle('rooms:cinema-rmdb-work', (hallId, workId) =>
+    api('GET', work(hallId, workId), undefined, 30_000),
+  );
+  // Adding fetches the title's details from the provider first.
+  options.handle('rooms:cinema-rmdb-add', (hallId, value, watchlist) =>
+    api(
+      'POST',
+      `${hall(hallId)}/rmdb`,
+      { ref: ref.parse(value), watchlist: z.boolean().parse(watchlist) },
+      30_000,
+    ),
+  );
+  options.handle('rooms:cinema-rmdb-review', (hallId, workId, value) =>
+    value === null
+      ? api('DELETE', `${work(hallId, workId)}/review`)
+      : api('PUT', `${work(hallId, workId)}/review`, rmdbReview.parse(value)),
+  );
+  options.handle('rooms:cinema-rmdb-remove-review', (hallId, workId, userId) =>
+    api('DELETE', `${work(hallId, workId)}/reviews/${encodeURIComponent(socialId.parse(userId))}`),
+  );
+  options.handle('rooms:cinema-rmdb-watchlist', (hallId, workId, on) =>
+    api('PUT', `${work(hallId, workId)}/watchlist`, { on: z.boolean().parse(on) }),
+  );
+  options.handle('rooms:cinema-rmdb-log', (hallId, workId, watchedAt) =>
+    api('POST', `${work(hallId, workId)}/diary`, {
+      watchedAt: z.number().int().nonnegative().optional().parse(watchedAt),
+    }),
+  );
+  options.handle('rooms:cinema-rmdb-remove-log', (hallId, workId, entryId) =>
+    api('DELETE', `${work(hallId, workId)}/diary/${encodeURIComponent(rmdbEntry.parse(entryId))}`),
+  );
+  options.handle('rooms:cinema-rmdb-remove', async (hallId, workId) => {
+    await api('DELETE', work(hallId, workId));
   });
 
   /**

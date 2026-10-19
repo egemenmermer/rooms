@@ -162,3 +162,123 @@ export type CinemaSubtitleTrack = {
   /** Signs and foreign-dialogue only. */
   forced: boolean;
 };
+
+// RMDB: the community's own record of what the hall watched, with members' ratings and
+// reviews. It lives apart from the IPTV account: removing or replacing the account keeps
+// every entry, poster, review and diary line.
+
+/** A member as RMDB saw them; the desktop resolves avatars by `userId`. */
+export type RmdbPerson = { userId: string; name: string };
+
+/** Half-star steps: 1 = ½★ … 10 = ★★★★★. */
+export type RmdbRating = number;
+
+export type RmdbEpisodeRef = { season: number; episode: number; title: string | null };
+
+/** Where the hall stopped. Series: inside `episode`. */
+export type RmdbProgress = {
+  positionSec: number;
+  durationSec: number | null;
+  /** The hall reached 90 % of the work (series: of `episode`) or its end. */
+  finished: boolean;
+  episode: RmdbEpisodeRef | null;
+  updatedAt: number;
+};
+
+export type RmdbWorkSummary = {
+  /** RMDB's own id (`w-…`), not a catalog ref: it outlives the IPTV account. */
+  id: string;
+  kind: 'movie' | 'series';
+  title: string;
+  year: number | null;
+  genre: string | null;
+  /** Poster art id for `cinemaArtUrl`; RMDB keeps its own copy. */
+  art: string | null;
+  /** Community average on the half-star scale (1–10), or null without ratings. */
+  averageRating: number | null;
+  ratingCount: number;
+  /** Reviews with text; a rating or a heart alone does not count. */
+  reviewCount: number;
+  likeCount: number;
+  /** Null until the hall has played it (added by hand). */
+  progress: RmdbProgress | null;
+  /** Diary entries, and when the newest one began. */
+  watchCount: number;
+  lastWatchedAt: number | null;
+  addedAt: number;
+  /** On the hall's shared İzlenecekler list. */
+  onWatchlist: boolean;
+  /** This viewer's own rating and heart. */
+  mine: { rating: RmdbRating | null; liked: boolean };
+};
+
+export type RmdbReview = {
+  author: RmdbPerson;
+  rating: RmdbRating | null;
+  /** May be empty: a rating or a heart alone. */
+  text: string;
+  spoiler: boolean;
+  liked: boolean;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type RmdbDiaryEntry = {
+  id: string;
+  /** When the watch began. */
+  watchedAt: number;
+  /** Hall: members whose player received the stream. Hand log: the member alone. */
+  viewers: RmdbPerson[];
+  episode: RmdbEpisodeRef | null;
+  finished: boolean;
+  /** Hall: the last position seen in this watch (of the work or `episode`). Hand logs: null. */
+  positionSec: number | null;
+  source: 'hall' | 'manual';
+  /** Hand logs: who logged it (they and the owner may remove it). */
+  loggedBy: RmdbPerson | null;
+};
+
+export type RmdbEpisodeProgress = RmdbEpisodeRef & {
+  positionSec: number;
+  durationSec: number | null;
+  finished: boolean;
+  watchedAt: number;
+};
+
+export type RmdbWorkDetails = RmdbWorkSummary & {
+  plot: string | null;
+  director: string | null;
+  cast: string | null;
+  durationSec: number | null;
+  backdrop: string | null;
+  /** Newest first. */
+  reviews: RmdbReview[];
+  /** Newest first. */
+  diary: RmdbDiaryEntry[];
+  /** Series: the episodes the hall played, in season and episode order. */
+  episodes: RmdbEpisodeProgress[];
+  watchlist: { by: RmdbPerson; at: number } | null;
+  /**
+   * What the current IPTV catalog can open, or null (no account, or the title left the
+   * catalog). Unfinished: where the hall stopped. Finished film: from the start. Finished
+   * episode: the next one, from the start (null after the last).
+   */
+  resume: {
+    ref: string;
+    title: string;
+    positionSec: number;
+    art: string | null;
+    /** Series: the episode it opens. */
+    episode: RmdbEpisodeRef | null;
+  } | null;
+};
+
+export type RmdbReviewInput = {
+  rating: RmdbRating | null;
+  text: string;
+  spoiler: boolean;
+  liked: boolean;
+};
+
+/** Longest review text the service keeps, in characters. */
+export const RMDB_REVIEW_MAX = 4000;

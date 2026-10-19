@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { StoatError } from '@rooms/stoat';
 import { SOCIAL_ID_PATTERN } from '@rooms/social';
-import { CINEMA_REF_PATTERN } from '../../../packages/community-cinema/src/types';
+import { CINEMA_REF_PATTERN, RMDB_REVIEW_MAX } from '../../../packages/community-cinema/src/types';
 import type { CinemaAuthority } from './authority';
 import type { ConfigStore } from './config-store';
 import { CinemaError, safeError } from './importer';
@@ -32,7 +32,25 @@ const statusOf: Record<string, number> = {
   CINEMA_SESSION_ENDED: 410,
   CINEMA_SUBTITLE_KEY_INVALID: 422,
   CINEMA_SUBTITLE_UNAVAILABLE: 502,
+  CINEMA_RMDB_NOT_FOUND: 404,
+  CINEMA_RMDB_INVALID: 400,
 };
+
+const review = z
+  .object({
+    rating: z.number().int().min(1).max(10).nullable(),
+    text: z.string().max(RMDB_REVIEW_MAX),
+    spoiler: z.boolean(),
+    liked: z.boolean(),
+  })
+  .strict();
+
+/** RMDB input that does not fit is the member's mistake, not a bad cinema source. */
+function rmdbInput<T>(schema: z.ZodType<T>, value: unknown): T {
+  const parsed = schema.safeParse(value ?? {});
+  if (!parsed.success) throw new CinemaError('CINEMA_RMDB_INVALID');
+  return parsed.data;
+}
 
 export type CinemaServerOptions = {
   service: CinemaService;
@@ -279,6 +297,7 @@ export async function createCinemaServer(options: CinemaServerOptions) {
       request.params.hallId,
       identity.communityId,
       identity.userId,
+      identity.displayName,
     );
   });
 
@@ -314,6 +333,108 @@ export async function createCinemaServer(options: CinemaServerOptions) {
         identity.communityId,
         identity.userId,
         session,
+        identity.displayName,
+      );
+    },
+  );
+
+  // RMDB: the community's record of what the hall watched. It works without an IPTV
+  // account; only adding a title from the catalog needs one.
+  type Work = { Params: { hallId: string; workId: string } };
+  const person = (identity: { userId: string; displayName: string }) => ({
+    userId: identity.userId,
+    name: identity.displayName,
+  });
+  const writes = { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } };
+
+  server.get<Hall>('/v1/halls/:hallId/rmdb', async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    return service.rmdbList(identity.communityId, identity.userId);
+  });
+
+  server.post<Hall>('/v1/halls/:hallId/rmdb', writes, async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    const body = rmdbInput(
+      z.object({ ref, watchlist: z.boolean().optional() }).strict(),
+      request.body,
+    );
+    return service.rmdbAdd(identity.communityId, body.ref, person(identity), !!body.watchlist);
+  });
+
+  server.get<Work>('/v1/halls/:hallId/rmdb/:workId', async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    return service.rmdbWork(identity.communityId, request.params.workId, identity.userId);
+  });
+
+  server.delete<Work>('/v1/halls/:hallId/rmdb/:workId', writes, async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    if (!identity.isOwner) throw new CinemaError('CINEMA_OWNER_REQUIRED');
+    service.rmdbRemove(identity.communityId, request.params.workId);
+    return { removed: true };
+  });
+
+  server.put<Work>('/v1/halls/:hallId/rmdb/:workId/review', writes, async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    return service.rmdbReview(
+      identity.communityId,
+      request.params.workId,
+      person(identity),
+      rmdbInput(review, request.body),
+    );
+  });
+
+  server.delete<Work>('/v1/halls/:hallId/rmdb/:workId/review', writes, async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    return service.rmdbReview(identity.communityId, request.params.workId, person(identity), null);
+  });
+
+  /** Owner: removes another member's review. */
+  server.delete<{ Params: { hallId: string; workId: string; userId: string } }>(
+    '/v1/halls/:hallId/rmdb/:workId/reviews/:userId',
+    writes,
+    async (request) => {
+      const identity = await viewer(request, request.params.hallId);
+      if (!identity.isOwner) throw new CinemaError('CINEMA_OWNER_REQUIRED');
+      return service.rmdbRemoveReview(
+        identity.communityId,
+        request.params.workId,
+        rmdbInput(socialId, request.params.userId),
+        identity.userId,
+      );
+    },
+  );
+
+  server.put<Work>('/v1/halls/:hallId/rmdb/:workId/watchlist', writes, async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    const { on } = rmdbInput(z.object({ on: z.boolean() }).strict(), request.body);
+    return service.rmdbWatchlist(identity.communityId, request.params.workId, person(identity), on);
+  });
+
+  server.post<Work>('/v1/halls/:hallId/rmdb/:workId/diary', writes, async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    const { watchedAt } = rmdbInput(
+      z.object({ watchedAt: z.number().int().optional() }).strict(),
+      request.body,
+    );
+    return service.rmdbLog(
+      identity.communityId,
+      request.params.workId,
+      person(identity),
+      watchedAt,
+    );
+  });
+
+  server.delete<{ Params: { hallId: string; workId: string; entryId: string } }>(
+    '/v1/halls/:hallId/rmdb/:workId/diary/:entryId',
+    writes,
+    async (request) => {
+      const identity = await viewer(request, request.params.hallId);
+      return service.rmdbRemoveLog(
+        identity.communityId,
+        request.params.workId,
+        request.params.entryId,
+        person(identity),
+        identity.isOwner,
       );
     },
   );

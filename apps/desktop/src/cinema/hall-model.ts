@@ -9,7 +9,7 @@ import { clock } from '../cinema-youtube';
 
 export type HallMedia = Extract<SharedMedia, { kind: 'community-media' }>;
 export type HallItem = QueueItem & { media: HallMedia };
-export type HallTab = 'live' | 'movies' | 'series' | 'youtube';
+export type HallTab = 'live' | 'movies' | 'series' | 'youtube' | 'rmdb';
 
 export const HALL_TITLE = 'Sinema salonu';
 
@@ -92,6 +92,47 @@ export function suggestCommands(room: RoomSnapshot | null, media: SharedMedia, i
   if (!room?.primary) commands.push({ type: 'start', activity: 'hall', title: HALL_TITLE });
   commands.push({ type: 'queue.add', itemId, media });
   return commands;
+}
+
+/** A film or episode the hall can pick up again (RMDB's `resume`). */
+export type HallResume = { ref: string; title: string; positionSec: number; art: string | null };
+
+/** The queue entry for a resume target; never live, art only when the protocol accepts it. */
+export function resumeMedia(target: HallResume): HallMedia {
+  return {
+    kind: 'community-media',
+    ref: target.ref,
+    title: (target.title.trim() || 'Adsız').slice(0, 240),
+    live: false,
+    art: target.art && /^[a-f0-9]{16,64}$/.test(target.art) ? target.art : null,
+  };
+}
+
+/** The protocol's `playback` position limit. */
+const MAX_POSITION_SEC = 86_400;
+
+/**
+ * How the hall picks a title up again. The protocol cannot start an item at a position, so with
+ * the remote it is opened now (`open`) and then moved there by a separate `playback` command
+ * (`seek`); the caller sends the seek only while the hall still shows that title. Without the
+ * remote the title is only suggested to the queue, and it will start from the beginning.
+ */
+export function resumeCommands(
+  room: RoomSnapshot | null,
+  target: HallResume,
+  itemId: string,
+  canDirect: boolean,
+): { open: ActivityCommand[]; seek: ActivityCommand | null; suggested: boolean } {
+  const media = resumeMedia(target);
+  // Nobody runs the hall yet: whoever opens it starts it and holds the remote.
+  if (!canDirect && room?.primary)
+    return { open: suggestCommands(room, media, itemId), seek: null, suggested: true };
+  const positionSec = Math.min(MAX_POSITION_SEC, Math.max(0, Math.floor(target.positionSec)));
+  return {
+    open: openNowCommands(room, media, itemId),
+    seek: positionSec > 0 ? { type: 'playback', playing: true, positionSec, rate: 1 } : null,
+    suggested: false,
+  };
 }
 
 const timeFormat = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' });
