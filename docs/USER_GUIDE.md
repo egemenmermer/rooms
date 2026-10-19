@@ -85,6 +85,8 @@ Ses gelmiyor veya görüşme bağlanmıyorsa [medya sorun giderme](TROUBLESHOOTI
 
 Etkinlikler ve oyunlar, yöneticinin Activities servisini gerektirir. Sayfa görünse bile servis veya izin eksikliği nedeniyle kullanılamayabilir.
 
+Film ve yayınlar topluluğun **Sinema** salonunda izlenir. Salon kenar çubuğundaki **Sinema** satırından açılır ve isteğe bağlı sinema servisini gerektirir ([Topluluk Sineması](COMMUNITY_CINEMA.md)). Ses odasındaki eski oda sineması (YouTube sırası ve kendi dosyanla senkron izleme) masaüstü uygulamadan kaldırıldı. Eski bir uygulamanın veya iPhone'un odada başlattığı böyle bir oturum **Etkinlikler**'de görünür; bu sürümde açılmaz, yalnızca oturumun hostu bitirebilir.
+
 Topluluk DJ'i ayrı müzik servisi ve desteklenen kaynak erişimi ister. Kuyruk oda/servis tarafından yönetilir; DJ panelini kapatmak kuyruğu iptal etmek için tasarlanmamıştır. Katılımcı ses seviyesi senin dinleme tercihindir. Ortak listelerde düzenleme ve çalma yetkileri topluluğun izinlerine bağlıdır.
 
 Kişisel medya bağlantıları, sana ait yetkili sağlayıcı erişimini kullanır. İçerik başka programda oynasa bile sağlayıcı bu oynatma yolunu reddedebilir. Kimlik bilgilerini veya kişisel yayın adreslerini herkese açık raporlarda paylaşma.

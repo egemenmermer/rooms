@@ -161,7 +161,7 @@ Kapsam dışı ve neden:
 | Alan | Neden |
 | --- | --- |
 | Ekran paylaşımı | macOS Ekran Kaydı izni gerekir; `voice.spec.ts` içinde nedeniyle atlanır |
-| Birlikte izle / YouTube | İstemci yalnız HTTPS topluluk kaynağında oynatıcı açar |
+| Sinema salonu / YouTube | İsteğe bağlı sinema servisi gerekir; YouTube oynatıcısı yalnız HTTPS topluluk kaynağında açılır |
 | DJ / müzik | Ayrı müzik servisi, kaynak köprüsü ve sağlayıcı erişimi |
 | Agent, HostOps, uzaktan kontrol | Ayrı yetkili servisler ve fiziksel onay akışları |
 | Oyunların oynanması | Masalar 2–4 oyunculu sıra ister; yalnız masa durumu sınanır. Kurallar `tests/games*.test.ts` içinde |
