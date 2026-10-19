@@ -2557,12 +2557,6 @@ export function CommunityInvite({
   const channel =
     c.channels.find((ch) => ch.id === c.activeChannelId && ch.type === 0)?.id ??
     c.channels.find((ch) => ch.type === 0)?.id;
-  const space = c.spaces.find((s) => s.id === c.activeSpaceId);
-  // The broker lets only the owner create links; say so instead of failing after a click.
-  const ownerReason =
-    space && c.user && space.ownerId !== c.user.id
-      ? 'Davet bağlantısını yalnızca topluluk sahibi oluşturabilir. Sahibinden bir bağlantı iste.'
-      : '';
   return (
     <Modal title={'Davet olu\u015Ftur'} onClose={onClose}>
       <p className="modal-description">
@@ -2573,8 +2567,7 @@ export function CommunityInvite({
       ) : (
         <button
           className="button primary full"
-          disabled={!channel || busy || !!ownerReason}
-          title={ownerReason || undefined}
+          disabled={!channel || busy}
           onClick={() => {
             setBusy(true);
             setError('');
@@ -2592,7 +2585,6 @@ export function CommunityInvite({
       {!channel && (
         <p className="modal-description">{tr('Open a space with a text channel first.')}</p>
       )}
-      {!created && ownerReason && <p className="modal-description">{ownerReason}</p>}
       {error && (
         <div className="error-pane" role="alert">
           <p>{error}</p>

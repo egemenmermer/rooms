@@ -41,10 +41,13 @@ test('desktop shell isolates native APIs and supports current signed-out onboard
     await expect(page.getByLabel('E-posta adresi')).toBeVisible();
     await expect(page.getByPlaceholder('Şifren', { exact: true })).toBeVisible();
     await page.getByRole('tab', { name: 'Kendi sunucunu kur', exact: true }).click();
+    // One step per screen: providers first, the install command on step 4.
     await expect(page.getByRole('link', { name: 'Hetzner Cloud: siteye git' })).toBeVisible();
+    await page.getByRole('button', { name: '4. adım: Kur', exact: true }).click();
     await expect(page.getByLabel('Kurulum komutu', { exact: true })).toContainText(
       'deploy/install.sh',
     );
+    await page.getByRole('button', { name: /^İleri/ }).click();
     await page.getByRole('button', { name: /Giriş yap sekmesine geç/ }).click();
     await expect(page.getByRole('tab', { name: 'Giriş yap', exact: true })).toHaveAttribute(
       'aria-selected',

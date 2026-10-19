@@ -135,6 +135,8 @@ try {
   await page.getByRole('tab', { name: 'Giriş yap', exact: true }).click();
   await page.getByLabel('E-posta adresi').waitFor();
   await page.getByRole('tab', { name: 'Kendi sunucunu kur', exact: true }).click();
+  // The self-host tab is a one-step-per-screen wizard; the install command is on step 4.
+  await page.getByRole('button', { name: '4. adım: Kur', exact: true }).click();
   await page.getByLabel('Kurulum komutu', { exact: true }).waitFor();
   result.checks.push(
     'Start tabs (Kayıt ol, Giriş yap, Kendi sunucunu kur) without submitting credentials',

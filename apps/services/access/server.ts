@@ -560,7 +560,7 @@ export async function createAccessServer(config: AccessConfig) {
   const stoat = (token?: string) =>
     new StoatClient(config.stoatUrl ?? 'http://127.0.0.1:3022', token, socialOptions);
   const inviteCode = z.object({ code: z.string().regex(LEGACY_INVITE_CODE_PATTERN) });
-  /** Invitation links are managed by the space owner only, matching who may create them. */
+  /** Listing and revoking links stays with the space owner, whoever created a link. */
   const requireSpaceOwner = async (authorization: string | undefined, spaceId: string) => {
     const client = stoat(tokenOf(authorization));
     const user = await client.getCurrentUser();
@@ -589,8 +589,8 @@ export async function createAccessServer(config: AccessConfig) {
       rawMember as StoatMember,
       user.id,
     );
-    if (!(permissions & (1n << 25n)) || rawServer.owner !== user.id)
-      throw new StoatError(403, 'INVITE_ADMIN_REQUIRED');
+    // Any member holding Stoat's InviteOthers permission may invite; the owner still manages links.
+    if (!(permissions & (1n << 25n))) throw new StoatError(403, 'INVITE_PERMISSION_REQUIRED');
     const upstream = await client.createUpstreamInvite(channelId);
     // Account invitations are seeded per signup, so one link can welcome several friends.
     const issued = await registration

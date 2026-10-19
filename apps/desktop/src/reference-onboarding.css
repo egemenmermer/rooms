@@ -620,45 +620,61 @@
   margin-top: 8px;
   font-size: 11px;
 }
-.ref-start-steps {
-  list-style: none;
-  margin: 0;
+/* Self-host wizard: one step per screen, so the start column never scrolls. */
+.ref-selfhost > p {
+  margin: 6px 0 14px;
+}
+.ref-start-progress {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.ref-start-progress button {
+  flex: 1;
+  height: 18px;
   padding: 0;
-  display: grid;
-  gap: 18px;
+  border: 0;
+  background: none;
+  cursor: pointer;
 }
-.ref-start-steps > li {
-  display: grid;
-  grid-template-columns: 24px 1fr;
-  gap: 12px;
+.ref-start-progress button::before {
+  content: '';
+  display: block;
+  height: 4px;
+  border-radius: 4px;
+  background: #3c4050;
 }
-.ref-start-step-number {
-  width: 24px;
-  height: 24px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #39354e;
-  color: #b7aeff;
+.ref-start-progress button.done::before {
+  background: #a59bff;
+}
+/* Every step gets the tallest step's height, so "Geri" and "İleri" never move between steps. */
+.ref-start-step {
+  min-height: 246px;
+  padding: 14px 16px;
+  border: 1px solid #343846;
+  border-radius: 10px;
+  background: #1b1d22;
+}
+.ref-start-step small {
   font-size: 11px;
+  color: #9298a7;
+}
+.ref-start-step h3 {
+  margin: 4px 0 6px;
+  font-size: 17px;
   font-weight: 600;
 }
-.ref-start-steps h3 {
-  margin: 2px 0 4px;
-  font-size: 13px;
-  font-weight: 600;
-}
-.ref-start-steps p {
+.ref-start-step p {
   margin: 0;
   font-size: 12px;
   line-height: 1.6;
   color: #a6abb8;
 }
-.ref-start-steps .button {
+.ref-start-step .button {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  margin-top: 10px;
+  margin-top: 12px;
   padding: 7px 11px;
   border-radius: 7px;
   font-size: 12px;
@@ -666,6 +682,41 @@
   background: #292d36;
   border: 1px solid #3c414e;
   color: #e5e7ef;
+}
+.ref-start-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ref-start-chips li {
+  padding: 4px 8px;
+  border: 1px solid #3c414e;
+  border-radius: 6px;
+  background: #22252c;
+  font:
+    500 12px ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  color: #d9dbe5;
+}
+.ref-start-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+.ref-start-nav .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 13px;
 }
 .ref-start-links {
   display: flex;
@@ -701,6 +752,9 @@
   background: #292d36;
   color: #c9cbd5;
   cursor: pointer;
+}
+.ref-selfhost .ref-auth-footer {
+  margin-top: 10px;
 }
 .ref-selfhost .ref-auth-footer a {
   color: #b7aeff;

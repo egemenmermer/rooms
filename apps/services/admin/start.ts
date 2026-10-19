@@ -13,7 +13,7 @@ import { randomBytes } from 'node:crypto';
 import { mkdir, open, readFile, rename } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { MongoClient } from 'mongodb';
-import { inviteShareLink } from '@rooms/social';
+import { INVITE_LINKS_PER_SPACE, inviteShareLink } from '@rooms/social';
 import { StoatError } from '@rooms/stoat';
 import { issueRegistrationInvite } from '../access/registration';
 
@@ -211,7 +211,7 @@ async function invite(args: Record<string, string>) {
     }).catch((error) => {
       if (error instanceof StoatError && error.code === 'INVITE_LIMIT_REACHED')
         throw new AdminError(
-          'This community already has 20 active invitation links. Cancel one in the app under Topluluk yönetimi → Davetler.',
+          `This community already has ${INVITE_LINKS_PER_SPACE} active invitation links. Cancel one in the app under Topluluk yönetimi → Davetler.`,
         );
       if (error instanceof StoatError && error.code === 'REGISTRATION_BUSY')
         throw new AdminError('Another signup is updating the invitation ledger. Try again.');

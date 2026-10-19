@@ -736,6 +736,8 @@ const errorMessages: Record<string, string> = {
     'Bu sunucuda hesap davetleri henüz hazır değil. Sunucu yöneticine danış.',
   'Only the space owner can create account invitations.':
     'Hesap davetini yalnızca topluluk sahibi oluşturabilir.',
+  'You do not have permission to invite people to this community.':
+    'Bu toplulukta davet oluşturma iznin yok. Topluluk sahibinden izin iste.',
   'This Stoat release cannot enforce invitation expiry or one-time use. Ask your administrator to provide an invitation.':
     'Bu sunucuda süreli veya tek kullanımlık davet desteklenmiyor. Sunucu yöneticinden davet iste.',
   'A separate account invitation is required. Ask your administrator.':
