@@ -25,6 +25,8 @@ async function start() {
     publicLivekitUrl: process.env.LIVEKIT_PUBLIC_URL ?? 'ws://127.0.0.1:7880',
     registrationInvitesFile: process.env.ROOMS_REGISTRATION_INVITES_FILE,
     accountInviteMongoUrl: process.env.ROOMS_ACCOUNT_INVITE_MONGO_URL,
+    publicUrl: process.env.ROOMS_PUBLIC_URL || undefined,
+    downloadUrl: process.env.ROOMS_DOWNLOAD_URL || undefined,
     socialReadMongoUrl: process.env.ROOMS_SOCIAL_READ_MONGO_URL,
     klipyKey: process.env.ROOMS_KLIPY_KEY || undefined,
     apiKey: required('LIVEKIT_API_KEY'),

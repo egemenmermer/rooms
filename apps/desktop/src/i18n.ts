@@ -325,9 +325,6 @@ const trMessages: Record<string, string> = {
   'SERVER ADDRESS': 'SUNUCU ADRESİ',
   'Community server address': 'Topluluk sunucusu adresi',
   'Use this computer’s server': 'Bu bilgisayardaki sunucuyu kullan',
-  'INVITATION CODE': 'DAVET KODU',
-  'Invitation code': 'Davet kodu',
-  'From someone in your circle': 'Bir arkadaşından gelen kod',
   'YOUR NAME': 'ADIN',
   'Account username': 'Kullanıcı adı',
   'How your friends know you': 'Arkadaşların seni nasıl tanıyor?',
@@ -406,9 +403,6 @@ const trMessages: Record<string, string> = {
   'Your server controls space membership and channel access.':
     'Mekân üyeliğini ve kanal erişimini sunucun yönetir.',
   'Come on in.': 'İçeri gel.',
-  'Paste an invitation code from someone in your circle.':
-    'Bir arkadaşından gelen davet kodunu yapıştır.',
-  'Join invitation code': 'Katılma davet kodu',
   'Joining…': 'Katılıyor…',
   'Join private space': 'Özel mekâna katıl',
   'This stream has ended.': 'Bu yayın sona erdi.',
@@ -488,11 +482,6 @@ const trMessages: Record<string, string> = {
   'Make room for a friend.': 'Bir dostuna yer aç.',
   'Create an invitation to this private space. It can be used once and expires after 24 hours. Your server checks invitation permissions.':
     'Bu mekân için davet oluştur. Davet kullanım koşullarını ve yetkilerini sunucun belirler.',
-  'Created invitation code': 'Oluşturulan davet kodu',
-  'Invitation code copied.': 'Davet kodu kopyalandı.',
-  'Clipboard is unavailable. Select and copy the code above.':
-    'Panoya erişilemiyor. Yukarıdaki kodu seçip kopyala.',
-  'Copy invitation code': 'Davet kodunu kopyala',
   'Creating…': 'Oluşturuluyor…',
   'Create invitation': 'Davet oluştur',
   'Open a space with a text channel first.': 'Önce sohbet kanalı olan bir mekân aç.',
@@ -759,7 +748,19 @@ const errorMessages: Record<string, string> = {
   'This Stoat release cannot enforce invitation expiry or one-time use. Ask your administrator to provide an invitation.':
     'Bu sunucuda süreli veya tek kullanımlık davet desteklenmiyor. Sunucu yöneticinden davet iste.',
   'A separate account invitation is required. Ask your administrator.':
-    'Hesap açmak için ayrıca hesap davet kodu gerekiyor. Sunucu yöneticinden bu kodu iste.',
+    'Bu sunucuda davet bağlantısıyla kayıt henüz açık değil. Sunucu yöneticine danış.',
+  'This invitation link has reached its limit. Ask for a new link.':
+    'Bu davet bağlantısının kişi sınırı doldu. Seni davet eden kişiden yeni bir bağlantı iste.',
+  'This invitation link has expired. Ask for a new link.':
+    'Bu davet bağlantısının süresi doldu. Seni davet eden kişiden yeni bir bağlantı iste.',
+  'This invitation link was cancelled. Ask for a new link.':
+    'Bu davet bağlantısı iptal edildi. Seni davet eden kişiden yeni bir bağlantı iste.',
+  'This invitation link was not found. It may have expired or been cancelled.':
+    'Bu davet bağlantısı bulunamadı. Süresi dolmuş ya da iptal edilmiş olabilir.',
+  'This community already has many active invitation links. Cancel one under Community management, Invitations.':
+    'Bu toplulukta çok fazla etkin davet bağlantısı var. Topluluk yönetimi → Davetler bölümünden birini iptal et.',
+  'Another signup is in progress. Try again in a moment.':
+    'Şu anda başka bir kayıt sürüyor. Birkaç saniye sonra yeniden dene.',
   'Verify your email before signing in.': 'Giriş yapmadan önce e-posta adresini doğrula.',
   'This account needs additional authentication. Complete the official Stoat sign-in flow.':
     'Bu hesap ek doğrulama istiyor. Sunucunun web uygulamasında girişini tamamla.',

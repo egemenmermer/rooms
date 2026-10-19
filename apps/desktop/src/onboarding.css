@@ -361,3 +361,37 @@
     justify-content: flex-start;
   }
 }
+/* Signed out outside the start screen: point to the start tabs instead of a second form. */
+.onboarding-signed-out p {
+  font-size: 12px;
+  line-height: 1.65;
+  color: #a1acbb;
+  margin: 0 0 16px;
+}
+.onboarding-signed-out-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.onboarding-signed-out-actions .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.invite-link-card .field-label input {
+  font-size: 12px;
+}
+.invite-link-meta {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--color-text-secondary, #a6abb8);
+}
+.invite-link-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

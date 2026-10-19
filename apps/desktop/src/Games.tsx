@@ -9,6 +9,8 @@ import {
 import { legalBatakCards } from '../../../packages/games/src/batak';
 import type { Card as EngineCard, Suit } from '../../../packages/games/src/cards';
 import { VoiceAvatar } from './VoiceAvatar';
+import { InviteLinkCard } from './InviteLinkCard';
+import type { SocialInvite } from '@rooms/social';
 import { tr, uiError } from './i18n';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -315,10 +317,9 @@ function ReferenceGames({
   const commandGeneration = useRef(commandScope);
   commandGeneration.current = commandScope;
   const [inviteOpen, setInviteOpen] = useState(false),
-    [inviteCode, setInviteCode] = useState(''),
+    [invite, setInvite] = useState<SocialInvite | null>(null),
     [inviteBusy, setInviteBusy] = useState(false),
-    [inviteError, setInviteError] = useState(''),
-    [inviteCopied, setInviteCopied] = useState(false);
+    [inviteError, setInviteError] = useState('');
   const inviteRequest = useRef(0);
   const [replaceConsent, setReplaceConsent] =
     useState<Extract<ActivityCommand, { type: 'game.create' }>['replacePrimary']>();
@@ -338,9 +339,8 @@ function ReferenceGames({
     inviteRequest.current++;
     setInviteOpen(false);
     setInviteBusy(false);
-    setInviteCode('');
+    setInvite(null);
     setInviteError('');
-    setInviteCopied(false);
   };
   useEffect(() => {
     closeInvite();
@@ -352,34 +352,15 @@ function ReferenceGames({
       scope = commandGeneration.current;
     setInviteBusy(true);
     setInviteError('');
-    setInviteCopied(false);
     try {
       const result = await c.createInvite(roomId);
       if (request === inviteRequest.current && scope === commandGeneration.current)
-        setInviteCode(result.code);
+        setInvite(result);
     } catch (error) {
       if (request === inviteRequest.current && scope === commandGeneration.current)
         setInviteError(uiError(error));
     } finally {
       if (request === inviteRequest.current) setInviteBusy(false);
-    }
-  };
-  const copyInvite = async (link: boolean) => {
-    const request = inviteRequest.current,
-      scope = commandGeneration.current;
-    try {
-      await navigator.clipboard.writeText(
-        link
-          ? `rooms://invite?server=${encodeURIComponent(c.serverUrl)}&code=${encodeURIComponent(inviteCode)}`
-          : inviteCode,
-      );
-      if (request === inviteRequest.current && scope === commandGeneration.current) {
-        setInviteCopied(true);
-        setInviteError('');
-      }
-    } catch {
-      if (request === inviteRequest.current && scope === commandGeneration.current)
-        setInviteError('Panoya erişilemiyor. Kodu seçip kopyala.');
     }
   };
   const selectedSeat = buyIn === null ? null : game?.seats.find((seat) => seat.seat === buyIn);
@@ -1501,27 +1482,8 @@ function ReferenceGames({
         <Modal title={`${roomName} daveti`} className="rg-modal rg-invite" onClose={closeInvite}>
           <div className="rg-modal-body">
             <p>Bu davet topluluğa katılmak içindir. Masada koltuk ayırmaz.</p>
-            {inviteCode ? (
-              <>
-                <label>
-                  Davet kodu
-                  <input
-                    autoFocus
-                    readOnly
-                    value={inviteCode}
-                    onFocus={(event) => event.target.select()}
-                  />
-                </label>
-                <div className="rg-invite-copy">
-                  <button className="button secondary" onClick={() => void copyInvite(false)}>
-                    Kodu kopyala
-                  </button>
-                  <button className="button primary" onClick={() => void copyInvite(true)}>
-                    Bağlantıyı kopyala
-                  </button>
-                </div>
-                {inviteCopied && <p role="status">Kopyalandı.</p>}
-              </>
+            {invite ? (
+              <InviteLinkCard serverUrl={c.serverUrl} invite={invite} autoFocus />
             ) : (
               <button
                 className="button primary"

@@ -22,6 +22,7 @@ import { MessageReminder } from './Reminder';
 import { ChatAgentRequest } from './ChatAgent';
 import { EmojiPicker, GifPicker, isGifMessage } from './ComposerPickers';
 import { AppDirectory } from './AppDirectory';
+import { InviteLinkCard } from './InviteLinkCard';
 import {
   Fragment,
   useCallback,
@@ -86,7 +87,13 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 import { Avatar, EmptyState, IconButton, Modal } from '@rooms/design';
-import type { SocialUser, SocialAttachment } from '@rooms/social';
+import {
+  parseInviteLink,
+  type SocialInvite,
+  type SocialUser,
+  type SocialAttachment,
+} from '@rooms/social';
+import { sameInviteServer } from './ConnectionPane';
 import { useCommunity, type CommunityMessage } from './community';
 import {
   useRealtime,
@@ -1526,9 +1533,18 @@ export function CommunitySpaces({ notify }: { notify(message: string): void }) {
           <form
             onSubmit={(e) => {
               e.preventDefault();
+              const link = parseInviteLink(code, { fallbackServer: c.serverUrl });
+              if (!link)
+                return notify(
+                  'Bu bir ROOMS davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.',
+                );
+              if (!sameInviteServer(link.serverUrl, c.serverUrl))
+                return notify(
+                  'Bu davet başka bir sunucuda. Katılmak için çıkış yapıp bağlantıyı yeniden aç.',
+                );
               setBusy(true);
               void c
-                .acceptInvite(code.trim())
+                .acceptInvite(link.code)
                 .then(() => {
                   setCode('');
                   close();
@@ -1538,13 +1554,16 @@ export function CommunitySpaces({ notify }: { notify(message: string): void }) {
             }}
           >
             <label className="field-label">
-              {tr('INVITATION CODE')}
+              Davet bağlantısı
               <input
-                aria-label={tr('Join invitation code')}
                 required
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                placeholder="https://…/davet/…"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                maxLength={128}
+                maxLength={4096}
               />
             </label>
             <button type="submit" className="button primary full" disabled={!code.trim() || busy}>
@@ -2580,61 +2599,36 @@ export function CommunityInvite({
   notify(message: string): void;
 }) {
   const c = useCommunity();
-  const [code, setCode] = useState('');
+  const [created, setCreated] = useState<SocialInvite | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const channel =
     c.channels.find((ch) => ch.id === c.activeChannelId && ch.type === 0)?.id ??
     c.channels.find((ch) => ch.type === 0)?.id;
+  const space = c.spaces.find((s) => s.id === c.activeSpaceId);
+  // The broker lets only the owner create links; say so instead of failing after a click.
+  const ownerReason =
+    space && c.user && space.ownerId !== c.user.id
+      ? 'Davet bağlantısını yalnızca topluluk sahibi oluşturabilir. Sahibinden bir bağlantı iste.'
+      : '';
   return (
     <Modal title={'Davet olu\u015Ftur'} onClose={onClose}>
       <p className="modal-description">
-        {tr('Bu davetle arkadaşın kendi hesabını açabilir. Tek kullanımlık, 24 saat geçerli.')}
+        Arkadaşların bu bağlantıyla kendi hesaplarını açıp topluluğa katılır.
       </p>
-      {code ? (
-        <>
-          <label className="field-label">
-            {tr('INVITATION CODE')}
-            <input aria-label={tr('Created invitation code')} readOnly value={code} />
-          </label>
-          <button
-            className="button primary full"
-            onClick={() => {
-              void navigator.clipboard
-                .writeText(code)
-                .then(() => notify(tr('Invitation code copied.')))
-                .catch(() =>
-                  setError(tr('Clipboard is unavailable. Select and copy the code above.')),
-                );
-            }}
-          >
-            <Copy size={16} />
-            {tr('Copy invitation code')}
-          </button>
-          <button
-            className="button secondary full"
-            onClick={() => {
-              const link = `rooms://invite?server=${encodeURIComponent(c.serverUrl)}&code=${encodeURIComponent(code)}`;
-              void navigator.clipboard
-                .writeText(link)
-                .then(() => notify(tr('Davet ba\u011Flant\u0131s\u0131 kopyaland\u0131.')))
-                .catch(() => setError(tr('Panoya eri\u015Filemiyor. Davet kodunu kopyala.')));
-            }}
-          >
-            <Link size={16} />
-            {tr('Davet ba\u011Flant\u0131s\u0131n\u0131 kopyala')}
-          </button>
-        </>
+      {created ? (
+        <InviteLinkCard serverUrl={c.serverUrl} invite={created} autoFocus />
       ) : (
         <button
           className="button primary full"
-          disabled={!channel || busy}
+          disabled={!channel || busy || !!ownerReason}
+          title={ownerReason || undefined}
           onClick={() => {
             setBusy(true);
             setError('');
             void c
               .createInvite(channel!)
-              .then((i) => setCode(i.code))
+              .then(setCreated)
               .catch((e) => setError(uiError(e)))
               .finally(() => setBusy(false));
           }}
@@ -2646,6 +2640,7 @@ export function CommunityInvite({
       {!channel && (
         <p className="modal-description">{tr('Open a space with a text channel first.')}</p>
       )}
+      {!created && ownerReason && <p className="modal-description">{ownerReason}</p>}
       {error && (
         <div className="error-pane" role="alert">
           <p>{error}</p>

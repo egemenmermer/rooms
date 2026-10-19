@@ -311,6 +311,8 @@ export interface SocialBridge {
   ): Promise<import('@rooms/social').SocialMessage>;
   delete(channelId: string, messageId: string): Promise<void>;
   createInvite(channelId: string): Promise<import('@rooms/social').SocialInvite>;
+  listInvites(spaceId: string): Promise<import('@rooms/social').SocialInviteLinkSummary[]>;
+  revokeInvite(spaceId: string, inviteId: string): Promise<void>;
   inspectInvite(serverUrl: string, code: string): Promise<import('@rooms/social').SocialInvite>;
   acceptInvite(code: string): Promise<import('@rooms/social').SocialInvite>;
   attachmentImage(channelId: string, messageId: string, fileId: string): Promise<string | null>;

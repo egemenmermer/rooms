@@ -225,8 +225,9 @@ cmd_bootstrap() {
 cmd_invite() {
   require_setup
   compose run --rm -T --no-deps admin node admin.cjs invite "$@"
-  info "Bağlantıyı yalnızca davet ettiğin kişiyle paylaş. Her bağlantı tek kullanımlıktır."
-  info "Bağlantı açılmazsa: uygulamada sunucu olarak https://$(env_value ROOMS_DOMAIN) gir ve kodu yapıştır."
+  info "Bağlantıyı yalnızca davet etmek istediğin kişilerle paylaş (varsayılan: 7 gün, 10 kişi)."
+  info "Arkadaşın bağlantıyı açıp uygulamayı indirir; ROOMS'ta 'Kayıt ol' sekmesine yapıştırması da yeterli."
+  info "Bağlantıları uygulamada Topluluk yönetimi → Davetler bölümünden iptal edebilirsin."
 }
 
 cmd_status() {
@@ -258,6 +259,8 @@ cmd_update() {
     git -C "$REPO_DIR" checkout --quiet "$ref"
   fi
   cmd_up
+  # The Caddyfile is a single-file bind mount; a restart picks up routes added by the update.
+  compose restart caddy >/dev/null
   ok "Güncelleme tamamlandı ($(git -C "$REPO_DIR" rev-parse --short HEAD))."
 }
 
@@ -304,7 +307,7 @@ Kullanım: rooms <komut>
   setup        Yapılandırmayı ve sırları oluştur (bir kez)
   up           Servisleri indir/derle ve başlat
   bootstrap    Sahip hesabını ve topluluğu oluştur (bir kez)
-  invite       Tek kullanımlık davet bağlantısı üret  [--count=N] [--days=1-7]
+  invite       Davet bağlantısı üret  [--uses=1-50] [--days=1-7] [--count=N]
   status       Servis ve erişim durumunu göster
   logs [svc]   Günlükleri izle (örnek: rooms logs access)
   restart      Servisleri yeniden başlat

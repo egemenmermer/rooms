@@ -83,8 +83,8 @@ main() {
   printf '\n\033[1;32mROOMS sunucun hazır!\033[0m\n\n'
   echo "  Sunucu adresi:  https://$domain"
   echo "  1. ROOMS uygulamasını indir: https://github.com/egemenmermer/rooms/releases/latest"
-  echo "  2. Uygulamada sunucu adresini gir ve sahip hesabınla giriş yap."
-  echo "  3. Arkadaşlarını uygulamadan ya da sunucuda 'rooms invite' ile davet et."
+  echo "  2. Uygulamada 'Giriş yap' sekmesinde sunucu adresini gir, sahip hesabınla giriş yap."
+  echo "  3. 'Davet oluştur' ile bağlantıyı arkadaşlarına gönder (ya da sunucuda: rooms invite)."
   echo
   echo "  Yararlı komutlar: rooms status · rooms invite · rooms backup · rooms update · rooms help"
 }

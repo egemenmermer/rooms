@@ -88,15 +88,11 @@ export class RoomsClient {
   /** Signs in through the visible onboarding form and stops at the profile step. */
   async submitSignIn(account: Pick<SeededAccount, 'email' | 'password'>) {
     const page = this.page;
-    await expect(page.getByRole('heading', { name: 'Giriş', exact: true })).toBeVisible({
-      timeout: 30000,
-    });
-    await page.getByRole('button', { name: 'Giriş yap', exact: true }).click();
-    // The server panel starts open unless the build carries VITE_ROOMS_DEFAULT_SERVER.
+    await page.getByRole('tab', { name: 'Giriş yap', exact: true }).click({ timeout: 30000 });
+    // The server panel starts open unless a server is saved or built in.
     const server = page.getByLabel('Sunucu adresi', { exact: true });
     await page.getByLabel('E-posta adresi').waitFor();
-    if (!(await server.isVisible()))
-      await page.getByText('Sunucu ve davet seçenekleri', { exact: true }).click();
+    if (!(await server.isVisible())) await page.locator('details.ref-auth-server summary').click();
     await server.fill(stack.serverUrl);
     await page.getByLabel('E-posta adresi').fill(account.email);
     await page.getByPlaceholder('Şifren', { exact: true }).fill(account.password);

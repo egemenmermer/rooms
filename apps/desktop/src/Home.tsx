@@ -83,7 +83,7 @@ export function Home({
           </span>
           <h2>Topluluk yok</h2>
           <button className="button primary" onClick={() => navigate('/setup/invite')}>
-            Davet aç
+            Davet bağlantısı aç
           </button>
         </div>
       </div>

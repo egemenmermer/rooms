@@ -2,7 +2,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { build } from 'esbuild';
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 const config = JSON.parse(
@@ -136,30 +136,42 @@ try {
     assert((await download.text()).includes('owned attachment verification'));
     await owner.deleteMessage(config.textId, m.id);
   });
-  await check('actual broker registration consumes a scoped single-use invitation', async () => {
-    const invitation = await owner.createInvite(config.textId);
-    assert(invitation.code.length >= 32);
-    assert(invitation.expiresAt);
-    assert.equal((await guest.inspectInvite(invitation.code)).space.id, config.spaceId);
-    const account = {
-      email: `egemenmermerroomsqa${suffix}@gmail.com`,
-      password: randomUUID() + randomUUID(),
-      username: `qa_${suffix}`,
-      inviteCode: invitation.code,
-    };
-    await writeFile(`.local/production/registration-${suffix}.json`, JSON.stringify(account), {
-      mode: 0o600,
-    });
-    const fresh = new StoatClient(config.base);
-    try {
-      await fresh.register(account);
-      await fresh.connect();
-      assert((await fresh.listSpaces()).some((x) => x.id === config.spaceId));
+  await check(
+    'actual invitation link: landing page, broker signup, use count and revoke',
+    async () => {
+      const invitation = await owner.createInvite(config.textId);
+      assert.match(invitation.code, /^[a-f0-9]{64}$/);
+      assert(invitation.expiresAt);
+      assert.equal(invitation.maxUses, 10);
+      assert.equal((await guest.inspectInvite(invitation.code)).space.id, config.spaceId);
+      const landing = await fetch(`${new URL(config.base).origin}/davet/${invitation.code}`);
+      assert.equal(landing.status, 200);
+      assert.equal(landing.headers.get('cache-control'), 'no-store');
+      assert((await landing.text()).includes('rooms://invite?'));
+      const account = {
+        email: `egemenmermerroomsqa${suffix}@gmail.com`,
+        password: randomUUID() + randomUUID(),
+        username: `qa_${suffix}`,
+        inviteCode: invitation.code,
+      };
+      await writeFile(`.local/production/registration-${suffix}.json`, JSON.stringify(account), {
+        mode: 0o600,
+      });
+      const fresh = new StoatClient(config.base);
+      const id = createHash('sha256').update(invitation.code).digest('hex').slice(0, 16);
+      try {
+        await fresh.register(account);
+        await fresh.connect();
+        assert((await fresh.listSpaces()).some((x) => x.id === config.spaceId));
+        const listed = (await owner.listInviteLinks(config.spaceId)).find((x) => x.id === id);
+        assert.equal(listed?.uses, 1);
+      } finally {
+        await fresh.disconnect();
+        await owner.revokeInviteLink(config.spaceId, id).catch(() => {});
+      }
       await assert.rejects(() => guest.inspectInvite(invitation.code));
-    } finally {
-      await fresh.disconnect();
-    }
-  });
+    },
+  );
   await check('outsider denied media and Activity access', async () => {
     const media = await request('outsider', '/rooms-access/v1/media/grant', {
       channelId: config.voiceId,

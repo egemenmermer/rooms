@@ -89,7 +89,7 @@ await writeFile(join(directory, 'compose.yml'), compose, { mode: 0o600 });
 let caddy = await readFile(join(directory, 'Caddyfile'), 'utf8');
 caddy = caddy.replace(
   '{$HOSTNAME} {',
-  '{$HOSTNAME} {\n route /rooms-access/* {\n  uri strip_prefix /rooms-access\n  reverse_proxy {$ROOMS_ACCESS_UPSTREAM}\n }\n route /rooms-activities/* {\n  uri strip_prefix /rooms-activities\n  reverse_proxy {$ROOMS_ACTIVITY_UPSTREAM}\n }',
+  '{$HOSTNAME} {\n route /rooms-access/* {\n  uri strip_prefix /rooms-access\n  reverse_proxy {$ROOMS_ACCESS_UPSTREAM}\n }\n route /davet/* {\n  reverse_proxy {$ROOMS_ACCESS_UPSTREAM}\n }\n route /rooms-activities/* {\n  uri strip_prefix /rooms-activities\n  reverse_proxy {$ROOMS_ACTIVITY_UPSTREAM}\n }',
 );
 caddy = caddy.replace(
   'uri strip_prefix /api',

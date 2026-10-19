@@ -480,6 +480,8 @@ export async function installReferenceFixture(id: string, value: string): Promis
       })),
     loadOlder: async () => undefined,
     createInvite: async (_channelId): Promise<SocialInvite> => rejectExternalAction(),
+    listInvites: async () => rejectExternalAction(),
+    revokeInvite: async () => rejectExternalAction(),
     acceptInvite: async () => rejectExternalAction(),
     createDM: async (recipientId) => {
       if (!useCommunity.getState().user)

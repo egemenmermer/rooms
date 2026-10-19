@@ -16,6 +16,10 @@
 	handle_path /rooms-activities/* {
 		reverse_proxy activities:3031
 	}
+	# Invitation landing page; the token stays in the path, so the access service reads it whole.
+	handle /davet/* {
+		reverse_proxy access:3002
+	}
 	handle_path /api/* {
 		@account_create path /auth/account/create /auth/account/create/*
 		respond @account_create "Use a ROOMS signup invitation." 403

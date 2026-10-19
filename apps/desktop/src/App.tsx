@@ -29,7 +29,11 @@ import ConnectionStatusSurface, { StartupSplash, SystemState } from './SystemSta
 import { useChannelAccess } from './channel-access';
 import { ChannelAccessState, CommunityEditor } from './CommunitySettings';
 import { SocialNotificationsPage, SocialReferenceOverlay } from './SocialReferenceEntry';
-import { ReferenceOnboarding, type ReferenceOnboardingMode } from './ReferenceOnboarding';
+import {
+  ReferenceOnboarding,
+  defaultStartTab,
+  type ReferenceOnboardingMode,
+} from './ReferenceOnboarding';
 import { FriendsPanel } from './People';
 import { InviteLanding } from './Invite';
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -294,6 +298,16 @@ export default function App() {
       .catch(() => {});
     return window.rooms.onInvite((value) => setNativeInvite(value));
   }, []);
+  // Signed out, an invitation link is a signup: open Kayıt ol with the link already filled in.
+  useEffect(() => {
+    if (!startupReady || !nativeInvite || community.user) return;
+    const params = new URLSearchParams({
+      server: nativeInvite.serverUrl,
+      invite: nativeInvite.code,
+    });
+    setNativeInvite(null);
+    navigate(`/setup/register?${params}`, { replace: true });
+  }, [startupReady, nativeInvite, community.user, navigate]);
   const [toast, setToast] = useState('');
   const [search, setSearch] = useState('');
   const notify = useCallback((message: string) => setToast(message), []);
@@ -495,11 +509,17 @@ export default function App() {
     'signin',
     'register',
     'recovery',
+    'selfhost',
     'invite',
     'profile',
     'devices',
   ];
   const setupMode = setupModes.find((mode) => mode === setupName);
+  // The start tabs share one mounted screen so switching tabs keeps keyboard focus on the tab list.
+  const setupKey =
+    setupMode === 'register' || setupMode === 'signin' || setupMode === 'selfhost'
+      ? 'start'
+      : setupMode;
   if (!startupReady)
     return (
       <div className="app onboarding-mode">
@@ -511,6 +531,13 @@ export default function App() {
         </div>
         <StartupSplash />
       </div>
+    );
+  if (setupMode === 'welcome' || (setupMode === 'invite' && !community.user))
+    return (
+      <Navigate
+        replace
+        to={`/setup/${defaultStartTab(new URLSearchParams(location.search))}${location.search}`}
+      />
     );
   if (setupMode)
     return (
@@ -527,7 +554,7 @@ export default function App() {
           </Suspense>
         ) : (
           <ReferenceOnboarding
-            key={`${setupMode}-${settingsPage}`}
+            key={`${setupKey}-${settingsPage}`}
             mode={setupMode}
             onNavigate={(mode) => navigate(`/setup/${mode}${location.search}`)}
             onComplete={() => navigate('/home')}
@@ -547,7 +574,7 @@ export default function App() {
             </Suspense>
           </Modal>
         )}
-        {nativeInvite && (
+        {nativeInvite && community.user && (
           <InviteLanding invite={nativeInvite} onClose={closeInvite} notify={notify} />
         )}
         <FriendRequiredDialog notify={notify} />
@@ -896,7 +923,7 @@ export default function App() {
           </Suspense>
         </section>
       )}
-      {nativeInvite && (
+      {nativeInvite && community.user && (
         <InviteLanding invite={nativeInvite} onClose={closeInvite} notify={notify} />
       )}
       {(overlay === 'create-space' || overlay === 'edit-space') && (

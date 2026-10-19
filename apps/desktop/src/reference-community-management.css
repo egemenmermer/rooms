@@ -603,3 +603,62 @@
     padding-bottom: 35px;
   }
 }
+.rcm-invites-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rcm-invites-heading h2 {
+  margin: 25px 0 8px;
+}
+.rcm-invites-note {
+  font-size: 12px;
+  color: #a4aabb;
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+.rcm-invites-error {
+  font-size: 12px;
+  color: #e9a8ac;
+  margin: 0 0 12px;
+}
+.rcm-invite-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #3a404e;
+  border-radius: 9px;
+}
+.rcm-invite-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+}
+.rcm-invite-list li + li {
+  border-top: 1px solid #3a404e;
+}
+.rcm-invite-list strong {
+  font-size: 13px;
+}
+.rcm-invite-list small {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  color: #a4aabb;
+}
+.rcm-invite-state {
+  margin-left: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  background: #2f4a3a;
+  color: #a7cfb8;
+}
+.rcm-invite-state.full {
+  background: #4a3d2a;
+  color: #d8bd80;
+}

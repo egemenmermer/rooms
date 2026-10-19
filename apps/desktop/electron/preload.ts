@@ -102,6 +102,9 @@ const bridge: DesktopBridge = {
     edit: (channel, id, content) => ipcRenderer.invoke('rooms:social-edit', channel, id, content),
     delete: (channel, id) => ipcRenderer.invoke('rooms:social-delete', channel, id),
     createInvite: (id) => ipcRenderer.invoke('rooms:social-create-invite', id),
+    listInvites: (spaceId) => ipcRenderer.invoke('rooms:social-list-invites', spaceId),
+    revokeInvite: (spaceId, inviteId) =>
+      ipcRenderer.invoke('rooms:social-revoke-invite', spaceId, inviteId),
     inspectInvite: (url, code) => ipcRenderer.invoke('rooms:social-inspect-invite', url, code),
     acceptInvite: (code) => ipcRenderer.invoke('rooms:social-accept-invite', code),
     attachmentImage: (channel, message, file) =>

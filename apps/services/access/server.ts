@@ -5,11 +5,17 @@ import { registerMusicPlaylists } from './music-playlists';
 import { registerDmCalls } from './dm-calls';
 import { registerGifs } from './gifs';
 import { registerRemoteControl, type RemoteConsent } from './remote-control';
-import Fastify, { type FastifyRequest } from 'fastify';
-import { RegistrationGate, issueRegistrationInvite } from './registration';
+import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
+import { InviteClaimReleased, RegistrationGate } from './registration';
+import {
+  mongoAccountInviteSink,
+  seedAccountInvite,
+  type AccountInviteSink,
+} from './account-invites';
+import { INVITE_PAGE_HEADERS, renderInvitePage } from './invite-page';
 import { MongoClient } from 'mongodb';
 import { StoatAuthorizationReader } from './stoat-authorization';
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import rateLimit from '@fastify/rate-limit';
 import {
   AccessToken,
@@ -20,7 +26,13 @@ import {
 } from 'livekit-server-sdk';
 import { z } from 'zod';
 import { StoatClient, StoatError } from '@rooms/stoat';
-import { SOCIAL_ID_PATTERN } from '@rooms/social';
+import {
+  INVITE_TOKEN_PATTERN,
+  LEGACY_INVITE_CODE_PATTERN,
+  SOCIAL_ID_PATTERN,
+  inviteAppLink,
+  inviteOrigin,
+} from '@rooms/social';
 import {
   stoatChannelPermissions,
   StoatPermissions as Permissions,
@@ -47,6 +59,12 @@ export interface AccessConfig {
   apiSecret: string;
   registrationInvitesFile?: string;
   accountInviteMongoUrl?: string;
+  /** Test seam for one-time Stoat account invitations; defaults to the delegated Mongo connection. */
+  accountInviteSink?: AccountInviteSink;
+  /** Public origin printed in invitation pages; the Host header is used when unset. */
+  publicUrl?: string;
+  /** Where invitation pages send people to download the desktop app. */
+  downloadUrl?: string;
   socialReadMongoUrl?: string;
   /** KLIPY app key for GIF search; kept on the server, never sent to clients. */
   klipyKey?: string;
@@ -537,15 +555,24 @@ export async function createAccessServer(config: AccessConfig) {
   const registration = new RegistrationGate(
     config.registrationInvitesFile ?? '.local/stoat/registration-invites.json',
   );
+  const accountInvites =
+    config.accountInviteSink ?? (accountDatabase ? mongoAccountInviteSink(accountDatabase) : null);
+  const stoat = (token?: string) =>
+    new StoatClient(config.stoatUrl ?? 'http://127.0.0.1:3022', token, socialOptions);
+  const inviteCode = z.object({ code: z.string().regex(LEGACY_INVITE_CODE_PATTERN) });
+  /** Invitation links are managed by the space owner only, matching who may create them. */
+  const requireSpaceOwner = async (authorization: string | undefined, spaceId: string) => {
+    const client = stoat(tokenOf(authorization));
+    const user = await client.getCurrentUser();
+    const space = (await client.getServer(spaceId)) as { owner?: string };
+    if (space.owner !== user.id) throw new StoatError(403, 'INVITE_ADMIN_REQUIRED');
+    return client;
+  };
   server.post('/v1/invites', async (request) => {
     const { channelId } = channelBody.parse(request.body);
     const token = tokenOf(request.headers.authorization);
-    if (!accountDatabase) throw new StoatError(501, 'INVITE_PROVISIONING_UNAVAILABLE');
-    const client = new StoatClient(
-      config.stoatUrl ?? 'http://127.0.0.1:3022',
-      token,
-      socialOptions,
-    );
+    if (!accountInvites) throw new StoatError(501, 'INVITE_PROVISIONING_UNAVAILABLE');
+    const client = stoat(token);
     const [user, channel] = await Promise.all([
       client.getCurrentUser(),
       client.getChannel(channelId),
@@ -565,28 +592,59 @@ export async function createAccessServer(config: AccessConfig) {
     if (!(permissions & (1n << 25n)) || rawServer.owner !== user.id)
       throw new StoatError(403, 'INVITE_ADMIN_REQUIRED');
     const upstream = await client.createUpstreamInvite(channelId);
-    const accountCode = randomBytes(32).toString('base64url');
-    await accountDatabase
-      .db('revolt')
-      .collection('account_invites')
-      .insertOne({ _id: accountCode, used: false } as any);
-    const issued = await issueRegistrationInvite(registration.path, accountCode, upstream.code);
-    return { ...upstream, code: issued.code, expiresAt: issued.expiresAt };
+    // Account invitations are seeded per signup, so one link can welcome several friends.
+    const issued = await registration
+      .issue({
+        communityInviteCode: upstream.code,
+        spaceId: channel.server,
+        createdBy: user.id,
+        source: 'app',
+        upstreamOwned: true,
+      })
+      .catch(async (error) => {
+        // No link refers to it, so the upstream invitation must not outlive this request.
+        await client.deleteUpstreamInvite(upstream.code).catch(() => {});
+        throw error;
+      });
+    return {
+      ...upstream,
+      code: issued.code,
+      expiresAt: issued.expiresAt,
+      maxUses: issued.maxUses,
+      uses: 0,
+    };
   });
+  server.get(
+    '/v1/spaces/:spaceId/invites',
+    { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
+    async (request) => {
+      const { spaceId } = z.object({ spaceId: opaqueId }).parse(request.params);
+      await requireSpaceOwner(request.headers.authorization, spaceId);
+      return { invites: await registration.list(spaceId) };
+    },
+  );
+  server.delete(
+    '/v1/spaces/:spaceId/invites/:id',
+    { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
+    async (request) => {
+      const { spaceId, id } = z
+        .object({ spaceId: opaqueId, id: z.string().regex(/^[a-f0-9]{16}$/) })
+        .parse(request.params);
+      const client = await requireSpaceOwner(request.headers.authorization, spaceId);
+      const revoked = await registration.revoke(spaceId, id);
+      // Best effort: the link is already closed; a leftover upstream code never leaves the broker.
+      if (revoked.releaseUpstream)
+        await client.deleteUpstreamInvite(revoked.communityInviteCode).catch(() => {});
+      return { revoked: true };
+    },
+  );
   server.get(
     '/v1/auth/invites/:code',
     { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
     async (request) => {
-      const code = z
-        .object({ code: z.string().regex(/^[A-Za-z0-9_-]{2,128}$/) })
-        .parse(request.params).code;
+      const { code } = inviteCode.parse(request.params);
       const ticket = await registration.inspect(code);
-      const client = new StoatClient(
-        config.stoatUrl ?? 'http://127.0.0.1:3022',
-        undefined,
-        socialOptions,
-      );
-      const invite = await client.inspectUpstreamInvite(ticket.communityInviteCode);
+      const invite = await stoat().inspectUpstreamInvite(ticket.communityInviteCode);
       return { ...invite, code, expiresAt: ticket.expiresAt };
     },
   );
@@ -594,18 +652,49 @@ export async function createAccessServer(config: AccessConfig) {
     '/v1/auth/invites/:code/join',
     { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
     async (request) => {
-      const code = z
-        .object({ code: z.string().regex(/^[A-Za-z0-9_-]{2,128}$/) })
-        .parse(request.params).code;
-      const client = new StoatClient(
-        config.stoatUrl ?? 'http://127.0.0.1:3022',
-        tokenOf(request.headers.authorization),
-        socialOptions,
-      );
-      await client.getCurrentUser();
-      return registration.consume(code, async (invitation) => {
-        const joined = await client.acceptInvite(invitation.communityInviteCode);
-        return { ...joined, code };
+      const { code } = inviteCode.parse(request.params);
+      const client = stoat(tokenOf(request.headers.authorization));
+      const user = await client.getCurrentUser();
+      const isMember = (spaceId: string) =>
+        client.getMember(spaceId, user.id).then(
+          () => true,
+          (error) => {
+            if (error instanceof StoatError && [403, 404].includes(error.status)) return false;
+            throw error;
+          },
+        );
+      // Opening a link again as a member must not spend a use, even once it is full or expired.
+      const known = await registration.peek(code);
+      if (known?.spaceId && (await isMember(known.spaceId))) {
+        const space = await client.getServer(known.spaceId);
+        return {
+          code,
+          space: { id: known.spaceId, name: typeof space.name === 'string' ? space.name : '' },
+          channel: null,
+          expiresAt: known.expiresAt,
+        };
+      }
+      const ticket = await registration.inspect(code);
+      const invite = await client.inspectUpstreamInvite(ticket.communityInviteCode);
+      // Legacy links carry no space id; the upstream invitation names the community instead.
+      const legacySpace = ticket.spaceId ? undefined : invite.space?.id;
+      if (legacySpace && (await isMember(legacySpace)))
+        return { ...invite, code, expiresAt: ticket.expiresAt };
+      return registration.consume(code, async (grant) => {
+        try {
+          const joined = await client.acceptInvite(grant.communityInviteCode);
+          return { ...joined, code };
+        } catch (error) {
+          // A definite refusal (banned, already joined, server full) joined nobody: return the use.
+          if (
+            error instanceof StoatError &&
+            error.status >= 400 &&
+            error.status < 500 &&
+            ![408, 429].includes(error.status)
+          )
+            throw new InviteClaimReleased(error);
+          throw error;
+        }
       });
     },
   );
@@ -614,23 +703,76 @@ export async function createAccessServer(config: AccessConfig) {
     { config: { rateLimit: { max: 5, timeWindow: '1 minute' } } },
     async (request) => {
       const body = registrationBody.parse(request.body);
-      return registration.consume(body.inviteCode, async (invitation) => {
-        const client = new StoatClient(
-          config.stoatUrl ?? 'http://127.0.0.1:3022',
-          undefined,
-          socialOptions,
-        );
-        await client.registerUpstream({
-          ...body,
-          inviteCode: invitation.communityInviteCode,
-          accountInviteCode: invitation.accountInviteCode,
-        });
+      return registration.consume(body.inviteCode, async (grant) => {
+        let accountInviteCode = grant.accountInviteCode;
+        if (!accountInviteCode) {
+          if (!accountInvites)
+            throw new InviteClaimReleased(new StoatError(501, 'INVITE_PROVISIONING_UNAVAILABLE'));
+          try {
+            accountInviteCode = await seedAccountInvite(accountInvites);
+          } catch {
+            throw new InviteClaimReleased(new StoatError(503, 'INVITE_PROVISIONING_UNAVAILABLE'));
+          }
+        }
+        const client = stoat();
+        let stage: 'prepare' | 'account-create' | 'account-created' = 'prepare';
+        try {
+          await client.registerUpstream(
+            { ...body, inviteCode: grant.communityInviteCode, accountInviteCode },
+            { onStage: (next) => (stage = next) },
+          );
+        } catch (error) {
+          // Only a definite rejection before any account exists returns the use to the link.
+          const definite =
+            error instanceof StoatError &&
+            error.status >= 400 &&
+            error.status < 500 &&
+            ![408, 429].includes(error.status);
+          if (stage === 'prepare' || (stage === 'account-create' && definite))
+            throw new InviteClaimReleased(error);
+          throw error;
+        }
         const token = client.getToken();
         if (!token) throw new StoatError(502, 'INVALID_SESSION_RESPONSE');
         return { token };
       });
     },
   );
+  const downloadUrl = config.downloadUrl ?? 'https://github.com/egemenmermer/rooms/releases/latest';
+  const pageOrigin = (request: FastifyRequest) => {
+    if (config.publicUrl) return inviteOrigin(config.publicUrl);
+    const host = request.headers.host ?? '';
+    const loopback = /^(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/.test(host);
+    const proto = loopback && request.headers['x-forwarded-proto'] === 'http' ? 'http' : 'https';
+    return inviteOrigin(`${proto}://${host}`);
+  };
+  // Read-only landing page: link previews and browser prefetches never spend a use.
+  const invitePage = async (request: FastifyRequest, reply: FastifyReply) => {
+    const { token } = z.object({ token: z.string() }).parse(request.params);
+    let state: Parameters<typeof renderInvitePage>[0] = { kind: 'invalid' };
+    if (INVITE_TOKEN_PATTERN.test(token)) {
+      try {
+        const ticket = await registration.inspect(token);
+        const invite = await stoat()
+          .inspectUpstreamInvite(ticket.communityInviteCode)
+          .catch(() => null);
+        const origin = pageOrigin(request);
+        state = {
+          kind: 'valid',
+          communityName: invite?.space?.name ?? null,
+          expiresAt: ticket.expiresAt,
+          appLink: origin ? inviteAppLink(origin, token) : null,
+          downloadUrl,
+        };
+      } catch {
+        state = { kind: 'invalid' };
+      }
+    }
+    const rendered = renderInvitePage(state);
+    return reply.code(rendered.status).headers(INVITE_PAGE_HEADERS).send(rendered.html);
+  };
+  for (const url of ['/davet/:token', '/davet/:token/'])
+    server.get(url, { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } }, invitePage);
   // Deafen is local playback state. The service publishes it as a server-owned participant attribute
   // so rooms and the directory can show it without granting clients canUpdateOwnMetadata.
   server.post(
