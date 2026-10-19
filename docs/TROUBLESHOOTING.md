@@ -16,7 +16,7 @@
 
 ## Uygulamayı nereden indirebilirim?
 
-[Güncel GitHub sürümünü](https://github.com/egemenmermer/rooms/releases/latest) açıp platformuna uygun DMG veya EXE'yi seç. Sürüm notlarında imza ve platform durumunu kontrol et. Sunucu adresi ve davet için topluluk yöneticine başvur. Kaynak etiketleri ve kaynak ZIP'leri uygulama kurulum dosyası değildir. Kendi derlemen için [geliştirme rehberini](DEVELOPMENT.md) izle.
+[Güncel GitHub sürümünü](https://github.com/egemenmermer/rooms/releases/latest) açıp platformuna uygun DMG veya EXE'yi seç. Sürüm notlarında imza ve platform durumunu kontrol et. Davet bağlantısı için topluluk yöneticine başvur. Kaynak etiketleri ve kaynak ZIP'leri uygulama kurulum dosyası değildir. Kendi derlemen için [geliştirme rehberini](DEVELOPMENT.md) izle.
 
 ## Herkesin sunucu kurması gerekiyor mu?
 
@@ -32,9 +32,22 @@ Docker kurulumunda hata varsa önce Docker motorunun gerçekten çalıştığın
 
 ## Davet çalışmıyor
 
-Davetin seçilen sunucuya ait olduğunu, süresinin dolmadığını ve kullanılmadığını kontrol et. ROOMS'un tek kullanımlık kayıt bileti ile üst sistem topluluk daveti farklıdır.
+**Üye:**
 
-Yarıda kalan kayıt, bileti `claiming` veya `failed` durumunda bırakabilir. Yönetici, yeni bilet vermeden veya eski kilidi kurtarmadan önce üst sistemde hesabın oluşup oluşmadığını incelemelidir. Bileti körlemesine `available` durumuna çevirme; hesap zaten oluşmuş olabilir.
+- **Sayfa "Bu davet bağlantısı artık geçerli değil" diyor:** bağlantının süresi dolmuş, kişi sınırı dolmuş veya iptal edilmiş. Seni davet edenden yeni bağlantı iste.
+- **ROOMS'ta aç bir şey yapmıyor:** uygulama kurulu değil veya `rooms:` protokolü kayıtlı değil. Uygulamayı kendin aç ve sayfanın adresini **Kayıt ol** sekmesindeki **Davet bağlantısı** alanına yapıştır.
+- **"Bu bir ROOMS davet bağlantısı değil" uyarısı:** bağlantının tamamını (`https://…/davet/…`) yapıştır; yalnızca bir parçası yetmez.
+- **Başka bir sunucuda oturumun açık:** davet penceresindeki **Çıkış yap ve davetle devam et** seçeneğini kullan.
+- **Kayıt yarıda kaldı:** hesabın oluşmuş olabilir. Önce **Giriş yap** ile dene. Belirsiz bir kayıt bağlantının bir hakkını harcar ve hak geri verilmez.
+
+**Yönetici:**
+
+- Tarayıcıda `/davet/…` adresi ROOMS sayfasını açmıyorsa ters vekil `/davet/*` yolunu erişim servisine iletmiyordur. Hızlı kurulumda eski bir sunucuyu güncellediysen bir kez `sudo rooms restart` çalıştır.
+- **Davet oluştur** "çok fazla etkin davet bağlantısı" diyorsa **Ayarlar → Üyeler ve roller → Davetler** bölümünden birini iptal et; topluluk başına sınır 20'dir.
+- Davet oluşturma veya kayıt "hesap davetleri henüz hazır değil" diyorsa erişim servisinde `ROOMS_ACCOUNT_INVITE_MONGO_URL` eksiktir ya da servis MongoDB'ye ulaşamıyordur. Bu durumda kayıt bağlantının hakkını harcamaz.
+- Defterde belirsiz kullanımlar `claiming` veya `uncertain` olarak kalır ve sayılır. Onları elle geri açma; hesap zaten oluşmuş olabilir. Gerekirse yeni bağlantı ver.
+
+ROOMS davet bağlantısı ile üst sistem (Stoat) topluluk daveti farklıdır. Ayrıntılar [sunucu rehberindedir](SELF_HOSTING.md#5-i̇lk-hesap-ve-davetler).
 
 Parola kurtarma, üst sistem kurulumunun posta/kurtarma yapılandırmasına bağlıdır. Bu hizmet kurulmadıysa uygulama kendi başına hesabı kurtaramaz.
 

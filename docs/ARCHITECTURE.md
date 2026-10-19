@@ -19,13 +19,13 @@ Sosyal alan tipleri ve Stoat bağdaştırıcısı, resmî üst sistem API/olayla
 
 Ses/medya durumu sayfa bileşenlerinin dışında yaşar. LiveKit medya sağlayıcısı sınırının arkasındadır; sayfa değiştirmek veya DJ panelini kapatmak görüşmeyi ya da sunucu kuyruğunu durdurmamalıdır. Katılımcı ses seviyesi dinleyiciye özeldir. Ortak etkinlikler yetkili komutlar, sürümler ve kullanıcıya özel görünümler kullanır; gizli oyun durumu diğer kullanıcılara gönderilmez.
 
-Erişim servisi güncel kimliği/üyeliği doğrular ve süreli medya izinleri verir. Activities sıralı oda durumu ile uyumlu kalıcılığı yönetir. Müzik çalışanı sınırlı kuyruk/kaynak temizliğini yönetir ve kısa süreli kira ile yayın yapar. İsteğe bağlı Agent, ayrı Linux sunucusunda Docker ile veya aynı fiziksel sunucuda ayrı kullanıcı ve sıkı kaynak sınırlarıyla rootless Podman üzerinden çalışır. Kurulum yolları ve yetkileri ayrı tutulur.
+Erişim servisi güncel kimliği/üyeliği doğrular ve süreli medya izinleri verir. Davet bağlantılarını da o yönetir: uygulamada yalnız topluluk sahibi bağlantı oluşturup iptal eder, defterde yalnız token'ın SHA-256 özeti durur ve çok kullanımlık bağlantıda her kayıt için üst sistemde yeni bir tek kullanımlık hesap daveti eklenir. `/davet/<token>` sayfası betiksiz, salt okunurdur (sıkı CSP, `no-store`, `no-referrer`, `noindex`) ve kullanım harcamaz. Activities sıralı oda durumu ile uyumlu kalıcılığı yönetir. Müzik çalışanı sınırlı kuyruk/kaynak temizliğini yönetir ve kısa süreli kira ile yayın yapar. İsteğe bağlı Agent, ayrı Linux sunucusunda Docker ile veya aynı fiziksel sunucuda ayrı kullanıcı ve sıkı kaynak sınırlarıyla rootless Podman üzerinden çalışır. Kurulum yolları ve yetkileri ayrı tutulur.
 
 Topluluk görselleri dekoratif, sürümlü, boyutu sınırlı ve aynı kaynaktandır. Yükleme başarısızsa paketli özgün statik görsel kullanılır. Görsel istekleri hesap çerezi veya sağlayıcı belirteci göndermez ve müzik komut sözleşmesini değiştirmez.
 
 ## Hesap ve medya akışı
 
-1. Kullanıcı topluluk kaynak adresini seçer veya davet açar.
+1. Kullanıcı **Giriş yap** sekmesinde topluluk kaynak adresini seçer ya da **Kayıt ol** sekmesine davet bağlantısı verir; yeni hesapta sunucuyu bağlantı belirler.
 2. Electron'ın yerel sosyal sınırı o toplulukta oturum açar; kimlik bilgilerini görünüm süreci dışında tutar.
 3. Tipli bağdaştırıcı, üst sistem REST/olaylarını uygulamanın sosyal alanına eşler.
 4. Seste erişim servisi gerçek hesabı, kanalı, üyeliği ve izinleri kontrol edip kısa süreli LiveKit yetkisi verir.
@@ -41,7 +41,7 @@ Bunlar farklı sistemlerdir. Sosyal websocket'in çalışması medyanın erişil
 | Hesap, mesajlar ve sosyal üyelik | Stoat, veritabanı ve nesne deposu |
 | Yerel hesap/oturum ve yerel tercihler | Seçilen masaüstü profili ve yerel kimlik bilgisi sınırı |
 | Aktif medya oturumu | Sayfalardan bağımsız gerçek zamanlı istemci durumu, LiveKit ve erişim izinleri |
-| Kayıt davetinin tüketimi | Kalıcı erişim servisi işlem defteri ve üst sistem hesap oluşturma |
+| Davet bağlantıları ve kullanımları | Erişim servisinin kalıcı defteri (`ROOMS_REGISTRATION_INVITES_FILE`, sürüm 2) ve üst sistem hesap oluşturma |
 | Etkinlik/oyun durumu | Dosya veya PostgreSQL kullanan tek yetkili Activities süreci |
 | Müzik kuyruğu/kaynak yaşam döngüsü | İsteğe bağlı müzik servisi; dinleyici ses seviyesi yereldir |
 | Topluluk Sineması hesabı, kataloğu ve aktarımları | İsteğe bağlı sinema servisi; hesap ve katalog şifreli, aktarım yalnızca bellekte ([Topluluk Sineması](COMMUNITY_CINEMA.md)) |

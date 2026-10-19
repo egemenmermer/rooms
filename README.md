@@ -41,7 +41,7 @@ Sesli sohbet, ekran paylaşımı, mesajlar, müzik ve ortak etkinlikler — tek 
 
 ROOMS, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında konuşabilir, ekranını paylaşabilir, mesajlaşabilir ve uygulamadan çıkmadan arkadaşlarınla birlikte vakit geçirebilirsin.
 
-**Sunucuyu sen seçersin.** ROOMS, herkesin tek bir merkezî hesapla girdiği veya herkese açık oda dizini sunan bir hizmet değildir. Topluluk yöneticisi arka ucu kendi sunucusunda çalıştırır, davetleri yönetir ve üyelerle sunucu adresini paylaşır. Hesabın o sunucuya aittir. Kaynak kodda hazır bir kişisel sunucu adresi veya ortak hesap bulunmaz.
+**Sunucuyu sen seçersin.** ROOMS, herkesin tek bir merkezî hesapla girdiği veya herkese açık oda dizini sunan bir hizmet değildir. Topluluk yöneticisi arka ucu kendi sunucusunda çalıştırır ve üyelere davet bağlantısı gönderir; bağlantı o sunucuyu gösterir. Hesabın o sunucuya aittir. Kaynak kodda hazır bir kişisel sunucu adresi veya ortak hesap bulunmaz.
 
 İstemci Electron, React ve TypeScript kullanır. Hesaplar ve sohbet için değiştirilmeden, ayrı çalıştırılan **Stoat** arka ucu; gerçek zamanlı ses ve görüntü için **LiveKit** kullanılır. ROOMS servisleri bu sistemleri birbirine bağlar ve ortak etkinlikleri yönetir.
 
@@ -49,7 +49,7 @@ ROOMS, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında 
 
 | İstediğin | Başlangıç noktası | Gerekenler |
 | --- | --- | --- |
-| Var olan topluluğa katılmak | [Kullanım rehberi](docs/USER_GUIDE.md) | Uyumlu uygulama, sunucu adresi ve davet veya mevcut hesap |
+| Var olan topluluğa katılmak | [Kullanım rehberi](docs/USER_GUIDE.md) | Uyumlu uygulama ve davet bağlantısı veya o sunucuda mevcut hesap |
 | Kendi topluluğunu kurmak | [Tek komutla kurulum](docs/SELF_HOSTING.md#hızlı-kurulum-tek-komut) | Linux sunucu (VPS) ve alan adı; gerisini kurulum betiği yapar |
 | Uygulamayı geliştirmek | [Geliştirme rehberi](docs/DEVELOPMENT.md) | Git, Node.js, pnpm ve kaynak kod |
 | Topluluğun DJ görselini değiştirmek | [Özelleştirme rehberi](docs/CUSTOMIZATION.md) | Kendi sunucunun herkese açık görsel dosyalarını yönetebilmek |
@@ -66,8 +66,8 @@ Güncel paketler [GitHub sürümleri](https://github.com/egemenmermer/rooms/rele
 | Windows x64 | [RC25 EXE indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.25/ROOMS-0.1.18-rc.25-windows-x64-setup.exe) | İmzasız arkadaş test paketi; sistem uyarısı gösterebilir |
 
 1. Platformuna uygun paketi indirip uygulamayı kur.
-2. Topluluk yöneticisinden sunucu adresini ve gerekiyorsa davetini al.
-3. Uygulamayı açıp o sunucuyu seç; mevcut hesabınla giriş yap veya davetle kayıt ol.
+2. Topluluk yöneticisinden davet bağlantısını (`https://<sunucu>/davet/…`) al.
+3. Uygulamayı aç. **Kayıt ol** sekmesinde bağlantıyı yapıştırıp kullanıcı adı, e-posta ve şifreni gir; sunucuyu bağlantı belirler. O sunucuda hesabın varsa **Giriş yap** sekmesini kullan.
 4. Bir sohbet ya da ses odasına gir. Mikrofon, kamera ve ekran izinlerini ilgili özelliği kullanırken ver.
 
 Uygulamayı indirmek bir sunucuya üyelik veya hazır hesap sağlamaz. Aynı uygulamayı kullanan farklı toplulukların hesapları ve verileri ayrıdır. Etiketlenmiş kaynak kod arşivi de kurulum paketi değildir.
@@ -134,7 +134,7 @@ $env:ROOMS_PROFILE = 'dev-contributor'
 pnpm dev
 ```
 
-Uygulama ayrı geliştirme profiliyle açılır. Topluluğunun adresini gir veya davetini aç. **İstemciyi başlatmak arka ucu başlatmaz.** Çalışan bir topluluk olmadan uygulamayı açabilirsin; gerçek sohbet ve ses akışlarını tamamlayamazsın.
+Uygulama ayrı geliştirme profiliyle açılır. **Kayıt ol** sekmesine davet bağlantını yapıştır veya **Giriş yap** sekmesinde topluluğunun adresini gir. **İstemciyi başlatmak arka ucu başlatmaz.** Çalışan bir topluluk olmadan uygulamayı açabilirsin; gerçek sohbet ve ses akışlarını tamamlayamazsın.
 
 Derleme, doğrulama ve paket komutları için [geliştirme rehberine](docs/DEVELOPMENT.md) bak. Tarayıcıdaki `pnpm dev:web`, arayüz çalışmaları içindir; yerel masaüstü özelliklerini sağlamaz.
 
@@ -146,7 +146,7 @@ Bir Linux sunucu (2 GB RAM yeterli, 4 GB önerilir) ve bir alan adı ile kendi R
 curl -fsSL https://raw.githubusercontent.com/egemenmermer/rooms/main/deploy/install.sh | sudo bash
 ```
 
-Betik Docker'ı kurar, tüm parolaları sunucuda üretir, HTTPS sertifikasını otomatik alır, sahip hesabını ve ilk topluluğu ses kanalıyla oluşturur ve ilk davet bağlantını verir. Sonra arkadaşlarını uygulamadan veya `sudo rooms invite` ile davet edersin.
+Betik Docker'ı kurar, tüm parolaları sunucuda üretir, HTTPS sertifikasını otomatik alır, sahip hesabını ve ilk topluluğu ses kanalıyla oluşturur ve ilk davet bağlantını (`https://alan-adin/davet/…`, 7 gün, 10 kişi) verir. Sonra arkadaşlarını uygulamadaki **Davet oluştur** veya `sudo rooms invite` ile davet edersin. Uygulamanın başlangıç ekranındaki **Kendi sunucunu kur** sekmesi de bu adımları kısaca gösterir.
 
 Ayrıntılar, portlar, yedekleme ve güncelleme için [sunucu rehberine](docs/SELF_HOSTING.md#hızlı-kurulum-tek-komut) bak. Müzik (DJ), Sinema salonu, Agent ve sunucu yönetim paneli isteğe bağlıdır ve hızlı kuruluma dahil değildir.
 
@@ -210,7 +210,7 @@ Açık istemcide özgün bir statik DJ çizimi bulunur. Her topluluk kendi adın
 
 ## Katkıda bulunma
 
-Issue ve odaklı PR'lara açığız. Çalışma ortamları arasındaki sözleşmeleri değiştirmeden önce [CONTRIBUTING.md](CONTRIBUTING.md) belgesini oku. Hata bildirimine yeniden üretim adımlarını ve ilgili platform/sürüm bilgisini ekle; parola, özel mesaj, davet kodu ve kişisel medya adreslerini ekleme.
+Issue ve odaklı PR'lara açığız. Çalışma ortamları arasındaki sözleşmeleri değiştirmeden önce [CONTRIBUTING.md](CONTRIBUTING.md) belgesini oku. Hata bildirimine yeniden üretim adımlarını ve ilgili platform/sürüm bilgisini ekle; parola, özel mesaj, davet bağlantısı ve kişisel medya adreslerini ekleme.
 
 Güvenlik açıklarında herkese açık issue yerine [SECURITY.md](SECURITY.md) yolunu izle.
 
