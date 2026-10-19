@@ -7,7 +7,6 @@ import {
   MonitorUp,
   Music2,
   PenTool,
-  Popcorn,
   Search,
   type LucideIcon,
 } from 'lucide-react';
@@ -16,7 +15,7 @@ import { openMusicDJ, openRoomActivity } from './MusicDJ';
 import { useRealtime } from './realtime';
 import { useCommunity } from './community';
 import { useActivityRoom } from './activity';
-import { activityRoute } from './Activities';
+import { activityRoute, openActivity } from './activity-route';
 import './app-directory.css';
 
 type Section = 'Uygulamalar' | 'Birlikte izle' | 'Kart oyunları' | 'Masa oyunları' | 'Araçlar';
@@ -65,16 +64,6 @@ export const directoryItems: DirectoryItem[] = [
     run: (open) => open('/agent'),
   },
   {
-    id: 'cinema',
-    name: 'Sinema',
-    detail: 'YouTube videolarını birlikte izle, sıraya ekle.',
-    section: 'Birlikte izle',
-    keywords: 'youtube film video izle sinema',
-    icon: Popcorn,
-    tint: '#c2593a',
-    run: (open) => open('/cinema/room'),
-  },
-  {
     id: 'screen',
     name: 'Ekran paylaş',
     detail: 'Pencere, oyun ya da tarayıcı; Instagram ve diğer siteler.',
@@ -107,8 +96,7 @@ export const directoryItems: DirectoryItem[] = [
     run: (open) => open('/together?tab=polls'),
   },
 ];
-/** Highlight order; the first four a surface offers fill the two-by-two grid. */
-const featured = ['cinema', 'holdem', '101', 'board', 'poll'];
+const featured = ['holdem', '101', 'board', 'poll'];
 const sections: Section[] = [
   'Uygulamalar',
   'Birlikte izle',
@@ -137,18 +125,14 @@ function Tile({ item, large = false }: { item: DirectoryItem; large?: boolean })
 /**
  * Discord-style catalogue of what can be opened in this room: apps, watch-together, games and
  * tools, searchable. `apps` adds the bots that also have their own buttons (DJ, Asistan).
- * `roomCinema` offers the older per-room cinema (`/cinema/room`); the header launcher leaves it
- * out because the community Sinema hall replaced it there.
  */
 export function AppDirectory({
   onClose,
   apps = true,
-  roomCinema = true,
   header,
 }: {
   onClose(): void;
   apps?: boolean;
-  roomCinema?: boolean;
   header?: ReactNode;
 }) {
   const navigate = useNavigate(),
@@ -159,18 +143,14 @@ export function AppDirectory({
   const primary = activity.room?.primary;
   const [query, setQuery] = useState('');
   const items = useMemo(
-    () =>
-      directoryItems.filter(
-        (item) => (apps || item.section !== 'Uygulamalar') && (roomCinema || item.id !== 'cinema'),
-      ),
-    [apps, roomCinema],
+    () => directoryItems.filter((item) => apps || item.section !== 'Uygulamalar'),
+    [apps],
   );
   const highlights = useMemo(
     () =>
       featured
         .map((id) => items.find((item) => item.id === id))
-        .filter((item): item is DirectoryItem => !!item)
-        .slice(0, 4),
+        .filter((item): item is DirectoryItem => !!item),
     [items],
   );
   const matches = useMemo(() => {
@@ -230,7 +210,7 @@ export function AppDirectory({
           <button
             className="appdir-live"
             onClick={() => {
-              open(activityRoute(primary.activity));
+              openActivity(primary.activity, navigate);
               onClose();
             }}
           >
@@ -241,9 +221,13 @@ export function AppDirectory({
                 {(gameNames as Record<string, string>)[primary.title] ?? primary.title}
               </strong>
             </span>
-            <em>
-              Katıl <ArrowRight size={14} />
-            </em>
+            {activityRoute(primary.activity) ? (
+              <em>
+                Katıl <ArrowRight size={14} />
+              </em>
+            ) : (
+              <em>Eski Sinema · ayrıntılar</em>
+            )}
           </button>
         )}
         {matches ? (

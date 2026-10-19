@@ -1,4 +1,4 @@
-import type { RoomSnapshot, Timeline } from '../../../packages/activity-protocol/src';
+import type { Timeline } from '../../../packages/activity-protocol/src';
 
 const VIDEO_ID = /^[\w-]{11}$/;
 
@@ -26,11 +26,6 @@ export function parseYouTubeVideo(value: string): string | null {
   }
 }
 
-/** Looks like a link or path rather than a search phrase. */
-export function looksLikeAddress(value: string) {
-  return /^\w+:|^www\.|^[\w-]+\.(com|be|tv)\//i.test(value.trim());
-}
-
 export const youtubeThumbnail = (videoId: string, size: 'mq' | 'hq' = 'mq') =>
   `https://i.ytimg.com/vi/${videoId}/${size}default.jpg`;
 
@@ -50,18 +45,6 @@ export function clock(seconds: number) {
     minutes = Math.floor((total % 3600) / 60),
     rest = String(total % 60).padStart(2, '0');
   return hours ? `${hours}:${String(minutes).padStart(2, '0')}:${rest}` : `${minutes}:${rest}`;
-}
-
-/** Items before the playing one have already been watched in this session. */
-export function queueProgress(room: RoomSnapshot | null) {
-  const queue = room?.queue ?? [];
-  const index = queue.findIndex((item) => item.id === room?.timeline.itemId);
-  return {
-    current: index >= 0 ? queue[index]! : null,
-    next: index >= 0 ? (queue[index + 1] ?? null) : null,
-    watched: index > 0 ? queue.slice(0, index) : [],
-    index,
-  };
 }
 
 // Official codes: https://developers.google.com/youtube/iframe_api_reference#onError

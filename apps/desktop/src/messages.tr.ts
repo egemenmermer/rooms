@@ -147,13 +147,7 @@ export const activityMessages: Record<string, string> = {
     'Bu cihazda seçili medya için eşleşen yetkili kaynak yok. Ortak sıradan Mavi saat demosunu seç.',
   'Otomatik oynatma engellendi. Devam etmek için oynat düğmesine bas.':
     'Otomatik oynatma engellendi. Devam etmek için oynat düğmesine bas.',
-  'Bu dosyanın medya biçimi oynatılamıyor. Başka bir dosya seç veya sistem oynatıcısını kullan.':
-    'Bu dosyanın medya biçimi oynatılamıyor. Başka bir dosya seç veya sistem oynatıcısını kullan.',
   'KİŞİSEL DOSYA': 'KİŞİSEL DOSYA',
-  'Yeniden yükle': 'Yeniden yükle',
-  'Sistem oynatıcısı açılamadı.': 'Sistem oynatıcısı açılamadı.',
-  'Sistem oynatıcısında aç': 'Sistem oynatıcısında aç',
-  'KİŞİSEL OYNATMA': 'KİŞİSEL OYNATMA',
   'Yalnızca bu cihazda oynatılır.': 'Yalnızca bu cihazda oynatılır.',
   'Seçtiğin dosya · kişisel oynatma': 'Seçtiğin dosya · kişisel oynatma',
   'Kişisel dosya açmak için ortak etkinliği bitir':
@@ -424,7 +418,6 @@ export const activityMessages: Record<string, string> = {
   'Beyaz tahta': 'Beyaz tahta',
   'Ortak oda bağlı': 'Ortak oda bağlı',
   'Odaya bağlanıyor…': 'Odaya bağlanıyor…',
-  'Etkinlik hizmeti bağlı değil': 'Etkinlik hizmeti bağlı değil',
   'Oda seçilmedi': 'Oda seçilmedi',
   'katılımcı · sürüm': 'katılımcı · sürüm',
   'Ortak odayı yenile': 'Ortak odayı yenile',

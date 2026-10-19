@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { Avatar, EmptyState, IconButton, Modal } from '@rooms/design';
 import { useActivityRoom } from './activity';
+import { retiredActivity } from './activity-route';
 import { useCurrentRoom } from './Agent';
 import { useCommunity } from './community';
 import type {
@@ -186,9 +187,8 @@ export default function Games() {
         }
         otherActivity={
           activity.room?.primary && !game
-            ? activity.room.primary.activity === 'cinema' ||
-              activity.room.primary.activity === 'youtube'
-              ? 'Sinema'
+            ? retiredActivity(activity.room.primary.activity)
+              ? 'eski Sinema oturumu'
               : activity.room.primary.activity === 'screen'
                 ? 'ekran paylaşımı'
                 : (tableTitle(activity.room.primary.title, undefined) ?? 'bir etkinlik')
@@ -1516,20 +1516,17 @@ function ReferenceGames({
             {activity.room?.primary && (
               <div className="rg-banner">
                 {tableTitle(activity.room.primary.title, game?.kind)} etkinliği açık.
-                <button
-                  onClick={() => {
-                    onCreate(null);
-                    navigate(
-                      ['cinema', 'youtube'].includes(activity.room?.primary?.activity ?? '')
-                        ? '/cinema/room'
-                        : game
-                          ? '/games?tab=table'
-                          : '/voice',
-                    );
-                  }}
-                >
-                  Etkinliği aç
-                </button>
+                {/* An old-cinema session has no page here; the consent below can still end it. */}
+                {!retiredActivity(activity.room.primary.activity) && (
+                  <button
+                    onClick={() => {
+                      onCreate(null);
+                      navigate(game ? '/games?tab=table' : '/voice');
+                    }}
+                  >
+                    Etkinliği aç
+                  </button>
+                )}
                 <label className="rg-replace-consent">
                   <input
                     type="checkbox"

@@ -23,7 +23,6 @@ import { RoomMembers } from './RoomMembers';
 import { FriendsPage } from './FriendsPage';
 import { FriendRequiredDialog } from './FriendRequiredDialog';
 import { PersonalSidebar } from './PersonalSidebar';
-import CinemaPlayback from './CinemaPlayback';
 import DmCallRuntime from './DmCallRuntime';
 import ConnectionStatusSurface, { StartupSplash, SystemState } from './SystemState';
 import { useChannelAccess } from './channel-access';
@@ -98,7 +97,6 @@ const RecoveryFixtureEntry = import.meta.env.DEV
 const PersonalMediaFixtureEntry = import.meta.env.DEV
   ? lazy(() => import('./dev/PersonalMediaEntry'))
   : null;
-const Cinema = lazy(() => import('./Cinema'));
 const CinemaHall = lazy(() => import('./cinema/CinemaHall'));
 const Settings = lazy(() => import('./Settings'));
 const AgentWorkspace = lazy(() => import('./Agent'));
@@ -348,7 +346,6 @@ export default function App() {
     return allowed;
   }, [navigate]);
   const visiblePath = settingsPage ? returnFromSettings.current.split('?')[0]! : location.pathname;
-  const cinema = visiblePath === '/cinema/room';
   const hallView = visiblePath === '/cinema';
   const voiceView = visiblePath === '/voice';
   const videoView =
@@ -390,7 +387,6 @@ export default function App() {
         '/together',
         '/agent',
         '/youtube',
-        '/watch/youtube',
         '/media',
       ].includes(visiblePath));
   const personalSidebarView =
@@ -399,14 +395,7 @@ export default function App() {
     const main = document.querySelector('.main-view');
     if (main) main.scrollTop = 0;
   }, [visiblePath]);
-  const settings = [
-    '/agent',
-    '/together',
-    '/games',
-    '/youtube',
-    '/watch/youtube',
-    '/media',
-  ].includes(visiblePath);
+  const settings = ['/agent', '/together', '/games', '/youtube', '/media'].includes(visiblePath);
   const selected = spaces.find((s) => s.id === activeSpace) ?? { name: tr('Your community') };
   const open = (value: Overlay) => {
     setSearch('');
@@ -493,7 +482,6 @@ export default function App() {
     '/chat': channel.startsWith('dm-') ? channel.slice(3) : `# ${channel}`,
     '/voice': tr('The lounge'),
     '/cinema': 'Sinema',
-    '/cinema/room': 'Oda sineması',
     '/settings': tr('Settings'),
     '/notifications': 'Bildirimler',
     '/polls': tr('Quick polls'),
@@ -501,7 +489,6 @@ export default function App() {
     '/together': 'Birlikte',
     '/games': 'Kıraathane',
     '/youtube': 'DJ',
-    '/watch/youtube': 'Birlikte YouTube',
   };
   const setupName = visiblePath.startsWith('/setup/') ? visiblePath.slice(7) : null;
   const setupModes: ReferenceOnboardingMode[] = [
@@ -587,7 +574,7 @@ export default function App() {
     );
   return (
     <div
-      className={`app minimal-room-ui ${cinema ? 'cinema-mode' : ''} ${hallView ? 'hall-mode' : ''} ${voiceView ? 'voice-mode' : ''} ${mediaView ? 'personal-media-mode' : ''} ${communityView ? 'community-mode' : ''} ${visiblePath === '/chat' || visiblePath === '/dm' ? 'chat-mode' : ''} ${realtime.channelId ? 'voice-active' : ''} ${channelNavOpen ? 'channel-nav-open' : ''} ${contextDrawerOpen ? 'context-drawer-open' : ''}`}
+      className={`app minimal-room-ui ${hallView ? 'hall-mode' : ''} ${voiceView ? 'voice-mode' : ''} ${mediaView ? 'personal-media-mode' : ''} ${communityView ? 'community-mode' : ''} ${visiblePath === '/chat' || visiblePath === '/dm' ? 'chat-mode' : ''} ${realtime.channelId ? 'voice-active' : ''} ${channelNavOpen ? 'channel-nav-open' : ''} ${contextDrawerOpen ? 'context-drawer-open' : ''}`}
     >
       {<PushToTalk notify={notify} />}
       <div className="window-chrome">
@@ -732,7 +719,7 @@ export default function App() {
             </div>
           )}
           <div className="workspace-body">
-            <main className={`main-view ${cinema ? 'theater-view' : ''}`}>
+            <main className="main-view">
               <Suspense
                 fallback={
                   <div className="loading-view">
@@ -862,27 +849,17 @@ export default function App() {
                       community.user ? <CinemaHall notify={notify} /> : <ConnectionRequired />
                     }
                   />
-                  <Route path="/cinema/room" element={<Cinema notify={notify} />} />
                   <Route path="/polls" element={<Navigate to="/together?tab=polls" replace />} />
                   <Route path="/agent" element={<AgentWorkspace notify={notify} />} />
                   <Route path="/together" element={<Together />} />
                   <Route path="/games" element={<Games />} />
                   <Route
                     path="/youtube"
-                    element={
-                      localFixture ? (
-                        <Navigate to="/cinema/room" replace />
-                      ) : (
-                        <MusicDJEntry returnTo={lastNonDJPath.current} />
-                      )
-                    }
+                    element={<MusicDJEntry returnTo={lastNonDJPath.current} />}
                   />
-                  {/* The cinema room replaced the separate YouTube page; keep old links working. */}
-                  <Route path="/watch/youtube" element={<Navigate to="/cinema/room" replace />} />
                   <Route path="*" element={<Navigate to="/home" replace />} />
                 </Routes>
               </Suspense>
-              <CinemaPlayback notify={notify} />
               <Suspense fallback={null}>
                 <PersonalPlaybackRuntime notify={notify} />
               </Suspense>

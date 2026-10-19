@@ -490,11 +490,11 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
             {
               id: 'demo-notice-cinema',
               kind: 'activity',
-              title: 'Salon’da Cinema başladı.',
-              detail: 'Ece, Can ve Zeynep odada',
+              title: 'Sinema’da film başladı.',
+              detail: 'Ece, Can ve Zeynep izliyor',
               timestampLabel: '6 dakika önce',
               unread: true,
-              actionLabel: 'Cinema’yı aç',
+              actionLabel: 'Sinema’yı aç',
             },
             {
               id: 'demo-notice-agent',
@@ -540,7 +540,7 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
                 messageId: 'demo-detail-notice-mention',
               },
               'demo-notice-friend': { route: '/friends' },
-              'demo-notice-cinema': { route: '/cinema/room' },
+              'demo-notice-cinema': { route: '/cinema' },
               'demo-notice-agent': { route: '/agent' },
             },
     };

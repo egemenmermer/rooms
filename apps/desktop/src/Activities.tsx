@@ -9,19 +9,9 @@ import { useRealtime, stopScreen } from './realtime';
 import { useActivityRoom } from './activity';
 import { uiError } from './i18n';
 import { gameNames } from './Kiraathane';
-import { endsActivity, type RoomSnapshot } from '../../../packages/activity-protocol/src/index';
+import { endsActivity } from '../../../packages/activity-protocol/src/index';
 import { AppDirectory } from './AppDirectory';
-
-/** Where a running primary activity is shown in this client. */
-export function activityRoute(kind: NonNullable<RoomSnapshot['primary']>['activity']) {
-  return kind === 'hall'
-    ? '/cinema'
-    : kind === 'cinema' || kind === 'youtube'
-      ? '/cinema/room'
-      : kind === 'screen'
-        ? '/voice?view=share'
-        : '/games';
-}
+import { activityRoute } from './activity-route';
 
 export function ActivityLauncher({ onClose }: { onClose(): void }) {
   const community = useCommunity(),
@@ -40,15 +30,12 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
     openRoomActivity(path, navigate);
     onClose();
   };
-  const position = Math.max(0, Math.floor(activity.room?.timeline.positionSec ?? 0));
-  const positionLabel = `${Math.floor(position / 60)}:${String(position % 60).padStart(2, '0')}`;
-  const roomCount = activity.room?.participants.length;
-  // Nothing running: the searchable catalogue; the DJ keeps its own button. The old room cinema
-  // is no longer started from here; the community Sinema hall has its own sidebar entry.
+  const route = primary ? activityRoute(primary.activity) : null;
+  // Nothing running: the searchable catalogue; the DJ keeps its own button.
   if (!primary && !forbidden)
     return (
       <Modal title="Etkinlikler" hideHeading onClose={onClose} className="appdir-modal">
-        <AppDirectory apps={false} roomCinema={false} onClose={onClose} />
+        <AppDirectory apps={false} onClose={onClose} />
       </Modal>
     );
   return (
@@ -65,13 +52,11 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
             <span className="reference-activity-mark">
               <ReferenceIcon
                 name={
-                  primary.activity === 'youtube'
-                    ? 'play'
-                    : primary.activity === 'cinema'
-                      ? 'film'
-                      : primary.activity === 'screen'
-                        ? 'monitor'
-                        : 'cards'
+                  !route || primary.activity === 'hall'
+                    ? 'film'
+                    : primary.activity === 'screen'
+                      ? 'monitor'
+                      : 'cards'
                 }
                 size={23}
               />
@@ -81,10 +66,10 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
                 {(gameNames as Record<string, string>)[primary.title] ?? primary.title}
               </strong>
               <small>
-                {primary.activity === 'cinema'
-                  ? `Cinema · ${roomCount ?? 0} kişi odada · ${positionLabel}`
-                  : primary.activity === 'youtube'
-                    ? `YouTube · ${roomCount ?? 0} kişi izliyor`
+                {!route
+                  ? 'Eski Sinema · bu sürümde açılmıyor'
+                  : primary.activity === 'hall'
+                    ? 'Sinema salonu'
                     : primary.activity === 'screen'
                       ? 'Ekran paylaşımı'
                       : 'Oyun masası'}
@@ -92,6 +77,14 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
             </div>
             <span className="reference-live-pill">Etkin</span>
           </div>
+          {!route && (
+            <p className="modal-description">
+              Bu oturum eski Sinema’dan kalma ve bu sürümde açılmıyor.{' '}
+              {canEnd
+                ? 'Bitirirsen odada yeni bir etkinlik başlatabilirsin.'
+                : 'Oturumun hostu bitirince odada yeni bir etkinlik başlatabilirsin.'}
+            </p>
+          )}
           <div className="button-row">
             {canEnd && (
               <button
@@ -108,12 +101,15 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
                 {activity.busy ? 'Bitiriliyor…' : 'Etkinliği bitir'}
               </button>
             )}
-            <button
-              className="button primary"
-              onClick={() => open(activityRoute(primary.activity))}
-            >
-              {self ? 'Aç' : 'Katıl'}
-            </button>
+            {route ? (
+              <button className="button primary" onClick={() => open(route)}>
+                {self ? 'Aç' : 'Katıl'}
+              </button>
+            ) : (
+              <button className="button secondary" onClick={onClose}>
+                Kapat
+              </button>
+            )}
           </div>
         </>
       ) : forbidden ? (

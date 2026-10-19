@@ -21,10 +21,10 @@ function Where() {
   return <output data-testid="route">{location.pathname + location.search}</output>;
 }
 const onClose = vi.fn();
-const mount = (apps = true, roomCinema = true) =>
+const mount = (apps = true) =>
   render(
     <MemoryRouter initialEntries={['/chat']}>
-      <AppDirectory apps={apps} roomCinema={roomCinema} onClose={onClose} />
+      <AppDirectory apps={apps} onClose={onClose} />
       <Where />
     </MemoryRouter>,
   );
@@ -78,21 +78,26 @@ it('puts what is already running in the room first', () => {
 const highlights = () =>
   [...document.querySelectorAll('.appdir-featured .appdir-card strong')].map((n) => n.textContent);
 
-it('can leave out the old room cinema and still fills the highlight grid', () => {
-  mount(false, false);
+it('no longer offers the old room cinema and still fills the highlight grid', () => {
+  mount();
   expect(screen.queryByRole('button', { name: /Sinema/ })).toBeNull();
   expect(highlights()).toEqual(['Texas Hold’em', '101 Okey', 'Beyaz tahta', 'Anket']);
   const search = screen.getByRole('textbox', { name: 'Uygulama ve etkinlik ara' });
-  fireEvent.change(search, { target: { value: 'youtube' } });
-  expect(screen.getByText('“youtube” için bir şey bulunamadı.')).toBeTruthy();
+  fireEvent.change(search, { target: { value: 'sinema' } });
+  expect(screen.getByText('“sinema” için bir şey bulunamadı.')).toBeTruthy();
   fireEvent.keyDown(search, { key: 'Enter' });
   expect(screen.getByTestId('route').textContent).toBe('/chat');
   expect(onClose).not.toHaveBeenCalled();
 });
 
-it('keeps the room cinema in the composer catalogue until it is retired there too', () => {
+it('sends an old-cinema session from an older client to the launcher that explains it', () => {
+  f.activity = { room: { primary: { activity: 'youtube', title: 'Birlikte izle' } } };
+  const opened = vi.fn();
+  window.addEventListener('rooms:open-activity-launcher', opened);
   mount();
-  expect(highlights()).toEqual(['Sinema', 'Texas Hold’em', '101 Okey', 'Beyaz tahta']);
-  fireEvent.click(screen.getAllByRole('button', { name: /Sinema/ })[0]!);
-  expect(screen.getByTestId('route').textContent).toBe('/cinema/room');
+  fireEvent.click(screen.getByRole('button', { name: /Şu an odada Birlikte izle Eski Sinema/ }));
+  window.removeEventListener('rooms:open-activity-launcher', opened);
+  expect(opened).toHaveBeenCalledOnce();
+  expect(onClose).toHaveBeenCalled();
+  expect(screen.getByTestId('route').textContent).toBe('/chat');
 });

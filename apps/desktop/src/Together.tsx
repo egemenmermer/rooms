@@ -1,4 +1,4 @@
-import { openRoomActivity } from './MusicDJ';
+import { openActivity } from './activity-route';
 import './reference-together.css';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -115,14 +115,6 @@ export default function Together() {
       : 'Henüz oy yok';
   };
   const primary = activity.room?.primary;
-  const primaryPath =
-    primary?.activity === 'cinema'
-      ? '/cinema/room'
-      : primary?.activity === 'youtube'
-        ? '/cinema/room'
-        : primary?.activity === 'screen'
-          ? '/voice'
-          : '/games';
   const guardedActivity = {
     ...activity,
     send: async (command: ActivityCommand) => {
@@ -208,7 +200,7 @@ export default function Together() {
                 {primary && (
                   <button
                     className="button secondary"
-                    onClick={() => openRoomActivity(primaryPath, navigate)}
+                    onClick={() => openActivity(primary.activity, navigate)}
                   >
                     Etkinliği aç
                     <ArrowRight size={15} />

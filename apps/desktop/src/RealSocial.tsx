@@ -3,7 +3,7 @@ import { ChatAttachment } from './ChatAttachment';
 import { ScreenShareGallery } from './ScreenShareGallery';
 import { VoiceRoomViewActions } from './VoiceRoomViewActions';
 import { QuietMenu } from './QuietMenu';
-import { openRoomActivity } from './MusicDJ';
+import { openActivity, retiredActivity } from './activity-route';
 import { FriendRequestButton } from './FriendRequestButton';
 import { MediaStage } from './MediaStage';
 import { watchScreen, setScreenVolume } from './realtime';
@@ -38,7 +38,6 @@ import { useActivityRoom } from './activity';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
-  Play,
   AlertCircle,
   Bell,
   Download,
@@ -266,27 +265,6 @@ export function CommunityChat({
       active = false;
     };
   }, []);
-  const [activityArt, setActivityArt] = useState<string | null>(null);
-  useEffect(() => {
-    let active = true;
-    if (import.meta.env.DEV && new URLSearchParams(location.search).has('fixture'))
-      void import('./dev/reference-fixtures').then(() => {
-        if (active) setActivityArt('/__reference/01_brand/cinema-still.svg');
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-  const activityPath =
-    primary?.activity === 'hall'
-      ? '/cinema'
-      : primary?.activity === 'youtube'
-        ? '/cinema/room'
-        : primary?.activity === 'screen'
-          ? '/voice'
-          : primary?.activity === 'cinema'
-            ? '/cinema/room'
-            : '/games';
   const [searchOpen, setSearchOpen] = useState(false),
     [query, setQuery] = useState('');
   const [options, setOptions] = useState<CommunityMessage | null>(null),
@@ -674,24 +652,22 @@ export function CommunityChat({
         <div className="chat-announcement">
           <Film size={20} />
           <div>
-            <strong>
-              {primary.activity === 'cinema'
-                ? `${voice.roomName ?? 'Oda'}’da film gecesi başladı`
-                : primary.title}
-            </strong>
+            <strong>{primary.title}</strong>
             <small>
-              {activity.room?.participants
-                .filter((p) => p.userId !== c.user?.id)
-                .map((p) => p.displayName)
-                .join(', ')}
+              {retiredActivity(primary.activity)
+                ? 'Eski Sinema oturumu · bu sürümde açılmıyor'
+                : activity.room?.participants
+                    .filter((p) => p.userId !== c.user?.id)
+                    .map((p) => p.displayName)
+                    .join(', ')}
             </small>
           </div>
           <button
             className="button secondary small"
-            onClick={() => openRoomActivity(activityPath, navigate)}
+            onClick={() => openActivity(primary.activity, navigate)}
           >
             <ArrowRight size={17} />
-            Etkinliğe dön
+            {retiredActivity(primary.activity) ? 'Ayrıntılar' : 'Etkinliğe dön'}
           </button>
         </div>
       )}
@@ -888,35 +864,6 @@ export function CommunityChat({
             </Fragment>
           );
         })}
-        {primary?.activity === 'cinema' && !query && (
-          <article className="chat-active-card" aria-label="Halen açık Cinema etkinliği">
-            {activityArt ? (
-              <img src={activityArt} alt="" />
-            ) : (
-              <div className="chat-active-art">
-                <Film size={32} />
-              </div>
-            )}
-            <div>
-              <span>
-                <h4>{primary.title}</h4>
-                <p>
-                  Cinema ·{' '}
-                  {activity.room?.cinema?.sources.filter(
-                    (source) =>
-                      source.ready &&
-                      Date.now() + activity.serverOffsetMs - source.updatedAt < 15000,
-                  ).length ?? 0}{' '}
-                  kişi hazır
-                </p>
-              </span>
-              <button className="button primary" onClick={() => navigate('/cinema/room')}>
-                <Play size={17} />
-                Odaya git
-              </button>
-            </div>
-          </article>
-        )}
       </div>
       {unseen && (
         <button
@@ -2566,12 +2513,7 @@ export function RealVoiceDock({
                   .then(() => {
                     // Keep the selected personal player visible while its window is shared.
                     if (generation.current !== epoch) return;
-                    if (location.pathname !== '/media')
-                      navigate(
-                        location.pathname === '/cinema/room'
-                          ? '/cinema/room?view=screen'
-                          : '/voice?view=share',
-                      );
+                    if (location.pathname !== '/media') navigate('/voice?view=share');
                     close();
                   })
                   .catch((e) => {

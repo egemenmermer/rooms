@@ -33,8 +33,7 @@ import {
 } from './realtime';
 import { silencedHere } from './participant-audio';
 import { useActivityRoom } from './activity';
-import { activityRoute } from './Activities';
-import { openRoomActivity } from './MusicDJ';
+import { openActivity, retiredActivity } from './activity-route';
 import { useVoiceDirectory } from './voice-directory';
 import { VoiceAvatar } from './VoiceAvatar';
 import { QuietMenu } from './QuietMenu';
@@ -53,7 +52,13 @@ import {
   type VoiceMemberTarget,
 } from './VoiceModeration';
 /** A running activity in the joined room, one click from the room list. */
-function RoomActivityRow({ roomId, onOpen }: { roomId: string; onOpen(path: string): void }) {
+function RoomActivityRow({
+  roomId,
+  onOpen,
+}: {
+  roomId: string;
+  onOpen(kind: Parameters<typeof openActivity>[0]): void;
+}) {
   const activity = useActivityRoom(roomId),
     me = useCommunity((s) => s.user?.id);
   const room = activity.status === 'connected' ? activity.room : null;
@@ -61,12 +66,14 @@ function RoomActivityRow({ roomId, onOpen }: { roomId: string; onOpen(path: stri
   if (!room || !primary) return null;
   const joined = room.participants.some((p) => p.userId === me);
   const count = room.participants.length;
+  // An old-cinema session has no page here; the click opens the launcher that explains it.
+  const action = retiredActivity(primary.activity) ? 'Eski Sinema' : joined ? 'Aç' : 'Katıl';
   return (
     <button
       className="minimal-activity"
       title={`${primary.title} · ${count} kişi`}
-      aria-label={`${primary.title} sürüyor, ${count} kişi. ${joined ? 'Aç' : 'Katıl'}`}
-      onClick={() => onOpen(activityRoute(primary.activity))}
+      aria-label={`${primary.title} sürüyor, ${count} kişi. ${action}`}
+      onClick={() => onOpen(primary.activity)}
     >
       {['cinema', 'youtube', 'screen'].includes(primary.activity) ? (
         <Film size={13} />
@@ -74,7 +81,7 @@ function RoomActivityRow({ roomId, onOpen }: { roomId: string; onOpen(path: stri
         <Gamepad2 size={13} />
       )}
       <span>{primary.title}</span>
-      <small>{joined ? 'Aç' : 'Katıl'}</small>
+      <small>{action}</small>
     </button>
   );
 }
@@ -303,10 +310,7 @@ export function MinimalSidebar({
                   );
                 })}
                 {r.channelId === ch.id && r.status === 'connected' && (
-                  <RoomActivityRow
-                    roomId={ch.id}
-                    onOpen={(path) => openRoomActivity(path, navigate)}
-                  />
+                  <RoomActivityRow roomId={ch.id} onOpen={(kind) => openActivity(kind, navigate)} />
                 )}
                 {!(r.channelId === ch.id && r.status === 'connected') &&
                   (directory.error ||
