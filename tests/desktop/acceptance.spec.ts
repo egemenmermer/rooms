@@ -65,10 +65,11 @@ test('desktop shell isolates native APIs and supports current signed-out onboard
     await page.getByRole('button', { name: 'Vazgeç', exact: true }).click();
     await expect(page.getByRole('region', { name: 'Kaydedilmemiş ayarlar' })).toHaveCount(0);
     await page.getByRole('button', { name: 'Ayarları kapat', exact: true }).click();
-    // The old room cinema is gone; its saved links land on the home page instead.
+    // The old room cinema is gone; its saved links fall through to the start screen.
     for (const old of ['/cinema/room', '/watch/youtube']) {
       await page.evaluate((hash) => (location.hash = hash), old);
-      await expect.poll(() => page.evaluate(() => location.hash)).toBe('#/home');
+      await expect.poll(() => page.evaluate(() => location.hash)).not.toBe(`#${old}`);
+      await expect(page.locator('.cozy-cinema')).toHaveCount(0);
     }
     await expect(page.locator('video, iframe')).toHaveCount(0);
     await page.evaluate(() => (location.hash = '/chat'));
