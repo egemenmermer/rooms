@@ -88,7 +88,9 @@ try {
   let page = await launch();
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.getByRole('heading', { name: 'Giriş', exact: true }).waitFor();
+  // The signed-out start screen opens on Kayıt ol; the old connection card's "Giriş" heading
+  // only flashes while the app routes there.
+  await page.getByRole('heading', { name: 'Hesap oluştur', exact: true }).waitFor();
   const info = await page.evaluate(() => window.rooms.applicationInfo());
   assert.equal(info.version, version);
   assert.equal(info.platform, 'win32');
@@ -129,8 +131,6 @@ try {
   );
   await assert.rejects(page.evaluate(() => window.rooms.windowAction('invalid')));
   result.checks.push('Invalid privileged window command refused');
-  // Signed out, the start screen opens on Kayıt ol (signup with an invitation link).
-  await page.getByRole('heading', { name: 'Hesap oluştur', exact: true }).waitFor();
   await page.getByLabel('Davet bağlantısı', { exact: true }).waitFor();
   await page.getByRole('tab', { name: 'Giriş yap', exact: true }).click();
   await page.getByLabel('E-posta adresi').waitFor();
@@ -250,7 +250,7 @@ try {
   await app.close();
   app = null;
   page = await launch();
-  await page.getByRole('heading', { name: 'Giriş', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Hesap oluştur', exact: true }).waitFor();
   assert.equal(
     await page.evaluate(() => localStorage.getItem('rooms-windows-disposable-check')),
     'persisted',
