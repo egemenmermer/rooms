@@ -26,6 +26,8 @@ Kişisel medya (Medyam) bundan ayrıdır ve özel kalır. Sinema'daki yeniden ya
    - Dizi bölümleri ve film ayrıntıları ilk açılışta sağlayıcıdan alınır ve saklanır.
    - Görseller servis üzerinden gelir; üyeler sağlayıcıya hiç bağlanmaz.
 4. **Birlikte izleme.** Bir üye bir öğeyi açtığında salon etkinliğinin sırasına `community-media` öğesi eklenir. Herkesin istemcisi servisten aynı aktarımı ister.
+   - Salon sayfasından ayrılınca (ör. bir ses odasına girince) oynayan şey köşedeki küçük oynatıcıda sürer ve koltuk korunur. Küçük oynatıcıyı kapatınca koltuk bırakılır; salon sayfası açılınca ekranı geri alır.
+   - Sahnede ←/→ filmi veya bölümü herkes için 10 saniye sarar. Art arda basışlar ekranda toplanır ve tek komut olarak gider. Kumanda ev sahibindeyse ekran bunu söyler; canlı yayın sarılamaz.
 
 ## Güvenlik sınırları
 
@@ -60,6 +62,7 @@ Sunucu 2 vCPU / 3,7 GB RAM'dir, bu yüzden video **dönüştürülmez**.
   - Canlı yayında 8 segmentlik kayan pencere ve `EXT-X-PROGRAM-DATE-TIME` kullanılır. İstemciler bu zamana göre aynı hedef gecikmeye hizalanır.
   - Film ve dizide okuma hızı sınırlanır ve yaklaşık 60 saniyelik pencere tutulur (`ROOMS_CINEMA_VOD_WINDOW_SEC`). Sarma işlemi aktarımı yeni konumdan yeniden başlatır.
   - Her liste `EXT-X-PROGRAM-DATE-TIME` taşır ve servis çıktı zamanı 0'ın PDT'sini (`originPdtMs`) bildirir; oynatıcılar eserdeki konumu `offsetSec + (oynatılan tarih − originPdtMs)` olarak hesaplar.
+  - Röle salonun konumunun gerisinde kalabilir (servis 30 saniyeye kadar geride olanı yeniden kullanır, yavaş sağlayıcı daha da geri düşer). O zaman oynatıcı rölenin kenarını kovalamaz: bir kez kenarın 3 saniye gerisine atlar ve röle doldukça oynar. Eskiden her iki saniyede bir kenara geri sarıyordu.
   - İmaj, rölenin test edildiği sürümü kullanır: `mwader/static-ffmpeg:9.0.2` (Debian'ın ffmpeg 5.1'i gereken bayrakları tanımaz).
 - **ffmpeg'in ağ erişimi.**
   - ffmpeg sağlayıcı adresini hiç görmez. Servis içindeki loopback vekil her adımı özel ağ engeli, sabitlenmiş DNS ve en fazla 4 yönlendirme ile `privateFetch` üzerinden yapar.

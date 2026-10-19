@@ -60,6 +60,7 @@ Parola kurtarma, üst sistem kurulumunun posta/kurtarma yapılandırmasına bağ
 3. İşletim sistemi yakalama iznini değiştirdiysen gerekiyorsa uygulamayı yeniden aç.
 4. Başka cihaz/kulaklık dene; karşı tarafın gerçekten ses/görüntü alıp almadığını sor.
 5. Paylaşımda gerçek bir kaynak seç. Sistem sesi, platform ve derlemeye göre ayrı sınırlar taşır.
+6. Kulaklığın kendi mikrofon tuşu sesini kesmiyorsa görüşmedeyken **Ayarlar → Ses ve video** bölümündeki "Odada duyulan mikrofon" satırına bak. Orada kulaklık yazmıyorsa odaya başka bir mikrofon gidiyordur: listeden kulaklığı seç ya da işletim sisteminde kulaklığı varsayılan kayıt cihazı yap. Görüşme sürerken kulaklık açılır ya da geri takılırsa ROOMS seçili mikrofona ("Sistem varsayılanı" seçiliyse o anki varsayılana) kendiliğinden geçer.
 
 **Yöneticinin kontrolleri:**
 
