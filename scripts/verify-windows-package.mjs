@@ -129,11 +129,16 @@ try {
   );
   await assert.rejects(page.evaluate(() => window.rooms.windowAction('invalid')));
   result.checks.push('Invalid privileged window command refused');
-  await page.getByRole('button', { name: 'Giriş yap', exact: true }).click();
-  await page.getByLabel('E-posta adresi', { exact: true }).waitFor();
-  await page.getByRole('button', { name: 'Davetle hesap oluştur', exact: true }).click();
+  // Signed out, the start screen opens on Kayıt ol (signup with an invitation link).
   await page.getByRole('heading', { name: 'Hesap oluştur', exact: true }).waitFor();
-  result.checks.push('Login and invitation signup navigation without submitting credentials');
+  await page.getByLabel('Davet bağlantısı', { exact: true }).waitFor();
+  await page.getByRole('tab', { name: 'Giriş yap', exact: true }).click();
+  await page.getByLabel('E-posta adresi').waitFor();
+  await page.getByRole('tab', { name: 'Kendi sunucunu kur', exact: true }).click();
+  await page.getByLabel('Kurulum komutu', { exact: true }).waitFor();
+  result.checks.push(
+    'Start tabs (Kayıt ol, Giriş yap, Kendi sunucunu kur) without submitting credentials',
+  );
   await page.evaluate(() => (location.hash = '/settings?tab=appearance'));
   await page.getByRole('heading', { name: 'Görünüm ve erişilebilirlik', exact: true }).waitFor();
   for (const [width, height] of [
