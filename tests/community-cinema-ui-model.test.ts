@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RoomSnapshot } from '../packages/activity-protocol/src';
-import { liveDrift, liveRate, LIVE_LATENCY_MS } from '../apps/desktop/src/cinema/HallPlayer';
+import { liveDrift, liveRate, liveStep } from '../apps/desktop/src/cinema/HallPlayer';
 import {
   hallMedia,
   minutesLabel,
@@ -105,14 +105,27 @@ describe('hall commands', () => {
 });
 
 describe('live sync', () => {
-  it('measures drift against the shared latency and corrects gently', () => {
-    const now = 1_000_000;
-    expect(liveDrift(now - LIVE_LATENCY_MS, now, 0)).toBe(0);
-    expect(liveDrift(now - LIVE_LATENCY_MS - 2000, now, 0)).toBe(2);
+  it('measures drift against the relay live edge and corrects gently', () => {
+    expect(liveDrift(40, 40)).toBe(0);
+    expect(liveDrift(38, 40)).toBe(2);
     expect(liveRate(0.2)).toBe(1);
     expect(liveRate(1.2)).toBe(1.05);
     expect(liveRate(-0.8)).toBe(0.95);
     expect(liveRate(4)).toBeNull();
+  });
+
+  it('jumps only to the sync position, never to the start of the relay window', () => {
+    // On the target: no jump, normal speed.
+    expect(liveStep(40, 40, true)).toEqual({ seekTo: null, rate: 1, behindLive: false });
+    // A second behind: catch up by playing slightly faster.
+    expect(liveStep(39, 40, true)).toEqual({ seekTo: null, rate: 1.05, behindLive: false });
+    // Far behind: one jump to the sync position, and not again until the guard allows it.
+    expect(liveStep(30, 40, true)).toEqual({ seekTo: 40, rate: 1, behindLive: true });
+    expect(liveStep(30, 40, false)).toEqual({ seekTo: null, rate: 1, behindLive: true });
+    // Ahead of the hall, e.g. waiting at the edge when a stalled upstream resumes: never a
+    // jump back (that replays the last seconds on every stall), only a slower pace.
+    expect(liveStep(44, 40, true)).toEqual({ seekTo: null, rate: 0.95, behindLive: false });
+    expect(liveStep(48, 40, true)).toEqual({ seekTo: null, rate: 0.95, behindLive: false });
   });
 });
 
