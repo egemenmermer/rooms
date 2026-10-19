@@ -1639,6 +1639,33 @@ export function CommunityVoice({
       </button>
     );
   };
+  const shareTile = (track: (typeof screens)[number]) => {
+    const presenter = r.participants.find((p) => p.id === track.participantId)?.name ?? 'Katılımcı';
+    return (
+      <button
+        className="room-share-preview"
+        key={track.id}
+        aria-label={`${presenter} ekranını izle`}
+        onClick={() => navigate(`/voice?view=share&screen=${encodeURIComponent(track.id)}`)}
+      >
+        {track.local ? (
+          <MediaStage id={track.id} label="Ekran paylaşımı önizlemesi" />
+        ) : (
+          // Remote streams are not downloaded until this listener chooses to watch.
+          <span className="room-share-invite">
+            <MonitorUp size={30} />
+            <strong>Yayını izle</strong>
+          </span>
+        )}
+        <span>
+          <MonitorUp size={14} />
+          {presenter}
+          {track.local ? ' (sen)' : ''}
+          <small>{viewerSummary(r.participants, track.participantId)}</small>
+        </span>
+      </button>
+    );
+  };
   return (
     <div
       className={`discord-voice-page reference-voice-page page-enter ${familiarRoom ? 'familiar-room' : ''} ${video ? 'is-video' : ''} ${share ? 'is-screen' : ''}`}
@@ -1884,31 +1911,14 @@ export function CommunityVoice({
                 : undefined
             }
           >
-            {shownParticipants.map(tile)}
-            {screens.map((track) => (
-              <button
-                className="room-share-preview"
-                key={track.id}
-                aria-label={`${r.participants.find((p) => p.id === track.participantId)?.name ?? 'Katılımcı'} ekranını izle`}
-                onClick={() => navigate(`/voice?view=share&screen=${encodeURIComponent(track.id)}`)}
-              >
-                {track.local ? (
-                  <MediaStage id={track.id} label="Ekran paylaşımı önizlemesi" />
-                ) : (
-                  // Remote streams are not downloaded until this listener chooses to watch.
-                  <span className="room-share-invite">
-                    <MonitorUp size={30} />
-                    <strong>Yayını izle</strong>
-                  </span>
-                )}
-                <span>
-                  <MonitorUp size={14} />
-                  {r.participants.find((p) => p.id === track.participantId)?.name ?? 'Katılımcı'}
-                  {track.local ? ' (sen)' : ''}
-                  <small>{viewerSummary(r.participants, track.participantId)}</small>
-                </span>
-              </button>
-            ))}
+            {/* A shared screen sits right after its presenter, so it reads as theirs. */}
+            {shownParticipants.flatMap((p) => [
+              tile(p),
+              ...screens.filter((track) => track.participantId === p.id).map(shareTile),
+            ])}
+            {screens
+              .filter((track) => !shownParticipants.some((p) => p.id === track.participantId))
+              .map(shareTile)}
             {familiarRoom && shownParticipants.length === 1 ? (
               <div className="room-activity-tile">
                 <div className="room-activity-illustration" aria-hidden="true">
