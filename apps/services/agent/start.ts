@@ -413,7 +413,7 @@ async function main() {
           platform: 'stoat',
         });
         return task
-          ? `Görev ${task.state === 'awaiting-approval' ? 'onay bekliyor' : 'sıraya alındı'}. Sonuç bu mesaja yanıt olarak gönderilecek; ilerlemeyi ROOMS Agent ekranından görebilirsin.`
+          ? `Görev ${task.state === 'awaiting-approval' ? 'onay bekliyor' : 'sıraya alındı'}. Sonuç bu mesaja yanıt olarak gönderilecek; ilerlemeyi Tayfa Agent ekranından görebilirsin.`
           : 'Bu mesaj için görev zaten oluşturuldu.';
       },
     });
@@ -443,7 +443,7 @@ async function main() {
           platform: 'discord',
         });
         return task
-          ? `ROOMS görevi ${task.state === 'awaiting-approval' ? 'onay bekliyor' : 'sıraya alındı'}. Sonuç bu mesaja yanıt olarak gönderilecek; ilerlemeyi ROOMS Agent ekranından görebilirsin.`
+          ? `Tayfa görevi ${task.state === 'awaiting-approval' ? 'onay bekliyor' : 'sıraya alındı'}. Sonuç bu mesaja yanıt olarak gönderilecek; ilerlemeyi Tayfa Agent ekranından görebilirsin.`
           : 'Bu mesaj için görev zaten oluşturuldu.';
       },
     });

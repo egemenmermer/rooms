@@ -188,7 +188,7 @@ export function ReferenceRDConnection({
               </>
             )}
             <p className="ref-rd-note">
-              İptal etmek ROOMS'un bu denemeyi tamamlamasını durdurur. Kod, sağlayıcıda süresi
+              İptal etmek Tayfa'nın bu denemeyi tamamlamasını durdurur. Kod, sağlayıcıda süresi
               dolana kadar geçerli kalabilir.
             </p>
           </>
@@ -216,7 +216,7 @@ export function ReferenceRDConnection({
             <Link2 size={38} aria-hidden="true" />
             <h3>Onay kontrolü durduruldu.</h3>
             <p>
-              ROOMS bu denemeyi tamamlamayacak. Kod, sağlayıcıda süresi dolana kadar geçerli
+              Tayfa bu denemeyi tamamlamayacak. Kod, sağlayıcıda süresi dolana kadar geçerli
               kalabilir.
             </p>
           </div>

@@ -12,7 +12,7 @@
 
 ## Kaynak kod ve kurulum dosyaları
 
-Depo herkese açıktır; özgün ROOMS kodu MIT lisanslıdır. Hazır masaüstü paketleri [GitHub sürümlerinde](https://github.com/egemenmermer/rooms/releases/latest) yayımlanır. Kaynağı veya paketi indirmek topluluğa üyelik ve hazır hesap sağlamaz; yöneticinin sunucu adresi ve daveti gerekir. Kendi topluluğunu dağıtan kişi kendi uyumlu paketini ve davetlerini yönetir.
+Depo herkese açıktır; özgün Tayfa kodu MIT lisanslıdır. Hazır masaüstü paketleri [GitHub sürümlerinde](https://github.com/egemenmermer/rooms/releases/latest) yayımlanır. Kaynağı veya paketi indirmek topluluğa üyelik ve hazır hesap sağlamaz; yöneticinin sunucu adresi ve daveti gerekir. Kendi topluluğunu dağıtan kişi kendi uyumlu paketini ve davetlerini yönetir.
 
 Git etiketi kaynağı tanımlar. Tek başına indirilebilir uygulamanın imzalı, noter onaylı veya test edilmiş olduğunu kanıtlamaz. Özel topluluk arşivlerini ve incelenmemiş geçmiş dosyaları herkese açık paket olarak yeniden dağıtma.
 

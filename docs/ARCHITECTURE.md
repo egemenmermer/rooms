@@ -11,7 +11,7 @@
 
 ## Süreçler ve güven sınırları
 
-ROOMS, tek bir Electron/React masaüstü kabuğu ve ayrı servis yetkilerinden oluşur.
+Tayfa, tek bir Electron/React masaüstü kabuğu ve ayrı servis yetkilerinden oluşur.
 
 Görünüm süreci tipli preload köprüsünü kullanır. Yerel oturum saklama, dosyalar/yakalama, sağlayıcı kimlik bilgileri ve ağ yetenekleri Electron main'e aittir. Görünüm sürecinde Node entegrasyonu kapalıdır. IPC; güvenilir göndereni, pencereyi, çerçeveyi, kaynak adresini ve girdiyi doğrular. Yerel kimlik doğrulama seçilen sunucu ve hesapla sınırlıdır.
 

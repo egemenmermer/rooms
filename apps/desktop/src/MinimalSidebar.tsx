@@ -136,7 +136,7 @@ export function MinimalSidebar({
     <ChannelTools>
       <aside id="rooms-navigation" className="minimal-sidebar" aria-label="Odalar ve gezinme">
         <header>
-          <QuietMenu label={space?.name ?? 'ROOMS'}>
+          <QuietMenu label={space?.name ?? 'Tayfa'}>
             {c.spaces.map((s) => (
               <button
                 key={s.id}

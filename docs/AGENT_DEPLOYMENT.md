@@ -1,4 +1,4 @@
-# Ayrı sunucuda ROOMS Agent kurulumu
+# Ayrı sunucuda Tayfa Agent kurulumu
 
 Bu rehber ayrı Linux sunucusundaki Docker arka ucunu anlatır. Aynı fiziksel sunucuda çalıştırmak için bunun kurallarını gevşetmeyin; ayrı tasarlanmış [yetkisiz Podman arka ucunu](../infra/agent/shared/README.md) kullanın. Masaüstü yetkili görevleri gönderir, ilerleme ve sonuçları alır. Ayrı Agent sunucusunda Core veritabanı kimlik bilgileri, kişisel IPTV/Real-Debrid kasası, masaüstü dosya sistemi bağlantısı veya Core özel ağına bağlantı bulunmamalıdır. İlk uygulama sırasında üretim sunucusu veya harici kimlik bilgisi sağlanmamıştı; aşağıdaki test sınırları o kontrol noktasını anlatır.
 
@@ -47,7 +47,7 @@ TLS ters vekil kullanın; servis yerel 3041 portunda kalsın. `SERVICE_HOST` ve 
 
 Bunlar gerçek kimlik bilgileri değil örneklerdir. Drive, ayrı `driveOAuth` veya yedek `driveToken` erişim belirteci kullanabilir. OAuth yenileme yalnızca `https://oauth2.googleapis.com/token` kullanır, kimlik bilgili yönlendirmeyi reddeder, yanıt boyutu/ömür sınırı koyar; erişim belirtecini sona ermeden kısa süre öncesine kadar yalnızca servis belleğinde tutar. Yenileme bilgileri model argümanlarına, görünüm verisine veya çalışan bağlarına girmez. API reddi önbelleği geçersizleştirir; değişiklik yapabilecek işlemi otomatik tekrarlamaz. Yalnız erişim belirteci ayarı süre bitimi/iptali açık bildirir; gerektiğinde özel belirteci yenileyin. GitHub sınırlı içerik okuma, issue, beklenen commit SHA ile dosya yazma ve taslak PR destekler. Drive izinli klasörde listeleme/okuma/metin oluşturmayı destekler. Yetenek üstverisi canlı sağlayıcı doğrulamasını değil yapılandırılan kapsamı gösterir.
 
-[Google'ın resmî çevrimdışı OAuth akışını](https://developers.google.com/identity/protocols/oauth2/web-server#offline) izleyin. Ayrı bot hesabı için uygun en düşük Drive kapsamını ve çevrimdışı erişimi kullanarak resmî onay akışını yönetsel olarak tamamlayın. İstemci kimliği/sırrı ve yenileme belirtecini yalnız 0600 bağlayıcı dosyasına koyun. ROOMS tarayıcı onay geri dönüşü sağlamaz veya bunları görünümden toplamaz. Gerektiğinde Google hesap/projesinden iptal edin veya döndürün, ardından servisi yeniden başlatın. Klasör izin listesi yenilemeden sonra da zorunludur. Canlı hesapla OAuth onayı, yenileme ve Drive çağrıları bu ilk uygulama kontrolünde denenmedi.
+[Google'ın resmî çevrimdışı OAuth akışını](https://developers.google.com/identity/protocols/oauth2/web-server#offline) izleyin. Ayrı bot hesabı için uygun en düşük Drive kapsamını ve çevrimdışı erişimi kullanarak resmî onay akışını yönetsel olarak tamamlayın. İstemci kimliği/sırrı ve yenileme belirtecini yalnız 0600 bağlayıcı dosyasına koyun. Tayfa tarayıcı onay geri dönüşü sağlamaz veya bunları görünümden toplamaz. Gerektiğinde Google hesap/projesinden iptal edin veya döndürün, ardından servisi yeniden başlatın. Klasör izin listesi yenilemeden sonra da zorunludur. Canlı hesapla OAuth onayı, yenileme ve Drive çağrıları bu ilk uygulama kontrolünde denenmedi.
 
 ## Sınırlı ağ
 
@@ -70,7 +70,7 @@ node scripts/agent-model-login.mjs codex OWNER_ID CONNECTION_ID
 node scripts/agent-model-login.mjs claude OWNER_ID CONNECTION_ID
 ```
 
-Yardımcı iç ağ/vekili ve sahip/bağlantı başına ayrı resmî yetki evini kullanır. ROOMS OAuth oturum belirteci veya hesap parolası toplamaz. Sağlayıcının desteklenen giriş/abonelik kurallarını kontrol edin. Yetki dosyasının varlığı güncel oturumu kanıtlamaz. Abonelikleri ortak havuz yapmayın.
+Yardımcı iç ağ/vekili ve sahip/bağlantı başına ayrı resmî yetki evini kullanır. Tayfa OAuth oturum belirteci veya hesap parolası toplamaz. Sağlayıcının desteklenen giriş/abonelik kurallarını kontrol edin. Yetki dosyasının varlığı güncel oturumu kanıtlamaz. Abonelikleri ortak havuz yapmayın.
 
 Resmî CLI görevleri OpenRouter aracısının GitHub/Drive veya kalıcı bot tarayıcısını kullanmaz. Yalıtılmış alan ve yapılandırılmış ağda CLI'nin kendi kod/araştırma davranışını çalıştırır. Yetenekler ayrıdır. Canlı sağlayıcı giriş/çalıştırma kabulü ayrıca gerekir.
 

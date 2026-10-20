@@ -72,8 +72,8 @@ export const activityMessages: Record<string, string> = {
   'Sunucudaki resmî model adı': 'Sunucudaki resmî model adı',
   'KİŞİSEL API ANAHTARI': 'KİŞİSEL API ANAHTARI',
   'Anahtarını yapıştır': 'Anahtarını yapıştır',
-  'bağlantısı ayrı sunucudaki resmî CLI oturumunu kullanır. ROOMS, ChatGPT veya Claude parolanı istemez.':
-    'bağlantısı ayrı sunucudaki resmî CLI oturumunu kullanır. ROOMS, ChatGPT veya Claude parolanı istemez.',
+  'bağlantısı ayrı sunucudaki resmî CLI oturumunu kullanır. Tayfa, ChatGPT veya Claude parolanı istemez.':
+    'bağlantısı ayrı sunucudaki resmî CLI oturumunu kullanır. Tayfa, ChatGPT veya Claude parolanı istemez.',
   'Bağlantıyı ekle': 'Bağlantıyı ekle',
   'ODANIN YARDIMCISI': 'ODANIN YARDIMCISI',
   'Bir fikrin var mı?': 'Bir fikrin var mı?',
@@ -123,7 +123,7 @@ export const activityMessages: Record<string, string> = {
   'Bu hafıza notunu sil': 'Bu hafıza notunu sil',
   'Henüz kaydedilmiş bir not yok.': 'Henüz kaydedilmiş bir not yok.',
   bağlantılar: 'bağlantılar',
-  ROOMS: 'ROOMS',
+  Tayfa: 'Tayfa',
   rooms: 'rooms',
   '⌘ K': '⌘ K',
   DEMO: 'DEMO',
@@ -350,8 +350,8 @@ export const activityMessages: Record<string, string> = {
   'Resmî Real-Debrid yetkilendirmesi ile yalnızca kendi hesabına bağlan.':
     'Resmî Real-Debrid yetkilendirmesi ile yalnızca kendi hesabına bağlan.',
   'YETKİLENDİRME KODUN': 'YETKİLENDİRME KODUN',
-  'Kodu resmî yetkilendirme sayfasına gir. ROOMS bağlantıyı burada kontrol eder.':
-    'Kodu resmî yetkilendirme sayfasına gir. ROOMS bağlantıyı burada kontrol eder.',
+  'Kodu resmî yetkilendirme sayfasına gir. Tayfa bağlantıyı burada kontrol eder.':
+    'Kodu resmî yetkilendirme sayfasına gir. Tayfa bağlantıyı burada kontrol eder.',
   'Yetkilendirme sayfası': 'Yetkilendirme sayfası',
   'Onayın bekleniyor ·': 'Onayın bekleniyor ·',
   'sonuna kadar': 'sonuna kadar',
@@ -394,7 +394,7 @@ export const activityMessages: Record<string, string> = {
   'Dosya yükleniyor': 'Dosya yükleniyor',
   'Davet bağlantısı kopyalandı.': 'Davet bağlantısı kopyalandı.',
   'Davet bağlantısını kopyala': 'Davet bağlantısını kopyala',
-  'ROOMS 0.1.0': 'ROOMS 0.1.0',
+  'Tayfa 0.1.0': 'Tayfa 0.1.0',
   'Mavi saat · özgün demo': 'Mavi saat · özgün demo',
   'Ortak oynatma için topluluğuna giriş yap ve bir sohbet ya da ses odası seç.':
     'Ortak oynatma için topluluğuna giriş yap ve bir sohbet ya da ses odası seç.',
@@ -523,8 +523,8 @@ export const activityMessages: Record<string, string> = {
   'Invalid provider base URL.': 'Sağlayıcı adresi geçersiz. HTTPS adresini kontrol et.',
   'Personal channel not found.': 'Kişisel kanal bulunamadı.',
   'Personal channel not found. Refresh the list.': 'Kişisel kanal bulunamadı. Listeyi yenile.',
-  'Real-Debrid device login requires the ROOMS registered public client ID.':
-    'Bu ROOMS sürümünde Real-Debrid istemci kaydı yapılandırılmamış.',
+  'Real-Debrid device login requires the Tayfa registered public client ID.':
+    'Bu Tayfa sürümünde Real-Debrid istemci kaydı yapılandırılmamış.',
   'Real-Debrid returned an invalid authorization request.':
     'Real-Debrid geçerli bir yetkilendirme isteği döndürmedi.',
   'Real-Debrid authorization did not complete.': 'Real-Debrid yetkilendirmesi tamamlanmadı.',
@@ -538,8 +538,8 @@ export const activityMessages: Record<string, string> = {
     'Güncelleme imzası doğrulanamadı. Mevcut sürümün kullanılmaya devam ediyor.',
   'The update could not be verified or downloaded. Your current application remains installed.':
     'Güncelleme indirilemedi veya doğrulanamadı. Mevcut sürümün kullanılmaya devam ediyor.',
-  'macOS uses real native traffic lights. Window size is restored between launches. Invitation links open securely in ROOMS.':
-    'macOS pencere düğmeleri sistemin kendisine aittir. Pencere boyutu korunur. Davet bağlantıları ROOMS içinde güvenli biçimde açılır.',
+  'macOS uses real native traffic lights. Window size is restored between launches. Invitation links open securely in Tayfa.':
+    'macOS pencere düğmeleri sistemin kendisine aittir. Pencere boyutu korunur. Davet bağlantıları Tayfa içinde güvenli biçimde açılır.',
   'Reminder source or authorization is unavailable.':
     'Hatırlatmanın kaynak mesajı veya gönderme izni artık kullanılamıyor.',
   'Delivery outcome uncertain. Verify the remote message before retrying.':

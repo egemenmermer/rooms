@@ -78,12 +78,12 @@ test.describe('personal entrance and leave sounds', () => {
     await owner.page.getByRole('button', { name: 'Giriş sesini değiştir' }).click();
     const picker = owner.page.getByRole('dialog', { name: 'Giriş sesi seç' });
     await picker
-      .getByRole('list', { name: 'ROOMS sesleri' })
+      .getByRole('list', { name: 'Tayfa sesleri' })
       .getByRole('button', { name: /^Fanfar \d/ })
       .click();
     await expect(
       picker
-        .getByRole('list', { name: 'ROOMS sesleri' })
+        .getByRole('list', { name: 'Tayfa sesleri' })
         .getByRole('button', { name: /^Fanfar \d/ }),
     ).toHaveAttribute('aria-pressed', 'true');
     await owner.page.keyboard.press('Escape');

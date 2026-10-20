@@ -3,13 +3,13 @@ import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { SocialMessage } from '@rooms/social';
 
-/** ROOMS quote-replies carry the first 400 characters of the quoted message. */
+/** Tayfa quote-replies carry the first 400 characters of the quoted message. */
 export const QUOTE_PREFIX_LENGTH = 400;
 export const STOAT_MESSAGE_LIMIT = 1900;
 
 export interface BotIdentity {
   id: string;
-  /** Names users can type as plain text (`@claude`) and names ROOMS quote-replies use. */
+  /** Names users can type as plain text (`@claude`) and names Tayfa quote-replies use. */
   names: string[];
 }
 
@@ -69,7 +69,7 @@ export function cleanPrompt(content: string, bot: BotIdentity) {
 }
 
 /**
- * Parse the ROOMS desktop quote-reply format:
+ * Parse the Tayfa desktop quote-reply format:
  * `> Name: first line\n> more lines\n\nreply text`.
  */
 export function parseQuoteReply(content: string) {
@@ -91,7 +91,7 @@ export function parseQuoteReply(content: string) {
   };
 }
 
-/** ROOMS chat renders plain text, so drop Markdown syntax that would otherwise show literally. */
+/** Tayfa chat renders plain text, so drop Markdown syntax that would otherwise show literally. */
 export function toPlainText(text: string) {
   return text
     .split('\n')

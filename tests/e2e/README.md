@@ -1,6 +1,6 @@
-# ROOMS uçtan uca testleri
+# Tayfa uçtan uca testleri
 
-Gerçek ROOMS masaüstü istemcilerini yerel ve atılabilir bir ROOMS sunucusuna (Stoat, erişim, Activities, LiveKit) karşı çalıştırır.
+Gerçek Tayfa masaüstü istemcilerini yerel ve atılabilir bir Tayfa sunucusuna (Stoat, erişim, Activities, LiveKit) karşı çalıştırır.
 
 ```sh
 pnpm build

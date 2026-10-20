@@ -72,7 +72,7 @@ export function setupWindowPolicy(
       void dialog
         .showMessageBox(window, {
           type: 'question',
-          title: 'ROOMS',
+          title: 'Tayfa',
           message: 'Pencereyi kapat?',
           detail: 'Ses bağlantın sonlanacak.',
           buttons: ['Vazgeç', 'Pencereyi kapat'],

@@ -35,7 +35,7 @@ function packageDetails(item){
  selected=item;
  const windows=item.platform==='Windows';
  $('download-meta').textContent=(windows?'Windows · x64 · EXE':'macOS 14+ · Apple Silicon · DMG')+' · '+size(item.size);
- $('installation').textContent=windows?'EXE dosyasını aç → Kurulumu tamamla → ROOMS’u aç.':'DMG’yi aç → ROOMS’u Applications’a sürükle → Applications’tan aç.';
+ $('installation').textContent=windows?'EXE dosyasını aç → Kurulumu tamamla → Tayfa’yı aç.':'DMG’yi aç → Tayfa’yı Applications’a sürükle → Applications’tan aç.';
  $('signature-note').textContent=windows&&!item.signed?'İmzasız arkadaş test paketi. Windows yayıncı uyarısı gösterebilir. Güncellemeler yeni EXE ile kurulur.':'';
  $('metadata').replaceChildren(...Object.entries({'sürüm':item.version,'platform':windows?'Windows':'macOS 14+','mimari':item.arch,'boyut':size(item.size),'SHA-256':item.sha256}).flatMap(([key,value])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=key;dd.textContent=value;return [dt,dd];}));
  $('notes').replaceChildren(...item.notes.map(note=>{const li=document.createElement('li');li.textContent=note;return li;}));
@@ -53,7 +53,7 @@ async function download(item,event){
 }
 function select(item,index){
  $('release-heading').textContent=index===0?'SON SÜRÜM':'SÜRÜM DETAYI';$('inspect-command').textContent=index===0?'./latest':'inspect '+item.version;
- $('release-title').textContent='ROOMS '+item.version;$('release-date').textContent=date(item.date);$('release-badge').textContent=index===0?'GÜNCEL':'ARŞİV';
+ $('release-title').textContent='Tayfa '+item.version;$('release-date').textContent=date(item.date);$('release-badge').textContent=index===0?'GÜNCEL':'ARŞİV';
  const preferred=/Windows/i.test(navigator.userAgent)?'Windows':'macOS';packageDetails(item.files.find(file=>file.platform===preferred)||item.files[0]);
  $('downloads').replaceChildren(...['Windows','macOS'].map(platform=>{
   const file=item.files.find(value=>value.platform===platform),label=platform==='Windows'?'Windows indir':'Mac indir';
@@ -67,7 +67,7 @@ async function load(){
  const result=await api('releases');const grouped=new Map();for(const file of result.releases){let item=grouped.get(file.version);if(!item){item={version:file.version,date:file.date,files:[]};grouped.set(file.version,item);}item.files.push(file);}releases=[...grouped.values()];
  $('locked').hidden=true;$('portal').hidden=false;$('logout').hidden=false;$('address').textContent='rooms — -zsh — 80×24';
  $('release-count').textContent=releases.length+' sürüm';$('empty').hidden=releases.length>0;$('release-body').hidden=releases.length===0;
- $('release-list').replaceChildren(...releases.map((item,index)=>{const row=document.createElement('button');row.className='release-row';row.type='button';row.setAttribute('aria-pressed','false');row.setAttribute('aria-label','ROOMS '+item.version+' sürümünü incele');for(const [i,value]of [item.version,shortDate(item.date),item.files.map(file=>file.platform==='macOS'?'Mac':'Windows').join(' / '),index===0?'güncel':'arşiv'].entries()){const span=document.createElement('span');span.textContent=value;if(i===3)span.className='badge';row.append(span);}row.addEventListener('click',()=>select(item,index));return row;}));
+ $('release-list').replaceChildren(...releases.map((item,index)=>{const row=document.createElement('button');row.className='release-row';row.type='button';row.setAttribute('aria-pressed','false');row.setAttribute('aria-label','Tayfa '+item.version+' sürümünü incele');for(const [i,value]of [item.version,shortDate(item.date),item.files.map(file=>file.platform==='macOS'?'Mac':'Windows').join(' / '),index===0?'güncel':'arşiv'].entries()){const span=document.createElement('span');span.textContent=value;if(i===3)span.className='badge';row.append(span);}row.addEventListener('click',()=>select(item,index));return row;}));
  if(releases.length)select(releases[0],0);
 }
 $('invite-form').addEventListener('submit',async event=>{event.preventDefault();$('enter').disabled=true;$('code').readOnly=true;updateInviteCaret();$('login-status').className='feedback';$('login-status').textContent='> davet doğrulanıyor…';try{await api('login',{method:'POST',body:JSON.stringify({code:$('code').value.trim()})});$('login-status').className='feedback success';$('login-status').textContent='✓ erişim verildi';$('code').value='';await load();$('logout').focus();}catch(error){locked(error.message);$('code').focus();}finally{$('enter').disabled=false;$('code').readOnly=false;updateInviteCaret();}});

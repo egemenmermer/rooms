@@ -32,6 +32,6 @@ export const playbackFailureCopy: Record<
   unknown: {
     title: 'Kaynak oynatılamadı',
     message:
-      'ROOMS bu yayını açamadı; hata nedeni belirlenemedi. Oynatma seçeneklerinden başka bir oynatıcıyla kontrol edebilirsin.',
+      'Tayfa bu yayını açamadı; hata nedeni belirlenemedi. Oynatma seçeneklerinden başka bir oynatıcıyla kontrol edebilirsin.',
   },
 };

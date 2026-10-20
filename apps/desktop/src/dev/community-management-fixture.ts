@@ -39,7 +39,7 @@ const memberNames = ['Deniz', 'Ece', 'Can', 'Zeynep', 'Mert'] as const;
 const moderatorRole = 'demo-role-moderator';
 const memberRole = 'demo-role-member';
 const brokerReason =
-  'ROOMS davet aracısında yetkili davet listeleme ve iptal etme yöntemi henüz uygulanmadı.';
+  'Tayfa davet aracısında yetkili davet listeleme ve iptal etme yöntemi henüz uygulanmadı.';
 const unsupported: Partial<Record<CommunityManagementFixtureVariant, string>> = {
   invites:
     'The safe invitations tab shows the actual unsupported broker capability; the original active invitation rows are not fabricated.',

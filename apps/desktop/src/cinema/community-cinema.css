@@ -1,4 +1,4 @@
-/* Community cinema hall. ROOMS purple means "you can act here"; red only ever means LIVE. */
+/* Community cinema hall. Tayfa purple means "you can act here"; red only ever means LIVE. */
 :root {
   --cinema-ground: #17181d;
   --cinema-screen: #050507;
@@ -2811,7 +2811,7 @@ html[data-motion='reduce'] .hall-screen-host {
 }
 
 /* RMDB: the community's own film diary. Stars stay amber like the catalog rating; progress,
-   hearts and this member's own marks are ROOMS purple. Red still only means LIVE. */
+   hearts and this member's own marks are Tayfa purple. Red still only means LIVE. */
 .rmdb-head {
   display: flex;
   align-items: flex-end;

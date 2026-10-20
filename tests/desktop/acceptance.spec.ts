@@ -34,7 +34,7 @@ test('desktop shell isolates native APIs and supports current signed-out onboard
     ).rejects.toThrow();
     await expect(page.getByRole('heading', { name: 'Hesap oluştur', exact: true })).toBeVisible();
     await page.getByLabel('Davet bağlantısı', { exact: true }).fill('!!!');
-    await expect(page.getByText(/Bu bir ROOMS davet bağlantısı değil/)).toBeVisible();
+    await expect(page.getByText(/Bu bir Tayfa davet bağlantısı değil/)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Hesap oluştur ve katıl' })).toBeDisabled();
     await page.getByRole('tab', { name: 'Kayıt ol', exact: true }).press('ArrowRight');
     await expect(page.getByRole('tab', { name: 'Giriş yap', exact: true })).toBeFocused();

@@ -1,6 +1,6 @@
 # Onaylı masaüstü kontrolü
 
-ROOMS'ta sunum devri ile işletim sistemi giriş onayı ayrıdır. İnsan izleyici gerçekten yayımlanan ekran izinin kontrolünü ister. Yayıncı o anda seçili tam monitör için yerel onay penceresinden kabul eder. Pencere yakalama, bot, Agent görevi, pano eşzamanlama, dosya aktarımı veya gözetimsiz erişim için giriş yolu yoktur.
+Tayfa'da sunum devri ile işletim sistemi giriş onayı ayrıdır. İnsan izleyici gerçekten yayımlanan ekran izinin kontrolünü ister. Yayıncı o anda seçili tam monitör için yerel onay penceresinden kabul eder. Pencere yakalama, bot, Agent görevi, pano eşzamanlama, dosya aktarımı veya gözetimsiz erişim için giriş yolu yoktur.
 
 Access her kısa ömürlü istek/onayı odaya, yayıncı/denetleyici kimliklerine ve LiveKit katılımcı SID'lerine, gerçek ekran izi SID'sine ve yeni yerel yakalama nesline bağlar. Yeniden katılma, yeni yakalama, iz/üyelik kaybı veya servis yeniden başlatması yeni karar ister. Beş saniyelik kirayı yalnız yayıncı kalp atışı uzatır. Yerel ana süreç 2,5 saniye içinde doğrulama ister; yavaş/eski yetki yanıtını reddeder. Yeniden bağlantı kullanılmış onayı etkinleştiremez.
 

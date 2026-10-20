@@ -3,7 +3,7 @@ import type { ApnsAlert, ApnsClient, ApnsEnvironment, ApnsResult } from './apns'
 
 /**
  * Upstream pushd routes sessions subscribed with endpoint "apn" to this routing key, but its own
- * APNs consumer hardcodes the Revolt app topic. ROOMS consumes the same routed payload instead of
+ * APNs consumer hardcodes the Revolt app topic. Tayfa consumes the same routed payload instead of
  * forking pushd, and leaves pushd's APNs keys unset so the two never compete.
  */
 export const APNS_EXCHANGE = 'revolt.notifications';
@@ -38,12 +38,12 @@ const payloadSchema = z
 const clip = (value: string, limit: number) =>
   value.length > limit ? `${[...value].slice(0, limit - 1).join('')}…` : value;
 
-/** Returns null for payload kinds ROOMS does not deliver to iPhone (friend requests, badges, calls). */
+/** Returns null for payload kinds Tayfa does not deliver to iPhone (friend requests, badges, calls). */
 export function messageAlert(raw: unknown): { token: string; alert: ApnsAlert } | null {
   const payload = payloadSchema.parse(raw);
   if (payload.notification.type !== 'MessageNotification') return null;
   const notification = notificationSchema.parse(payload.notification.data);
-  const author = clip(notification.author.trim() || 'ROOMS', 80);
+  const author = clip(notification.author.trim() || 'Tayfa', 80);
   const place = notification.channel.name ? clip(notification.channel.name, 60) : null;
   const title =
     notification.channel.channel_type === 'TextChannel' && place

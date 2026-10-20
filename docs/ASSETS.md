@@ -1,6 +1,6 @@
 # Görsellerin kaynağı ve lisansı
 
-ROOMS'un özgün kaynak kodu ve projeye ait marka/vektör görselleri sahibi tarafından MIT ile sunulur. `InterVariable.woff2`, SIL Open Font License 1.1 ve yanındaki OFL bildirimini korur. Bağımlılık ve gömülü yerel bileşen bildirimleri [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) ile üretilen ikili bildirimlerinde kalır.
+Tayfa'nın özgün kaynak kodu ve projeye ait marka/vektör görselleri sahibi tarafından MIT ile sunulur. `InterVariable.woff2`, SIL Open Font License 1.1 ve yanındaki OFL bildirimini korur. Bağımlılık ve gömülü yerel bileşen bildirimleri [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) ile üretilen ikili bildirimlerinde kalır.
 
 `dj/default-dj.png`, 14 Ekim 2026'da yerleşik OpenAI ImageGen aracıyla girdi/referans görsel kullanılmadan üretildi. Gerçek kişi veya mevcut markalı karakter yerine özgün soyut robot gösterir. Sahibinin verebildiği haklar ölçüsünde projenin MIT lisanslı özgün varlıklarıyla sunulur; üçüncü taraflara karşı münhasırlık iddiası yoktur.
 
@@ -10,7 +10,7 @@ Eski özel topluluk kişi posteri/klibi, özel referans ekran görüntüleri ve 
 
 ## Belge galerisi
 
-`docs/images/home.png`, `chat.png` ve `voice.png`, 14 Ekim 2026'da `f4e9e4f` kaynak commit'inin güncel ROOMS görünümünden, yalıtılmış ve belirli örnek topluluk durumlarıyla (S08, S10, S19) alındı. Hesap girişi, özel sunucu, sağlayıcı oturumu veya canlı görüşme kullanılmadı. Sohbet etkinlik kartındaki nötr manzara yalnızca çekimde verilen özgün örnek SVG'dir. Avatarlar uygulamanın baş harf yedeğini kullanır.
+`docs/images/home.png`, `chat.png` ve `voice.png`, 14 Ekim 2026'da `f4e9e4f` kaynak commit'inin güncel Tayfa görünümünden, yalıtılmış ve belirli örnek topluluk durumlarıyla (S08, S10, S19) alındı. Hesap girişi, özel sunucu, sağlayıcı oturumu veya canlı görüşme kullanılmadı. Sohbet etkinlik kartındaki nötr manzara yalnızca çekimde verilen özgün örnek SVG'dir. Avatarlar uygulamanın baş harf yedeğini kullanır.
 
 Sunum çekimlerinde geliştirme göstergesi gösterilmez; uygulamanın geliştirme örneği işareti ve üretim sınırları korunur. Bu görseller arayüz anlatımıdır; mesaj teslimi, ses aktarımı veya sağlayıcı oynatma kabul kanıtı değildir. README ve kullanıcı rehberi örnek topluluk verisini belirtir. Özel referans görüntüsü veya kişi klibi yeniden kullanılmadı.
 

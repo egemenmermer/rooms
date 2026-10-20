@@ -499,11 +499,11 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
             {
               id: 'demo-notice-agent',
               kind: 'agent',
-              title: 'ROOMS araştırmanı tamamladı.',
+              title: 'Tayfa araştırmanı tamamladı.',
               detail: 'Hafta sonu için 3 seçenek',
               timestampLabel: '12 dakika önce',
               unread: true,
-              actionLabel: 'ROOMS Agent’ı aç',
+              actionLabel: 'Tayfa Agent’ı aç',
             },
             {
               id: 'demo-notice-friend',

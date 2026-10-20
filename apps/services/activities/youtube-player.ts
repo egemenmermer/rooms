@@ -14,7 +14,7 @@ export function registerYouTubePlayer(server: FastifyInstance) {
           .regex(/^[a-zA-Z0-9_-]{10,128}$/)
           .optional(),
         nonce: z.string().uuid(),
-        // `minimal`: the ROOMS cinema draws its own controls over the official player.
+        // `minimal`: the Tayfa cinema draws its own controls over the official player.
         chrome: z.enum(['minimal']).optional(),
       })
       .strict()

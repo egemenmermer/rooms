@@ -77,7 +77,7 @@ it('explains a pasted value that is not an invitation link and keeps signup clos
   const field = screen.getByLabelText('Davet bağlantısı');
   fireEvent.change(field, { target: { value: 'https://example.test/not-an-invite' } });
   fillAccount();
-  expect(screen.getByText(/Bu bir ROOMS davet bağlantısı değil/)).toBeTruthy();
+  expect(screen.getByText(/Bu bir Tayfa davet bağlantısı değil/)).toBeTruthy();
   expect(field.getAttribute('aria-invalid')).toBe('true');
   expect(
     (screen.getByRole('button', { name: /Hesap oluştur ve katıl/ }) as HTMLButtonElement).disabled,

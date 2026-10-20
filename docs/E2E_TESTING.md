@@ -2,7 +2,7 @@
 
 [← README](../README.md) · [Geliştirme](DEVELOPMENT.md) · [Mimari](ARCHITECTURE.md) · [Sunucu kurulumu](SELF_HOSTING.md)
 
-Bu paket, **gerçek ROOMS masaüstü istemcilerini** (Electron main + görünüm süreci) yerel ve atılabilir bir ROOMS sunucusuna karşı çalıştırır. Her test, gerçek kullanıcı gibi pencerede tıklar, yazar ve sonucu hem arayüzde hem de üst sistemde doğrular. Sahte servis, örnek veri veya `?fixture` yolu kullanılmaz.
+Bu paket, **gerçek Tayfa masaüstü istemcilerini** (Electron main + görünüm süreci) yerel ve atılabilir bir Tayfa sunucusuna karşı çalıştırır. Her test, gerçek kullanıcı gibi pencerede tıklar, yazar ve sonucu hem arayüzde hem de üst sistemde doğrular. Sahte servis, örnek veri veya `?fixture` yolu kullanılmaz.
 
 ## İçindekiler
 
@@ -37,7 +37,7 @@ Bu paket, **gerçek ROOMS masaüstü istemcilerini** (Electron main + görünüm
 - Ekran paylaşımı. macOS Ekran Kaydı izni ve `desktopCapturer` gerekir; test bilerek atlanır.
 - HTTPS/WSS, TLS, NAT/TURN ve gerçek sunucu kaynak sınırları. Yığın yalnız loopback HTTP kullanır.
 - İmzalı paket, kurulum ve otomatik güncelleme. Testler `pnpm build` çıktısını `electron .` ile açar.
-- Davet sayfasındaki **ROOMS'ta aç** düğmesinin işletim sistemi üzerinden uygulamayı açması. Test, kayıt ekranını bağlantının parametreleriyle doğrudan açar; davet akışının gerçek cihaz kabulü ayrıca gerekir.
+- Davet sayfasındaki **Tayfa'da aç** düğmesinin işletim sistemi üzerinden uygulamayı açması. Test, kayıt ekranını bağlantının parametreleriyle doğrudan açar; davet akışının gerçek cihaz kabulü ayrıca gerekir.
 - YouTube, müzik/DJ, Agent, HostOps, uzaktan kontrol ve APNs. Bunlar HTTPS kaynağı, sağlayıcı hesabı veya ayrı servis ister; aşağıdaki [kapsam](#kapsam) tablosuna bak.
 
 Bir PR'da sonuç bildirirken bu sınırları açıkça yaz. Bu paketin geçmesi üretim sunucusunun veya fiziksel cihaz kabulünün geçtiği anlamına gelmez.
@@ -131,7 +131,7 @@ Adresler (hepsi `127.0.0.1`):
 
 Sırlar (`RabbitMQ`, `MinIO`, `PostgreSQL`, LiveKit anahtarı, dosya şifreleme anahtarı, VAPID) ilk `up` sırasında rastgele üretilir, `.local/e2e/stack/` altında 0600 izinle saklanır ve hiçbir zaman yazdırılmaz. `reset` hepsini siler.
 
-Kayıt üretimde olduğu gibi davetle sınırlıdır (`invite_only = true`). Test hesapları ham API'de, üst sistem hesap daveti MongoDB'ye eklenerek oluşturulur. Bu, yöneticinin [ilk hesap adımının](SELF_HOSTING.md#5-i̇lk-hesap-ve-davetler) yerel karşılığıdır. ROOMS davet bağlantısı ise `seed.ts` içindeki `issueSignupTicket` ile, erişim servisinin kendi `issueRegistrationInvite` fonksiyonu kullanılarak çok kullanımlık kayıt olarak deftere yazılır; yardımcı `{ code, link, … }` döndürür (`link` = `http://127.0.0.1:4100/davet/<code>`). Arayüzden kayıt testi bu bağlantıyı kullanır; erişim servisi her kayıtta MongoDB'ye yeni bir hesap daveti ekler.
+Kayıt üretimde olduğu gibi davetle sınırlıdır (`invite_only = true`). Test hesapları ham API'de, üst sistem hesap daveti MongoDB'ye eklenerek oluşturulur. Bu, yöneticinin [ilk hesap adımının](SELF_HOSTING.md#5-i̇lk-hesap-ve-davetler) yerel karşılığıdır. Tayfa davet bağlantısı ise `seed.ts` içindeki `issueSignupTicket` ile, erişim servisinin kendi `issueRegistrationInvite` fonksiyonu kullanılarak çok kullanımlık kayıt olarak deftere yazılır; yardımcı `{ code, link, … }` döndürür (`link` = `http://127.0.0.1:4100/davet/<code>`). Arayüzden kayıt testi bu bağlantıyı kullanır; erişim servisi her kayıtta MongoDB'ye yeni bir hesap daveti ekler.
 
 ## Bir test çalışmasının yaşam döngüsü
 
