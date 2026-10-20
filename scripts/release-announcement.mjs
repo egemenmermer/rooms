@@ -94,8 +94,11 @@ export async function announceRelease({ version, notes, config, stateDirectory, 
     const existing = history.find(
       (message) =>
         message.nonce === deliveryKey ||
+        // Versions before the rename were announced as ROOMS.
         (typeof message.content === 'string' &&
-          message.content.startsWith(`ROOMS ${version} yayınlandı\n`)),
+          [`Tayfa ${version} yayınlandı\n`, `ROOMS ${version} yayınlandı\n`].some((prefix) =>
+            message.content.startsWith(prefix),
+          )),
     );
     if (existing) {
       await save({ version, status: 'sent', messageId: existing._id });
