@@ -3,7 +3,12 @@ import { dirname } from 'node:path';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { StoatError } from '@rooms/stoat';
-import { INVITE_LINK_DAYS, INVITE_LINK_MAX_USES, SOCIAL_ID_PATTERN } from '@rooms/social';
+import {
+  INVITE_LINK_DAYS,
+  INVITE_LINK_MAX_USES,
+  INVITE_LINKS_PER_SPACE,
+  SOCIAL_ID_PATTERN,
+} from '@rooms/social';
 
 const datetime = z.string().datetime();
 const legacyInvitation = z
@@ -338,7 +343,7 @@ export class RegistrationGate {
           const { uses, pending } = usage(item, now);
           return uses + pending < item.maxUses;
         }).length;
-        if (active >= (input.maxActivePerSpace ?? 20))
+        if (active >= (input.maxActivePerSpace ?? INVITE_LINKS_PER_SPACE))
           throw new StoatError(409, 'INVITE_LIMIT_REACHED');
       }
       const code = randomBytes(32).toString('hex');

@@ -23,7 +23,7 @@
 
 Kendi arkadaş grubun için ROOMS sunucusunu yaklaşık 15 dakikada kurabilirsin. Sohbet, ses, ekran paylaşımı ve ortak etkinlikler bu kurulumla gelir; müzik (DJ), Agent ve sunucu yönetim paneli isteğe bağlıdır ve dahil değildir.
 
-Uygulamanın başlangıç ekranındaki **Kendi sunucunu kur** sekmesi aynı adımları kısaca gösterir: sunucu kirala, DuckDNS adresi al, portları aç, kurulum komutunu çalıştır, giriş yapıp davet oluştur.
+Uygulamanın başlangıç ekranındaki **Kendi sunucunu kur** sekmesi aynı adımları her ekranda bir adım olacak şekilde gösterir: sunucu kirala, DuckDNS adresi al, portları aç, kurulum komutunu çalıştır, giriş yapıp davet oluştur.
 
 ### Gerekenler
 
@@ -73,7 +73,7 @@ Tek bir bağlantıyı birden çok arkadaşına gönderebilirsin. Arkadaşın ba�
 
 - **Kullanım:** bağlantıyı açmak kullanım harcamaz. Bir kullanım yalnızca başarılı kayıtta veya üye olmayan mevcut bir hesap katıldığında sayılır. Zaten üye olan biri bağlantıyı yeniden açarsa hak harcanmaz.
 - **Kopyalama:** bağlantı yalnızca oluşturulduğu anda gösterilir; sunucu yalnızca SHA-256 özetini saklar. Kaybettiysen yenisini oluştur.
-- **Yönetim:** etkin bağlantıları uygulamada **Ayarlar → Üyeler ve roller → Davetler** bölümünde görürsün: kullanım (ör. 3/10 kişi), son geçerlilik, oluşturan ve Etkin/Dolu durumu; `rooms invite` ile üretilenlerde oluşturan "Sunucu" görünür. **İptal et** bağlantıyı hemen kapatır; bağlantıyla katılmış olanlar toplulukta kalır. Bir toplulukta en fazla 20 etkin bağlantı olabilir.
+- **Yönetim:** etkin bağlantıları uygulamada **Ayarlar → Üyeler ve roller → Davetler** bölümünde görürsün: kullanım (ör. 3/10 kişi), son geçerlilik, oluşturan ve Etkin/Dolu durumu; `rooms invite` ile üretilenlerde oluşturan "Sunucu" görünür. **İptal et** bağlantıyı hemen kapatır; bağlantıyla katılmış olanlar toplulukta kalır. Davet etme izni olan her üye (Stoat'ta varsayılan olarak herkes) bağlantı oluşturabilir; listeleme ve iptal topluluk sahibindedir. Bir toplulukta en fazla 50 etkin bağlantı olabilir.
 
 Bilinen sınırlar:
 

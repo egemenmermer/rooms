@@ -248,7 +248,7 @@ export function ConnectionPane({
                         ? NOT_AN_INVITE
                         : pasted
                           ? `Sunucu: ${serverHost(pasted.serverUrl)}`
-                          : 'Seni davet eden kişinin gönderdiği bağlantıyı buraya yapıştır.'}
+                          : 'Topluluktaki her üye davet bağlantısı oluşturabilir. Arkadaşının gönderdiği bağlantıyı buraya yapıştır.'}
                     </p>
                   </>
                 ))}

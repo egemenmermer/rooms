@@ -4,6 +4,8 @@ export const INVITE_TOKEN_PATTERN = /^[a-f0-9]{64}$/;
 export const LEGACY_INVITE_CODE_PATTERN = /^[A-Za-z0-9_-]{2,128}$/;
 export const INVITE_LINK_MAX_USES = 10;
 export const INVITE_LINK_DAYS = 7;
+/** Active links per community; any member with the invite permission may create one. */
+export const INVITE_LINKS_PER_SPACE = 50;
 export const INVITE_LINK_PATH = '/davet/';
 
 export interface InviteLink {

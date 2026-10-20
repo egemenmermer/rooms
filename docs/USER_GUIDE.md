@@ -35,7 +35,7 @@ Platform ve imza bilgisini indirdiğin sürümün notlarından kontrol et. Issue
 5. Profil ve cihaz kurulumunu takip et. Mikrofon, kamera ve ekran erişimini yalnızca ilgili özelliği kullanırken ver.
 6. Erişebildiğin topluluğu ve kanalı seç. Görebildiklerin ve yapabileceklerin üyeliğine ve rolüne bağlıdır.
 
-Uygulama ilk açılışta veya davet bağlantısıyla **Kayıt ol**, daha önce bir sunucu kullandıysan **Giriş yap** sekmesinde açılır. Üçüncü sekme **Kendi sunucunu kur**, kendi topluluğunu kurmak için kısa adımları gösterir; ayrıntılar [sunucu rehberindedir](SELF_HOSTING.md#hızlı-kurulum-tek-komut).
+Uygulama ilk açılışta veya davet bağlantısıyla **Kayıt ol**, daha önce bir sunucu kullandıysan **Giriş yap** sekmesinde açılır. Üçüncü sekme **Kendi sunucunu kur**, kendi topluluğunu kurmak için beş kısa adımı tek tek gösterir (**İleri** / **Geri**); ayrıntılar [sunucu rehberindedir](SELF_HOSTING.md#hızlı-kurulum-tek-komut).
 
 Başka bir sunucuda oturumun açıkken davet bağlantısı açarsan **Çıkış yap ve davetle devam et** seçeneği çıkar. Seni bağlantısı dolu **Kayıt ol** sekmesine götürür. Eski `rooms://invite?…` bağlantıları da çalışır.
 
@@ -97,7 +97,7 @@ Kişisel medya bağlantıları, sana ait yetkili sağlayıcı erişimini kullan�
 
 Yetkili bir yönetici **Ayarlar → Üyeler ve roller → Roller** bölümünde rol adı, renk ve temel izinleri düzenleyebilir. Kanka, Yayıncı ve Moderatör şablonları düzenlenebilir taslaklardır; seçmek kendiliğinden üyeye yetki vermez. Kaydedilen rol ayrıca üyeye atanır. Ayrıntılar [rol rehberindedir](COMMUNITY_ROLES.md).
 
-Topluluk sahibi **Davet oluştur** ile bir davet bağlantısı oluşturur (7 gün, 10 kişi). Bağlantı yalnızca oluşturulduğu anda kopyalanabilir; kaybettiysen yenisini oluştur. Etkin bağlantılar **Ayarlar → Üyeler ve roller → Davetler** bölümündedir: kullanım (ör. 3/10 kişi), son geçerlilik, oluşturan ve Etkin/Dolu durumu. **İptal et** bağlantıyı hemen kapatır; bağlantıyla katılmış olanlar toplulukta kalır. Bir toplulukta en fazla 20 etkin bağlantı olabilir. Bağlantıyı bilen herkes kayıt olabilir; yalnızca davet etmek istediğin kişilerle paylaş.
+Topluluktaki her üye **Davet oluştur** ile bir davet bağlantısı oluşturabilir (7 gün, 10 kişi). Topluluk sahibi bu izni Stoat rolleriyle kısabilir. Bağlantı yalnızca oluşturulduğu anda kopyalanabilir; kaybettiysen yenisini oluştur. Etkin bağlantıları topluluk sahibi **Ayarlar → Üyeler ve roller → Davetler** bölümünde görür: kullanım (ör. 3/10 kişi), son geçerlilik, oluşturan ve Etkin/Dolu durumu. **İptal et** bağlantıyı hemen kapatır; bağlantıyla katılmış olanlar toplulukta kalır. Bir toplulukta en fazla 50 etkin bağlantı olabilir. Bağlantıyı bilen herkes kayıt olabilir; yalnızca davet etmek istediğin kişilerle paylaş.
 
 Sunucu izleme/terminal gibi yönetim özellikleri normal üyelikten ayrı yetki ister. Core sunucu ile Agent makinesi farklı sistemler olabilir; seçtiğin makineye dikkat et. [Sunucu yönetimi](SERVER_OPERATIONS.md) belgesini izle.
 

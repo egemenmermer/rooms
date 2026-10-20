@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // `<id>-token` signs in as `<id>`; `owner` owns `space`, `member` already belongs to it and
-// `stranger` does not. Registration outcomes are steered per test through `stoat.register`.
+// `stranger` does not. Registration outcomes are steered per test through `stoat.register`;
+// `defaultPermissions` is the community's @everyone permission set.
 const stoat = vi.hoisted(() => ({
+  defaultPermissions: '0',
   register: 'ok' as 'ok' | 'invalid-invite' | 'email-taken' | 'timeout' | 'after-create',
   registered: [] as { accountInviteCode: string; inviteCode: string }[],
   accepted: [] as string[],
@@ -26,7 +28,12 @@ vi.mock('@rooms/stoat', async () => {
       }
       async getServer(spaceId: string) {
         if (spaceId !== 'space') throw new real.StoatError(404, 'NotFound');
-        return { _id: 'space', owner: 'owner', default_permissions: '0', roles: {} };
+        return {
+          _id: 'space',
+          owner: 'owner',
+          default_permissions: stoat.defaultPermissions,
+          roles: {},
+        };
       }
       async getMember(server: string, user: string) {
         if (user === 'stranger' || user === 'banned') throw new real.StoatError(404, 'NotFound');
@@ -72,6 +79,7 @@ vi.mock('@rooms/stoat', async () => {
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { INVITE_LINKS_PER_SPACE } from '@rooms/social';
 import { createAccessServer } from '../apps/services/access/server';
 
 let directory: string;
@@ -79,7 +87,13 @@ let seeded: string[];
 beforeEach(async () => {
   directory = await mkdtemp(join(tmpdir(), 'rooms-invite-links-'));
   seeded = [];
-  Object.assign(stoat, { register: 'ok', registered: [], accepted: [], deleted: [] });
+  Object.assign(stoat, {
+    defaultPermissions: '0',
+    register: 'ok',
+    registered: [],
+    accepted: [],
+    deleted: [],
+  });
 });
 afterEach(async () => {
   await rm(directory, { recursive: true, force: true });
@@ -124,19 +138,34 @@ const listLinks = async (server: Awaited<ReturnType<typeof access>>) =>
     .invites as { id: string; uses: number; maxUses: number }[];
 
 describe('invitation links in the access service', () => {
-  it('lets only the owner create a 10-person, 7-day link', async () => {
+  it('lets anyone with the invite permission create a 10-person, 7-day link', async () => {
     const server = await access();
+    const create = (user: string) =>
+      server.inject({
+        method: 'POST',
+        url: '/v1/invites',
+        headers: bearer(user),
+        payload: { channelId: 'room' },
+      });
     try {
       const link = await createLink(server);
       expect(link.code).toMatch(/^[a-f0-9]{64}$/);
       expect(link).toMatchObject({ maxUses: 10, uses: 0 });
-      const denied = await server.inject({
-        method: 'POST',
-        url: '/v1/invites',
-        headers: bearer('member'),
-        payload: { channelId: 'room' },
-      });
+      // Without Stoat's InviteOthers permission a member gets a clear refusal.
+      const denied = await create('member');
       expect(denied.statusCode).toBe(403);
+      expect(denied.json().error).toBe('INVITE_PERMISSION_REQUIRED');
+      // The community grants invites to everyone (Stoat's default): any member may create one.
+      stoat.defaultPermissions = String((1n << 25n) | (1n << 20n));
+      const byMember = await create('member');
+      expect(byMember.statusCode).toBe(200);
+      expect(byMember.json()).toMatchObject({ maxUses: 10, uses: 0 });
+      expect((await create('stranger')).statusCode).not.toBe(200);
+      const links = await listLinks(server);
+      expect(links.map((item) => (item as { createdBy?: string }).createdBy).sort()).toEqual([
+        'member',
+        'owner',
+      ]);
       expect(seeded).toEqual([]);
     } finally {
       await server.close();
@@ -293,7 +322,7 @@ describe('invitation links in the access service', () => {
   it('deletes the upstream invitation when the link limit refuses a new link', async () => {
     const server = await access();
     try {
-      for (let i = 0; i < 20; i++) await createLink(server);
+      for (let i = 0; i < INVITE_LINKS_PER_SPACE; i++) await createLink(server);
       expect(stoat.deleted).toEqual([]);
       const refused = await server.inject({
         method: 'POST',

@@ -84,6 +84,7 @@ const inviteErrors: Record<string, string> = {
   INVITE_LIMIT_REACHED:
     'This community already has many active invitation links. Cancel one under Community management, Invitations.',
   REGISTRATION_BUSY: 'Another signup is in progress. Try again in a moment.',
+  INVITE_PERMISSION_REQUIRED: 'You do not have permission to invite people to this community.',
 };
 const ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
 /** Video types the desktop chat plays inline; QuickTime covers Mac recordings and iPhone videos. */
