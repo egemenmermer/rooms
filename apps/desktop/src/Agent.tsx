@@ -354,7 +354,7 @@ function LegacyAgentSettings({
                 <p>
                   {provider === 'codex' ? 'Codex' : 'Claude'}
                   {tr(
-                    'ba\u011Flant\u0131s\u0131 ayr\u0131 sunucudaki resm\u00EE CLI oturumunu kullan\u0131r. ROOMS, ChatGPT veya Claude parolan\u0131 istemez.',
+                    'ba\u011Flant\u0131s\u0131 ayr\u0131 sunucudaki resm\u00EE CLI oturumunu kullan\u0131r. Tayfa, ChatGPT veya Claude parolan\u0131 istemez.',
                   )}
                 </p>
               </div>
@@ -2162,7 +2162,7 @@ export function AgentModelsSurface(props: AgentModelsProps) {
           <p>{providerName(login)} girişini ayrı Agent sunucusunda tamamla.</p>
           <div className="reference-agent-callout">
             <LockKeyhole size={18} />
-            ROOMS parola veya abonelik erişim bilgisi istemez. Giriş başlatma bağlantısı bu hizmette
+            Tayfa parola veya abonelik erişim bilgisi istemez. Giriş başlatma bağlantısı bu hizmette
             sunulmuyor.
           </div>
           <form

@@ -1293,7 +1293,7 @@ export async function setupCommunity(
       const messages: Record<string, string> = {
         PERSONAL_SOUNDS_NOT_CONFIGURED: 'Bu sunucuda giriş sesleri henüz açılmadı.',
         PERSONAL_SOUND_UPLOADS_DISABLED:
-          'Sunucu yöneticisi ses yüklemeyi kapattı. ROOMS seslerinden birini seçebilirsin.',
+          'Sunucu yöneticisi ses yüklemeyi kapattı. Tayfa seslerinden birini seçebilirsin.',
         PERSONAL_SOUND_INVALID_AUDIO: 'Ses dosyası okunamadı. En fazla 4 saniyelik bir kesit seç.',
         PERSONAL_SOUND_SILENT: 'Seçtiğin kesit neredeyse sessiz. Başka bir bölüm seç.',
         PERSONAL_SOUND_LIBRARY_FULL: `En fazla ${PERSONAL_SOUND_LIMITS.maxSounds} ses saklayabilirsin. Önce birini sil.`,

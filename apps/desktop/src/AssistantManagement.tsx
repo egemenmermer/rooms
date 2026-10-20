@@ -416,7 +416,7 @@ export function AssistantManagement() {
                   </div>
                   <p>Canlı Discord bağlantısı bu durum bilgisiyle doğrulanmaz.</p>
                   <div className="agent-management-title">
-                    <strong>ROOMS asistanı</strong>
+                    <strong>Tayfa asistanı</strong>
                     <button
                       className="button secondary"
                       disabled

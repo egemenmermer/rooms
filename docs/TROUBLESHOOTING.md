@@ -35,19 +35,19 @@ Docker kurulumunda hata varsa önce Docker motorunun gerçekten çalıştığın
 **Üye:**
 
 - **Sayfa "Bu davet bağlantısı artık geçerli değil" diyor:** bağlantının süresi dolmuş, kişi sınırı dolmuş veya iptal edilmiş. Seni davet edenden yeni bağlantı iste.
-- **ROOMS'ta aç bir şey yapmıyor:** uygulama kurulu değil veya `rooms:` protokolü kayıtlı değil. Uygulamayı kendin aç ve sayfanın adresini **Kayıt ol** sekmesindeki **Davet bağlantısı** alanına yapıştır.
-- **"Bu bir ROOMS davet bağlantısı değil" uyarısı:** bağlantının tamamını (`https://…/davet/…`) yapıştır; yalnızca bir parçası yetmez.
+- **Tayfa'da aç bir şey yapmıyor:** uygulama kurulu değil veya `rooms:` protokolü kayıtlı değil. Uygulamayı kendin aç ve sayfanın adresini **Kayıt ol** sekmesindeki **Davet bağlantısı** alanına yapıştır.
+- **"Bu bir Tayfa davet bağlantısı değil" uyarısı:** bağlantının tamamını (`https://…/davet/…`) yapıştır; yalnızca bir parçası yetmez.
 - **Başka bir sunucuda oturumun açık:** davet penceresindeki **Çıkış yap ve davetle devam et** seçeneğini kullan.
 - **Kayıt yarıda kaldı:** hesabın oluşmuş olabilir. Önce **Giriş yap** ile dene. Belirsiz bir kayıt bağlantının bir hakkını harcar ve hak geri verilmez.
 
 **Yönetici:**
 
-- Tarayıcıda `/davet/…` adresi ROOMS sayfasını açmıyorsa ters vekil `/davet/*` yolunu erişim servisine iletmiyordur. Hızlı kurulumda eski bir sunucuyu güncellediysen bir kez `sudo rooms restart` çalıştır.
+- Tarayıcıda `/davet/…` adresi Tayfa sayfasını açmıyorsa ters vekil `/davet/*` yolunu erişim servisine iletmiyordur. Hızlı kurulumda eski bir sunucuyu güncellediysen bir kez `sudo rooms restart` çalıştır.
 - **Davet oluştur** "çok fazla etkin davet bağlantısı" diyorsa **Ayarlar → Üyeler ve roller → Davetler** bölümünden birini iptal et; topluluk başına sınır 20'dir.
 - Davet oluşturma veya kayıt "hesap davetleri henüz hazır değil" diyorsa erişim servisinde `ROOMS_ACCOUNT_INVITE_MONGO_URL` eksiktir ya da servis MongoDB'ye ulaşamıyordur. Bu durumda kayıt bağlantının hakkını harcamaz.
 - Defterde belirsiz kullanımlar `claiming` veya `uncertain` olarak kalır ve sayılır. Onları elle geri açma; hesap zaten oluşmuş olabilir. Gerekirse yeni bağlantı ver.
 
-ROOMS davet bağlantısı ile üst sistem (Stoat) topluluk daveti farklıdır. Ayrıntılar [sunucu rehberindedir](SELF_HOSTING.md#5-i̇lk-hesap-ve-davetler).
+Tayfa davet bağlantısı ile üst sistem (Stoat) topluluk daveti farklıdır. Ayrıntılar [sunucu rehberindedir](SELF_HOSTING.md#5-i̇lk-hesap-ve-davetler).
 
 Parola kurtarma, üst sistem kurulumunun posta/kurtarma yapılandırmasına bağlıdır. Bu hizmet kurulmadıysa uygulama kendi başına hesabı kurtaramaz.
 
@@ -60,7 +60,7 @@ Parola kurtarma, üst sistem kurulumunun posta/kurtarma yapılandırmasına bağ
 3. İşletim sistemi yakalama iznini değiştirdiysen gerekiyorsa uygulamayı yeniden aç.
 4. Başka cihaz/kulaklık dene; karşı tarafın gerçekten ses/görüntü alıp almadığını sor.
 5. Paylaşımda gerçek bir kaynak seç. Sistem sesi, platform ve derlemeye göre ayrı sınırlar taşır.
-6. Kulaklığın kendi mikrofon tuşu sesini kesmiyorsa görüşmedeyken **Ayarlar → Ses ve video** bölümündeki "Odada duyulan mikrofon" satırına bak. Orada kulaklık yazmıyorsa odaya başka bir mikrofon gidiyordur: listeden kulaklığı seç ya da işletim sisteminde kulaklığı varsayılan kayıt cihazı yap. Görüşme sürerken kulaklık açılır ya da geri takılırsa ROOMS seçili mikrofona ("Sistem varsayılanı" seçiliyse o anki varsayılana) kendiliğinden geçer.
+6. Kulaklığın kendi mikrofon tuşu sesini kesmiyorsa görüşmedeyken **Ayarlar → Ses ve video** bölümündeki "Odada duyulan mikrofon" satırına bak. Orada kulaklık yazmıyorsa odaya başka bir mikrofon gidiyordur: listeden kulaklığı seç ya da işletim sisteminde kulaklığı varsayılan kayıt cihazı yap. Görüşme sürerken kulaklık açılır ya da geri takılırsa Tayfa seçili mikrofona ("Sistem varsayılanı" seçiliyse o anki varsayılana) kendiliğinden geçer.
 
 **Yöneticinin kontrolleri:**
 

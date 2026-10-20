@@ -51,12 +51,12 @@ function page(body: string) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<meta property="og:title" content="ROOMS daveti">
-<meta property="og:description" content="Arkadaşların seni ROOMS'a davet etti.">
-<title>ROOMS daveti</title>
+<meta property="og:title" content="Tayfa daveti">
+<meta property="og:description" content="Arkadaşların seni Tayfa'ya davet etti.">
+<title>Tayfa daveti</title>
 <style>${STYLE}</style>
 </head>
-<body><main><p class="brand">ROOMS</p>${body}</main></body>
+<body><main><p class="brand">Tayfa</p>${body}</main></body>
 </html>`;
 }
 
@@ -82,25 +82,25 @@ export function renderInvitePage(state: InvitePageState): { status: number; html
     };
   const title = state.communityName
     ? `${escape(state.communityName)} topluluğuna davet edildin`
-    : 'Bir ROOMS topluluğuna davet edildin';
+    : 'Bir Tayfa topluluğuna davet edildin';
   const open = state.appLink
     ? `<li><p class="step"><span>2</span>Daveti uygulamada aç</p>
-<a class="button secondary" href="${escape(state.appLink)}">ROOMS'ta aç</a>
-<p class="hint">Açılmazsa ROOMS'ta <b>Kayıt ol</b> sekmesine bu sayfanın adresini yapıştır.</p></li>`
+<a class="button secondary" href="${escape(state.appLink)}">Tayfa'da aç</a>
+<p class="hint">Açılmazsa Tayfa'da <b>Kayıt ol</b> sekmesine bu sayfanın adresini yapıştır.</p></li>`
     : `<li><p class="step"><span>2</span>Daveti uygulamada aç</p>
-<p class="hint">ROOMS'ta <b>Kayıt ol</b> sekmesine bu sayfanın adresini yapıştır.</p></li>`;
+<p class="hint">Tayfa'da <b>Kayıt ol</b> sekmesine bu sayfanın adresini yapıştır.</p></li>`;
   return {
     status: 200,
     html: page(
       `<h1>${title}</h1>
 <p class="meta">Son geçerlilik: ${escape(formatExpiry(state.expiresAt))}</p>
 <ol>
-<li><p class="step"><span>1</span>ROOMS'u bilgisayarına kur</p>
+<li><p class="step"><span>1</span>Tayfa'yı bilgisayarına kur</p>
 <a class="button" href="${escape(state.downloadUrl)}">Uygulamayı indir</a>
 <p class="hint">macOS (Apple Silicon) ve Windows için.</p></li>
 ${open}
 </ol>
-<p class="note">ROOMS masaüstünde çalışır. Bu bağlantıyı telefondan açtıysan bilgisayarına gönder.</p>`,
+<p class="note">Tayfa masaüstünde çalışır. Bu bağlantıyı telefondan açtıysan bilgisayarına gönder.</p>`,
     ),
   };
 }

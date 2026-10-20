@@ -49,7 +49,7 @@ const trMessages: Record<string, string> = {
   'DESKTOP PREVIEW': 'MASAÜSTÜ ÖNİZLEME',
   'A little closer, even from here.': 'Uzakta da olsak, bir arada.',
   'Spaces rail': 'Mekânlar çubuğu',
-  'ROOMS home': 'ROOMS ana sayfa',
+  'Tayfa home': 'Tayfa ana sayfa',
   'Create a local space': 'Demo mekân oluştur',
   'Invite a friend': 'Arkadaş davet et',
   'Help and keyboard shortcuts': 'Yardım ve klavye kısayolları',
@@ -176,7 +176,7 @@ const trMessages: Record<string, string> = {
   'The bundled demonstration video is unavailable. Reload it to try again.':
     'Demo video kullanılamıyor. Yeniden yüklemeyi dene.',
   'Blue hour original local demo video': 'Mavi saat özgün demo videosu',
-  'ROOMS ORIGINAL DEMO': 'ROOMS ÖZGÜN DEMO',
+  'Tayfa ORIGINAL DEMO': 'Tayfa ÖZGÜN DEMO',
   'PERSONAL PLAYBACK': 'KİŞİSEL OYNATMA',
   'Resume Blue hour': 'Mavi saate devam et',
   'Play Blue hour': 'Mavi saati oynat',
@@ -325,8 +325,8 @@ const trMessages: Record<string, string> = {
   'Account password': 'Hesap parolası',
   'Join your friends': 'Dostlarına katıl',
   'Come on in': 'İçeri gel',
-  'An invitation is required to create an account. Your server handles sign-in; ROOMS keeps the session in the desktop’s secure storage.':
-    'Hesap oluşturmak için davet gerekir. Girişi sunucun yönetir; ROOMS oturumunu güvenli masaüstü deposunda tutar.',
+  'An invitation is required to create an account. Your server handles sign-in; Tayfa keeps the session in the desktop’s secure storage.':
+    'Hesap oluşturmak için davet gerekir. Girişi sunucun yönetir; Tayfa oturumunu güvenli masaüstü deposunda tutar.',
   'We couldn’t complete that.': 'İşlem tamamlanamadı.',
   'Push-to-talk could not access the microphone.': 'Bas konuş mikrofonuna erişemedi.',
   'Please try again.': 'Lütfen yeniden dene.',
@@ -464,8 +464,8 @@ const trMessages: Record<string, string> = {
   'Choose exactly what your room can see. Capture starts only after you press Share. System audio is off on this macOS build.':
     "Odanın göreceği ekranı seç. Yakalama, Paylaş'a bastığında başlar. Bu macOS sürümünde sistem sesi kapalıdır.",
   'Finding screens and windows…': 'Ekranlar ve pencereler bulunuyor…',
-  'No capture sources are available. Allow ROOMS in System Settings → Privacy & Security → Screen & System Audio Recording, then retry.':
-    "Ekran kaynağı bulunamadı. Sistem Ayarları → Gizlilik ve Güvenlik → Ekran ve Sistem Sesi Kaydı bölümünden ROOMS'a izin verip yeniden dene.",
+  'No capture sources are available. Allow Tayfa in System Settings → Privacy & Security → Screen & System Audio Recording, then retry.':
+    "Ekran kaynağı bulunamadı. Sistem Ayarları → Gizlilik ve Güvenlik → Ekran ve Sistem Sesi Kaydı bölümünden Tayfa'ya izin verip yeniden dene.",
   Cancel: 'Vazgeç',
   'Screen sharing could not start.': 'Ekran paylaşımı başlatılamadı.',
   'Starting…': 'Başlatılıyor…',
@@ -491,8 +491,8 @@ const trMessages: Record<string, string> = {
   'Microphone disconnected. Choose an available input device and retry.':
     'Mikrofon bağlantısı kesildi. Kullanılabilir bir giriş aygıtı seçip yeniden dene.',
   Unavailable: 'Kullanılamıyor',
-  'Microphone access was denied. Allow ROOMS in macOS System Settings → Privacy & Security → Microphone, then retry.':
-    "Mikrofon erişimi reddedildi. macOS Sistem Ayarları → Gizlilik ve Güvenlik → Mikrofon bölümünden ROOMS'a izin verip yeniden dene.",
+  'Microphone access was denied. Allow Tayfa in macOS System Settings → Privacy & Security → Microphone, then retry.':
+    "Mikrofon erişimi reddedildi. macOS Sistem Ayarları → Gizlilik ve Güvenlik → Mikrofon bölümünden Tayfa'ya izin verip yeniden dene.",
   'The selected microphone is unavailable. Refresh devices and choose another input.':
     'Seçili mikrofon kullanılamıyor. Aygıtları yenile ve başka bir giriş seç.',
   'Playing a quiet test tone through your selected output.':
@@ -596,16 +596,16 @@ const trMessages: Record<string, string> = {
   'Close topmost dialog': 'En üst pencereyi kapat',
   'Send local message': 'Demo mesaj gönder',
   'New line': 'Yeni satır',
-  'Media shortcuts respect text fields. Enable push-to-talk in Voice & audio, then hold Ctrl + Shift + Space while ROOMS is focused.':
-    'Medya kısayolları metin alanlarında çalışmaz. Bas konuşu açtıktan sonra ROOMS odaktayken Ctrl + Shift + Space tuşlarına basılı tut.',
+  'Media shortcuts respect text fields. Enable push-to-talk in Voice & audio, then hold Ctrl + Shift + Space while Tayfa is focused.':
+    'Medya kısayolları metin alanlarında çalışmaz. Bas konuşu açtıktan sonra Tayfa odaktayken Ctrl + Shift + Space tuşlarına basılı tut.',
   'A proper place on your desktop.': 'Masaüstünde kendine ait bir yer.',
   'Native controls, with you in charge.': 'Yerel denetimler, karar sende.',
   'Push to talk': 'Bas konuş',
-  'Hold Ctrl + Shift + Space to speak while ROOMS is focused. Typing fields are excluded; releasing the keys or switching apps mutes you.':
-    'ROOMS odaktayken Ctrl + Shift + Space ile konuş. Yazı alanları hariçtir; tuşları bırakınca veya uygulama değiştirince mikrofon kapanır.',
+  'Hold Ctrl + Shift + Space to speak while Tayfa is focused. Typing fields are excluded; releasing the keys or switching apps mutes you.':
+    'Tayfa odaktayken Ctrl + Shift + Space ile konuş. Yazı alanları hariçtir; tuşları bırakınca veya uygulama değiştirince mikrofon kapanır.',
   'Keep window on top': 'Pencereyi üstte tut',
-  'Keep ROOMS nearby while using other apps.':
-    'Diğer uygulamaları kullanırken ROOMS yanında kalsın.',
+  'Keep Tayfa nearby while using other apps.':
+    'Diğer uygulamaları kullanırken Tayfa yanında kalsın.',
   'Always on top': 'Her zaman üstte',
   'Always on top is available in the Electron app.':
     'Her zaman üstte seçeneği masaüstü uygulamasında kullanılabilir.',
@@ -628,7 +628,7 @@ const trMessages: Record<string, string> = {
   'Clear signals. No secrets.': 'Durum açık. Sırlar güvende.',
   'An honest view of what’s connected.': 'Bağlantılarının gerçek durumu.',
   Application: 'Uygulama',
-  'ROOMS 0.1.0 / Desktop development': 'ROOMS 0.1.0 / Masaüstü geliştirme',
+  'Tayfa 0.1.0 / Desktop development': 'Tayfa 0.1.0 / Masaüstü geliştirme',
   Runtime: 'Çalışma ortamı',
   'Browser preview': 'Tarayıcı önizlemesi',
   Platform: 'Platform',
@@ -711,7 +711,7 @@ const trMessages: Record<string, string> = {
   'Let’s get you back in.': 'Seni geri alalım.',
   'The local view could not open. Your settings are still saved.':
     'Görünüm açılamadı. Ayarların hâlâ kayıtlı.',
-  'Reload ROOMS': "ROOMS'u yeniden yükle",
+  'Reload Tayfa': "Tayfa'yı yeniden yükle",
 };
 export const locale = 'tr-TR';
 export function tr(key: string): string {

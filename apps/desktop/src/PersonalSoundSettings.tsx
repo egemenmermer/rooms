@@ -306,7 +306,7 @@ function UploadArea({
   if (!profile.uploads)
     return (
       <p className="ref-settings-note personal-sound-upload">
-        Sunucu yöneticisi ses yüklemeyi kapattı. ROOMS seslerinden birini seçebilirsin.
+        Sunucu yöneticisi ses yüklemeyi kapattı. Tayfa seslerinden birini seçebilirsin.
       </p>
     );
   const read = async (file: File) => {
@@ -766,7 +766,7 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
               onClick={() => void choose(event, id)}
             >
               <span>{name}</span>
-              <small>{id === null ? 'Klasik ROOMS sesi' : seconds(duration)}</small>
+              <small>{id === null ? 'Klasik Tayfa sesi' : seconds(duration)}</small>
               {selected && <Check size={15} aria-hidden="true" />}
             </button>
             <PreviewParts
@@ -875,8 +875,8 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
             </ul>
           </div>
           <div className="personal-sound-group">
-            <h3>ROOMS sesleri</h3>
-            <ul className="personal-sound-options" aria-label="ROOMS sesleri">
+            <h3>Tayfa sesleri</h3>
+            <ul className="personal-sound-options" aria-label="Tayfa sesleri">
               {profile.presets.map((preset) =>
                 option(slot, preset.id, preset.name, preset.durationSec),
               )}

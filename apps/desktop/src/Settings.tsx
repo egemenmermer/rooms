@@ -82,7 +82,7 @@ const tabs = [
   { id: 'connections', label: 'Uygulama bağlantıları', icon: Link },
   { id: 'room-memory', label: 'Oda hafızası', icon: Bookmark },
   { id: 'schedules', label: 'Tek seferlik görevler', icon: Clock3 },
-  { id: 'services', label: 'ROOMS bağlantıları', icon: Globe },
+  { id: 'services', label: 'Tayfa bağlantıları', icon: Globe },
   { id: 'server-profile', label: 'Sunucu profili', icon: Store },
   { id: 'cinema', label: 'Sinema', icon: Clapperboard },
   { id: 'hostops', label: 'Sunucu makinesi', icon: Monitor },
@@ -348,7 +348,7 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
       )}
       {logout && (
         <Modal
-          title="ROOMS’tan çıkış yap?"
+          title="Tayfa’dan çıkış yap?"
           className="ref-settings-confirm"
           onClose={() => {
             if (!busy) setLogout(false);
@@ -612,7 +612,7 @@ export default function Settings({
     } catch (e) {
       setError(
         e instanceof DOMException && e.name === 'NotAllowedError'
-          ? 'Kamera izni kapalı. Sistem gizlilik ayarlarından ROOMS’a kamera izni ver.'
+          ? 'Kamera izni kapalı. Sistem gizlilik ayarlarından Tayfa’ya kamera izni ver.'
           : 'Kamera kullanılamıyor. Cihaz listesini yenile ve başka bir kamera seç.',
       );
     }
@@ -794,7 +794,7 @@ export default function Settings({
       setError(
         err instanceof DOMException && err.name === 'NotAllowedError'
           ? tr(
-              'Microphone access was denied. Allow ROOMS in macOS System Settings \u2192 Privacy & Security \u2192 Microphone, then retry.',
+              'Microphone access was denied. Allow Tayfa in macOS System Settings \u2192 Privacy & Security \u2192 Microphone, then retry.',
             )
           : tr('The selected microphone is unavailable. Refresh devices and choose another input.'),
       );
@@ -953,7 +953,7 @@ export default function Settings({
                     : []),
                 ],
               },
-              { label: 'ROOMS', ids: ['about'] },
+              { label: 'Tayfa', ids: ['about'] },
             ].map((group) => (
               <div className="ref-settings-nav-group" key={group.label}>
                 <span className="ref-nav-group">{group.label}</span>
@@ -974,7 +974,7 @@ export default function Settings({
                     </button>
                   );
                 })}
-                {group.label === 'ROOMS' && (
+                {group.label === 'Tayfa' && (
                   <button onClick={onClose}>
                     <ArrowLeft size={17} />
                     Sohbete dön
@@ -1111,9 +1111,9 @@ export default function Settings({
                   <aside className="ref-chat-preview">
                     <span className="ref-preview-label">METİN ÖNİZLEMESİ</span>
                     <div className="ref-settings-inline">
-                      <Avatar name={community.user?.displayName || 'ROOMS'} />
+                      <Avatar name={community.user?.displayName || 'Tayfa'} />
                       <div>
-                        <strong>{community.user?.displayName || 'ROOMS'}</strong>
+                        <strong>{community.user?.displayName || 'Tayfa'}</strong>
                         <p>Metin ve durum işaretleri.</p>
                       </div>
                     </div>
@@ -1541,7 +1541,7 @@ export default function Settings({
                       title="Masaüstü bildirimleri"
                       description={
                         notifications?.supported
-                          ? 'ROOMS arka plandayken yeni mesajı haber verir.'
+                          ? 'Tayfa arka plandayken yeni mesajı haber verir.'
                           : 'Sistem bildirimleri bu ortamda kullanılamıyor.'
                       }
                     >
@@ -1611,14 +1611,14 @@ export default function Settings({
                     <div className="ref-notification-preview">
                       <Bell size={22} />
                       <div>
-                        <strong>ROOMS</strong>
+                        <strong>Tayfa</strong>
                         <p>Mesaj içeriği gizli.</p>
                       </div>
                     </div>
                     <div className="ref-settings-divider" />
                     <span className="ref-preview-label">MASAÜSTÜ</span>
                     <div className="ref-desktop-summary">
-                      <strong>ROOMS</strong>
+                      <strong>Tayfa</strong>
                       <p>
                         {realtime.status === 'connected'
                           ? `${realtime.roomName} · Ses bağlı`
@@ -1639,9 +1639,9 @@ export default function Settings({
                         >
                           <p>Sistem menüsündeki komutlar.</p>
                           <div className="ref-tray-preview">
-                            <strong>ROOMS</strong>
+                            <strong>Tayfa</strong>
                             <ul>
-                              <li>ROOMS’u aç</li>
+                              <li>Tayfa’yı aç</li>
                               <li>Çıkış</li>
                             </ul>
                             <small>Çıkış, ses bağlantısını da sonlandırır.</small>
@@ -1743,7 +1743,7 @@ export default function Settings({
                 <h3>{'Tan\u0131lama'}</h3>
                 <div className="diagnostic-list">
                   {[
-                    [tr('Application'), tr('ROOMS 0.1.14 / Desktop')],
+                    [tr('Application'), tr('Tayfa 0.1.14 / Desktop')],
                     [tr('Runtime'), window.rooms ? 'Electron 44.7.0' : tr('Browser preview')],
                     [tr('Platform'), window.rooms?.platform ?? tr('Browser')],
                     [tr('Social / gateway'), community.status],

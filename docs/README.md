@@ -1,6 +1,6 @@
-# ROOMS belgeleri
+# Tayfa belgeleri
 
-ROOMS'u kullanmak için herkesin sunucu kurması gerekmez. Var olan bir topluluğa katılacaksan [kullanım rehberiyle](USER_GUIDE.md); kendi topluluğunu kuracaksan [sunucu rehberiyle](SELF_HOSTING.md) başla. Güncel paketler [GitHub yayınlarındadır](https://github.com/egemenmermer/rooms/releases/latest).
+Tayfa'yı kullanmak için herkesin sunucu kurması gerekmez. Var olan bir topluluğa katılacaksan [kullanım rehberiyle](USER_GUIDE.md); kendi topluluğunu kuracaksan [sunucu rehberiyle](SELF_HOSTING.md) başla. Güncel paketler [GitHub yayınlarındadır](https://github.com/egemenmermer/rooms/releases/latest).
 
 ## Kullanıcılar için
 

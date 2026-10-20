@@ -211,10 +211,10 @@ export function ReferenceAuthFrame({
   return (
     <main className={`ref-onboarding mode-${mode}`}>
       <div className="ref-auth-content">
-        <aside className="ref-auth-art" aria-label="ROOMS">
+        <aside className="ref-auth-art" aria-label="Tayfa">
           <div className="ref-auth-wordmark">
             <img src="./reference-brand/brand/logo-symbol-lilac.svg" alt="" />
-            ROOMS
+            Tayfa
           </div>
           <div className="ref-auth-sculpture" aria-hidden="true">
             <div className="ref-auth-portal" />
@@ -301,7 +301,7 @@ export function ReferenceOnboarding({
     setInvite(null);
     if (!parsed) {
       setError(
-        'Bu bir ROOMS davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.',
+        'Bu bir Tayfa davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.',
       );
       return;
     }

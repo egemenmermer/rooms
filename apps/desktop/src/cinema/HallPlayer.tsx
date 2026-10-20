@@ -429,7 +429,7 @@ export function HallPlayer({
           setTimeout(() => setAttempt((value) => value + 1), 600 * reconnects.current);
           return;
         }
-        // These are failures of the ROOMS relay connection, not of the provider account.
+        // These are failures of the Tayfa relay connection, not of the provider account.
         update({ phase: 'error', code: 'CINEMA_STREAM_FAILED' });
       });
       instance.loadSource(source.src);

@@ -469,7 +469,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     this.patch({
       error:
         name === 'NotAllowedError' || name === 'PermissionDeniedError'
-          ? 'Mikrofon veya kamera izni kapalı. Sistem Ayarları → Gizlilik ve Güvenlik bölümünden ROOMS iznini aç.'
+          ? 'Mikrofon veya kamera izni kapalı. Sistem Ayarları → Gizlilik ve Güvenlik bölümünden Tayfa iznini aç.'
           : name === 'NotFoundError' || name === 'OverconstrainedError'
             ? 'Seçili cihaz bulunamadı. Ses ayarlarından sistem varsayılanını seç.'
             : name === 'NotReadableError'

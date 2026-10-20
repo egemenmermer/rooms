@@ -623,7 +623,7 @@ export class StoatClient {
     inviteCode: string;
     accountInviteCode?: string;
   }) {
-    // Signup tickets belong to ROOMS. Official account/community invitation secrets remain in the broker.
+    // Signup tickets belong to Tayfa. Official account/community invitation secrets remain in the broker.
     let response: Response;
     try {
       response = await fetch(`${new URL(this.instanceUrl).origin}/rooms-access/v1/auth/register`, {

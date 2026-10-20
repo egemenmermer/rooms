@@ -9,7 +9,7 @@ import {
 } from '@rooms/social';
 import './onboarding.css';
 
-/** The https link friends open; servers without the ROOMS broker fall back to the app link. */
+/** The https link friends open; servers without the Tayfa broker fall back to the app link. */
 export function inviteLinkFor(serverUrl: string, code: string) {
   return inviteShareLink(serverUrl, code) ?? inviteAppLink(serverUrl, code) ?? code;
 }

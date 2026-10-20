@@ -1,4 +1,4 @@
-# ROOMS geliştirme ve derleme rehberi
+# Tayfa geliştirme ve derleme rehberi
 
 [← README](../README.md) · [Mimari](ARCHITECTURE.md) · [Sunucu kurulumu](SELF_HOSTING.md)
 

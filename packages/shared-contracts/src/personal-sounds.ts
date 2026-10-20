@@ -103,7 +103,7 @@ export const personalSoundPresetSchema = z
     durationSec: z.number().positive().max(PERSONAL_SOUND_LIMITS.acceptDurationSec),
   })
   .strict();
-/** `null` means the classic ROOMS cue. */
+/** `null` means the classic Tayfa cue. */
 export const personalSoundAssignSchema = z
   .object({ enter: personalSoundIdSchema.nullable(), leave: personalSoundIdSchema.nullable() })
   .strict();

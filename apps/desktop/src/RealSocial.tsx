@@ -1483,7 +1483,7 @@ export function CommunitySpaces({ notify }: { notify(message: string): void }) {
               const link = parseInviteLink(code, { fallbackServer: c.serverUrl });
               if (!link)
                 return notify(
-                  'Bu bir ROOMS davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.',
+                  'Bu bir Tayfa davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.',
                 );
               if (!sameInviteServer(link.serverUrl, c.serverUrl))
                 return notify(
@@ -2449,7 +2449,7 @@ export function RealVoiceDock({
           {!visibleSources.length && !busy && !error && (
             <p className="modal-description">
               {captureStatus?.screen === 'denied'
-                ? 'macOS ekran kaydı izni kapalı. Sistem Ayarları → Gizlilik ve Güvenlik → Ekran ve Sistem Sesi Kaydı bölümünden ROOMS’a izin ver.'
+                ? 'macOS ekran kaydı izni kapalı. Sistem Ayarları → Gizlilik ve Güvenlik → Ekran ve Sistem Sesi Kaydı bölümünden Tayfa’ya izin ver.'
                 : 'Bu türde paylaşılabilir kaynak bulunamadı.'}
             </p>
           )}

@@ -261,7 +261,7 @@ export function StartupSplash({ referenceCopy = false }: { referenceCopy?: boole
   return (
     <div className="reference-splash" role="status">
       <div>
-        <img src="./reference-brand/brand/logo-lockup-lilac.svg" alt="ROOMS" />
+        <img src="./reference-brand/brand/logo-lockup-lilac.svg" alt="Tayfa" />
         {import.meta.env.DEV && referenceCopy && <h1>Aynı yere dönmek güzel.</h1>}
         <p>Odan hazırlanıyor.</p>
         <progress aria-label="Uygulama açılıyor" />

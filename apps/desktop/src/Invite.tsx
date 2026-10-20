@@ -41,7 +41,7 @@ export function InviteLanding({
     const inspect = async () => {
       try {
         if (!window.rooms?.social)
-          throw new Error('Daveti açmak için ROOMS masaüstü uygulamasını kullan.');
+          throw new Error('Daveti açmak için Tayfa masaüstü uygulamasını kullan.');
         const value = await window.rooms.social.inspectInvite(invite.serverUrl, invite.code);
         if (!stale) setPreview(value);
       } catch (err) {

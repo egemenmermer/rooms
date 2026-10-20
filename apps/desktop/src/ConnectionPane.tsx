@@ -29,7 +29,7 @@ export const sameInviteServer = (a: string, b: string) => {
   return !!origin && origin === inviteOrigin(normalizedServer(b));
 };
 const NOT_AN_INVITE =
-  'Bu bir ROOMS davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.';
+  'Bu bir Tayfa davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.';
 const formatExpiry = (iso: string | null | undefined) => {
   const time = iso ? Date.parse(iso) : NaN;
   return Number.isFinite(time) ? new Date(time).toLocaleString('tr-TR') : null;

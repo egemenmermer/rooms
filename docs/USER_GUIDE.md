@@ -1,4 +1,4 @@
-# ROOMS kullanım rehberi
+# Tayfa kullanım rehberi
 
 [← README](../README.md) · [Sunucu kurulumu](SELF_HOSTING.md) · [Sorun giderme](TROUBLESHOOTING.md)
 
@@ -18,18 +18,18 @@
 
 Topluluğu yöneten kişiden şunları al:
 
-1. Uyumlu ROOMS uygulaması veya kaynak koddan çalıştırma adımları. Hazır masaüstü paketleri [sürümler sayfasındadır](https://github.com/egemenmermer/rooms/releases/latest).
+1. Uyumlu Tayfa uygulaması veya kaynak koddan çalıştırma adımları. Hazır masaüstü paketleri [sürümler sayfasındadır](https://github.com/egemenmermer/rooms/releases/latest).
 2. Yeni hesap için davet bağlantısı: `https://<sunucu>/davet/…`. Bağlantı sunucuyu da belirler.
 3. O sunucuda zaten hesabın varsa topluluğun sunucu adresi; genellikle bir HTTPS adresidir.
 
-Evrensel bir ROOMS hesabı yoktur. Başka bir topluluğun sunucusuna bağlanmak hesabını, mesajlarını veya izinlerini otomatik taşımaz. GitHub hesabın da ROOMS hesabı değildir.
+Evrensel bir Tayfa hesabı yoktur. Başka bir topluluğun sunucusuna bağlanmak hesabını, mesajlarını veya izinlerini otomatik taşımaz. GitHub hesabın da Tayfa hesabı değildir.
 
 Platform ve imza bilgisini indirdiğin sürümün notlarından kontrol et. Issue yorumlarındaki bilinmeyen çalıştırılabilir dosyaları indirme; kaynak kod arşivini kurulum paketi sanma. Kendi paketini dağıtacaksan [sürüm rehberini](RELEASING.md) izle.
 
 ## Topluluğa katıl
 
 1. Platformuna uygun masaüstü paketini kurup aç veya [kaynaktan çalıştır](DEVELOPMENT.md).
-2. Davet bağlantısını tarayıcıda aç. Sayfada **Uygulamayı indir** ve **ROOMS'ta aç** düğmeleri vardır. **ROOMS'ta aç**, `rooms:` protokolünü kaydeden kurulu bir masaüstü paketi ister.
+2. Davet bağlantısını tarayıcıda aç. Sayfada **Uygulamayı indir** ve **Tayfa'da aç** düğmeleri vardır. **Tayfa'da aç**, `rooms:` protokolünü kaydeden kurulu bir masaüstü paketi ister.
 3. Uygulama **Kayıt ol** sekmesinde açılır. Bağlantıdan geldiysen davet kartında topluluğun adını ve son geçerlilik zamanını görürsün; kullanıcı adı, e-posta ve şifre girmen yeterli. Düğme uygulamayı açmadıysa bağlantının tamamını **Davet bağlantısı** alanına yapıştır. Sunucu adresi girmen gerekmez.
 4. O sunucuda zaten hesabın varsa **Giriş yap** sekmesine geç. E-posta ve şifreni gir; sunucu, altta küçük **Sunucu: …** kutusundadır; değiştirmek için ona tıkla. Bağlantıdan geldiysen girişten sonra topluluğa katılırsın.
 5. Profil ve cihaz kurulumunu takip et. Mikrofon, kamera ve ekran erişimini yalnızca ilgili özelliği kullanırken ver.
@@ -41,7 +41,7 @@ Başka bir sunucuda oturumun açıkken davet bağlantısı açarsan **Çıkış 
 
 Bir davet bağlantısı birden çok kişiye gönderilebilir; varsayılan olarak 7 gün ve 10 kişi geçerlidir. Süresi dolmuşsa, kişi sınırı dolmuşsa veya iptal edildiyse seni davet edenden yeni bağlantı iste. Kayıt yarıda kaldıysa önce **Giriş yap** ile dene; hesabın oluşmuş olabilir. Sürekli yeniden denemek, kısmen oluşturulmuş bir hesabı güvenle onarmaz.
 
-Kaynaktan alınan derleme hazır sunucu adresi olmadan başlar. Bu beklenen davranıştır; davet bağlantısını kullan veya **Giriş yap** sekmesinde yöneticinin adresini gir. Boş alan, eksik bir merkezî ROOMS hizmeti olduğu anlamına gelmez.
+Kaynaktan alınan derleme hazır sunucu adresi olmadan başlar. Bu beklenen davranıştır; davet bağlantısını kullan veya **Giriş yap** sekmesinde yöneticinin adresini gir. Boş alan, eksik bir merkezî Tayfa hizmeti olduğu anlamına gelmez.
 
 ## Ekranları tanı
 

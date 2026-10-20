@@ -1,6 +1,6 @@
 # Üçüncü taraf bildirimleri ve kaynakları
 
-Özgün ROOMS kodu ve proje görselleri kökteki MIT lisansıyla sunulur. Varsayılan DJ çizimi ve korunan varlıklar [varlık kaydında](ASSETS.md) açıklanır. Topluluk medyası sağlayıcısına aittir; depo yeniden lisanslamaz. Inter fontu SIL OFL 1.1 lisansını korur. Font ve gömülü yerel bileşen bildirimleri korunur. Aşağıdaki hukuki lisans metinleri, değiştirilmeden dağıtılması için özgün dillerindedir; açıklamalar Türkçedir.
+Özgün Tayfa kodu ve proje görselleri kökteki MIT lisansıyla sunulur. Varsayılan DJ çizimi ve korunan varlıklar [varlık kaydında](ASSETS.md) açıklanır. Topluluk medyası sağlayıcısına aittir; depo yeniden lisanslamaz. Inter fontu SIL OFL 1.1 lisansını korur. Font ve gömülü yerel bileşen bildirimleri korunur. Aşağıdaki hukuki lisans metinleri, değiştirilmeden dağıtılması için özgün dillerindedir; açıklamalar Türkçedir.
 
 Bağımlılıkların kendi lisansları geçerlidir. Tam sürümler için kurulu LICENSE dosyaları ve kilit dosyasına bakın. Derleme, kurulu üretim bağımlılık üstverisi ve LICENSE/NOTICE dosyalarından `dist/THIRD_PARTY_NOTICES.txt` üretip `app.asar` içine koyar. Dağıtım imajları ve resmî komut satırı araçları üst bildirimlerini ayrıca korur.
 
@@ -23,7 +23,7 @@ Değiştirilmeden kendi sunucunda çalışan Stoat ve resmî kurulum ayarı ayr�
 
 Eski Spacebar entegrasyonu geri dönüş için kaynak/kanıt olarak tutulur, etkin yeni arka uç değildir: https://github.com/spacebarchat/server (AGPL-3.0).
 
-Uzak çalışan değiştirilmemiş resmî Codex ve Claude Code araçlarını kurar. Kullanım/yetkilendirme koşulları ROOMS'tan bağımsızdır; görevi başlatan kişi kendi uygun sağlayıcı hesabını kullanır. Önbellek yetki malzemesi dağıtılmaz. İsteğe bağlı resmî YouTube oynatıcısı ve ayrı sunucu ses bağdaştırıcıları sağlayıcı şartlarını korur. Sağlayıcı bilgisi, hesap oturumu veya medya akışı paketlenmez. Özellik bulunması sağlayıcı/içerik yeniden dağıtım hakkı vermez.
+Uzak çalışan değiştirilmemiş resmî Codex ve Claude Code araçlarını kurar. Kullanım/yetkilendirme koşulları Tayfa'dan bağımsızdır; görevi başlatan kişi kendi uygun sağlayıcı hesabını kullanır. Önbellek yetki malzemesi dağıtılmaz. İsteğe bağlı resmî YouTube oynatıcısı ve ayrı sunucu ses bağdaştırıcıları sağlayıcı şartlarını korur. Sağlayıcı bilgisi, hesap oturumu veya medya akışı paketlenmez. Özellik bulunması sağlayıcı/içerik yeniden dağıtım hakkı vermez.
 
 - Inter / SIL Open Font License 1.1: https://github.com/rsms/inter. Tam lisans fontla ve üretilen bildirimlerle dağıtılır.
 

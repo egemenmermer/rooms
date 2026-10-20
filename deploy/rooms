@@ -205,7 +205,7 @@ cmd_bootstrap() {
   local email username password password2 community
   email="${ROOMS_OWNER_EMAIL:-$(ask 'E-posta' "$(env_value ROOMS_ACME_EMAIL)")}"
   username="${ROOMS_OWNER_USERNAME:-$(ask 'Kullanıcı adı')}"
-  community="${ROOMS_COMMUNITY_NAME:-$(ask 'Topluluk adı' 'ROOMS')}"
+  community="${ROOMS_COMMUNITY_NAME:-$(ask 'Topluluk adı' 'Tayfa')}"
   if [[ -n "${ROOMS_OWNER_PASSWORD:-}" ]]; then
     password="$ROOMS_OWNER_PASSWORD"
   else

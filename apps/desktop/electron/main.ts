@@ -136,7 +136,7 @@ function createWindow() {
     minHeight: 700,
     backgroundColor: '#141518',
     show: false,
-    title: 'ROOMS',
+    title: 'Tayfa',
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 15, y: 8 },
     ...(process.platform === 'win32'
@@ -533,7 +533,7 @@ app.whenReady().then(async () => {
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
       {
-        label: 'ROOMS',
+        label: 'Tayfa',
         submenu: [
           { role: 'about' },
           { type: 'separator' },
@@ -566,11 +566,11 @@ app.whenReady().then(async () => {
   icon.setTemplateImage(true);
   if (!icon.isEmpty()) {
     tray = new Tray(icon);
-    tray.setToolTip('ROOMS');
+    tray.setToolTip('Tayfa');
     tray.setContextMenu(
       Menu.buildFromTemplate([
         {
-          label: 'ROOMS’u aç',
+          label: 'Tayfa’yı aç',
           click: () => {
             if (win) showWindow(win);
             else createWindow();

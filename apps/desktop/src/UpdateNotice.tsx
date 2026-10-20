@@ -39,7 +39,7 @@ export function UpdateNotice() {
   const waiting = useWaitingUpdate(),
     navigate = useNavigate();
   if (!waiting) return null;
-  const name = waiting.version ? `ROOMS ${waiting.version}` : 'Yeni sürüm';
+  const name = waiting.version ? `Tayfa ${waiting.version}` : 'Yeni sürüm';
   return (
     <IconButton
       label={`${name} hazır, güncellemek için tıkla`}

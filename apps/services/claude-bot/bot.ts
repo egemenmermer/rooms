@@ -30,7 +30,7 @@ export interface ClaudeBotConfig {
   maxConcurrent: number;
   progressIntervalMs: number;
   contextMessages: number;
-  /** When non-empty, only these ROOMS user IDs can start or continue conversations. */
+  /** When non-empty, only these Tayfa user IDs can start or continue conversations. */
   allowedUserIds?: ReadonlySet<string>;
   env?: NodeJS.ProcessEnv;
 }
@@ -220,7 +220,7 @@ export class ClaudeChannelBot {
       await this.client
         .editMessage(message.channelId, statusId, '⏳ Üzerinde çalışıyorum…')
         .catch(() => {});
-      const header = `[ROOMS chat message from ${author(message)} in channel ${message.channelId} at ${message.timestamp}]`;
+      const header = `[Tayfa chat message from ${author(message)} in channel ${message.channelId} at ${message.timestamp}]`;
       const input = `${conversation.sessionId ? '' : await this.context(message)}${header}\n${prompt}`;
       const result = await this.run({
         prompt: input,

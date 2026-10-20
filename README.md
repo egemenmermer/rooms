@@ -1,8 +1,10 @@
 <div align="center">
 
-# ROOMS
+# Tayfa
 
-<img src="apps/desktop/public/icon.png" alt="ROOMS portal ikonu" width="96" height="96" />
+> Tayfa'nın eski adı ROOMS'tur; kurulu uygulamanın dosya adı ve iç tanımlayıcılar şimdilik ROOMS olarak kalıyor.
+
+<img src="apps/desktop/public/icon.png" alt="Tayfa portal ikonu" width="96" height="96" />
 
 ### Arkadaşlarınla buluş. Sunucun sende kalsın.
 
@@ -19,11 +21,11 @@ Sesli sohbet, ekran paylaşımı, mesajlar, müzik ve ortak etkinlikler — tek 
 
 </div>
 
-![ROOMS ses odası](docs/images/voice.png)
+![Tayfa ses odası](docs/images/voice.png)
 
 ## İçindekiler
 
-- [ROOMS nedir?](#rooms-nedir)
+- [Tayfa nedir?](#tayfa-nedir)
 - [Başlangıç](#başlangıç)
 - [İndir ve topluluğa katıl](#i̇ndir-ve-topluluğa-katıl)
 - [Uygulamadan görüntüler](#uygulamadan-görüntüler)
@@ -37,13 +39,13 @@ Sesli sohbet, ekran paylaşımı, mesajlar, müzik ve ortak etkinlikler — tek 
 - [Katkıda bulunma](#katkıda-bulunma)
 - [Lisans](#lisans)
 
-## ROOMS nedir?
+## Tayfa nedir?
 
-ROOMS, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında konuşabilir, ekranını paylaşabilir, mesajlaşabilir ve uygulamadan çıkmadan arkadaşlarınla birlikte vakit geçirebilirsin.
+Tayfa, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında konuşabilir, ekranını paylaşabilir, mesajlaşabilir ve uygulamadan çıkmadan arkadaşlarınla birlikte vakit geçirebilirsin.
 
-**Sunucuyu sen seçersin.** ROOMS, herkesin tek bir merkezî hesapla girdiği veya herkese açık oda dizini sunan bir hizmet değildir. Topluluk yöneticisi arka ucu kendi sunucusunda çalıştırır ve üyelere davet bağlantısı gönderir; bağlantı o sunucuyu gösterir. Hesabın o sunucuya aittir. Kaynak kodda hazır bir kişisel sunucu adresi veya ortak hesap bulunmaz.
+**Sunucuyu sen seçersin.** Tayfa, herkesin tek bir merkezî hesapla girdiği veya herkese açık oda dizini sunan bir hizmet değildir. Topluluk yöneticisi arka ucu kendi sunucusunda çalıştırır ve üyelere davet bağlantısı gönderir; bağlantı o sunucuyu gösterir. Hesabın o sunucuya aittir. Kaynak kodda hazır bir kişisel sunucu adresi veya ortak hesap bulunmaz.
 
-İstemci Electron, React ve TypeScript kullanır. Hesaplar ve sohbet için değiştirilmeden, ayrı çalıştırılan **Stoat** arka ucu; gerçek zamanlı ses ve görüntü için **LiveKit** kullanılır. ROOMS servisleri bu sistemleri birbirine bağlar ve ortak etkinlikleri yönetir.
+İstemci Electron, React ve TypeScript kullanır. Hesaplar ve sohbet için değiştirilmeden, ayrı çalıştırılan **Stoat** arka ucu; gerçek zamanlı ses ve görüntü için **LiveKit** kullanılır. Tayfa servisleri bu sistemleri birbirine bağlar ve ortak etkinlikleri yönetir.
 
 ## Başlangıç
 
@@ -140,7 +142,7 @@ Derleme, doğrulama ve paket komutları için [geliştirme rehberine](docs/DEVEL
 
 ## Kendi topluluğunu kur
 
-Bir Linux sunucu (2 GB RAM yeterli, 4 GB önerilir) ve bir alan adı ile kendi ROOMS sunucunu tek komutla kurabilirsin. Alan adın yoksa ücretsiz bir [DuckDNS](https://www.duckdns.org) adı da işe yarar.
+Bir Linux sunucu (2 GB RAM yeterli, 4 GB önerilir) ve bir alan adı ile kendi Tayfa sunucunu tek komutla kurabilirsin. Alan adın yoksa ücretsiz bir [DuckDNS](https://www.duckdns.org) adı da işe yarar.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/egemenmermer/rooms/main/deploy/install.sh | sudo bash
@@ -169,7 +171,7 @@ Yerel kimlik bilgilerini, ekran yakalamayı ve yetkili işlemleri Electron yöne
 
 ## Platformlar ve projenin durumu
 
-ROOMS aktif geliştirme aşamasındadır; güncel sürüm bir yayın adayıdır. Kaynağın açık olması, tamamlanmış bir herkese açık V1 olduğu anlamına gelmez.
+Tayfa aktif geliştirme aşamasındadır; güncel sürüm bir yayın adayıdır. Kaynağın açık olması, tamamlanmış bir herkese açık V1 olduğu anlamına gelmez.
 
 - **macOS 14+ / Apple Silicon:** paketleme yapılandırılmıştır. Güvenilir dağıtım için imza ve Apple noter onayı gerekir.
 - **Windows x64:** EXE kurulumu vardır. İmzasız arkadaş test paketi ile güvenilir imzalı yayın farklıdır.
@@ -216,4 +218,4 @@ Güvenlik açıklarında herkese açık issue yerine [SECURITY.md](SECURITY.md) 
 
 ## Lisans
 
-Özgün ROOMS kodu ve uygun özgün varlıklar [MIT lisanslıdır](LICENSE). Bağımlılıklar, yazı tipleri ve ayrı arka uç servisleri kendi lisanslarını korur. ROOMS'un MIT lisansı Stoat'ı veya üçüncü taraf medyayı yeniden lisanslamaz. Üçüncü taraf lisanslarının özgün metinleri dağıtımlarda korunur.
+Özgün Tayfa kodu ve uygun özgün varlıklar [MIT lisanslıdır](LICENSE). Bağımlılıklar, yazı tipleri ve ayrı arka uç servisleri kendi lisanslarını korur. Tayfa'nın MIT lisansı Stoat'ı veya üçüncü taraf medyayı yeniden lisanslamaz. Üçüncü taraf lisanslarının özgün metinleri dağıtımlarda korunur.

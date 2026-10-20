@@ -426,7 +426,7 @@ export function gameCommand(
     table.seats.push({
       seat: command.seat,
       userId: `bot-${randomUUID()}`,
-      name: `ROOMS Bot ${command.seat + 1}`,
+      name: `Tayfa Bot ${command.seat + 1}`,
       bot: true,
       permanentBot: true,
       chips: table.kind === 'holdem' ? rulesOf(table).initialChips : 1000,
