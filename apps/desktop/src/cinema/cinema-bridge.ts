@@ -58,7 +58,10 @@ const copy: Record<CinemaErrorCode, string> = {
   CINEMA_SUBTITLE_KEY_INVALID: 'SubDL bu API anahtarını kabul etmedi. Anahtarı kontrol et.',
   CINEMA_SUBTITLE_UNAVAILABLE:
     'Altyazı servisine şu an ulaşılamadı ya da günlük indirme sınırı doldu. Biraz sonra yeniden dene.',
-  CINEMA_RMDB_NOT_FOUND: "Bu kayıt artık RMDB'de yok.",
+  CINEMA_METADATA_KEY_INVALID:
+    'TMDB bu anahtarı kabul etmedi. API anahtarını ya da okuma jetonunu kontrol et.',
+  CINEMA_METADATA_UNAVAILABLE: 'Yapım bilgisine şu an ulaşılamadı. Biraz sonra yeniden dene.',
+  CINEMA_RMDB_NOT_FOUND: "Bu kayıt artık Tayfa'da yok.",
   CINEMA_RMDB_INVALID: 'Puan veya yorum kaydedilemedi; uzunluğu ve tarihi kontrol et.',
 };
 

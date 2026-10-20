@@ -1,17 +1,42 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ArrowLeft, ChevronRight, Info, ListPlus, Play, Star } from 'lucide-react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import {
+  ArrowLeft,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  EyeOff,
+  Info,
+  ListPlus,
+  NotebookPen,
+  Play,
+  Star,
+  X,
+} from 'lucide-react';
 import type {
   CatalogKind,
   CinemaCategory,
+  CinemaContinueItem,
   CinemaDetails,
+  CinemaEpisode,
+  CinemaEpisodeMarks,
   CinemaItem,
 } from '../../../../packages/community-cinema/src/types';
-import { cinemaArt } from './cinema-bridge';
+import { cinemaArt, cinemaErrorText, getCinemaBridge } from './cinema-bridge';
+import { cleanEpisodeTitle } from '../../../../packages/community-cinema/src/titles';
+import { useCinemaPreferences } from './cinema-preferences';
 import { CinemaArt, QualityBadges } from './CinemaArt';
 import { rememberItems, useBridgeRead, useCategories, useItems } from './catalog-cache';
 import { minutesLabel } from './hall-model';
 import { RmdbCatalogActions } from './RmdbCatalogActions';
 import { useHall } from './use-hall';
+import { useHallMenu } from './HallMenu';
+import {
+  airDateLabel,
+  continueLine,
+  daysUntil,
+  hideContinue,
+  visibleContinue,
+} from './continue-model';
 
 type VodKind = Extract<CatalogKind, 'movie' | 'series'>;
 export type VodView =
@@ -54,10 +79,18 @@ export function VodTab({
         onOpen={(ref) => onView({ mode: 'details', ref })}
       />
     );
-  return <VodHome kind={kind} onView={onView} />;
+  return <VodHome kind={kind} onView={onView} onRmdb={onRmdb} />;
 }
 
-function VodHome({ kind, onView }: { kind: VodKind; onView(view: VodView): void }) {
+function VodHome({
+  kind,
+  onView,
+  onRmdb,
+}: {
+  kind: VodKind;
+  onView(view: VodView): void;
+  onRmdb?(workId: string): void;
+}) {
   const hall = useHall();
   const categories = useCategories(hall.hallId, kind);
   const recent = useItems(hall.hallId, kind, null, 'added', 24);
@@ -77,6 +110,11 @@ function VodHome({ kind, onView }: { kind: VodKind; onView(view: VodView): void 
           onDetails={() => onView({ mode: 'details', ref: hero.ref })}
         />
       )}
+      <ContinueRow
+        kind={kind}
+        onDetails={(ref) => onView({ mode: 'details', ref })}
+        onRmdb={onRmdb}
+      />
       <Row
         title="Yeni eklenenler"
         items={recent.data.items}
@@ -107,12 +145,21 @@ function Hero({ item, kind, onDetails }: { item: CinemaItem; kind: VodKind; onDe
   const details = useBridgeRead<CinemaDetails>(`${hall.hallId}:details:${item.ref}`, (bridge) =>
     bridge.details(hall.hallId, item.ref),
   );
+  // Without a backdrop the poster stands in, softened: stretched sharp, it would crop badly.
+  const posterOnly = !details.data?.backdrop;
   const backdrop = cinemaArt(hall.hallId, details.data?.backdrop ?? item.art);
   const steer = hall.canDirect || !hall.primary;
   const firstEpisode = details.data?.seasons[0]?.episodes[0];
   return (
     <section className="hall-hero" aria-label={item.title}>
-      {backdrop && <img className="hall-hero-backdrop" src={backdrop} alt="" draggable={false} />}
+      {backdrop && (
+        <img
+          className={`hall-hero-backdrop ${posterOnly ? 'from-poster' : ''}`}
+          src={backdrop}
+          alt=""
+          draggable={false}
+        />
+      )}
       <div className="hall-hero-shade" />
       <div className="hall-hero-text">
         <span className="hall-eyebrow">{kind === 'movie' ? 'Yeni film' : 'Yeni dizi'}</span>
@@ -142,7 +189,15 @@ function Hero({ item, kind, onDetails }: { item: CinemaItem; kind: VodKind; onDe
   );
 }
 
-function Meta({ item, details }: { item: CinemaItem; details: CinemaDetails | null }) {
+function Meta({
+  item,
+  details,
+  children,
+}: {
+  item: CinemaItem;
+  details: CinemaDetails | null;
+  children?: ReactNode;
+}) {
   const parts = [
     item.year,
     details?.genre,
@@ -160,8 +215,189 @@ function Meta({ item, details }: { item: CinemaItem; details: CinemaDetails | nu
       {parts.map((part) => (
         <span key={String(part)}>{part}</span>
       ))}
+      {children}
       <QualityBadges badges={item.badges} max={2} />
     </p>
+  );
+}
+
+/**
+ * IMDb (films and series) and Letterboxd (films) open in the browser. The IMDb id is looked up
+ * on the click; without the title's TMDB id from the provider, neither can be found.
+ */
+function TitleLinks({
+  kind,
+  refId,
+  tmdbId,
+}: {
+  kind: VodKind;
+  refId: string;
+  tmdbId: number | null;
+}) {
+  const hall = useHall();
+  const [state, setState] = useState<'idle' | 'busy' | 'missing'>('idle');
+  const none = 'Sağlayıcı bu yapımın TMDB kimliğini vermiyor; sayfası bulunamadı.';
+  const imdb = async () => {
+    const bridge = getCinemaBridge();
+    if (!bridge?.titleLinks || state === 'busy') return;
+    setState('busy');
+    try {
+      const links = await bridge.titleLinks(hall.hallId, refId);
+      if (links.imdbId) {
+        window.open(`https://www.imdb.com/title/${links.imdbId}/`);
+        setState('idle');
+      } else setState('missing');
+    } catch (error) {
+      setState('idle');
+      hall.notify(cinemaErrorText(error));
+    }
+  };
+  return (
+    <span className="hall-title-links">
+      <button
+        className="hall-title-link imdb"
+        disabled={!tmdbId || state === 'missing'}
+        aria-busy={state === 'busy'}
+        title={
+          !tmdbId
+            ? none
+            : state === 'missing'
+              ? 'Bu yapımın IMDb sayfası bulunamadı.'
+              : "IMDb'de aç"
+        }
+        aria-label="IMDb sayfasını aç"
+        onClick={() => void imdb()}
+      >
+        IMDb
+      </button>
+      {kind === 'movie' && (
+        <button
+          className="hall-title-link letterboxd"
+          disabled={!tmdbId}
+          title={tmdbId ? "Letterboxd'da aç" : none}
+          aria-label="Letterboxd sayfasını aç"
+          onClick={() => tmdbId && window.open(`https://letterboxd.com/tmdb/${tmdbId}/`)}
+        >
+          <i aria-hidden="true" />
+          <i aria-hidden="true" />
+          <i aria-hidden="true" />
+          Letterboxd
+        </button>
+      )}
+    </span>
+  );
+}
+
+/**
+ * What the hall left unfinished, the next episode of a series it is following, or that
+ * episode's air date. A card opens where the hall stopped; its menu hides it for this viewer.
+ */
+function ContinueRow({
+  kind,
+  onDetails,
+  onRmdb,
+}: {
+  kind: VodKind;
+  onDetails(ref: string): void;
+  onRmdb?(workId: string): void;
+}) {
+  const hall = useHall();
+  // Read again whenever the hall moves on, so the row follows what was just watched.
+  const read = useBridgeRead(
+    `${hall.hallId}:continue:${kind}:${hall.current?.id ?? '-'}`,
+    (bridge) => bridge.continueWatching?.(hall.hallId, kind) ?? Promise.resolve([]),
+  );
+  const [hidden, setHidden] = useState<string[]>([]);
+  const menu = useHallMenu();
+  const now = Date.now();
+  // An older server has no row; it is simply not shown.
+  const items = visibleContinue(hall.hallId, read.data ?? []).filter(
+    (item) => !hidden.includes(item.workId),
+  );
+  if (read.error || (!read.loading && !items.length) || (read.loading && !read.data)) return null;
+  const steer = hall.canDirect || !hall.primary;
+  const open = (item: CinemaContinueItem) =>
+    item.resume ? void hall.resume(item.resume) : onDetails(item.ref);
+  return (
+    <HallRow title="Devam et" wide>
+      {items.map((item) => {
+        const days = item.upcomingAt ? daysUntil(item.upcomingAt, now) : null;
+        const line = continueLine(item);
+        return (
+          <button
+            key={item.workId}
+            className="hall-continue-card"
+            title={item.title}
+            aria-label={[
+              item.title,
+              line,
+              item.upcomingAt ? `yakında, ${airDateLabel(item.upcomingAt)}` : null,
+              item.resume ? (steer ? 'salonda devam et' : 'sıraya öner') : 'ayrıntıları aç',
+            ]
+              .filter(Boolean)
+              .join(', ')}
+            onClick={() => open(item)}
+            {...menu.bind(item.title, () => [
+              {
+                label: 'Listeden kaldır',
+                icon: <X size={15} />,
+                danger: true,
+                onSelect: () => {
+                  hideContinue(hall.hallId, item.workId);
+                  setHidden((value) => [...value, item.workId]);
+                },
+              },
+              ...(item.resume
+                ? [
+                    {
+                      label: steer ? 'Devam et' : 'Sıraya öner',
+                      icon: steer ? <Play size={15} /> : <ListPlus size={15} />,
+                      onSelect: () => open(item),
+                    },
+                  ]
+                : []),
+              {
+                label: 'Ayrıntılar',
+                icon: <Info size={15} />,
+                onSelect: () => onDetails(item.ref),
+              },
+              ...(onRmdb
+                ? [
+                    {
+                      label: "Tayfa'da aç",
+                      icon: <NotebookPen size={15} />,
+                      onSelect: () => onRmdb(item.workId),
+                    },
+                  ]
+                : []),
+            ])}
+          >
+            <span className="hall-continue-art">
+              <CinemaArt hallId={hall.hallId} art={item.art} title={item.title} shape="wide" />
+              {item.upcomingAt ? (
+                <span className="hall-continue-badges">
+                  <span>Yakında · {airDateLabel(item.upcomingAt)}</span>
+                  {days !== null && <span>{days}g</span>}
+                </span>
+              ) : (
+                <span className="hall-continue-play" aria-hidden="true">
+                  {steer ? <Play size={20} /> : <ListPlus size={20} />}
+                </span>
+              )}
+              {item.progress > 0 && (
+                <span
+                  className="hall-continue-progress"
+                  style={{ '--progress': item.progress } as CSSProperties}
+                />
+              )}
+            </span>
+            <strong>{item.title}</strong>
+            <small>{line}</small>
+          </button>
+        );
+      })}
+      {menu.menu}
+    </HallRow>
   );
 }
 
@@ -248,6 +484,7 @@ export function HallRow({
   sectionRef,
   onAll,
   loading = false,
+  wide = false,
   children,
 }: {
   title: string;
@@ -255,10 +492,12 @@ export function HallRow({
   sectionRef?: React.Ref<HTMLElement>;
   onAll?(): void;
   loading?: boolean;
+  /** 16:9 cards (Devam et) instead of posters. */
+  wide?: boolean;
   children?: ReactNode;
 }) {
   return (
-    <section className="hall-row" ref={sectionRef} aria-label={title}>
+    <section className={`hall-row ${wide ? 'wide' : ''}`} ref={sectionRef} aria-label={title}>
       <header>
         <h3>
           {title}
@@ -271,14 +510,116 @@ export function HallRow({
           </button>
         )}
       </header>
-      <div className="hall-row-track">
+      <RowTrack>
         {loading
-          ? Array.from({ length: 7 }, (_, index) => (
-              <span key={index} className="hall-skeleton poster" />
+          ? Array.from({ length: wide ? 4 : 7 }, (_, index) => (
+              <span key={index} className={`hall-skeleton ${wide ? 'wide' : 'poster'}`} />
             ))
           : children}
-      </div>
+      </RowTrack>
     </section>
+  );
+}
+
+/**
+ * A row's horizontal track: arrows on hover page it by most of its width, and it can be
+ * dragged with the mouse. The wheel keeps scrolling the page.
+ */
+function RowTrack({ children }: { children?: ReactNode }) {
+  const track = useRef<HTMLDivElement>(null);
+  const [ends, setEnds] = useState({ start: true, end: true });
+  const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
+  const measure = () => {
+    const element = track.current;
+    if (!element) return;
+    const start = element.scrollLeft <= 2;
+    const end = element.scrollLeft + element.clientWidth >= element.scrollWidth - 2;
+    setEnds((value) => (value.start === start && value.end === end ? value : { start, end }));
+  };
+  useEffect(() => {
+    const element = track.current;
+    if (!element) return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  // Cards arrive after the first paint (lazy rows); look at the ends again when they change.
+  useEffect(measure, [children]);
+  const page = (direction: 1 | -1) => {
+    const element = track.current;
+    if (!element) return;
+    element.scrollBy({
+      left: direction * element.clientWidth * 0.8,
+      behavior: document.documentElement.dataset.motion === 'reduce' ? 'auto' : 'smooth',
+    });
+  };
+  return (
+    <div className="hall-row-frame">
+      <div
+        ref={track}
+        className="hall-row-track"
+        onScroll={measure}
+        onPointerDown={(event) => {
+          if (event.pointerType !== 'mouse' || event.button !== 0) return;
+          drag.current = { x: event.clientX, left: track.current!.scrollLeft, moved: false };
+        }}
+        onPointerMove={(event) => {
+          const state = drag.current;
+          const element = track.current;
+          if (!state || !element) return;
+          const dx = event.clientX - state.x;
+          if (!state.moved && Math.abs(dx) < 6) return;
+          if (!state.moved) {
+            state.moved = true;
+            element.setPointerCapture(event.pointerId);
+            element.classList.add('dragging');
+          }
+          element.scrollLeft = state.left - dx;
+        }}
+        onPointerUp={(event) => {
+          const element = track.current;
+          if (drag.current?.moved && element) {
+            element.classList.remove('dragging');
+            if (element.hasPointerCapture(event.pointerId))
+              element.releasePointerCapture(event.pointerId);
+            // The click that ends a drag opens nothing.
+            const swallow = (click: MouseEvent) => {
+              click.stopPropagation();
+              click.preventDefault();
+            };
+            element.addEventListener('click', swallow, { capture: true, once: true });
+            setTimeout(() => element.removeEventListener('click', swallow, { capture: true }), 0);
+          }
+          drag.current = null;
+        }}
+        onPointerCancel={() => {
+          track.current?.classList.remove('dragging');
+          drag.current = null;
+        }}
+      >
+        {children}
+      </div>
+      {!ends.start && (
+        <button
+          className="hall-row-arrow left"
+          aria-label="Öncekiler"
+          tabIndex={-1}
+          onClick={() => page(-1)}
+        >
+          <ChevronLeft size={22} />
+        </button>
+      )}
+      {!ends.end && (
+        <button
+          className="hall-row-arrow right"
+          aria-label="Sonrakiler"
+          tabIndex={-1}
+          onClick={() => page(1)}
+        >
+          <ChevronRight size={22} />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -434,10 +775,37 @@ function VodDetails({
       return value;
     }),
   );
+  const [marksVersion, setMarksVersion] = useState(0);
+  const marks = useBridgeRead<CinemaEpisodeMarks>(
+    kind === 'series' ? `${hall.hallId}:marks:${refId}:${marksVersion}` : null,
+    (bridge) =>
+      bridge.episodeMarks?.(hall.hallId, refId) ?? Promise.resolve({ workId: null, episodes: [] }),
+  );
+  const [marking, setMarking] = useState<string | null>(null);
+  const { blurUnwatched: blur } = useCinemaPreferences();
+  const menu = useHallMenu();
+  const markOf = (episode: CinemaEpisode) =>
+    marks.data?.episodes.find((e) => e.season === episode.season && e.episode === episode.episode);
+  const markEpisode = async (ref: string, watched: boolean) => {
+    const bridge = getCinemaBridge();
+    if (!bridge?.markEpisode) return;
+    setMarking(ref);
+    try {
+      await bridge.markEpisode(hall.hallId, ref, watched);
+      setMarksVersion((value) => value + 1);
+    } catch (error) {
+      hall.notify(cinemaErrorText(error));
+    } finally {
+      setMarking(null);
+    }
+  };
   const [season, setSeason] = useState<number | null>(null);
   const data = details.data;
   const seasons = data?.seasons ?? [];
-  const activeSeason = seasons.find((value) => value.season === season) ?? seasons[0] ?? null;
+  // The season the hall is in, until the viewer picks one.
+  const lastSeason = marks.data?.episodes.at(-1)?.season ?? null;
+  const activeSeason =
+    seasons.find((value) => value.season === (season ?? lastSeason)) ?? seasons[0] ?? null;
   const steer = hall.canDirect || !hall.primary;
   const playingRef = hall.current?.media.kind === 'community-media' ? hall.current.media.ref : null;
   return (
@@ -460,7 +828,9 @@ function VodDetails({
           >
             <span className="hall-eyebrow">{kind === 'movie' ? 'Film' : 'Dizi'}</span>
             <h2>{data.item.title}</h2>
-            <Meta item={data.item} details={data} />
+            <Meta item={data.item} details={data}>
+              <TitleLinks kind={kind} refId={data.item.ref} tmdbId={data.tmdbId ?? null} />
+            </Meta>
             {data.plot && <p>{data.plot}</p>}
             <Credits director={data.director} cast={data.cast} />
             {!!data.versions?.length && (
@@ -515,41 +885,98 @@ function VodDetails({
                 ))}
               </div>
               <ol>
-                {activeSeason.episodes.map((episode) => (
-                  <li key={episode.ref} className={playingRef === episode.ref ? 'playing' : ''}>
-                    <button
-                      className="hall-episode"
-                      disabled={playingRef === episode.ref}
-                      onClick={() => void hall.openEpisode(data.item, episode)}
-                      aria-label={`${episode.episode}. bölüm, ${episode.title}: ${steer ? 'salonda oynat' : 'sıraya öner'}`}
+                {activeSeason.episodes.map((episode) => {
+                  const mark = markOf(episode);
+                  const watched = !!mark?.finished;
+                  const name =
+                    cleanEpisodeTitle(
+                      episode.title,
+                      data.item.title,
+                      episode.season,
+                      episode.episode,
+                    ) || `${episode.episode}. Bölüm`;
+                  const toggle = () => void markEpisode(episode.ref, !watched);
+                  return (
+                    <li
+                      key={episode.ref}
+                      className={[
+                        playingRef === episode.ref ? 'playing' : '',
+                        watched ? 'watched' : '',
+                      ].join(' ')}
+                      {...menu.bind(name, () => [
+                        {
+                          label: watched ? 'İzlenmedi olarak işaretle' : 'İzlendi olarak işaretle',
+                          icon: watched ? <EyeOff size={15} /> : <Check size={15} />,
+                          onSelect: toggle,
+                        },
+                      ])}
                     >
-                      <span className="hall-episode-thumb">
-                        <CinemaArt
-                          hallId={hall.hallId}
-                          art={episode.art}
-                          title={episode.title}
-                          shape="wide"
-                        />
-                        <span className="hall-episode-play">
-                          {steer ? <Play size={18} /> : <ListPlus size={18} />}
-                        </span>
-                        <small>
-                          S{episode.season} B{episode.episode}
-                        </small>
-                      </span>
-                      <span className="hall-episode-text">
-                        <strong>
-                          {episode.episode}. {episode.title}
-                          {episode.durationSec ? (
-                            <small> · {minutesLabel(episode.durationSec * 1000)}</small>
+                      <button
+                        className="hall-episode"
+                        disabled={playingRef === episode.ref}
+                        onClick={() => void hall.openEpisode(data.item, episode)}
+                        aria-label={`${episode.episode}. bölüm, ${name}${watched ? ', izlendi' : ''}: ${steer ? 'salonda oynat' : 'sıraya öner'}`}
+                      >
+                        <span className={`hall-episode-thumb ${blur && !watched ? 'spoiler' : ''}`}>
+                          <CinemaArt
+                            hallId={hall.hallId}
+                            art={episode.art}
+                            title={name}
+                            shape="wide"
+                          />
+                          <span className="hall-episode-play">
+                            {steer ? <Play size={18} /> : <ListPlus size={18} />}
+                          </span>
+                          <small>
+                            S{episode.season} B{episode.episode}
+                          </small>
+                          {mark && !mark.finished && mark.durationSec ? (
+                            <span
+                              className="hall-continue-progress"
+                              style={
+                                {
+                                  '--progress': Math.min(1, mark.positionSec / mark.durationSec),
+                                } as CSSProperties
+                              }
+                            />
                           ) : null}
-                        </strong>
-                        {episode.plot && <span>{episode.plot}</span>}
-                      </span>
-                    </button>
-                  </li>
-                ))}
+                        </span>
+                        <span className="hall-episode-text">
+                          <strong>
+                            {episode.episode}. {name}
+                            {episode.durationSec ? (
+                              <small> · {minutesLabel(episode.durationSec * 1000)}</small>
+                            ) : null}
+                            {episode.airDate && episode.airDate > Date.now() ? (
+                              <small> · {airDateLabel(episode.airDate)}</small>
+                            ) : null}
+                          </strong>
+                          {episode.plot && !(blur && !watched) && <span>{episode.plot}</span>}
+                        </span>
+                      </button>
+                      <button
+                        className={`hall-episode-mark ${watched ? 'on' : ''}`}
+                        aria-pressed={watched}
+                        aria-label={
+                          watched
+                            ? `${name}: izlenmedi olarak işaretle`
+                            : `${name}: izlendi olarak işaretle`
+                        }
+                        title={
+                          watched
+                            ? 'İzlendi · izlenmedi olarak işaretle'
+                            : 'İzlendi olarak işaretle'
+                        }
+                        disabled={marking === episode.ref}
+                        onClick={toggle}
+                      >
+                        <Check size={15} />
+                      </button>
+                    </li>
+                  );
+                })}
               </ol>
+              {menu.menu}
             </section>
           )}
         </>
@@ -575,7 +1002,14 @@ export function DetailsHead({
   const src = cinemaArt(hallId, backdrop ?? art);
   return (
     <section className="hall-details-head">
-      {src && <img className="hall-hero-backdrop" src={src} alt="" draggable={false} />}
+      {src && (
+        <img
+          className={`hall-hero-backdrop ${backdrop ? '' : 'from-poster'}`}
+          src={src}
+          alt=""
+          draggable={false}
+        />
+      )}
       <div className="hall-hero-shade" />
       <div className="hall-details-body">
         <CinemaArt hallId={hallId} art={art} title={title} shape="poster" />

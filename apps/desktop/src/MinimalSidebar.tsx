@@ -1,4 +1,5 @@
 import { SoundboardButton } from './Soundboard';
+import { CinemaReminders } from './cinema/CinemaReminders';
 import { useState, type DragEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -480,6 +481,7 @@ export function MinimalSidebar({
       <SoundboardButton showTrigger={false} />
       {/* Like the soundboard, the corner cinema outlives page changes (e.g. joining voice). */}
       <HallBackground notify={notify} />
+      <CinemaReminders />
       {memberMenu && (
         <VoiceMemberMenu
           target={memberMenu}

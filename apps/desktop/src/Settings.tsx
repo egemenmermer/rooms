@@ -1,4 +1,6 @@
 import { HostOperations } from './HostOperations';
+import { HallKeySettings } from './cinema/CinemaViewerSettings';
+import { setWindowOnTop, useWindowOnTop } from './window-on-top';
 import { mediaProvider } from './runtime-sources';
 import { NoiseComparison } from './NoiseComparison';
 import { createNoiseSuppressionNode } from '@rooms/media';
@@ -619,7 +621,7 @@ export default function Settings({
     if (cameraVideo.current) cameraVideo.current.srcObject = cameraStream;
   }, [cameraStream]);
   const [micState, setMicState] = useState(tr('Not requested'));
-  const [onTop, setOnTop] = useState(false);
+  const onTop = useWindowOnTop();
   const [autoStart, setAutoStart] = useState(false);
   const [notifications, setNotifications] = useState<{
     enabled: boolean;
@@ -1521,6 +1523,7 @@ export default function Settings({
                     <kbd>{b}</kbd>
                   </div>
                 ))}
+                <HallKeySettings />
               </>
             )}
             {tab === 'desktop' && (
@@ -1694,8 +1697,7 @@ export default function Settings({
                       disabled={!window.rooms}
                       onChange={async (v) => {
                         try {
-                          await window.rooms!.setAlwaysOnTop(v);
-                          setOnTop(v);
+                          await setWindowOnTop(v);
                         } catch (e) {
                           setError(uiError(e));
                         }

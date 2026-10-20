@@ -3,6 +3,10 @@
 // playlists, segments and artwork on the `rooms-cinema:` scheme, so the
 // renderer never sees a ticket, a token or a provider URL.
 import type {
+  CinemaContinueItem,
+  CinemaVideoInfo,
+  CinemaTitleLinks,
+  CinemaEpisodeMarks,
   CatalogKind,
   CinemaAudioTrack,
   CinemaCategory,
@@ -66,6 +70,8 @@ export type CinemaWatchSource = {
   audioTrack: number | null;
   /** VOD text subtitles; `src` is a WebVTT file on the work's timeline, still growing. */
   subtitles: CinemaSubtitleSource[];
+  /** The source picture, for the info pills; null when the service did not say. */
+  video: CinemaVideoInfo | null;
 };
 
 export type CinemaSubtitleSource = CinemaSubtitleTrack & { src: string };
@@ -101,6 +107,8 @@ export type CinemaErrorCode =
   | 'CINEMA_RATE_LIMITED'
   | 'CINEMA_SUBTITLE_KEY_INVALID'
   | 'CINEMA_SUBTITLE_UNAVAILABLE'
+  | 'CINEMA_METADATA_KEY_INVALID'
+  | 'CINEMA_METADATA_UNAVAILABLE'
   /** RMDB has no such work, review or diary entry (removed meanwhile). */
   | 'CINEMA_RMDB_NOT_FOUND'
   /** A rating, review or date RMDB does not accept (e.g. text over `RMDB_REVIEW_MAX`). */
@@ -132,10 +140,26 @@ export interface CinemaBridge {
   setAudio(hallId: string, ref: string, track: number): Promise<void>;
   /** Owner: the community's own SubDL API key, verified first; null removes it. */
   setSubtitleKey(communityId: string, key: string | null): Promise<CinemaStatus>;
+  /** Owner: films start with a Turkish dub when there is one, or in their own language. */
+  setAudioDefault(communityId: string, value: 'turkish' | 'original'): Promise<CinemaStatus>;
+  /** Owner: the community's own TMDB key (air dates, IMDb ids), verified first; null removes it. */
+  setTmdbKey(communityId: string, key: string | null): Promise<CinemaStatus>;
+  /** IMDb and TMDB ids of a film or series (an episode answers for its series). */
+  titleLinks(hallId: string, ref: string): Promise<CinemaTitleLinks>;
   /** Subtitles found online for a film or episode (Turkish first). */
   subtitles(hallId: string, ref: string): Promise<CinemaExternalSubtitleSources>;
   /** A subtitle file this viewer picks from disk, converted to WebVTT; null if cancelled. */
   chooseSubtitleFile(): Promise<{ name: string; content: string } | null>;
+  /** The "Devam et" row of Filmler or Diziler, newest first. */
+  continueWatching(hallId: string, kind: 'movie' | 'series'): Promise<CinemaContinueItem[]>;
+  /** This member's favourite live channels (refs), oldest first. */
+  favorites(hallId: string): Promise<string[]>;
+  /** Stars or unstars a live channel for this member; returns the new list. */
+  setFavorite(hallId: string, ref: string, on: boolean): Promise<string[]>;
+  /** Which episodes of a catalog series the hall watched, and how far. */
+  episodeMarks(hallId: string, seriesRef: string): Promise<CinemaEpisodeMarks>;
+  /** Any member: marks an episode (`e-…`) watched or not watched for the hall. */
+  markEpisode(hallId: string, episodeRef: string, watched: boolean): Promise<CinemaEpisodeMarks>;
   /** RMDB: every work the hall watched or a member added, most recent activity first. */
   rmdb(hallId: string): Promise<RmdbWorkSummary[]>;
   rmdbWork(hallId: string, workId: string): Promise<RmdbWorkDetails>;

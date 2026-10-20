@@ -547,7 +547,9 @@ describe('RMDB resume', () => {
   });
 
   it('has Turkish copy for the RMDB errors', () => {
-    expect(cinemaErrorText(new Error('CINEMA_RMDB_NOT_FOUND'))).toBe("Bu kayıt artık RMDB'de yok.");
+    expect(cinemaErrorText(new Error('CINEMA_RMDB_NOT_FOUND'))).toBe(
+      "Bu kayıt artık Tayfa'da yok.",
+    );
     expect(cinemaErrorText(new Error('Error invoking remote method: CINEMA_RMDB_INVALID'))).toBe(
       'Puan veya yorum kaydedilemedi; uzunluğu ve tarihi kontrol et.',
     );

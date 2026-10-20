@@ -20,6 +20,9 @@ import {
   Minimize,
   Minus,
   PanelRightClose,
+  PictureInPicture2,
+  Pin,
+  PinOff,
   PanelRightOpen,
   Pause,
   Play,
@@ -31,11 +34,12 @@ import {
   VolumeX,
 } from 'lucide-react';
 import type { QueueItem } from '../../../../packages/activity-protocol/src';
+import type { CinemaDetails } from '../../../../packages/community-cinema/src/types';
 import '../cozy-cinema.css';
 import { CinemaYouTubeStage } from '../CinemaYouTubeStage';
 import { clock, expectedPosition } from '../cinema-youtube';
 import { cinemaErrorCopy, cinemaErrorText, getCinemaBridge } from './cinema-bridge';
-import { knownItem } from './catalog-cache';
+import { knownItem, useBridgeRead } from './catalog-cache';
 import { QualityBadges } from './CinemaArt';
 import {
   HallPlayer,
@@ -43,8 +47,18 @@ import {
   type PlayerSnapshot,
   type SubtitleOption,
 } from './HallPlayer';
-import { isHallItem, viewerLabel } from './hall-model';
+import {
+  isHallItem,
+  nextEpisode,
+  nextItemId,
+  outroSec,
+  streamFacts,
+  viewerLabel,
+} from './hall-model';
 import { useHall } from './use-hall';
+import { useHallMenu } from './HallMenu';
+import { keyLabel, useHallKeys, type HallCommand } from './hall-keys';
+import { setWindowOnTop, useWindowOnTop } from '../window-on-top';
 
 type YouTubeItem = QueueItem & { media: { kind: 'youtube'; videoId: string; title: string } };
 
@@ -122,6 +136,32 @@ export function HallStage({
     };
   }, [wake, current?.id]);
 
+  // A film or episode shows what it plays in (resolution, fps, bit rate) for a few seconds
+  // when it starts; afterwards the pills come back with the pointer.
+  const [reveal, setReveal] = useState(false);
+  const revealed = useRef<string | null>(null);
+  const started = !!hallItem && !live && player?.phase === 'playing';
+  useEffect(() => {
+    if (!started || !hallItem || revealed.current === hallItem.id) return;
+    revealed.current = hallItem.id;
+    setReveal(true);
+    const timer = setTimeout(() => setReveal(false), 3000);
+    return () => clearTimeout(timer);
+  }, [started, hallItem?.id]);
+  const facts = streamFacts(player?.video ?? null, player?.bitrate ?? null);
+  const onTop = useWindowOnTop();
+  const keys = useHallKeys();
+  const k = (command: HallCommand) => keyLabel(keys[command]);
+  const menu = useHallMenu();
+  const toggleOnTop = () =>
+    void setWindowOnTop(!onTop).catch(() => hall.notify('Pencere üstte tutulamadı.'));
+  const togglePip = () =>
+    void controls.current
+      ?.togglePictureInPicture()
+      .catch(() => hall.notify('Pencere içinde pencere açılamadı.'));
+  const pipAvailable =
+    typeof document !== 'undefined' && document.pictureInPictureEnabled && !!hallItem;
+
   // "Kanal değişiyor…" only when a switch takes long enough to be noticed.
   const loading = !player || player.phase === 'loading';
   useEffect(() => {
@@ -134,8 +174,33 @@ export function HallStage({
   }, [hallItem?.id, loading]);
   useEffect(() => setPlayer(null), [hallItem?.id]);
 
+  // An episode knows its series: the one after it is offered near the end and follows it.
+  const episodeRef =
+    hallItem && !live && hallItem.media.ref.startsWith('e-') ? hallItem.media.ref : null;
+  const series = useBridgeRead<CinemaDetails>(
+    episodeRef ? `${hall.hallId}:details:${episodeRef}` : null,
+    (bridge) => bridge.details(hall.hallId, episodeRef!),
+  );
+  const following = episodeRef ? nextEpisode(series.data, episodeRef) : null;
+  const playNext = useCallback(
+    (quiet = false) => {
+      if (!hallItem || !following || !series.data) return;
+      void hall.openEpisode(series.data.item, following, {
+        itemId: nextItemId(hallItem.id),
+        quiet,
+      });
+    },
+    [hall.openEpisode, hallItem?.id, following, series.data],
+  );
+  const ending = useRef({ playNext, auto: false });
+  // With nothing queued after it, an episode that ends opens the next one (whoever holds the
+  // remote; each viewer derives the same queue id, so it is added once).
+  ending.current = { playNext, auto: !!following && canDirect && !hall.upcoming.length };
   const onEnded = useCallback(
-    (itemId: string) => hall.quiet({ type: 'queue.next', fromItemId: itemId, reason: 'ended' }),
+    (itemId: string) => {
+      if (ending.current.auto) ending.current.playNext(true);
+      else hall.quiet({ type: 'queue.next', fromItemId: itemId, reason: 'ended' });
+    },
     [hall.quiet],
   );
   const durationSec = player?.durationSec ?? null;
@@ -158,10 +223,36 @@ export function HallStage({
 
   return (
     <div
-      className={`hall-screen ${mode} ${idle && !pinned ? 'idle' : ''} ${live ? 'live' : ''}`}
+      className={`hall-screen ${mode} ${idle && !pinned ? 'idle' : ''} ${live ? 'live' : ''} ${reveal ? 'reveal' : ''}`}
       onPointerMove={wake}
       onPointerDown={wake}
       onFocusCapture={wake}
+      onContextMenu={(event) => {
+        if (mode !== 'stage' || !current) return;
+        event.preventDefault();
+        menu.show(event.clientX, event.clientY, 'Ekran', [
+          {
+            label: onTop ? 'Üstte tutmayı kapat' : 'Her zaman üstte',
+            icon: onTop ? <PinOff size={15} /> : <Pin size={15} />,
+            disabled: !window.rooms,
+            onSelect: toggleOnTop,
+          },
+          ...(pipAvailable
+            ? [
+                {
+                  label: player?.pictureInPicture ? 'Pencereye geri al' : 'Pencere içinde pencere',
+                  icon: <PictureInPicture2 size={15} />,
+                  onSelect: togglePip,
+                },
+              ]
+            : []),
+          {
+            label: fullscreen ? 'Tam ekrandan çık' : 'Tam ekran',
+            icon: fullscreen ? <Minimize size={15} /> : <Maximize size={15} />,
+            onSelect: onToggleFullscreen,
+          },
+        ]);
+      }}
     >
       {hallItem && timeline ? (
         <HallPlayer
@@ -212,6 +303,18 @@ export function HallStage({
                 </span>
               )}
               {info && <QualityBadges badges={info.badges} max={3} />}
+              {facts.length > 0 && (
+                <span className="hall-stream-facts" aria-label="Yayın bilgisi">
+                  {facts.map((fact) => (
+                    <span key={fact}>{fact}</span>
+                  ))}
+                  {live && player?.latencySec != null && (
+                    <span title="Salonun canlı yayını, kaynağın canlı ucunun bu kadar gerisinde">
+                      canlıdan {player.latencySec} sn geride
+                    </span>
+                  )}
+                </span>
+              )}
             </div>
             {viewers > 0 && (
               <span className="hall-viewers-pill" title={viewerLabel(viewers)}>
@@ -266,6 +369,29 @@ export function HallStage({
         </>
       )}
 
+      {mode === 'stage' &&
+        following &&
+        durationSec &&
+        positionSec >= durationSec - outroSec(durationSec) &&
+        (canDirect ? (
+          <button className="hall-next-episode" onClick={() => playNext()}>
+            <span>
+              <small>
+                S{following.season} B{following.episode}
+              </small>
+              Sonraki bölüm
+            </span>
+            <SkipForward size={18} />
+          </button>
+        ) : (
+          <span className="hall-next-episode quiet" role="status">
+            <span>
+              <small>Sırada</small>S{following.season} B{following.episode}
+            </span>
+          </span>
+        ))}
+
+      {menu.menu}
       {mode === 'mini' && current && (
         <button className="hall-mini-expand" aria-label="Sahneyi büyüt" onClick={onExpand}>
           <span>
@@ -319,14 +445,14 @@ export function HallStage({
                   {paused ? <Play size={18} /> : <Pause size={18} />}
                 </ControlButton>
                 <ControlButton
-                  label={canDirect ? 'Önceki kanal (↑)' : directReason}
+                  label={canDirect ? `Önceki kanal (${k('channelUp')})` : directReason}
                   disabled={!canDirect}
                   onClick={() => onZap(-1)}
                 >
                   <ChevronUp size={18} />
                 </ControlButton>
                 <ControlButton
-                  label={canDirect ? 'Sonraki kanal (↓)' : directReason}
+                  label={canDirect ? `Sonraki kanal (${k('channelDown')})` : directReason}
                   disabled={!canDirect}
                   onClick={() => onZap(1)}
                 >
@@ -363,7 +489,7 @@ export function HallStage({
             )}
             <div className="hall-volume">
               <ControlButton
-                label={audio.muted ? 'Sesi aç (M)' : 'Sesi kapat (M)'}
+                label={audio.muted ? `Sesi aç (${k('mute')})` : `Sesi kapat (${k('mute')})`}
                 onClick={() => setVolume({ ...audio, muted: !audio.muted })}
               >
                 <VolumeIcon size={18} />
@@ -420,14 +546,39 @@ export function HallStage({
                 }
               />
             )}
+            {pipAvailable && (
+              <ControlButton
+                label={
+                  player?.pictureInPicture
+                    ? 'Pencereye geri al'
+                    : `Pencere içinde pencere (${k('pictureInPicture')})`
+                }
+                onClick={togglePip}
+              >
+                <PictureInPicture2 size={18} />
+              </ControlButton>
+            )}
+            {window.rooms && (
+              <ControlButton
+                label={onTop ? 'Üstte tutmayı kapat' : 'Pencereyi her zaman üstte tut'}
+                pressed={onTop}
+                onClick={toggleOnTop}
+              >
+                {onTop ? <PinOff size={18} /> : <Pin size={18} />}
+              </ControlButton>
+            )}
             <ControlButton
-              label={panelOpen ? 'Paneli gizle (C)' : 'Paneli göster (C)'}
+              label={panelOpen ? `Paneli gizle (${k('panel')})` : `Paneli göster (${k('panel')})`}
               onClick={onTogglePanel}
             >
               {panelOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
             </ControlButton>
             <ControlButton
-              label={fullscreen ? 'Tam ekrandan çık (F)' : 'Tam ekran (F)'}
+              label={
+                fullscreen
+                  ? `Tam ekrandan çık (${k('fullscreen')})`
+                  : `Tam ekran (${k('fullscreen')})`
+              }
               onClick={onToggleFullscreen}
             >
               {fullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
@@ -610,18 +761,22 @@ function ControlButton({
   label,
   disabled,
   primary,
+  pressed,
   onClick,
   children,
 }: {
   label: string;
   disabled?: boolean;
   primary?: boolean;
+  /** A toggle's state, for assistive tech and the lit look. */
+  pressed?: boolean;
   onClick(): void;
   children: ReactNode;
 }) {
   return (
     <button
-      className={`hall-control ${primary ? 'primary' : ''}`}
+      className={`hall-control ${primary ? 'primary' : ''} ${pressed ? 'on' : ''}`}
+      aria-pressed={pressed}
       aria-label={label}
       title={label}
       disabled={disabled}

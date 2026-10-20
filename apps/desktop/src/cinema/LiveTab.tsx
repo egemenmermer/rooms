@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ListPlus, Play, Search, Tv } from 'lucide-react';
+import { Bell, BellOff, ListPlus, Play, Search, Star, StarOff, Tv } from 'lucide-react';
 import type { CinemaItem } from '../../../../packages/community-cinema/src/types';
 import { CinemaArt, QualityBadges } from './CinemaArt';
 import { useAllItems, useCategories } from './catalog-cache';
 import { useHall } from './use-hall';
+import { FAVORITES, toggleFavorite, useFavorites } from './favorites';
+import { useHallMenu } from './HallMenu';
+import { cachedGuide } from './guide-cache';
+import { programmeAfter, hhmm } from './hall-model';
+import { hasReminder, toggleReminder } from './reminders';
 
 const TILE_MIN = 164;
 const TILE_GAP = 10;
@@ -22,12 +27,22 @@ export function LiveTab({
 }) {
   const hall = useHall();
   const categories = useCategories(hall.hallId, 'live');
-  const items = useAllItems(hall.hallId, 'live', categoryId);
+  const favorites = useFavorites(hall.hallId);
+  const starred = categoryId === FAVORITES;
+  const items = useAllItems(hall.hallId, 'live', starred ? null : categoryId);
+  const menu = useHallMenu();
   const [filter, setFilter] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
   const playingRef = hall.current?.media.kind === 'community-media' ? hall.current.media.ref : null;
-  const list = useMemo(() => {
+  // Favourites keep the order they were starred in.
+  const source = useMemo(() => {
     const all = items.data?.items ?? [];
+    if (!starred) return all;
+    const byRef = new Map(all.map((item) => [item.ref, item]));
+    return favorites.map((ref) => byRef.get(ref)).filter((item): item is CinemaItem => !!item);
+  }, [items.data, starred, favorites]);
+  const list = useMemo(() => {
+    const all = source;
     const terms = filter.trim().toLocaleLowerCase('tr').split(/\s+/).filter(Boolean);
     return terms.length
       ? all.filter((item) => {
@@ -35,10 +50,11 @@ export function LiveTab({
           return terms.every((term) => title.includes(term));
         })
       : all;
-  }, [items.data, filter]);
+  }, [source, filter]);
+  // ↑/↓ on the stage go through what this list shows: only favourites while they are open.
   useEffect(() => {
-    if (items.data) onZapList(items.data.items);
-  }, [items.data, onZapList]);
+    if (items.data && source.length) onZapList(source);
+  }, [items.data, source, onZapList]);
   useEffect(() => {
     if (!list.length) return;
     if (!selected || !list.some((item) => item.ref === selected))
@@ -68,6 +84,29 @@ export function LiveTab({
   const lastRow = Math.min(rows, Math.ceil((view.top + view.height) / ROW) + OVERSCAN);
   const total = categories.data?.reduce((sum, c) => sum + c.count, 0) ?? 0;
   const direct = hall.canDirect || !hall.primary;
+
+  // The channel's next programme, when its guide is already here: remind me when it starts.
+  const reminderItems = (item: CinemaItem) => {
+    const next = programmeAfter(cachedGuide(hall.hallId, item.ref), Date.now());
+    if (!next) return [];
+    const reminder = {
+      hallId: hall.hallId,
+      ref: item.ref,
+      channel: item.title,
+      title: next.title,
+      start: next.start,
+    };
+    const on = hasReminder(reminder);
+    return [
+      {
+        label: on
+          ? `Hatırlatmayı kaldır · ${next.title}`
+          : `Hatırlat · ${hhmm(next.start)} ${next.title}`,
+        icon: on ? <BellOff size={15} /> : <Bell size={15} />,
+        onSelect: () => toggleReminder(reminder),
+      },
+    ];
+  };
 
   const keyNav = (event: React.KeyboardEvent) => {
     const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: columns, ArrowUp: -columns }[event.key];
@@ -101,6 +140,17 @@ export function LiveTab({
           </span>
           <span>Tüm kanallar</span>
           <small>{total || ''}</small>
+        </button>
+        <button
+          className={starred ? 'selected' : ''}
+          aria-current={starred ? 'true' : undefined}
+          onClick={() => onCategory(FAVORITES)}
+        >
+          <span className="hall-category-flag">
+            <Star size={15} />
+          </span>
+          <span>Favoriler</span>
+          <small>{favorites.length || ''}</small>
         </button>
         {categories.loading && !categories.data && <CategorySkeleton />}
         {categories.data?.map((category) => (
@@ -149,7 +199,11 @@ export function LiveTab({
             <p className="hall-empty-note">{items.error}</p>
           ) : !list.length ? (
             <p className="hall-empty-note">
-              {filter ? 'Bu adla bir kanal yok.' : 'Bu kategoride kanal yok.'}
+              {filter
+                ? 'Bu adla bir kanal yok.'
+                : starred
+                  ? 'Henüz favori kanal yok. Bir kanalın yıldızına bas ya da sağ tıklayıp favorilere ekle.'
+                  : 'Bu kategoride kanal yok.'}
             </p>
           ) : (
             <div style={{ height: rows * ROW, position: 'relative' }}>
@@ -167,6 +221,9 @@ export function LiveTab({
                   >
                     {list.slice(row * columns, row * columns + columns).map((item) => {
                       const playing = item.ref === playingRef;
+                      const favorite = favorites.includes(item.ref);
+                      const star = () =>
+                        void toggleFavorite(hall.hallId, item.ref, !favorite, hall.notify);
                       return (
                         <div
                           key={item.ref}
@@ -179,7 +236,44 @@ export function LiveTab({
                             setSelected(item.ref);
                             if (!playing) void hall.openItem(item);
                           }}
+                          onContextMenu={(event) => {
+                            event.preventDefault();
+                            setSelected(item.ref);
+                            menu.show(event.clientX, event.clientY, item.title, [
+                              ...(playing
+                                ? []
+                                : [
+                                    {
+                                      label: direct ? 'Salonda aç' : 'Sıraya öner',
+                                      icon: direct ? <Play size={15} /> : <ListPlus size={15} />,
+                                      onSelect: () => void hall.openItem(item),
+                                    },
+                                  ]),
+                              {
+                                label: favorite ? 'Favorilerden çıkar' : 'Favorilere ekle',
+                                icon: favorite ? <StarOff size={15} /> : <Star size={15} />,
+                                onSelect: star,
+                              },
+                              ...reminderItems(item),
+                            ]);
+                          }}
                         >
+                          <button
+                            className={`hall-tile-star ${favorite ? 'on' : ''}`}
+                            aria-pressed={favorite}
+                            aria-label={
+                              favorite
+                                ? `${item.title}: favorilerden çıkar`
+                                : `${item.title}: favorilere ekle`
+                            }
+                            title={favorite ? 'Favorilerden çıkar' : 'Favorilere ekle'}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              star();
+                            }}
+                          >
+                            <Star size={14} fill={favorite ? 'currentColor' : 'none'} />
+                          </button>
                           <CinemaArt hallId={hall.hallId} art={item.art} title={item.title} />
                           <strong>{item.title}</strong>
                           <span className="hall-tile-meta">
@@ -211,6 +305,7 @@ export function LiveTab({
           )}
         </div>
       </section>
+      {menu.menu}
     </div>
   );
 }

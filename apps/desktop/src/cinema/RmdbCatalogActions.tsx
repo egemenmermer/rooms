@@ -35,7 +35,7 @@ export function RmdbCatalogActions({
     try {
       await addToRmdb(hall.hallId, item.ref, watchlist);
       hall.notify(
-        watchlist ? `${item.title} İzlenecekler'e eklendi.` : `${item.title} RMDB'ye eklendi.`,
+        watchlist ? `${item.title} İzlenecekler'e eklendi.` : `${item.title} Tayfa'ya eklendi.`,
       );
     } catch (error) {
       hall.notify(cinemaErrorText(error));
@@ -66,7 +66,7 @@ export function RmdbCatalogActions({
       <>
         <button className="button secondary" disabled={!!busy} onClick={() => void add(false)}>
           <Plus size={16} />
-          RMDB'ye ekle
+          Tayfa'ya ekle
         </button>
         <button className="button secondary" disabled={!!busy} onClick={() => void add(true)}>
           <Bookmark size={16} />
@@ -79,7 +79,7 @@ export function RmdbCatalogActions({
       {onRmdb && (
         <button className="button secondary" onClick={() => onRmdb(workId)}>
           <NotebookPen size={16} />
-          RMDB'de aç
+          Tayfa'da aç
         </button>
       )}
       <button

@@ -340,8 +340,9 @@ describe('community cinema service', () => {
       {
         season: 1,
         episodes: [
-          expect.objectContaining({ ref: 'e-77001', durationSec: 2700 }),
+          expect.objectContaining({ ref: 'e-77001', durationSec: 2700, airDate: null }),
           expect.objectContaining({ ref: 'e-77002' }),
+          expect.objectContaining({ ref: 'e-77003', airDate: Date.UTC(2099, 0, 15, 12) }),
         ],
       },
     ]);
@@ -803,6 +804,26 @@ describe('RMDB in the cinema service', () => {
     });
     expect(details.diary[0]).toMatchObject({ source: 'hall', finished: false, positionSec: 320 });
     expect(details.resume.title).toBe('Sıcak Kafa · 1. Sezon 1. Bölüm');
+    const going = (kind: 'movie' | 'series') =>
+      s.call('GET', `/v1/halls/${HALL}/continue?kind=${kind}`, 'member-token');
+    // A film added by hand has no progress; the half-watched episode leads Diziler.
+    expect((await going('movie')).body).toEqual([]);
+    expect((await going('series')).body).toEqual([
+      expect.objectContaining({
+        workId: series.id,
+        ref: 's-5001',
+        title: 'Sıcak Kafa',
+        episode: { season: 1, episode: 1, title: null },
+        resume: expect.objectContaining({ ref: 'e-77001', positionSec: 315 }),
+        upcomingAt: null,
+      }),
+    ]);
+    expect((await going('series')).body[0].progress).toBeCloseTo(320 / 600, 2);
+    expect(
+      (await s.call('GET', `/v1/halls/${HALL}/continue?kind=live`, 'member-token')).body,
+    ).toEqual({
+      error: 'CINEMA_RMDB_INVALID',
+    });
     // The fake relay reports 600 s: past 90 % the next episode is offered from the start.
     await playFor(240, 320);
     details = (await rmdb('GET', `/${series.id}`)).body;
@@ -815,6 +836,106 @@ describe('RMDB in the cinema service', () => {
     expect(details.episodes).toEqual([
       expect.objectContaining({ season: 1, episode: 1, finished: true }),
     ]);
+    // Diziler offers the next episode from the start…
+    expect(
+      (await s.call('GET', `/v1/halls/${HALL}/continue?kind=series`, 'member-token')).body,
+    ).toEqual([
+      expect.objectContaining({
+        episode: { season: 1, episode: 2, title: null },
+        resume: expect.objectContaining({ ref: 'e-77002', positionSec: 0 }),
+        progress: 0,
+        remainingSec: null,
+      }),
+    ]);
+    // …and after it, the announced third one by its air date, with nothing to open yet.
+    s.send('member', {
+      type: 'queue.add',
+      itemId: 'e2',
+      media: {
+        kind: 'community-media',
+        ref: 'e-77002',
+        title: 'Sıcak Kafa · 1. Sezon 2. Bölüm',
+        live: false,
+      },
+      start: true,
+    });
+    await s.call('POST', `/v1/halls/${HALL}/watch`, 'member-token');
+    await playFor(320, 0);
+    await playFor(240, 320);
+    expect(
+      (await s.call('GET', `/v1/halls/${HALL}/continue?kind=series`, 'member-token')).body,
+    ).toEqual([
+      expect.objectContaining({
+        episode: { season: 1, episode: 3, title: 'Sessizlik' },
+        resume: null,
+        upcomingAt: Date.UTC(2099, 0, 15, 12),
+      }),
+    ]);
+  });
+
+  it('marks episodes watched or not, and Devam et follows', async () => {
+    const marks = (path = '') =>
+      s.call('GET', `/v1/halls/${HALL}/episodes/s-5001${path}`, 'member-token');
+    const mark = (ref: string, watched: boolean) =>
+      s.call('PUT', `/v1/halls/${HALL}/episodes/${ref}`, 'member-token', { watched });
+    const going = async () =>
+      (await s.call('GET', `/v1/halls/${HALL}/continue?kind=series`, 'member-token')).body;
+    await s.call('GET', `/v1/halls/${HALL}/details/s-5001`, 'member-token');
+    expect((await marks()).body).toEqual({ workId: null, episodes: [] });
+    // Unmarking something never watched adds nothing.
+    expect((await mark('e-77001', false)).body).toEqual({ workId: null, episodes: [] });
+    await mark('e-77001', true);
+    const second = (await mark('e-77002', true)).body;
+    expect(second.workId).toMatch(/^w-/);
+    expect(second.episodes).toEqual([
+      expect.objectContaining({ season: 1, episode: 1, finished: true, positionSec: 2700 }),
+      expect.objectContaining({ season: 1, episode: 2, finished: true }),
+    ]);
+    expect(await going()).toEqual([
+      expect.objectContaining({ episode: expect.objectContaining({ episode: 3 }), resume: null }),
+    ]);
+    // Unmarking the last one brings the row back to episode 2.
+    await mark('e-77002', false);
+    expect(await going()).toEqual([
+      expect.objectContaining({
+        episode: { season: 1, episode: 2, title: null },
+        resume: expect.objectContaining({ ref: 'e-77002', positionSec: 0 }),
+      }),
+    ]);
+    await mark('e-77001', false);
+    expect(await going()).toEqual([]);
+    expect((await mark('m-3001', true)).body).toEqual({ error: 'CINEMA_ITEM_NOT_FOUND' });
+    expect(
+      (
+        await s.call('PUT', `/v1/halls/${HALL}/episodes/e-77001`, 'outsider-token', {
+          watched: true,
+        })
+      ).body,
+    ).toEqual({ error: 'CINEMA_ACCESS_DENIED' });
+  });
+
+  it("keeps each member's own favourite channels", async () => {
+    const favorites = (token: string, body?: unknown) =>
+      s.call(body ? 'PUT' : 'GET', `/v1/halls/${HALL}/favorites`, token, body);
+    expect((await favorites('member-token')).body).toEqual([]);
+    expect((await favorites('member-token', { ref: 'l-1001', on: true })).body).toEqual(['l-1001']);
+    expect((await favorites('member-token', { ref: 'l-1002', on: true })).body).toEqual([
+      'l-1001',
+      'l-1002',
+    ]);
+    // Starring again moves it to the end; another member has their own list.
+    expect((await favorites('member-token', { ref: 'l-1001', on: true })).body).toEqual([
+      'l-1002',
+      'l-1001',
+    ]);
+    expect((await favorites('owner-token')).body).toEqual([]);
+    expect((await favorites('member-token', { ref: 'l-1002', on: false })).body).toEqual([
+      'l-1001',
+    ]);
+    expect((await favorites('member-token', { ref: 'm-3001', on: true })).body).toEqual({
+      error: 'CINEMA_ITEM_NOT_FOUND',
+    });
+    expect((await favorites('outsider-token')).body).toEqual({ error: 'CINEMA_ACCESS_DENIED' });
   });
 
   it('checks who may change what', async () => {

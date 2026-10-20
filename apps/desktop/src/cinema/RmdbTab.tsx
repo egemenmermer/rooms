@@ -66,7 +66,7 @@ export function RmdbTab({
     return (
       <RmdbDetails
         workId={view.workId}
-        backLabel={view.back ? 'Tümü' : 'RMDB'}
+        backLabel={view.back ? 'Tümü' : 'Tayfa'}
         onBack={() => onView(view.back ?? { mode: 'home' })}
       />
     );
@@ -120,13 +120,13 @@ function RmdbHome({
           <span className="hall-message-icon">
             <NotebookPen size={28} />
           </span>
-          <h3>RMDB henüz boş</h3>
+          <h3>Tayfa henüz boş</h3>
           <p>
             Salonda izlediğiniz filmler ve diziler burada birikir; yarım kalanlar kaldığı yerde
             durur. Herkes kendi puanını ve yorumunu yazar.
           </p>
           <p>
-            Elle eklemek için Filmler ya da Diziler'de bir başlığı aç ve “RMDB'ye ekle”yi seç.
+            Elle eklemek için Filmler ya da Diziler'de bir başlığı aç ve “Tayfa'ya ekle”yi seç.
             Birlikte izlemek istediklerinizi “İzlenecekler'e ekle” ile ortak listeye koy.
           </p>
           {hall.status.connected && (
@@ -193,7 +193,7 @@ function RmdbHeader({ works, onAll }: { works: RmdbWorkSummary[]; onAll?(): void
   return (
     <header className="rmdb-head">
       <div>
-        <h2>RMDB</h2>
+        <h2>Tayfa</h2>
         <p>
           Topluluğun film defteri
           {works.length > 0 && <span> · {countsLine(rmdbCounts(works))}</span>}
@@ -300,7 +300,7 @@ function RmdbGrid({
       <header className="hall-grid-head rmdb-grid-head">
         <button className="hall-text-button" onClick={() => onView({ mode: 'home' })}>
           <ArrowLeft size={15} />
-          RMDB
+          Tayfa
         </button>
         <h2>Tümü {rmdb.works && <small>{list.length}</small>}</h2>
         <div className="rmdb-segment" role="radiogroup" aria-label="Tür">
@@ -342,7 +342,7 @@ function RmdbGrid({
       {rmdb.error && <p className="hall-empty-note">{rmdb.error}</p>}
       {rmdb.works && !list.length && (
         <p className="hall-empty-note">
-          {rmdb.works.length ? 'Bu süzgece uyan kayıt yok.' : 'RMDB henüz boş.'}
+          {rmdb.works.length ? 'Bu süzgece uyan kayıt yok.' : 'Tayfa henüz boş.'}
         </p>
       )}
       <div className="hall-poster-grid">

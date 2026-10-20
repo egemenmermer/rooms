@@ -1,3 +1,4 @@
+import { TMDB_KEY_PATTERN } from './metadata';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import rateLimit from '@fastify/rate-limit';
 import { createHash } from 'node:crypto';
@@ -32,6 +33,8 @@ const statusOf: Record<string, number> = {
   CINEMA_SESSION_ENDED: 410,
   CINEMA_SUBTITLE_KEY_INVALID: 422,
   CINEMA_SUBTITLE_UNAVAILABLE: 502,
+  CINEMA_METADATA_KEY_INVALID: 422,
+  CINEMA_METADATA_UNAVAILABLE: 502,
   CINEMA_RMDB_NOT_FOUND: 404,
   CINEMA_RMDB_INVALID: 400,
 };
@@ -176,6 +179,29 @@ export async function createCinemaServer(options: CinemaServerOptions) {
       .strict()
       .parse(request.body);
     await service.setSubtitleKey(communityId, key);
+    return service.status(communityId, true);
+  });
+
+  server.put<Community>('/v1/communities/:communityId/audio', async (request) => {
+    const { communityId } = request.params;
+    await owner(request, communityId);
+    const { value } = z
+      .object({ value: z.enum(['turkish', 'original']) })
+      .strict()
+      .parse(request.body);
+    service.setAudioDefault(communityId, value);
+    return service.status(communityId, true);
+  });
+
+  /** Owner: the community's own TMDB key (null removes it). It is never returned. */
+  server.put<Community>('/v1/communities/:communityId/tmdb', async (request) => {
+    const { communityId } = request.params;
+    await owner(request, communityId);
+    const { key } = z
+      .object({ key: z.string().regex(TMDB_KEY_PATTERN).nullable() })
+      .strict()
+      .parse(request.body);
+    await service.setTmdbKey(communityId, key);
     return service.status(communityId, true);
   });
 
@@ -350,6 +376,52 @@ export async function createCinemaServer(options: CinemaServerOptions) {
   server.get<Hall>('/v1/halls/:hallId/rmdb', async (request) => {
     const identity = await viewer(request, request.params.hallId);
     return service.rmdbList(identity.communityId, identity.userId);
+  });
+
+  // Filmler and Diziler open with what the hall left unfinished.
+  server.get<Hall>('/v1/halls/:hallId/continue', async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    const { kind } = rmdbInput(
+      z.object({ kind: z.enum(['movie', 'series']) }).strict(),
+      request.query,
+    );
+    return service.rmdbContinue(identity.communityId, kind);
+  });
+
+  server.get<{ Params: { hallId: string; ref: string } }>(
+    '/v1/halls/:hallId/links/:ref',
+    async (request) => {
+      const identity = await viewer(request, request.params.hallId);
+      return service.titleLinks(identity.communityId, rmdbInput(ref, request.params.ref));
+    },
+  );
+
+  // Each member's own favourite channels.
+  server.get<Hall>('/v1/halls/:hallId/favorites', async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    return service.favorites(identity.communityId, identity.userId);
+  });
+  server.put<Hall>('/v1/halls/:hallId/favorites', writes, async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    const body = rmdbInput(z.object({ ref, on: z.boolean() }).strict(), request.body);
+    return service.setFavorite(identity.communityId, identity.userId, body.ref, body.on);
+  });
+
+  // Episode marks of a series' details page; any member may change them.
+  type Series = { Params: { hallId: string; ref: string } };
+  server.get<Series>('/v1/halls/:hallId/episodes/:ref', async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    return service.rmdbEpisodes(identity.communityId, rmdbInput(ref, request.params.ref));
+  });
+  server.put<Series>('/v1/halls/:hallId/episodes/:ref', writes, async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    const { watched } = rmdbInput(z.object({ watched: z.boolean() }).strict(), request.body);
+    return service.rmdbMarkEpisode(
+      identity.communityId,
+      rmdbInput(ref, request.params.ref),
+      watched,
+      person(identity),
+    );
   });
 
   server.post<Hall>('/v1/halls/:hallId/rmdb', writes, async (request) => {

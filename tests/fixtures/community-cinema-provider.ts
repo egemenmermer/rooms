@@ -144,6 +144,14 @@ export async function startProvider(now: number) {
                     container_extension: 'mp4',
                     info: {},
                   },
+                  // Listed before it airs, as some panels do.
+                  {
+                    id: '77003',
+                    episode_num: 3,
+                    title: 'Sıcak Kafa - S01E03 - Sessizlik',
+                    container_extension: 'mp4',
+                    info: { releasedate: '2099-01-15' },
+                  },
                 ],
               },
             }),

@@ -4,7 +4,12 @@ import type {
   RoomSnapshot,
   SharedMedia,
 } from '../../../../packages/activity-protocol/src';
-import type { CinemaItem, CinemaProgramme } from '../../../../packages/community-cinema/src/types';
+import type {
+  CinemaDetails,
+  CinemaEpisode,
+  CinemaItem,
+  CinemaProgramme,
+} from '../../../../packages/community-cinema/src/types';
 import { clock } from '../cinema-youtube';
 
 export type HallMedia = Extract<SharedMedia, { kind: 'community-media' }>;
@@ -235,3 +240,56 @@ export const didThis = (name: string, verb: 'açtı' | 'ekledi') =>
 
 export const viewerLabel = (count: number) =>
   count === 1 ? '1 kişi izliyor' : `${count} kişi izliyor`;
+
+/** The episode after `ref` in a series' seasons (across seasons), or null after the last. */
+export function nextEpisode(
+  details: Pick<CinemaDetails, 'seasons'> | null | undefined,
+  ref: string,
+): CinemaEpisode | null {
+  const episodes = (details?.seasons ?? [])
+    .flatMap((season) => season.episodes)
+    .sort((a, b) => a.season - b.season || a.episode - b.episode);
+  const index = episodes.findIndex((episode) => episode.ref === ref);
+  const next = index >= 0 ? episodes[index + 1] : undefined;
+  // An announced episode that has not aired cannot be opened yet.
+  return next && !(next.airDate && next.airDate > Date.now() + 12 * 3_600_000) ? next : null;
+}
+
+/** The end of an episode where "Sonraki bölüm" shows: the last minute, or 4 % of a long one. */
+export const outroSec = (durationSec: number) => Math.max(60, durationSec * 0.04);
+
+/** A queue id for the episode that follows queue item `itemId`; the same on every viewer. */
+export const nextItemId = (itemId: string) => `next-${itemId}`.slice(0, 128);
+
+const megabits = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 1 });
+const frames = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 2 });
+
+/** `4K · 23,98 fps · 14,2 Mb/s` pieces for the screen's info pills; unknown parts are left out. */
+export function streamFacts(
+  video: {
+    width: number | null;
+    height: number | null;
+    fps: number | null;
+    bitrate: number | null;
+  } | null,
+  measuredBitrate: number | null,
+) {
+  const height = video?.height ?? null;
+  const width = video?.width ?? null;
+  const resolution =
+    height === null
+      ? null
+      : (width ?? 0) >= 3800 || height >= 2100
+        ? '4K'
+        : (width ?? 0) >= 2500 || height >= 1400
+          ? '1440p'
+          : (width ?? 0) >= 1900 || height >= 1000
+            ? '1080p'
+            : `${height}p`;
+  const bitrate = measuredBitrate ?? video?.bitrate ?? null;
+  return [
+    resolution,
+    video?.fps ? `${frames.format(video.fps)} fps` : null,
+    bitrate ? `${megabits.format(bitrate / 1_000_000)} Mb/s` : null,
+  ].filter((part): part is string => !!part);
+}
