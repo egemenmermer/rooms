@@ -24,7 +24,34 @@ export interface MusicLease {
   url: string;
   token: string;
 }
-type Entry = MusicReference & { id: string; file?: MusicFile; spotify?: SpotifyPlaylistTrack };
+type Entry = MusicReference & {
+  id: string;
+  file?: MusicFile;
+  spotify?: SpotifyPlaylistTrack;
+  /** Times a stream that broke off mid-song was picked up again. */
+  retries?: number;
+};
+/** Failures of one track, not of the DJ: the queue goes on without it. */
+const TRACK_FAILURES = new Set([
+  'MUSIC_DECODE_FAILED',
+  'MUSIC_YOUTUBE_UNAVAILABLE',
+  'MUSIC_SOURCE_FAILED',
+  'MUSIC_SOURCE_TIMEOUT',
+  'MUSIC_SOURCE_TOO_LARGE',
+  'MUSIC_MIRROR_NOT_FOUND',
+]);
+/** Of those, the ones a broken connection causes; the stream is opened again where it stopped. */
+const STREAM_FAILURES = new Set([
+  'MUSIC_DECODE_FAILED',
+  'MUSIC_YOUTUBE_UNAVAILABLE',
+  'MUSIC_SOURCE_FAILED',
+  'MUSIC_SOURCE_TIMEOUT',
+]);
+const MID_SONG_RETRIES = 2;
+/** Tracks that fail to start in a row before the DJ stops and says so. */
+const SKIP_LIMIT = 3;
+const musicCode = (error: unknown, fallback: string) =>
+  error instanceof Error && /^MUSIC_[A-Z_]+$/.test(error.message) ? error.message : fallback;
 function playlistReference(
   track: PlaylistTrack,
 ): MusicReference & { spotify?: SpotifyPlaylistTrack } {
@@ -249,7 +276,7 @@ export class MusicWorker {
         return;
       if (s.index + 1 < s.queue.length) {
         s.index++;
-        await this.play(s);
+        await this.playOn(s);
       } else {
         s.status = 'paused';
         s.pausedAt = this.now();
@@ -283,15 +310,7 @@ export class MusicWorker {
           item.source,
           Math.max(0, position),
           () => this.ended(s, item, generation),
-          (error) => {
-            if (this.sessions.get(s.channelId) === s && generation === s.generation) {
-              s.status = 'error';
-              s.error =
-                error && /^MUSIC_[A-Z_]+$/.test(error.message)
-                  ? error.message
-                  : 'MUSIC_DECODE_FAILED';
-            }
-          },
+          (error) => this.failed(s, item, generation, error),
         );
         if (
           this.sessions.get(s.channelId) === s &&
@@ -356,12 +375,7 @@ export class MusicWorker {
         item.file.path,
         Math.max(0, Math.min(position, Math.max(0, item.durationSec - 0.01))),
         () => this.ended(s, item, generation),
-        () => {
-          if (this.sessions.get(s.channelId) === s && generation === s.generation) {
-            s.status = 'error';
-            s.error = 'MUSIC_DECODE_FAILED';
-          }
-        },
+        () => this.failed(s, item, generation),
       );
       if (this.sessions.get(s.channelId) === s && generation === s.generation) {
         s.played.add(item.id);
@@ -370,13 +384,70 @@ export class MusicWorker {
     } catch (error) {
       if (this.sessions.get(s.channelId) === s && generation === s.generation) {
         s.status = 'error';
-        s.error =
-          error instanceof Error && /^MUSIC_[A-Z_]+$/.test(error.message)
-            ? error.message
-            : 'MUSIC_SOURCE_FAILED';
+        s.error = musicCode(error, 'MUSIC_SOURCE_FAILED');
       }
       throw error;
     }
+  }
+  /**
+   * Plays from `s.index` on its own (a song ended or broke off): a track that cannot start is
+   * skipped, up to {@link SKIP_LIMIT} in a row, so one bad link never stalls the whole queue.
+   * The snapshot then says a track was skipped.
+   */
+  private async playOn(s: Session, skipped: string | null = null) {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await this.play(s);
+        if (skipped && this.sessions.get(s.channelId) === s && s.status === 'playing')
+          s.error = 'MUSIC_TRACK_SKIPPED';
+        return;
+      } catch (error) {
+        if (this.sessions.get(s.channelId) !== s) return;
+        const code = musicCode(error, 'MUSIC_SOURCE_FAILED');
+        if (!TRACK_FAILURES.has(code) || attempt + 1 >= SKIP_LIMIT) return;
+        if (s.index + 1 >= s.queue.length) return;
+        s.index++;
+        skipped = code;
+      }
+    }
+  }
+  /**
+   * The playing track failed after it started. A dropped stream is opened again where it
+   * stopped (twice at most); otherwise the queue moves on. Access refusals and transport
+   * failures stop the DJ, since every next track would fail the same way.
+   */
+  private failed(s: Session, item: Entry, generation: number, error?: Error) {
+    if (this.sessions.get(s.channelId) !== s || generation !== s.generation) return;
+    const code = musicCode(error, 'MUSIC_DECODE_FAILED');
+    s.status = 'error';
+    s.error = code;
+    if (!TRACK_FAILURES.has(code)) return;
+    const position = s.publisher.position();
+    void this.serial(s, async () => {
+      if (
+        this.sessions.get(s.channelId) !== s ||
+        generation !== s.generation ||
+        s.queue[s.index]?.id !== item.id
+      )
+        return;
+      const midSong = position > 1 && (item.durationSec <= 0 || position < item.durationSec - 2);
+      if (STREAM_FAILURES.has(code) && midSong && (item.retries ?? 0) < MID_SONG_RETRIES) {
+        item.retries = (item.retries ?? 0) + 1;
+        try {
+          await this.play(s, position);
+          return;
+        } catch {
+          if (this.sessions.get(s.channelId) !== s) return;
+        }
+      }
+      if (s.index + 1 >= s.queue.length) {
+        s.status = 'error';
+        s.error = code;
+        return;
+      }
+      s.index++;
+      await this.playOn(s, code);
+    }).catch(() => {});
   }
   private async serial<T>(s: Session, work: () => Promise<T>): Promise<T> {
     const pending = s.serial.catch(() => {}).then(work);
@@ -563,6 +634,19 @@ export class MusicWorker {
           if (s.index > 0) s.index--;
           await this.play(s);
           break;
+        case 'clear': {
+          // Everything but the current track, which plays or waits on.
+          const keep = s.queue[s.index];
+          const removed = s.queue.filter((item) => item !== keep);
+          s.queue = keep ? [keep] : [];
+          s.index = keep ? 0 : -1;
+          for (const old of removed)
+            if (old.file) {
+              this.bytes -= old.file.bytes;
+              await rm(old.file.directory, { recursive: true, force: true });
+            }
+          break;
+        }
         case 'remove': {
           const index = s.queue.findIndex((q) => q.id === command.id);
           if (index === s.index) throw new Error('MUSIC_CURRENT_ITEM');
