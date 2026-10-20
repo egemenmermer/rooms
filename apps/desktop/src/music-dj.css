@@ -378,6 +378,9 @@
   color: inherit;
   cursor: pointer;
 }
+.dj-queue-heading button.danger {
+  color: #ff8a8a;
+}
 .dj-queue .dj-queue-title {
   flex: 1;
   min-width: 0;

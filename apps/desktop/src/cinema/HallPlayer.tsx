@@ -15,7 +15,10 @@ import type {
   CinemaExternalSubtitleSource,
   CinemaWatchSource,
 } from '../../../../packages/community-cinema/src/bridge';
-import type { CinemaAudioTrack } from '../../../../packages/community-cinema/src/types';
+import type {
+  CinemaAudioTrack,
+  CinemaVideoInfo,
+} from '../../../../packages/community-cinema/src/types';
 import {
   cueText,
   parseVtt,
@@ -23,6 +26,7 @@ import {
 } from '../../../../packages/community-cinema/src/webvtt';
 import { expectedPosition } from '../cinema-youtube';
 import { cinemaErrorCode, getCinemaBridge } from './cinema-bridge';
+import { cinemaPreferences, type CinemaPreferences } from './cinema-preferences';
 import type { HallItem } from './hall-model';
 
 /** Live channels play this many relay segments behind the relay's live edge. */
@@ -53,6 +57,14 @@ export interface PlayerSnapshot {
   subtitleOffset: number;
   /** Subtitles found online: still looking, found, no SubDL key, or the search failed. */
   onlineSubtitles: 'idle' | 'loading' | 'ready' | 'unavailable' | 'error';
+  /** The source picture, as the service probed it. */
+  video: CinemaVideoInfo | null;
+  /** Bits per second the relay delivers, measured over the last few segments. */
+  bitrate: number | null;
+  /** Live: seconds behind the relay's live edge. */
+  latencySec: number | null;
+  /** The picture floats in its own always-on-top window. */
+  pictureInPicture: boolean;
 }
 
 /** A subtitle a viewer can pick: from the film itself, found online, or their own file. */
@@ -78,6 +90,8 @@ export interface PlayerControls {
   setSubtitleOffset(seconds: number): void;
   /** Opens a subtitle file from disk for this viewer and shows it. */
   chooseSubtitleFile(): Promise<void>;
+  /** Floats the picture above other apps, or brings it back. */
+  togglePictureInPicture(): Promise<void>;
 }
 
 /** The seekable window of the video element, or null before it has one. */
@@ -91,6 +105,8 @@ function seekRange(element: HTMLVideoElement) {
 
 const turkish = (track: { language: string | null; label: string }) =>
   track.language === 'tur' || track.language === 'tr' || track.label.startsWith('Türkçe');
+const english = (track: { language: string | null; label: string }) =>
+  track.language === 'eng' || track.language === 'en' || track.label.startsWith('İngilizce');
 
 function subtitlesOff() {
   try {
@@ -109,18 +125,22 @@ function rememberSubtitles(on: boolean) {
 }
 
 /**
- * The subtitles a viewer starts with: Turkish when the hall hears another language (the
- * film's own first, then one found online), only Turkish forced subtitles over Turkish
- * audio, nothing once the viewer turned them off.
+ * The subtitles a viewer starts with, in their language (Settings: Turkish unless they chose
+ * English or none): the film's own track first, then one found online. Over audio in that same
+ * language only forced subtitles (signs, foreign lines) show; nothing once the viewer turned
+ * subtitles off in the menu.
  */
 export function autoSubtitle(
   tracks: Pick<SubtitleOption, 'key' | 'label' | 'language' | 'forced' | 'origin'>[],
   audioLabel: string | null,
   off = subtitlesOff(),
+  language: CinemaPreferences['subtitleLanguage'] = cinemaPreferences().subtitleLanguage,
 ): string | null {
-  if (off) return null;
-  const candidates = tracks.filter((t) => t.origin !== 'file' && turkish(t));
-  if (audioLabel?.startsWith('Türkçe')) return candidates.find((t) => t.forced)?.key ?? null;
+  if (off || language === 'off') return null;
+  const matches = language === 'eng' ? english : turkish;
+  const candidates = tracks.filter((t) => t.origin !== 'file' && matches(t));
+  if (audioLabel && matches({ language: null, label: audioLabel }))
+    return candidates.find((t) => t.forced)?.key ?? null;
   const embedded = candidates.filter((t) => t.origin === 'embedded');
   const pool = embedded.length ? embedded : candidates;
   return (pool.find((t) => !t.forced) ?? pool[0])?.key ?? null;
@@ -265,6 +285,10 @@ export function HallPlayer({
     subtitle: null,
     subtitleOffset: 0,
     onlineSubtitles: 'idle',
+    video: null,
+    bitrate: null,
+    latencySec: null,
+    pictureInPicture: false,
   });
   const [cues, setCues] = useState<SubtitleCue[]>([]);
   const [caption, setCaption] = useState('');
@@ -321,6 +345,9 @@ export function HallPlayer({
       live: item.media.live,
       positionSec: 0,
       durationSec: null,
+      video: null,
+      bitrate: null,
+      latencySec: null,
     });
     if (!bridge) {
       update({ phase: 'error', code: 'CINEMA_UNAVAILABLE' });
@@ -345,6 +372,7 @@ export function HallPlayer({
           live: value.live,
           audioTracks: value.audioTracks,
           audioTrack: value.audioTrack,
+          video: value.video ?? null,
         });
       } catch (error) {
         if (active)
@@ -372,6 +400,20 @@ export function HallPlayer({
       hls.current = instance;
       let recovered = false;
       instance.on(Hls.Events.MANIFEST_PARSED, start);
+      // What the relay actually delivers: bytes over media seconds of the last few segments.
+      const recent: { bytes: number; seconds: number }[] = [];
+      instance.on(Hls.Events.FRAG_LOADED, (_event, data) => {
+        const bytes = data.frag.stats.loaded;
+        if (!bytes || !(data.frag.duration > 0)) return;
+        recent.push({ bytes, seconds: data.frag.duration });
+        if (recent.length > 6) recent.shift();
+        const total = recent.reduce(
+          (sum, f) => ({ bytes: sum.bytes + f.bytes, seconds: sum.seconds + f.seconds }),
+          { bytes: 0, seconds: 0 },
+        );
+        // Rounded to 0.1 Mb/s so the pill does not flicker.
+        update({ bitrate: Math.round((total.bytes * 8) / total.seconds / 100_000) * 100_000 });
+      });
       instance.on(Hls.Events.ERROR, (_event, data) => {
         if (!data.fatal) return;
         if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !recovered) {
@@ -430,11 +472,17 @@ export function HallPlayer({
         onEnded(current.id);
       }
     };
+    const floating = () => update({ pictureInPicture: true });
+    const docked = () => update({ pictureInPicture: false });
+    element.addEventListener('enterpictureinpicture', floating);
+    element.addEventListener('leavepictureinpicture', docked);
     element.addEventListener('playing', playing);
     element.addEventListener('waiting', waiting);
     element.addEventListener('pause', paused);
     element.addEventListener('ended', ended);
     return () => {
+      element.removeEventListener('enterpictureinpicture', floating);
+      element.removeEventListener('leavepictureinpicture', docked);
       element.removeEventListener('playing', playing);
       element.removeEventListener('waiting', waiting);
       element.removeEventListener('pause', paused);
@@ -478,7 +526,11 @@ export function HallPlayer({
             element.currentTime = step.seekTo;
           }
           element.playbackRate = step.rate;
-          update({ behindLive: step.behindLive });
+          const latency = hls.current?.latency;
+          update({
+            behindLive: step.behindLive,
+            latencySec: latency != null && Number.isFinite(latency) ? Math.round(latency) : null,
+          });
         } else update({ behindLive: false });
         if (element.paused && element.readyState > 2) void element.play().catch(() => {});
         return;
@@ -636,6 +688,11 @@ export function HallPlayer({
       },
       setSubtitleOffset: (seconds) =>
         update({ subtitleOffset: Math.round(Math.max(-600, Math.min(600, seconds)) * 10) / 10 }),
+      togglePictureInPicture: async () => {
+        const element = video.current;
+        if (document.pictureInPictureElement) await document.exitPictureInPicture();
+        else if (element && element.readyState > 0) await element.requestPictureInPicture();
+      },
       chooseSubtitleFile: async () => {
         const picked = await getCinemaBridge()?.chooseSubtitleFile();
         if (!picked) return;

@@ -128,7 +128,7 @@ function mount(variant: CommunityCinemaFixtureVariant, again = false) {
 const hallTabs = async () => screen.findByRole('tablist', { name: 'Sinema' });
 
 async function openRmdb() {
-  fireEvent.click(within(await hallTabs()).getByRole('tab', { name: 'RMDB' }));
+  fireEvent.click(within(await hallTabs()).getByRole('tab', { name: 'Tayfa' }));
 }
 
 /** Opens a work from the RMDB home page (its poster names it first). */
@@ -154,10 +154,10 @@ describe('RMDB in the cinema hall', { timeout: 30_000 }, () => {
       'Filmler',
       'Diziler',
       'YouTube',
-      'RMDB',
+      'Tayfa',
     ]);
     await openRmdb();
-    expect(await screen.findByRole('heading', { level: 2, name: 'RMDB' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Tayfa' })).toBeTruthy();
     expect(screen.getByText(/8 film · 5 dizi · 13 yorum/)).toBeTruthy();
     for (const row of ['Devam et', 'İzlenecekler', 'Son izlenenler', 'Topluluğun favorileri'])
       expect(screen.getByRole('region', { name: row })).toBeTruthy();
@@ -176,7 +176,7 @@ describe('RMDB in the cinema hall', { timeout: 30_000 }, () => {
   it('explains an empty RMDB and points to the catalog', async () => {
     mount('rmdb_empty');
     await openRmdb();
-    expect(await screen.findByText('RMDB henüz boş')).toBeTruthy();
+    expect(await screen.findByText('Tayfa henüz boş')).toBeTruthy();
     expect(screen.getByText(/Salonda izlediğiniz filmler ve diziler burada birikir/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Filmler' }));
     expect(
@@ -259,7 +259,7 @@ describe('RMDB in the cinema hall', { timeout: 30_000 }, () => {
     expect(text.getAttribute('aria-hidden')).toBeNull();
     // Escape steps back to the RMDB home page, not out to the stage.
     fireEvent.keyDown(document.body, { key: 'Escape' });
-    expect(await screen.findByRole('heading', { level: 2, name: 'RMDB' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Tayfa' })).toBeTruthy();
   });
 
   it('toggles the heart and İzlenecekler, and the poster shows both', async () => {
@@ -285,7 +285,7 @@ describe('RMDB in the cinema hall', { timeout: 30_000 }, () => {
       }),
     );
     expect(screen.getByText(/İzlenecekler listesinde · sen ekledin/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'RMDB' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tayfa' }));
     const watchlist = await screen.findByRole('region', { name: 'İzlenecekler' });
     const card = within(watchlist).getByRole('button', { name: /^Son Vapur,/ });
     expect(card.getAttribute('aria-label')).toContain("İzlenecekler'de");
@@ -295,7 +295,7 @@ describe('RMDB in the cinema hall', { timeout: 30_000 }, () => {
   it('keeps owner-only removals from members and lets the owner use them', async () => {
     mount('member');
     await openWork('Sessiz Sokak');
-    expect(screen.queryByRole('button', { name: "RMDB'den kaldır" })).toBeNull();
+    expect(screen.queryByRole('button', { name: "Tayfa'dan kaldır" })).toBeNull();
     expect(screen.queryByRole('button', { name: /adlı üyenin yorumunu kaldır/ })).toBeNull();
     expect(
       within(screen.getByRole('region', { name: 'Günlük' })).queryByRole('button', {
@@ -310,10 +310,10 @@ describe('RMDB in the cinema hall', { timeout: 30_000 }, () => {
     const dialog = await screen.findByRole('dialog', { name: 'Yorum kaldırılsın mı?' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Yorumu kaldır' }));
     await waitFor(() => expect(screen.queryByText(/Katil baştan beri/)).toBeNull());
-    fireEvent.click(screen.getByRole('button', { name: "RMDB'den kaldır" }));
-    const confirm = await screen.findByRole('dialog', { name: "RMDB'den kaldırılsın mı?" });
+    fireEvent.click(screen.getByRole('button', { name: "Tayfa'dan kaldır" }));
+    const confirm = await screen.findByRole('dialog', { name: "Tayfa'dan kaldırılsın mı?" });
     fireEvent.click(within(confirm).getByRole('button', { name: 'Kaldır' }));
-    expect(await screen.findByRole('heading', { level: 2, name: 'RMDB' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Tayfa' })).toBeTruthy();
     await waitFor(() =>
       expect(screen.queryAllByRole('button', { name: /^Sessiz Sokak,/ })).toHaveLength(0),
     );
@@ -385,21 +385,21 @@ describe('RMDB in the cinema hall', { timeout: 30_000 }, () => {
     fireEvent.click(within(await hallTabs()).getByRole('tab', { name: 'Filmler' }));
     // Catalog posters read "Yeni Kırmızı Balon …" while they are new.
     fireEvent.click((await screen.findAllByRole('button', { name: /Kırmızı Balon/ }))[0]!);
-    fireEvent.click(await screen.findByRole('button', { name: "RMDB'ye ekle" }));
-    fireEvent.click(await screen.findByRole('button', { name: "RMDB'de aç" }));
+    fireEvent.click(await screen.findByRole('button', { name: "Tayfa'ya ekle" }));
+    fireEvent.click(await screen.findByRole('button', { name: "Tayfa'da aç" }));
     expect(
       within(await hallTabs())
-        .getByRole('tab', { name: 'RMDB' })
+        .getByRole('tab', { name: 'Tayfa' })
         .getAttribute('aria-selected'),
     ).toBe('true');
     expect(await screen.findByRole('heading', { level: 2, name: 'Kırmızı Balon' })).toBeTruthy();
-    expect(screen.getByText('Film · RMDB')).toBeTruthy();
+    expect(screen.getByText('Film · Tayfa')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Salonda oynat' })).toBeTruthy();
     // A film the hall already watched links to its entry at once.
     fireEvent.click(within(await hallTabs()).getByRole('tab', { name: 'Filmler' }));
     fireEvent.click(screen.getByRole('button', { name: 'Filmler' }));
     fireEvent.click((await screen.findAllByRole('button', { name: /Mavi Saat/ }))[0]!);
-    fireEvent.click(await screen.findByRole('button', { name: "RMDB'de aç" }));
+    fireEvent.click(await screen.findByRole('button', { name: "Tayfa'da aç" }));
     expect(await screen.findByRole('heading', { level: 2, name: 'Mavi Saat' })).toBeTruthy();
   });
 });

@@ -10,7 +10,17 @@ import {
   type ReactNode,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clapperboard, Film, Plug, Popcorn, Search, Settings2, Tv } from 'lucide-react';
+import {
+  Bell,
+  BellRing,
+  Clapperboard,
+  Film,
+  Plug,
+  Popcorn,
+  Search,
+  Settings2,
+  Tv,
+} from 'lucide-react';
 import { endsActivity } from '../../../../packages/activity-protocol/src';
 import type {
   CinemaDetails,
@@ -51,6 +61,15 @@ import {
   type HallTab,
 } from './hall-model';
 import { LiveTab } from './LiveTab';
+import { hallCommandOf } from './hall-keys';
+import {
+  hasReminder,
+  takeHallOpen,
+  toggleReminder,
+  useReminders,
+  type Reminder,
+} from './reminders';
+import { HallKeysCard } from './HallKeysCard';
 import { OpenPalette } from './OpenPalette';
 import { HallContext, useHall, useHallState } from './use-hall';
 import { VodTab, type VodView } from './VodTab';
@@ -66,7 +85,7 @@ const tabs: { id: View; label: string }[] = [
   { id: 'movies', label: 'Filmler' },
   { id: 'series', label: 'Diziler' },
   { id: 'youtube', label: 'YouTube' },
-  { id: 'rmdb', label: 'RMDB' },
+  { id: 'rmdb', label: 'Tayfa' },
 ];
 
 /** The community cinema hall: one shared screen, a catalog to open things from, and the hall's chat. */
@@ -155,6 +174,7 @@ function HallLayout() {
     tab: 'chat',
   }));
   const [palette, setPalette] = useState(false);
+  const [keysOpen, setKeysOpen] = useState(false);
   const [osd, setOsd] = useState<StageOsd | null>(null);
   const [audio, setAudioState] = useState(storedVolume);
   const controls = useRef<PlayerControls | null>(null);
@@ -173,6 +193,17 @@ function HallLayout() {
       .map((item) => item.ref);
   }, [zapItems, currentRef, live]);
   useGuides(hall.hallId, nearby);
+
+  // A reminder's "Salonda aç": play its channel once the channel list is here.
+  useEffect(() => {
+    if (!hall.connected || !allLive.data) return;
+    const ref = takeHallOpen(hall.hallId);
+    const item = ref ? allLive.data.items.find((value) => value.ref === ref) : null;
+    if (item) {
+      setView('stage');
+      void hall.openItem(item);
+    }
+  }, [hall.connected, hall.hallId, allLive.data, hall.openItem]);
 
   const setAudio = useCallback((value: { volume: number; muted: boolean }) => {
     setAudioState(value);
@@ -381,27 +412,30 @@ function HallLayout() {
       if (palette || event.metaKey || event.ctrlKey || event.altKey || editingTarget(event.target))
         return;
       // The hall stays mounted under Settings and dialogs; it must not react there.
-      if (document.querySelector('.modal-backdrop,.settings-layout')) return;
+      if (document.querySelector('.modal-backdrop,.settings-layout,.hall-context-menu')) return;
       const stage = view === 'stage';
       const timeline = hall.room?.timeline;
-      switch (event.key) {
-        case 'Escape':
-          if (vodKey && vod[vodKey].mode !== 'home') {
-            event.preventDefault();
-            setVod((value) => ({ ...value, [vodKey]: { mode: 'home' } }));
-          } else if (!stage && hall.current) {
-            event.preventDefault();
-            setView('stage');
-          }
-          return;
-        case 'f':
-        case 'F':
+      if (event.key === 'Escape') {
+        if (keysOpen) {
+          event.preventDefault();
+          setKeysOpen(false);
+        } else if (vodKey && vod[vodKey].mode !== 'home') {
+          event.preventDefault();
+          setVod((value) => ({ ...value, [vodKey]: { mode: 'home' } }));
+        } else if (!stage && hall.current) {
+          event.preventDefault();
+          setView('stage');
+        }
+        return;
+      }
+      const command = hallCommandOf(event);
+      switch (command) {
+        case 'fullscreen':
           if (!hall.current) return;
           event.preventDefault();
           void toggleFullscreen();
           return;
-        case 'm':
-        case 'M':
+        case 'mute':
           event.preventDefault();
           setAudio({ ...audio, muted: !audio.muted });
           show({
@@ -411,23 +445,33 @@ function HallLayout() {
             note: audio.muted ? 'Ses açıldı' : 'Ses kapalı',
           });
           return;
-        case 'c':
-        case 'C':
+        case 'panel':
           event.preventDefault();
           togglePanel();
+          return;
+        case 'help':
+          event.preventDefault();
+          setKeysOpen((value) => !value);
+          return;
+        case 'pictureInPicture':
+          if (!isHallItem(hall.current)) return;
+          event.preventDefault();
+          void controls.current
+            ?.togglePictureInPicture()
+            .catch(() => hall.notify('Pencere içinde pencere açılamadı.'));
           return;
       }
       if (!stage) return;
       // Arrows yield only to widgets that move with them; Space and digits to any control.
       if (event.key.startsWith('Arrow') ? arrowTarget(event.target) : controlTarget(event.target))
         return;
-      if (live && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+      if (live && (command === 'channelUp' || command === 'channelDown')) {
         event.preventDefault();
-        zap(event.key === 'ArrowDown' ? 1 : -1);
+        zap(command === 'channelDown' ? 1 : -1);
       } else if (live && /^[0-9]$/.test(event.key)) {
         event.preventDefault();
         typeDigit(event.key);
-      } else if (event.key === ' ' && isHallItem(hall.current)) {
+      } else if (command === 'playPause' && isHallItem(hall.current)) {
         event.preventDefault();
         if (live) controls.current?.toggleLocalPause();
         else if (hall.canDirect && timeline) shared(!timeline.playing, currentPosition(hall));
@@ -435,7 +479,7 @@ function HallLayout() {
           show({ number: null, title: '', detail: null, note: 'Kumanda ev sahibinde' });
       } else if (
         isHallItem(hall.current) &&
-        (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
+        (command === 'seekBack' || command === 'seekForward')
       ) {
         event.preventDefault();
         if (live)
@@ -445,7 +489,7 @@ function HallLayout() {
             detail: null,
             note: cinemaErrorText('LIVE_PLAYBACK_FIXED'),
           });
-        else seekBy(event.key === 'ArrowRight' ? SEEK_STEP_SEC : -SEEK_STEP_SEC);
+        else seekBy(command === 'seekForward' ? SEEK_STEP_SEC : -SEEK_STEP_SEC);
       }
     };
     window.addEventListener('keydown', key);
@@ -630,6 +674,7 @@ function HallLayout() {
           />
         )}
       </div>
+      {keysOpen && <HallKeysCard onClose={() => setKeysOpen(false)} />}
       {palette && (
         <OpenPalette
           onClose={() => setPalette(false)}
@@ -753,9 +798,20 @@ function NowBar() {
         )}
       </div>
       <div className="hall-nowbar-side">
-        {next ? (
+        {next && item ? (
           <div className="hall-next">
-            <small>Sıradaki · {hhmm(next.start)}</small>
+            <small>
+              Sıradaki · {hhmm(next.start)}
+              <ReminderBell
+                reminder={{
+                  hallId: hall.hallId,
+                  ref: item.media.ref,
+                  channel: item.media.title,
+                  title: next.title,
+                  start: next.start,
+                }}
+              />
+            </small>
             <span>{next.title}</span>
           </div>
         ) : upNext ? (
@@ -783,6 +839,25 @@ function NowBar() {
         )}
       </div>
     </div>
+  );
+}
+
+/** "Başlayınca haber ver" for the next programme; the reminder stays on this device. */
+function ReminderBell({ reminder }: { reminder: Reminder }) {
+  useReminders();
+  const on = hasReminder(reminder);
+  return (
+    <button
+      className={`hall-reminder-bell ${on ? 'on' : ''}`}
+      aria-pressed={on}
+      aria-label={
+        on ? `${reminder.title}: hatırlatmayı kaldır` : `${reminder.title} başlayınca haber ver`
+      }
+      title={on ? 'Hatırlatma kurulu · kaldır' : 'Başlayınca haber ver'}
+      onClick={() => toggleReminder(reminder)}
+    >
+      {on ? <BellRing size={13} /> : <Bell size={13} />}
+    </button>
   );
 }
 

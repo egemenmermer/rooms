@@ -51,6 +51,14 @@ export type ImportOptions = {
 export class CinemaError extends Error {}
 
 /** A TMDB id as panels send it: a number or a numeric string; "0" and junk mean none. */
+/** `2026-10-20` (also with a time) → that day at 12:00 UTC, so no time zone moves the day. */
+export function dayOf(value: unknown): number | null {
+  const match = typeof value === 'string' ? /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim()) : null;
+  if (!match) return null;
+  const day = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12);
+  return Number.isFinite(day) && Number(match[1]) > 1900 ? day : null;
+}
+
 function tmdbOf(value: unknown) {
   const id =
     typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : '';
@@ -435,6 +443,9 @@ export class Importer {
           plot: clip(asString(detail.plot), 2000),
           durationSec: asPositiveInt(detail.duration_secs),
           art: image ? artId(image) : null,
+          airDate: dayOf(
+            detail.releasedate ?? detail.release_date ?? detail.air_date ?? row.air_date,
+          ),
           providerId: id,
           ext: containerExtension(row.container_extension, 'mp4'),
           url: null,

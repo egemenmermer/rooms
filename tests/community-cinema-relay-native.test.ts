@@ -421,6 +421,27 @@ describe.runIf(native)('cinema relay with real ffmpeg', () => {
     await relays.stop(info.session);
   }, 60_000);
 
+  it('keeps the picture and the subtitles on one timeline after a seek between keyframes', async () => {
+    const film = { url: `${base}/movie/user/secretpass/subbed.mkv`, headers: {}, live: false };
+    // Keyframes every 2 s: output time 0 is the keyframe at 20, not the asked 21.3.
+    const info = await relays.acquire({
+      communityId: 'C9',
+      key: 'C9:m-6@21.3',
+      source: film,
+      startSec: 21.3,
+      slots: 1,
+    });
+    expect(info.offsetSec).toBeGreaterThan(19.9);
+    expect(info.offsetSec).toBeLessThan(20.1);
+    let cues: { start: number; end: number; text: string }[] = [];
+    for (let tries = 0; tries < 60 && !cues.length; tries++) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      cues = parseVtt((await relays.file(info.session, 'sub0.vtt'))!.body.toString('utf8'));
+    }
+    expect(cues[0]).toMatchObject({ start: 24, end: 26.5, text: 'ikinci' });
+    await relays.stop(info.session);
+  }, 60_000);
+
   it('stops idle relays and never logs a provider URL', async () => {
     const info = await relays.acquire({
       communityId: 'C4',

@@ -1,3 +1,4 @@
+import { TitleMetadata } from './metadata';
 import { join } from 'node:path';
 import type { ActivityResponse } from '../../../packages/activity-protocol/src/index';
 import { cachedAuthority, stoatAuthority } from './authority';
@@ -72,6 +73,7 @@ async function main() {
     },
     image: (url) => importer.image(url),
     subtitles: new SubtitleSearch({ userAgent }),
+    metadata: new TitleMetadata({ userAgent }),
     rmdb,
     maxRelays: Number(process.env.ROOMS_CINEMA_MAX_RELAYS ?? 1),
     log,

@@ -73,7 +73,15 @@ export function useHallState({
   const roomRef = useRef(room);
   roomRef.current = room;
   const open = useCallback(
-    async (media: SharedMedia, label = media.title) => {
+    async (
+      media: SharedMedia,
+      label = media.title,
+      /**
+       * `itemId`: a queue id every viewer derives the same way, so two of them starting the same
+       * next episode add it once. `quiet`: no notices (an automatic step, not a click).
+       */
+      options: { itemId?: string; quiet?: boolean } = {},
+    ) => {
       const id =
         media.kind === 'community-media'
           ? media.ref
@@ -83,14 +91,15 @@ export function useHallState({
       if (opening.current === id) return;
       opening.current = id;
       try {
+        const itemId = options.itemId ?? crypto.randomUUID();
         if (canDirect || !roomRef.current?.primary) {
-          await sendAll(openNowCommands(roomRef.current, media, crypto.randomUUID()));
+          await sendAll(openNowCommands(roomRef.current, media, itemId));
         } else {
-          await sendAll(suggestCommands(roomRef.current, media, crypto.randomUUID()));
-          notify(`${label} sıraya önerildi.`);
+          await sendAll(suggestCommands(roomRef.current, media, itemId));
+          if (!options.quiet) notify(`${label} sıraya önerildi.`);
         }
       } catch (error) {
-        notify(cinemaErrorText(error));
+        if (!options.quiet) notify(cinemaErrorText(error));
       } finally {
         opening.current = null;
       }
@@ -138,14 +147,21 @@ export function useHallState({
   );
   const openItem = useCallback((item: CinemaItem) => open(hallMedia(item)), [open]);
   const openEpisode = useCallback(
-    (series: CinemaItem, episode: CinemaEpisode) =>
-      open({
-        kind: 'community-media',
-        ref: episode.ref,
-        title: `${series.title} · ${episode.season}. Sezon ${episode.episode}. Bölüm`.slice(0, 240),
-        live: false,
-        art: episode.art && /^[a-f0-9]{16,64}$/.test(episode.art) ? episode.art : null,
-      }),
+    (series: CinemaItem, episode: CinemaEpisode, options?: { itemId?: string; quiet?: boolean }) =>
+      open(
+        {
+          kind: 'community-media',
+          ref: episode.ref,
+          title: `${series.title} · ${episode.season}. Sezon ${episode.episode}. Bölüm`.slice(
+            0,
+            240,
+          ),
+          live: false,
+          art: episode.art && /^[a-f0-9]{16,64}$/.test(episode.art) ? episode.art : null,
+        },
+        undefined,
+        options,
+      ),
     [open],
   );
   const nameOf = useCallback(

@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { cinemaArt } from './cinema-bridge';
 
-/** Provider artwork through the main process, with a calm lettered tile when there is none. */
+const ratios = { poster: 2 / 3, wide: 16 / 9 } as const;
+
+/**
+ * Provider artwork through the main process, with a calm lettered tile when there is none.
+ * Providers often hand a poster where a still belongs (or the other way round); a picture
+ * far from the frame's shape is shown whole over a blurred copy of itself instead of being
+ * cropped to a sliver.
+ */
 export function CinemaArt({
   hallId,
   art,
@@ -17,6 +24,8 @@ export function CinemaArt({
 }) {
   const src = cinemaArt(hallId, art);
   const [failed, setFailed] = useState<string | null>(null);
+  const [fit, setFit] = useState<{ src: string; mismatched: boolean } | null>(null);
+  const mismatched = fit?.src === src && fit.mismatched;
   const initials = title
     .replace(/\b(HD|FHD|UHD|4K|TV)\b/gi, '')
     .trim()
@@ -26,9 +35,28 @@ export function CinemaArt({
     .slice(0, shape === 'logo' ? 2 : 3)
     .toLocaleUpperCase('tr');
   return (
-    <span className={`hall-art ${shape} ${className}`} aria-hidden="true">
+    <span
+      className={`hall-art ${shape} ${mismatched ? 'letterbox' : ''} ${className}`}
+      aria-hidden="true"
+    >
       {src && failed !== src ? (
-        <img src={src} alt="" loading="lazy" draggable={false} onError={() => setFailed(src)} />
+        <>
+          {mismatched && <img className="hall-art-blur" src={src} alt="" draggable={false} />}
+          <img
+            src={src}
+            alt=""
+            loading="lazy"
+            draggable={false}
+            onError={() => setFailed(src)}
+            onLoad={(event) => {
+              if (shape === 'logo') return;
+              const { naturalWidth: width, naturalHeight: height } = event.currentTarget;
+              if (!width || !height) return;
+              const ratio = width / height / ratios[shape];
+              setFit({ src, mismatched: ratio < 0.75 || ratio > 1.33 });
+            }}
+          />
+        </>
       ) : (
         <span className="hall-art-fallback">{initials || '·'}</span>
       )}

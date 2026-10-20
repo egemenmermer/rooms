@@ -8,12 +8,16 @@ import {
 import { maskServer } from '../../../packages/community-cinema/src/mask';
 import { detectXtreamExport } from '../../../packages/community-cinema/src/m3u';
 import { normalizeForSearch } from '../../../packages/community-cinema/src/normalize';
+import { cleanEpisodeTitle, cleanVodTitle } from '../../../packages/community-cinema/src/titles';
 import {
   liveExtension,
   xtreamUrls,
   type XtreamAccount,
 } from '../../../packages/community-cinema/src/xtream';
 import type {
+  CinemaContinueItem,
+  CinemaVideoInfo,
+  CinemaTitleLinks,
   CinemaDetails,
   CinemaExternalSubtitles,
   CinemaImportProgress,
@@ -41,8 +45,11 @@ import {
 import { CinemaError, safeError, type Importer } from './importer';
 import { tmdbOf, type Rmdb, type RmdbMeta, type StoredWork } from './rmdb';
 import type { SubtitleCandidate, SubtitleQuery } from './subtitles';
+import type { TitleMetadata } from './metadata';
 import type { SecureFiles } from './secure-file';
 
+/** Cards in a "Devam et" row. */
+const CONTINUE_LIMIT = 20;
 export type RelaySource = { url: string; headers: Record<string, string>; live: boolean };
 export type RelayInfo = {
   session: string;
@@ -57,6 +64,7 @@ export type RelayInfo = {
   audioTracks?: { index: number; label: string }[];
   audioTrack?: number | null;
   subtitleTracks?: CinemaSubtitleTrack[];
+  video?: CinemaVideoInfo | null;
 };
 
 /** The part of the relay manager the service drives. */
@@ -68,6 +76,7 @@ export interface RelayPort {
     startSec?: number;
     slots: number;
     audio?: number | null;
+    original?: boolean;
   }): Promise<RelayInfo>;
   sessionsOf(communityId: string): RelayInfo[];
   stop(session: string): Promise<void>;
@@ -177,6 +186,8 @@ export type CinemaServiceOptions = {
   image(url: string): Promise<{ body: Buffer; type: string }>;
   /** Subtitle search with the owner's key; absent, films only offer their own subtitles. */
   subtitles?: SubtitlePort;
+  /** IMDb ids and air dates; absent, the IMDb link stays off and no air dates come from TMDB. */
+  metadata?: TitleMetadata;
   /** The community's record of what the hall watched; absent, nothing is recorded. */
   rmdb?: Rmdb;
   maxRelays?: number;
@@ -261,6 +272,8 @@ export class CinemaService {
       importing: this.jobs.get(communityId)?.progress ?? this.failedJob(communityId),
       relaySlots: this.slots(config),
       subtitleSearch: !!config.subtitleKey && !!this.options.subtitles,
+      tmdb: !!config.tmdbKey && !!this.options.metadata,
+      audioDefault: config.audioDefault ?? 'turkish',
     };
   }
 
@@ -328,6 +341,36 @@ export class CinemaService {
     if (key) await subtitles.verify(key);
     this.options.configs.update(communityId, (config) => ({ ...config, subtitleKey: key }));
     this.forgetSubtitles(communityId);
+  }
+
+  /** Owner: whether films start with a Turkish dub when there is one, or their own language. */
+  setAudioDefault(communityId: string, value: 'turkish' | 'original') {
+    this.options.configs.update(communityId, (config) => ({ ...config, audioDefault: value }));
+  }
+
+  /** Owner: verifies and stores (or removes) the community's TMDB key. */
+  async setTmdbKey(communityId: string, key: string | null) {
+    const metadata = this.options.metadata ?? fail('CINEMA_METADATA_UNAVAILABLE');
+    if (key) await metadata.verify(key);
+    this.options.configs.update(communityId, (config) => ({ ...config, tmdbKey: key }));
+  }
+
+  /** IMDb and TMDB ids of a film or series; an episode answers for its series. */
+  async titleLinks(communityId: string, ref: string): Promise<CinemaTitleLinks> {
+    const catalog = this.catalog(communityId);
+    const item = ref.startsWith('e-') ? catalog.episode(ref)?.series : catalog.item(ref);
+    if (!item || item.kind === 'live') return fail('CINEMA_ITEM_NOT_FOUND');
+    const kind = item.kind === 'series' ? 'series' : 'movie';
+    // The provider gives the TMDB id with the details; fetch them once if needed.
+    if (item.tmdbId === undefined || item.tmdbId === null)
+      await this.details(communityId, item.ref).catch(() => null);
+    const tmdbId = Number(tmdbOf(item.tmdbId)) || null;
+    const key = this.options.configs.get(communityId).tmdbKey ?? null;
+    const imdbId =
+      tmdbId && this.options.metadata
+        ? await this.options.metadata.imdbId(kind, tmdbId, key).catch(() => null)
+        : null;
+    return { kind, tmdbId, imdbId };
   }
 
   private forgetSubtitles(communityId: string) {
@@ -620,6 +663,7 @@ export class CinemaService {
           plot: episode.plot,
           durationSec: episode.durationSec,
           art: episode.art,
+          airDate: episode.airDate ?? null,
         },
       ]);
     return {
@@ -633,6 +677,7 @@ export class CinemaService {
       seasons: [...seasons]
         .sort((a, b) => a[0] - b[0])
         .map(([season, episodes]) => ({ season, episodes })),
+      tmdbId: Number(tmdbOf(item.tmdbId)) || null,
       versions: catalog.versions(ref).map((other) => ({ ref: other.ref, badges: other.badges })),
     };
   }
@@ -780,7 +825,8 @@ export class CinemaService {
     const source = this.relaySource(config.source!, config.account, item, episode);
     const slots = this.slots(config);
     const audio = this.audioChoices.get(`${communityId}\n${current.ref}`) ?? null;
-    const audioKey = audio === null ? '' : `#a${audio}`;
+    const original = config.audioDefault === 'original';
+    const audioKey = audio === null ? (original ? '#o' : '') : `#a${audio}`;
     // One relay decision at a time per community: viewers who press play together share it.
     const info = await this.serial(communityId, async () => {
       let chosen: RelayInfo;
@@ -791,6 +837,7 @@ export class CinemaService {
           source,
           slots,
           audio,
+          original,
         });
       } else {
         const position = playbackPosition(
@@ -817,6 +864,7 @@ export class CinemaService {
             startSec,
             slots,
             audio,
+            original,
           }));
       }
       const running = new Set(this.options.relays.sessionsOf(communityId).map((r) => r.session));
@@ -843,6 +891,7 @@ export class CinemaService {
       audioTracks: info.audioTracks ?? [],
       audioTrack: info.audioTrack ?? null,
       subtitleTracks: info.subtitleTracks ?? [],
+      video: info.video ?? null,
     };
   }
 
@@ -961,6 +1010,17 @@ export class CinemaService {
    * reconnected or different account).
    */
   private async resumeOf(communityId: string, work: StoredWork) {
+    return (await this.continueOf(communityId, work))?.resume ?? null;
+  }
+
+  /**
+   * Where a work goes on in the current catalog: the stored ref when the same account still
+   * lists the same title, otherwise the same title by name and year (a reconnected or
+   * different account). Unfinished: where the hall stopped. Finished film: from the start.
+   * Finished episode: the next one from the start, or, while that one has not aired, its
+   * air date and nothing to open. Null when the catalog has nothing to go on with.
+   */
+  private async continueOf(communityId: string, work: StoredWork) {
     const source = this.options.configs.get(communityId).source;
     if (!source) return null;
     const catalog = this.options.catalogs.get(communityId);
@@ -978,10 +1038,17 @@ export class CinemaService {
     const resumeAt = (seconds: number) => Math.max(0, Math.floor(seconds) - 5);
     if (work.kind === 'movie')
       return {
+        resume: {
+          ref: item.ref,
+          title: item.title,
+          positionSec: progress && !progress.finished ? resumeAt(progress.positionSec) : 0,
+          art: item.art,
+          episode: null,
+        },
         ref: item.ref,
-        title: item.title,
-        positionSec: progress && !progress.finished ? resumeAt(progress.positionSec) : 0,
-        art: item.art,
+        still: null,
+        upcomingAt: null,
+        next: false,
         episode: null,
       };
     if (!catalog.episodes(item.ref)) await this.details(communityId, item.ref).catch(() => null);
@@ -993,16 +1060,102 @@ export class CinemaService {
       ? episodes.findIndex((e) => e.season === at.season && e.episode === at.episode)
       : 0;
     if (index < 0) return null;
-    const next = at && progress!.finished;
+    const next = !!at && progress!.finished;
     const target = episodes[next ? index + 1 : index];
-    if (!target) return null;
-    return {
-      ref: target.ref,
-      title: `${item.title} · ${target.season}. Sezon ${target.episode}. Bölüm`.slice(0, 240),
-      positionSec: at && !next ? resumeAt(progress!.positionSec) : 0,
-      art: target.art ?? item.art,
-      episode: { season: target.season, episode: target.episode, title: target.title || null },
+    if (!target) {
+      // The provider has nothing after the last watched episode: TMDB may know when it airs.
+      const key = this.options.configs.get(communityId).tmdbKey;
+      const tmdbId = Number(tmdbOf(item.tmdbId ?? work.tmdbId)) || null;
+      const airing =
+        next && at && key && tmdbId && this.options.metadata
+          ? await this.options.metadata.nextAiring(tmdbId, key).catch(() => null)
+          : null;
+      if (
+        !airing ||
+        !(
+          airing.season > at!.season ||
+          (airing.season === at!.season && airing.episode > at!.episode)
+        )
+      )
+        return null;
+      return {
+        resume: null,
+        ref: item.ref,
+        still: null,
+        upcomingAt: airing.airDate,
+        next: true,
+        episode: { season: airing.season, episode: airing.episode, title: airing.title },
+      };
+    }
+    const episode = {
+      season: target.season,
+      episode: target.episode,
+      title: cleanEpisodeTitle(target.title, item.title, target.season, target.episode) || null,
     };
+    // Providers may list an episode before it airs; it cannot be opened yet.
+    const upcomingAt =
+      target.airDate && target.airDate > this.now() + 12 * 3600_000 ? target.airDate : null;
+    return {
+      resume: upcomingAt
+        ? null
+        : {
+            ref: target.ref,
+            title: `${item.title} · ${target.season}. Sezon ${target.episode}. Bölüm`.slice(0, 240),
+            positionSec: at && !next ? resumeAt(progress!.positionSec) : 0,
+            art: target.art ?? item.art,
+            episode: {
+              season: target.season,
+              episode: target.episode,
+              title: target.title || null,
+            },
+          },
+      ref: item.ref,
+      still: target.art,
+      upcomingAt,
+      next,
+      episode,
+    };
+  }
+
+  /**
+   * The "Devam et" row of Filmler or Diziler: works the hall left unfinished, series whose
+   * next episode is out or announced, newest first. Each viewer hides cards on their own.
+   */
+  async rmdbContinue(communityId: string, kind: 'movie' | 'series'): Promise<CinemaContinueItem[]> {
+    const rmdb = this.rmdb();
+    if (!this.options.configs.get(communityId).source) return [];
+    const out: CinemaContinueItem[] = [];
+    for (const summary of rmdb.list(communityId, '')) {
+      if (out.length >= CONTINUE_LIMIT) break;
+      const progress = summary.progress;
+      if (summary.kind !== kind || !progress) continue;
+      if (kind === 'movie' && progress.finished) continue;
+      const work = rmdb.get(communityId, summary.id);
+      const value = await this.continueOf(communityId, work).catch(() => null);
+      if (!value || (!value.resume && !value.upcomingAt)) continue;
+      out.push({
+        workId: work.id,
+        kind,
+        title: cleanVodTitle(work.title) || work.title,
+        art: value.still ?? work.backdrop ?? work.art,
+        resume: value.resume,
+        episode: kind === 'series' ? (value.episode ?? null) : null,
+        ref: value.ref,
+        progress:
+          value.next || value.upcomingAt
+            ? 0
+            : progress.durationSec
+              ? Math.min(1, Math.max(0, progress.positionSec / progress.durationSec))
+              : 0,
+        remainingSec:
+          !value.next && !value.upcomingAt && progress.durationSec
+            ? Math.max(0, Math.round(progress.durationSec - progress.positionSec))
+            : null,
+        upcomingAt: value.upcomingAt,
+        updatedAt: progress.updatedAt,
+      });
+    }
+    return out.sort((a, b) => b.updatedAt - a.updatedAt);
   }
 
   private rmdb() {
@@ -1041,6 +1194,65 @@ export class CinemaService {
     if (!created) rmdb.enrich(communityId, work.id, metaOf(item));
     await this.keepArt(communityId, work.id);
     return this.rmdbWork(communityId, work.id, by.userId);
+  }
+
+  /** This member's favourite live channels that the current catalog still lists. */
+  favorites(communityId: string, userId: string) {
+    const catalog = this.catalog(communityId);
+    return this.rmdb()
+      .favorites(communityId, userId)
+      .filter((ref) => catalog.item(ref)?.kind === 'live');
+  }
+
+  setFavorite(communityId: string, userId: string, ref: string, on: boolean) {
+    const item = this.catalog(communityId).item(ref);
+    if (on && item?.kind !== 'live') return fail('CINEMA_ITEM_NOT_FOUND');
+    this.rmdb().setFavorite(communityId, userId, ref, on);
+    return this.favorites(communityId, userId);
+  }
+
+  /** The hall's watched episodes of a catalog series, for its details page. */
+  rmdbEpisodes(communityId: string, seriesRef: string) {
+    const rmdb = this.rmdb();
+    const item = this.catalog(communityId).item(seriesRef);
+    if (!item || item.kind !== 'series') return fail('CINEMA_ITEM_NOT_FOUND');
+    const work = rmdb.find(communityId, metaOf(item));
+    return { workId: work?.id ?? null, episodes: work?.episodes ?? [] };
+  }
+
+  /** A member marks an episode watched or not; a series RMDB does not have yet is added. */
+  async rmdbMarkEpisode(communityId: string, ref: string, watched: boolean, by: RmdbPerson) {
+    const rmdb = this.rmdb();
+    const catalog = this.catalog(communityId);
+    const hit = catalog.episode(ref) ?? fail('CINEMA_ITEM_NOT_FOUND');
+    const series = hit.series;
+    let work = rmdb.find(communityId, metaOf(series));
+    if (!work && !watched) return this.rmdbEpisodes(communityId, series.ref);
+    if (!work) {
+      const source = this.options.configs.get(communityId).source!;
+      work = rmdb.add(
+        communityId,
+        metaOf(series),
+        { ref: series.ref, account: accountOf(source) },
+        by,
+        false,
+      ).work;
+      void this.keepArt(communityId, work.id);
+    }
+    const episode = hit.episode;
+    rmdb.markEpisode(
+      communityId,
+      work.id,
+      {
+        season: episode.season,
+        episode: episode.episode,
+        title:
+          cleanEpisodeTitle(episode.title, series.title, episode.season, episode.episode) || null,
+      },
+      watched,
+      episode.durationSec,
+    );
+    return this.rmdbEpisodes(communityId, series.ref);
   }
 
   rmdbReview(

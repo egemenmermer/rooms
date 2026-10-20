@@ -1,6 +1,16 @@
 import './community-cinema.css';
 import { useEffect, useState } from 'react';
-import { Captions, Eye, EyeOff, LoaderCircle, Plug, RefreshCw, Trash2, Unplug } from 'lucide-react';
+import {
+  CalendarClock,
+  Captions,
+  Eye,
+  EyeOff,
+  LoaderCircle,
+  Plug,
+  RefreshCw,
+  Trash2,
+  Unplug,
+} from 'lucide-react';
 import { Modal } from '@rooms/design';
 import type { CinemaSourceInput } from '../../../../packages/community-cinema/src/bridge';
 import type { CinemaStatus } from '../../../../packages/community-cinema/src/types';
@@ -8,6 +18,7 @@ import { useActivityRoom } from '../activity';
 import { useCommunity } from '../community';
 import { acceptCinemaStatus, useCommunityCinema } from './cinema-status';
 import { cinemaErrorText, getCinemaBridge } from './cinema-bridge';
+import { CinemaViewerSettings } from './CinemaViewerSettings';
 
 const dateFormat = new Intl.DateTimeFormat('tr-TR', {
   day: 'numeric',
@@ -49,7 +60,7 @@ export function CinemaSettings({ notify }: { notify(message: string): void }) {
   const channels = useCommunity((s) => s.channels);
   const bridge = getCinemaBridge();
   const [busy, setBusy] = useState<
-    'hall' | 'connect' | 'reload' | 'disconnect' | 'subtitles' | null
+    'hall' | 'connect' | 'reload' | 'disconnect' | 'subtitles' | 'tmdb' | 'audio' | null
   >(null);
   const [error, setError] = useState('');
   const [confirm, setConfirm] = useState(false);
@@ -97,6 +108,8 @@ export function CinemaSettings({ notify }: { notify(message: string): void }) {
           herkes kanalları, rehberi, filmleri ve dizileri birlikte açabilsin.
         </p>
       </header>
+      <CinemaViewerSettings />
+      <hr />
       {!owner && (
         <p className="cs-note inline">Sinema ayarlarını yalnızca topluluk sahibi değiştirebilir.</p>
       )}
@@ -161,6 +174,48 @@ export function CinemaSettings({ notify }: { notify(message: string): void }) {
         />
       )}
       <hr />
+      <section className="cs-section">
+        <h2>Ses dili</h2>
+        <p>
+          Bir filmin birden fazla ses dili varsa salon onunla başlar. Kumanda kimdeyse film oynarken
+          sesi herkes için değiştirebilir.
+        </p>
+        <div className="cs-choices" role="radiogroup" aria-label="Filmler hangi sesle başlasın">
+          {(
+            [
+              ['turkish', 'Türkçe dublaj', 'Varsa Türkçe ses, yoksa filmin kendi dili'],
+              [
+                'original',
+                'Orijinal',
+                'Her zaman filmin kendi dili; Türkçe altyazı kendiliğinden açılır',
+              ],
+            ] as const
+          ).map(([value, label, detail]) => (
+            <label key={value} className="cs-choice">
+              <input
+                type="radio"
+                name="cinema-audio-default"
+                checked={(status.audioDefault ?? 'turkish') === value}
+                disabled={!owner || !!busy}
+                onChange={() =>
+                  void run(
+                    'audio',
+                    () => bridge.setAudioDefault(communityId, value),
+                    value === 'original'
+                      ? 'Filmler artık kendi dilinde başlar.'
+                      : 'Filmler artık varsa Türkçe dublajla başlar.',
+                  )
+                }
+              />
+              <span>
+                <strong>{label}</strong>
+                <small>{detail}</small>
+              </span>
+            </label>
+          ))}
+        </div>
+      </section>
+      <hr />
       <SubtitleSection
         enabled={status.subtitleSearch}
         owner={owner}
@@ -171,6 +226,20 @@ export function CinemaSettings({ notify }: { notify(message: string): void }) {
             'subtitles',
             () => bridge.setSubtitleKey(communityId, key),
             key ? 'SubDL anahtarı doğrulandı ve kaydedildi.' : 'SubDL anahtarı kaldırıldı.',
+          )
+        }
+      />
+      <hr />
+      <MetadataSection
+        enabled={!!status.tmdb}
+        owner={owner}
+        busy={busy === 'tmdb'}
+        disabled={!!busy}
+        onSave={(key) =>
+          run(
+            'tmdb',
+            () => bridge.setTmdbKey(communityId, key),
+            key ? 'TMDB anahtarı doğrulandı ve kaydedildi.' : 'TMDB anahtarı kaldırıldı.',
           )
         }
       />
@@ -268,6 +337,102 @@ function SubtitleSection({
           <div className="cs-actions">
             <button className="button primary" disabled={disabled || !valid}>
               {busy ? <LoaderCircle size={16} className="spin" /> : <Captions size={16} />}
+              {busy ? 'Doğrulanıyor…' : 'Doğrula ve kaydet'}
+            </button>
+            {enabled && (
+              <button
+                type="button"
+                className="button secondary"
+                disabled={disabled}
+                onClick={() => void onSave(null)}
+              >
+                <Trash2 size={16} />
+                Anahtarı kaldır
+              </button>
+            )}
+          </div>
+        </form>
+      )}
+    </section>
+  );
+}
+
+/** Air dates of next episodes and IMDb ids from TMDB, with the owner's own key. */
+function MetadataSection({
+  enabled,
+  owner,
+  busy,
+  disabled,
+  onSave,
+}: {
+  enabled: boolean;
+  owner: boolean;
+  busy: boolean;
+  disabled: boolean;
+  onSave(key: string | null): Promise<boolean>;
+}) {
+  const [key, setKey] = useState('');
+  const [reveal, setReveal] = useState(false);
+  const valid = /^[A-Za-z0-9._-]{20,1024}$/.test(key.trim());
+  return (
+    <section className="cs-section">
+      <h2>Yapım bilgileri</h2>
+      <p>
+        Bir dizinin sıradaki bölümü sağlayıcıda henüz yoksa Filmler ve Diziler'deki “Devam et”
+        satırı yayın tarihini TMDB'den alır (“Yakında · 08.12.2026”). IMDb bağlantıları anahtarsız
+        da çalışır; anahtar varsa önce TMDB'ye bakılır.
+      </p>
+      <p className="cs-note inline">
+        <CalendarClock size={15} />
+        {enabled
+          ? 'TMDB bağlı: yayın tarihleri görünüyor.'
+          : 'TMDB bağlı değil: yalnızca sağlayıcının listelediği tarihler görünür.'}
+      </p>
+      {owner && (
+        <form
+          className="cs-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (valid) void onSave(key.trim()).then((ok) => ok && setKey(''));
+          }}
+        >
+          <label className="cs-field">
+            <span>
+              {enabled ? 'Yeni TMDB API anahtarı' : 'TMDB API anahtarı veya okuma jetonu'}
+            </span>
+            <span className="cs-password">
+              <input
+                type={reveal ? 'text' : 'password'}
+                value={key}
+                autoComplete="off"
+                spellCheck={false}
+                disabled={disabled}
+                onChange={(event) => setKey(event.target.value)}
+              />
+              <button
+                type="button"
+                aria-label={reveal ? 'Anahtarı gizle' : 'Anahtarı göster'}
+                disabled={disabled}
+                onClick={() => setReveal(!reveal)}
+              >
+                {reveal ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </span>
+            <small>
+              Anahtarı{' '}
+              <a
+                href="https://www.themoviedb.org/settings/api"
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                TMDB hesabının API sayfasından
+              </a>{' '}
+              ücretsiz alabilirsin. Anahtar sunucuda şifreli saklanır, kimseye gösterilmez.
+            </small>
+          </label>
+          <div className="cs-actions">
+            <button className="button primary" disabled={disabled || !valid}>
+              {busy ? <LoaderCircle size={16} className="spin" /> : <CalendarClock size={16} />}
               {busy ? 'Doğrulanıyor…' : 'Doğrula ve kaydet'}
             </button>
             {enabled && (
