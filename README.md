@@ -49,12 +49,12 @@ Tayfa, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında 
 
 ## Başlangıç
 
-| İstediğin | Başlangıç noktası | Gerekenler |
-| --- | --- | --- |
-| Var olan topluluğa katılmak | [Kullanım rehberi](docs/USER_GUIDE.md) | Uyumlu uygulama ve davet bağlantısı veya o sunucuda mevcut hesap |
-| Kendi topluluğunu kurmak | [Tek komutla kurulum](docs/SELF_HOSTING.md#hızlı-kurulum-tek-komut) | Linux sunucu (VPS) ve alan adı; gerisini kurulum betiği yapar |
-| Uygulamayı geliştirmek | [Geliştirme rehberi](docs/DEVELOPMENT.md) | Git, Node.js, pnpm ve kaynak kod |
-| Topluluğun DJ görselini değiştirmek | [Özelleştirme rehberi](docs/CUSTOMIZATION.md) | Kendi sunucunun herkese açık görsel dosyalarını yönetebilmek |
+| İstediğin                           | Başlangıç noktası                                                   | Gerekenler                                                       |
+| ----------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Var olan topluluğa katılmak         | [Kullanım rehberi](docs/USER_GUIDE.md)                              | Uyumlu uygulama ve davet bağlantısı veya o sunucuda mevcut hesap |
+| Kendi topluluğunu kurmak            | [Tek komutla kurulum](docs/SELF_HOSTING.md#hızlı-kurulum-tek-komut) | Linux sunucu (VPS) ve alan adı; gerisini kurulum betiği yapar    |
+| Uygulamayı geliştirmek              | [Geliştirme rehberi](docs/DEVELOPMENT.md)                           | Git, Node.js, pnpm ve kaynak kod                                 |
+| Topluluğun DJ görselini değiştirmek | [Özelleştirme rehberi](docs/CUSTOMIZATION.md)                       | Kendi sunucunun herkese açık görsel dosyalarını yönetebilmek     |
 
 **Herkesin sunucu kurması gerekiyor mu?** Hayır. Bir yönetici topluluğun sunucusunu kurar; diğer üyeler masaüstü uygulamasını açıp o sunucuya bağlanır.
 
@@ -62,10 +62,10 @@ Tayfa, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında 
 
 Güncel paketler [GitHub sürümleri](https://github.com/egemenmermer/rooms/releases/latest) sayfasındadır. Son yayımlanan arkadaş test sürümü **RC28**:
 
-| Platform | Paket | Durum |
-| --- | --- | --- |
-| macOS 14+ / Apple Silicon | [RC28 DMG indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.28/ROOMS-0.1.18-rc.28-arm64.dmg) | Apple imzalı ve noter onaylı |
-| Windows x64 | [RC28 EXE indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.28/ROOMS-0.1.18-rc.28-windows-x64-setup.exe) | İmzasız arkadaş test paketi; sistem uyarısı gösterebilir |
+| Platform                  | Paket                                                                                                                            | Durum                                                    |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| macOS 14+ / Apple Silicon | [RC28 DMG indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.28/ROOMS-0.1.18-rc.28-arm64.dmg)             | Apple imzalı ve noter onaylı                             |
+| Windows x64               | [RC28 EXE indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.28/ROOMS-0.1.18-rc.28-windows-x64-setup.exe) | İmzasız arkadaş test paketi; sistem uyarısı gösterebilir |
 
 1. Platformuna uygun paketi indirip uygulamayı kur.
 2. Topluluk yöneticisinden davet bağlantısını (`https://<sunucu>/davet/…`) al.
@@ -100,16 +100,16 @@ Bu görüntüler, uygulamanın gerçek arayüzünden örnek topluluk verileriyle
 
 ## Neler yapabilirsin?
 
-| Alan | Ne işe yarar? | Gereken altyapı |
-| --- | --- | --- |
-| Topluluk ve sohbet | Hesap, kanal, mesaj, arkadaşlık, profil ve rol yönetimi | Uyumlu Stoat kurulumu ve kanal/rol izinleri |
-| Ses ve ekran paylaşımı | Konuşma, kamera ve seçilen ekran/pencere yayını | LiveKit, erişim servisi, açık medya portları ve işletim sistemi izinleri |
-| İzinli uzaktan kontrol | Yayıncının onayıyla fare ve klavye kontrolü | Yerel giriş bileşeni, oturum yetkisi ve platform izinleri; gerçek cihaz kabulü ayrıca gerekir |
-| Ortak etkinlikler | Paylaşılan araçlar ve sunucunun yönettiği oyun durumu | Activities servisi ve kalıcı depolama |
-| Müzik | Topluluk DJ'i, kuyruk ve ortak listeler | İsteğe bağlı müzik servisi, desteklenen kaynaklar ve yönetici yapılandırması |
-| Kişisel medya | Sana ait yapılandırılmış medya bağlantıları | Desteklenen sağlayıcı/kaynak ve kendi yetkili erişimin |
-| Sunucu yönetimi | Yetkili kişinin sunucu durumu ve yönetim işlerini izlemesi | HostOps kurulumu ve ayrı yönetici yetkileri |
-| Agent | İsteğe bağlı görevler, ilerleme ve sonuçlar | Yalıtılmış Agent kurulumu, model bağlantısı ve açıkça verilmiş yetkiler |
+| Alan                   | Ne işe yarar?                                              | Gereken altyapı                                                                               |
+| ---------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Topluluk ve sohbet     | Hesap, kanal, mesaj, arkadaşlık, profil ve rol yönetimi    | Uyumlu Stoat kurulumu ve kanal/rol izinleri                                                   |
+| Ses ve ekran paylaşımı | Konuşma, kamera ve seçilen ekran/pencere yayını            | LiveKit, erişim servisi, açık medya portları ve işletim sistemi izinleri                      |
+| İzinli uzaktan kontrol | Yayıncının onayıyla fare ve klavye kontrolü                | Yerel giriş bileşeni, oturum yetkisi ve platform izinleri; gerçek cihaz kabulü ayrıca gerekir |
+| Ortak etkinlikler      | Paylaşılan araçlar ve sunucunun yönettiği oyun durumu      | Activities servisi ve kalıcı depolama                                                         |
+| Müzik                  | Topluluk DJ'i, kuyruk ve ortak listeler                    | İsteğe bağlı müzik servisi, desteklenen kaynaklar ve yönetici yapılandırması                  |
+| Kişisel medya          | Sana ait yapılandırılmış medya bağlantıları                | Desteklenen sağlayıcı/kaynak ve kendi yetkili erişimin                                        |
+| Sunucu yönetimi        | Yetkili kişinin sunucu durumu ve yönetim işlerini izlemesi | HostOps kurulumu ve ayrı yönetici yetkileri                                                   |
+| Agent                  | İsteğe bağlı görevler, ilerleme ve sonuçlar                | Yalıtılmış Agent kurulumu, model bağlantısı ve açıkça verilmiş yetkiler                       |
 
 Bir ekranın görünmesi o servisi veya sağlayıcı hesabını kendiliğinden kurmaz. Önce temel sohbet ve sesi çalıştır; isteğe bağlı servisleri daha sonra ekle. Sağlayıcı kısıtları ve platform farkları geçerlidir.
 
@@ -192,23 +192,23 @@ Açık istemcide özgün bir statik DJ çizimi bulunur. Her topluluk kendi adın
 
 [Tüm belgeler ve okuma sırası](docs/README.md) · [RC28 yayın ve doğrulama kaydı](docs/RC28_RELEASE.md)
 
-| Rehber | İçeriği |
-| --- | --- |
-| [Kullanım](docs/USER_GUIDE.md) | Katılım, hesap, sohbet, ses, ekran paylaşımı ve günlük kullanım |
-| [Sunucu kurulumu](docs/SELF_HOSTING.md) | Servisler, yerel kurulum, dış ağ, veriler, yedek ve doğrulama |
-| [Geliştirme](docs/DEVELOPMENT.md) | Araç zinciri, komutlar, kaynak düzeni ve doğrulama seviyeleri |
-| [Mimari](docs/ARCHITECTURE.md) | Süreçler, güven sınırları, depolama ve genişletme noktaları |
-| [Sorun giderme ve sık sorulanlar](docs/TROUBLESHOOTING.md) | Kurulum, bağlantı, medya ve güncelleme sorunları |
-| [Topluluk rolleri](docs/COMMUNITY_ROLES.md) | Özel roller, renkler, izinler ve yetki sınırları |
-| [Uzaktan kontrol](docs/REMOTE_CONTROL.md) | İstek/onay akışı, yerel giriş ve kabul sınırları |
-| [Sunucu yönetimi](docs/SERVER_OPERATIONS.md) | İzleme, terminal, HostOps ve operatör yetkileri |
-| [Özelleştirme](docs/CUSTOMIZATION.md) | Topluluğa özel DJ görseli ve adı |
-| [Sürüm yayımlama](docs/RELEASING.md) | Geliştirme paketleri, imza, güncelleme beslemesi ve yayın kontrolleri |
-| [Arka uç entegrasyonu](infra/stoat/README.md) | Bağdaştırıcı, kayıt ve üst sistem kabul notları |
-| [Medya aktarımı](docs/MEDIA_TRANSPORT.md) | Tasarım ve geçmiş doğrulama kayıtları |
-| [Agent kurulumu](docs/AGENT_DEPLOYMENT.md) | İsteğe bağlı izole Agent altyapısı |
-| [Varlık kaydı](docs/ASSETS.md) | Görsellerin ve yazı tiplerinin kaynağı |
-| [Üçüncü taraf bildirimleri](docs/THIRD_PARTY_NOTICES.md) | Bağımlılık ve üst sistem lisansları |
+| Rehber                                                     | İçeriği                                                               |
+| ---------------------------------------------------------- | --------------------------------------------------------------------- |
+| [Kullanım](docs/USER_GUIDE.md)                             | Katılım, hesap, sohbet, ses, ekran paylaşımı ve günlük kullanım       |
+| [Sunucu kurulumu](docs/SELF_HOSTING.md)                    | Servisler, yerel kurulum, dış ağ, veriler, yedek ve doğrulama         |
+| [Geliştirme](docs/DEVELOPMENT.md)                          | Araç zinciri, komutlar, kaynak düzeni ve doğrulama seviyeleri         |
+| [Mimari](docs/ARCHITECTURE.md)                             | Süreçler, güven sınırları, depolama ve genişletme noktaları           |
+| [Sorun giderme ve sık sorulanlar](docs/TROUBLESHOOTING.md) | Kurulum, bağlantı, medya ve güncelleme sorunları                      |
+| [Topluluk rolleri](docs/COMMUNITY_ROLES.md)                | Özel roller, renkler, izinler ve yetki sınırları                      |
+| [Uzaktan kontrol](docs/REMOTE_CONTROL.md)                  | İstek/onay akışı, yerel giriş ve kabul sınırları                      |
+| [Sunucu yönetimi](docs/SERVER_OPERATIONS.md)               | İzleme, terminal, HostOps ve operatör yetkileri                       |
+| [Özelleştirme](docs/CUSTOMIZATION.md)                      | Topluluğa özel DJ görseli ve adı                                      |
+| [Sürüm yayımlama](docs/RELEASING.md)                       | Geliştirme paketleri, imza, güncelleme beslemesi ve yayın kontrolleri |
+| [Arka uç entegrasyonu](infra/stoat/README.md)              | Bağdaştırıcı, kayıt ve üst sistem kabul notları                       |
+| [Medya aktarımı](docs/MEDIA_TRANSPORT.md)                  | Tasarım ve geçmiş doğrulama kayıtları                                 |
+| [Agent kurulumu](docs/AGENT_DEPLOYMENT.md)                 | İsteğe bağlı izole Agent altyapısı                                    |
+| [Varlık kaydı](docs/ASSETS.md)                             | Görsellerin ve yazı tiplerinin kaynağı                                |
+| [Üçüncü taraf bildirimleri](docs/THIRD_PARTY_NOTICES.md)   | Bağımlılık ve üst sistem lisansları                                   |
 
 ## Katkıda bulunma
 
