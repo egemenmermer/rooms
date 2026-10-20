@@ -23,7 +23,7 @@ export function announcementContent(version, notes) {
       throw Error('Invalid release note');
     return `• ${value.trim()}`;
   });
-  const content = `ROOMS ${version} yayınlandı\n\n${changes.join('\n')}\n\nUygulamadaki Ayarlar → Güncelleme ve hakkında bölümünden güncellemeyi kontrol edebilirsin.`;
+  const content = `Tayfa ${version} yayınlandı\n\n${changes.join('\n')}\n\nUygulamadaki Ayarlar → Güncelleme ve hakkında bölümünden güncellemeyi kontrol edebilirsin.`;
   if (content.length > 2000) throw Error('Release announcement exceeds 2000 characters');
   return content;
 }
