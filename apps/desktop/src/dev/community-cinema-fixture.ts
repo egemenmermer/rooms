@@ -8,6 +8,7 @@ import {
   RMDB_REVIEW_MAX,
   type CatalogKind,
   type CinemaCategory,
+  type CinemaContinueItem,
   type CinemaDetails,
   type CinemaEpisode,
   type CinemaItem,
@@ -767,6 +768,11 @@ export function createCommunityCinemaFixtureBridge(
   const viewer: RmdbPerson = demoPeople.deniz;
   let works = variant === 'rmdb_empty' ? [] : demoRmdb(now, catalog);
   let logs = 0;
+  // DEMO favourites: the first two channels.
+  let favorites = catalog.items
+    .filter((item) => item.kind === 'live')
+    .slice(0, 2)
+    .map((item) => item.ref);
   const rmdbHall = (hallId: string) => {
     if (hallId !== status.hallChannelId) throw new Error('CINEMA_HALL_REQUIRED');
   };
@@ -967,6 +973,128 @@ export function createCommunityCinemaFixtureBridge(
         400,
       );
     },
+    favorites: async (hallId) => {
+      hall(hallId);
+      return delay([...favorites], 60);
+    },
+    setFavorite: async (hallId, ref, on) => {
+      hall(hallId);
+      favorites = favorites.filter((value) => value !== ref);
+      if (on) favorites.push(ref);
+      return delay([...favorites], 80);
+    },
+    episodeMarks: async (hallId, seriesRef) => {
+      hall(hallId);
+      const found = works.find((value) => value.ref === seriesRef);
+      return delay({ workId: found?.id ?? null, episodes: found?.episodes ?? [] }, 80);
+    },
+    markEpisode: async (hallId, episodeRef, watched) => {
+      hall(hallId);
+      const series = [...catalog.details.values()].find((entry) =>
+        entry.seasons.some((season) => season.episodes.some((e) => e.ref === episodeRef)),
+      );
+      const episode = series?.seasons
+        .flatMap((season) => season.episodes)
+        .find((e) => e.ref === episodeRef);
+      if (!series || !episode) throw new Error('CINEMA_ITEM_NOT_FOUND');
+      const found = works.find((value) => value.ref === series.item.ref);
+      if (found) {
+        found.episodes = found.episodes.filter(
+          (e) => !(e.season === episode.season && e.episode === episode.episode),
+        );
+        if (watched)
+          found.episodes.push({
+            season: episode.season,
+            episode: episode.episode,
+            title: episode.title,
+            positionSec: episode.durationSec ?? 0,
+            durationSec: episode.durationSec,
+            finished: true,
+            watchedAt: Date.now(),
+          });
+        found.episodes.sort((a, b) => a.season - b.season || a.episode - b.episode);
+        const last = found.episodes.filter((e) => e.finished).at(-1);
+        found.progress = last
+          ? {
+              positionSec: last.positionSec,
+              durationSec: last.durationSec,
+              finished: true,
+              episode: { season: last.season, episode: last.episode, title: last.title },
+              updatedAt: Date.now(),
+            }
+          : null;
+      }
+      return delay({ workId: found?.id ?? null, episodes: found?.episodes ?? [] }, 120);
+    },
+    setAudioDefault: async (_communityId, value) => {
+      status = { ...status, audioDefault: value };
+      return delay(status, 200);
+    },
+    setTmdbKey: async (_communityId, key) => {
+      if (key === 'yanlis-anahtar-yanlis-anahtar') throw new Error('CINEMA_METADATA_KEY_INVALID');
+      status = { ...status, tmdb: !!key };
+      return delay(status, 400);
+    },
+    titleLinks: async (hallId, ref) => {
+      hall(hallId);
+      const series = ref.startsWith('e-') || ref.startsWith('s-');
+      // DEMO: real public ids, so the links open the right pages during review.
+      return delay(
+        {
+          kind: series ? ('series' as const) : ('movie' as const),
+          tmdbId: series ? 1396 : 550,
+          imdbId: series ? 'tt0903747' : 'tt0137523',
+        },
+        300,
+      );
+    },
+    continueWatching: async (hallId, kind) => {
+      hall(hallId);
+      const cards = works
+        .filter((value) => value.kind === kind && value.progress)
+        .filter((value) => kind === 'series' || !value.progress!.finished)
+        .flatMap((value): CinemaContinueItem[] => {
+          const progress = value.progress!;
+          const resume = resumeOf(value);
+          // DEMO: a finished series with nothing left announces its next episode in 49 days.
+          const upcomingAt =
+            !resume && kind === 'series' && progress.finished && value.ref ? now + 49 * day : null;
+          if ((!resume && !upcomingAt) || !value.ref) return [];
+          const next = kind === 'series' && progress.finished;
+          const episode =
+            resume?.episode ??
+            (progress.episode && upcomingAt
+              ? {
+                  season: progress.episode.season,
+                  episode: progress.episode.episode + 1,
+                  title: null,
+                }
+              : null);
+          return [
+            {
+              workId: value.id,
+              kind,
+              ref: value.ref!,
+              title: value.title,
+              art: resume?.art ?? value.backdrop ?? value.art,
+              resume,
+              episode: kind === 'series' ? episode : null,
+              progress:
+                next || !progress.durationSec
+                  ? 0
+                  : Math.min(1, progress.positionSec / progress.durationSec),
+              remainingSec:
+                next || !progress.durationSec
+                  ? null
+                  : Math.round(progress.durationSec - progress.positionSec),
+              upcomingAt,
+              updatedAt: progress.updatedAt,
+            },
+          ];
+        })
+        .sort((a, b) => b.updatedAt - a.updatedAt);
+      return delay(cards, 160);
+    },
     rmdb: async (hallId) => {
       rmdbHall(hallId);
       return delay([...works].sort((a, b) => b.touchedAt - a.touchedAt).map(summaryOf), 120);
@@ -1133,6 +1261,10 @@ export function createCommunityCinemaFixtureBridge(
                 { index: 2, label: 'İngilizce' },
               ],
           audioTrack: current.media.live ? null : (audioChoice ?? 1),
+          // DEMO picture facts for the info pills.
+          video: current.media.live
+            ? { width: 1920, height: 1080, fps: 25, codec: 'h264', bitrate: null }
+            : { width: 3840, height: 1608, fps: 23.98, codec: 'hevc', bitrate: 14_200_000 },
           subtitles: current.media.live
             ? []
             : [

@@ -11,7 +11,7 @@
 
 ## Süreçler ve güven sınırları
 
-ROOMS, tek bir Electron/React masaüstü kabuğu ve ayrı servis yetkilerinden oluşur.
+Tayfa, tek bir Electron/React masaüstü kabuğu ve ayrı servis yetkilerinden oluşur.
 
 Görünüm süreci tipli preload köprüsünü kullanır. Yerel oturum saklama, dosyalar/yakalama, sağlayıcı kimlik bilgileri ve ağ yetenekleri Electron main'e aittir. Görünüm sürecinde Node entegrasyonu kapalıdır. IPC; güvenilir göndereni, pencereyi, çerçeveyi, kaynak adresini ve girdiyi doğrular. Yerel kimlik doğrulama seçilen sunucu ve hesapla sınırlıdır.
 
@@ -19,7 +19,7 @@ Sosyal alan tipleri ve Stoat bağdaştırıcısı, resmî üst sistem API/olayla
 
 Ses/medya durumu sayfa bileşenlerinin dışında yaşar. LiveKit medya sağlayıcısı sınırının arkasındadır; sayfa değiştirmek veya DJ panelini kapatmak görüşmeyi ya da sunucu kuyruğunu durdurmamalıdır. Katılımcı ses seviyesi dinleyiciye özeldir. Ortak etkinlikler yetkili komutlar, sürümler ve kullanıcıya özel görünümler kullanır; gizli oyun durumu diğer kullanıcılara gönderilmez.
 
-Erişim servisi güncel kimliği/üyeliği doğrular ve süreli medya izinleri verir. Davet bağlantılarını da o yönetir: uygulamada yalnız topluluk sahibi bağlantı oluşturup iptal eder, defterde yalnız token'ın SHA-256 özeti durur ve çok kullanımlık bağlantıda her kayıt için üst sistemde yeni bir tek kullanımlık hesap daveti eklenir. `/davet/<token>` sayfası betiksiz, salt okunurdur (sıkı CSP, `no-store`, `no-referrer`, `noindex`) ve kullanım harcamaz. Activities sıralı oda durumu ile uyumlu kalıcılığı yönetir. Müzik çalışanı sınırlı kuyruk/kaynak temizliğini yönetir ve kısa süreli kira ile yayın yapar. İsteğe bağlı Agent, ayrı Linux sunucusunda Docker ile veya aynı fiziksel sunucuda ayrı kullanıcı ve sıkı kaynak sınırlarıyla rootless Podman üzerinden çalışır. Kurulum yolları ve yetkileri ayrı tutulur.
+Erişim servisi güncel kimliği/üyeliği doğrular ve süreli medya izinleri verir. Davet bağlantılarını da o yönetir: Stoat'un davet etme izni olan her üye bağlantı oluşturur, yalnız topluluk sahibi listeler ve iptal eder, defterde yalnız token'ın SHA-256 özeti durur ve çok kullanımlık bağlantıda her kayıt için üst sistemde yeni bir tek kullanımlık hesap daveti eklenir. `/davet/<token>` sayfası betiksiz, salt okunurdur (sıkı CSP, `no-store`, `no-referrer`, `noindex`) ve kullanım harcamaz. Activities sıralı oda durumu ile uyumlu kalıcılığı yönetir. Müzik çalışanı sınırlı kuyruk/kaynak temizliğini yönetir ve kısa süreli kira ile yayın yapar. İsteğe bağlı Agent, ayrı Linux sunucusunda Docker ile veya aynı fiziksel sunucuda ayrı kullanıcı ve sıkı kaynak sınırlarıyla rootless Podman üzerinden çalışır. Kurulum yolları ve yetkileri ayrı tutulur.
 
 Topluluk görselleri dekoratif, sürümlü, boyutu sınırlı ve aynı kaynaktandır. Yükleme başarısızsa paketli özgün statik görsel kullanılır. Görsel istekleri hesap çerezi veya sağlayıcı belirteci göndermez ve müzik komut sözleşmesini değiştirmez.
 

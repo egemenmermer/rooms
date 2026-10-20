@@ -341,6 +341,14 @@ describe('automatic subtitle choice', () => {
     expect(autoSubtitle(tracks, 'İngilizce', true)).toBeNull();
   });
 
+  it('follows the language the viewer chose in Settings', () => {
+    expect(autoSubtitle(tracks, 'Almanca', false, 'eng')).toBe('e0');
+    // English audio needs no English subtitles.
+    expect(autoSubtitle(tracks, 'İngilizce', false, 'eng')).toBeNull();
+    expect(autoSubtitle(tracks, 'Almanca', false, 'off')).toBeNull();
+    expect(autoSubtitle(tracks, 'Almanca', false, 'tur')).toBe('e2');
+  });
+
   it("prefers the film's own Turkish subtitles, then one found online, never a file", () => {
     const online = track('o1', 'Türkçe · SubDL · WEB-DL', 'tur', false, 'online');
     const file = track('file', 'Dosya · film.srt', null, false, 'file');

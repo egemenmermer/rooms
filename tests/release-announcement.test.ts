@@ -7,7 +7,7 @@ import { announcementContent, announceRelease } from '../scripts/release-announc
 const version = '0.1.18-rc.13',
   notes = { version, changes: ['Fotoğraf görünümü düzeltildi.'] };
 it('requires version-matched notes and refuses mass mentions', () => {
-  expect(announcementContent(version, notes)).toContain('ROOMS 0.1.18-rc.13 yayınlandı');
+  expect(announcementContent(version, notes)).toContain('Tayfa 0.1.18-rc.13 yayınlandı');
   expect(() => announcementContent(version, { ...notes, version: '0.0.1' })).toThrow();
   expect(() => announcementContent(version, { version, changes: ['@everyone update'] })).toThrow();
 });

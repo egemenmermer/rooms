@@ -1,6 +1,6 @@
 {
   "name": "rooms",
-  "version": "0.1.18-rc.26",
+  "version": "0.1.18-rc.27",
   "private": true,
   "description": "A private desktop clubhouse",
   "author": "ROOMS",
@@ -104,9 +104,11 @@
       "minimumSystemVersion": "14.0",
       "hardenedRuntime": false,
       "extendInfo": {
-        "NSMicrophoneUsageDescription": "ROOMS uses your microphone only when you start a microphone test or join a voice room.",
-        "NSCameraUsageDescription": "ROOMS uses your camera only when you enable video.",
-        "NSAudioCaptureUsageDescription": "ROOMS captures system audio only when you explicitly enable sound for a selected screen share."
+        "CFBundleDisplayName": "Tayfa",
+        "CFBundleName": "Tayfa",
+        "NSMicrophoneUsageDescription": "Tayfa uses your microphone only when you start a microphone test or join a voice room.",
+        "NSCameraUsageDescription": "Tayfa uses your camera only when you enable video.",
+        "NSAudioCaptureUsageDescription": "Tayfa captures system audio only when you explicitly enable sound for a selected screen share."
       },
       "icon": "apps/desktop/public/icon.icns",
       "identity": "-",
@@ -123,7 +125,7 @@
     },
     "protocols": [
       {
-        "name": "ROOMS invitation links",
+        "name": "Tayfa invitation links",
         "schemes": [
           "rooms"
         ]

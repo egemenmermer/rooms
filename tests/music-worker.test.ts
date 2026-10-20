@@ -505,3 +505,100 @@ it('appends shared list references atomically, preserves pause, and rejects over
   ).rejects.toThrow('MUSIC_QUEUE_FULL');
   expect(worker.snapshot('room').queue).toHaveLength(3);
 });
+it('picks a stream that broke off mid-song up where it stopped, then moves on', async () => {
+  const { publisher, lease } = await setup(),
+    failures: Array<(error?: Error) => void> = [];
+  const playYouTube = vi.fn(async (_source: string, _position: number, _ended, onError) => {
+    failures.push(onError);
+  });
+  const worker = new MusicWorker({
+    publisher: () => ({ ...publisher, position: () => 95, playYouTube }),
+    lease: async () => lease,
+    youtubeReferences: async () => [
+      { source: 'https://www.youtube.com/watch?v=w2BTr6qsLFc', title: 'One', durationSec: 200 },
+      { source: 'https://www.youtube.com/watch?v=vKHu4uPOJVg', title: 'Two', durationSec: 203 },
+    ],
+  });
+  workers.push(worker);
+  const first = await worker.command('drop-room', lease, {
+    type: 'add',
+    url: 'https://www.youtube.com/playlist?list=PLabcdefgh123',
+  });
+  // Twice: the same song again from 95 s.
+  for (let retry = 1; retry <= 2; retry++) {
+    failures.at(-1)!(Error('MUSIC_YOUTUBE_UNAVAILABLE'));
+    await vi.waitFor(() => expect(playYouTube).toHaveBeenCalledTimes(1 + retry));
+    expect(playYouTube).toHaveBeenLastCalledWith(
+      'https://www.youtube.com/watch?v=w2BTr6qsLFc',
+      95,
+      expect.any(Function),
+      expect.any(Function),
+    );
+    expect(worker.snapshot('drop-room').status).toBe('playing');
+  }
+  // A third break skips to the next song and says so.
+  failures.at(-1)!(Error('MUSIC_DECODE_FAILED'));
+  await vi.waitFor(() => expect(worker.snapshot('drop-room').currentId).toBe(first.queue[1]!.id));
+  expect(playYouTube).toHaveBeenLastCalledWith(
+    'https://www.youtube.com/watch?v=vKHu4uPOJVg',
+    0,
+    expect.any(Function),
+    expect.any(Function),
+  );
+  expect(worker.snapshot('drop-room')).toMatchObject({
+    status: 'playing',
+    error: 'MUSIC_TRACK_SKIPPED',
+  });
+});
+it('skips tracks that cannot start when a song ends, but stops on an access refusal', async () => {
+  const { publisher, lease } = await setup(),
+    ends: Array<() => void> = [],
+    failures: Array<(error?: Error) => void> = [];
+  const broken = 'https://www.youtube.com/watch?v=vKHu4uPOJVg';
+  const playYouTube = vi.fn(async (source: string, _position: number, ended, onError) => {
+    if (source === broken) throw Error('MUSIC_YOUTUBE_UNAVAILABLE');
+    ends.push(ended);
+    failures.push(onError);
+  });
+  const worker = new MusicWorker({
+    publisher: () => ({ ...publisher, playYouTube }),
+    lease: async () => lease,
+    youtubeReferences: async () => [
+      { source: 'https://www.youtube.com/watch?v=w2BTr6qsLFc', title: 'One', durationSec: 200 },
+      { source: broken, title: 'Gone', durationSec: 203 },
+      { source: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', title: 'Three', durationSec: 212 },
+    ],
+  });
+  workers.push(worker);
+  const first = await worker.command('skip-room', lease, {
+    type: 'add',
+    url: 'https://www.youtube.com/playlist?list=PLabcdefgh123',
+  });
+  ends[0]!();
+  await vi.waitFor(() => expect(worker.snapshot('skip-room').currentId).toBe(first.queue[2]!.id));
+  expect(worker.snapshot('skip-room')).toMatchObject({
+    status: 'playing',
+    error: 'MUSIC_TRACK_SKIPPED',
+  });
+  failures.at(-1)!(Error('MUSIC_YOUTUBE_ACCESS_REQUIRED'));
+  await Promise.resolve();
+  expect(worker.snapshot('skip-room')).toMatchObject({
+    status: 'error',
+    error: 'MUSIC_YOUTUBE_ACCESS_REQUIRED',
+    currentId: first.queue[2]!.id,
+  });
+});
+it('clears the queue but for the current track and removes cached files', async () => {
+  const { worker, lease, directories } = await setup();
+  await worker.command('clear-room', lease, { type: 'add', url: 'https://audio.test/one.mp3' });
+  await worker.command('clear-room', lease, { type: 'add', url: 'https://audio.test/two.mp3' });
+  await worker.command('clear-room', lease, { type: 'add', url: 'https://audio.test/three.mp3' });
+  const ids = worker.snapshot('clear-room').queue.map((q) => q.id);
+  await worker.command('clear-room', lease, { type: 'next' });
+  const value = await worker.command('clear-room', lease, { type: 'clear' });
+  expect(value.queue.map((q) => q.id)).toEqual([ids[1]]);
+  expect(value.currentId).toBe(ids[1]);
+  expect(value.status).toBe('playing');
+  await expect(access(directories[0]!)).rejects.toThrow();
+  await access(directories[1]!);
+});

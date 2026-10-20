@@ -52,6 +52,8 @@ export type CinemaEpisode = {
   plot: string | null;
   durationSec: number | null;
   art: string | null;
+  /** Epoch ms of the day it airs (UTC noon), when the provider lists one. */
+  airDate?: number | null;
 };
 
 export type CinemaDetails = {
@@ -63,6 +65,8 @@ export type CinemaDetails = {
   durationSec: number | null;
   backdrop: string | null;
   seasons: { season: number; episodes: CinemaEpisode[] }[];
+  /** The title's TMDB id, when the provider lists it (IMDb and Letterboxd links). */
+  tmdbId?: number | null;
   /** The same title listed in other qualities (its own badges are on `item`). */
   versions?: { ref: string; badges: string[] }[];
 };
@@ -107,6 +111,10 @@ export type CinemaStatus = {
   relaySlots: number;
   /** Whether films can look up subtitles (the owner added a SubDL key). The key never leaves. */
   subtitleSearch: boolean;
+  /** Whether the owner added a TMDB key (air dates of next episodes). The key never leaves. */
+  tmdb?: boolean;
+  /** Films start with a Turkish dub when there is one, or in their own language. */
+  audioDefault?: 'turkish' | 'original';
 };
 
 export type CinemaWatch = {
@@ -136,9 +144,22 @@ export type CinemaWatch = {
    * `rooms-cinema://stream/<session>/sub<index>.vtt`, timed on the work's timeline.
    */
   subtitleTracks: CinemaSubtitleTrack[];
+  /** The source picture (absent from older services). */
+  video?: CinemaVideoInfo | null;
 };
 
 export type CinemaAudioTrack = { index: number; label: string };
+
+/** What the relayed picture is, from the server's probe of the source. */
+export type CinemaVideoInfo = {
+  width: number | null;
+  height: number | null;
+  /** Frames per second, rounded to two decimals. */
+  fps: number | null;
+  codec: string | null;
+  /** The source's own bit rate (bits/s) when its container says it; players also measure. */
+  bitrate: number | null;
+};
 
 /** A subtitle found online for a film or episode (SubDL), opaque to clients. */
 export type CinemaExternalSubtitle = {
@@ -271,6 +292,48 @@ export type RmdbWorkDetails = RmdbWorkSummary & {
     /** Series: the episode it opens. */
     episode: RmdbEpisodeRef | null;
   } | null;
+};
+
+/**
+ * A card of the "Devam et" row on Filmler and Diziler: where the hall stopped, the next
+ * episode of a series it finished an episode of, or that episode's air date when it is
+ * not out yet.
+ */
+export type CinemaContinueItem = {
+  workId: string;
+  kind: 'movie' | 'series';
+  /** The film or series in the current catalog, for its details page. */
+  ref: string;
+  /** The film or series name alone, without platform or quality decorations. */
+  title: string;
+  /** Wide artwork: the episode still, else the backdrop, else the poster. */
+  art: string | null;
+  /** What opens, or null while the episode has not aired. */
+  resume: RmdbWorkDetails['resume'];
+  /** Series: the episode the card is about; its title is the episode's own name or null. */
+  episode: RmdbEpisodeRef | null;
+  /** 0–1: how much of the film (series: of the episode) the hall watched; 0 for a next one. */
+  progress: number;
+  /** Seconds left of an unfinished film or episode, when its length is known. */
+  remainingSec: number | null;
+  /** Series: epoch ms the next episode airs, when it is not out yet. */
+  upcomingAt: number | null;
+  /** When the hall last watched it; the row is newest first. */
+  updatedAt: number;
+};
+
+/** Outside pages of a film or series; null where nobody knows the id. */
+export type CinemaTitleLinks = {
+  kind: 'movie' | 'series';
+  tmdbId: number | null;
+  imdbId: string | null;
+};
+
+/** The hall's watched episodes of a series, for its details page. */
+export type CinemaEpisodeMarks = {
+  /** The series' Tayfa (RMDB) entry, or null before the hall watched or marked any. */
+  workId: string | null;
+  episodes: RmdbEpisodeProgress[];
 };
 
 export type RmdbReviewInput = {

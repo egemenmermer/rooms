@@ -124,7 +124,7 @@ export function RmdbDetails({
       <div className="hall-vod details-view rmdb">
         {back}
         <div className="rmdb-empty" role="status">
-          <p>Bu kayıt artık RMDB'de yok.</p>
+          <p>Bu kayıt artık Tayfa'da yok.</p>
         </div>
       </div>
     );
@@ -153,7 +153,7 @@ export function RmdbDetails({
         art={details.art}
         title={details.title}
       >
-        <span className="hall-eyebrow">{details.kind === 'movie' ? 'Film' : 'Dizi'} · RMDB</span>
+        <span className="hall-eyebrow">{details.kind === 'movie' ? 'Film' : 'Dizi'} · Tayfa</span>
         <h2>{details.title}</h2>
         <WorkMeta details={details} />
         {unfinished(details) && details.progress && <ProgressNote progress={details.progress} />}
@@ -267,7 +267,7 @@ function WorkActions({ details, onRemoved }: { details: RmdbWorkDetails; onRemov
     setBusy(true);
     try {
       await removeFromRmdb(hall.hallId, details.id);
-      hall.notify(`${details.title} RMDB'den kaldırıldı.`);
+      hall.notify(`${details.title} Tayfa'dan kaldırıldı.`);
       onRemoved();
     } catch (error) {
       hall.notify(cinemaErrorText(error));
@@ -323,7 +323,7 @@ function WorkActions({ details, onRemoved }: { details: RmdbWorkDetails; onRemov
         {hall.status.isOwner && (
           <button className="hall-text-button quiet rmdb-remove" onClick={() => setConfirm(true)}>
             <Trash2 size={14} />
-            RMDB'den kaldır
+            Tayfa'dan kaldır
           </button>
         )}
       </div>
@@ -346,10 +346,10 @@ function WorkActions({ details, onRemoved }: { details: RmdbWorkDetails; onRemov
         </div>
       )}
       {confirm && (
-        <Modal title="RMDB'den kaldırılsın mı?" onClose={() => setConfirm(false)}>
+        <Modal title="Tayfa'dan kaldırılsın mı?" onClose={() => setConfirm(false)}>
           <div className="cs-confirm">
             <p>
-              “{details.title}” bütün puanları, yorumları ve günlüğüyle birlikte RMDB'den silinir.
+              “{details.title}” bütün puanları, yorumları ve günlüğüyle birlikte Tayfa'dan silinir.
               Bu geri alınamaz.
             </p>
             <div className="cs-actions">
@@ -622,8 +622,8 @@ function Reviews({ details }: { details: RmdbWorkDetails }) {
         <Modal title="Yorum kaldırılsın mı?" onClose={() => setRemoving(null)}>
           <div className="cs-confirm">
             <p>
-              {removing.author.name} adlı üyenin puanı, yorumu ve beğenisi RMDB'den silinir. Bu geri
-              alınamaz.
+              {removing.author.name} adlı üyenin puanı, yorumu ve beğenisi Tayfa'dan silinir. Bu
+              geri alınamaz.
             </p>
             <div className="cs-actions">
               <button className="button secondary" onClick={() => setRemoving(null)}>

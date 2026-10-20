@@ -147,7 +147,7 @@ describe('native notification preferences', () => {
     invoke('opt-in', true);
     service.message();
     expect(mock.shown).toEqual([
-      { title: 'ROOMS', body: 'Topluluğunda yeni bir mesaj var.', silent: true },
+      { title: 'Tayfa', body: 'Topluluğunda yeni bir mesaj var.', silent: true },
     ]);
   });
   it('enables system sound only by explicit preference and restores it', () => {
@@ -202,6 +202,6 @@ it('uses content-free mention copy while preserving opt-out and channel mute pre
   invoke('channel-mute', { ...scope, channelId: 'chat', muted: false });
   service.message(scope, 'chat', true);
   expect(mock.shown).toEqual([
-    { title: 'ROOMS', body: 'Topluluğunda biri seni etiketledi.', silent: true },
+    { title: 'Tayfa', body: 'Topluluğunda biri seni etiketledi.', silent: true },
   ]);
 });

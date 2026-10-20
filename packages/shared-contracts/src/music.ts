@@ -48,6 +48,8 @@ export const musicCommandSchema = z.discriminatedUnion('type', [
     .strict(),
   z.object({ type: z.literal('stop') }).strict(),
   z.object({ type: z.literal('remove'), id: z.string().uuid() }).strict(),
+  /** Empties the queue but for the current track. */
+  z.object({ type: z.literal('clear') }).strict(),
 ]);
 export type MusicCommand = z.infer<typeof musicCommandSchema>;
 export const musicSearchQuerySchema = z

@@ -34,7 +34,7 @@ class Boundary extends React.Component<
           <h1>{tr('Let\u2019s get you back in.')}</h1>
           <p>{tr('The local view could not open. Your settings are still saved.')}</p>
           <button className="button primary" onClick={() => location.reload()}>
-            {tr('Reload ROOMS')}
+            {tr('Reload Tayfa')}
           </button>
         </div>
       );

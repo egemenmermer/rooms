@@ -28,6 +28,16 @@ export type RelayInfo = {
   audioTrack: number | null;
   /** Text subtitle streams relayed as `sub<index>.vtt` (VOD only). */
   subtitleTracks: RelaySubtitle[];
+  /** The source picture, from the probe. */
+  video: ProbeVideo | null;
+};
+
+export type ProbeVideo = {
+  width: number | null;
+  height: number | null;
+  fps: number | null;
+  codec: string | null;
+  bitrate: number | null;
 };
 
 export type RelaySubtitle = {
@@ -46,6 +56,8 @@ export type ProbeResult = {
   audioTracks?: ProbeAudio[];
   /** Every subtitle stream, in order (`index` is its position among them: `0:s:<index>`). */
   subtitleTracks?: ProbeSubtitle[];
+  /** The first video stream's picture. */
+  videoInfo?: ProbeVideo | null;
 };
 
 export type ProbeAudio = {
@@ -56,6 +68,17 @@ export type ProbeAudio = {
 };
 
 export type ProbeSubtitle = ProbeAudio & { codec: string; forced: boolean };
+
+const positive = (value: number | undefined) =>
+  value !== undefined && Number.isFinite(value) && value > 0 ? Math.round(value) : null;
+
+/** `25/1` or `30000/1001` → 25 or 29.97; absurd rates (fields, timebases) are dropped. */
+export function frameRate(value: string | undefined) {
+  const match = /^(\d+)\/(\d+)$/.exec(value ?? '');
+  if (!match || Number(match[2]) === 0) return null;
+  const rate = Number(match[1]) / Number(match[2]);
+  return rate >= 5 && rate <= 240 ? Math.round(rate * 100) / 100 : null;
+}
 
 /** Subtitle codecs ffmpeg can turn into WebVTT; image subtitles (PGS, DVB) would need OCR. */
 const TEXT_SUBTITLES = new Set(['subrip', 'srt', 'ass', 'ssa', 'mov_text', 'webvtt', 'text']);
@@ -130,8 +153,18 @@ function languageCode(value: string | null) {
 }
 
 /** The hall's chosen stream when it exists, else Turkish, else the default, else the first. */
-export function pickAudio(tracks: ProbeAudio[], requested: number | null | undefined) {
+/**
+ * The audio a relay starts with: the hall's pick, else Turkish (a dub), else the file's default
+ * track, else the first. With `original` the hall prefers the film's own language: the
+ * default track (or the first) even when a Turkish dub exists.
+ */
+export function pickAudio(
+  tracks: ProbeAudio[],
+  requested: number | null | undefined,
+  original = false,
+) {
   if (requested != null && tracks.some((t) => t.index === requested)) return requested;
+  if (original) return (tracks.find((t) => t.isDefault) ?? tracks[0])?.index ?? 0;
   const turkish = tracks.find(
     (t) =>
       t.language?.toLowerCase() === 'tur' ||
@@ -168,6 +201,7 @@ type Session = {
   audioTracks: ProbeAudio[];
   audioTrack: number | null;
   subtitleTracks: ProbeSubtitle[];
+  video: ProbeVideo | null;
   /** Read pacing by the proxy instead of ffmpeg's `-readrate` (see {@link RelayManager.pace}). */
   paced: boolean;
   launchedAt: number | null;
@@ -409,6 +443,8 @@ export class RelayManager {
     slots: number;
     /** The hall's audio choice (`0:a:<index>`); null picks Turkish, the default, or the first. */
     audio?: number | null;
+    /** The hall prefers the film's own language over a Turkish dub. */
+    original?: boolean;
   }): Promise<RelayInfo> {
     if (this.closed || input.slots < 1) throw fail('CINEMA_RELAY_BUSY');
     const startSec = input.source.live ? 0 : Math.max(0, input.startSec ?? 0);
@@ -531,6 +567,7 @@ export class RelayManager {
         language: languageCode(t.language),
         forced: t.forced,
       })),
+      video: s.video,
     };
   }
 
@@ -554,6 +591,8 @@ export class RelayManager {
     startSec: number;
     slots: number;
     audio?: number | null;
+    /** The hall prefers the film's own language over a Turkish dub. */
+    original?: boolean;
   }): Promise<RelayInfo> {
     const previous = this.find(input.communityId, input.key);
     if (previous) await this.stop(previous.id);
@@ -598,6 +637,7 @@ export class RelayManager {
       audioTracks: [],
       audioTrack: null,
       subtitleTracks: [],
+      video: null,
       paced: false,
       launchedAt: null,
       producedReadAt: 0,
@@ -631,8 +671,11 @@ export class RelayManager {
       if (!probe.video && !probe.audio) throw fail('CINEMA_STREAM_FAILED');
       session.durationSec = session.live ? null : probe.durationSec;
       session.audioTracks = probe.audio ? (probe.audioTracks ?? []) : [];
-      session.audioTrack = probe.audio ? pickAudio(session.audioTracks, input.audio) : null;
+      session.audioTrack = probe.audio
+        ? pickAudio(session.audioTracks, input.audio, input.original)
+        : null;
       session.subtitleTracks = session.live ? [] : textSubtitles(probe.subtitleTracks);
+      session.video = probe.videoInfo ?? null;
       session.paced = session.subtitleTracks.length > 0;
       if (session.paced) paced = session;
       session.args = (startNumber) =>
@@ -845,11 +888,17 @@ export class RelayManager {
       streams?: {
         codec_type?: string;
         codec_name?: string;
+        width?: number;
+        height?: number;
+        avg_frame_rate?: string;
+        r_frame_rate?: string;
+        bit_rate?: string;
         tags?: { language?: string; title?: string };
         disposition?: { default?: number; forced?: number };
       }[];
-      format?: { format_name?: string; duration?: string };
+      format?: { format_name?: string; duration?: string; bit_rate?: string };
     };
+    const picture = json.streams?.find((s) => s.codec_type === 'video');
     const stream = (type: string) =>
       json.streams?.find((s) => s.codec_type === type)?.codec_name ?? null;
     const duration = Number(json.format?.duration);
@@ -858,6 +907,15 @@ export class RelayManager {
       video: stream('video'),
       audio: stream('audio'),
       durationSec: Number.isFinite(duration) && duration > 0 ? duration : null,
+      videoInfo: picture
+        ? {
+            width: positive(picture.width),
+            height: positive(picture.height),
+            fps: frameRate(picture.avg_frame_rate) ?? frameRate(picture.r_frame_rate),
+            codec: picture.codec_name ?? null,
+            bitrate: positive(Number(picture.bit_rate)) ?? positive(Number(json.format?.bit_rate)),
+          }
+        : null,
       audioTracks: (json.streams ?? [])
         .filter((s) => s.codec_type === 'audio')
         .slice(0, 32)

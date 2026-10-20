@@ -304,7 +304,7 @@ export function setupRemoteControl(config: {
         supported: true,
         reason: native!.status().permission
           ? null
-          : 'Kontrol vermeden önce ROOMS için Erişilebilirlik ve Giriş İzleme izinlerini açmalısın.',
+          : 'Kontrol vermeden önce Tayfa için Erişilebilirlik ve Giriş İzleme izinlerini açmalısın.',
       };
     } catch (error) {
       return {
@@ -351,12 +351,12 @@ export function setupRemoteControl(config: {
       const module = load();
       if (!module.status().permission)
         throw Error(
-          'Sistem Ayarları → Gizlilik ve Güvenlik bölümünde ROOMS için Erişilebilirlik ve Giriş İzleme izinlerini aç.',
+          'Sistem Ayarları → Gizlilik ve Güvenlik bölümünde Tayfa için Erişilebilirlik ve Giriş İzleme izinlerini aç.',
         );
       const display = screen.getAllDisplays().find((d) => String(d.id) === capture.displayId);
       if (!display) throw Error('Paylaşılan ekran artık bağlı değil.');
       const window = config.window();
-      if (!window) throw Error('ROOMS penceresi kapandı.');
+      if (!window) throw Error('Tayfa penceresi kapandı.');
       const answer = await dialog.showMessageBox(window, {
         type: 'question',
         buttons: ['Reddet', 'Kontrol ver'],

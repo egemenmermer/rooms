@@ -50,7 +50,15 @@ export type StoredWork = RmdbMeta & {
   watchlist: { by: RmdbPerson; at: number } | null;
 };
 
-type RmdbFile = { version: 1; works: StoredWork[] };
+type RmdbFile = {
+  version: 1;
+  works: StoredWork[];
+  /** Each member's favourite live channels (catalog refs), in the order they were starred. */
+  favorites?: Record<string, string[]>;
+};
+
+/** Favourite channels a member keeps; the oldest drop first. */
+const MAX_FAVORITES = 300;
 
 /** One look at the hall, from the activity timeline the service read itself. */
 export type RmdbSample = {
@@ -456,6 +464,76 @@ export class Rmdb {
     work.touchedAt = this.now();
     this.store.saveSoon(communityId);
     return { work, created };
+  }
+
+  /**
+   * A member marks an episode watched or not watched by hand. The work's progress then points
+   * at the furthest watched episode, finished, so "Devam et" offers the one after it; when no
+   * watched episode is left it is cleared and the series leaves the row.
+   */
+  markEpisode(
+    communityId: string,
+    workId: string,
+    at: RmdbEpisodeRef,
+    watched: boolean,
+    durationSec: number | null,
+  ) {
+    const work = this.work(communityId, workId);
+    if (work.kind !== 'series') fail('CINEMA_RMDB_INVALID');
+    const now = this.now();
+    const same = (e: { season: number; episode: number }) =>
+      e.season === at.season && e.episode === at.episode;
+    work.episodes = work.episodes.filter((e) => !same(e));
+    if (watched) {
+      work.episodes.push({
+        ...at,
+        positionSec: durationSec ?? 0,
+        durationSec,
+        finished: true,
+        watchedAt: now,
+      });
+      work.episodes.sort((a, b) => a.season - b.season || a.episode - b.episode);
+    }
+    const furthest = work.episodes.filter((e) => e.finished).at(-1) ?? null;
+    const current = work.progress?.episode ?? null;
+    const behind = (a: RmdbEpisodeRef, b: RmdbEpisodeRef) =>
+      a.season < b.season || (a.season === b.season && a.episode < b.episode);
+    // A half-watched episode after the furthest finished one stays where the hall left it.
+    const keep =
+      current &&
+      !work.progress!.finished &&
+      !same(current) &&
+      (!furthest || behind(furthest, current));
+    if (!keep)
+      work.progress = furthest
+        ? {
+            positionSec: furthest.positionSec,
+            durationSec: furthest.durationSec,
+            finished: true,
+            episode: { season: furthest.season, episode: furthest.episode, title: furthest.title },
+            updatedAt: now,
+          }
+        : null;
+    work.touchedAt = now;
+    this.store.saveSoon(communityId);
+    return work;
+  }
+
+  /** This member's favourite live channels, oldest first. */
+  favorites(communityId: string, userId: string) {
+    return [...(this.store.get(communityId).favorites?.[userId] ?? [])];
+  }
+
+  /** Stars or unstars a channel for this member only. */
+  setFavorite(communityId: string, userId: string, ref: string, on: boolean) {
+    const data = this.store.get(communityId);
+    const all = (data.favorites ??= {});
+    const list = (all[userId] ?? []).filter((value) => value !== ref);
+    if (on) list.push(ref);
+    if (list.length) all[userId] = list.slice(-MAX_FAVORITES);
+    else delete all[userId];
+    this.store.saveSoon(communityId);
+    return this.favorites(communityId, userId);
   }
 
   /** This member's rating, review and heart; null (or nothing left) removes them. */

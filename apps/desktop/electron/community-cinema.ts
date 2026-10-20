@@ -74,6 +74,16 @@ const watchResponse = z
       .max(32)
       .optional(),
     audioTrack: z.number().int().min(0).max(31).nullable().optional(),
+    video: z
+      .object({
+        width: z.number().int().min(1).max(16384).nullable(),
+        height: z.number().int().min(1).max(16384).nullable(),
+        fps: z.number().min(1).max(1000).nullable(),
+        codec: z.string().max(40).nullable(),
+        bitrate: z.number().int().min(1).max(1e10).nullable(),
+      })
+      .nullable()
+      .optional(),
     subtitleTracks: z
       .array(
         z.object({
@@ -263,6 +273,7 @@ export function setupCommunityCinema(options: {
       originPdtMs: watch.originPdtMs ?? null,
       audioTracks: watch.audioTracks ?? [],
       audioTrack: watch.audioTrack ?? null,
+      video: watch.video ?? null,
       subtitles: (watch.subtitleTracks ?? []).map((track) => ({
         index: track.index,
         label: track.label,
@@ -272,6 +283,24 @@ export function setupCommunityCinema(options: {
       })),
     };
   });
+  options.handle('rooms:cinema-audio-default', (communityId, value) =>
+    api('PUT', `${community(communityId)}/audio`, {
+      value: z.enum(['turkish', 'original']).parse(value),
+    }),
+  );
+  options.handle('rooms:cinema-tmdb-key', (communityId, key) =>
+    api('PUT', `${community(communityId)}/tmdb`, {
+      key: z
+        .string()
+        .trim()
+        .regex(/^[A-Za-z0-9._-]{20,1024}$/)
+        .nullable()
+        .parse(key),
+    }),
+  );
+  options.handle('rooms:cinema-links', (hallId, value) =>
+    api('GET', `${hall(hallId)}/links/${encodeURIComponent(ref.parse(value))}`, undefined, 20_000),
+  );
   options.handle('rooms:cinema-subtitle-key', (communityId, key) =>
     api('PUT', `${community(communityId)}/subtitles`, {
       key: z
@@ -307,6 +336,30 @@ export function setupCommunityCinema(options: {
   const work = (hallId: unknown, workId: unknown) =>
     `${hall(hallId)}/rmdb/${encodeURIComponent(rmdbWork.parse(workId))}`;
   options.handle('rooms:cinema-rmdb', (hallId) => api('GET', `${hall(hallId)}/rmdb`));
+  options.handle('rooms:cinema-favorites', (hallId) => api('GET', `${hall(hallId)}/favorites`));
+  options.handle('rooms:cinema-favorite', (hallId, value, on) =>
+    api('PUT', `${hall(hallId)}/favorites`, { ref: ref.parse(value), on: z.boolean().parse(on) }),
+  );
+  options.handle('rooms:cinema-episode-marks', (hallId, value) =>
+    api('GET', `${hall(hallId)}/episodes/${encodeURIComponent(ref.parse(value))}`),
+  );
+  options.handle('rooms:cinema-mark-episode', (hallId, value, watched) =>
+    api(
+      'PUT',
+      `${hall(hallId)}/episodes/${encodeURIComponent(ref.parse(value))}`,
+      { watched: z.boolean().parse(watched) },
+      30_000,
+    ),
+  );
+  // Series may fetch their episodes from the provider first.
+  options.handle('rooms:cinema-continue', (hallId, kind) =>
+    api(
+      'GET',
+      `${hall(hallId)}/continue?kind=${z.enum(['movie', 'series']).parse(kind)}`,
+      undefined,
+      30_000,
+    ),
+  );
   options.handle('rooms:cinema-rmdb-work', (hallId, workId) =>
     api('GET', work(hallId, workId), undefined, 30_000),
   );

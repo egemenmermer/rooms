@@ -1,9 +1,11 @@
-/** Signup tokens issued by the ROOMS access broker; the same value travels in every link form. */
+/** Signup tokens issued by the Tayfa access broker; the same value travels in every link form. */
 export const INVITE_TOKEN_PATTERN = /^[a-f0-9]{64}$/;
 /** Older broker tickets and upstream community invitations accepted from legacy links. */
 export const LEGACY_INVITE_CODE_PATTERN = /^[A-Za-z0-9_-]{2,128}$/;
 export const INVITE_LINK_MAX_USES = 10;
 export const INVITE_LINK_DAYS = 7;
+/** Active links per community; any member with the invite permission may create one. */
+export const INVITE_LINKS_PER_SPACE = 50;
 export const INVITE_LINK_PATH = '/davet/';
 
 export interface InviteLink {
@@ -42,7 +44,7 @@ export function inviteOrigin(serverUrl: string): string | null {
   return server ? new URL(server).origin : null;
 }
 
-/** Shareable link that opens a landing page with download and "open in ROOMS" steps. */
+/** Shareable link that opens a landing page with download and "open in Tayfa" steps. */
 export function inviteShareLink(serverUrl: string, token: string): string | null {
   const origin = inviteOrigin(serverUrl);
   return origin && INVITE_TOKEN_PATTERN.test(token) ? `${origin}${INVITE_LINK_PATH}${token}` : null;

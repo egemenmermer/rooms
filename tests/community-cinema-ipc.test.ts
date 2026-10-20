@@ -154,6 +154,16 @@ describe('community cinema IPC', () => {
     );
   });
 
+  it('reads the Devam et row of films or series only', async () => {
+    await expect(s.invoke('rooms:cinema-continue', 'hall', 'live')).rejects.toThrow();
+    await expect(s.invoke('rooms:cinema-continue', '../x', 'movie')).rejects.toThrow();
+    expect(s.requests).toHaveLength(0);
+    await s.invoke('rooms:cinema-continue', 'hall', 'series');
+    expect(s.requests[0].url).toBe(
+      'https://rooms.example/rooms-cinema/v1/halls/hall/continue?kind=series',
+    );
+  });
+
   it('sends RMDB calls to the hall routes after checking ids and reviews', async () => {
     const work = 'w-AbCdEfGh1234';
     await expect(s.invoke('rooms:cinema-rmdb-work', 'hall', '../x')).rejects.toThrow();
@@ -215,6 +225,8 @@ describe('community cinema IPC', () => {
       audioTracks: [],
       audioTrack: null,
       subtitles: [],
+      // An older service says nothing about the picture.
+      video: null,
     });
     expect(JSON.stringify(source)).not.toContain(TICKET);
     const playlist = await mocks.protocol!(new Request('rooms-cinema://stream/s1/index.m3u8'));

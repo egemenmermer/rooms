@@ -42,6 +42,10 @@ export type CommunityConfig = {
   relaySlots: number;
   /** The owner's own SubDL API key for subtitle search; never sent to clients. */
   subtitleKey?: string | null;
+  /** The owner's own TMDB key for IMDb links and air dates; never sent to clients. */
+  tmdbKey?: string | null;
+  /** Films start with a Turkish dub when there is one, or in their own language. */
+  audioDefault?: 'turkish' | 'original';
 };
 
 /**
@@ -85,6 +89,7 @@ export class ConfigStore {
         connectedBy: null,
         relaySlots: 1,
         subtitleKey: null,
+        tmdbKey: null,
       }
     );
   }

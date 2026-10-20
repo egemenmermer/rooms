@@ -10,7 +10,7 @@ export async function enumerateCaptureSources<T extends { id: string }>(
   screenPermission: () => string,
 ): Promise<T[]> {
   const permissionMessage =
-    'macOS ekran kaydı izni kapalı. Sistem Ayarları → Gizlilik ve Güvenlik → Ekran ve Sistem Sesi Kaydı bölümünden ROOMS’a izin ver; ardından uygulamayı yeniden aç.';
+    'macOS ekran kaydı izni kapalı. Sistem Ayarları → Gizlilik ve Güvenlik → Ekran ve Sistem Sesi Kaydı bölümünden Tayfa’ya izin ver; ardından uygulamayı yeniden aç.';
   if (['denied', 'restricted'].includes(screenPermission()))
     throw new CaptureSourcesError(permissionMessage);
   try {
@@ -38,7 +38,7 @@ export async function enumerateCaptureSources<T extends { id: string }>(
     }
     if (!sources.length)
       throw new CaptureSourcesError(
-        'Ekran ve pencere listesi macOS tarafından alınamadı. Ekran kaydı iznini kontrol et; izin açıksa ROOMS’u normal şekilde kapatıp yeniden aç.',
+        'Ekran ve pencere listesi macOS tarafından alınamadı. Ekran kaydı iznini kontrol et; izin açıksa Tayfa’yı normal şekilde kapatıp yeniden aç.',
       );
     return [...new Map(sources.map((source) => [source.id, source])).values()];
   }

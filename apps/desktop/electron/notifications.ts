@@ -148,7 +148,7 @@ export function setupNotifications(
         return;
       lastShown = Date.now();
       const notification = new Notification({
-        title: 'ROOMS',
+        title: 'Tayfa',
         body: mentioned ? 'Topluluğunda biri seni etiketledi.' : 'Topluluğunda yeni bir mesaj var.',
         silent: !sound,
       });

@@ -1,4 +1,4 @@
-# ROOMS arkadaş masası kuralları — v1
+# Tayfa arkadaş masası kuralları — v1
 
 Oyun kuralları yalnızca yetkili Activity sunucusunda çalışır. Sürümlü komutlar güncel oda üyeliği, beklenen oda sürümü ve benzersiz komut kimliği gerektirir. Oyunlarda gerçek paraya çevrilemeyen sanal fişler kullanılır; gerçek para ödemesi veya kazanç ödemesi yoktur.
 
@@ -24,7 +24,7 @@ Krupiyenin kapalı kartı ve deste bitişe kadar açık görünümde yer almaz. 
 
 ## Batak — `rooms-batak-v1`
 
-Tüm türler jokersiz standart 52 kart kullanır. İhaleli ve Eşli'de kişiye 13, Gömmeli'de 16 kart ve dört kartlık gömü vardır. Açılan renge uymak zorunludur. Aynı renkte eli almak mümkünse üstüne çıkılmalıdır. Renk yoksa mümkün olduğunda koz, mümkünse üst koz atılmalıdır. Takım arkadaşı kazanırken de bu zorunluluklar geçerlidir; bu, yazılmamış ev kuralı istisnası değil yayımlanan ROOMS profilidir.
+Tüm türler jokersiz standart 52 kart kullanır. İhaleli ve Eşli'de kişiye 13, Gömmeli'de 16 kart ve dört kartlık gömü vardır. Açılan renge uymak zorunludur. Aynı renkte eli almak mümkünse üstüne çıkılmalıdır. Renk yoksa mümkün olduğunda koz, mümkünse üst koz atılmalıdır. Takım arkadaşı kazanırken de bu zorunluluklar geçerlidir; bu, yazılmamış ev kuralı istisnası değil yayımlanan Tayfa profilidir.
 
 - İhaleli: artan ihale, en az 5/en fazla 13; kazanan kozu seçer ve başlar. İhaleci başarılıysa aldığı el kadar, başarısızsa eksi ihale kadar puan alır. Savunmacılar kendi ellerini yazar.
 - Eşli: karşılıklı koltuklar takım; artan ihale en az 8. İhalecinin takımı başarılıysa toplam aldığı eli, değilse eksi ihaleyi yazar; savunmacılar takım ellerini yazar.
@@ -45,4 +45,4 @@ Seriler tek renk, en az üç taşlıdır; 13→1 dönüşü yoktur. Gruplar ayn�
 
 `pnpm typecheck` ve `pnpm test` başarılıdır. Testler gerçek TCP istemcileriyle iki insanlı tam Holdem elini, özel görünümleri ve aynı komutun tekrarını; sunucuyla tam Blackjack/Batak/101 turlarını; el ortasında kart değiştirmeyen bot eklemeyi; dört Batak türünü ve dört 101 profilini; fiş korunmasını, all-in yeniden açılmasını, eşit yan potları, okeyle açma/değiştirmeyi, yinelenen fiziksel taşları, çift bitiş/işlemeyi, atılan taş kısıtlarını, yumuşak as ve bölünmüş as ödemelerini kapsar.
 
-Bunlar test üyelik çözümleyicisiyle yerel kural/servis davranışını doğrular. Dağıtılmış gerçek Stoat yetkisi, masaüstü oyun etkileşimi/görselleri, iki fiziksel bilgisayar, PostgreSQL yeniden başlatma kurtarması ve kapsamlı strateji/ev kuralı incelemesi ayrı kabuldür. Yukarıdaki profiller ROOMS'un açık seçimleridir; tüm arkadaş gruplarının aynı kuralları kullandığı iddiası değildir.
+Bunlar test üyelik çözümleyicisiyle yerel kural/servis davranışını doğrular. Dağıtılmış gerçek Stoat yetkisi, masaüstü oyun etkileşimi/görselleri, iki fiziksel bilgisayar, PostgreSQL yeniden başlatma kurtarması ve kapsamlı strateji/ev kuralı incelemesi ayrı kabuldür. Yukarıdaki profiller Tayfa'nın açık seçimleridir; tüm arkadaş gruplarının aynı kuralları kullandığı iddiası değildir.

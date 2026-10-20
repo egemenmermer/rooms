@@ -253,8 +253,18 @@ const bridge: DesktopBridge = {
     setAudio: (hallId, ref, track) => ipcRenderer.invoke('rooms:cinema-audio', hallId, ref, track),
     setSubtitleKey: (communityId, key) =>
       ipcRenderer.invoke('rooms:cinema-subtitle-key', communityId, key),
+    setAudioDefault: (communityId, value) =>
+      ipcRenderer.invoke('rooms:cinema-audio-default', communityId, value),
+    setTmdbKey: (communityId, key) => ipcRenderer.invoke('rooms:cinema-tmdb-key', communityId, key),
+    titleLinks: (hallId, ref) => ipcRenderer.invoke('rooms:cinema-links', hallId, ref),
     subtitles: (hallId, ref) => ipcRenderer.invoke('rooms:cinema-subtitles', hallId, ref),
     chooseSubtitleFile: () => ipcRenderer.invoke('rooms:cinema-subtitle-file'),
+    continueWatching: (hallId, kind) => ipcRenderer.invoke('rooms:cinema-continue', hallId, kind),
+    favorites: (hallId) => ipcRenderer.invoke('rooms:cinema-favorites', hallId),
+    setFavorite: (hallId, ref, on) => ipcRenderer.invoke('rooms:cinema-favorite', hallId, ref, on),
+    episodeMarks: (hallId, ref) => ipcRenderer.invoke('rooms:cinema-episode-marks', hallId, ref),
+    markEpisode: (hallId, ref, watched) =>
+      ipcRenderer.invoke('rooms:cinema-mark-episode', hallId, ref, watched),
     rmdb: (hallId) => ipcRenderer.invoke('rooms:cinema-rmdb', hallId),
     rmdbWork: (hallId, workId) => ipcRenderer.invoke('rooms:cinema-rmdb-work', hallId, workId),
     rmdbAdd: (hallId, ref, watchlist) =>

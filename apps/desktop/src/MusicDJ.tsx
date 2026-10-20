@@ -193,6 +193,13 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
     }
   };
   const [listsOpen, setListsOpen] = useState(false);
+  // "Temizle" asks once: a second click within a few seconds empties the queue.
+  const [clearing, setClearing] = useState(false);
+  useEffect(() => {
+    if (!clearing) return;
+    const timer = setTimeout(() => setClearing(false), 4000);
+    return () => clearTimeout(timer);
+  }, [clearing]);
   const [results, setResults] = useState<MusicSearchResult[] | null>(null);
   const panel = useRef<HTMLElement>(null),
     alive = useRef(false),
@@ -617,6 +624,23 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
             <History size={14} />
             Geçmiş
           </button>
+          {(snapshot?.queue.length ?? 0) > 1 && (
+            <button
+              className={clearing ? 'danger' : undefined}
+              disabled={!available || busy}
+              title="Çalan parça dışında kuyruğu boşaltır"
+              onClick={() => {
+                if (!clearing) return setClearing(true);
+                setClearing(false);
+                void run({ type: 'clear' });
+              }}
+            >
+              <Trash2 size={13} />
+              {clearing
+                ? `${(snapshot?.queue.length ?? 1) - (active ? 1 : 0)} parçayı kaldır`
+                : 'Temizle'}
+            </button>
+          )}
         </div>
         <ol className="dj-queue">
           {snapshot?.queue.map((item, i) => {

@@ -161,12 +161,12 @@ export function About({ notify }: { notify(message: string): void }) {
       <div className="ref-settings-heading">
         <span>UYGULAMA</span>
         <h1>Güncelleme ve hakkında</h1>
-        {fixture && <p>ROOMS’u güncel tut ve destek bilgilerini yönet.</p>}
+        {fixture && <p>Tayfa’yı güncel tut ve destek bilgilerini yönet.</p>}
       </div>
       <div className="about-hero">
         <img src="./reference-brand/app-icons/app-icon-128.png" alt="" />
         <div>
-          <h1>ROOMS</h1>
+          <h1>Tayfa</h1>
           {fixture && <p>Arkadaşlarınla aynı yerde.</p>}
           <small>
             Sürüm {info?.version ?? '—'} · {platform}
@@ -179,7 +179,7 @@ export function About({ notify }: { notify(message: string): void }) {
       </div>
       <section className="about-update">
         <div className="about-section-title">
-          <h2>{status?.version ? `ROOMS ${status.version}` : 'Uygulama güncellemeleri'}</h2>
+          <h2>{status?.version ? `Tayfa ${status.version}` : 'Uygulama güncellemeleri'}</h2>
           {status?.version && <small>Yeni sürüm</small>}
         </div>
         {!!status?.releaseNotes?.length && (
@@ -327,7 +327,7 @@ export function About({ notify }: { notify(message: string): void }) {
       )}
       <footer>
         <img src="./reference-brand/brand/logo-symbol-lilac.svg" alt="" />
-        ROOMS{fixture && ' · Özel arkadaş toplulukları için'}
+        Tayfa{fixture && ' · Özel arkadaş toplulukları için'}
       </footer>
       {modal && (
         <Modal
@@ -346,7 +346,7 @@ export function About({ notify }: { notify(message: string): void }) {
           <div className="about-modal-body">
             {modal === 'restart' ? (
               <p>
-                {status?.version ? `ROOMS ${status.version} hazır. ` : ''}
+                {status?.version ? `Tayfa ${status.version} hazır. ` : ''}
                 {voice.channelId
                   ? 'Ses bağlantın ve açık görüşmeler kapanacak.'
                   : 'Uygulama kapanıp yeniden açılacak.'}{' '}

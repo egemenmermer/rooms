@@ -461,8 +461,8 @@ function HostOperationsScope() {
             <small>
               {host.mode === 'shared'
                 ? host.agentAvailable
-                  ? 'ROOMS ve Agent aynı fiziksel makineyi kullanır.'
-                  : 'ROOMS sunucusu · AI çalıştırıcısı henüz etkin değil.'
+                  ? 'Tayfa ve Agent aynı fiziksel makineyi kullanır.'
+                  : 'Tayfa sunucusu · AI çalıştırıcısı henüz etkin değil.'
                 : 'Ayrı çalışma makinesi.'}
             </small>
           </div>

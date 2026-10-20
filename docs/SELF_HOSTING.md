@@ -1,4 +1,4 @@
-# Kendi ROOMS topluluğunu kur
+# Kendi Tayfa topluluğunu kur
 
 [← README](../README.md) · [Kullanım](USER_GUIDE.md) · [Sorun giderme](TROUBLESHOOTING.md)
 
@@ -10,7 +10,7 @@
 - [1. Kaynak kodu al](#1-kaynak-kodu-al)
 - [2. Sosyal arka uç kurulumu](#2-sosyal-arka-uç-kurulumu)
 - [3. LiveKit yapılandırması](#3-livekit-yapılandırması)
-- [4. ROOMS servislerini yapılandır ve başlat](#4-rooms-servislerini-yapılandır-ve-başlat)
+- [4. Tayfa servislerini yapılandır ve başlat](#4-rooms-servislerini-yapılandır-ve-başlat)
 - [5. İlk hesap ve davetler](#5-i̇lk-hesap-ve-davetler)
 - [6. Masaüstü istemcisini bağla](#6-masaüstü-istemcisini-bağla)
 - [7. Dış ağdan erişim](#7-dış-ağdan-erişim)
@@ -21,9 +21,9 @@
 
 ## Hızlı kurulum (tek komut)
 
-Kendi arkadaş grubun için ROOMS sunucusunu yaklaşık 15 dakikada kurabilirsin. Sohbet, ses, ekran paylaşımı ve ortak etkinlikler bu kurulumla gelir; müzik (DJ), Agent ve sunucu yönetim paneli isteğe bağlıdır ve dahil değildir.
+Kendi arkadaş grubun için Tayfa sunucusunu yaklaşık 15 dakikada kurabilirsin. Sohbet, ses, ekran paylaşımı ve ortak etkinlikler bu kurulumla gelir; müzik (DJ), Agent ve sunucu yönetim paneli isteğe bağlıdır ve dahil değildir.
 
-Uygulamanın başlangıç ekranındaki **Kendi sunucunu kur** sekmesi aynı adımları kısaca gösterir: sunucu kirala, DuckDNS adresi al, portları aç, kurulum komutunu çalıştır, giriş yapıp davet oluştur.
+Uygulamanın başlangıç ekranındaki **Kendi sunucunu kur** sekmesi aynı adımları her ekranda bir adım olacak şekilde gösterir: sunucu kirala, DuckDNS adresi al, portları aç, kurulum komutunu çalıştır, giriş yapıp davet oluştur.
 
 ### Gerekenler
 
@@ -49,7 +49,7 @@ curl -fsSL https://raw.githubusercontent.com/egemenmermer/rooms/main/deploy/inst
 
 Betik sırasıyla şunları yapar:
 
-1. Docker yoksa kurar ve ROOMS'u `/opt/rooms` altına indirir.
+1. Docker yoksa kurar ve Tayfa'yı `/opt/rooms` altına indirir.
 2. Alan adını ve sertifika e-postasını sorar; tüm parolaları ve anahtarları sunucuda rastgele üretir.
 3. Servisleri başlatır. HTTPS sertifikası Let's Encrypt'ten otomatik alınır ve yenilenir.
 4. **Topluluk sahibi** hesabını (e-posta, kullanıcı adı, parola) ve ilk topluluğu, ses kanalıyla birlikte oluşturur.
@@ -57,7 +57,7 @@ Betik sırasıyla şunları yapar:
 
 ### 3. Uygulamadan bağlan
 
-1. [ROOMS uygulamasını indir](https://github.com/egemenmermer/rooms/releases/latest) ve aç.
+1. [Tayfa uygulamasını indir](https://github.com/egemenmermer/rooms/releases/latest) ve aç.
 2. **Giriş yap** sekmesinde sunucu olarak `https://alan-adin` gir ve sahip hesabınla giriş yap.
 3. Arkadaşlarını uygulamadaki **Davet oluştur** ile davet et veya sunucuda yeni bağlantı üret:
 
@@ -69,11 +69,11 @@ sudo rooms invite --count=5           # beş ayrı bağlantı
 
 `--uses` 1–50, `--days` 1–7, `--count` 1–20 arasındadır. Her satır `https://alan-adin/davet/<token>  (7 gün · 10 kişi · son geçerlilik: …)` biçimindedir.
 
-Tek bir bağlantıyı birden çok arkadaşına gönderebilirsin. Arkadaşın bağlantıyı tarayıcıda açar; sayfada **Uygulamayı indir** ve **ROOMS'ta aç** düğmeleri vardır. Düğme uygulamayı açmazsa bağlantıyı uygulamadaki **Kayıt ol** sekmesine yapıştırması yeterlidir; sunucu adresini bağlantı belirler.
+Tek bir bağlantıyı birden çok arkadaşına gönderebilirsin. Arkadaşın bağlantıyı tarayıcıda açar; sayfada **Uygulamayı indir** ve **Tayfa'da aç** düğmeleri vardır. Düğme uygulamayı açmazsa bağlantıyı uygulamadaki **Kayıt ol** sekmesine yapıştırması yeterlidir; sunucu adresini bağlantı belirler.
 
 - **Kullanım:** bağlantıyı açmak kullanım harcamaz. Bir kullanım yalnızca başarılı kayıtta veya üye olmayan mevcut bir hesap katıldığında sayılır. Zaten üye olan biri bağlantıyı yeniden açarsa hak harcanmaz.
 - **Kopyalama:** bağlantı yalnızca oluşturulduğu anda gösterilir; sunucu yalnızca SHA-256 özetini saklar. Kaybettiysen yenisini oluştur.
-- **Yönetim:** etkin bağlantıları uygulamada **Ayarlar → Üyeler ve roller → Davetler** bölümünde görürsün: kullanım (ör. 3/10 kişi), son geçerlilik, oluşturan ve Etkin/Dolu durumu; `rooms invite` ile üretilenlerde oluşturan "Sunucu" görünür. **İptal et** bağlantıyı hemen kapatır; bağlantıyla katılmış olanlar toplulukta kalır. Bir toplulukta en fazla 20 etkin bağlantı olabilir.
+- **Yönetim:** etkin bağlantıları uygulamada **Ayarlar → Üyeler ve roller → Davetler** bölümünde görürsün: kullanım (ör. 3/10 kişi), son geçerlilik, oluşturan ve Etkin/Dolu durumu; `rooms invite` ile üretilenlerde oluşturan "Sunucu" görünür. **İptal et** bağlantıyı hemen kapatır; bağlantıyla katılmış olanlar toplulukta kalır. Davet etme izni olan her üye (Stoat'ta varsayılan olarak herkes) bağlantı oluşturabilir; listeleme ve iptal topluluk sahibindedir. Bir toplulukta en fazla 50 etkin bağlantı olabilir.
 
 Bilinen sınırlar:
 
@@ -99,7 +99,7 @@ Yedek dosyası parolaları ve mesajları içerir. Onu sunucunun dışında güve
 
 - **Sertifika alınamıyor:** Alan adının A kaydı sunucu IP'sini göstermeli ve 80/443 portları açık olmalı. Düzelttikten sonra `sudo rooms restart` çalıştır.
 - **Mesajlar çalışıyor, ses bağlanmıyor:** `7881/tcp` ve `7882/udp` portlarını sağlayıcının güvenlik duvarında aç. Sunucuda `ufw` etkinse `sudo rooms firewall` çalıştır.
-- **Davet bağlantısı tarayıcıda ROOMS sayfasını açmıyor:** sayfa `/davet` yolundan sunulur. Bu yol gelmeden önce kurulmuş bir sunucuyu güncellediysen bir kez `sudo rooms restart` çalıştır; Caddy yeni yolu yeniden başlayınca okur.
+- **Davet bağlantısı tarayıcıda Tayfa sayfasını açmıyor:** sayfa `/davet` yolundan sunulur. Bu yol gelmeden önce kurulmuş bir sunucuyu güncellediysen bir kez `sudo rooms restart` çalıştır; Caddy yeni yolu yeniden başlayınca okur.
 - **Başka bir sorun:** `sudo rooms status` ve `sudo rooms logs` çıktısıyla [sorun giderme rehberine](TROUBLESHOOTING.md) bak veya GitHub'da issue aç. Parola, token veya davet bağlantısı paylaşma.
 
 Hızlı kurulum tek sunucu ve küçük-orta bir arkadaş grubu içindir. Yüzlerce eşzamanlı kullanıcı, ayrı medya sunucusu veya müzik/Agent gibi isteğe bağlı servisler için aşağıdaki ayrıntılı kurulumu kullan.
@@ -113,9 +113,9 @@ Arka ucu bir yönetici çalıştırır; üyeler masaüstü uygulamasını kullan
 | Bileşen | Sorumluluk | Gereken özellik |
 | --- | --- | --- |
 | Stoat servisleri | Hesap, sohbet/olaylar, dosyalar ve sosyal veriler | Topluluk girişi ve sohbet |
-| ROOMS erişim servisi | Üyelik, kayıt aracısı, kısa süreli medya izinleri | ROOMS kaydı ve ses yetkilendirmesi |
+| Tayfa erişim servisi | Üyelik, kayıt aracısı, kısa süreli medya izinleri | Tayfa kaydı ve ses yetkilendirmesi |
 | LiveKit | Gerçek zamanlı medya sinyali ve aktarımı | Ses, kamera ve ekran paylaşımı |
-| ROOMS Activities | Yetkili ortak etkinlik durumu | Etkinlikler ve oyunlar |
+| Tayfa Activities | Yetkili ortak etkinlik durumu | Etkinlikler ve oyunlar |
 | Müzik çalışanı | Ortak kuyruk ve kaynaklar | İsteğe bağlı DJ |
 | Agent makinesi | Sınırlandırılmış görevler ve kalıcı görev durumu | İsteğe bağlı Agent |
 | Ters vekil | Dışarıya açık HTTPS/WSS rotaları | Uzak üyeler |
@@ -148,7 +148,7 @@ Aksi belirtilmedikçe depo kökünde çalış. Derlenmiş servisler `dist-servic
 
 ## 2. Sosyal arka uç kurulumu
 
-ROOMS, [UPSTREAM.json](../infra/stoat/UPSTREAM.json) ile sabitlenmiş, **değiştirilmemiş** Stoat kullanır. Bu sürümü habersiz üst sistem `main` ile değiştirme. Yardımcı betik sabit dağıtım dosyalarını indirip özel yerel yapılandırma oluşturur:
+Tayfa, [UPSTREAM.json](../infra/stoat/UPSTREAM.json) ile sabitlenmiş, **değiştirilmemiş** Stoat kullanır. Bu sürümü habersiz üst sistem `main` ile değiştirme. Yardımcı betik sabit dağıtım dosyalarını indirip özel yerel yapılandırma oluşturur:
 
 ```sh
 pnpm stoat:setup
@@ -165,7 +165,7 @@ docker compose --project-directory .local/stoat config --quiet
 node scripts/stoat-start.mjs
 ```
 
-Başlatıcı seçilen sosyal servisleri açar; ROOMS erişim, Activities veya bağımsız ROOMS LiveKit servisini açmaz. Upstream web/native ses profilleri varsayılan olarak kapalıdır. [Entegrasyon ayrıntılarına](../infra/stoat/README.md) bak.
+Başlatıcı seçilen sosyal servisleri açar; Tayfa erişim, Activities veya bağımsız Tayfa LiveKit servisini açmaz. Upstream web/native ses profilleri varsayılan olarak kapalıdır. [Entegrasyon ayrıntılarına](../infra/stoat/README.md) bak.
 
 ### Yerel adresler
 
@@ -174,7 +174,7 @@ Başlatıcı seçilen sosyal servisleri açar; ROOMS erişim, Activities veya ba
 | `http://127.0.0.1:3021` | Yerel herkese açık ters vekil; API `/api`, olaylar `/ws` | Kurulumda loopback |
 | `http://127.0.0.1:3022` | Aracının kullandığı ham üst sistem API | Yalnız özel ağ |
 | `127.0.0.1:3023` | Geliştirme MongoDB eşlemesi | Yalnız özel ağ |
-| `127.0.0.1:3002` | ROOMS erişim servisi | Proxy arkasında |
+| `127.0.0.1:3002` | Tayfa erişim servisi | Proxy arkasında |
 | `127.0.0.1:3031` | Activities servisi | Proxy arkasında |
 
 Docker'dan ana makineye erişim için `.env.web`, `host.docker.internal` kullanır. Bu adın ve dinleme adresinin kendi Docker ortamında çalıştığını doğrula. Servisleri konteyner içine alırsan gerçek iç servis adlarını ve erişilebilir dinleme adreslerini kullan. Linux bridge konteyner, ana makinenin yalnız loopback dinleyen servisine ulaşamayabilir. Bunu ham API veya veritabanını internete açarak çözme.
@@ -205,13 +205,13 @@ webhook:
 livekit-server --config .local/livekit.yaml
 ```
 
-Dosyayı yalnız servis hesabı okuyabilsin. ROOMS erişim servisinde **aynı** anahtar/sırrı kullan. İmzalı webhook, LiveKit'in çalıştığı ortamdan erişim servisine ulaşmalıdır; konteynerden yukarıdaki yerel loopback adresine erişilemeyebilir.
+Dosyayı yalnız servis hesabı okuyabilsin. Tayfa erişim servisinde **aynı** anahtar/sırrı kullan. İmzalı webhook, LiveKit'in çalıştığı ortamdan erişim servisine ulaşmalıdır; konteynerden yukarıdaki yerel loopback adresine erişilemeyebilir.
 
 Bu loopback örneği uzak üyeler için uygun değildir. Herkese açık kurulumda erişilebilir duyurulan IP, WSS sinyali, eşleşen TCP/UDP portları ve gereken NAT/TURN düzeni doğrulanır. LiveKit API sırları sunucuda kalır; istemciler kısa süreli yetki alır.
 
 Geçmişteki `scripts/livekit-*` yardımcıları `infra/local/` altında özel dosyalar bekler. Bunlar yerel doğrulama kolaylığıdır; bu rehberin üretim kurulum tarifi değildir. Önce beklenen girdilerini incele. Yukarıdaki açık yapılandırma, geçmişte üretilmiş dosyalara bağımlı değildir.
 
-## 4. ROOMS servislerini yapılandır ve başlat
+## 4. Tayfa servislerini yapılandır ve başlat
 
 Özel dizinleri oluşturup ortam kontrol listesini kopyala:
 
@@ -232,13 +232,13 @@ PowerShell'de eşdeğer dosya işlemleri için `New-Item -ItemType Directory -Fo
 | `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | Eşleşen kendi LiveKit kimlik bilgilerin |
 | `ROOMS_SOUNDBOARD_DIRECTORY` | Yazılabilir kalıcı soundboard dizini |
 | `ROOMS_PERSONAL_SOUNDS_DIRECTORY` | Yazılabilir kalıcı giriş sesi dizini; varsayılan `/state/personal-sounds` |
-| `ROOMS_PERSONAL_SOUND_UPLOADS` | `0`, `false`, `off` veya `no` ise (büyük/küçük harf fark etmez) üyeler yeni ses yükleyemez; daha önce yüklenen sesler ve ROOMS'un hazır sesleri seçilebilir ve çalınabilir kalır |
+| `ROOMS_PERSONAL_SOUND_UPLOADS` | `0`, `false`, `off` veya `no` ise (büyük/küçük harf fark etmez) üyeler yeni ses yükleyemez; daha önce yüklenen sesler ve Tayfa'nın hazır sesleri seçilebilir ve çalınabilir kalır |
 | `ROOMS_PERSONAL_SOUNDS_MAX_MB` | Yüklenen giriş seslerinin toplam üst sınırı (MB); varsayılan 512 |
 | `ROOMS_ACTIVITY_DATA` | PostgreSQL yoksa dosya tabanlı etkinlik dizini |
 | `ROOMS_ACTIVITY_DATABASE_URL` | İsteğe bağlı Activities PostgreSQL bağlantısı |
 | `ROOMS_REGISTRATION_INVITES_FILE` | Kalıcı davet bağlantısı defteri |
 | `ROOMS_ACCOUNT_INVITE_MONGO_URL` | Her kayıtta yeni üst sistem hesap daveti eklemek için kapsamlı Mongo bağlantısı; yoksa uygulamadan davet oluşturulamaz |
-| `ROOMS_PUBLIC_URL` | `/davet` sayfasındaki **ROOMS'ta aç** bağlantısının herkese açık HTTPS adresi; yoksa isteğin `Host` başlığı kullanılır |
+| `ROOMS_PUBLIC_URL` | `/davet` sayfasındaki **Tayfa'da aç** bağlantısının herkese açık HTTPS adresi; yoksa isteğin `Host` başlığı kullanılır |
 | `ROOMS_DOWNLOAD_URL` | `/davet` sayfasındaki **Uygulamayı indir** adresi; varsayılan GitHub `releases/latest` (ön sürümleri göstermez) |
 | `ROOMS_SOCIAL_READ_MONGO_URL` | İsteğe bağlı sınırlı sosyal yetki okuma bağlantısı |
 
@@ -268,7 +268,7 @@ Aynı ortam ortak değerleri sağlayabilir; süreçler kendi port ayarlarını k
 **Bu zorunlu yönetici adımı kurulumun otomatik sonucu değildir.** Davet üretme betiği, zaten var olan ve yetkili olduğun üst sistem topluluk davetini ister; ilk yöneticiyi veya topluluğu oluşturmaz.
 
 1. Sabit üst sistem kurulumun desteklediği yönetim/API yolu ile ilk hesabı, topluluğu ve kanalları oluştur. Üretilen `.local/stoat/Guides.md` ve üst sistem API belgelerine bak. Hesap akışın gerektiriyorsa posta/kurtarmayı yapılandır.
-2. Sahibi olduğun topluluk için üst sistem daveti edin ve özel tut. Herkese açık ROOMS ters vekil ham hesap oluşturmayı bilerek kapatır; geçici kurulum istisnasını açık bırakma.
+2. Sahibi olduğun topluluk için üst sistem daveti edin ve özel tut. Herkese açık Tayfa ters vekil ham hesap oluşturmayı bilerek kapatır; geçici kurulum istisnasını açık bırakma.
 3. Erişim aracısının ve kalıcı davet defterinin hazır olduğunu doğrula.
 4. Tek kullanımlık ilk davetini üret:
 
@@ -300,7 +300,7 @@ Sesten önce iki hesapla mesajlaşmayı dene. Ardından gerçek üyelik, ViewCha
 
 Herkese açık kaynak adresini seç ve arka uçta buna uygun HTTPS/WSS adreslerini duyur. Alan adı kullanışlıdır; IP kullanıyorsan da istemcinin güveneceği TLS kurulumu gerekir. Uzak güvensiz WS bağlantıları istemci tarafından reddedilir.
 
-Herkese açık ters vekil, Stoat API/olay/dosya rotalarını korumalı ve ROOMS yollarını yönlendirmelidir:
+Herkese açık ters vekil, Stoat API/olay/dosya rotalarını korumalı ve Tayfa yollarını yönlendirmelidir:
 
 | Herkese açık yol | İç hedef | Not |
 | --- | --- | --- |
@@ -337,7 +337,7 @@ Temel giriş, sohbet, izinler ve medya çalıştıktan sonra ekle:
 | Giriş sesleri | `ROOMS_PERSONAL_SOUNDS_DIRECTORY` | Kişi klasörlerini olduğu gibi koru |
 | Agent/yapılandırma | Yapılandırılmış veri dizini ve şifreleme anahtarı | Veri ile eşleşen anahtarı ayrı ve korumalı sakla |
 
-**Giriş sesleri.** Her üyenin giriş/çıkış sesleri kendi klasöründe (`<dizin>/<kullanıcı kimliği>/`) durur: seçimler ve yükleme onayının zamanı `profile.json` içinde, sesler ise sunucunun ses düzeyini eşitlediği en fazla 4 saniyelik WAV dosyaları olarak saklanır; yüklenen özgün dosya tutulmaz. Hızlı kurulumda dizin `/opt/rooms/deploy/data/access/personal-sounds` olur ve `rooms backup` yedeğine girer. Yüklemeyi kapatmak için `/opt/rooms/deploy/.env` dosyasına `ROOMS_PERSONAL_SOUND_UPLOADS=0` (`false`, `off` ve `no` da olur), toplam alanı değiştirmek için `ROOMS_PERSONAL_SOUNDS_MAX_MB=<MB>` ekleyip `sudo rooms up` çalıştır. Bu anahtar yalnızca yeni yüklemeyi durdurur: daha önce yüklenen sesler silinmez, sahipleri onları seçebilir ve odalarda çalmaya devam ederler. Onları da kaldırmak için bir kişinin bütün seslerinde o kişinin klasörünü (`<dizin>/<kullanıcı kimliği>/`), herkesinkinde dizinin kendisini değil içindekileri sil. Servisi yeniden başlatmak gerekmez; bir sonraki ses bağlantısından itibaren o kişi için klasik ROOMS sesi çalar. Tek bir `.wav` dosyasını elle silme, `profile.json` onu listelemeye devam eder; tek bir sesi kişinin kendisi Ayarlar → Ses ve video → **Giriş ve çıkış sesin** bölümünden siler.
+**Giriş sesleri.** Her üyenin giriş/çıkış sesleri kendi klasöründe (`<dizin>/<kullanıcı kimliği>/`) durur: seçimler ve yükleme onayının zamanı `profile.json` içinde, sesler ise sunucunun ses düzeyini eşitlediği en fazla 4 saniyelik WAV dosyaları olarak saklanır; yüklenen özgün dosya tutulmaz. Hızlı kurulumda dizin `/opt/rooms/deploy/data/access/personal-sounds` olur ve `rooms backup` yedeğine girer. Yüklemeyi kapatmak için `/opt/rooms/deploy/.env` dosyasına `ROOMS_PERSONAL_SOUND_UPLOADS=0` (`false`, `off` ve `no` da olur), toplam alanı değiştirmek için `ROOMS_PERSONAL_SOUNDS_MAX_MB=<MB>` ekleyip `sudo rooms up` çalıştır. Bu anahtar yalnızca yeni yüklemeyi durdurur: daha önce yüklenen sesler silinmez, sahipleri onları seçebilir ve odalarda çalmaya devam ederler. Onları da kaldırmak için bir kişinin bütün seslerinde o kişinin klasörünü (`<dizin>/<kullanıcı kimliği>/`), herkesinkinde dizinin kendisini değil içindekileri sil. Servisi yeniden başlatmak gerekmez; bir sonraki ses bağlantısından itibaren o kişi için klasik Tayfa sesi çalar. Tek bir `.wav` dosyasını elle silme, `profile.json` onu listelemeye devam eder; tek bir sesi kişinin kendisi Ayarlar → Ses ve video → **Giriş ve çıkış sesin** bölümünden siler.
 
 Activities, başlangıçta PostgreSQL'de mevcut `rooms_activity_state` tablosunu oluşturur. Bu, tam sürümlü migration/geri dönüş sistemi değildir. Tek yetkili Activities süreci kullan; ortak PostgreSQL bağımsız komut işlemcilerini kendiliğinden güvenli yapmaz.
 
@@ -360,7 +360,7 @@ Bunlar servis sağlık kontrolleridir; tam kabul testi değildir. Yeniden başla
 
 ## Başkalarını davet etmeden önce
 
-- İki gerçek kişi davet bağlantısıyla herkese açık adres üzerinden kayıt olup mesajlaşabilir; bağlantı sayfası tarayıcıda açılır ve **ROOMS'ta aç** uygulamayı başlatır.
+- İki gerçek kişi davet bağlantısıyla herkese açık adres üzerinden kayıt olup mesajlaşabilir; bağlantı sayfası tarayıcıda açılır ve **Tayfa'da aç** uygulamayı başlatır.
 - Yetkisiz dış hesap kanalları okuyamaz veya medya/etkinlik yetkisi alamaz.
 - Farklı ağdaki iki fiziksel cihaz birbirini duyabilir ve seçilen ekranı paylaşabilir.
 - Mikrofon/sağırlaştırma, ayrılma/katılma, yeniden bağlantı ve üyelik iptali çalışır.

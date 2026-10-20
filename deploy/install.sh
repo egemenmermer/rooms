@@ -46,12 +46,12 @@ main() {
   systemctl enable --now docker >/dev/null 2>&1 || true
   docker compose version >/dev/null || die "Docker Compose kurulamadı."
 
-  say "ROOMS indiriliyor → $ROOMS_DIR"
+  say "Tayfa indiriliyor → $ROOMS_DIR"
   if [[ -d "$ROOMS_DIR/.git" ]]; then
     git -C "$ROOMS_DIR" fetch --quiet --tags origin
   else
     [[ ! -e "$ROOMS_DIR" || -z "$(ls -A "$ROOMS_DIR")" ]] ||
-      die "$ROOMS_DIR boş değil ve bir ROOMS kurulumu değil. ROOMS_DIR=/baska/yol ile tekrar dene."
+      die "$ROOMS_DIR boş değil ve bir Tayfa kurulumu değil. ROOMS_DIR=/baska/yol ile tekrar dene."
     git clone --quiet "$ROOMS_REPO" "$ROOMS_DIR"
   fi
   git -C "$ROOMS_DIR" checkout --quiet "$ROOMS_REF"
@@ -80,9 +80,9 @@ main() {
   rooms invite
 
   domain="$(grep -E '^ROOMS_DOMAIN=' "$ROOMS_DIR/deploy/.env" | cut -d= -f2-)"
-  printf '\n\033[1;32mROOMS sunucun hazır!\033[0m\n\n'
+  printf '\n\033[1;32mTayfa sunucun hazır!\033[0m\n\n'
   echo "  Sunucu adresi:  https://$domain"
-  echo "  1. ROOMS uygulamasını indir: https://github.com/egemenmermer/rooms/releases/latest"
+  echo "  1. Tayfa uygulamasını indir:https://github.com/egemenmermer/rooms/releases/latest"
   echo "  2. Uygulamada 'Giriş yap' sekmesinde sunucu adresini gir, sahip hesabınla giriş yap."
   echo "  3. 'Davet oluştur' ile bağlantıyı arkadaşlarına gönder (ya da sunucuda: rooms invite)."
   echo

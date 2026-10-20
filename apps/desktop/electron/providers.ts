@@ -859,7 +859,7 @@ export function setupProviders(
     const check = () => checkRD(generation, scope);
     const clientId = process.env.ROOMS_RD_CLIENT_ID;
     if (!clientId)
-      throw new Error('Real-Debrid device login requires the ROOMS registered public client ID.');
+      throw new Error('Real-Debrid device login requires the Tayfa registered public client ID.');
     if (!safeStorage.isEncryptionAvailable())
       throw new Error('Encrypted OS storage is unavailable.');
     const u = new URL('https://api.real-debrid.com/oauth/v2/device/code');

@@ -1,4 +1,4 @@
-/* Community cinema hall. ROOMS purple means "you can act here"; red only ever means LIVE. */
+/* Community cinema hall. Tayfa purple means "you can act here"; red only ever means LIVE. */
 :root {
   --cinema-ground: #17181d;
   --cinema-screen: #050507;
@@ -2811,7 +2811,7 @@ html[data-motion='reduce'] .hall-screen-host {
 }
 
 /* RMDB: the community's own film diary. Stars stay amber like the catalog rating; progress,
-   hearts and this member's own marks are ROOMS purple. Red still only means LIVE. */
+   hearts and this member's own marks are Tayfa purple. Red still only means LIVE. */
 .rmdb-head {
   display: flex;
   align-items: flex-end;
@@ -3573,4 +3573,623 @@ html[data-motion='reduce'] .hall-screen-host {
   .rmdb-columns {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* "Devam et": 16:9 cards with where the hall stopped, or an announced episode's date. */
+.hall-row.wide .hall-row-track {
+  grid-auto-columns: 264px;
+}
+.hall-skeleton.wide {
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+}
+.hall-continue-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  scroll-snap-align: start;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+.hall-continue-art {
+  position: relative;
+  display: block;
+  margin-bottom: 6px;
+  overflow: hidden;
+  border-radius: 10px;
+  transition: transform 150ms var(--motion-ease-out);
+}
+.hall-continue-art .hall-art.wide {
+  border-radius: 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-motion='full'] .hall-continue-card:hover .hall-continue-art {
+    transform: scale(1.02);
+  }
+}
+.hall-continue-card:focus-visible {
+  outline: none;
+}
+.hall-continue-card:focus-visible .hall-continue-art {
+  outline: 2px solid var(--color-action-focus);
+  outline-offset: 3px;
+}
+.hall-continue-card strong {
+  overflow: hidden;
+  font: 650 14px / 19px var(--font-family);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hall-continue-card small {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hall-continue-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid rgb(255 255 255 / 0.85);
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.4);
+  color: var(--cinema-on-video);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  transition: opacity 150ms ease;
+}
+.hall-continue-card:hover .hall-continue-play,
+.hall-continue-card:focus-visible .hall-continue-play {
+  opacity: 1;
+}
+.hall-continue-badges {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  display: flex;
+  gap: 4px;
+}
+.hall-continue-badges span {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.68);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14);
+  color: var(--cinema-on-video);
+  font: 650 11px / 17px var(--font-family);
+  backdrop-filter: blur(6px);
+}
+.hall-continue-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: rgb(0 0 0 / 0.55);
+}
+.hall-continue-progress::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--color-action-primary);
+  transform: scaleX(var(--progress, 0));
+  transform-origin: left;
+}
+
+/* Context menu of cards and the screen. */
+.hall-context-menu {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 210px;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgb(23 24 29 / 0.97);
+  box-shadow:
+    0 18px 40px -16px rgb(0 0 0 / 0.8),
+    0 0 0 1px var(--cinema-line-strong);
+}
+.hall-context-menu button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--cinema-on-video);
+  font: 13px / 18px var(--font-family);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.hall-context-menu button:hover:not(:disabled),
+.hall-context-menu button:focus-visible {
+  outline: none;
+  background: rgb(255 255 255 / 0.08);
+}
+.hall-context-menu button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.hall-context-menu button.danger {
+  background: rgb(255 69 58 / 0.14);
+  color: #ff6961;
+}
+.hall-context-menu button.danger:hover,
+.hall-context-menu button.danger:focus-visible {
+  background: rgb(255 69 58 / 0.24);
+}
+
+/* Episode marks: a check the hall shares, and stills blurred until watched (viewer's choice). */
+.hall-episodes li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hall-episodes li .hall-episode {
+  flex: 1;
+  min-width: 0;
+}
+.hall-episode-thumb .hall-art {
+  transition: filter 150ms ease;
+}
+.hall-episode-thumb.spoiler .hall-art {
+  filter: blur(14px) brightness(0.7);
+}
+.hall-episode-thumb {
+  overflow: hidden;
+  border-radius: 8px;
+}
+.hall-episode-mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-right: 8px;
+  border: 1.5px solid var(--cinema-line-strong);
+  border-radius: 50%;
+  background: none;
+  color: transparent;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+.hall-episode-mark:hover:not(:disabled) {
+  border-color: var(--color-text-muted);
+  color: var(--color-text-muted);
+}
+.hall-episode-mark.on {
+  border-color: var(--color-action-primary);
+  background: var(--color-action-primary);
+  color: var(--color-text-onAccent);
+}
+.hall-episode-mark:focus-visible {
+  outline: 2px solid var(--color-action-focus);
+  outline-offset: 2px;
+}
+.hall-episodes li.watched .hall-episode-text strong {
+  color: var(--color-text-muted);
+}
+
+/* Near an episode's end: one click opens the next for the hall. Stays while the bar hides. */
+.hall-next-episode {
+  position: absolute;
+  right: 20px;
+  bottom: 96px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 190px;
+  padding: 10px 14px 10px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: rgb(245 245 247 / 0.94);
+  box-shadow: 0 12px 30px -12px rgb(0 0 0 / 0.7);
+  color: #111;
+  font: 650 14px / 18px var(--font-family);
+  text-align: left;
+  cursor: pointer;
+  animation: hall-next-in 220ms var(--motion-ease-out);
+}
+.hall-next-episode span {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.hall-next-episode small {
+  color: rgb(0 0 0 / 0.55);
+  font: 600 11px / 14px var(--font-family);
+}
+.hall-next-episode:hover {
+  background: #fff;
+}
+.hall-next-episode:focus-visible {
+  outline: 2px solid var(--color-action-focus);
+  outline-offset: 3px;
+}
+.hall-next-episode.quiet {
+  min-width: 0;
+  background: rgb(0 0 0 / 0.6);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14);
+  color: var(--cinema-on-video);
+  cursor: default;
+}
+.hall-next-episode.quiet small {
+  color: rgb(255 255 255 / 0.6);
+}
+@keyframes hall-next-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hall-next-episode {
+    animation: none;
+  }
+}
+
+/* IMDb and Letterboxd next to the rating: text badges in their colours, no logos. */
+.hall-title-links {
+  display: inline-flex;
+  gap: 6px;
+}
+.hall-title-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 4px;
+  font: 800 11px / 1 var(--font-family);
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+.hall-title-link.imdb {
+  background: #f5c518;
+  color: #000;
+}
+.hall-title-link.letterboxd {
+  background: #14181c;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
+  color: #fff;
+}
+.hall-title-link.letterboxd i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff8000;
+}
+.hall-title-link.letterboxd i + i {
+  margin-left: -2px;
+  background: #00e054;
+}
+.hall-title-link.letterboxd i + i + i {
+  margin-right: 3px;
+  background: #40bcf4;
+}
+.hall-title-link:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+.hall-title-link:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.hall-title-link[aria-busy='true'] {
+  opacity: 0.7;
+  cursor: progress;
+}
+.hall-title-link:focus-visible {
+  outline: 2px solid var(--color-action-focus);
+  outline-offset: 2px;
+}
+
+/* Resolution, frame rate, bit rate (and live delay) beside LIVE and the quality badges. */
+.hall-stream-facts {
+  display: inline-flex;
+  gap: 4px;
+}
+.hall-stream-facts span {
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgb(0 0 0 / 0.55);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.16);
+  color: var(--cinema-on-video);
+  font: 600 11px / 16px var(--font-family);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.hall-screen.reveal .hall-screen-top {
+  opacity: 1;
+}
+.hall-control.on {
+  background: rgb(255 255 255 / 0.16);
+  color: var(--cinema-on-video);
+}
+
+.cs-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cs-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+.cs-choice input {
+  margin-top: 3px;
+  accent-color: var(--color-action-primary);
+}
+.cs-choice span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cs-choice strong {
+  font: 600 13.5px / 18px var(--font-family);
+}
+.cs-choice small {
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+}
+
+/* `?`: the hall's keys. */
+.hall-keys-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 0.45);
+}
+.hall-keys-card {
+  width: min(420px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: rgb(23 24 29 / 0.98);
+  box-shadow:
+    0 24px 60px -20px rgb(0 0 0 / 0.85),
+    0 0 0 1px var(--cinema-line-strong);
+  color: var(--cinema-on-video);
+}
+.hall-keys-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.hall-keys-card h2 {
+  margin: 0;
+  font: 650 16px / 22px var(--font-family);
+}
+.hall-keys-card dl {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+.hall-keys-card dl div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--cinema-line);
+}
+.hall-keys-card dt {
+  font-size: 13px;
+}
+.hall-keys-card dd {
+  margin: 0;
+}
+.hall-keys-card p {
+  margin: 12px 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.cs-choices-title {
+  font: 600 13px / 18px var(--font-family);
+}
+.cs-check {
+  margin-top: 14px;
+}
+.hall-key-settings {
+  margin-top: 24px;
+}
+.hall-key-settings > p {
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+}
+.hall-key-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.hall-key-button {
+  min-width: 72px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: 12.5px / 1 var(--font-family);
+  cursor: pointer;
+}
+.hall-key-button:hover,
+.hall-key-button.listening {
+  border-color: var(--color-action-primary);
+}
+.hall-key-button.listening {
+  color: var(--color-action-primary);
+}
+.hall-key-reset {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.hall-key-reset:hover {
+  background: var(--color-background-hover, rgb(255 255 255 / 0.06));
+}
+.hall-key-note {
+  margin: 10px 0;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+}
+
+/* Favourite channels and programme reminders. */
+.hall-tile {
+  position: relative;
+}
+.hall-tile-star {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.35);
+  color: var(--color-text-muted);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+.hall-tile:hover .hall-tile-star,
+.hall-tile.selected .hall-tile-star,
+.hall-tile-star:focus-visible,
+.hall-tile-star.on {
+  opacity: 1;
+}
+.hall-tile-star.on {
+  color: #ffc53d;
+}
+.hall-tile-star:hover {
+  color: #ffc53d;
+}
+.hall-reminder-bell {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.hall-reminder-bell:hover {
+  background: var(--cinema-fill);
+}
+.hall-reminder-bell.on {
+  color: var(--color-action-primary);
+}
+
+/* Art whose shape does not fit its frame: whole, over a blurred copy of itself. */
+.hall-art {
+  position: relative;
+}
+.hall-art.letterbox img:not(.hall-art-blur) {
+  position: relative;
+  object-fit: contain;
+}
+.hall-art img.hall-art-blur {
+  position: absolute;
+  inset: -12%;
+  width: 124%;
+  height: 124%;
+  object-fit: cover;
+  filter: blur(18px) brightness(0.55);
+}
+/* A hero or details head with only a poster: a soft wash of it, never a sharp crop. */
+.hall-hero-backdrop.from-poster {
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  filter: blur(28px) brightness(0.6) saturate(1.2);
+}
+
+/* Row arrows (hover) and mouse dragging. */
+.hall-row-frame {
+  position: relative;
+}
+.hall-row-track.dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  user-select: none;
+}
+.hall-row-track.dragging * {
+  pointer-events: none;
+}
+.hall-row-arrow {
+  position: absolute;
+  top: 0;
+  bottom: 52px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  border: 0;
+  background: linear-gradient(to right, var(--cinema-ground) 10%, transparent);
+  color: var(--color-text-primary);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 150ms ease;
+}
+.hall-row-arrow.left {
+  left: -4px;
+}
+.hall-row-arrow.right {
+  right: -4px;
+  background: linear-gradient(to left, var(--cinema-ground) 10%, transparent);
+}
+.hall-row:hover .hall-row-arrow,
+.hall-row-arrow:focus-visible {
+  opacity: 1;
+}
+@media (hover: none) {
+  .hall-row-arrow {
+    display: none;
+  }
+}
+.hall-screen.mini .hall-stream-facts {
+  display: none;
+}
+.hall-key-settings .shortcut-row {
+  align-items: center;
 }

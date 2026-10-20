@@ -5,7 +5,7 @@
  *   bootstrap  Create the owner account, community, voice channel and upstream invite.
  *              Reads `email=`, `password=`, `username=` and `communityName=` lines on stdin
  *              so the password never appears in process arguments.
- *   invite     Issue multi-use ROOMS invitation links (https://<domain>/davet/<token>) for the
+ *   invite     Issue multi-use Tayfa invitation links (https://<domain>/davet/<token>) for the
  *              bootstrapped community. Each signup seeds its own account invitation.
  *   status     Print the non-secret bootstrap state.
  */
@@ -13,7 +13,7 @@ import { randomBytes } from 'node:crypto';
 import { mkdir, open, readFile, rename } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { MongoClient } from 'mongodb';
-import { inviteShareLink } from '@rooms/social';
+import { INVITE_LINKS_PER_SPACE, inviteShareLink } from '@rooms/social';
 import { StoatError } from '@rooms/stoat';
 import { issueRegistrationInvite } from '../access/registration';
 
@@ -120,7 +120,7 @@ async function bootstrap() {
   const email = String(input.email ?? '').trim();
   const password = String(input.password ?? '');
   const username = String(input.username ?? '').trim();
-  const communityName = String(input.communityName ?? '').trim() || 'ROOMS';
+  const communityName = String(input.communityName ?? '').trim() || 'Tayfa';
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new AdminError('Enter a valid email.');
   if (password.length < 8) throw new AdminError('Password must be at least 8 characters.');
   if (!/^[\p{L}\p{N}_.-]{2,32}$/u.test(username))
@@ -142,7 +142,7 @@ async function bootstrap() {
   const session = await api<{ token?: string; result?: string }>('/auth/session/login', 'POST', {
     email,
     password,
-    friendly_name: 'ROOMS self-host bootstrap',
+    friendly_name: 'Tayfa self-host bootstrap',
   });
   if (typeof session?.token !== 'string')
     throw new AdminError('Login needs extra verification; complete it in the desktop app.');
@@ -211,7 +211,7 @@ async function invite(args: Record<string, string>) {
     }).catch((error) => {
       if (error instanceof StoatError && error.code === 'INVITE_LIMIT_REACHED')
         throw new AdminError(
-          'This community already has 20 active invitation links. Cancel one in the app under Topluluk yönetimi → Davetler.',
+          `This community already has ${INVITE_LINKS_PER_SPACE} active invitation links. Cancel one in the app under Topluluk yönetimi → Davetler.`,
         );
       if (error instanceof StoatError && error.code === 'REGISTRATION_BUSY')
         throw new AdminError('Another signup is updating the invitation ledger. Try again.');

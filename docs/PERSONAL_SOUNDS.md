@@ -27,7 +27,7 @@ Ekran paylaşımı ve yayın izleme sesleri bu sürümde yok. Kimin izlediği ar
 
 ## Akış
 
-1. Kişi Ayarlar → Ses ve video → **Giriş ve çıkış sesin** bölümünden bir ROOMS sesi seçer ya da kendi sesini yükler. Seçim hemen erişim servisinde saklanır ve tüm cihazlarında geçerlidir; sayfadaki Kaydet düğmesini beklemez.
+1. Kişi Ayarlar → Ses ve video → **Giriş ve çıkış sesin** bölümünden bir Tayfa sesi seçer ya da kendi sesini yükler. Seçim hemen erişim servisinde saklanır ve tüm cihazlarında geçerlidir; sayfadaki Kaydet düğmesini beklemez.
 2. Kişi bir ses odasına girerken erişim servisi LiveKit iznini verir. İzne, seçtiği sesin kimliğini sunucuya ait katılımcı özelliği olarak ekler (`rooms.sound.enter`, `rooms.sound.leave`). İstemciler kendi özelliklerini değiştiremez (`canUpdateOwnMetadata: false`). Bu yüzden kimse başkası adına ses çaldıramaz.
 3. Odadaki istemciler LiveKit'in giriş ve çıkış olaylarını görür. Kimlik LiveKit'te sunucu tarafından doğrulanmıştır. İstemci önce gürültü kurallarını uygular, sonra sesi erişim servisinden indirir ve bellekte tutar. Bu indirme kanal üyeliği ve bağlanma izni ister. Ses seçili hoparlörden yerel olarak çalar.
 4. Kişi odadayken sesini değiştirirse erişim servisi aktif bağlantısındaki özelliği günceller.
@@ -36,7 +36,7 @@ Eski istemciler bilmedikleri özelliği yok sayar ve klasik sesi çalar.
 
 ## Sesler ve sınırlar
 
-- **ROOMS sesleri:** Fanfar, Kapı zili, Arcade, Portal, Damla, Kristal, Kapanış ve Hoşça kal. Hepsi kodda sentezlenen özgün seslerdir; kayıt veya lisanslı içerik kullanılmaz.
+- **Tayfa sesleri:** Fanfar, Kapı zili, Arcade, Portal, Damla, Kristal, Kapanış ve Hoşça kal. Hepsi kodda sentezlenen özgün seslerdir; kayıt veya lisanslı içerik kullanılmaz.
 - **Yükleme:** şimdilik yalnızca masaüstünde. Dosya (MP3, WAV, OGG, FLAC; M4A cihazdaki çözücüye bağlı) en fazla 20 MB ve 5 dakika olabilir ve cihazda çözülür. Kesit seçilirken bellekte yalnızca tek kanallı bir kopya tutulur. Kişi en fazla 4 saniyelik bir kesit seçer ve önizler. Sunucuya yalnızca bu kesit mono 48 kHz WAV olarak gider. Kişi başına en fazla 6 ses saklanır.
 - **Ses düzeyi:** sunucu her yüklemeyi kendisi ölçer (ITU-R BS.1770). Sesi −20 LUFS'e getirir; en fazla +12 dB yükseltir, tepeyi −3 dBFS'nin altında tutar, baştaki ve sondaki sessizliği kırpar, kenarları 5 ms ve 30 ms ile yumuşatır. Neredeyse sessiz kesitler reddedilir. İstemcinin ses düzeyine güvenilmez. Ham dosya saklanmaz.
 - **Hak beyanı:** yüklerken kişi sesi kullanma hakkı olduğunu onaylar. Telifli müzik, başkasının sesi veya rahatsız edici içerik yüklenmemelidir. Kısa olması bir kaydı telif sorunundan kurtarmaz.

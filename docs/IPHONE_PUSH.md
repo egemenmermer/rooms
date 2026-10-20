@@ -6,7 +6,7 @@ Uygulama kapalıyken iPhone'a bahsetme ve özel mesaj bildirimi gönderir.
 
 1. iPhone uygulaması girişten sonra bildirim izni ister. İzin verilirse Apple'dan aldığı cihaz belirtecini Stoat'ın `POST /push/subscribe` uç noktasına `endpoint: "apn"` ile kaydeder. Kayıt oturuma bağlıdır; çıkış yapınca oturumla birlikte silinir.
 2. Stoat `pushd`, bildirim alması gereken kullanıcıları kendisi belirler: bahsetmeler, özel mesajlar ve kullanıcının bildirim ayarları. `apn` aboneliklerini `revolt.notifications` değişimindeki `notifications.outbound.apn` yönlendirme anahtarına gönderir.
-3. Upstream `pushd` APNs istemcisi konuyu `chat.revolt.app` olarak sabitler, bu yüzden ROOMS uygulamasına gönderemez. Stoat'ı çatallamak yerine `apps/services/apns` aynı yönlendirme anahtarını `rooms.apns-relay` kuyruğuyla dinler ve bildirimi ROOMS paket kimliğiyle Apple'a iletir.
+3. Upstream `pushd` APNs istemcisi konuyu `chat.revolt.app` olarak sabitler, bu yüzden Tayfa uygulamasına gönderemez. Stoat'ı çatallamak yerine `apps/services/apns` aynı yönlendirme anahtarını `rooms.apns-relay` kuyruğuyla dinler ve bildirimi Tayfa paket kimliğiyle Apple'a iletir.
 4. `pushd` için APNs anahtarları boş kalmalıdır. Aksi halde iki tüketici aynı bildirimi yarışarak işler.
 
 Bildirim yalnızca yazar, kanal adı ve `pushd`'nin hazırladığı metni içerir. Kanal ve mesaj kimlikleri dokununca doğru sohbeti açmak için eklenir. Belirteçler ve mesaj içerikleri günlüğe yazılmaz; servis saatte bir yalnızca sayıları yazar.

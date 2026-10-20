@@ -142,7 +142,7 @@ export interface DesktopBridge {
      * videos still play on youtube.com; `playable: false` ones are private or removed.
      */
     youtubeDetails?(videoId: string): Promise<YouTubeDetails | { playable: false } | null>;
-    /** `minimal` hides YouTube's own controls; ROOMS draws the shared ones. */
+    /** `minimal` hides YouTube's own controls; Tayfa draws the shared ones. */
     youtubePlayer(
       videoId: string,
       chrome?: 'minimal' | 'native',

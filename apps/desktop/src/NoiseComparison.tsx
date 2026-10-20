@@ -73,7 +73,7 @@ export function NoiseComparison({
       if (controller.current === current && !current.signal.aborted)
         setError(
           failure instanceof DOMException && failure.name === 'NotAllowedError'
-            ? 'Mikrofon izni verilmedi. Sistem ayarlarından ROOMS için izin ver.'
+            ? 'Mikrofon izni verilmedi. Sistem ayarlarından Tayfa için izin ver.'
             : failure instanceof Error
               ? failure.message
               : 'Ses karşılaştırması tamamlanamadı.',

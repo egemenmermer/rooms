@@ -144,7 +144,7 @@ export default function App() {
     name: s.name,
     initials: s.name.slice(0, 1),
     tone: 'blue',
-    description: 'ROOMS',
+    description: 'Tayfa',
   }));
   const activeSpace = community.activeSpaceId;
   const [communityIcons, setCommunityIcons] = useState<Record<string, string>>({});
@@ -513,7 +513,7 @@ export default function App() {
         <div className="window-chrome">
           <span className="window-wordmark">
             <img src="./reference-brand/brand/logo-symbol-white.svg" alt="" />
-            ROOMS
+            Tayfa
           </span>
         </div>
         <StartupSplash />
@@ -532,7 +532,7 @@ export default function App() {
         <div className="window-chrome">
           <span className="window-wordmark">
             <img src="./reference-brand/brand/logo-symbol-white.svg" alt="" />
-            ROOMS
+            Tayfa
           </span>
         </div>
         {RecoveryFixtureEntry && localFixture.startsWith('S04/') ? (
@@ -585,7 +585,7 @@ export default function App() {
         </div>
         <span className="window-wordmark">
           <img src="./reference-brand/brand/logo-symbol-white.svg" alt="" />
-          ROOMS
+          Tayfa
         </span>
         {import.meta.env.DEV && localFixture ? (
           <span className="window-private">
@@ -640,7 +640,7 @@ export default function App() {
                   ? voiceView
                     ? (realtime.roomName ?? channel)
                     : channel
-                  : (titles[visiblePath] ?? 'ROOMS')}
+                  : (titles[visiblePath] ?? 'Tayfa')}
               </span>
             </div>
             <div className="toolbar-actions">

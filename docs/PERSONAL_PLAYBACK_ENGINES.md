@@ -1,12 +1,12 @@
 # Kişisel IPTV oynatma motorları
 
-Kullanıcı okunur kategori adlarının eksik olduğunu, oynatmanın kesildiğini, takıldığını ve hataların belirsiz kaldığını bildirdi. Aynı sorunlu kanal kullanıcının VLC denemesinde kesintisiz oynadı. Bu, incelemeyi ROOMS oynatma yoluna daraltır; belirli kodeği teşhis etmez veya sağlayıcıya giden istek farklarını dışlamaz. Özel sağlayıcı URL'si/hesabı verilmedi veya incelenmedi.
+Kullanıcı okunur kategori adlarının eksik olduğunu, oynatmanın kesildiğini, takıldığını ve hataların belirsiz kaldığını bildirdi. Aynı sorunlu kanal kullanıcının VLC denemesinde kesintisiz oynadı. Bu, incelemeyi Tayfa oynatma yoluna daraltır; belirli kodeği teşhis etmez veya sağlayıcıya giden istek farklarını dışlamaz. Özel sağlayıcı URL'si/hesabı verilmedi veya incelenmedi.
 
 Kaynak düzeltmeleri standart, sarmalanmış ve anahtarlı Xtream kategori yanıtlarını kabul eder; ondalık kimlikleri kayıplı sayısal dönüşüm olmadan normalleştirir. Kategori üstverisi yoksa satırdaki ad kullanılır. Çözülemeyen ad açık belirtilir; iç numara okunur grup adı gibi sunulmaz. Canlı bekleme/takılma olayları sınırlı gözetim süresi kullanır; gerçek ilerleme, duraklatma veya hesap kapatmada iptal edilir, mevcut sınırlı HLS kurtarmasına bağlanır. Bilinmeyen hata artık hesap/kaynak geçersiz demek değildir. Bunlar bildirilen kanalın çalıştığını onaylamaz.
 
 ## Yerel motor yönü
 
-ROOMS gezinme/kontrollerini koruyarak kişisel medya için libVLC yerel arka ucu değerlendirildi. Resmî gömme arayüzleri macOS NSView ve Windows HWND yüzeyi sağlar. HTML/HLS yolu zaten Chromium/hls.js ile çözer; sıfırdan yeni çözücü değildir. VLC desteklenen biçimleri genişletebilir; sağlayıcı hataları ve kategori üstverisi ayrıca ele alınır.
+Tayfa gezinme/kontrollerini koruyarak kişisel medya için libVLC yerel arka ucu değerlendirildi. Resmî gömme arayüzleri macOS NSView ve Windows HWND yüzeyi sağlar. HTML/HLS yolu zaten Chromium/hls.js ile çözer; sıfırdan yeni çözücü değildir. VLC desteklenen biçimleri genişletebilir; sağlayıcı hataları ve kategori üstverisi ayrıca ele alınır.
 
 Görünümü sağlayıcı kimlik bilgileriyle doğrudan libVLC'ye bağlamayın. Yerel sağlayıcı yetkisini, hesap nesillerini, sınırlı ağ doğrulamasını, erişim iptalini ve yalnız yerel oynatmayı kullanın. VLC `rooms-provider:` bilmez; yetkili yerel akış bağdaştırıcısı bu yeteneği ve yeniden yazılmış liste/segment URL'lerini çevirmelidir. Özgün sağlayıcı bilgilerini açığa çıkarmamalı, rastgele dosya/ağ erişimi vermemelidir. Motor günlük/olaylarında kaynak URL ve yetki verisi bulunmamalıdır.
 
@@ -14,7 +14,7 @@ Benimsemeden önce sabit yerel bağ ve eşleşen ARM64/x64 libVLC değerlendiril
 
 ## Yerel uygulama ve paketleme
 
-Üçüncü taraf Electron sarmalayıcısı, yeniden derleme zinciri Git kaynaklı node-gyp istediği için pnpm'in alışılmadık alt bağımlılık politikasıyla reddedildi. Politika açık bırakıldı; sarmalayıcı ve kodu kurulmadı/kopyalanmadı/derlenmedi. ROOMS, VideoLAN'ın resmî libVLC 3 C API'sine yazılmış bağımsız küçük N-API bağdaştırıcısı kullanır; npm bağımlılığı eklemez.
+Üçüncü taraf Electron sarmalayıcısı, yeniden derleme zinciri Git kaynaklı node-gyp istediği için pnpm'in alışılmadık alt bağımlılık politikasıyla reddedildi. Politika açık bırakıldı; sarmalayıcı ve kodu kurulmadı/kopyalanmadı/derlenmedi. Tayfa, VideoLAN'ın resmî libVLC 3 C API'sine yazılmış bağımsız küçük N-API bağdaştırıcısı kullanır; npm bağımlılığı eklemez.
 
 `pnpm prepare:vlc`, sabit VLC 3.0.23 ve bağımlılık kaynak özetlerini doğrular, Mac motorunu kaynaktan derler, bağdaştırıcıyı derler, lisans/bildirimleri korur. Kaynak derlemesi FFmpeg 7.1.5, VideoLAN güvenlik yamalı libdvbpsi 1.3.3, libgcrypt 1.12.0/libgpg-error 1.58 ve FreeType 2.14.1 kullanır. Küçük avcodec sürüm koşulu düzeltmesi avformat olmadan derlemeyi destekler. Resmî Mac ikili dağıtımı derleyicinin ev yollarını içerdiğinden değiştirilmemiş gizlilik kontrolü tarafından reddedildi; yalnız özel yerel inceleme için tutuldu, paketlenmedi. Mac ARM64 ve Windows x64 kendi sunucu derleyicisini kullanır; Windows Visual Studio x64 geliştirici kabuğu ister. Resmî Electron SDK girdileri özetle sabittir. Üretilen çıktı Git dışındadır. `ROOMS_VLC=1` motoru pakete ekler; yoksa Chromium/HLS kalır. Kişisel oynatıcıda açık Standart seçimi korunur; otomatik eşzamanlı ikinci sağlayıcı akışı başlatılmaz.
 
@@ -22,7 +22,7 @@ Her oynatma mevcut hesaba bağlı sağlayıcı yeteneğiyle başlar. Yerel motor
 
 Gezinme, EPG ve kontroller korunur. Video yalnız üstveri yüklenince değil libVLC görüntülenen kare bildirince görünür. Yerel çizim DOM kontrollerinin üstünde sınırlanır; görünmeyen fakat tıklanabilir düğme sorunu önlenir. Tam ekran Escape işleyicisi açıktır. libVLC, bağımsız VLC uygulamasının kullanıcı ayarını kullanmaz. Yerel yüzey rota değişimi, modal/menü, küçültme ve kapatmada gizlenir. libVLC güvenilir canlı sarma aralığı vermiyorsa DVR kapalıdır; aralık veren kaynak için kullanıcı Standart'ı seçebilir. Motor kişisel yerel oynatma içindir; sağlayıcı içeriğini yayınlama eklemez.
 
-LGPL ortak motor ve kaynağı değiştirilebilir; eklentiler GPL veya başka lisanslı olabilir. Arşiv/kaynak bağlantıları, COPYING, COPYING.LIB, AUTHORS, THANKS ve resmî dağıtım bildirimleri ile ROOMS bağdaştırıcı kaynağı/derleme betiği eşlik eder. Yayından önce iki platform paketi, gerçek çıktı/kontroller/boyut/tam ekran, hesap/pencere iptali ve bildirilen uzun IPTV oynatımı doğrulanmalıdır. Sentetik/taklit kontroller gerçek sağlayıcı/fiziksel kabulü kapatmaz. İlk uygulama aday tutuldu; sonraki RC9 dağıtımı aşağıdadır. Güncel yayın [RC12](RC12_RELEASE.md)'dir.
+LGPL ortak motor ve kaynağı değiştirilebilir; eklentiler GPL veya başka lisanslı olabilir. Arşiv/kaynak bağlantıları, COPYING, COPYING.LIB, AUTHORS, THANKS ve resmî dağıtım bildirimleri ile Tayfa bağdaştırıcı kaynağı/derleme betiği eşlik eder. Yayından önce iki platform paketi, gerçek çıktı/kontroller/boyut/tam ekran, hesap/pencere iptali ve bildirilen uzun IPTV oynatımı doğrulanmalıdır. Sentetik/taklit kontroller gerçek sağlayıcı/fiziksel kabulü kapatmaz. İlk uygulama aday tutuldu; sonraki RC9 dağıtımı aşağıdadır. Güncel yayın [RC12](RC12_RELEASE.md)'dir.
 
 Birincil kaynaklar: [VideoLAN kaynak/lisans](https://github.com/videolan/vlc), [resmî libVLC oynatıcı arayüzleri](https://videolan.videolan.me/vlc-3.0/group__libvlc__media__player.html), [incelenen Electron bağının gereksinimleri](https://github.com/ssnangua/electron-vlc-player).
 
@@ -52,7 +52,7 @@ Bildirilen uzun sağlayıcı oynatımı, gerçek hesap sohbet/fotoğraf/kuyruk g
 
 Sahibi mevcut RC9'a Windows x64 eklemeyi onayladı. `6bb398f72e343b19d5a63e7566688a7370fe5573`, [38608454039 çalışmasında](https://github.com/egemenmermer/rooms/actions/runs/38608454039) gerçek Windows kurulum işini geçti. `ROOMS-0.1.18-rc.9-windows-x64-setup.exe`: 192410868 bayt; SHA-256 `99cec572636e91ed24f7405c3507c4ebdbda32f44a59deb4f29e30a6a6656506`. İmzasız arkadaş önizlemesidir; güvenilir imzalı Windows yayını değildir. Mac arşivi/besleme özgün baytları korunur.
 
-Gerçek çalıştırma eksik Windows gecikmeli yükleme kancasını buldu: Node simgeleri ayrı Node'dan değil yükleyen Electron/ROOMS'tan çözülmelidir. Derlemeye kanca eklendi. Kütüphane/eklenti yolları Unicode Windows API'si kullanır; Türkçe karakterli dizine kurulum doğrulandı.
+Gerçek çalıştırma eksik Windows gecikmeli yükleme kancasını buldu: Node simgeleri ayrı Node'dan değil yükleyen Electron/Tayfa'dan çözülmelidir. Derlemeye kanca eklendi. Kütüphane/eklenti yolları Unicode Windows API'si kullanır; Türkçe karakterli dizine kurulum doğrulandı.
 
 Windows Server 2025 işi NSIS'i sessiz kurdu, kurulu/paket ASAR özetlerini karşılaştırdı, kurulu VLC'den gerçek sentetik video gösterdi; duraklat/devam, sınır, iptal ve eşzamansız durdurmayı sınadı. Arayüz menü/Escape, tam ekran/Escape, rota gizle/dön ve 900×700 taşmayı geçti. Kurulu korumalı uygulama kimlik bilgisi göndermeden giriş/kayıt gezinmesi, geçersiz ayrıcalıklı komut reddi, 900×700/1440×900 ayarlar, Strong/Standard WASM hazırlığı ve normal açılış kalıcılığını geçti. Ekran kaynakları listelendi; yakalama/yayın yapılmadı.
 

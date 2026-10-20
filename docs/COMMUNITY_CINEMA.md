@@ -13,7 +13,8 @@ Kişisel medya (Medyam) bundan ayrıdır ve özel kalır. Sinema'daki yeniden ya
 - [Aktarım](#aktarım)
 - [Altyazılar](#altyazılar)
 - [Etkinlik protokolü](#etkinlik-protokolü)
-- [RMDB](#rmdb)
+- [Filmler, diziler ve canlı TV](#filmler-diziler-ve-canlı-tv)
+- [RMDB (arayüzde Tayfa)](#rmdb)
 - [Kurulum](#kurulum)
 - [Doğrulama](#doğrulama)
 
@@ -112,9 +113,22 @@ Salon, `hall` adlı ana etkinliktir; `roomId` salon kanalının kimliğidir. Sı
 - Filmler ve bölümler ortak zaman çizelgesiyle oynar, sarılır ve duraklatılır.
 - Ev sahibi, kumanda modu ve devir kuralları [etkinlik protokolündeki](ACTIVITY_PROTOCOL.md) gibidir.
 
+## Filmler, diziler ve canlı TV
+
+- **Devam et.** Filmler ve Diziler'in en üstündeki satır `GET /v1/halls/:salon/continue?kind=` ile gelir. Satırda salonun yarım bıraktığı filmler ve bölümler, bölümü biten dizinin sıradaki bölümü ve henüz çıkmamış bölümün yayın tarihi (`Yakında · 08.12.2026`, 60 günden azsa `49g`) yer alır. Başlıklar platform ve kalite eklerinden arındırılır (`packages/community-cinema/src/titles.ts`). "Listeden kaldır" yalnızca o izleyicide geçerlidir ve salon yapımı yeniden izleyince kart geri gelir.
+- **Yayın tarihleri.** Sağlayıcı bölümün tarihini (`releasedate`/`air_date`) verirse o kullanılır. Vermezse ve sahip Sinema ayarlarına TMDB anahtarı girdiyse tarih TMDB'deki `next_episode_to_air` alanından alınır. Anahtar SubDL anahtarı gibi şifreli saklanır, hiçbir yanıta girmez.
+- **Sonraki bölüm.** Bölümün son dakikasında (uzun bölümde son %4'ünde) kumandası olan kişiye "Sonraki bölüm" düğmesi çıkar. Sıra boşsa bölüm bitince sonraki bölüm kendiliğinden açılır. Kuyruk kimliği biten öğeden türetilir (`next-<öğe>`), bu yüzden iki izleyici aynı anda denerse bölüm bir kez eklenir.
+- **Bölüm işaretleri.** `GET` ve `PUT /v1/halls/:salon/episodes/:ref` uçları kullanılır. Salon üyesi bir bölümü izlendi ya da izlenmedi olarak işaretleyebilir. İşaret yapımın ilerlemesini en ileri izlenen bölüme taşır, böylece "Devam et" de değişir. İzlenmemiş bölümlerin bulanıklaştırılması izleyicinin kendi tercihidir.
+- **IMDb ve Letterboxd.** Bu bağlantılar sağlayıcının verdiği TMDB kimliğinden kurulur. IMDb kimliği tıklanınca `GET /v1/halls/:salon/links/:ref` ile çözülür: önce TMDB'ye (anahtar varsa), sonra Wikidata'ya bakılır. Letterboxd bağlantısı yalnızca filmlerde vardır ve `letterboxd.com/tmdb/<kimlik>` adresine gider.
+- **Ses dili.** Sahip "Türkçe dublaj" ile "Orijinal" arasında seçim yapar. Röle filmin ilk ses izini bu seçime göre seçer; kumandası olan kişi ses dilini film sırasında değiştirebilir. Altyazı dili (Türkçe, İngilizce ya da Kapalı) her izleyicinin kendi tercihidir.
+- **Yayın bilgisi.** Röle ffprobe'dan çözünürlüğü, fps değerini ve kodeki bildirir; bit hızını oynatıcı son parçalardan ölçer. Canlı yayında "canlıdan X sn geride" bilgisi de gösterilir. Film ya da bölüm açılınca bu bilgi 3 saniye ekranda kalır.
+- **Favori kanallar.** Her üyenin listesi Tayfa dosyasında, üye başına en fazla 300 kanal olarak tutulur ve `GET` ile `PUT /v1/halls/:salon/favorites` uçlarından okunup yazılır. Favoriler açıkken ↑/↓ yalnızca favori kanallar arasında gezer.
+- **Hatırlatıcılar.** Bir programın hatırlatması cihazda saklanır. Program başlayınca sistem bildirimi ve "Salonda aç" kartı gelir. Uygulama kapalıysa hatırlatma çalışmaz. Kartta isteyen için "Salona duyur" düğmesi de var; salon sohbetine kişinin kendi adıyla yazar, kendiliğinden bir şey göndermez.
+- **Kısayollar.** Salonun tuşları Ayarlar → Klavye'den değiştirilebilir. Çakışan tuş yeni komuta geçer ve eski komut kısayolsuz kalır; Esc, rakamlar ve ⌘/Ctrl K sabittir. `?` tuşu kısayol kartını açar.
+
 ## RMDB
 
-RMDB, salonun kendi film ve dizi kaydıdır; Sinema'nın son sekmesidir. Salonda izlenenler kendiliğinden girer, üyeler puan, yorum ve günlük ekler.
+RMDB, salonun kendi film ve dizi kaydıdır; Sinema'nın son sekmesidir. Arayüzde adı **Tayfa**'dır; kod, uç noktalar ve dosyalar `rmdb` adını korur. Salonda izlenenler kendiliğinden girer, üyeler puan, yorum ve günlük ekler.
 
 - **Ne girer.**
   - Salonda bir film ya da dizi bölümü en az 5 dakika gerçekten oynayınca yapım kayda girer ve o izlemenin günlük satırı açılır. Sarmalar bu süreye sayılmaz. Canlı kanallar girmez.
@@ -137,17 +151,17 @@ RMDB, salonun kendi film ve dizi kaydıdır; Sinema'nın son sekmesidir. Salonda
 
 `infra/cinema.Dockerfile` imajı ve `infra/cinema-compose.fragment.yml` parçası özel üretim yapılandırmasına eklenir. Ters vekil `/rooms-cinema/*` yolunu ön eki kaldırarak `cinema:3050` adresine iletir.
 
-| Değişken | Anlamı |
-| --- | --- |
-| `ROOMS_CINEMA_STORAGE_KEY` | 64 onaltılık karakter; hesap ve katalog şifreleme anahtarı. Yedekle; değişirse kayıtlı hesap okunamaz ve servis başlamaz, sahibin hesabı yeniden bağlaması gerekir. |
-| `ROOMS_CINEMA_TICKET_SECRET` | En az 32 karakter; aktarım bileti imzası |
-| `STOAT_INTERNAL_URL` | Özel ham Stoat API (`http://api:14702`) |
-| `ROOMS_SOCIAL_READ_MONGO_URL` | Yalnızca okuyabilen üyelik okuyucusu (Access ve Activities ile aynı) |
-| `ROOMS_ACTIVITIES_INTERNAL_URL` | Salon etkinliğini okumak için (`http://activities:3031`) |
-| `ROOMS_CINEMA_MAX_RELAYS` | Aynı anda en fazla aktarım; hesabın sınırını aşamaz |
-| `ROOMS_CINEMA_USER_AGENT` | Sağlayıcıya giden istemci adı; varsayılan `ROOMS-Cinema/1.0` |
-| `ROOMS_CINEMA_ALLOW_PRIVATE_SOURCES` | Yalnızca yerel geliştirme. `1` olursa SSRF korumasının tamamı kapanır (özel ağlar ve yönlendirmeler serbest kalır); üretimde asla ayarlama |
-| `ROOMS_CINEMA_VOD_WINDOW_SEC` | Film rölesinin tuttuğu saniye (imajda 60) |
+| Değişken                             | Anlamı                                                                                                                                                              |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ROOMS_CINEMA_STORAGE_KEY`           | 64 onaltılık karakter; hesap ve katalog şifreleme anahtarı. Yedekle; değişirse kayıtlı hesap okunamaz ve servis başlamaz, sahibin hesabı yeniden bağlaması gerekir. |
+| `ROOMS_CINEMA_TICKET_SECRET`         | En az 32 karakter; aktarım bileti imzası                                                                                                                            |
+| `STOAT_INTERNAL_URL`                 | Özel ham Stoat API (`http://api:14702`)                                                                                                                             |
+| `ROOMS_SOCIAL_READ_MONGO_URL`        | Yalnızca okuyabilen üyelik okuyucusu (Access ve Activities ile aynı)                                                                                                |
+| `ROOMS_ACTIVITIES_INTERNAL_URL`      | Salon etkinliğini okumak için (`http://activities:3031`)                                                                                                            |
+| `ROOMS_CINEMA_MAX_RELAYS`            | Aynı anda en fazla aktarım; hesabın sınırını aşamaz                                                                                                                 |
+| `ROOMS_CINEMA_USER_AGENT`            | Sağlayıcıya giden istemci adı; varsayılan `ROOMS-Cinema/1.0`                                                                                                        |
+| `ROOMS_CINEMA_ALLOW_PRIVATE_SOURCES` | Yalnızca yerel geliştirme. `1` olursa SSRF korumasının tamamı kapanır (özel ağlar ve yönlendirmeler serbest kalır); üretimde asla ayarlama                          |
+| `ROOMS_CINEMA_VOD_WINDOW_SEC`        | Film rölesinin tuttuğu saniye (imajda 60)                                                                                                                           |
 
 `/state` dizinini UID 10003 ve 0700 izniyle hazırla, diğer kalıcı depolar gibi şifreli yedekle. `/hls` yalnızca bellektedir.
 
