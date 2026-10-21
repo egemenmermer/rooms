@@ -3,6 +3,7 @@ import { StoatClient, StoatError } from '@rooms/stoat';
 import { StoatAuthorizationReader } from '../access/stoat-authorization';
 import {
   stoatChannelPermissions,
+  stoatCommunityAdmin,
   StoatPermissions,
   type StoatChannel,
   type StoatMember,
@@ -12,7 +13,7 @@ import {
 export type CinemaIdentity = { userId: string; displayName: string };
 
 export interface CinemaAuthority {
-  /** Current member of the community; `isOwner` gates account changes. */
+  /** Current member of the community; `isOwner` (owner or owner-equivalent admin) gates account changes. */
   community(token: string, communityId: string): Promise<CinemaIdentity & { isOwner: boolean }>;
   /** Someone who can see the channel; returns the community it belongs to. */
   channel(
@@ -37,8 +38,13 @@ export function stoatAuthority(options: { stoatUrl: string; mongoUrl?: string })
       const context = reader ? await reader.community(communityId, user.id) : null;
       const server = (context?.server ??
         (await stoat.getServer(communityId))) as unknown as StoatServer;
-      if (!context) await stoat.getMember(communityId, user.id);
-      return { userId: user.id, displayName: user.displayName, isOwner: server.owner === user.id };
+      const member = (context?.member ??
+        (await stoat.getMember(communityId, user.id))) as unknown as StoatMember;
+      return {
+        userId: user.id,
+        displayName: user.displayName,
+        isOwner: stoatCommunityAdmin(server, member, user.id),
+      };
     },
     async channel(token, channelId) {
       const stoat = client(token);
@@ -65,7 +71,11 @@ export function stoatAuthority(options: { stoatUrl: string; mongoUrl?: string })
         userId: user.id,
         displayName: user.displayName,
         communityId: channel.server,
-        isOwner: (server as unknown as StoatServer).owner === user.id,
+        isOwner: stoatCommunityAdmin(
+          server as unknown as StoatServer,
+          member as unknown as StoatMember,
+          user.id,
+        ),
       };
     },
     async close() {

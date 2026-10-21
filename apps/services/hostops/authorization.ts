@@ -1,6 +1,12 @@
 import { StoatError } from '@rooms/stoat';
 import type { StoatAuthorizationReader } from '../access/stoat-authorization';
-import { stoatChannelPermissions, StoatPermissions } from '../access/stoat-permissions';
+import {
+  stoatChannelPermissions,
+  stoatCommunityAdmin,
+  StoatPermissions,
+  type StoatMember,
+  type StoatServer,
+} from '../access/stoat-permissions';
 
 /** Private, find-only boundary. The Agent receives only visible IDs, never Core credentials. */
 export async function visibleHostRooms(
@@ -34,9 +40,9 @@ export async function visibleHostRooms(
 }
 
 /**
- * Whether this member owns the community. The membership store answers first; if it cannot be
- * reached (a refusal is still a refusal) the Stoat API answers instead, so an unreachable store
- * never locks the owner out.
+ * Whether this member owns the community or is an owner-equivalent admin (`stoatCommunityAdmin`).
+ * The membership store answers first; if it cannot be reached (a refusal is still a refusal) the
+ * Stoat API answers instead, so an unreachable store never locks the owner out.
  */
 export async function communityOwnership(
   reader: Pick<StoatAuthorizationReader, 'community'> | null,
@@ -49,11 +55,13 @@ export async function communityOwnership(
 ): Promise<boolean> {
   if (reader)
     try {
-      return (await reader.community(communityId, userId)).server.owner === userId;
+      const { server, member } = await reader.community(communityId, userId);
+      return stoatCommunityAdmin(server, member, userId);
     } catch (error) {
       if (error instanceof StoatError) throw error;
     }
-  const owner = (await api.getServer(communityId)).owner === userId;
-  if (!owner) await api.getMember(communityId, userId);
-  return owner;
+  const server = (await api.getServer(communityId)) as StoatServer;
+  if (server.owner === userId) return true;
+  const member = (await api.getMember(communityId, userId)) as StoatMember;
+  return stoatCommunityAdmin(server, member, userId);
 }

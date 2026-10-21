@@ -131,6 +131,42 @@ function calculatePermissions(
   return permissions;
 }
 
+/**
+ * Whether ROOMS treats this member like the community owner in its own services (invite links,
+ * the Sinema account, host operations). The owner counts, and so does a member whose server
+ * roles grant every Stoat permission, such as a "developer" role. Upstream lets only the owner or
+ * such a member create or assign a role like that, so the circle widens only as they allow.
+ */
+export function stoatCommunityAdmin(
+  server: StoatServer,
+  member: StoatMember | null,
+  userId: string,
+  now = Date.now(),
+): boolean {
+  if (server.owner === userId) return true;
+  if (!member?._id || member._id.server !== server._id || member._id.user !== userId) return false;
+  try {
+    if (member.timeout && !(Date.parse(member.timeout) <= now)) return false;
+    const selected = new Set(member.roles ?? []);
+    let permissions = value(server.default_permissions);
+    const groups = new Map<number, { a: bigint; d: bigint }>();
+    for (const [id, role] of Object.entries(server.roles ?? {})) {
+      if (!selected.has(id)) continue;
+      if (!Number.isSafeInteger(role.rank)) return false;
+      const group = groups.get(role.rank) ?? { a: 0n, d: 0n };
+      const bits = overrideBits(role.permissions);
+      group.a |= bits.a;
+      group.d |= bits.d;
+      groups.set(role.rank, group);
+    }
+    for (const [, group] of [...groups].sort((a, b) => b[0] - a[0]))
+      permissions = (permissions | group.a) & ~group.d;
+    return permissions === StoatPermissions.ALL;
+  } catch {
+    return false;
+  }
+}
+
 /** Pure authorization data errors must revoke existing grants as well as reject new ones. */
 export function stoatChannelPermissions(
   server: StoatServer,

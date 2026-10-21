@@ -69,7 +69,7 @@ it('explains why non-owners and fixtures cannot manage links, without requesting
         source: 'rooms-broker',
         state: 'unsupported',
         managementSupported: false,
-        reason: 'Only the community owner can manage invitation links.',
+        reason: 'Only the community owner or an admin can manage invitation links.',
       }}
       members={[]}
       bridge={bridge}

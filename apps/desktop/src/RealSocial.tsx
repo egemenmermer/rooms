@@ -94,6 +94,7 @@ import {
 } from '@rooms/social';
 import { sameInviteServer } from './ConnectionPane';
 import { useCommunity, type CommunityMessage } from './community';
+import { useModerationRights } from './VoiceModeration';
 import {
   useRealtime,
   joinVoice,
@@ -135,6 +136,9 @@ export function CommunityChat({
   notify(message: string): void;
 }) {
   const c = useCommunity();
+  const communityAdmin =
+    useModerationRights(c.activeSpaceId).communityAdmin ||
+    c.spaces.find((s) => s.id === c.activeSpaceId)?.ownerId === c.user?.id;
   const [selectedAuthor, setSelectedAuthor] = useState<SocialUser | null>(null);
   const [confirmRemoval, setConfirmRemoval] = useState(false);
   const [memberBusy, setMemberBusy] = useState(false);
@@ -1197,7 +1201,7 @@ export function CommunityChat({
                   {tr('Unblock member')}
                 </button>
               </div>
-              {c.spaces.find((s) => s.id === c.activeSpaceId)?.ownerId === c.user?.id && (
+              {communityAdmin && (
                 <button
                   className="button secondary full destructive"
                   disabled={memberBusy}

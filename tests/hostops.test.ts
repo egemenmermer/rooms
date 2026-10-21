@@ -385,6 +385,31 @@ describe('community ownership for host operations', () => {
     expect(await communityOwnership(reader as never, other, 'space', 'member')).toBe(false);
     expect(other.getMember).toHaveBeenCalledWith('space', 'member');
   });
+  it('counts a member whose roles grant every permission as the owner', async () => {
+    const full = String((1n << 52n) - 1n);
+    const server = {
+      _id: 'space',
+      owner: 'owner',
+      default_permissions: '0',
+      roles: { developer: { rank: 0, permissions: { a: full, d: '0' } } },
+    };
+    const developer = { _id: { server: 'space', user: 'dev' }, roles: ['developer'] };
+    const reader = { community: vi.fn(async () => ({ server, member: developer })) };
+    expect(await communityOwnership(reader as never, api('owner'), 'space', 'dev')).toBe(true);
+    const down = {
+      community: vi.fn(async () => {
+        throw Error('connect ECONNREFUSED 172.18.0.3:27017');
+      }),
+    };
+    const client = {
+      getServer: vi.fn(async () => server),
+      getMember: vi.fn(async () => developer),
+    };
+    expect(await communityOwnership(down as never, client, 'space', 'dev')).toBe(true);
+    const plain = { _id: { server: 'space', user: 'dev' }, roles: [] };
+    reader.community.mockResolvedValueOnce({ server, member: plain });
+    expect(await communityOwnership(reader as never, api('owner'), 'space', 'dev')).toBe(false);
+  });
   it('keeps a refusal from the store as a refusal', async () => {
     const reader = {
       community: vi.fn(async () => {

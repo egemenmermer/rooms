@@ -202,6 +202,11 @@ export interface SocialCommunityManagement {
     banMembers?: boolean;
     /** Stoat MoveMembers: move people between voice rooms or disconnect them. */
     moveMembers?: boolean;
+    /**
+     * Owner, or a member whose roles grant every Stoat permission; ROOMS services treat both as
+     * the owner (invite links, Sinema account, host operations). Absent from older projections.
+     */
+    communityAdmin?: boolean;
   };
   roles: SocialCommunityRole[];
   grantablePermissions: SocialRolePermissionKey[];

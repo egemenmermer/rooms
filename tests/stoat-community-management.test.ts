@@ -199,6 +199,20 @@ it('reports ban and move rights and bans only members below this account', async
     body: {},
   });
 });
+it('treats a role granting every permission like the owner, and nothing less', async () => {
+  const full = fixture({ bits: 2 ** 52 - 1 });
+  expect((await full.client.communityCapabilities('space')).communityAdmin).toBe(true);
+  expect((await full.client.communityManagement('space')).invites.managementSupported).toBe(true);
+  const partial = fixture({ bits: 2 ** 52 - 2 });
+  expect((await partial.client.communityCapabilities('space')).communityAdmin).toBe(false);
+  expect((await partial.client.communityManagement('space')).invites.managementSupported).toBe(
+    false,
+  );
+  const timedOut = fixture({ bits: 2 ** 52 - 1, timeout: '2999-01-01T00:00:00.000Z' });
+  expect((await timedOut.client.communityCapabilities('space')).communityAdmin).toBe(false);
+  const owner = fixture({ self: 'owner' });
+  expect((await owner.client.communityCapabilities('space')).communityAdmin).toBe(true);
+});
 it('refuses to ban without the Ban Members permission', async () => {
   const { client, calls } = fixture();
   expect((await client.communityCapabilities('space')).banMembers).toBe(false);

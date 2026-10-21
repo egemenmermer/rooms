@@ -27,6 +27,7 @@ import { useRealtime, joinVoice, leaveVoice, toggleMic, toggleDeafen } from './r
 import { useVoiceDirectory } from './voice-directory';
 import { VoiceAvatar } from './VoiceAvatar';
 import { uiError } from './i18n';
+import { useModerationRights } from './VoiceModeration';
 export function VoiceSidebar({
   notify,
   invite,
@@ -102,6 +103,8 @@ export function VoiceSidebar({
     };
   }, [menuOpen]);
   const currentSpace = c.spaces.find((s) => s.id === c.activeSpaceId);
+  const communityAdmin =
+    useModerationRights(c.activeSpaceId).communityAdmin || currentSpace?.ownerId === c.user?.id;
   const menuAction = (action: () => void) => {
     setMenuOpen(false);
     triggerRef.current?.focus();
@@ -158,12 +161,8 @@ export function VoiceSidebar({
               </button>
               <button
                 role="menuitem"
-                disabled={currentSpace?.ownerId !== c.user?.id}
-                title={
-                  currentSpace?.ownerId !== c.user?.id
-                    ? 'Topluluk sahibi düzenleyebilir.'
-                    : undefined
-                }
+                disabled={!communityAdmin}
+                title={!communityAdmin ? 'Topluluk sahibi düzenleyebilir.' : undefined}
                 onClick={() => menuAction(editSpace)}
               >
                 <ReferenceIcon name="settings" size={15} />
