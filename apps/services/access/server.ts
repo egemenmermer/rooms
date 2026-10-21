@@ -182,6 +182,26 @@ export async function createAccessServer(config: AccessConfig) {
     await reader?.close();
   });
   const roomName = (id: string) => `stoat-channel-${id}`;
+  /**
+   * Grants live in memory, so a restart forgets everyone already in a room. A caller whose
+   * session was just authorized and who is still a participant in the LiveKit room is
+   * registered again with that session instead of being told to rejoin.
+   */
+  const memberGrant = async (token: string, channelId: string, userId: string) => {
+    const key = `${channelId}:${userId}`;
+    const known = grants.get(key);
+    if (known) return known;
+    let participant;
+    try {
+      participant = await roomService.getParticipant(roomName(channelId), userId);
+    } catch {
+      return undefined;
+    }
+    if (participant?.identity !== userId) return undefined;
+    const grant = { userId, channelId, token, lastSeen: Date.now() };
+    grants.set(key, grant);
+    return grant;
+  };
   const dmCalls = registerDmCalls(server, {
     apiKey: config.apiKey,
     apiSecret: config.apiSecret,
@@ -367,7 +387,7 @@ export async function createAccessServer(config: AccessConfig) {
       invalidateScreenUser(channelId, result.user.id);
       throw new StoatError(403, 'PRESENT_PERMISSION_REQUIRED');
     }
-    const grant = grants.get(`${channelId}:${result.user.id}`);
+    const grant = await memberGrant(token, channelId, result.user.id);
     if (!grant || grant.token !== token) throw new StoatError(403, 'JOIN_VOICE_FIRST');
     let participant;
     try {
@@ -385,7 +405,7 @@ export async function createAccessServer(config: AccessConfig) {
   const leaseContext = z.object({ channelId: opaqueId, leaseId: z.string().uuid() }).strict();
   const remoteMember = async (token: string, channelId: string) => {
     const result = await authorize(token, channelId);
-    const grant = grants.get(`${channelId}:${result.user.id}`);
+    const grant = await memberGrant(token, channelId, result.user.id);
     if (!grant || grant.token !== token || (result.permissions & Permissions.LISTEN) === 0n)
       throw new StoatError(403, 'JOIN_VOICE_FIRST');
     const person = await roomService.getParticipant(roomName(channelId), result.user.id);
@@ -803,7 +823,7 @@ export async function createAccessServer(config: AccessConfig) {
         .parse(request.body);
       const token = tokenOf(request.headers.authorization);
       const { user } = await authorize(token, channelId);
-      const grant = grants.get(`${channelId}:${user.id}`);
+      const grant = await memberGrant(token, channelId, user.id);
       if (!grant || grant.token !== token) throw new StoatError(403, 'JOIN_VOICE_FIRST');
       await roomService.updateParticipant(roomName(channelId), user.id, {
         attributes: { [DEAFENED_ATTRIBUTE]: deafened ? '1' : '' },

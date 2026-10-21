@@ -90,6 +90,27 @@ it('publishes deafen as a server-owned attribute only for a joined member', asyn
   }
 });
 
+it('recognizes a member still in the room after the service restarts', async () => {
+  // A fresh server has no grants; the member's LiveKit participant survived the restart.
+  sdk.getParticipant.mockResolvedValue({ identity: 'viewer', tracks: [] });
+  const server = await createAccessServer(config);
+  try {
+    expect((await deafen(server, true)).json()).toEqual({ deafened: true });
+    expect(sdk.getParticipant).toHaveBeenCalledWith('stoat-channel-room', 'viewer');
+    // The recovered grant is bound to the session that asked first.
+    const other = await server.inject({
+      method: 'POST',
+      url: '/v1/media/deafen',
+      headers: { authorization: 'another-token' },
+      payload: { channelId: 'room', deafened: false },
+    });
+    expect(other.statusCode).toBe(403);
+  } finally {
+    await server.close();
+    sdk.getParticipant.mockReset();
+  }
+});
+
 it('reports deafened occupants in the voice directory', async () => {
   sdk.listRooms.mockResolvedValue([{ name: 'stoat-channel-room' }]);
   sdk.listParticipants.mockResolvedValue([
