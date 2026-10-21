@@ -11,6 +11,7 @@ import { LiveKitMediaProvider } from '../packages/media-providers/src/index';
 import {
   captureMissesInput,
   inputDeviceLabel,
+  selectedInputLabel,
   type InputDeviceEntry,
 } from '../packages/media-providers/src/input-device';
 
@@ -24,6 +25,7 @@ vi.mock('../packages/media-providers/src/soundboard', () => ({
     class {
       processedTrack = { readyState: 'live' };
       setNoiseSuppression = vi.fn(async () => {});
+      setInputLevel = vi.fn();
       destroy = vi.fn(async () => {});
       stop = vi.fn();
       play = vi.fn(async () => {});
@@ -266,5 +268,19 @@ describe('a call on a microphone the person chose', () => {
     );
     expect(local.setMicrophoneEnabled).not.toHaveBeenCalled();
     await provider.disconnect();
+  });
+});
+
+describe('naming the selected microphone before capture', () => {
+  const headset = input('headset-mic', 'g-headset', 'HyperX Cloud II');
+  const system = { ...input('default', 'g-headset', 'Varsayılan - HyperX Cloud II') };
+  it('names a chosen device and resolves the system default to its physical device', () => {
+    expect(selectedInputLabel([laptop, headset, system], 'laptop-mic')).toBe(laptop.label);
+    expect(selectedInputLabel([laptop, headset, system], '')).toBe('HyperX Cloud II');
+    expect(selectedInputLabel([laptop, headset, system], 'default')).toBe('HyperX Cloud II');
+  });
+  it('says nothing when the list cannot tell', () => {
+    expect(selectedInputLabel([laptop], 'gone')).toBeNull();
+    expect(selectedInputLabel([{ ...laptop, label: '' }], 'laptop-mic')).toBeNull();
   });
 });

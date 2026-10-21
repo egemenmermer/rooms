@@ -1,5 +1,6 @@
 import { SpeakingMeter } from './speaking-meter';
 import { captureMissesInput, inputDeviceLabel } from './input-device';
+export { selectedInputLabel } from './input-device';
 import type { NoiseSuppressionMode, NoiseProcessingState } from './noise-suppression';
 import { SoundboardMixer } from './soundboard';
 import {
@@ -115,6 +116,8 @@ export interface RealtimeMediaProvider {
   connectRoom(roomId: string, shortLivedMembershipToken: string, serverUrl: string): Promise<void>;
   publishMic(deviceId?: string): Promise<void>;
   setNoiseSuppression(value: boolean, mode?: NoiseSuppressionMode): Promise<void>;
+  /** Scales what the room hears from this microphone: 1 as captured, 0–2. */
+  setInputLevel?(value: number): void;
   playSoundboard(buffer: AudioBuffer, volume: number): Promise<void>;
   stopSoundboard(): void;
   publishCamera(enabled: boolean, deviceId?: string): Promise<void>;
@@ -298,6 +301,14 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     );
     return task;
   }
+  private inputLevel = 1;
+  setInputLevel(value: number) {
+    if (!Number.isFinite(value) || value < 0 || value > 2)
+      throw Error('Input level must be between 0 and 2.');
+    this.inputLevel = value;
+    this.mixer?.setInputLevel(value);
+    this.pendingMixer?.setInputLevel(value);
+  }
   setNoiseSuppression(value: boolean, mode: NoiseSuppressionMode = this.noiseMode) {
     return this.microphoneTask(async () => {
       const prior = this.noiseSuppression,
@@ -371,6 +382,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
           this.patch({ noiseProcessing: { status: 'active', mode: this.noiseMode, stats } });
       },
     });
+    mixer.setInputLevel(this.inputLevel);
     this.pendingMixer = mixer;
     try {
       await (context as AudioContext & { setSinkId?(id: string): Promise<void> }).setSinkId?.(

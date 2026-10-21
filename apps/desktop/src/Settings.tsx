@@ -3,7 +3,7 @@ import { HallKeySettings } from './cinema/CinemaViewerSettings';
 import { setWindowOnTop, useWindowOnTop } from './window-on-top';
 import { mediaProvider } from './runtime-sources';
 import { NoiseComparison } from './NoiseComparison';
-import { createNoiseSuppressionNode } from '@rooms/media';
+import { createNoiseSuppressionNode, selectedInputLabel } from '@rooms/media';
 import { tr, uiError } from './i18n';
 import type { DesktopBridge } from '@rooms/contracts';
 import { ChannelNotifications } from './ChannelNotifications';
@@ -68,7 +68,7 @@ import {
   X,
 } from 'lucide-react';
 import { Avatar, IconButton, Modal, Toggle } from '@rooms/design';
-import { useRooms } from './store';
+import { useRooms, withInputLevel } from './store';
 import { PushToTalkKeyField } from './PushToTalkKeyField';
 import { ConnectionPane } from './ConnectionPane';
 import { useModerationRights } from './VoiceModeration';
@@ -581,6 +581,13 @@ export default function Settings({
   const cameraEpoch = useRef(0);
   const [testing, setTesting] = useState(false);
   const [level, setLevel] = useState(0);
+  // Named after the selected microphone, or the one the room hears when the list cannot tell.
+  const inputName =
+      selectedInputLabel(devices, p.inputId) ??
+      (realtime.status === 'connected' ? (realtime.inputDevice ?? null) : null),
+    inputLevel = (inputName ? p.inputLevels[inputName] : undefined) ?? 100;
+  const inputPercent = useRef(100);
+  inputPercent.current = inputLevel;
   const [cameraId, setCameraId] = useState('');
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const cameraRef = useRef<MediaStream | null>(null);
@@ -779,7 +786,14 @@ export default function Settings({
       const tick = (now: number) => {
         if (now - last > 100) {
           analyser.getByteFrequencyData(values);
-          setLevel(Math.min(100, (values.reduce((a, b) => a + b, 0) / values.length) * 1.8));
+          setLevel(
+            Math.min(
+              100,
+              (values.reduce((a, b) => a + b, 0) / values.length) *
+                1.8 *
+                (inputPercent.current / 100),
+            ),
+          );
           last = now;
         }
         frame.current = requestAnimationFrame(tick);
@@ -1214,6 +1228,36 @@ export default function Settings({
                     {realtime.status === 'connected' && realtime.inputDevice && (
                       <p className="ref-settings-note" role="status">
                         Odada duyulan mikrofon: {realtime.inputDevice}
+                      </p>
+                    )}
+                    {inputName ? (
+                      <Row
+                        title="Mikrofon seviyesi"
+                        description={`${inputName} için hatırlanır; bu mikrofona geçince kendiliğinden uygulanır.`}
+                      >
+                        <label className="personal-sound-level">
+                          <input
+                            type="range"
+                            aria-label="Mikrofon seviyesi"
+                            aria-valuetext={`${inputLevel}%`}
+                            min={0}
+                            max={200}
+                            step={5}
+                            value={inputLevel}
+                            onChange={(e) =>
+                              setPreference(
+                                'inputLevels',
+                                withInputLevel(p.inputLevels, inputName, Number(e.target.value)),
+                              )
+                            }
+                          />
+                          <span>{inputLevel}%</span>
+                        </label>
+                      </Row>
+                    ) : (
+                      <p className="ref-settings-note">
+                        Mikrofon seviyesi, mikrofonun adı görünce ayarlanabilir. Mikrofonu dene veya
+                        bir ses odasına katıl.
                       </p>
                     )}
                     <Row
