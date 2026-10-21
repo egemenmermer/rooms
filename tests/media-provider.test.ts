@@ -22,6 +22,7 @@ vi.mock('../packages/media-providers/src/soundboard', () => ({
     class {
       processedTrack = { readyState: 'live' };
       setNoiseSuppression = vi.fn(async () => {});
+      setInputLevel = vi.fn();
       destroy = vi.fn(async () => {});
       stop = vi.fn();
       play = vi.fn(async () => {});

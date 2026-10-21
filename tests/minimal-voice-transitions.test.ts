@@ -16,6 +16,7 @@ vi.mock('../apps/desktop/src/runtime-sources', () => ({
   mediaBridge: () => ({ grant: f.grant, leave: f.leave }),
   mediaProvider: () => ({
     snapshot: () => ({ status: f.status, muted: f.muted }),
+    subscribeState: () => () => {},
     connectRoom: f.connect,
     disconnect: f.disconnect,
     setNoiseSuppression: f.noise,

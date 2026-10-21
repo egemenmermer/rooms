@@ -57,6 +57,26 @@ const updateListenerScope = () => {
 };
 updateListenerScope();
 // A moderator moved this person: join the target through the normal grant check.
+/** The level the person chose for the microphone the room hears now; 100 % when unset. */
+function applyInputLevel() {
+  const name = mediaProvider().snapshot().inputDevice;
+  const percent = (name ? useRooms.getState().preferences.inputLevels[name] : undefined) ?? 100;
+  try {
+    mediaProvider().setInputLevel?.(percent / 100);
+  } catch {
+    /* A malformed level leaves the microphone as captured. */
+  }
+}
+let heardInput: string | null | undefined;
+mediaProvider().subscribeState(() => {
+  const name = mediaProvider().snapshot().inputDevice;
+  if (name === heardInput) return;
+  heardInput = name;
+  applyInputLevel();
+});
+useRooms.subscribe((state, previous) => {
+  if (state.preferences.inputLevels !== previous.preferences.inputLevels) applyInputLevel();
+});
 mediaProvider().onMove?.((channelId) => {
   if (useVoiceContext.getState().channelId === channelId) return;
   const name = useCommunity.getState().channels.find((c) => c.id === channelId)?.name ?? 'Oda';

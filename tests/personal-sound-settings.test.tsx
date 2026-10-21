@@ -32,7 +32,11 @@ vi.mock('../apps/desktop/src/realtime', async () => {
   };
 });
 vi.mock('../apps/desktop/src/runtime-sources', () => ({ mediaProvider: () => ({}) }));
-vi.mock('@rooms/media', () => ({ createNoiseSuppressionNode: vi.fn() }));
+const media = vi.hoisted(() => ({ inputName: null as string | null }));
+vi.mock('@rooms/media', () => ({
+  createNoiseSuppressionNode: vi.fn(),
+  selectedInputLabel: () => media.inputName,
+}));
 vi.mock('../apps/desktop/src/NoiseComparison', () => ({ NoiseComparison: () => null }));
 import { PersonalSoundSettings, monoOf } from '../apps/desktop/src/PersonalSoundSettings';
 import Settings from '../apps/desktop/src/Settings';
@@ -723,5 +727,27 @@ describe('listener sound preferences', () => {
     expect(saved.soundEffectsLevel).toBe(0.4);
     expect(saved.personalSounds).toBe(false);
     expect(saved.roomEventSounds).toBe(true);
+  });
+  it('saves a microphone level for the named device only', async () => {
+    media.inputName = 'HyperX Cloud II';
+    try {
+      useRooms.setState({
+        preferences: { ...original.prefs, inputLevels: { 'MacBook Pro Microphone': 20 } },
+      });
+      showSettings();
+      const slider = screen.getByRole('slider', { name: 'Mikrofon seviyesi' });
+      expect(slider.getAttribute('aria-valuetext')).toBe('100%');
+      expect(screen.getByText(/HyperX Cloud II için hatırlanır/)).toBeTruthy();
+      fireEvent.change(slider, { target: { value: '50' } });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Kaydet' }));
+      });
+      expect(useRooms.getState().preferences.inputLevels).toEqual({
+        'MacBook Pro Microphone': 20,
+        'HyperX Cloud II': 50,
+      });
+    } finally {
+      media.inputName = null;
+    }
   });
 });
