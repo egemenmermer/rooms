@@ -35,6 +35,7 @@ import {
 } from '@rooms/social';
 import {
   stoatChannelPermissions,
+  stoatCommunityAdmin,
   StoatPermissions as Permissions,
   type StoatServer,
   type StoatChannel,
@@ -241,7 +242,7 @@ export async function createAccessServer(config: AccessConfig) {
       permissions,
       communityId: channel.server,
       ownerId: (rawServer as StoatServer).owner,
-      canManage: rawServer.owner === user.id,
+      canManage: stoatCommunityAdmin(rawServer as StoatServer, rawMember as StoatMember, user.id),
     };
   };
   registerSoundboard(server, {
@@ -560,12 +561,17 @@ export async function createAccessServer(config: AccessConfig) {
   const stoat = (token?: string) =>
     new StoatClient(config.stoatUrl ?? 'http://127.0.0.1:3022', token, socialOptions);
   const inviteCode = z.object({ code: z.string().regex(LEGACY_INVITE_CODE_PATTERN) });
-  /** Listing and revoking links stays with the space owner, whoever created a link. */
+  /** Listing and revoking links stays with the space owner and owner-equivalent admins. */
   const requireSpaceOwner = async (authorization: string | undefined, spaceId: string) => {
     const client = stoat(tokenOf(authorization));
     const user = await client.getCurrentUser();
-    const space = (await client.getServer(spaceId)) as { owner?: string };
-    if (space.owner !== user.id) throw new StoatError(403, 'INVITE_ADMIN_REQUIRED');
+    const space = (await client.getServer(spaceId)) as unknown as StoatServer;
+    const member =
+      space.owner === user.id
+        ? null
+        : ((await client.getMember(spaceId, user.id).catch(() => null)) as StoatMember | null);
+    if (!stoatCommunityAdmin(space, member, user.id))
+      throw new StoatError(403, 'INVITE_ADMIN_REQUIRED');
     return client;
   };
   server.post('/v1/invites', async (request) => {

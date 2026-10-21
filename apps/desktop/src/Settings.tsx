@@ -71,6 +71,7 @@ import { Avatar, IconButton, Modal, Toggle } from '@rooms/design';
 import { useRooms } from './store';
 import { PushToTalkKeyField } from './PushToTalkKeyField';
 import { ConnectionPane } from './ConnectionPane';
+import { useModerationRights } from './VoiceModeration';
 import { useCommunity } from './community';
 import { useRealtime, setNoiseSuppression } from './realtime';
 const tabs = [
@@ -422,6 +423,10 @@ export default function Settings({
   onInvite?(): void;
 }) {
   const community = useCommunity();
+  const communityAdmin =
+    useModerationRights(community.activeSpaceId).communityAdmin ||
+    community.spaces.find((space) => space.id === community.activeSpaceId)?.ownerId ===
+      community.user?.id;
   const realtime = useRealtime();
   const [params, setParams] = useSearchParams();
   const tab = tabs.some((t) => t.id === params.get('tab')) ? params.get('tab')! : 'appearance';
@@ -946,11 +951,8 @@ export default function Settings({
                   'channel-permissions',
                   'assistant-permissions',
                   'automation',
-                  // The machine behind the server is the owner's concern, not every member's.
-                  ...(community.spaces.find((space) => space.id === community.activeSpaceId)
-                    ?.ownerId === community.user?.id
-                    ? ['hostops']
-                    : []),
+                  // The machine behind the server is the owner's (and admins') concern, not every member's.
+                  ...(communityAdmin ? ['hostops'] : []),
                 ],
               },
               { label: 'Tayfa', ids: ['about'] },

@@ -1523,9 +1523,11 @@ export class StoatClient {
       ? null
       : checkedMember(await this.getMember(spaceId, self._id), spaceId, self._id);
     const bits = managementPermissionBits(self, server, member, roles),
-      rank = bypass ? -Infinity : memberRank(member!, roles);
+      rank = bypass ? -Infinity : memberRank(member!, roles),
+      // Matches the services' stoatCommunityAdmin: the owner, or roles granting every permission.
+      admin = self._id === server.owner || (!!member && bits === safeMask);
     this.assertManagementContext(epoch, session);
-    return { self, server, roles, bits, rank, epoch, session };
+    return { self, server, roles, bits, rank, admin, epoch, session };
   }
   private assertManagementContext(epoch: number, session: number) {
     if (session !== this.sessionEpoch) throw new StoatError(401, 'SESSION_CHANGED');
@@ -1597,16 +1599,15 @@ export class StoatClient {
           permissions: rolePermissionValues(role.permissions),
         }))
         .sort((a, b) => a.rank - b.rank || a.id.localeCompare(b.id));
-      // Invitation links are created by the owner only, so only the owner manages them.
-      result.invites =
-        context.server.owner === context.self._id
-          ? { source: 'rooms-broker', state: 'supported', managementSupported: true }
-          : {
-              source: 'rooms-broker',
-              state: 'unsupported',
-              managementSupported: false,
-              reason: 'Only the community owner can manage invitation links.',
-            };
+      // Members may create links; listing and revoking stay with the owner and admins.
+      result.invites = context.admin
+        ? { source: 'rooms-broker', state: 'supported', managementSupported: true }
+        : {
+            source: 'rooms-broker',
+            state: 'unsupported',
+            managementSupported: false,
+            reason: 'Only the community owner or an admin can manage invitation links.',
+          };
       this.assertManagementContext(context.epoch, context.session);
       result.access = 'allowed';
       return result;
@@ -1740,9 +1741,12 @@ export class StoatClient {
   async communityCapabilities(spaceId: string): Promise<SocialCommunityManagement['capabilities']> {
     checked(spaceId);
     const context = await this.managementContext(spaceId);
-    return Object.fromEntries(
-      Object.entries(managementBits).map(([key, bit]) => [key, !!(context.bits & bit)]),
-    ) as SocialCommunityManagement['capabilities'];
+    return {
+      ...Object.fromEntries(
+        Object.entries(managementBits).map(([key, bit]) => [key, !!(context.bits & bit)]),
+      ),
+      communityAdmin: context.admin,
+    } as SocialCommunityManagement['capabilities'];
   }
   /** Bans someone below this account's rank; they leave the community and cannot rejoin. */
   async banCommunityMember(change: SocialMemberRemoval): Promise<SocialCommunityManagement> {

@@ -38,7 +38,7 @@ Kişisel medya (Medyam) bundan ayrıdır ve özel kalır. Sinema'daki yeniden ya
   - M3U kayıt adresleri de anahtar taşıyabileceği için şifreli anlık görüntünün içindedir.
   - Anahtar `ROOMS_CINEMA_STORAGE_KEY` değişkenindedir. Anahtarı değiştirmek kayıtlı hesabı okunamaz yapar.
 - **Kimin ne yapabildiği.**
-  - Salon seçme, hesap bağlama, yeniden yükleme ve kaldırma yalnızca topluluk sahibine açıktır.
+  - Salon seçme, hesap bağlama, yeniden yükleme ve kaldırma yalnızca topluluk sahibine ve yöneticilerine (bütün izinleri veren rol, [Mimari](ARCHITECTURE.md)) açıktır.
   - Katalog, arama, rehber, detay, görsel ve izleme için salon kanalında görüntüleme izni (VIEW_CHANNEL) gerekir.
   - Sahip olmayan üyeler maskeli sunucu adını bile görmez.
 - **İstemciye giden veri.**

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { StoatClient } from '@rooms/stoat';
 import { RoomServiceClient, TrackType } from 'livekit-server-sdk';
 import { StoatAuthorizationReader } from '../access/stoat-authorization';
+import { stoatCommunityAdmin } from '../access/stoat-permissions';
 import { communityOwnership, visibleHostRooms } from './authorization';
 import { createHostOpsServer } from './server';
 import { HostOpsStore } from './store';
@@ -152,8 +153,8 @@ async function start() {
             visibleRooms: (userId, host, roomIds) =>
               visibleHostRooms(reader!, host.communityId, userId, roomIds),
             identifyUser: async (userId: string, host: { communityId: string }) => {
-              const { server } = await reader!.community(host.communityId, userId);
-              return { userId, owner: server.owner === userId };
+              const { server, member } = await reader!.community(host.communityId, userId);
+              return { userId, owner: stoatCommunityAdmin(server, member, userId) };
             },
           },
         }

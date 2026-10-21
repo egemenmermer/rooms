@@ -73,6 +73,7 @@ import {
 import { Avatar, IconButton, Modal } from '@rooms/design';
 import { useRooms } from './store';
 import { useCommunity, initializeCommunity } from './community';
+import { useModerationRights } from './VoiceModeration';
 import { useRealtime, joinVoice, toggleMic } from './realtime';
 import { PushToTalk } from './PushToTalk';
 import {
@@ -125,6 +126,7 @@ export default function App() {
   }, [location.pathname, location.search]);
   const { preferences: p, setPreference } = useRooms();
   const community = useCommunity();
+  const communityAdmin = useModerationRights(community.activeSpaceId).communityAdmin;
   const realtime = useRealtime();
   useEffect(() => {
     if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('fixture')) return;
@@ -908,7 +910,8 @@ export default function App() {
           mode={overlay === 'edit-space' ? 'edit' : 'create'}
           space={community.spaces.find((s) => s.id === activeSpace)}
           canEdit={
-            community.spaces.find((s) => s.id === activeSpace)?.ownerId === community.user?.id
+            community.spaces.find((s) => s.id === activeSpace)?.ownerId === community.user?.id ||
+            communityAdmin
           }
           onClose={close}
           onSave={

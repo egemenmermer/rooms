@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   stoatChannelPermissions,
+  stoatCommunityAdmin,
   StoatPermissions as P,
 } from '../apps/services/access/stoat-permissions';
 import { ulidTimestamp, validateInstanceUrl } from '@rooms/stoat';
@@ -207,4 +208,44 @@ it('classifies malformed nested override and role objects as typed denial', () =
       expect(error).toMatchObject({ status: 403 });
     }
   }
+});
+
+describe('owner-equivalent community admins', () => {
+  const server = {
+    ...base,
+    roles: {
+      developer: { rank: 0, permissions: { a: String(P.ALL), d: '0' } },
+      moderator: { rank: 1, permissions: { a: String(P.ALL & ~P.MOVE_MEMBERS), d: '0' } },
+      muted: { rank: 0, permissions: { a: '0', d: String(P.SPEAK) } },
+    },
+  };
+  const as = (roles: string[], extra = {}) => ({ ...member, roles, ...extra });
+  it('counts the owner and a member whose roles grant every permission', () => {
+    expect(stoatCommunityAdmin(server, null, 'owner')).toBe(true);
+    expect(stoatCommunityAdmin(server, as(['developer']), 'friend')).toBe(true);
+  });
+  it('refuses anything short of every permission', () => {
+    expect(stoatCommunityAdmin(server, as([]), 'friend')).toBe(false);
+    expect(stoatCommunityAdmin(server, as(['moderator']), 'friend')).toBe(false);
+    // An equal-ranked denial wins, as in channel permissions.
+    expect(stoatCommunityAdmin(server, as(['developer', 'muted']), 'friend')).toBe(false);
+  });
+  it('refuses timed-out, mismatched or malformed memberships', () => {
+    const future = new Date(Date.now() + 60_000).toISOString();
+    expect(stoatCommunityAdmin(server, as(['developer'], { timeout: future }), 'friend')).toBe(
+      false,
+    );
+    expect(stoatCommunityAdmin(server, as(['developer']), 'stranger')).toBe(false);
+    expect(stoatCommunityAdmin({ ...server, _id: 'other' }, as(['developer']), 'friend')).toBe(
+      false,
+    );
+    expect(
+      stoatCommunityAdmin(
+        { ...server, roles: { developer: { rank: 0, permissions: { a: '-1' } } } },
+        as(['developer']),
+        'friend',
+      ),
+    ).toBe(false);
+    expect(stoatCommunityAdmin(server, null, 'friend')).toBe(false);
+  });
 });

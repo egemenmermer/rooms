@@ -13,7 +13,7 @@ export interface CommunityInvitesBridge {
   revokeInvite(spaceId: string, inviteId: string): Promise<void>;
 }
 
-const OWNER_ONLY = 'Only the community owner can manage invitation links.';
+const OWNER_ONLY = 'Only the community owner or an admin can manage invitation links.';
 const formatDate = (iso: string) => new Date(iso).toLocaleString('tr-TR');
 
 /**
@@ -98,7 +98,7 @@ export function CommunityInvitesTab({
             <p>
               {disabledReason ||
                 (!capability.managementSupported && capability.reason === OWNER_ONLY
-                  ? 'Davet bağlantılarını yalnızca topluluk sahibi görebilir ve iptal edebilir.'
+                  ? 'Davet bağlantılarını yalnızca topluluk sahibi ve yöneticiler görebilir ve iptal edebilir.'
                   : 'Bu sunucu davet bağlantılarını listelemiyor.')}
             </p>
           </div>
