@@ -1254,14 +1254,16 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   async deviceSelection(inputId: string, outputId: string) {
     try {
       const room = this.requireRoom();
-      const input = await this.switchDevice(room, 'audioinput', inputId || '');
+      await this.switchDevice(room, 'audioinput', inputId || '');
       const output = await this.switchDevice(room, 'audiooutput', outputId || '');
       for (const context of [this.soundContext, this.equalizerContext])
         await (
           context as (AudioContext & { setSinkId?(id: string): Promise<void> }) | null
         )?.setSinkId?.(output);
       this.outputDeviceId = output;
-      this.inputDeviceId = input || undefined;
+      // Keep the chosen headset: capture asks for it as a preference, so the default opens while it
+      // is gone, and followInput moves back to it once it is listed again.
+      this.inputDeviceId = inputId || undefined;
       this.patch({ error: null, inputDeviceFallback: false });
       this.sync();
       void this.describeCurrentInput(room);
