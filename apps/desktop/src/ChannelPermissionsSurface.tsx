@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { SocialChannelPermissions, SocialPermissionValues } from '@rooms/social';
 import { ChannelPermissions, type ChannelPermissionSnapshot } from './CommunitySettings';
@@ -21,6 +21,7 @@ export function ChannelPermissionsSurface({ channelId }: { channelId: string | n
     [error, setError] = useState(''),
     [refresh, setRefresh] = useState(0);
   const epoch = useRef(0);
+  const projected = useMemo(() => (snapshot ? project(snapshot) : undefined), [snapshot]);
   const fixture = !!(import.meta.env.DEV && new URLSearchParams(location.search).has('fixture'));
   useEffect(() => {
     const request = ++epoch.current;
@@ -133,7 +134,7 @@ export function ChannelPermissionsSurface({ channelId }: { channelId: string | n
         spaceName={c.spaces.find((space) => space.id === snapshot?.spaceId)?.name}
         channel={access === 'allowed' ? channel : undefined}
         access={access}
-        snapshot={snapshot ? project(snapshot) : undefined}
+        snapshot={projected}
         canEdit={!!snapshot?.effective.managePermissions}
         onSave={save}
         onReturn={back}
