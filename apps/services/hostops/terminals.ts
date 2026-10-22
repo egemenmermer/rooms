@@ -313,6 +313,21 @@ export class TerminalHub {
         this.save();
       }
   }
+  /** Users who own a live session on this profile (active or detached). */
+  owners(host: string, profileId: string) {
+    return [
+      ...new Set(
+        [...this.sessions.values()]
+          .filter(
+            (r) =>
+              r.info.hostId === host &&
+              r.profileId === profileId &&
+              ['active', 'detached'].includes(r.info.state),
+          )
+          .map((r) => r.info.ownerId),
+      ),
+    ];
+  }
   revokeUser(host: string, user: string) {
     for (const r of this.sessions.values())
       if (r.info.hostId === host) {

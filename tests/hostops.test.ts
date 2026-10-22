@@ -485,3 +485,46 @@ describe('operator grants', () => {
     }
   });
 });
+describe('admins who lose the role', () => {
+  it('closes their terminals on the owner profile, and only on a definite answer', async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    const store = new HostOpsStore(':memory:');
+    const owners: Record<string, boolean | 'error'> = { owner: true, osman: true, ece: 'error' };
+    const app = createHostOpsServer({
+      store,
+      terminals: f.hub,
+      hosts: [
+        {
+          id: 'core',
+          label: 'Core',
+          physicalHostId: 'primary',
+          mode: 'shared',
+          communityId: 'space',
+          ownerProfileId: 'operator',
+          agentAvailable: false,
+        },
+      ],
+      identify: async (token) => ({ userId: token, owner: true }),
+      stillOwner: async (user) => {
+        if (owners[user] === 'error') throw new Error('store unreachable');
+        return owners[user] === true;
+      },
+    });
+    try {
+      await app.ready();
+      const osman = f.hub.create('core', 'osman', 'operator', undefined, { sharedProfile: true });
+      const ece = f.hub.create('core', 'ece', 'operator', undefined, { sharedProfile: true });
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(f.alive.has(osman.id)).toBe(true);
+      owners.osman = false;
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(f.alive.has(osman.id)).toBe(false);
+      // A failed read of the membership store closes nothing.
+      expect(f.alive.has(ece.id)).toBe(true);
+    } finally {
+      await app.close();
+      vi.useRealTimers();
+    }
+  });
+});
