@@ -281,6 +281,30 @@ export interface SocialBridge {
     inviteCode: string;
     accountInviteCode?: string;
   }): Promise<SocialSession>;
+  /**
+   * Approved sign-up without an invitation link; see docs/SELF_HOSTING.md. A request creates no
+   * account; after approval the account is created through the invitation registration.
+   */
+  signupAvailable(serverUrl: string): Promise<boolean>;
+  requestSignup(input: {
+    serverUrl: string;
+    email: string;
+    password: string;
+    username: string;
+  }): Promise<import('@rooms/social').SocialPendingSignup>;
+  pendingSignup(): Promise<import('@rooms/social').SocialPendingSignup | null>;
+  checkSignup(): Promise<{
+    pending: import('@rooms/social').SocialPendingSignup | null;
+    session: SocialSession | null;
+  }>;
+  completeSignup(input: { email?: string; password: string }): Promise<SocialSession>;
+  cancelSignup(): Promise<void>;
+  signupRequests(spaceId: string): Promise<import('@rooms/social').SocialSignupRequests>;
+  decideSignupRequest(
+    spaceId: string,
+    requestId: string,
+    decision: 'approve' | 'reject',
+  ): Promise<void>;
   passwordRecoveryCapabilities(serverUrl: string): Promise<SocialPasswordRecoveryCapabilities>;
   requestPasswordRecovery(input: { serverUrl: string; email: string }): Promise<{ accepted: true }>;
   importPasswordRecoveryLink(input: {

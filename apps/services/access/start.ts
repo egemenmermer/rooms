@@ -1,5 +1,6 @@
 import { createAccessServer } from './server';
 import { personalSoundUploadsEnabled } from './personal-sounds';
+import { SOCIAL_ID_PATTERN } from '@rooms/social';
 const required = (name: string) => {
   const value = process.env[name];
   if (!value) throw new Error(`Missing service configuration: ${name}`);
@@ -9,6 +10,17 @@ async function start() {
   const personalSoundsMegabytes = Number(process.env.ROOMS_PERSONAL_SOUNDS_MAX_MB || 512);
   if (!(personalSoundsMegabytes >= 0))
     throw new Error('Invalid service configuration: ROOMS_PERSONAL_SOUNDS_MAX_MB');
+  const signupSpaceId = process.env.ROOMS_SIGNUP_SPACE_ID?.trim() || undefined;
+  if (signupSpaceId && !SOCIAL_ID_PATTERN.test(signupSpaceId))
+    throw new Error('Invalid service configuration: ROOMS_SIGNUP_SPACE_ID');
+  const limit = (name: string) => {
+    const raw = process.env[name]?.trim();
+    if (!raw) return undefined;
+    const value = Number(raw);
+    if (!Number.isInteger(value) || value < 1 || value > 10000)
+      throw new Error(`Invalid service configuration: ${name}`);
+    return value;
+  };
   const server = await createAccessServer({
     soundboardDirectory: process.env.ROOMS_SOUNDBOARD_DIRECTORY ?? '/state/soundboard',
     personalSoundsDirectory:
@@ -28,6 +40,13 @@ async function start() {
     publicUrl: process.env.ROOMS_PUBLIC_URL || undefined,
     downloadUrl: process.env.ROOMS_DOWNLOAD_URL || undefined,
     socialReadMongoUrl: process.env.ROOMS_SOCIAL_READ_MONGO_URL,
+    signupSpaceId,
+    signupRequestsFile: process.env.ROOMS_SIGNUP_REQUESTS_FILE,
+    signupLimits: {
+      perIpPerHour: limit('ROOMS_SIGNUP_PER_IP_PER_HOUR'),
+      globalPerHour: limit('ROOMS_SIGNUP_PER_HOUR'),
+      maxPending: limit('ROOMS_SIGNUP_MAX_PENDING'),
+    },
     klipyKey: process.env.ROOMS_KLIPY_KEY || undefined,
     apiKey: required('LIVEKIT_API_KEY'),
     apiSecret: required('LIVEKIT_API_SECRET'),

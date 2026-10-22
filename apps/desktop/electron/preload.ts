@@ -58,6 +58,15 @@ const bridge: DesktopBridge = {
     session: () => ipcRenderer.invoke('rooms:social-session'),
     login: (input) => ipcRenderer.invoke('rooms:social-login', input),
     register: (input) => ipcRenderer.invoke('rooms:social-register', input),
+    signupAvailable: (serverUrl) => ipcRenderer.invoke('rooms:social-signup-available', serverUrl),
+    requestSignup: (input) => ipcRenderer.invoke('rooms:social-signup-request', input),
+    pendingSignup: () => ipcRenderer.invoke('rooms:social-signup-pending'),
+    checkSignup: () => ipcRenderer.invoke('rooms:social-signup-check'),
+    completeSignup: (input) => ipcRenderer.invoke('rooms:social-signup-complete', input),
+    cancelSignup: () => ipcRenderer.invoke('rooms:social-signup-cancel'),
+    signupRequests: (spaceId) => ipcRenderer.invoke('rooms:social-signup-requests', spaceId),
+    decideSignupRequest: (spaceId, requestId, decision) =>
+      ipcRenderer.invoke('rooms:social-signup-decide', spaceId, requestId, decision),
     passwordRecoveryCapabilities: (serverUrl) =>
       ipcRenderer.invoke('rooms:social-password-recovery-capabilities', serverUrl),
     requestPasswordRecovery: (input) =>

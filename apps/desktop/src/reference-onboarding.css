@@ -779,3 +779,49 @@
   border-radius: 10px;
   color: var(--color-text-secondary, inherit);
 }
+/* Kayıt ol: invitation link or approved sign-up. */
+.ref-auth-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin: 0 0 17px;
+  border: 1px solid #343846;
+  border-radius: 8px;
+  background: #1b1d22;
+}
+.ref-auth-choice button {
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 6px;
+  background: none;
+  color: #a6abb8;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.ref-auth-choice button[aria-pressed='true'] {
+  background: #2d2b45;
+  color: #e9e7ff;
+}
+.ref-auth-choice button:focus-visible {
+  outline: 2px solid #8b83ff;
+  outline-offset: 1px;
+}
+/* Approved sign-up waiting, rejected and expired states. */
+.ref-signup-pending {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ref-signup-pending > svg,
+.ref-signup-pending-icon {
+  color: #b7aeff;
+}
+.ref-signup-pending h2 {
+  margin: 4px 0 0;
+}
+.ref-signup-pending p {
+  margin: 0;
+  line-height: 1.6;
+}

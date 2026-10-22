@@ -13,6 +13,7 @@ import {
   type AccountInviteSink,
 } from './account-invites';
 import { INVITE_PAGE_HEADERS, renderInvitePage } from './invite-page';
+import { registerSignupRequests, SignupRequestStore, type SignupLimits } from './signup-requests';
 import { MongoClient } from 'mongodb';
 import { StoatAuthorizationReader } from './stoat-authorization';
 import { createHash, randomUUID } from 'node:crypto';
@@ -68,6 +69,10 @@ export interface AccessConfig {
   /** Where invitation pages send people to download the desktop app. */
   downloadUrl?: string;
   socialReadMongoUrl?: string;
+  /** Community that approved sign-up (no invitation link) asks to join; unset turns it off. */
+  signupSpaceId?: string;
+  signupRequestsFile?: string;
+  signupLimits?: Partial<SignupLimits>;
   /** KLIPY app key for GIF search; kept on the server, never sent to clients. */
   klipyKey?: string;
 }
@@ -590,7 +595,7 @@ export async function createAccessServer(config: AccessConfig) {
     new StoatClient(config.stoatUrl ?? 'http://127.0.0.1:3022', token, socialOptions);
   const inviteCode = z.object({ code: z.string().regex(LEGACY_INVITE_CODE_PATTERN) });
   /** Listing and revoking links stays with the space owner and owner-equivalent admins. */
-  const requireSpaceOwner = async (authorization: string | undefined, spaceId: string) => {
+  const requireSpaceAdmin = async (authorization: string | undefined, spaceId: string) => {
     const client = stoat(tokenOf(authorization));
     const user = await client.getCurrentUser();
     const space = (await client.getServer(spaceId)) as unknown as StoatServer;
@@ -600,8 +605,18 @@ export async function createAccessServer(config: AccessConfig) {
         : ((await client.getMember(spaceId, user.id).catch(() => null)) as StoatMember | null);
     if (!stoatCommunityAdmin(space, member, user.id))
       throw new StoatError(403, 'INVITE_ADMIN_REQUIRED');
-    return client;
+    return { client, userId: user.id };
   };
+  const requireSpaceOwner = async (authorization: string | undefined, spaceId: string) =>
+    (await requireSpaceAdmin(authorization, spaceId)).client;
+  registerSignupRequests(server, {
+    spaceId: config.signupSpaceId,
+    store: new SignupRequestStore(config.signupRequestsFile ?? '.local/stoat/signup-requests.json'),
+    registration,
+    provisioning: !!accountInvites,
+    limits: config.signupLimits,
+    requireSpaceAdmin,
+  });
   server.post('/v1/invites', async (request) => {
     const { channelId } = channelBody.parse(request.body);
     const token = tokenOf(request.headers.authorization);
