@@ -197,6 +197,13 @@ export async function createAgentServer(config: AgentConfig) {
     room(p, t.roomId);
     return t;
   };
+  /** Approving, cancelling or reconciling a task: its owner, or someone who manages the Agent. */
+  const ownTask = (p: AgentPrincipal, taskId: string) => {
+    const t = task(p, taskId);
+    if (t.ownerId !== p.userId && !p.canManage)
+      throw Object.assign(new Error('TASK_ACTION_DENIED'), { statusCode: 403 });
+    return t;
+  };
   const status = (): AgentStatus => ({
     configured: true,
     connected: true,
@@ -576,7 +583,7 @@ export async function createAgentServer(config: AgentConfig) {
   });
   app.post<{ Params: { id: string } }>('/v1/tasks/:id/cancel', async (request) => {
     const p = principal(request);
-    const t = task(p, request.params.id);
+    const t = ownTask(p, request.params.id);
     if (!['completed', 'failed', 'cancelled', 'interrupted'].includes(t.state)) {
       jobs.get(t.id)?.abort();
       t.state = 'cancelled';
@@ -586,7 +593,7 @@ export async function createAgentServer(config: AgentConfig) {
   });
   app.post<{ Params: { id: string } }>('/v1/tasks/:id/approve', async (request) => {
     const p = principal(request);
-    const t = task(p, request.params.id);
+    const t = ownTask(p, request.params.id);
     if (t.state !== 'awaiting-approval')
       throw Object.assign(new Error('TASK_NOT_AWAITING_APPROVAL'), { statusCode: 409 });
     if (t.pendingApproval) {
@@ -606,7 +613,7 @@ export async function createAgentServer(config: AgentConfig) {
   });
   app.post<{ Params: { id: string } }>('/v1/tasks/:id/resolve-operation', async (request) => {
     const p = principal(request);
-    const t = task(p, request.params.id);
+    const t = ownTask(p, request.params.id);
     const b = z
       .object({
         operationId: z.string().regex(/^[a-f0-9]{64}$/),
