@@ -10,8 +10,8 @@
 
 [![Son sürüm](https://img.shields.io/github/v/release/egemenmermer/rooms?style=flat-square&label=son%20s%C3%BCr%C3%BCm&color=8B5CF6)](https://github.com/egemenmermer/rooms/releases/latest)
 [![MIT lisansı](https://img.shields.io/badge/lisans-MIT-64748B?style=flat-square)](LICENSE)
-[![macOS indir](https://img.shields.io/badge/macOS-indir-18181B?style=flat-square&logo=apple&logoColor=white)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.31/ROOMS-0.1.18-rc.31-arm64.dmg)
-[![Windows indir](https://img.shields.io/badge/Windows-indir-2563EB?style=flat-square)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.31/ROOMS-0.1.18-rc.31-windows-x64-setup.exe)
+[![macOS indir](https://img.shields.io/badge/macOS-indir-18181B?style=flat-square&logo=apple&logoColor=white)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-arm64.dmg)
+[![Windows indir](https://img.shields.io/badge/Windows-indir-2563EB?style=flat-square)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-windows-x64-setup.exe)
 
 Sesli sohbet, ekran paylaşımı, mesajlar, müzik ve ortak etkinlikler — tek masaüstü uygulamasında.
 
@@ -60,12 +60,12 @@ Tayfa, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında 
 
 ## İndir ve topluluğa katıl
 
-Güncel paketler [GitHub sürümleri](https://github.com/egemenmermer/rooms/releases/latest) sayfasındadır. Son yayımlanan arkadaş test sürümü **RC31**:
+Güncel paketler [GitHub sürümleri](https://github.com/egemenmermer/rooms/releases/latest) sayfasındadır. Son yayımlanan arkadaş test sürümü **RC32**:
 
 | Platform | Paket | Durum |
 | --- | --- | --- |
-| macOS 14+ / Apple Silicon | [RC31 DMG indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.31/ROOMS-0.1.18-rc.31-arm64.dmg) | Apple imzalı ve noter onaylı |
-| Windows x64 | [RC31 EXE indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.31/ROOMS-0.1.18-rc.31-windows-x64-setup.exe) | İmzasız arkadaş test paketi; sistem uyarısı gösterebilir |
+| macOS 14+ / Apple Silicon | [RC32 DMG indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-arm64.dmg) | Apple imzalı ve noter onaylı |
+| Windows x64 | [RC32 EXE indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-windows-x64-setup.exe) | İmzasız arkadaş test paketi; sistem uyarısı gösterebilir |
 
 1. Platformuna uygun paketi indirip uygulamayı kur.
 2. Topluluk yöneticisinden davet bağlantısını (`https://<sunucu>/davet/…`) al.
@@ -190,7 +190,7 @@ Açık istemcide özgün bir statik DJ çizimi bulunur. Her topluluk kendi adın
 
 ## Belgeler
 
-[Tüm belgeler ve okuma sırası](docs/README.md) · [RC31 yayın ve doğrulama kaydı](docs/RC31_RELEASE.md)
+[Tüm belgeler ve okuma sırası](docs/README.md) · [RC32 yayın ve doğrulama kaydı](docs/RC32_RELEASE.md)
 
 | Rehber | İçeriği |
 | --- | --- |
