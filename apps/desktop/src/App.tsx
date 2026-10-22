@@ -86,6 +86,7 @@ import {
 import { Home } from './Home';
 import { ConnectionPane } from './ConnectionPane';
 import { ActivityLauncher } from './Activities';
+import { RemoteControlRuntime } from './RemoteControl';
 const PersonalPlaybackRuntime = lazy(() =>
   import('./PersonalMedia').then((module) => ({ default: module.PersonalPlaybackRuntime })),
 );
@@ -885,6 +886,8 @@ export default function App() {
         openLauncher={() => open('launcher')}
         notify={notify}
       />
+      {/* Route independent: registers the shared screen and answers control requests. */}
+      <RemoteControlRuntime />
       <MusicDJ showTrigger={false} />
       <RoomEventSounds />
       <ParticipantAudioMenu />

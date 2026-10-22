@@ -134,3 +134,10 @@ it('measures authenticated data-channel round trip and rejects an old UI lease w
   receiver.clear();
   expect(() => receiver.response(nonce)).toThrow(/INACTIVE/);
 });
+it('keeps the remote-control runtime mounted by the app shell, outside any route', async () => {
+  // ca2f134 removed the only mount (inside ScreenHandoffRuntime) and the feature went dead.
+  const { readFileSync } = await import('node:fs');
+  const app = readFileSync(new URL('../apps/desktop/src/App.tsx', import.meta.url), 'utf8');
+  expect(app).toMatch(/<RemoteControlRuntime \/>/);
+  expect(app).toMatch(/import \{ RemoteControlRuntime \} from '\.\/RemoteControl';/);
+});
