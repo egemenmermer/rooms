@@ -203,6 +203,13 @@ services:
       # Optional: where the landing page sends people to download the app (default: latest release).
       ROOMS_DOWNLOAD_URL: ${ROOMS_DOWNLOAD_URL:-}
       ROOMS_REGISTRATION_INVITES_FILE: /state/registration-invites.json
+      # Optional approved sign-up without an invitation link: the community id people ask to join.
+      # Empty keeps it off. Limits default to 3/hour per address, 20/hour overall, 50 waiting.
+      ROOMS_SIGNUP_SPACE_ID: ${ROOMS_SIGNUP_SPACE_ID:-}
+      ROOMS_SIGNUP_REQUESTS_FILE: /state/signup-requests.json
+      ROOMS_SIGNUP_PER_IP_PER_HOUR: ${ROOMS_SIGNUP_PER_IP_PER_HOUR:-}
+      ROOMS_SIGNUP_PER_HOUR: ${ROOMS_SIGNUP_PER_HOUR:-}
+      ROOMS_SIGNUP_MAX_PENDING: ${ROOMS_SIGNUP_MAX_PENDING:-}
       ROOMS_SOUNDBOARD_DIRECTORY: /state/soundboard
       ROOMS_PERSONAL_SOUNDS_DIRECTORY: /state/personal-sounds
       # Instance admin: `0` turns personal sound uploads off; presets stay available.

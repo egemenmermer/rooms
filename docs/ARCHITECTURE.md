@@ -27,7 +27,7 @@ Topluluk görselleri dekoratif, sürümlü, boyutu sınırlı ve aynı kaynaktan
 
 ## Hesap ve medya akışı
 
-1. Kullanıcı **Giriş yap** sekmesinde topluluk kaynak adresini seçer ya da **Kayıt ol** sekmesine davet bağlantısı verir; yeni hesapta sunucuyu bağlantı belirler.
+1. Kullanıcı **Giriş yap** sekmesinde topluluk kaynak adresini seçer ya da **Kayıt ol** sekmesine davet bağlantısı verir; yeni hesapta sunucuyu bağlantı belirler. Sunucu [onaylı kaydı](SELF_HOSTING.md#onaylı-kayıt-davet-bağlantısı-olmadan) açtıysa kişi bağlantısız kayıt isteği gönderir: hesabı erişim aracısı oluşturur, kişi bir yönetici onaylayana kadar topluluğa girmez.
 2. Electron'ın yerel sosyal sınırı o toplulukta oturum açar; kimlik bilgilerini görünüm süreci dışında tutar.
 3. Tipli bağdaştırıcı, üst sistem REST/olaylarını uygulamanın sosyal alanına eşler.
 4. Seste erişim servisi gerçek hesabı, kanalı, üyeliği ve izinleri kontrol edip kısa süreli LiveKit yetkisi verir.
@@ -44,6 +44,7 @@ Bunlar farklı sistemlerdir. Sosyal websocket'in çalışması medyanın erişil
 | Yerel hesap/oturum ve yerel tercihler             | Seçilen masaüstü profili ve yerel kimlik bilgisi sınırı                                                                                                                                                       |
 | Aktif medya oturumu                               | Sayfalardan bağımsız gerçek zamanlı istemci durumu, LiveKit ve erişim izinleri                                                                                                                                |
 | Davet bağlantıları ve kullanımları                | Erişim servisinin kalıcı defteri (`ROOMS_REGISTRATION_INVITES_FILE`, sürüm 2) ve üst sistem hesap oluşturma                                                                                                   |
+| Onaylı kayıt istekleri                            | Erişim servisinin kalıcı istek dosyası (`ROOMS_SIGNUP_REQUESTS_FILE`); e-posta/şifre tutulmaz                                                                                                                  |
 | Etkinlik/oyun durumu                              | Dosya veya PostgreSQL kullanan tek yetkili Activities süreci                                                                                                                                                  |
 | Müzik kuyruğu/kaynak yaşam döngüsü                | İsteğe bağlı müzik servisi; dinleyici ses seviyesi yereldir                                                                                                                                                   |
 | Topluluk Sineması hesabı, kataloğu ve aktarımları | İsteğe bağlı sinema servisi; IPTV hesabı, Stremio oturumu, Stremio seçimleri ve katalog şifreli, aktarım yalnızca bellekte ([Topluluk Sineması](COMMUNITY_CINEMA.md), [Stremio](COMMUNITY_CINEMA.md#stremio)) |

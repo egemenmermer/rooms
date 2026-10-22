@@ -665,6 +665,18 @@ export class StoatClient {
     hooks: { onStage?(stage: 'account-create' | 'account-created'): void } = {},
   ) {
     await this.inspectUpstreamInvite(input.inviteCode);
+    await this.createUpstreamAccount(input, hooks);
+    await this.acceptInvite(input.inviteCode);
+    return this.getCurrentUser();
+  }
+  /**
+   * Broker-only: creates, signs in and onboards an account with a seeded one-time account
+   * invitation. It joins no community; approved sign-up admits the person later.
+   */
+  async createUpstreamAccount(
+    input: { email: string; password: string; username: string; accountInviteCode: string },
+    hooks: { onStage?(stage: 'account-create' | 'account-created'): void } = {},
+  ) {
     // The broker uses these stages to tell a definite rejection from an uncertain account.
     hooks.onStage?.('account-create');
     await this.request('/auth/account/create', 'POST', {
@@ -677,7 +689,6 @@ export class StoatClient {
     const onboarding = await this.request<{ onboarding: boolean }>('/onboard/hello');
     if (onboarding.onboarding)
       await this.request('/onboard/complete', 'POST', { username: input.username });
-    await this.acceptInvite(input.inviteCode);
     return this.getCurrentUser();
   }
   async getCurrentUser() {
