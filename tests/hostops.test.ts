@@ -248,6 +248,16 @@ describe('HostOps telemetry and authority', () => {
   });
 });
 describe('operator terminal lifecycle', () => {
+  it('lets owner-equivalent admins open terminals on the shared owner profile', () => {
+    const f = fixture();
+    const owner = f.hub.create('core', 'owner', 'operator', undefined, { sharedProfile: true });
+    f.hub.attach('core', owner.id, 'owner', () => {}).detach();
+    // An operator with their own grant still cannot use someone else's profile.
+    expect(() => f.hub.create('core', 'ops', 'operator')).toThrow('TERMINAL_PROFILE_IN_USE');
+    const admin = f.hub.create('core', 'osman', 'operator', undefined, { sharedProfile: true });
+    expect(admin.ownerId).toBe('osman');
+    expect(f.hub.list('core', 'owner').map((t) => t.id)).toEqual([owner.id]);
+  });
   it('keeps detached processes, resumes after broker restart and expires at 24h', () => {
     const f = fixture();
     const t = f.hub.create('core', 'owner', 'operator');

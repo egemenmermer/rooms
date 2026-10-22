@@ -249,7 +249,9 @@ export function createHostOpsServer(config: {
     const h = hostOf(req.params.hostId),
       p = await authorize(req.headers.authorization, h, 'terminal');
     if (!p.profileId) throw failure('TERMINAL_PROFILE_UNAVAILABLE', 503);
-    const t = hub().create(h.id, p.userId, p.profileId);
+    const t = hub().create(h.id, p.userId, p.profileId, undefined, {
+      sharedProfile: p.owner && p.profileId === h.ownerProfileId,
+    });
     config.store.audit(p.userId, h.id, 'terminal-created', t.id);
     return t;
   });
