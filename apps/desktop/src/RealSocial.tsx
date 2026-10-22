@@ -2269,7 +2269,8 @@ export function RealVoiceDock({
           <div className="dock-divider" />
           <div className="room-dock-group room-device-controls">
             <IconButton
-              disabled={!connected}
+              // While reconnecting the microphone can still be muted (not unmuted).
+              disabled={!connected && !(r.status === 'reconnecting' && !r.muted)}
               label={r.muted ? 'Mikrofonu aç' : 'Mikrofonu kapat'}
               className={r.muted ? 'muted-control' : ''}
               onClick={() => report(toggleMic(), notify)}

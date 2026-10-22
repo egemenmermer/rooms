@@ -927,6 +927,14 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     this.stopSoundboard();
     return this.microphoneTask(async () => {
       try {
+        const room = this.room;
+        if (room && this.status !== 'connected') {
+          // Reconnecting: muting is a local capture change and must not wait for the
+          // transport, or a hot microphone stays live when the room comes back.
+          await room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track?.mute();
+          this.patch({ muted: true });
+          return;
+        }
         await this.requireRoom().localParticipant.setMicrophoneEnabled(false);
         this.sync();
       } catch (error) {
