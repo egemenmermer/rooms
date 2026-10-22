@@ -15,7 +15,8 @@ export function musicPlaybackError(code: string, title?: string) {
     MUSIC_YOUTUBE_UNAVAILABLE: `${song} YouTube’dan alınamadı. Video kaldırılmış, bölgeye kapalı veya geçici olarak erişilemiyor olabilir.`,
     MUSIC_SOURCE_TIMEOUT: `${song} yüklenirken süre doldu. Yeniden dene; sürerse başka bir kayıt seç.`,
     MUSIC_DECODE_FAILED: `${song} bulundu ancak ses akışı başlatılamadı veya kesildi. Parçayı yeniden seçerek dene.`,
-    MUSIC_TRACK_SKIPPED: 'Bir parça çalınamadı ya da yarıda kesildi; DJ kuyrukta sıradakine geçti.',
+    MUSIC_TRACK_SKIPPED:
+      'Bir parça bulunamadı ya da çalınamadı; DJ sıradakine geçti. Atlanan parça kuyrukta işaretli.',
     MUSIC_TRANSPORT_UNAVAILABLE:
       'DJ ses odasına bağlanamadı. Oda bağlantısını kontrol edip yeniden dene.',
     MUSIC_HISTORY_UNAVAILABLE: 'Müzik bağlantısı korunuyor, ancak DJ geçmişi kaydedilemedi.',

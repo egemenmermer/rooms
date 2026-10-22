@@ -30,7 +30,14 @@ type Entry = MusicReference & {
   spotify?: SpotifyPlaylistTrack;
   /** Times a stream that broke off mid-song was picked up again. */
   retries?: number;
+  /** Why the queue went past this track on its own; the queue shows it next to the title. */
+  skipped?: 'missing' | 'failed' | 'cut';
 };
+const SKIPPED = {
+  missing: 'bulunamadı, atlandı',
+  failed: 'çalınamadı, atlandı',
+  cut: 'yarıda kesildi, atlandı',
+} as const;
 /** Failures of one track, not of the DJ: the queue goes on without it. */
 const TRACK_FAILURES = new Set([
   'MUSIC_DECODE_FAILED',
@@ -39,6 +46,7 @@ const TRACK_FAILURES = new Set([
   'MUSIC_SOURCE_TIMEOUT',
   'MUSIC_SOURCE_TOO_LARGE',
   'MUSIC_MIRROR_NOT_FOUND',
+  'MUSIC_SEARCH_UNAVAILABLE',
 ]);
 /** Of those, the ones a broken connection causes; the stream is opened again where it stopped. */
 const STREAM_FAILURES = new Set([
@@ -50,6 +58,8 @@ const STREAM_FAILURES = new Set([
 const MID_SONG_RETRIES = 2;
 /** Tracks that fail to start in a row before the DJ stops and says so. */
 const SKIP_LIMIT = 3;
+/** A song with no YouTube recording says nothing about the next one, so more may go by. */
+const MISSING_SKIP_LIMIT = 10;
 const musicCode = (error: unknown, fallback: string) =>
   error instanceof Error && /^MUSIC_[A-Z_]+$/.test(error.message) ? error.message : fallback;
 function playlistReference(
@@ -180,9 +190,13 @@ export class MusicWorker {
       identity: musicIdentity(channelId),
       status: s?.status ?? 'disconnected',
       queue:
-        s?.queue.map(({ id, title, durationSec, requestedProvider }) => ({
+        s?.queue.map(({ id, title, durationSec, requestedProvider, skipped }) => ({
           id,
-          title: requestedProvider ? `${title.slice(0, 140)} · YouTube` : title,
+          title: skipped
+            ? `${title.slice(0, 120)}${requestedProvider ? ' · YouTube' : ''} · ${SKIPPED[skipped]}`
+            : requestedProvider
+              ? `${title.slice(0, 140)} · YouTube`
+              : title,
           durationSec,
         })) ?? [],
       currentId: s?.queue[s.index]?.id ?? null,
@@ -302,16 +316,24 @@ export class MusicWorker {
     s.error = null;
     s.resumePosition = null;
     s.ended = false;
+    // Marked again only when the queue moves past it; the track the DJ stops on is never 'skipped'.
+    delete item.skipped;
     try {
       if (item.spotify && !youtubeSource(item.source)) {
-        const ref = await (this.options.matchingYouTubeReference ?? matchingYouTubeReference)({
-          provider: 'spotify',
-          title: item.spotify.title,
-          artists: item.spotify.artists,
-          durationSec: item.spotify.durationSec,
-        });
+        const ref = await (this.options.matchingYouTubeReference ?? matchingYouTubeReference)(
+          {
+            provider: 'spotify',
+            title: item.spotify.title,
+            artists: item.spotify.artists,
+            durationSec: item.spotify.durationSec,
+          },
+          { loose: true },
+        );
         if (this.sessions.get(s.channelId) !== s || generation !== s.generation) return;
-        await this.options.lease(s.channelId, s.leaseId);
+        // A passing access failure is no refusal; the heartbeat still ends a revoked lease.
+        await this.options.lease(s.channelId, s.leaseId).catch((error: unknown) => {
+          if (!(error instanceof Error && error.message === 'MUSIC_LEASE_UNAVAILABLE')) throw error;
+        });
         if (this.sessions.get(s.channelId) !== s || generation !== s.generation) return;
         Object.assign(item, ref);
       }
@@ -330,6 +352,7 @@ export class MusicWorker {
           s.status = 'playing';
           s.pausedAt = null;
           s.played.add(item.id);
+          delete item.skipped;
           await this.archive(s);
         }
         return;
@@ -389,6 +412,7 @@ export class MusicWorker {
       );
       if (this.sessions.get(s.channelId) === s && generation === s.generation) {
         s.played.add(item.id);
+        delete item.skipped;
         await this.archive(s);
       }
     } catch (error) {
@@ -400,12 +424,16 @@ export class MusicWorker {
     }
   }
   /**
-   * Plays from `s.index` on its own (a song ended or broke off): a track that cannot start is
-   * skipped, up to {@link SKIP_LIMIT} in a row, so one bad link never stalls the whole queue.
-   * The snapshot then says a track was skipped.
+   * Plays from `s.index` on its own (a song ended or broke off, Next, a list just added): a
+   * track that cannot start is skipped, up to {@link SKIP_LIMIT} in a row
+   * ({@link MISSING_SKIP_LIMIT} for songs with no YouTube recording), so one bad link never
+   * stalls the whole queue. The snapshot says a track was skipped and the queue marks which.
    */
   private async playOn(s: Session, skipped: string | null = null) {
-    for (let attempt = 0; ; attempt++) {
+    let failures = 0,
+      missing = 0;
+    for (;;) {
+      const item = s.queue[s.index];
       try {
         await this.play(s);
         if (skipped && this.sessions.get(s.channelId) === s && s.status === 'playing')
@@ -414,8 +442,11 @@ export class MusicWorker {
       } catch (error) {
         if (this.sessions.get(s.channelId) !== s) return;
         const code = musicCode(error, 'MUSIC_SOURCE_FAILED');
-        if (!TRACK_FAILURES.has(code) || attempt + 1 >= SKIP_LIMIT) return;
+        if (!TRACK_FAILURES.has(code)) return;
+        const notFound = code === 'MUSIC_MIRROR_NOT_FOUND';
+        if (notFound ? ++missing >= MISSING_SKIP_LIMIT : ++failures >= SKIP_LIMIT) return;
         if (s.index + 1 >= s.queue.length) return;
+        if (item) item.skipped = notFound ? 'missing' : 'failed';
         s.index++;
         skipped = code;
       }
@@ -455,6 +486,9 @@ export class MusicWorker {
         s.error = code;
         return;
       }
+      // A break in the last seconds is the end of the song, not a skip.
+      if (!(item.durationSec > 0 && position >= item.durationSec - 2))
+        item.skipped = position > 1 ? 'cut' : 'failed';
       s.index++;
       await this.playOn(s, code);
     }).catch(() => {});
@@ -484,6 +518,7 @@ export class MusicWorker {
         case 'add-list': {
           if (s.queue.length >= 100 || this.pending >= 1) throw new Error('MUSIC_QUEUE_FULL');
           this.pending++;
+          let released = false;
           try {
             let references: (MusicReference & { spotify?: SpotifyPlaylistTrack })[];
             let url = command.type === 'add' ? command.url : '';
@@ -524,8 +559,13 @@ export class MusicWorker {
             if (s.queue.length + references.length > 100) throw new Error('MUSIC_QUEUE_FULL');
             if (this.sessions.get(channelId) !== s) throw new Error('MUSIC_LEASE_EXPIRED');
             const start = async () => {
-              if (references.some((ref) => ref.spotify)) await this.play(s).catch(() => {});
-              else await this.play(s);
+              // A list plays on past songs it cannot find; a single link reports its failure.
+              // The import slot is worker-wide: free it before searching through songs to skip.
+              if (references.some((ref) => ref.spotify)) {
+                this.pending--;
+                released = true;
+                await this.playOn(s);
+              } else await this.play(s);
             };
             const firstNew = s.queue.length,
               current = s.queue[s.index],
@@ -546,7 +586,7 @@ export class MusicWorker {
               await start();
             }
           } finally {
-            this.pending--;
+            if (!released) this.pending--;
           }
           break;
         }
@@ -633,7 +673,7 @@ export class MusicWorker {
         case 'next':
           if (s.index + 1 < s.queue.length) {
             s.index++;
-            await this.play(s);
+            await this.playOn(s);
           } else {
             s.generation++;
             s.publisher.pause();
