@@ -78,6 +78,8 @@ export interface DesktopBridge {
   chooseCaption(mediaUrl: string): Promise<{ content: string; name: string } | null>;
   openMediaExternal(url: string): Promise<boolean>;
   applicationInfo(): Promise<{ version: string; platform: string; arch: string; electron: string }>;
+  /** Unread mentions and conversations on the Dock or launcher icon (0 clears it). */
+  setBadge?(count: number): Promise<void>;
   diagnosticsPreview(): Promise<string>;
   thirdPartyNotices(): Promise<string>;
   exportDiagnostics(): Promise<boolean>;
@@ -102,6 +104,8 @@ export interface DesktopBridge {
       value: boolean,
     ): Promise<{ enabled: boolean; sound: boolean; pauseDuringVoice: boolean; supported: boolean }>;
     setVoiceActive(value: boolean): Promise<void>;
+    /** A content-free OS notification for an incoming private call (not while focused). */
+    incomingCall?(): Promise<void>;
   };
   social: SocialBridge;
   music: {
@@ -253,6 +257,11 @@ export interface SocialSession {
   user: import('@rooms/social').SocialUser | null;
   status: ConnectionStatus;
   remembered: boolean;
+  /**
+   * Why a saved session is not in use: the server refused it (`expired`), or it could not be
+   * reached at launch and is retried (`unreachable`).
+   */
+  restore?: 'expired' | 'unreachable' | null;
   sessionEpoch?: number;
 }
 export interface SocialPasswordRecoveryCapabilities {

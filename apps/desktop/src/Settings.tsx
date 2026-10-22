@@ -70,6 +70,7 @@ import {
 import { Avatar, IconButton, Modal, Toggle } from '@rooms/design';
 import { useRooms, withInputLevel } from './store';
 import { PushToTalkKeyField } from './PushToTalkKeyField';
+import { formatPushToTalkKey, pushToTalkKey } from './push-to-talk-key';
 import { ConnectionPane } from './ConnectionPane';
 import { useModerationRights } from './VoiceModeration';
 import { useCommunity } from './community';
@@ -432,14 +433,25 @@ export default function Settings({
   const tab = tabs.some((t) => t.id === params.get('tab')) ? params.get('tab')! : 'appearance';
   const savedPreferences = useRooms((state) => state.preferences);
   const [p, setDraftPreferences] = useState(() => ({ ...savedPreferences }));
+  // What the draft started from. Other writers change the store while Settings is open
+  // (the microphone keeps microphoneOn, a narrow window keeps showFriends); comparing with
+  // this instead of the live store keeps their changes out of "unsaved" and out of Save.
+  const baseline = useRef({ ...savedPreferences });
   const setPreference = <K extends keyof typeof p>(key: K, value: (typeof p)[K]) =>
     setDraftPreferences((current) => ({ ...current, [key]: value }));
-  const dirty = JSON.stringify(p) !== JSON.stringify(savedPreferences);
+  const changedKeys = (Object.keys(p) as (keyof typeof p)[]).filter(
+    (key) => JSON.stringify(p[key]) !== JSON.stringify(baseline.current[key]),
+  );
+  const dirty = changedKeys.length > 0;
+  const resetDraft = () => {
+    baseline.current = { ...useRooms.getState().preferences };
+    setDraftPreferences({ ...baseline.current });
+  };
   const [saving, setSaving] = useState(false),
     [confirmDiscard, setConfirmDiscard] = useState(false);
   const approvedClose = useRef(false);
   useEffect(() => {
-    setDraftPreferences({ ...useRooms.getState().preferences });
+    resetDraft();
     setConfirmDiscard(false);
     approvedClose.current = false;
   }, [community.user?.id, community.serverUrl]);
@@ -457,35 +469,40 @@ export default function Settings({
     if (saving) return false;
     const accountId = community.user?.id,
       serverUrl = community.serverUrl;
+    const before = { ...useRooms.getState().preferences };
     setSaving(true);
     setError('');
     try {
       if (realtime.status === 'connected') {
         await setNoiseSuppression(p.noiseSuppression, p.noiseSuppressionMode);
         await mediaProvider().deviceSelection(p.inputId, p.outputId);
+        await mediaProvider().selectCamera?.(p.cameraId);
       }
       if (
         useCommunity.getState().user?.id !== accountId ||
         useCommunity.getState().serverUrl !== serverUrl
       )
         throw new Error('Oturum değişti. Ayarları yeniden aç.');
-      useRooms.getState().setPreferences(p);
+      const next = { ...useRooms.getState().preferences };
+      for (const key of changedKeys) Object.assign(next, { [key]: p[key] });
+      useRooms.getState().setPreferences(next);
+      baseline.current = { ...next };
+      setDraftPreferences({ ...next });
       notify('Ayarlar kaydedildi.');
       return true;
     } catch (failure) {
       try {
-        useRooms.getState().setPreferences(savedPreferences);
+        useRooms.getState().setPreferences(before);
       } catch {
         /* Preserve the error when device storage is unavailable. */
       }
       setError(uiError(failure));
       if (realtime.status === 'connected') {
-        await setNoiseSuppression(
-          savedPreferences.noiseSuppression,
-          savedPreferences.noiseSuppressionMode,
-        ).catch(() => {});
+        await setNoiseSuppression(before.noiseSuppression, before.noiseSuppressionMode).catch(
+          () => {},
+        );
         await mediaProvider()
-          .deviceSelection(savedPreferences.inputId, savedPreferences.outputId)
+          .deviceSelection(before.inputId, before.outputId)
           .catch(() => {});
       }
     } finally {
@@ -494,6 +511,22 @@ export default function Settings({
     return false;
   };
   const [error, setError] = useState('');
+  // Diagnostics show the running build, not a version typed into the source.
+  const [appInfo, setAppInfo] = useState<{
+    version: string;
+    arch: string;
+    electron: string;
+  } | null>(null);
+  useEffect(() => {
+    let active = true;
+    void window.rooms
+      ?.applicationInfo?.()
+      .then((value) => active && setAppInfo(value))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
   const [narrowSettings, setNarrowSettings] = useState(
     () => window.matchMedia('(max-width: 959px)').matches,
   );
@@ -588,7 +621,7 @@ export default function Settings({
     inputLevel = (inputName ? p.inputLevels[inputName] : undefined) ?? 100;
   const inputPercent = useRef(100);
   inputPercent.current = inputLevel;
-  const [cameraId, setCameraId] = useState('');
+  const cameraId = p.cameraId;
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const cameraRef = useRef<MediaStream | null>(null);
   const cameraVideo = useRef<HTMLVideoElement | null>(null);
@@ -1440,10 +1473,18 @@ export default function Settings({
                         value={cameraId}
                         onChange={(e) => {
                           stopCamera();
-                          setCameraId(e.target.value);
+                          setPreference('cameraId', e.target.value);
                         }}
                       >
                         <option value="">Sistem varsayılanı</option>
+                        {cameraId &&
+                          !devices.some(
+                            (d) => d.kind === 'videoinput' && d.deviceId === cameraId,
+                          ) && (
+                            <option value={cameraId}>
+                              Seçili kamera bağlı değil (varsayılan kullanılır)
+                            </option>
+                          )}
                         {devices
                           .filter((d) => d.kind === 'videoinput')
                           .map((d, i) => (
@@ -1457,7 +1498,10 @@ export default function Settings({
                       <Video size={16} />
                       {cameraStream ? 'Önizlemeyi kapat' : 'Kamerayı dene'}
                     </button>
-                    <p className="ref-settings-note">Kamera denemesi odaya yayınlanmaz.</p>
+                    <p className="ref-settings-note">
+                      Seçtiğin kamera odalarda ve özel görüşmelerde kullanılır. Kamera denemesi
+                      odaya yayınlanmaz.
+                    </p>
                     <div className="ref-camera-preview">
                       {cameraStream ? (
                         <video
@@ -1557,7 +1601,10 @@ export default function Settings({
                   [tr('Home / Spaces / Chat / Voice / Cinema'), '⌘ / Ctrl 1–5'],
                   [tr('Open settings'), '⌘ / Ctrl ,'],
                   [tr('Mikrofonu aç / kapat'), '⌘ / Ctrl Shift M'],
-                  [tr('Push to talk (when enabled)'), 'Ctrl Shift Space'],
+                  [
+                    tr('Push to talk (when enabled)'),
+                    formatPushToTalkKey(pushToTalkKey(p.pushToTalkKey)),
+                  ],
                   [tr('Play / pause local media'), 'Space'],
                   [tr('Seek local media 5 seconds'), '← / →'],
                   [tr('Close topmost dialog'), 'Esc'],
@@ -1789,8 +1836,16 @@ export default function Settings({
                 <h3>{'Tan\u0131lama'}</h3>
                 <div className="diagnostic-list">
                   {[
-                    [tr('Application'), tr('Tayfa 0.1.14 / Desktop')],
-                    [tr('Runtime'), window.rooms ? 'Electron 44.7.0' : tr('Browser preview')],
+                    [
+                      tr('Application'),
+                      appInfo
+                        ? `Tayfa ${appInfo.version} / ${appInfo.arch}`
+                        : tr('Browser preview'),
+                    ],
+                    [
+                      tr('Runtime'),
+                      appInfo ? `Electron ${appInfo.electron}` : tr('Browser preview'),
+                    ],
                     [tr('Platform'), window.rooms?.platform ?? tr('Browser')],
                     [tr('Social / gateway'), community.status],
                     ['WebRTC / SFU', realtime.status],
@@ -1846,7 +1901,7 @@ export default function Settings({
                 className="button secondary"
                 disabled={saving}
                 onClick={() => {
-                  setDraftPreferences({ ...savedPreferences });
+                  resetDraft();
                   setError('');
                 }}
               >

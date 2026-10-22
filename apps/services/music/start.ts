@@ -44,7 +44,13 @@ const worker = new MusicWorker({
         signal: AbortSignal.timeout(10000),
       },
     );
-    if (!response.ok) throw new Error('Lease revoked');
+    // 401/403: the lease is gone for good. Anything else is passing; the worker tries again.
+    if (!response.ok)
+      throw new Error(
+        response.status === 401 || response.status === 403
+          ? 'MUSIC_LEASE_REVOKED'
+          : 'MUSIC_LEASE_UNAVAILABLE',
+      );
     return (await response.json()) as MusicLease;
   },
 });

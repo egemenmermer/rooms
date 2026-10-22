@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CinemaBridge } from '../../../../packages/community-cinema/src/bridge';
 import type {
   CatalogKind,
@@ -92,4 +92,76 @@ export function useAllItems(hallId: string, kind: CatalogKind, categoryId: strin
     rememberItems(items);
     return { items, total: first.total };
   });
+}
+
+/**
+ * A grid read page by page with an offset: each step fetches only the next page, and a page
+ * that fails keeps what is already shown (the service caps one read at 1000 items).
+ */
+export function usePagedItems(
+  hallId: string,
+  kind: CatalogKind,
+  categoryId: string | null,
+  sort: 'default' | 'name' | 'added' | 'rating',
+  pageSize = 60,
+) {
+  const key = `${hallId}:${kind}:${categoryId ?? '*'}:${sort}`;
+  const [state, setState] = useState<{
+    key: string;
+    items: CinemaItem[];
+    total: number;
+    loading: boolean;
+    error: string | null;
+  }>({ key, items: [], total: 0, loading: true, error: null });
+  const busy = useRef(false);
+  const current =
+    state.key === key ? state : { key, items: [], total: 0, loading: true, error: null };
+  const load = useCallback(
+    async (offset: number) => {
+      const bridge = getCinemaBridge();
+      if (!bridge || busy.current) return;
+      busy.current = true;
+      setState((value) => ({
+        ...(value.key === key ? value : { key, items: [], total: 0 }),
+        loading: true,
+        error: null,
+      }));
+      try {
+        const page = await bridge.items(hallId, {
+          kind,
+          categoryId,
+          sort,
+          offset,
+          limit: pageSize,
+        });
+        rememberItems(page.items);
+        setState((value) =>
+          value.key !== key
+            ? value
+            : {
+                key,
+                items: [...value.items.slice(0, offset), ...page.items],
+                total: page.total,
+                loading: false,
+                error: null,
+              },
+        );
+      } catch (error) {
+        setState((value) =>
+          value.key !== key ? value : { ...value, loading: false, error: cinemaErrorText(error) },
+        );
+      } finally {
+        busy.current = false;
+      }
+    },
+    [key, hallId, kind, categoryId, sort, pageSize],
+  );
+  useEffect(() => {
+    busy.current = false;
+    void load(0);
+  }, [load]);
+  const more = useCallback(() => {
+    if (!current.loading && current.items.length < current.total) void load(current.items.length);
+  }, [current.loading, current.items.length, current.total, load]);
+  return { ...current, more, retry: () => void load(current.items.length) };
 }

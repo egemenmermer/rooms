@@ -73,9 +73,11 @@ describe('Activity proxy and authenticated-user rate boundaries', () => {
         return { userId: 'alice', displayName: 'QA', canControl: true, canCreate: true };
       },
     });
+    // A client that is not the reverse proxy: its forwarded header must not pick the bucket.
     const read = (token: string) =>
       app.inject({
         url: '/v1/rooms/private/activity',
+        remoteAddress: '203.0.113.5',
         headers: {
           authorization: `Bearer ${token}`,
           'x-forwarded-for': token,

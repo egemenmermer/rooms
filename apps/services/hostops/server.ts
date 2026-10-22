@@ -14,6 +14,7 @@ import {
 } from '../../../packages/shared-contracts/src/hostops';
 import { HostOpsStore } from './store';
 import { TerminalHub } from './terminals';
+import { ingressLimit, TRUSTED_PROXIES } from '../shared/ingress';
 export interface HostSpec {
   id: string;
   label: string;
@@ -41,7 +42,8 @@ export function createHostOpsServer(config: {
     visibleRooms?(userId: string, host: HostSpec, roomIds: string[]): Promise<string[]>;
   };
 }) {
-  const app = Fastify({ logger: false, bodyLimit: 16384 });
+  const app = Fastify({ logger: false, trustProxy: TRUSTED_PROXIES, bodyLimit: 16384 });
+  ingressLimit(app, { perMinute: 1200, error: 'RATE_LIMITED' });
   void app.register(rateLimit, {
     max: 180,
     timeWindow: '1 minute',
@@ -186,7 +188,13 @@ export function createHostOpsServer(config: {
       p = await authorize(req.headers.authorization, h);
     if (!p.owner) throw failure('OWNER_REQUIRED');
     const g = opsGrantSchema.parse(req.body);
-    if (g.profileId && !config.terminals?.hasProfile(g.profileId))
+    // The profile matters only for terminal access: revoking a grant whose profile was removed
+    // from the machine must still work.
+    if (
+      g.permissions.includes('terminal') &&
+      g.profileId &&
+      !config.terminals?.hasProfile(g.profileId)
+    )
       throw failure('TERMINAL_PROFILE_UNAVAILABLE', 400);
     const previous = config.store.grant(h.id, g.userId);
     if (
@@ -241,7 +249,9 @@ export function createHostOpsServer(config: {
     const h = hostOf(req.params.hostId),
       p = await authorize(req.headers.authorization, h, 'terminal');
     if (!p.profileId) throw failure('TERMINAL_PROFILE_UNAVAILABLE', 503);
-    const t = hub().create(h.id, p.userId, p.profileId);
+    const t = hub().create(h.id, p.userId, p.profileId, undefined, {
+      sharedProfile: p.owner && p.profileId === h.ownerProfileId,
+    });
     config.store.audit(p.userId, h.id, 'terminal-created', t.id);
     return t;
   });

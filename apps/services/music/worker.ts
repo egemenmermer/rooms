@@ -82,6 +82,8 @@ interface Session {
   heartbeat?: ReturnType<typeof setInterval>;
   pausedAt: number | null;
   resumePosition: number | null;
+  /** The last track played to its end (its duration may be unknown, e.g. a pasted link). */
+  ended?: boolean;
   historyId: string;
   startedAt: string;
   played: Set<string>;
@@ -254,8 +256,11 @@ export class MusicWorker {
             await this.options.lease(channelId, selected.leaseId);
             if (selected.pausedAt && this.now() - selected.pausedAt > 180000)
               await this.destroy(selected);
-          } catch {
-            await this.destroy(selected);
+          } catch (error) {
+            // A passing failure (access restarting, Stoat or LiveKit slow) keeps the session;
+            // the lease still expires on access if it never recovers, and that ends it.
+            if (!(error instanceof Error && error.message === 'MUSIC_LEASE_UNAVAILABLE'))
+              await this.destroy(selected);
           } finally {
             checking = false;
           }
@@ -280,7 +285,11 @@ export class MusicWorker {
       } else {
         s.status = 'paused';
         s.pausedAt = this.now();
-        s.resumePosition = item.durationSec || s.publisher.position();
+        // A link added by hand or a flat playlist entry has no duration; learn it at its end.
+        if (!(item.durationSec > 0))
+          item.durationSec = Math.max(1, Math.round(s.publisher.position()));
+        s.resumePosition = item.durationSec;
+        s.ended = true;
       }
     }).catch(() => {});
   }
@@ -292,6 +301,7 @@ export class MusicWorker {
     s.status = 'connecting';
     s.error = null;
     s.resumePosition = null;
+    s.ended = false;
     try {
       if (item.spotify && !youtubeSource(item.source)) {
         const ref = await (this.options.matchingYouTubeReference ?? matchingYouTubeReference)({
@@ -522,8 +532,8 @@ export class MusicWorker {
               finished =
                 s.status === 'paused' &&
                 !!current &&
-                current.durationSec > 0 &&
-                (s.resumePosition ?? 0) >= current.durationSec;
+                (!!s.ended ||
+                  (current.durationSec > 0 && (s.resumePosition ?? 0) >= current.durationSec));
             s.queue.push(...references.map((ref) => ({ ...ref, id: randomUUID() })));
             if (command.playNow || finished) {
               s.index = firstNew;
@@ -587,8 +597,9 @@ export class MusicWorker {
           if (s.queue[s.index])
             await this.play(
               s,
-              s.queue[s.index]!.durationSec > 0 &&
-                (s.resumePosition ?? 0) >= s.queue[s.index]!.durationSec
+              s.ended ||
+                (s.queue[s.index]!.durationSec > 0 &&
+                  (s.resumePosition ?? 0) >= s.queue[s.index]!.durationSec)
                 ? 0
                 : Math.min(
                     s.resumePosition ?? s.publisher.position(),

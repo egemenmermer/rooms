@@ -25,9 +25,16 @@ export class PostgresActivityRepository implements ActivityRepository {
       [room.snapshot.roomId, encodeStoredRoom(room)],
     );
   }
+  /** Rooms that decode; a corrupt or unsupported row is left out instead of failing the list. */
   async list(): Promise<StoredRoom[]> {
-    return (await this.pool.query('SELECT room_id,state FROM rooms_activity_state')).rows.map(
-      (row) => decodeStoredRoom(row.state, row.room_id),
+    return (await this.pool.query('SELECT room_id,state FROM rooms_activity_state')).rows.flatMap(
+      (row) => {
+        try {
+          return [decodeStoredRoom(row.state, row.room_id)];
+        } catch {
+          return [];
+        }
+      },
     );
   }
 }

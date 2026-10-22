@@ -11,6 +11,7 @@ import type { ConfigStore } from './config-store';
 import { CinemaError, safeError } from './importer';
 import type { CinemaService } from './service';
 import { STREMIO_ID, STREMIO_TYPE } from './stremio';
+import { ingressLimit, TRUSTED_PROXIES } from '../shared/ingress';
 
 const socialId = z.string().regex(SOCIAL_ID_PATTERN);
 const ref = z.string().regex(CINEMA_REF_PATTERN);
@@ -74,7 +75,8 @@ export type CinemaServerOptions = {
 
 export async function createCinemaServer(options: CinemaServerOptions) {
   const { service, configs, authority } = options;
-  const server = Fastify({ logger: false, bodyLimit: 16384 });
+  const server = Fastify({ logger: false, trustProxy: TRUSTED_PROXIES, bodyLimit: 16384 });
+  ingressLimit(server, { perMinute: 1200, error: 'CINEMA_RATE_LIMITED' });
   await server.register(rateLimit, {
     max: 1200,
     timeWindow: '1 minute',

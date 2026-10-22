@@ -72,7 +72,7 @@ import {
 } from 'lucide-react';
 import { Avatar, IconButton, Modal } from '@rooms/design';
 import { useRooms } from './store';
-import { useCommunity, initializeCommunity } from './community';
+import { badgeCount, useCommunity, initializeCommunity } from './community';
 import { useModerationRights } from './VoiceModeration';
 import { useRealtime, joinVoice, toggleMic } from './realtime';
 import { PushToTalk } from './PushToTalk';
@@ -86,6 +86,7 @@ import {
 import { Home } from './Home';
 import { ConnectionPane } from './ConnectionPane';
 import { ActivityLauncher } from './Activities';
+import { RemoteControlRuntime } from './RemoteControl';
 const PersonalPlaybackRuntime = lazy(() =>
   import('./PersonalMedia').then((module) => ({ default: module.PersonalPlaybackRuntime })),
 );
@@ -180,6 +181,42 @@ export default function App() {
       !window.rooms ||
       !!(import.meta.env.DEV && new URLSearchParams(window.location.search).has('fixture')),
   );
+  // The Dock badge follows unread mentions and conversations.
+  useEffect(() => {
+    if (!window.rooms?.setBadge) return;
+    let last = -1;
+    const update = (state: ReturnType<typeof useCommunity.getState>) => {
+      const count = badgeCount(state);
+      if (count === last) return;
+      last = count;
+      void window.rooms?.setBadge?.(count).catch(() => {});
+    };
+    update(useCommunity.getState());
+    const unsubscribe = useCommunity.subscribe(update);
+    return () => {
+      unsubscribe();
+      void window.rooms?.setBadge?.(0).catch(() => {});
+    };
+  }, []);
+  // A clicked desktop notification opens its channel or conversation.
+  useEffect(() => {
+    const open = (event: Event) => {
+      const channelId = (event as CustomEvent<string>).detail;
+      const state = useCommunity.getState();
+      if (![...state.channels, ...state.dms].some((channel) => channel.id === channelId)) return;
+      void state.openChannel(channelId).then(() => navigate('/chat'));
+    };
+    window.addEventListener('rooms:open-channel', open);
+    return () => window.removeEventListener('rooms:open-channel', open);
+  }, [navigate]);
+  // The saved session's server came back after launch: leave the sign-in screen.
+  useEffect(() => {
+    const restored = () => {
+      if (location.pathname.startsWith('/setup/')) navigate('/home', { replace: true });
+    };
+    window.addEventListener('rooms:session-restored', restored);
+    return () => window.removeEventListener('rooms:session-restored', restored);
+  }, [location.pathname, navigate]);
   useEffect(() => {
     if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('fixture')) return;
     let current = true;
@@ -885,6 +922,8 @@ export default function App() {
         openLauncher={() => open('launcher')}
         notify={notify}
       />
+      {/* Route independent: registers the shared screen and answers control requests. */}
+      <RemoteControlRuntime />
       <MusicDJ showTrigger={false} />
       <RoomEventSounds />
       <ParticipantAudioMenu />

@@ -15,6 +15,7 @@ async function fixture() {
   const grants: Record<string, AgentPrincipal> = {
     manager: { userId: 'manager', roomIds: ['room'], canManage: true },
     member: { userId: 'member', roomIds: ['room'], canManage: false },
+    peer: { userId: 'peer', roomIds: ['room'], canManage: false },
     outsider: { userId: 'outsider', roomIds: ['other'], canManage: true },
   };
   const modelId = randomUUID();
@@ -105,7 +106,7 @@ it('projects real room grants and safe scope resources without another user pers
         mappings: [{ userId: 'member', personalModel: 'private' }],
       },
     });
-    expect(value.principals.map((p) => p.userId)).toEqual(['manager', 'member']);
+    expect(value.principals.map((p) => p.userId)).toEqual(['manager', 'member', 'peer']);
     expect(value.scopes).toEqual([
       { kind: 'github', read: true, write: true, resources: ['team/repo'] },
       { kind: 'workspace', read: true, write: true, resources: [] },
@@ -238,6 +239,32 @@ it('records actual completed execution in sanitized audit while preserving initi
     ).toBe(true);
     expect(JSON.stringify(audit)).not.toContain('Sensitive fixture');
     expect(f.repository.data.tasks[0].modelConnectionId).toBe(f.modelId);
+  } finally {
+    await f.close();
+  }
+});
+
+it('lets only the owner or a manager approve, cancel or reconcile a task', async () => {
+  const f = await fixture();
+  try {
+    const created = (await (
+      await f.request('/v1/tasks', 'member', 'POST', {
+        roomId: 'room',
+        prompt: 'Owner task',
+        modelConnectionId: f.modelId,
+      })
+    ).json()) as any;
+    for (const action of ['approve', 'cancel', 'resolve-operation']) {
+      const response = await f.request(`/v1/tasks/${created.id}/${action}`, 'peer', 'POST', {
+        operationId: 'a'.repeat(64),
+        resolution: 'confirm-not-applied',
+      });
+      expect(response.status).toBe(403);
+      expect(((await response.json()) as any).error).toBe('TASK_ACTION_DENIED');
+    }
+    expect((await f.request(`/v1/tasks/${created.id}/cancel`, 'member', 'POST', {})).status).toBe(
+      200,
+    );
   } finally {
     await f.close();
   }

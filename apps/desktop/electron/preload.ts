@@ -44,6 +44,7 @@ const bridge: DesktopBridge = {
   chooseCaption: (mediaUrl: string) => ipcRenderer.invoke('rooms:choose-caption', mediaUrl),
   openMediaExternal: (url) => ipcRenderer.invoke('rooms:external-media', url),
   applicationInfo: () => ipcRenderer.invoke('rooms:application-info'),
+  setBadge: (count) => ipcRenderer.invoke('rooms:set-badge', count),
   diagnosticsPreview: () => ipcRenderer.invoke('rooms:diagnostics-preview'),
   thirdPartyNotices: () => ipcRenderer.invoke('rooms:third-party-notices'),
   exportDiagnostics: () => ipcRenderer.invoke('rooms:export-diagnostics'),
@@ -202,6 +203,7 @@ const bridge: DesktopBridge = {
     setSound: (value) => ipcRenderer.invoke('rooms:notification-sound', value),
     setPauseDuringVoice: (value) => ipcRenderer.invoke('rooms:notification-pause-voice', value),
     setVoiceActive: (value) => ipcRenderer.invoke('rooms:notification-voice-active', value),
+    incomingCall: () => ipcRenderer.invoke('rooms:notification-incoming-call'),
   },
   providers: {
     nativePlayer: {
