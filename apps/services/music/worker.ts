@@ -646,8 +646,16 @@ export class MusicWorker {
           await this.play(s);
           break;
         case 'clear': {
-          // Everything but the current track, which plays or waits on.
-          const keep = s.queue[s.index];
+          // Everything but the current track, which plays or waits on (a failed one goes too).
+          const keep = s.status === 'error' ? undefined : s.queue[s.index];
+          if (!keep) {
+            s.generation++;
+            s.publisher.pause();
+            s.status = 'paused';
+            s.error = null;
+            s.resumePosition = null;
+            s.ended = false;
+          }
           const removed = s.queue.filter((item) => item !== keep);
           s.queue = keep ? [keep] : [];
           s.index = keep ? 0 : -1;
@@ -660,8 +668,23 @@ export class MusicWorker {
         }
         case 'remove': {
           const index = s.queue.findIndex((q) => q.id === command.id);
-          if (index === s.index) throw new Error('MUSIC_CURRENT_ITEM');
-          if (index >= 0) {
+          // A failed or paused current track can go; the next one waits (paused) in its place.
+          if (index === s.index && s.status !== 'error' && s.status !== 'paused')
+            throw new Error('MUSIC_CURRENT_ITEM');
+          if (index >= 0 && index === s.index) {
+            s.generation++;
+            s.publisher.pause();
+            const [file] = s.queue.splice(index, 1);
+            s.index = s.queue.length ? Math.min(index, s.queue.length - 1) : -1;
+            s.status = 'paused';
+            s.error = null;
+            s.resumePosition = null;
+            s.ended = false;
+            if (file!.file) {
+              this.bytes -= file!.file.bytes;
+              await rm(file!.file.directory, { recursive: true, force: true });
+            }
+          } else if (index >= 0) {
             const [file] = s.queue.splice(index, 1);
             if (index < s.index) s.index--;
             if (file!.file) {

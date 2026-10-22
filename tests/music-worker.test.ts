@@ -672,3 +672,32 @@ it('keeps the session and its queue when a lease check fails only for a moment',
     vi.useRealTimers();
   }
 });
+it('removes a failed current track and clears an errored queue', async () => {
+  const { publisher, lease } = await setup();
+  const worker = new MusicWorker({
+    publisher: () => ({
+      ...publisher,
+      playYouTube: async (_source, _position, _ended, onError) => {
+        onError(new Error('decode'));
+      },
+    }),
+    lease: async () => lease,
+    youtubeReferences: async (source) => [{ source, title: 'Broken', durationSec: 100 }],
+  });
+  workers.push(worker);
+  const added = await worker.command('failed', lease, {
+    type: 'add',
+    url: 'https://www.youtube.com/watch?v=vKHu4uPOJVg',
+  });
+  await vi.waitFor(() => expect(worker.snapshot('failed').status).toBe('error'));
+  const removed = await worker.command('failed', lease, { type: 'remove', id: added.queue[0]!.id });
+  expect(removed.queue).toHaveLength(0);
+  expect(removed.status).toBe('paused');
+  await worker.command('failed', lease, {
+    type: 'add',
+    url: 'https://www.youtube.com/watch?v=w2BTr6qsLFc',
+  });
+  await vi.waitFor(() => expect(worker.snapshot('failed').status).toBe('error'));
+  const cleared = await worker.command('failed', lease, { type: 'clear' });
+  expect(cleared.queue).toHaveLength(0);
+});
