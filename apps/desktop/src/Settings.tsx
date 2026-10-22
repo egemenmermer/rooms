@@ -432,14 +432,25 @@ export default function Settings({
   const tab = tabs.some((t) => t.id === params.get('tab')) ? params.get('tab')! : 'appearance';
   const savedPreferences = useRooms((state) => state.preferences);
   const [p, setDraftPreferences] = useState(() => ({ ...savedPreferences }));
+  // What the draft started from. Other writers change the store while Settings is open
+  // (the microphone keeps microphoneOn, a narrow window keeps showFriends); comparing with
+  // this instead of the live store keeps their changes out of "unsaved" and out of Save.
+  const baseline = useRef({ ...savedPreferences });
   const setPreference = <K extends keyof typeof p>(key: K, value: (typeof p)[K]) =>
     setDraftPreferences((current) => ({ ...current, [key]: value }));
-  const dirty = JSON.stringify(p) !== JSON.stringify(savedPreferences);
+  const changedKeys = (Object.keys(p) as (keyof typeof p)[]).filter(
+    (key) => JSON.stringify(p[key]) !== JSON.stringify(baseline.current[key]),
+  );
+  const dirty = changedKeys.length > 0;
+  const resetDraft = () => {
+    baseline.current = { ...useRooms.getState().preferences };
+    setDraftPreferences({ ...baseline.current });
+  };
   const [saving, setSaving] = useState(false),
     [confirmDiscard, setConfirmDiscard] = useState(false);
   const approvedClose = useRef(false);
   useEffect(() => {
-    setDraftPreferences({ ...useRooms.getState().preferences });
+    resetDraft();
     setConfirmDiscard(false);
     approvedClose.current = false;
   }, [community.user?.id, community.serverUrl]);
@@ -457,6 +468,7 @@ export default function Settings({
     if (saving) return false;
     const accountId = community.user?.id,
       serverUrl = community.serverUrl;
+    const before = { ...useRooms.getState().preferences };
     setSaving(true);
     setError('');
     try {
@@ -469,23 +481,26 @@ export default function Settings({
         useCommunity.getState().serverUrl !== serverUrl
       )
         throw new Error('Oturum değişti. Ayarları yeniden aç.');
-      useRooms.getState().setPreferences(p);
+      const next = { ...useRooms.getState().preferences };
+      for (const key of changedKeys) Object.assign(next, { [key]: p[key] });
+      useRooms.getState().setPreferences(next);
+      baseline.current = { ...next };
+      setDraftPreferences({ ...next });
       notify('Ayarlar kaydedildi.');
       return true;
     } catch (failure) {
       try {
-        useRooms.getState().setPreferences(savedPreferences);
+        useRooms.getState().setPreferences(before);
       } catch {
         /* Preserve the error when device storage is unavailable. */
       }
       setError(uiError(failure));
       if (realtime.status === 'connected') {
-        await setNoiseSuppression(
-          savedPreferences.noiseSuppression,
-          savedPreferences.noiseSuppressionMode,
-        ).catch(() => {});
+        await setNoiseSuppression(before.noiseSuppression, before.noiseSuppressionMode).catch(
+          () => {},
+        );
         await mediaProvider()
-          .deviceSelection(savedPreferences.inputId, savedPreferences.outputId)
+          .deviceSelection(before.inputId, before.outputId)
           .catch(() => {});
       }
     } finally {
@@ -1846,7 +1861,7 @@ export default function Settings({
                 className="button secondary"
                 disabled={saving}
                 onClick={() => {
-                  setDraftPreferences({ ...savedPreferences });
+                  resetDraft();
                   setError('');
                 }}
               >
