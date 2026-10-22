@@ -392,7 +392,7 @@ export function gameCommand(
       }
       player.connected = true;
       player.disconnectedAt = null;
-      player.left = false;
+      if (player.left) delete player.left;
       const requested = player.bot && !player.pendingReturn;
       player.pendingReturn = player.bot;
       if (requested) recoveryEvent(table, player, 'return-requested', now);
