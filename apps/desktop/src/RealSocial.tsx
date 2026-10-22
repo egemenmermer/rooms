@@ -93,7 +93,7 @@ import {
   type SocialAttachment,
 } from '@rooms/social';
 import { sameInviteServer } from './ConnectionPane';
-import { useCommunity, type CommunityMessage } from './community';
+import { MESSAGE_WINDOW, useCommunity, type CommunityMessage } from './community';
 import { useModerationRights } from './VoiceModeration';
 import {
   useRealtime,
@@ -708,6 +708,12 @@ export function CommunityChat({
             <RefreshCw size={12} />
             {c.loadingMessages ? 'Yükleniyor…' : 'Önceki mesajlar'}
           </button>
+        )}
+        {!c.hasOlder && c.messages.length >= MESSAGE_WINDOW && (
+          <p className="load-older-limit">
+            Bu görünümde en fazla {MESSAGE_WINDOW.toLocaleString('tr-TR')} mesaj tutulur; daha
+            eskiler burada açılamıyor.
+          </p>
         )}
         {!c.messages.length && !c.loadingMessages && (
           <div className="chat-welcome">

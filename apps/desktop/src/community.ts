@@ -150,6 +150,8 @@ async function applySession(session: SocialSession, request = sessionEpoch) {
   });
   await useCommunity.getState().refresh();
 }
+/** Messages one channel view keeps; past this, "Önceki mesajlar" stops instead of looping. */
+export const MESSAGE_WINDOW = 5000;
 /** A saved session waits for its server; nothing needs to be typed again. */
 export const SERVER_UNREACHABLE_MESSAGE =
   'Kayıtlı sunucuna şu an ulaşılamıyor. Oturumun duruyor; bağlantı gelince kendiliğinden açılacak.';
@@ -510,12 +512,16 @@ export const useCommunity = create<CommunityState>((set, get) => ({
     try {
       const older = await bridge().messages(channelId, oldest.id);
       if (current())
-        set((state) => ({
-          messages: [...older, ...state.messages]
-            .filter((m, i, a) => a.findIndex((x) => x.id === m.id) === i)
-            .slice(-1000),
-          hasOlder: older.length === 50,
-        }));
+        set((state) => {
+          const known = new Set(state.messages.map((m) => m.id));
+          const merged = [...older.filter((m) => !known.has(m.id)), ...state.messages];
+          // Trimming the oldest end would throw away the page just fetched (and loop forever).
+          const full = merged.length >= MESSAGE_WINDOW;
+          return {
+            messages: full ? merged.slice(-MESSAGE_WINDOW) : merged,
+            hasOlder: older.length === 50 && !full,
+          };
+        });
     } catch (error) {
       if (current()) set({ error: safeError(error) });
     } finally {
@@ -759,19 +765,20 @@ function onEvent(event: GatewayEvent) {
         ),
         unread: { ...s.unread, [message.channelId]: message.author.id !== s.user?.id },
       }));
+    // An edit or reaction on a message that is not loaded must not drop it into the log out
+    // of context; it arrives in place when older pages load.
+    const upsert = (messages: SocialMessage[]) =>
+      event.type === 'MESSAGE_UPDATE' && !messages.some((m) => m.id === message.id)
+        ? messages
+        : [...messages.filter((m) => m.id !== message.id), message].sort(
+            (a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp),
+          );
     const cached = conversations.get(message.channelId);
     if (cached)
-      conversations.put(message.channelId, {
-        ...cached,
-        messages: [...cached.messages.filter((m) => m.id !== message.id), message].sort(
-          (a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp),
-        ),
-      });
+      conversations.put(message.channelId, { ...cached, messages: upsert(cached.messages) });
     if (message.channelId === state.activeChannelId) {
       useCommunity.setState((s) => ({
-        messages: [...s.messages.filter((m) => m.id !== message.id), message]
-          .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
-          .slice(-1000),
+        messages: upsert(s.messages).slice(-MESSAGE_WINDOW),
       }));
     }
     if (
