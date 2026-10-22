@@ -602,3 +602,43 @@ it('clears the queue but for the current track and removes cached files', async 
   await expect(access(directories[0]!)).rejects.toThrow();
   await access(directories[1]!);
 });
+it('starts a track added after an unknown-length last track ended, and Play restarts it', async () => {
+  const { publisher, lease } = await setup(),
+    ends: Array<() => void> = [];
+  const playYouTube = vi.fn(async (_source: string, _position: number, ended: () => void) => {
+    ends.push(ended);
+  });
+  const worker = new MusicWorker({
+    publisher: () => ({ ...publisher, position: () => 241.7, playYouTube }),
+    lease: async () => lease,
+    youtubeReferences: async (source) => [{ source, title: 'Pasted', durationSec: 0 }],
+  });
+  workers.push(worker);
+  await worker.command('unknown-end', lease, {
+    type: 'add',
+    url: 'https://www.youtube.com/watch?v=vKHu4uPOJVg',
+  });
+  ends[0]!();
+  await vi.waitFor(() => expect(worker.snapshot('unknown-end').status).toBe('paused'));
+  // Play at the end starts the track again instead of seeking past its end.
+  await worker.command('unknown-end', lease, { type: 'play' });
+  expect(playYouTube).toHaveBeenLastCalledWith(
+    'https://www.youtube.com/watch?v=vKHu4uPOJVg',
+    0,
+    expect.any(Function),
+    expect.any(Function),
+  );
+  ends[1]!();
+  await vi.waitFor(() => expect(worker.snapshot('unknown-end').status).toBe('paused'));
+  const added = await worker.command('unknown-end', lease, {
+    type: 'add',
+    url: 'https://www.youtube.com/watch?v=w2BTr6qsLFc',
+  });
+  expect(added.currentId).toBe(added.queue[1]!.id);
+  expect(playYouTube).toHaveBeenLastCalledWith(
+    'https://www.youtube.com/watch?v=w2BTr6qsLFc',
+    0,
+    expect.any(Function),
+    expect.any(Function),
+  );
+});
