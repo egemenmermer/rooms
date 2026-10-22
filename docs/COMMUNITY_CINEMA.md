@@ -4,7 +4,9 @@
 
 Sinema, sol menüde kalıcı duran ortak izleme salonudur. Topluluk sahibi sunucunun IPTV hesabını bir kez bağlar. Hesap kaldırılana kadar salon kanalını görebilen herkes canlı kanalları, yayın akışını, filmleri ve dizileri gezer ve birlikte açar. Aynı salonda YouTube bağlantıları ve ekran paylaşımı da açılır.
 
-Kişisel medya (Medyam) bundan ayrıdır ve özel kalır. Sinema'daki yeniden yayın yalnızca sahibin bağladığı hesap içindir ([geliştirme kuralları](../AGENTS.md)).
+Sahip ayrıca bir Stremio hesabı bağlayabilir; salon o hesabın eklentilerinin (ör. Real-Debrid ile Torrentio) bulduğu kaynakları da oynatır. IPTV bağlı olmasa da çalışır ([Stremio](#stremio)).
+
+Kişisel medya (Medyam) bundan ayrıdır ve özel kalır. Sinema'daki yeniden yayın yalnızca sahibin bağladığı IPTV ve Stremio hesapları içindir ([geliştirme kuralları](../AGENTS.md)).
 
 ## İçindekiler
 
@@ -14,6 +16,7 @@ Kişisel medya (Medyam) bundan ayrıdır ve özel kalır. Sinema'daki yeniden ya
 - [Altyazılar](#altyazılar)
 - [Etkinlik protokolü](#etkinlik-protokolü)
 - [Filmler, diziler ve canlı TV](#filmler-diziler-ve-canlı-tv)
+- [Stremio](#stremio)
 - [RMDB (arayüzde Tayfa)](#rmdb)
 - [Kurulum](#kurulum)
 - [Doğrulama](#doğrulama)
@@ -42,7 +45,7 @@ Kişisel medya (Medyam) bundan ayrıdır ve özel kalır. Sinema'daki yeniden ya
   - Katalog, arama, rehber, detay, görsel ve izleme için salon kanalında görüntüleme izni (VIEW_CHANNEL) gerekir.
   - Sahip olmayan üyeler maskeli sunucu adını bile görmez.
 - **İstemciye giden veri.**
-  - İstemci yalnızca opak öğe kimliklerini (`l-…`, `m-…`, `s-…`, `e-…`) ve opak görsel kimliklerini görür.
+  - İstemci yalnızca opak öğe kimliklerini (`l-…`, `m-…`, `s-…`, `e-…`, Stremio için `x-…`) ve opak görsel kimliklerini görür.
   - Etkinlik şeması URL, kullanıcı adı ve şifre taşıyan alanları reddeder.
 - **Aktarımı yönlendirme.** Servis yalnızca salon etkinliğinde **seçili olan** öğeyi aktarır. Sunucunun tek sağlayıcı bağlantısını başka bir kanala çevirmek için salonun kumandası gerekir; kumandası olmayan kişi yalnızca sıraya öneri ekleyebilir.
 - **Masaüstü tarafı.**
@@ -123,8 +126,23 @@ Salon, `hall` adlı ana etkinliktir; `roomId` salon kanalının kimliğidir. Sı
 - **Ses dili.** Sahip "Türkçe dublaj" ile "Orijinal" arasında seçim yapar. Röle filmin ilk ses izini bu seçime göre seçer; kumandası olan kişi ses dilini film sırasında değiştirebilir. Altyazı dili (Türkçe, İngilizce ya da Kapalı) her izleyicinin kendi tercihidir.
 - **Yayın bilgisi.** Röle ffprobe'dan çözünürlüğü, fps değerini ve kodeki bildirir; bit hızını oynatıcı son parçalardan ölçer. Canlı yayında "canlıdan X sn geride" bilgisi de gösterilir. Film ya da bölüm açılınca bu bilgi 3 saniye ekranda kalır.
 - **Favori kanallar.** Her üyenin listesi Tayfa dosyasında, üye başına en fazla 300 kanal olarak tutulur ve `GET` ile `PUT /v1/halls/:salon/favorites` uçlarından okunup yazılır. Favoriler açıkken ↑/↓ yalnızca favori kanallar arasında gezer.
-- **Hatırlatıcılar.** Bir programın hatırlatması cihazda saklanır. Program başlayınca sistem bildirimi ve "Salonda aç" kartı gelir. Uygulama kapalıysa hatırlatma çalışmaz. Kartta isteyen için "Salona duyur" düğmesi de var; salon sohbetine kişinin kendi adıyla yazar, kendiliğinden bir şey göndermez.
+- **Hatırlatıcılar.** Bir programın hatırlatması cihazda saklanır. Program başlayınca "Salonda aç" kartı gelir; pencere önde değilse bir sistem bildirimi de çıkar (sohbet bildirimleri kapalı olsa bile). Uygulama kapalıysa hatırlatma çalışmaz. Kartta isteyen için "Salona duyur" düğmesi de var; salon sohbetine kişinin kendi adıyla yazar, kendiliğinden bir şey göndermez.
 - **Kısayollar.** Salonun tuşları Ayarlar → Klavye'den değiştirilebilir. Çakışan tuş yeni komuta geçer ve eski komut kısayolsuz kalır; Esc, rakamlar ve ⌘/Ctrl K sabittir. `?` tuşu kısayol kartını açar.
+
+## Stremio
+
+Sahip, Sinema ayarlarındaki **Stremio** bölümünden hesabını bağlar. Salonda Filmler ile YouTube arasında bir **Stremio** sekmesi açılır.
+
+- **Bağlama.** Stremio'nun kendi kodla bağlama akışı kullanılır (`link.stremio.com/api/v2/create` → tarayıcıda onay → `read`). Şifre Tayfa'ya hiç gelmez. Bekleyen ve süresi dolan kod Stremio'da aynı yanıtı verdiği için kod 15 dakika sonra bırakılır.
+- **Saklama.** Stremio oturum anahtarı ve seçilen kaynakların adresleri topluluğun şifreli ayar dosyasında (`stremio`, `stremioPicks`, en fazla 300) tutulur. Debrid bağlantıları (Torrentio'nun Real-Debrid adresleri) debrid anahtarını içerdiği için hiçbir yanıtta istemciye gitmez.
+- **Gezinme.** Salonu gören herkes Cinemeta'nın popüler başlıklarını, aramasını ve film/dizi ayrıntılarını görür. Hesabın "izlemeye devam et" satırı ve kitaplığı (`datastoreGet`) yalnızca hesabı bağlayan kişiye görünür. Görseller servis üzerinden gelir.
+- **Kim seçer.** Kaynaklar sahibin eklentileri ve debrid hesabıyla bulunduğu için kaynakları listelemek ve seçmek topluluk sahibine ve yöneticilere açıktır. Seçilen şey salonda herkes için oynar.
+- **Kaynaklar.** Bir film veya bölüm için hesabın `stream` sunan eklentileri sorulur (eklenti başına 20 sn). Her kaynak opak bir kimlikle döner (2 saat geçerli); kalite, boyut ve debrid önbelleği (`[RD+]` → Hazır, `[RD download]` → İndirilecek) gösterilir.
+- **Cloudflare engeli.** Torrentio veri merkezi adreslerini (Hetzner dahil) Cloudflare ile reddeder (403). Servis bunu `blockedAddons` olarak bildirir. Hesabı bağlayan kişinin masaüstü uygulaması o eklentiyi kendi (ev) adresinden sorar (`/stremio/assist`). Eklenti adresleri ve Torrentio'nun yönlendirdiği bağlantılar Electron ana sürecinde kalır. Seçilen kaynağın yönlendirmesi (Torrentio → debrid indirme bağlantısı) yine orada izlenir ve yalnızca son indirme bağlantısı servise verilir (`/stremio/pick-direct`). Önbellekte olmayan bir kaynak Torrentio'nun "indiriliyor" klibinde kalır; bu durumda `CINEMA_STREMIO_NOT_CACHED` döner. Yerel ağ adresleri ve https olmayan bağlantılar atlanır.
+- **Yalnızca doğrudan bağlantılar.** Sunucu yalnızca HTTP(S) adreslerini oynatır. Yalnızca `infoHash` taşıyan torrent kaynakları atlanır ve sayısı gösterilir; sunucu hiçbir zaman torrent indirmez veya paylaşmaz. Bütün istekler `privateFetch` üzerinden gider (özel ağ engeli, sabitlenmiş DNS).
+- **Oynatma.** Seçilen kaynak `x-…` kimliği alır ve salonun sırasına `community-media` olarak girer. Aktarım katalog filmleriyle aynı yoldan gider. Ayrıntılar, IMDb bağlantısı ve hesabın altyazı eklentilerinden gelen Türkçe/İngilizce altyazılar da çalışır.
+- **Kaldırma.** Bağlantı kaldırılınca oturum ve bütün seçimler silinir, `x-` aktarımları durur. Stremio oturumu geçersiz sayarsa (`CINEMA_STREMIO_LOGGED_OUT`) sahip yeniden bağlar.
+- **iPhone.** Seçilen kaynak iPhone salonunda da oynar; Stremio'da gezinme şimdilik masaüstündedir.
 
 ## RMDB
 

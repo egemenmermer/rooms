@@ -728,6 +728,21 @@ describe('listener sound preferences', () => {
     expect(saved.personalSounds).toBe(false);
     expect(saved.roomEventSounds).toBe(true);
   });
+  it('keeps changes made outside Settings out of the draft and out of Save', async () => {
+    useRooms.setState({ preferences: { ...original.prefs, microphoneOn: false } });
+    showSettings();
+    // The microphone is toggled in the room while Settings is open.
+    act(() => useRooms.getState().setPreference('microphoneOn', true));
+    expect(screen.queryByRole('region', { name: 'Kaydedilmemiş ayarlar' })).toBeNull();
+    fireEvent.click(screen.getByRole('switch', { name: 'Oda giriş ve çıkış sesleri' }));
+    expect(screen.getByRole('region', { name: 'Kaydedilmemiş ayarlar' })).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Kaydet' }));
+    });
+    const saved = useRooms.getState().preferences;
+    expect(saved.microphoneOn).toBe(true);
+    expect(saved.roomEventSounds).toBe(!original.prefs.roomEventSounds);
+  });
   it('saves a microphone level for the named device only', async () => {
     media.inputName = 'HyperX Cloud II';
     try {

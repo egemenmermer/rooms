@@ -16,7 +16,8 @@ export function setupNotifications(
   let sound = false;
   let pauseDuringVoice = false;
   let voiceActiveUntil = 0;
-  let lastShown = 0;
+  let lastShown = 0,
+    lastMention = 0;
   let mutedKeys = new Set<string>();
   const channelKey = (scope: ChannelNotificationScope, channelId: string) =>
     createHash('sha256')
@@ -127,6 +128,53 @@ export function setupNotifications(
     }
     return { muted: value.muted };
   });
+  // A ringing private call shows even during voice (it is the point of being reachable), but
+  // never while the window is focused, where the call card already rings.
+  ipcMain.handle('rooms:notification-incoming-call', (event) => {
+    assertSender(event);
+    const window = getWindow();
+    if (!enabled || !Notification.isSupported() || window?.isFocused()) return;
+    const notification = new Notification({
+      title: 'Tayfa',
+      body: 'Özel bir arama geliyor.',
+      silent: !sound,
+    });
+    notification.on('click', () => {
+      const current = getWindow();
+      if (!current) return;
+      showWindow(current);
+      current.focus();
+    });
+    notification.show();
+  });
+  // A programme reminder is something the member asked for: it shows even when chat
+  // notifications are off, but not while the window is in front (the card is there).
+  ipcMain.handle('rooms:notification-reminder', (event, input) => {
+    assertSender(event);
+    const value = input as { title?: unknown; detail?: unknown } | null;
+    if (
+      typeof value?.title !== 'string' ||
+      typeof value.detail !== 'string' ||
+      !value.title.trim() ||
+      value.title.length > 200 ||
+      value.detail.length > 200
+    )
+      throw new Error('Invalid reminder.');
+    const window = getWindow();
+    if (!Notification.isSupported() || window?.isFocused()) return;
+    const notification = new Notification({
+      title: value.title,
+      body: value.detail,
+      silent: !sound,
+    });
+    notification.on('click', () => {
+      const current = getWindow();
+      if (!current) return;
+      showWindow(current);
+      current.focus();
+    });
+    notification.show();
+  });
   // A short renderer lease expires after crash/suspension and is never persisted.
   ipcMain.handle('rooms:notification-voice-active', (event, value) => {
     assertSender(event);
@@ -135,18 +183,27 @@ export function setupNotifications(
   });
   return {
     voiceActive: () => voiceActiveUntil > Date.now(),
-    message: (scope?: ChannelNotificationScope, channelId?: string, mentioned = false) => {
+    message: (
+      scope?: ChannelNotificationScope,
+      channelId?: string,
+      mentioned = false,
+      /** Opens the message's channel when the notification is clicked. */
+      open?: () => void,
+    ) => {
       if (scope && channelId && mutedKeys.has(channelKey(scope, channelId))) return;
       const window = getWindow();
+      // Mentions have their own, shorter throttle: a message just before must not swallow them.
+      const last = mentioned ? lastMention : lastShown;
       if (
         !enabled ||
         (pauseDuringVoice && voiceActiveUntil > Date.now()) ||
         !Notification.isSupported() ||
         window?.isFocused() ||
-        Date.now() - lastShown < 5000
+        Date.now() - last < (mentioned ? 1500 : 5000)
       )
         return;
-      lastShown = Date.now();
+      if (mentioned) lastMention = Date.now();
+      else lastShown = Date.now();
       const notification = new Notification({
         title: 'Tayfa',
         body: mentioned ? 'Topluluğunda biri seni etiketledi.' : 'Topluluğunda yeni bir mesaj var.',
@@ -157,6 +214,7 @@ export function setupNotifications(
         if (!current) return;
         showWindow(current);
         current.focus();
+        open?.();
       });
       notification.show();
     },

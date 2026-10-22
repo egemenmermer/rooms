@@ -28,6 +28,7 @@ import { AgentApprovalRequired, AgentUncertainEffect, projectAgentAudit } from '
 import { AgentInterrupted } from './shared-host';
 import type { WorkspaceTerminals } from './workspace-terminals';
 import { registerWorkspaceTerminals } from './workspace-wire';
+import { ingressLimit, TRUSTED_PROXIES } from '../shared/ingress';
 export interface AgentPrincipal {
   userId: string;
   roomIds: string[];
@@ -173,8 +174,11 @@ function artifactPreview(
 export async function createAgentServer(config: AgentConfig) {
   const repo = config.repository;
   const now = config.clock ?? Date.now;
-  const app = Fastify({ logger: false, bodyLimit: 1024 * 1024 });
-  await app.register(rateLimit, { max: 60, timeWindow: '1 minute' });
+  const app = Fastify({ logger: false, trustProxy: TRUSTED_PROXIES, bodyLimit: 1024 * 1024 });
+  ingressLimit(app, { perMinute: 1200, error: 'RATE_LIMITED' });
+  // One open Agent window refreshes about 30 times a minute; leave room for actions and a
+  // second window. Clients are told apart by address now (trusted proxy hops only).
+  await app.register(rateLimit, { max: 240, timeWindow: '1 minute' });
   const jobs = new Map<string, AbortController>();
   const completions = new Map<string, Promise<void>>();
   let busy = false;
@@ -193,6 +197,13 @@ export async function createAgentServer(config: AgentConfig) {
     const t = repo.data.tasks.find((t) => t.id === uuid.parse(taskId));
     if (!t) throw Object.assign(new Error('TASK_NOT_FOUND'), { statusCode: 404 });
     room(p, t.roomId);
+    return t;
+  };
+  /** Approving, cancelling or reconciling a task: its owner, or someone who manages the Agent. */
+  const ownTask = (p: AgentPrincipal, taskId: string) => {
+    const t = task(p, taskId);
+    if (t.ownerId !== p.userId && !p.canManage)
+      throw Object.assign(new Error('TASK_ACTION_DENIED'), { statusCode: 403 });
     return t;
   };
   const status = (): AgentStatus => ({
@@ -574,7 +585,7 @@ export async function createAgentServer(config: AgentConfig) {
   });
   app.post<{ Params: { id: string } }>('/v1/tasks/:id/cancel', async (request) => {
     const p = principal(request);
-    const t = task(p, request.params.id);
+    const t = ownTask(p, request.params.id);
     if (!['completed', 'failed', 'cancelled', 'interrupted'].includes(t.state)) {
       jobs.get(t.id)?.abort();
       t.state = 'cancelled';
@@ -584,7 +595,7 @@ export async function createAgentServer(config: AgentConfig) {
   });
   app.post<{ Params: { id: string } }>('/v1/tasks/:id/approve', async (request) => {
     const p = principal(request);
-    const t = task(p, request.params.id);
+    const t = ownTask(p, request.params.id);
     if (t.state !== 'awaiting-approval')
       throw Object.assign(new Error('TASK_NOT_AWAITING_APPROVAL'), { statusCode: 409 });
     if (t.pendingApproval) {
@@ -604,7 +615,7 @@ export async function createAgentServer(config: AgentConfig) {
   });
   app.post<{ Params: { id: string } }>('/v1/tasks/:id/resolve-operation', async (request) => {
     const p = principal(request);
-    const t = task(p, request.params.id);
+    const t = ownTask(p, request.params.id);
     const b = z
       .object({
         operationId: z.string().regex(/^[a-f0-9]{64}$/),

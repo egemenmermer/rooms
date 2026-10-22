@@ -177,3 +177,39 @@ it('attaches pasted image files and asks the native clipboard when the paste car
   });
   expect(pasteAttachment).toHaveBeenCalledTimes(1);
 });
+
+it('lets a moderator delete someone else’s message and shows its real author', async () => {
+  const deleteMessage = vi.fn(async () => {});
+  useCommunity.setState({ deleteMessage });
+  const permissions = (manageMessages: boolean) => ({
+    access: 'allowed',
+    effective: { manageMessages },
+  });
+  let moderator = false;
+  window.rooms = {
+    social: { channelPermissions: vi.fn(async () => permissions(moderator)) },
+  } as unknown as DesktopBridge;
+  const { unmount } = renderChat();
+  const openBobOptions = async () => {
+    const buttons = await screen.findAllByRole('button', { name: 'Mesaj seçenekleri' });
+    fireEvent.click(buttons[1]!);
+  };
+  await openBobOptions();
+  expect((await screen.findByRole('button', { name: /Mesajı sil/ })).hasAttribute('disabled')).toBe(
+    true,
+  );
+  unmount();
+  moderator = true;
+  renderChat();
+  await openBobOptions();
+  const remove = await screen.findByRole('button', { name: /Mesajı sil/ });
+  await waitFor(() => expect(remove.hasAttribute('disabled')).toBe(false));
+  fireEvent.click(remove);
+  await waitFor(() =>
+    expect(document.querySelector('.chat-delete-preview strong')?.textContent).toBe('Bob'),
+  );
+  await act(async () => {
+    fireEvent.click(screen.getAllByRole('button', { name: 'Mesajı sil' }).at(-1)!);
+  });
+  expect(deleteMessage).toHaveBeenCalledWith('m2');
+});

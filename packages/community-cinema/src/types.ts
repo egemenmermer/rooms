@@ -115,6 +115,8 @@ export type CinemaStatus = {
   tmdb?: boolean;
   /** Films start with a Turkish dub when there is one, or in their own language. */
   audioDefault?: 'turkish' | 'original';
+  /** The owner's linked Stremio account; the email is shown to the owner only. */
+  stremio?: { linked: boolean; email: string | null; linkedAt: number | null };
 };
 
 export type CinemaWatch = {
@@ -345,3 +347,84 @@ export type RmdbReviewInput = {
 
 /** Longest review text the service keeps, in characters. */
 export const RMDB_REVIEW_MAX = 4000;
+
+// Stremio in the hall: titles come from Cinemeta and the linked account's add-ons; streams
+// are listed by opaque ids, and a picked stream becomes an `x-` ref the relay plays.
+
+export type StremioType = 'movie' | 'series';
+
+export type StremioLinkCode = { code: string; link: string };
+
+export type StremioTitle = {
+  type: StremioType;
+  /** Stremio id (`tt0903747`, `kitsu:1`…). */
+  id: string;
+  name: string;
+  year: string | null;
+  /** Opaque artwork id for `/art/:id`, or null. */
+  art: string | null;
+};
+
+export type StremioContinueItem = StremioTitle & {
+  /** The episode or film being watched (`tt0903747:1:2`), when Stremio knows it. */
+  videoId: string | null;
+  season: number | null;
+  episode: number | null;
+  /** 0–1. */
+  progress: number | null;
+  watchedAt: number | null;
+};
+
+export type StremioHome = {
+  continue: StremioContinueItem[];
+  library: StremioTitle[];
+  popular: { movie: StremioTitle[]; series: StremioTitle[] };
+};
+
+export type StremioVideo = {
+  id: string;
+  season: number;
+  episode: number;
+  title: string;
+  plot: string | null;
+  released: number | null;
+  art: string | null;
+};
+
+export type StremioDetails = StremioTitle & {
+  plot: string | null;
+  genres: string[];
+  runtime: string | null;
+  rating: string | null;
+  backdrop: string | null;
+  cast: string[];
+  director: string[];
+  videos: StremioVideo[];
+};
+
+export type StremioStream = {
+  /** Opaque, valid for about two hours. */
+  id: string;
+  addon: string;
+  name: string;
+  title: string;
+  /** Debrid cache (`[RD+]`): true plays at once, false must download first, null unknown. */
+  cached: boolean | null;
+  resolution: string | null;
+  size: string | null;
+};
+
+export type StremioStreams = {
+  streams: StremioStream[];
+  /** Torrent-only streams the server does not play (no debrid link). */
+  skippedTorrents: number;
+  /** Other streams the hall cannot play (external pages, YouTube ids, Usenet). */
+  skippedOther?: number;
+  failedAddons: string[];
+  /** Add-ons Cloudflare refuses the server for (Torrentio blocks data-centre addresses). */
+  blockedAddons: string[];
+  /** This viewer linked the account: their desktop can ask the refused add-ons itself. */
+  assist: boolean;
+};
+
+export type StremioPicked = { ref: string; title: string; art: string | null };

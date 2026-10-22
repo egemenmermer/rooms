@@ -20,6 +20,8 @@ export interface Preferences {
   serverUrl: string;
   inputId: string;
   outputId: string;
+  /** Camera for rooms and calls; empty is the system default. */
+  cameraId: string;
   notifications: boolean;
   chatFontSize: number;
   accent: 'pearl' | 'sage';
@@ -44,6 +46,7 @@ const defaults: Preferences = {
   serverUrl: '',
   inputId: '',
   outputId: '',
+  cameraId: '',
   notifications: false,
   chatFontSize: 15,
   accent: 'pearl',

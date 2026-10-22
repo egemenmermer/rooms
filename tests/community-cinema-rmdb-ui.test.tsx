@@ -153,6 +153,7 @@ describe('RMDB in the cinema hall', { timeout: 30_000 }, () => {
       'Canlı TV',
       'Filmler',
       'Diziler',
+      'Stremio',
       'YouTube',
       'Tayfa',
     ]);

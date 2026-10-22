@@ -12,7 +12,7 @@ import {
   type InviteLink,
   type SocialInvite,
 } from '@rooms/social';
-import { useCommunity } from './community';
+import { SERVER_UNREACHABLE_MESSAGE, useCommunity } from './community';
 import { useRooms } from './store';
 import './onboarding.css';
 const normalizedServer = (value: string) => value.trim().replace(/\/+$/, '');
@@ -160,6 +160,11 @@ export function ConnectionPane({
         </h2>
         {sessionExpired && !registration && (
           <p>Oturumunun süresi doldu. Hesabına yeniden giriş yap.</p>
+        )}
+        {!c.user && c.error === SERVER_UNREACHABLE_MESSAGE && (
+          <p role="status" className="ref-auth-waiting">
+            {SERVER_UNREACHABLE_MESSAGE}
+          </p>
         )}
         {c.user ? (
           <>

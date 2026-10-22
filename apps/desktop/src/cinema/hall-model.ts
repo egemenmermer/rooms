@@ -14,7 +14,7 @@ import { clock } from '../cinema-youtube';
 
 export type HallMedia = Extract<SharedMedia, { kind: 'community-media' }>;
 export type HallItem = QueueItem & { media: HallMedia };
-export type HallTab = 'live' | 'movies' | 'series' | 'youtube' | 'rmdb';
+export type HallTab = 'live' | 'movies' | 'series' | 'stremio' | 'youtube' | 'rmdb';
 
 export const HALL_TITLE = 'Sinema salonu';
 

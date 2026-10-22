@@ -121,6 +121,8 @@ export interface RealtimeMediaProvider {
   playSoundboard(buffer: AudioBuffer, volume: number): Promise<void>;
   stopSoundboard(): void;
   publishCamera(enabled: boolean, deviceId?: string): Promise<void>;
+  /** Moves a published camera to another device (empty: the system default). */
+  selectCamera?(deviceId: string): Promise<void>;
   publishScreen(options?: ScreenShareOptions): Promise<void>;
   stopScreen(): Promise<void>;
   subscribe(participantId: string): Promise<MediaStream>;
@@ -927,6 +929,14 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     this.stopSoundboard();
     return this.microphoneTask(async () => {
       try {
+        const room = this.room;
+        if (room && this.status !== 'connected') {
+          // Reconnecting: muting is a local capture change and must not wait for the
+          // transport, or a hot microphone stays live when the room comes back.
+          await room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track?.mute();
+          this.patch({ muted: true });
+          return;
+        }
         await this.requireRoom().localParticipant.setMicrophoneEnabled(false);
         this.sync();
       } catch (error) {
@@ -936,15 +946,31 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     });
   }
   async publishCamera(enabled: boolean, deviceId?: string) {
+    const options = (id?: string) => ({
+      deviceId: id,
+      resolution: { width: 1280, height: 720, frameRate: 30 },
+    });
     try {
-      await this.requireRoom().localParticipant.setCameraEnabled(enabled, {
-        deviceId,
-        resolution: { width: 1280, height: 720, frameRate: 30 },
-      });
+      try {
+        await this.requireRoom().localParticipant.setCameraEnabled(enabled, options(deviceId));
+      } catch (error) {
+        // The chosen camera was unplugged: fall back to the system default, as the mic does.
+        if (!enabled || !deviceId) throw error;
+        await this.requireRoom().localParticipant.setCameraEnabled(true, options(undefined));
+      }
       this.sync();
     } catch (error) {
       this.fail(error);
       throw new Error(this.state.error ?? 'Media operation failed.');
+    }
+  }
+  async selectCamera(deviceId: string) {
+    const room = this.room;
+    if (!room || this.status !== 'connected' || !room.localParticipant.isCameraEnabled) return;
+    try {
+      await room.switchActiveDevice('videoinput', deviceId || 'default');
+    } catch {
+      // The camera keeps the device it has.
     }
   }
   async publishScreen(options: ScreenShareOptions = {}) {

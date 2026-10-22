@@ -283,6 +283,39 @@ describe('LiveKit adapter lifecycle', () => {
     expect(provider.snapshot().sharing).toBe(false);
     await provider.disconnect();
   });
+  it('publishes the chosen camera, falls back to the default and switches a live camera', async () => {
+    const { provider, local, room } = fixture();
+    await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+    local.setCameraEnabled.mockRejectedValueOnce(new Error('OverconstrainedError'));
+    await provider.publishCamera(true, 'usb-cam');
+    expect(local.setCameraEnabled).toHaveBeenNthCalledWith(
+      1,
+      true,
+      expect.objectContaining({ deviceId: 'usb-cam' }),
+    );
+    expect(local.setCameraEnabled).toHaveBeenNthCalledWith(
+      2,
+      true,
+      expect.objectContaining({ deviceId: undefined }),
+    );
+    local.isCameraEnabled = true;
+    await provider.selectCamera('laptop-cam');
+    expect(room.switchActiveDevice).toHaveBeenCalledWith('videoinput', 'laptop-cam');
+    await provider.disconnect();
+  });
+  it('mutes the microphone while the room is reconnecting', async () => {
+    const { provider, local, emit } = fixture();
+    await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+    const mute = vi.fn(async () => {});
+    local.getTrackPublication.mockReturnValue({ track: { mute } });
+    emit(RoomEvent.ConnectionStateChanged, ConnectionState.Reconnecting);
+    local.setMicrophoneEnabled.mockClear();
+    await expect(provider.mute(true)).resolves.toBeUndefined();
+    expect(mute).toHaveBeenCalled();
+    expect(local.setMicrophoneEnabled).not.toHaveBeenCalled();
+    expect(provider.snapshot().muted).toBe(true);
+    await provider.disconnect();
+  });
   it('tracks reconnect state without reacquiring microphone or screen', async () => {
     const { provider, emit, local } = fixture();
     await provider.connectRoom('room', 'token', 'ws://localhost:7880');

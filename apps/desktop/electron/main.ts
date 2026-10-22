@@ -148,6 +148,9 @@ function createWindow() {
       sandbox: true,
       nodeIntegration: false,
       webSecurity: true,
+      // Incoming private calls are found by polling; a window in the background must keep
+      // polling at its pace instead of once a minute (calls ring for 45 s).
+      backgroundThrottling: false,
     },
   });
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -464,6 +467,12 @@ app.whenReady().then(async () => {
       null,
       2,
     );
+  ipcMain.handle('rooms:set-badge', (event, count) => {
+    assertSender(event);
+    if (!Number.isInteger(count) || count < 0 || count > 9999) throw new Error('Invalid badge.');
+    // macOS and Linux launchers; Windows has no count badge for a plain window icon.
+    app.setBadgeCount(count);
+  });
   ipcMain.handle('rooms:application-info', (event) => {
     assertSender(event);
     return {

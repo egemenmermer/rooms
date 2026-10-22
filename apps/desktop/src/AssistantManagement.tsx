@@ -112,10 +112,13 @@ export function AssistantManagement() {
         const status = await window.rooms!.agent.status();
         if (!live()) return;
         if (!status.connected) throw new Error(status.reason || 'Agent sunucusu bağlı değil.');
-        const [authority, audit] = await Promise.all([
-          window.rooms!.agent.authority(roomId),
-          window.rooms!.agent.audit(roomId),
-        ]);
+        // The room's history is for managers; everyone else reads their own, and sees the
+        // "yetkin yok" view for the permissions instead of an error.
+        const authority = await window.rooms!.agent.authority(roomId);
+        if (!live()) return;
+        const audit = authority.canManage
+          ? await window.rooms!.agent.audit(roomId)
+          : await window.rooms!.agent.audit();
         if (!live()) return;
         const names: Record<string, string> = { [c.user!.id]: c.user!.displayName };
         if (c.activeSpaceId) {

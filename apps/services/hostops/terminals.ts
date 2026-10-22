@@ -140,6 +140,11 @@ export class TerminalHub {
     user: string,
     profileId: string,
     workspace?: { taskId: string },
+    /**
+     * The host owner's profile, used by the owner and every owner-equivalent admin: they are the
+     * same OS account already, so one person's detached session must not lock out the others.
+     */
+    options: { sharedProfile?: boolean } = {},
   ): OpsTerminal {
     if (this.stopped) throw Error('TERMINAL_BROKER_CLOSED');
     this.expire();
@@ -148,6 +153,7 @@ export class TerminalHub {
     if (this.list(host, user).filter((r) => r.ownerId === user).length >= 3)
       throw Object.assign(Error('TERMINAL_LIMIT'), { statusCode: 409 });
     if (
+      !options.sharedProfile &&
       [...this.sessions.values()].some(
         (r) =>
           r.profileId === profileId &&

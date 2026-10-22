@@ -4,6 +4,8 @@ import { useCommunity } from '../apps/desktop/src/community';
 const f = vi.hoisted(() => ({
   status: 'not-configured',
   muted: true,
+  deafened: false,
+  deafen: vi.fn(),
   grant: vi.fn(),
   leave: vi.fn(),
   connect: vi.fn(),
@@ -15,7 +17,8 @@ const f = vi.hoisted(() => ({
 vi.mock('../apps/desktop/src/runtime-sources', () => ({
   mediaBridge: () => ({ grant: f.grant, leave: f.leave }),
   mediaProvider: () => ({
-    snapshot: () => ({ status: f.status, muted: f.muted }),
+    snapshot: () => ({ status: f.status, muted: f.muted, deafened: f.deafened }),
+    deafen: f.deafen,
     subscribeState: () => () => {},
     connectRoom: f.connect,
     disconnect: f.disconnect,
@@ -37,10 +40,15 @@ beforeEach(async () => {
   vi.clearAllMocks();
   f.status = 'not-configured';
   f.muted = true;
+  f.deafened = false;
+  f.deafen.mockImplementation(async (value: boolean) => {
+    f.deafened = value;
+  });
   f.grant.mockResolvedValue(grant);
   f.leave.mockResolvedValue(undefined);
   f.disconnect.mockImplementation(async () => {
     f.status = 'not-configured';
+    f.deafened = false;
   });
   f.connect.mockImplementation(async () => {
     f.status = 'connected';
@@ -163,4 +171,17 @@ it('starts disconnect immediately when leaving an unresolved connection', async 
   delayed.resolve();
   await Promise.all([joining, leaving]);
   expect(f.status).toBe('not-configured');
+});
+
+it('stays deafened when moved to another room or rejoining', async () => {
+  await joinVoice('one', 'One');
+  f.deafened = true;
+  // A moderator move joins the new room; leaving the old one resets deafen in the provider.
+  await joinVoice('two', 'Two');
+  expect(f.deafen).toHaveBeenCalledWith(true);
+  expect(f.deafened).toBe(true);
+  f.deafen.mockClear();
+  await leaveVoice();
+  await joinVoice('three', 'Three');
+  expect(f.deafen).not.toHaveBeenCalled();
 });

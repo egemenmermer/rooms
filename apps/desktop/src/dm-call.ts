@@ -161,7 +161,10 @@ async function connectAccepted() {
     if (!valid()) return;
     if (wantsCamera)
       try {
-        await mediaProvider().publishCamera(true);
+        await mediaProvider().publishCamera(
+          true,
+          useRooms.getState().preferences.cameraId || undefined,
+        );
       } catch {
         if (valid()) useDmCall.setState({ error: 'Kamera açılamadı. Sesli görüşme devam ediyor.' });
       }

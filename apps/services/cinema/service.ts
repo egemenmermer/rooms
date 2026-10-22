@@ -47,6 +47,7 @@ import { tmdbOf, type Rmdb, type RmdbMeta, type StoredWork } from './rmdb';
 import type { SubtitleCandidate, SubtitleQuery } from './subtitles';
 import type { TitleMetadata } from './metadata';
 import type { SecureFiles } from './secure-file';
+import { StremioCinema, type StremioFetch } from './stremio';
 
 /** Cards in a "Devam et" row. */
 const CONTINUE_LIMIT = 20;
@@ -191,6 +192,10 @@ export type CinemaServiceOptions = {
   /** The community's record of what the hall watched; absent, nothing is recorded. */
   rmdb?: Rmdb;
   maxRelays?: number;
+  /** Stremio's API and add-ons; absent, the hall cannot link a Stremio account. */
+  stremio?: StremioFetch;
+  /** User agent and network policy for Stremio subtitle downloads. */
+  stremioNetwork?: { userAgent: string; allowPrivateNetwork?: boolean };
   log?: (line: string) => void;
   now?: () => number;
 };
@@ -224,7 +229,35 @@ export class CinemaService {
   private readonly subtitleLoads = new Map<string, Promise<string>>();
   private subtitleBytes = 0;
 
-  constructor(private readonly options: CinemaServiceOptions) {}
+  readonly stremio: StremioCinema;
+
+  constructor(private readonly options: CinemaServiceOptions) {
+    const { configs } = options;
+    this.stremio = new StremioCinema({
+      fetch: options.stremio ?? (() => Promise.reject(new Error('Stremio is not configured'))),
+      account: (communityId) => configs.get(communityId).stremio ?? null,
+      picks: (communityId) => configs.get(communityId).stremioPicks ?? [],
+      savePicks: (communityId, picks) =>
+        configs.update(communityId, (config) => ({ ...config, stremioPicks: picks })),
+      saveAccount: (communityId, account) =>
+        configs.update(communityId, (config) => ({ ...config, stremio: account })),
+      userAgent: options.stremioNetwork?.userAgent,
+      allowPrivateNetwork: options.stremioNetwork?.allowPrivateNetwork,
+      now: options.now,
+    });
+  }
+
+  /** Owner: forgets Stremio and stops whatever the hall plays from it. */
+  async stremioUnlink(communityId: string) {
+    this.stremio.unlink(communityId);
+    await this.serial(communityId, async () => {
+      for (const [session, entry] of this.sessionRefs)
+        if (entry.communityId === communityId && entry.ref.startsWith('x-')) {
+          this.sessionRefs.delete(session);
+          await this.options.relays.stop(session);
+        }
+    });
+  }
 
   private now() {
     return this.options.now?.() ?? Date.now();
@@ -274,6 +307,11 @@ export class CinemaService {
       subtitleSearch: !!config.subtitleKey && !!this.options.subtitles,
       tmdb: !!config.tmdbKey && !!this.options.metadata,
       audioDefault: config.audioDefault ?? 'turkish',
+      stremio: {
+        linked: !!config.stremio,
+        email: isOwner ? (config.stremio?.email ?? null) : null,
+        linkedAt: config.stremio?.linkedAt ?? null,
+      },
     };
   }
 
@@ -357,6 +395,10 @@ export class CinemaService {
 
   /** IMDb and TMDB ids of a film or series; an episode answers for its series. */
   async titleLinks(communityId: string, ref: string): Promise<CinemaTitleLinks> {
+    if (ref.startsWith('x-')) {
+      const found = this.stremio.imdbOf(communityId, ref) ?? fail('CINEMA_ITEM_NOT_FOUND');
+      return { kind: found.kind, tmdbId: null, imdbId: found.imdbId };
+    }
     const catalog = this.catalog(communityId);
     const item = ref.startsWith('e-') ? catalog.episode(ref)?.series : catalog.item(ref);
     if (!item || item.kind === 'live') return fail('CINEMA_ITEM_NOT_FOUND');
@@ -386,6 +428,7 @@ export class CinemaService {
 
   /** Subtitles found online for a film or episode of the hall's catalog. */
   async externalSubtitles(communityId: string, ref: string): Promise<CinemaExternalSubtitles> {
+    if (ref.startsWith('x-')) return this.stremio.subtitles(communityId, ref);
     const key = this.options.configs.get(communityId).subtitleKey;
     this.catalog(communityId);
     if (!key || !this.options.subtitles) return { available: false, subtitles: [] };
@@ -403,6 +446,7 @@ export class CinemaService {
 
   /** One subtitle from the item's last search, as WebVTT on the work's timeline. */
   async subtitleFile(communityId: string, ref: string, id: string) {
+    if (ref.startsWith('x-')) return this.stremio.subtitleFile(communityId, ref, id);
     const key = this.options.configs.get(communityId).subtitleKey;
     const subtitles = this.options.subtitles;
     if (!key || !subtitles) return fail('CINEMA_SUBTITLE_UNAVAILABLE');
@@ -603,6 +647,7 @@ export class CinemaService {
   }
 
   async details(communityId: string, ref: string): Promise<CinemaDetails> {
+    if (ref.startsWith('x-')) return this.stremio.pickDetails(communityId, ref);
     const catalog = this.catalog(communityId);
     if (ref.startsWith('e-')) {
       // An episode answers with its series; the episode itself is in `seasons`.
@@ -697,7 +742,10 @@ export class CinemaService {
     const store = this.options.rmdb?.store;
     const kept = store?.hasArt(communityId, id) ? store.readArt(communityId, id) : null;
     if (kept) return this.remember(key, kept);
-    const url = this.catalog(communityId).artUrl(id) ?? fail('CINEMA_ITEM_NOT_FOUND');
+    const url =
+      this.stremio.artUrl(communityId, id) ??
+      this.catalog(communityId).artUrl(id) ??
+      fail('CINEMA_ITEM_NOT_FOUND');
     let load = this.artLoads.get(key);
     if (!load) {
       load = this.options.image(url).finally(() => this.artLoads.delete(key));
@@ -786,7 +834,7 @@ export class CinemaService {
     name = userId,
   ) {
     const config = this.options.configs.get(communityId);
-    if (!config.source) fail('CINEMA_NOT_CONNECTED');
+    if (!config.source && !config.stremio) fail('CINEMA_NOT_CONNECTED');
     if (config.hallChannelId !== hallId) fail('CINEMA_HALL_REQUIRED');
     const entry = this.sessionRefs.get(session);
     const relay = this.options.relays.sessionsOf(communityId).find((r) => r.session === session);
@@ -811,7 +859,7 @@ export class CinemaService {
     name = userId,
   ): Promise<CinemaWatch> {
     const config = this.options.configs.get(communityId);
-    if (!config.source) fail('CINEMA_NOT_CONNECTED');
+    if (!config.source && !config.stremio) fail('CINEMA_NOT_CONNECTED');
     if (config.hallChannelId !== hallId) fail('CINEMA_HALL_REQUIRED');
     const response = await this.options.activity(token, hallId);
     const fetchedAt = Date.now();
@@ -819,10 +867,13 @@ export class CinemaService {
     const current = room.queue.find((entry) => entry.id === room.timeline.itemId)?.media;
     if (room.primary?.activity !== 'hall' || current?.kind !== 'community-media')
       return fail('CINEMA_NOTHING_SELECTED');
-    const catalog = this.catalog(communityId);
-    const item = catalog.item(current.ref);
-    const episode = item ? null : catalog.episode(current.ref);
-    const source = this.relaySource(config.source!, config.account, item, episode);
+    const stremio = current.ref.startsWith('x-');
+    const catalog = stremio ? null : this.catalog(communityId);
+    const item = catalog?.item(current.ref) ?? null;
+    const episode = item || !catalog ? null : catalog.episode(current.ref);
+    const source = stremio
+      ? this.stremio.relaySource(communityId, current.ref)
+      : this.relaySource(config.source!, config.account, item, episode);
     const slots = this.slots(config);
     const audio = this.audioChoices.get(`${communityId}\n${current.ref}`) ?? null;
     const original = config.audioDefault === 'original';
@@ -908,7 +959,7 @@ export class CinemaService {
     track: number,
   ) {
     const config = this.options.configs.get(communityId);
-    if (!config.source) fail('CINEMA_NOT_CONNECTED');
+    if (!config.source && !config.stremio) fail('CINEMA_NOT_CONNECTED');
     if (config.hallChannelId !== hallId) fail('CINEMA_HALL_REQUIRED');
     const room = (await this.options.activity(token, hallId)).room;
     const current = room.queue.find((entry) => entry.id === room.timeline.itemId)?.media;

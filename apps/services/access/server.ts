@@ -41,6 +41,7 @@ import {
   type StoatChannel,
   type StoatMember,
 } from './stoat-permissions';
+import { ingressLimit, TRUSTED_PROXIES } from '../shared/ingress';
 
 export interface AccessConfig {
   soundboardDirectory?: string;
@@ -88,8 +89,9 @@ const registrationBody = credentialBody.extend({
 /** Server-owned LiveKit participant attribute; clients cannot edit their own metadata. */
 export const DEAFENED_ATTRIBUTE = 'rooms.deafened';
 export async function createAccessServer(config: AccessConfig) {
-  const server = Fastify({ logger: false, bodyLimit: 16384 });
-  // Media polling and room changes share this ingress budget, including proxied peers.
+  const server = Fastify({ logger: false, trustProxy: TRUSTED_PROXIES, bodyLimit: 16384 });
+  ingressLimit(server, { perMinute: 1200, error: 'RATE_LIMITED' });
+  // Media polling and room changes share this budget per client address (Caddy is trusted).
   await server.register(rateLimit, { max: 600, timeWindow: '1 minute' });
   const rawBodies = new WeakMap<FastifyRequest, string>();
   server.removeContentTypeParser('application/json');
@@ -327,7 +329,13 @@ export async function createAccessServer(config: AccessConfig) {
     directory: config.musicPlaylistsDirectory,
     authorize: async (token, channelId) => {
       const value = await authorize(token, channelId);
-      return { communityId: value.communityId, userId: value.user.id };
+      return {
+        communityId: value.communityId,
+        userId: value.user.id,
+        canControl:
+          (value.permissions & Permissions.SPEAK) !== 0n &&
+          (value.permissions & Permissions.LISTEN) !== 0n,
+      };
     },
     references: async (channelId, source) => {
       if (!config.musicUrl || !config.musicSecret) throw Error('MUSIC_NOT_CONFIGURED');

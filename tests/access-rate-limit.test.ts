@@ -81,3 +81,52 @@ it('bounds the public invitation landing page separately from the API budget', a
     await server.close();
   }
 });
+it('gives each client behind the proxy its own budget', async () => {
+  const server = await createAccessServer(config);
+  const register = (client: string) =>
+    server.inject({
+      method: 'POST',
+      url: '/v1/auth/register',
+      payload: {},
+      remoteAddress: '172.18.0.2',
+      headers: { 'x-forwarded-for': client },
+    });
+  try {
+    for (let i = 0; i < 5; i++) expect((await register('203.0.113.7')).statusCode).toBe(400);
+    expect((await register('203.0.113.7')).statusCode).toBe(429);
+    // Another person signing up through the same Caddy is not blocked by the first.
+    expect((await register('198.51.100.20')).statusCode).toBe(400);
+    // A client that is not a private hop cannot pick its own address.
+    const direct = await server.inject({
+      method: 'POST',
+      url: '/v1/auth/register',
+      payload: {},
+      remoteAddress: '203.0.113.7',
+      headers: { 'x-forwarded-for': '192.0.2.99' },
+    });
+    expect(direct.statusCode).toBe(429);
+  } finally {
+    await server.close();
+  }
+});
+it('throttles a client that sends a fresh bearer on every request', async () => {
+  const server = await createAccessServer(config);
+  try {
+    const codes = new Set<number>();
+    for (let i = 0; i < 1250; i++)
+      codes.add(
+        (
+          await server.inject({
+            method: 'POST',
+            url: '/v1/media/directory',
+            payload: {},
+            headers: { authorization: `Bearer random-${i}`, 'x-forwarded-for': '203.0.113.9' },
+            remoteAddress: '172.18.0.2',
+          })
+        ).statusCode,
+      );
+    expect(codes.has(429)).toBe(true);
+  } finally {
+    await server.close();
+  }
+});
