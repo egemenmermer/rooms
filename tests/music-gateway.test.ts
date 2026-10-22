@@ -300,3 +300,58 @@ it('forwards a full shared playlist through fresh joined control without the glo
     await server.close();
   }
 });
+it('keeps the DJ lease through a passing Stoat failure and ends it on a real refusal', async () => {
+  const server = Fastify();
+  let sent: any;
+  let failure: Error | null = null;
+  const roomService = {
+    getParticipant: vi.fn(async () => ({ identity: 'self' })),
+    listParticipants: vi.fn(async () => [{ identity: 'self' }]),
+    removeParticipant: vi.fn(async () => {}),
+    updateParticipant: vi.fn(async () => {}),
+  };
+  const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, options) => {
+    sent = options?.body ? JSON.parse(String(options.body)) : null;
+    return new Response(JSON.stringify(state));
+  });
+  registerMusicGateway(server, {
+    url: 'http://worker',
+    secret,
+    apiKey: 'devkey',
+    apiSecret: 'development-secret-at-least-32-characters',
+    livekitUrl: 'ws://livekit:7880',
+    roomService: roomService as any,
+    authorize: async () => {
+      if (failure) throw failure;
+      return { userId: 'self', canControl: true };
+    },
+  });
+  const lease = (leaseId: string) =>
+    server.inject({
+      method: 'POST',
+      url: '/v1/music/internal/lease',
+      headers: { authorization: `Bearer ${secret}` },
+      payload: { channelId: 'room', leaseId },
+    });
+  try {
+    await server.inject({
+      method: 'POST',
+      url: '/v1/music/room',
+      headers: { authorization: 'user-session' },
+      payload: { type: 'play' },
+    });
+    const leaseId = sent.lease.leaseId;
+    failure = Object.assign(new Error('Stoat unavailable'), { status: 503 });
+    const passing = await lease(leaseId);
+    expect(passing.statusCode).toBe(503);
+    expect(roomService.removeParticipant).not.toHaveBeenCalled();
+    failure = null;
+    expect((await lease(leaseId)).statusCode).toBe(200);
+    failure = Object.assign(new Error('Forbidden'), { status: 403 });
+    expect((await lease(leaseId)).statusCode).toBe(403);
+    expect(roomService.removeParticipant).toHaveBeenCalled();
+  } finally {
+    fetcher.mockRestore();
+    await server.close();
+  }
+});

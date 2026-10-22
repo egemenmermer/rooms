@@ -256,8 +256,11 @@ export class MusicWorker {
             await this.options.lease(channelId, selected.leaseId);
             if (selected.pausedAt && this.now() - selected.pausedAt > 180000)
               await this.destroy(selected);
-          } catch {
-            await this.destroy(selected);
+          } catch (error) {
+            // A passing failure (access restarting, Stoat or LiveKit slow) keeps the session;
+            // the lease still expires on access if it never recovers, and that ends it.
+            if (!(error instanceof Error && error.message === 'MUSIC_LEASE_UNAVAILABLE'))
+              await this.destroy(selected);
           } finally {
             checking = false;
           }

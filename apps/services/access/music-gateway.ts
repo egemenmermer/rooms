@@ -17,7 +17,20 @@ interface Lease {
   token: string;
   userId: string;
   expires: number;
+  /** When the room was first seen without people; a short gap (everyone reconnecting) is kept. */
+  emptySince?: number;
 }
+/** Grace for an empty room before the DJ leaves it. */
+const EMPTY_GRACE_MS = 60_000;
+/**
+ * A refusal that ends the session: the commander lost the right, or the room is gone. Anything
+ * else (Stoat 5xx or timeout, a LiveKit API error) is passing and must not wipe the queue.
+ */
+const definitive = (error: unknown) =>
+  error instanceof Error &&
+  (error.message === 'MUSIC_PERMISSION_DENIED' ||
+    error.message === 'MUSIC_ROOM_EMPTY' ||
+    [401, 403, 404].includes((error as { status?: number }).status ?? 0));
 export function registerMusicGateway(
   server: FastifyInstance,
   options: {
@@ -80,7 +93,9 @@ export function registerMusicGateway(
     const humans = (await options.roomService.listParticipants(room(channelId))).filter(
       (p) => p.identity !== musicIdentity(channelId),
     );
-    if (!humans.length) throw new Error('MUSIC_ROOM_EMPTY');
+    if (humans.length) delete lease.emptySince;
+    else if (Date.now() - (lease.emptySince ??= Date.now()) > EMPTY_GRACE_MS)
+      throw new Error('MUSIC_ROOM_EMPTY');
   }
   async function grant(channelId: string, lease: Lease) {
     await validate(channelId, lease);
@@ -120,7 +135,9 @@ export function registerMusicGateway(
       return reply.code(403).send({ error: 'MUSIC_LEASE_EXPIRED' });
     try {
       return await grant(body.channelId, lease);
-    } catch {
+    } catch (error) {
+      // A passing failure keeps the lease (it still expires on its own); the worker retries.
+      if (!definitive(error)) return reply.code(503).send({ error: 'MUSIC_LEASE_UNAVAILABLE' });
       await revoke(body.channelId);
       return reply.code(403).send({ error: 'MUSIC_PERMISSION_DENIED' });
     }
@@ -266,10 +283,10 @@ export function registerMusicGateway(
       try {
         for (const [id, lease] of leases) {
           try {
-            if (lease.expires < Date.now()) throw new Error('Expired');
+            if (lease.expires < Date.now()) throw new Error('MUSIC_PERMISSION_DENIED');
             await validate(id, lease);
-          } catch {
-            await revoke(id);
+          } catch (error) {
+            if (definitive(error)) await revoke(id);
           }
         }
       } finally {

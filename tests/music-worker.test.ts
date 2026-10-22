@@ -642,3 +642,33 @@ it('starts a track added after an unknown-length last track ended, and Play rest
     expect.any(Function),
   );
 });
+it('keeps the session and its queue when a lease check fails only for a moment', async () => {
+  vi.useFakeTimers();
+  try {
+    const { publisher, lease: grant } = await setup();
+    let failure: Error | null = null;
+    const worker = new MusicWorker({
+      publisher: () => publisher,
+      lease: async () => {
+        if (failure) throw failure;
+        return grant;
+      },
+      fetchFile: async () => {
+        const directory = await mkdtemp(join(tmpdir(), 'rooms-music-test-'));
+        const path = join(directory, 'source.mp3');
+        await writeFile(path, 'fixture');
+        return { directory, path, bytes: 7, title: 'Song', durationSec: 30 };
+      },
+    });
+    workers.push(worker);
+    await worker.command('blip', grant, { type: 'add', url: 'https://audio.test/one.mp3' });
+    failure = new Error('MUSIC_LEASE_UNAVAILABLE');
+    await vi.advanceTimersByTimeAsync(10_500);
+    expect(worker.snapshot('blip').queue).toHaveLength(1);
+    failure = new Error('MUSIC_LEASE_REVOKED');
+    await vi.advanceTimersByTimeAsync(10_500);
+    expect(worker.snapshot('blip').queue).toHaveLength(0);
+  } finally {
+    vi.useRealTimers();
+  }
+});
