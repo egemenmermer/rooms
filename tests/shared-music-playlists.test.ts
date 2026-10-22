@@ -66,7 +66,7 @@ it('rechecks actual membership after a slow import and never persists a revoked 
     directory: path,
     authorize: async () => {
       if (!allowed) throw Error('MUSIC_PERMISSION_DENIED');
-      return { communityId: 'one', userId: 'alice' };
+      return { communityId: 'one', userId: 'alice', canControl: true };
     },
     references,
   });
@@ -95,7 +95,11 @@ it('requires authentication and lets different members manage the same community
     app = Fastify();
   registerMusicPlaylists(app, {
     directory: path,
-    authorize: async (token) => ({ communityId: 'one', userId: token }),
+    authorize: async (token) => ({
+      communityId: 'one',
+      userId: token,
+      canControl: token !== 'listener',
+    }),
     references: async () => [track],
   });
   try {
@@ -122,6 +126,23 @@ it('requires authentication and lets different members manage the same community
     });
     expect(changed.statusCode).toBe(200);
     expect(changed.json()[0].name).toBe('Edited by Bob');
+    // A listen-only member reads the lists but cannot change or delete them.
+    expect(
+      (
+        await app.inject({
+          url: '/v1/music/room/playlists',
+          headers: { authorization: 'listener' },
+        })
+      ).statusCode,
+    ).toBe(200);
+    const removed = await app.inject({
+      method: 'POST',
+      url: '/v1/music/room/playlists',
+      headers: { authorization: 'listener' },
+      payload: { op: 'remove', id: item.id, revision: changed.json()[0].revision },
+    });
+    expect(removed.statusCode).toBe(403);
+    expect(removed.json().error).toBe('MUSIC_PERMISSION_DENIED');
   } finally {
     await app.close();
   }
@@ -130,7 +151,7 @@ it('rejects private sources and reports provider outages separately from invalid
   const app = Fastify();
   registerMusicPlaylists(app, {
     directory: await directory(),
-    authorize: async () => ({ communityId: 'one', userId: 'alice' }),
+    authorize: async () => ({ communityId: 'one', userId: 'alice', canControl: true }),
     references: async () => {
       throw Error('MUSIC_PLAYLIST_SOURCE_UNAVAILABLE');
     },
@@ -172,7 +193,7 @@ it('accepts the documented 100-track catalog edit under the production Access bo
   const app = Fastify({ bodyLimit: 16384 });
   registerMusicPlaylists(app, {
     directory: await directory(),
-    authorize: async () => ({ communityId: 'one', userId: 'alice' }),
+    authorize: async () => ({ communityId: 'one', userId: 'alice', canControl: true }),
     references: async () => [],
   });
   try {
@@ -198,7 +219,7 @@ it('imports Spotify display references and preserves them across a store restart
   const references = vi.fn(async () => tracks);
   registerMusicPlaylists(app, {
     directory: path,
-    authorize: async () => ({ communityId: 'one', userId: 'alice' }),
+    authorize: async () => ({ communityId: 'one', userId: 'alice', canControl: true }),
     references,
   });
   try {

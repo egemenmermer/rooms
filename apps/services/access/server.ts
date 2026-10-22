@@ -329,7 +329,13 @@ export async function createAccessServer(config: AccessConfig) {
     directory: config.musicPlaylistsDirectory,
     authorize: async (token, channelId) => {
       const value = await authorize(token, channelId);
-      return { communityId: value.communityId, userId: value.user.id };
+      return {
+        communityId: value.communityId,
+        userId: value.user.id,
+        canControl:
+          (value.permissions & Permissions.SPEAK) !== 0n &&
+          (value.permissions & Permissions.LISTEN) !== 0n,
+      };
     },
     references: async (channelId, source) => {
       if (!config.musicUrl || !config.musicSecret) throw Error('MUSIC_NOT_CONFIGURED');

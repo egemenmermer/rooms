@@ -1464,7 +1464,8 @@ export async function setupCommunity(
         MUSIC_PLAYLIST_EMPTY: 'Kaydedilebilecek parça yok.',
         MUSIC_PLAYLISTS_NOT_CONFIGURED: 'Ortak listeler sunucuda henüz açılmadı.',
         MUSIC_NOT_CONFIGURED: 'Sunucunun DJ hizmeti henüz açılmadı.',
-        MUSIC_PERMISSION_DENIED: 'Bu odanın listelerine erişimin yok. Oda erişimini kontrol et.',
+        MUSIC_PERMISSION_DENIED:
+          'Bu odanın listelerine erişimin yok ya da listeleri değiştirmek için odada konuşma iznin yok.',
         AUTH_REQUIRED: 'Oturum doğrulanamadı. Bağlantıyı yenileyip yeniden dene.',
         MUSIC_PLAYLIST_LIMIT:
           'Topluluğun liste sınırına ulaşıldı. Kullanılmayan listeleri veya parçaları kaldır.',
