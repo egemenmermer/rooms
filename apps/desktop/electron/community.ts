@@ -346,6 +346,7 @@ export async function setupCommunity(
   handle('rooms:social-session', () => snapshot());
   handle('rooms:social-read-states', () => requireClient().readStates());
   const cinema = setupCommunityCinema({
+    openExternal: (url) => shell.openExternal(url),
     handle: (name, handler) =>
       handle(name, async (...args) => {
         try {

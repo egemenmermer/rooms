@@ -15,6 +15,15 @@ const relayFile = /^[A-Za-z0-9_.-]{1,80}$/;
 const sessionId = /^[A-Za-z0-9_-]{1,80}$/;
 const rmdbWork = z.string().regex(/^w-[A-Za-z0-9_-]{8,40}$/);
 const rmdbEntry = z.string().regex(/^d-[A-Za-z0-9_-]{8,40}$/);
+const stremioType = z.enum(['movie', 'series']);
+const stremioId = z.string().regex(/^[A-Za-z0-9:._%-]{1,160}$/);
+const stremioStream = z.string().regex(/^[A-Za-z0-9_-]{8,40}$/);
+const stremioLink = z
+  .object({
+    code: z.string().regex(/^[A-Za-z0-9]{3,16}$/),
+    link: z.string().regex(/^https:\/\/link\.stremio\.com\/[A-Za-z0-9]{3,16}$/),
+  })
+  .strict();
 const rmdbReview = z
   .object({
     rating: z.number().int().min(1).max(10).nullable(),
@@ -148,6 +157,8 @@ export function setupCommunityCinema(options: {
   account(): CinemaAccount;
   /** Whether `account` is still the signed-in one. */
   isCurrent(account: CinemaAccount): boolean;
+  /** Opens Stremio's link page in the browser. */
+  openExternal?(url: string): Promise<void>;
   fetch?: typeof fetch;
 }) {
   const request = options.fetch ?? fetch;
@@ -394,6 +405,56 @@ export function setupCommunityCinema(options: {
   options.handle('rooms:cinema-rmdb-remove', async (hallId, workId) => {
     await api('DELETE', work(hallId, workId));
   });
+  // Stremio: the main process opens only Stremio's own link page, whatever the service says.
+  options.handle('rooms:cinema-stremio-link', async (communityId) => {
+    const code = stremioLink.parse(await api('POST', `${community(communityId)}/stremio/link`, {}));
+    await options.openExternal?.(code.link);
+    return code;
+  });
+  options.handle('rooms:cinema-stremio-poll', (communityId) =>
+    api('POST', `${community(communityId)}/stremio/poll`, {}, 20_000),
+  );
+  options.handle('rooms:cinema-stremio-unlink', (communityId) =>
+    api('DELETE', `${community(communityId)}/stremio`),
+  );
+  options.handle('rooms:cinema-stremio-home', (hallId) =>
+    api('GET', `${hall(hallId)}/stremio/home`, undefined, 30_000),
+  );
+  options.handle('rooms:cinema-stremio-search', (hallId, text) =>
+    api(
+      'GET',
+      `${hall(hallId)}/stremio/search?${new URLSearchParams({ q: z.string().max(200).parse(text) })}`,
+      undefined,
+      30_000,
+    ),
+  );
+  options.handle('rooms:cinema-stremio-details', (hallId, type, id) =>
+    api(
+      'GET',
+      `${hall(hallId)}/stremio/details?${new URLSearchParams({
+        type: stremioType.parse(type),
+        id: stremioId.parse(id),
+      })}`,
+      undefined,
+      30_000,
+    ),
+  );
+  // Add-ons answer slowly (debrid lookups); the service waits up to 20 s for each.
+  options.handle('rooms:cinema-stremio-streams', (hallId, type, id, videoId) =>
+    api(
+      'GET',
+      `${hall(hallId)}/stremio/streams?${new URLSearchParams({
+        type: stremioType.parse(type),
+        id: stremioId.parse(id),
+        videoId: stremioId.parse(videoId),
+      })}`,
+      undefined,
+      60_000,
+    ),
+  );
+  options.handle('rooms:cinema-stremio-pick', (hallId, streamId) =>
+    api('POST', `${hall(hallId)}/stremio/pick`, { streamId: stremioStream.parse(streamId) }),
+  );
 
   /**
    * The session's ticket, renewed when it is close to expiry (or `force`d after a 401).

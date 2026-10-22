@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { SOCIAL_ID_PATTERN } from '@rooms/social';
 import type { XtreamAccount } from '../../../packages/community-cinema/src/xtream';
 import type { SecureFiles } from './secure-file';
+import type { StremioAccount, StremioPick } from './stremio';
 
 const id = z.string().regex(SOCIAL_ID_PATTERN);
 const httpUrl = z
@@ -46,6 +47,10 @@ export type CommunityConfig = {
   tmdbKey?: string | null;
   /** Films start with a Turkish dub when there is one, or in their own language. */
   audioDefault?: 'turkish' | 'original';
+  /** The owner's Stremio session (auth key); never sent to clients. */
+  stremio?: StremioAccount | null;
+  /** Streams members picked from Stremio add-ons, newest first; their links stay here. */
+  stremioPicks?: StremioPick[];
 };
 
 /**

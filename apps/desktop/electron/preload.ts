@@ -280,6 +280,18 @@ const bridge: DesktopBridge = {
     rmdbRemoveLog: (hallId, workId, entryId) =>
       ipcRenderer.invoke('rooms:cinema-rmdb-remove-log', hallId, workId, entryId),
     rmdbRemove: (hallId, workId) => ipcRenderer.invoke('rooms:cinema-rmdb-remove', hallId, workId),
+    stremioLinkStart: (communityId) => ipcRenderer.invoke('rooms:cinema-stremio-link', communityId),
+    stremioLinkPoll: (communityId) => ipcRenderer.invoke('rooms:cinema-stremio-poll', communityId),
+    stremioUnlink: (communityId) => ipcRenderer.invoke('rooms:cinema-stremio-unlink', communityId),
+    stremioHome: (hallId) => ipcRenderer.invoke('rooms:cinema-stremio-home', hallId),
+    stremioSearch: (hallId, text) =>
+      ipcRenderer.invoke('rooms:cinema-stremio-search', hallId, text),
+    stremioDetails: (hallId, type, id) =>
+      ipcRenderer.invoke('rooms:cinema-stremio-details', hallId, type, id),
+    stremioStreams: (hallId, type, id, videoId) =>
+      ipcRenderer.invoke('rooms:cinema-stremio-streams', hallId, type, id, videoId),
+    stremioPick: (hallId, streamId) =>
+      ipcRenderer.invoke('rooms:cinema-stremio-pick', hallId, streamId),
   },
   remoteControl: {
     register: (room, track) => ipcRenderer.invoke('rooms:remote-register', room, track),

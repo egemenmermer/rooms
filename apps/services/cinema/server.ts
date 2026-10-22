@@ -10,6 +10,7 @@ import type { CinemaAuthority } from './authority';
 import type { ConfigStore } from './config-store';
 import { CinemaError, safeError } from './importer';
 import type { CinemaService } from './service';
+import { STREMIO_ID, STREMIO_TYPE } from './stremio';
 
 const socialId = z.string().regex(SOCIAL_ID_PATTERN);
 const ref = z.string().regex(CINEMA_REF_PATTERN);
@@ -37,7 +38,14 @@ const statusOf: Record<string, number> = {
   CINEMA_METADATA_UNAVAILABLE: 502,
   CINEMA_RMDB_NOT_FOUND: 404,
   CINEMA_RMDB_INVALID: 400,
+  CINEMA_STREMIO_NOT_LINKED: 409,
+  CINEMA_STREMIO_LOGGED_OUT: 409,
+  CINEMA_STREMIO_UNAVAILABLE: 502,
+  CINEMA_STREMIO_LINK_EXPIRED: 410,
+  CINEMA_STREMIO_STREAM_EXPIRED: 410,
 };
+
+const stremioId = z.string().regex(STREMIO_ID);
 
 const review = z
   .object({
@@ -214,6 +222,62 @@ export async function createCinemaServer(options: CinemaServerOptions) {
       .parse(request.body);
     service.reload(communityId, scope);
     return service.status(communityId, true);
+  });
+
+  /** Owner: a Stremio link code; the owner approves it at link.stremio.com. */
+  server.post<Community>('/v1/communities/:communityId/stremio/link', async (request) => {
+    const { communityId } = request.params;
+    await owner(request, communityId);
+    return service.stremio.linkStart(communityId);
+  });
+
+  /** Owner: checks the code; the status says whether the account is linked now. */
+  server.post<Community>('/v1/communities/:communityId/stremio/poll', async (request) => {
+    const { communityId } = request.params;
+    const identity = await owner(request, communityId);
+    await service.stremio.linkPoll(communityId, identity.userId);
+    return service.status(communityId, true);
+  });
+
+  server.delete<Community>('/v1/communities/:communityId/stremio', async (request) => {
+    const { communityId } = request.params;
+    await owner(request, communityId);
+    await service.stremioUnlink(communityId);
+    return service.status(communityId, true);
+  });
+
+  server.get<Hall>('/v1/halls/:hallId/stremio/home', async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    return service.stremio.home(identity.communityId);
+  });
+
+  server.get<Hall>('/v1/halls/:hallId/stremio/search', async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    const { q } = z.object({ q: z.string().max(200) }).parse(request.query);
+    return service.stremio.search(identity.communityId, q);
+  });
+
+  server.get<Hall>('/v1/halls/:hallId/stremio/details', async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    const query = z.object({ type: STREMIO_TYPE, id: stremioId }).parse(request.query);
+    return service.stremio.details(identity.communityId, query.type, query.id);
+  });
+
+  server.get<Hall>('/v1/halls/:hallId/stremio/streams', async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    const query = z
+      .object({ type: STREMIO_TYPE, id: stremioId, videoId: stremioId })
+      .parse(request.query);
+    return service.stremio.streams(identity.communityId, query.type, query.id, query.videoId);
+  });
+
+  server.post<Hall>('/v1/halls/:hallId/stremio/pick', async (request) => {
+    const identity = await viewer(request, request.params.hallId);
+    const { streamId } = z
+      .object({ streamId: z.string().regex(/^[A-Za-z0-9_-]{8,40}$/) })
+      .strict()
+      .parse(request.body);
+    return service.stremio.pick(identity.communityId, streamId);
   });
 
   server.get<Hall>('/v1/halls/:hallId/categories', async (request) => {

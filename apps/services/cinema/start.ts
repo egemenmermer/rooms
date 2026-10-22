@@ -10,6 +10,7 @@ import { Rmdb, RmdbStore } from './rmdb';
 import { SecureFiles } from './secure-file';
 import { createCinemaServer } from './server';
 import { SubtitleSearch } from './subtitles';
+import { stremioFetch } from './stremio';
 import { CatalogStore, CinemaService } from './service';
 import { issueTicket } from './tickets';
 
@@ -73,6 +74,7 @@ async function main() {
     },
     image: (url) => importer.image(url),
     subtitles: new SubtitleSearch({ userAgent }),
+    stremio: stremioFetch({ userAgent, allowPrivateNetwork }),
     metadata: new TitleMetadata({ userAgent }),
     rmdb,
     maxRelays: Number(process.env.ROOMS_CINEMA_MAX_RELAYS ?? 1),
