@@ -812,6 +812,7 @@ function NowBar() {
               <ReminderBell
                 reminder={{
                   hallId: hall.hallId,
+                  communityId: hall.status.communityId,
                   ref: item.media.ref,
                   channel: item.media.title,
                   title: next.title,

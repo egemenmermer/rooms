@@ -31,7 +31,7 @@ Kaydedilen sorunlar ve düzeltmeler:
 
 Kanıtlar özel `.local/qa/hostops/` altında. Linux kontrolü yetkisiz, ağsız, salt okunur, CPU/RAM/PID sınırlı Node konteynerinde gerçek 2 çekirdek ölçümü ve SQLite'ı geçti; sıcaklık doğru biçimde desteksizdi. Ayrı geçici yetkisiz systemd/tmux servisi özel soketten işaret üretti, durdurulup temizlendi. Bu tam node-pty/aracı/arayüz yeniden başlatma kabulü değildi. İşaretli, gerçek hesaptan yalıtılmış Electron örneği 1440×900/900×700, klavye ve işletmeci açıklama kontrollerini geçti.
 
-O aşamada açık kalanlar: Linux yerel kit/root profilleri/birimleri; PTY Unicode/Ctrl+C/boyut/aracı yeniden başlatma; özel vekil; gerçek ses/DJ sırasında ölçüm maliyeti; Sunucu görünümü dışı uyarı teslimi. Gerçek sınırlı kaynak sağlanana kadar medya bit hızı/RTT/kayıp/jitter ve servis hata oranı kullanılamaz. Altı kişi/iki saat fiziksel kabul iddiası yoktur.
+O aşamada açık kalanlar: Linux yerel kit/root profilleri/birimleri; PTY Unicode/Ctrl+C/boyut/aracı yeniden başlatma; özel vekil; gerçek ses/DJ sırasında ölçüm maliyeti. Sunucu görünümü dışı uyarı teslimi RC31'de eklendi: masaüstü uygulaması sahibe ve developer rolündekilere dakikada bir yeni uyarıları sistem bildirimi olarak gösterir ve kişi için iletildi diye işaretler. Gerçek sınırlı kaynak sağlanana kadar medya bit hızı/RTT/kayıp/jitter ve servis hata oranı kullanılamaz. Altı kişi/iki saat fiziksel kabul iddiası yoktur.
 
 O kontrol noktasında aşama 3–4 uygulanmamıştı: ortak rootless/toplam kota/başlatma, insan–AI devralma/kontrol noktası, sunucu taşıma ve onaylı Mac/Windows girişi. `agentAvailable:false` korunuyordu; izleme/terminal testleri bunları tamamlamaz.
 

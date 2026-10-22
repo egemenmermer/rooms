@@ -94,6 +94,57 @@ describe('Stoat official REST protocol fixtures', () => {
       },
     });
   });
+  it('reports an email that already has an account as a definite refusal', async () => {
+    const calls: string[] = [];
+    server = createServer((req, res) => {
+      calls.push(`${req.method} ${req.url}`);
+      res.setHeader('Content-Type', 'application/json');
+      if (req.url === '/api/auth/account/create') {
+        // Upstream with SMTP off: it finds the account, cannot mail a reset, creates nothing.
+        res.statusCode = 500;
+        return res.end(JSON.stringify({ type: 'OperationFailed' }));
+      }
+      res.end(JSON.stringify({ _id: 'invite', type: 'Server', server_id: 'space' }));
+    });
+    await new Promise<void>((resolve) => server!.listen(0, '127.0.0.1', resolve));
+    const { port } = server.address() as { port: number };
+    const stages: string[] = [];
+    await expect(
+      new StoatClient(`http://127.0.0.1:${port}`).registerUpstream(
+        {
+          email: 'taken@example.test',
+          password: 'fixture',
+          username: 'friend',
+          inviteCode: 'community-invite',
+          accountInviteCode: 'account-invite',
+        },
+        { onStage: (stage) => stages.push(stage) },
+      ),
+    ).rejects.toMatchObject({ status: 409, code: 'OperationFailed' });
+    expect(stages).toEqual(['account-create']);
+    expect(calls).not.toContain('POST /api/auth/session/login');
+  });
+  it('reads the own bio through the profile route by user id', async () => {
+    const paths: string[] = [];
+    const url = await fixture((path) => {
+      paths.push(path);
+      if (path.endsWith('/users/01ARZ3NDEKTSV4RRFFQ69G5FAV/profile'))
+        return { content: 'Film gecesi' };
+      if (path.endsWith('/profile')) return { type: 'NotFound' };
+      return {
+        _id: '01ARZ3NDEKTSV4RRFFQ69G5FAV',
+        username: 'friend',
+        status: { text: 'Dizide', presence: 'Idle' },
+      };
+    });
+    const client = new StoatClient(url, 'fixture-token');
+    await expect(client.ownProfile()).resolves.toEqual({
+      bio: 'Film gecesi',
+      statusText: 'Dizide',
+      presence: 'idle',
+    });
+    expect(paths.some((path) => path.includes('@me/profile'))).toBe(false);
+  });
   it('does not send social tokens to an unrelated events host discovered in upstream response', async () => {
     const url = await fixture(() => ({ ws: 'wss://unexpected.example/ws' }));
     const client = new StoatClient(url, 'fixture-token');
