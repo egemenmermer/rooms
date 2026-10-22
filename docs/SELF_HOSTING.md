@@ -90,7 +90,7 @@ Bilinen sınırlar:
 | `sudo rooms invite` | Yeni davet bağlantısı üretir (varsayılan 7 gün, 10 kişi; `--uses`, `--days`, `--count`) |
 | `sudo rooms logs [servis]` | Günlükleri izler (örnek: `rooms logs access`) |
 | `sudo rooms backup` | Veritabanı, dosyalar ve yapılandırmanın yedeğini `/opt/rooms/deploy/backups` altına alır |
-| `sudo rooms update` | Önce yedek alır, sonra en son sürüme günceller ve Caddy'yi yeniden başlatır |
+| `sudo rooms update [sürüm]` | Önce yedek alır, sonra `main` dalının son haline (ya da verilen sürüm etiketine, ör. `v0.1.18-rc.30`) günceller ve Caddy'yi yeniden başlatır |
 | `sudo rooms restart` / `stop` | Servisleri yeniden başlatır / durdurur (veriler korunur) |
 
 Yedek dosyası parolaları ve mesajları içerir. Onu sunucunun dışında güvenli bir yere kopyala ve ara sıra geri yüklemeyi dene.
