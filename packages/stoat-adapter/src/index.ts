@@ -99,7 +99,7 @@ export class StoatError extends Error {
         directMessageErrors[code] ??
         inviteErrors[code] ??
         (code === 'REGISTRATION_REQUIRES_SIGN_IN'
-          ? 'Account creation could not be completed. If you already have an account, sign in instead. Contact the server administrator if you cannot sign in.'
+          ? 'This email address already has an account. Sign in with it, or use a different email address.'
           : code === 'REGISTRATION_UNCERTAIN'
             ? 'Account creation could not be confirmed. Try signing in before submitting another invitation.'
             : code === 'INVITE_PROVISIONING_UNAVAILABLE'
@@ -667,11 +667,19 @@ export class StoatClient {
     await this.inspectUpstreamInvite(input.inviteCode);
     // The broker uses these stages to tell a definite rejection from an uncertain account.
     hooks.onStage?.('account-create');
-    await this.request('/auth/account/create', 'POST', {
-      email: input.email,
-      password: input.password,
-      invite: input.accountInviteCode,
-    });
+    try {
+      await this.request('/auth/account/create', 'POST', {
+        email: input.email,
+        password: input.password,
+        invite: input.accountInviteCode,
+      });
+    } catch (error) {
+      // Upstream answers 500 OperationFailed when the (normalised) email already has an account
+      // and it cannot mail a reset; nothing was created, so report a definite refusal.
+      if (error instanceof StoatError && error.code === 'OperationFailed')
+        throw new StoatError(409, 'OperationFailed');
+      throw error;
+    }
     hooks.onStage?.('account-created');
     await this.authenticate(input.email, input.password);
     const onboarding = await this.request<{ onboarding: boolean }>('/onboard/hello');
