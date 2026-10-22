@@ -181,6 +181,17 @@ export default function App() {
       !window.rooms ||
       !!(import.meta.env.DEV && new URLSearchParams(window.location.search).has('fixture')),
   );
+  // A clicked desktop notification opens its channel or conversation.
+  useEffect(() => {
+    const open = (event: Event) => {
+      const channelId = (event as CustomEvent<string>).detail;
+      const state = useCommunity.getState();
+      if (![...state.channels, ...state.dms].some((channel) => channel.id === channelId)) return;
+      void state.openChannel(channelId).then(() => navigate('/chat'));
+    };
+    window.addEventListener('rooms:open-channel', open);
+    return () => window.removeEventListener('rooms:open-channel', open);
+  }, [navigate]);
   // The saved session's server came back after launch: leave the sign-in screen.
   useEffect(() => {
     const restored = () => {

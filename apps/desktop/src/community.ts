@@ -702,7 +702,12 @@ function onEvent(event: GatewayEvent) {
       status: event.data as ConnectionStatus,
       ...(event.data !== 'connected' ? { typing: {} } : {}),
     });
-  else if (event.type === 'SESSION_RESTORED') {
+  else if (event.type === 'OPEN_CHANNEL') {
+    // A clicked desktop notification: App opens the channel.
+    const channelId = (event.data as { channelId?: unknown })?.channelId;
+    if (typeof channelId === 'string')
+      window.dispatchEvent(new CustomEvent('rooms:open-channel', { detail: channelId }));
+  } else if (event.type === 'SESSION_RESTORED') {
     // The saved session's server answered (or refused it) after launch.
     const request = ++sessionEpoch;
     void bridge()

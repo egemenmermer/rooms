@@ -89,6 +89,7 @@ export async function setupCommunity(
     scope: { serverUrl: string; userId: string },
     channelId: string,
     mentioned?: boolean,
+    open?: () => void,
   ) => void = () => {},
 ) {
   let dmNativeEpoch = 0;
@@ -236,10 +237,14 @@ export async function setupCommunity(
           deliveredMessages.add(message.id);
           if (deliveredMessages.size > 2000)
             deliveredMessages.delete(deliveredMessages.values().next().value!);
+          const channelId = message.channelId;
           onIncomingMessage(
             { serverUrl: next.instanceUrl, userId: user.id },
-            message.channelId,
+            channelId,
             message.mentions?.includes(user.id) ?? false,
+            () => {
+              if (client === next) emit({ type: 'OPEN_CHANNEL', data: { channelId } });
+            },
           );
         }
       }
