@@ -204,13 +204,14 @@ export async function createActivityServer(options: ActivityServerOptions) {
     sweeping = true;
     try {
       for (const stored of await options.repository.list())
+        // One room that fails must not stop presence expiry and bot takeover for the others.
         await serialize(stored.snapshot.roomId, async () => {
           const room = await options.repository.load(stored.snapshot.roomId);
           if (room && pruneDisconnected(room, now())) {
             await options.repository.save(room);
             notify(room.snapshot.roomId);
           }
-        });
+        }).catch((error: unknown) => operationalError(error, 'sweep'));
     } catch (error) {
       operationalError(error, 'sweep'); /* The next sweep retries without accepting stale leases. */
     } finally {
