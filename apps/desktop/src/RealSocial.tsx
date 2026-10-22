@@ -377,6 +377,24 @@ export function CommunityChat({
   // The unsent draft waits here while the composer edits an existing message.
   const draftBeforeEdit = useRef('');
   const [deleting, setDeleting] = useState<string | null>(null);
+  // Moderators (manage messages in this channel) may delete other people's messages too.
+  const [moderates, setModerates] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setModerates(false);
+    const id = c.activeChannelId;
+    if (!id || !window.rooms?.social?.channelPermissions || c.dms.some((dm) => dm.id === id))
+      return;
+    void window.rooms.social
+      .channelPermissions(id)
+      .then((value) => {
+        if (active) setModerates(value.access === 'allowed' && value.effective.manageMessages);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [c.activeChannelId, c.user?.id]);
   const log = useRef<HTMLDivElement>(null);
   const nearBottom = useRef(true);
   const [unseen, setUnseen] = useState(false);
@@ -1275,10 +1293,10 @@ export function CommunityChat({
               Mesajı sabitle
             </button>
             <button
-              disabled={options.author.id !== c.user?.id}
+              disabled={options.author.id !== c.user?.id && !moderates}
               title={
-                options.author.id !== c.user?.id
-                  ? 'Yalnızca kendi mesajını silebilirsin'
+                options.author.id !== c.user?.id && !moderates
+                  ? 'Başkasının mesajını silmek için bu kanalda mesajları yönetme iznin olmalı'
                   : undefined
               }
               onClick={() => {
@@ -1398,15 +1416,20 @@ export function CommunityChat({
         >
           <div className="chat-modal-body">
             <p>Bu mesaj kanaldaki herkes için silinecek. Bu işlem geri alınamaz.</p>
-            {c.messages.find((m) => m.id === deleting) && (
-              <div className="chat-delete-preview">
-                <VoiceAvatar id={c.user!.id} name={c.user!.displayName} />
-                <div>
-                  <strong>{c.user!.displayName}</strong>
-                  <p>{c.messages.find((m) => m.id === deleting)?.content}</p>
+            {(() => {
+              const target = c.messages.find((m) => m.id === deleting);
+              if (!target) return null;
+              const name = target.author.displayName || target.author.username;
+              return (
+                <div className="chat-delete-preview">
+                  <VoiceAvatar id={target.author.id} name={name} />
+                  <div>
+                    <strong>{name}</strong>
+                    <p>{target.content}</p>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
             {actionError && (
               <div className="error-pane" role="alert">
                 {actionError}
