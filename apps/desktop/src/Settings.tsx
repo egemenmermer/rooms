@@ -475,6 +475,7 @@ export default function Settings({
       if (realtime.status === 'connected') {
         await setNoiseSuppression(p.noiseSuppression, p.noiseSuppressionMode);
         await mediaProvider().deviceSelection(p.inputId, p.outputId);
+        await mediaProvider().selectCamera?.(p.cameraId);
       }
       if (
         useCommunity.getState().user?.id !== accountId ||
@@ -603,7 +604,7 @@ export default function Settings({
     inputLevel = (inputName ? p.inputLevels[inputName] : undefined) ?? 100;
   const inputPercent = useRef(100);
   inputPercent.current = inputLevel;
-  const [cameraId, setCameraId] = useState('');
+  const cameraId = p.cameraId;
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const cameraRef = useRef<MediaStream | null>(null);
   const cameraVideo = useRef<HTMLVideoElement | null>(null);
@@ -1455,10 +1456,18 @@ export default function Settings({
                         value={cameraId}
                         onChange={(e) => {
                           stopCamera();
-                          setCameraId(e.target.value);
+                          setPreference('cameraId', e.target.value);
                         }}
                       >
                         <option value="">Sistem varsayılanı</option>
+                        {cameraId &&
+                          !devices.some(
+                            (d) => d.kind === 'videoinput' && d.deviceId === cameraId,
+                          ) && (
+                            <option value={cameraId}>
+                              Seçili kamera bağlı değil (varsayılan kullanılır)
+                            </option>
+                          )}
                         {devices
                           .filter((d) => d.kind === 'videoinput')
                           .map((d, i) => (
@@ -1472,7 +1481,10 @@ export default function Settings({
                       <Video size={16} />
                       {cameraStream ? 'Önizlemeyi kapat' : 'Kamerayı dene'}
                     </button>
-                    <p className="ref-settings-note">Kamera denemesi odaya yayınlanmaz.</p>
+                    <p className="ref-settings-note">
+                      Seçtiğin kamera odalarda ve özel görüşmelerde kullanılır. Kamera denemesi
+                      odaya yayınlanmaz.
+                    </p>
                     <div className="ref-camera-preview">
                       {cameraStream ? (
                         <video

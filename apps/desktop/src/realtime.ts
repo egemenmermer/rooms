@@ -245,7 +245,12 @@ export async function toggleDeafen() {
   });
 }
 export async function toggleCamera() {
-  await run(() => mediaProvider().publishCamera(!mediaProvider().snapshot().camera));
+  await run(() =>
+    mediaProvider().publishCamera(
+      !mediaProvider().snapshot().camera,
+      useRooms.getState().preferences.cameraId || undefined,
+    ),
+  );
 }
 export async function startScreen(
   sourceId?: string,

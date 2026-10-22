@@ -196,7 +196,7 @@ describe('private call renderer lifetime and device consent', () => {
     poll.mockResolvedValue({ call: { ...ringing, state: 'accepted', acceptedAt: 2000 } });
     await refreshDmCall();
     expect(mock.connect).toHaveBeenCalledOnce();
-    expect(mock.camera).toHaveBeenCalledWith(true);
+    expect(mock.camera).toHaveBeenCalledWith(true, undefined);
     expect(useDmCall.getState().connected).toBe(true);
     expect(useDmCall.getState().error).toContain('Sesli görüşme devam');
   });
