@@ -8,6 +8,7 @@ Sinema'ya Stremio geldi. Ayrıca 2026-10-22'deki çok ajanlı tam proje denetimi
 - **Salon sekmesi:** Salonda Diziler ile YouTube arasında bir **Stremio** sekmesi açılır. Hesabı bağlayan kişi kendi "izlemeye devam et" satırını ve kitaplığını görür. Herkes Cinemeta'nın popüler başlıklarını, aramasını ve ayrıntıları görür.
 - **Kaynaklar:** Bir film veya bölüm için Stremio'daki eklentilerin (ör. Real-Debrid ile Torrentio) bulduğu kaynaklar kalite, boyut ve "Hazır/İndirilecek" durumuyla listelenir. Seçilen kaynak sunucudan salondaki herkese aynı anda oynar. Kaynakları sahip ve yöneticiler seçer.
 - **IPTV olmadan da çalışır.**
+- **Oynatılamayan kaynaklar:** Doğrudan bağlantı olmayan kaynaklar (torrent, dış sayfa, YouTube, Usenet) sayılır ve neden gösterilmediği yazılır. Seçilen kaynakların bağlantıları 30 gün sonra silinir.
 - **Torrentio sunucunun adresini engelliyor:** Cloudflare veri merkezi IP'lerini reddediyor. Torrentio kaynaklarını hesabı bağlayan kişinin bilgisayarı kendi adresinden listeler ve debrid bağlantısını orada çözer; sunucuya yalnızca son indirme bağlantısı gider.
 - **Güvenlik:** Hesap ve debrid anahtarları sunucuda şifreli kalır, üyelere gitmez. Yalnızca doğrudan bağlantılar oynar; sunucu torrent indirmez. Ayrıntılar [Topluluk Sineması](COMMUNITY_CINEMA.md#stremio) belgesinde.
 
@@ -49,6 +50,7 @@ Sinema'ya Stremio geldi. Ayrıca 2026-10-22'deki çok ajanlı tam proje denetimi
   - Yalnızca yasaklama yetkisi olan moderatör üye menüsüne erişebiliyor.
   - "Yeniden başlat ve güncelle" yalnızca güncelleme inince çıkıyor.
   - DJ'de başarısız olan parça kaldırılabiliyor; "Temizle" onu da siliyor.
+  - Program hatırlatıcıları pencere arkadayken sistem bildirimi gösteriyor.
 
 ## Yeni küçük özellikler
 
