@@ -171,14 +171,27 @@ export async function setupCommunity(
     if (win && !win.webContents.isDestroyed() && !fixtureWindow())
       win.webContents.send('rooms:social-event', { ...event, sessionEpoch });
   };
+  /**
+   * A saved session whose server could not be reached at launch (offline, DNS, 5xx). The token
+   * is kept and the restore retried, so a short outage does not look like being signed out.
+   */
+  let pendingRestore: { url: string; token: string } | null = null;
+  /** Why the saved session is not in use: the server refused it, or it is still unreachable. */
+  let restoreState: 'expired' | 'unreachable' | null = null;
   const snapshot = (): SocialSession => ({
-    instanceUrl: client?.instanceUrl ?? null,
+    instanceUrl: client?.instanceUrl ?? pendingRestore?.url ?? null,
     user,
-    status: client?.status ?? 'not-configured',
-    remembered,
+    status:
+      client?.status ??
+      (pendingRestore ? 'reconnecting' : restoreState === 'expired' ? 'error' : 'not-configured'),
+    remembered: remembered || !!pendingRestore,
+    restore: restoreState,
     sessionEpoch,
   });
   function bind(next: StoatClient, generation: number) {
+    // Any session in use supersedes a saved one still waiting for its server.
+    pendingRestore = null;
+    restoreState = null;
     if (client && client !== next) void closeDmCall();
     unsubscribe?.();
     client = next;
@@ -478,6 +491,8 @@ export async function setupCommunity(
     }),
   );
   handle('rooms:social-logout', async () => {
+    pendingRestore = null;
+    restoreState = null;
     conversationVault.clear();
     recoveryEpoch++;
     passwordReset.clear();
@@ -1900,6 +1915,35 @@ export async function setupCommunity(
     },
     { useSystemPicker: false },
   );
+  const expiredSession = (error: unknown) =>
+    error instanceof StoatError && error.status === 401 && error.code !== 'SESSION_CHANGED';
+  const restoreSaved = async (stored: { url: string; token: string }) => {
+    const restored = new StoatClient(stored.url, stored.token);
+    const me = await restored.getCurrentUser();
+    if (client || (pendingRestore && pendingRestore !== stored)) return;
+    user = me;
+    conversationVault.select(restored.instanceUrl, me.id);
+    bind(restored, sessionEpoch);
+    remembered = true;
+    void restored.connect().catch(() => {});
+  };
+  const retryRestore = (stored: { url: string; token: string }, delayMs: number) => {
+    setTimeout(() => {
+      if (pendingRestore !== stored || client) return;
+      void restoreSaved(stored)
+        .then(() => {
+          if (client) emit({ type: 'SESSION_RESTORED', data: null });
+        })
+        .catch((error: unknown) => {
+          if (pendingRestore !== stored) return;
+          if (expiredSession(error)) {
+            pendingRestore = null;
+            restoreState = 'expired';
+            emit({ type: 'SESSION_RESTORED', data: null });
+          } else retryRestore(stored, Math.min(60_000, delayMs * 2));
+        });
+    }, delayMs).unref?.();
+  };
   try {
     if (existsSync(vault) && safeStorage.isEncryptionAvailable()) {
       const stored = z
@@ -1910,12 +1954,17 @@ export async function setupCommunity(
           token: z.string().min(1),
         })
         .parse(JSON.parse(safeStorage.decryptString(readFileSync(vault))));
-      const restored = new StoatClient(stored.url, stored.token);
-      user = await restored.getCurrentUser();
-      conversationVault.select(restored.instanceUrl, user.id);
-      bind(restored, sessionEpoch);
-      remembered = true;
-      void restored.connect().catch(() => {});
+      try {
+        await restoreSaved(stored);
+      } catch (error) {
+        if (expiredSession(error)) restoreState = 'expired';
+        else {
+          // Unreachable (offline, DNS, 5xx, rate limit): keep the token and try again.
+          pendingRestore = stored;
+          restoreState = 'unreachable';
+          retryRestore(stored, 5_000);
+        }
+      }
     }
   } catch {
     user = null;

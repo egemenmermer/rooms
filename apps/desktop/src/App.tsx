@@ -181,6 +181,14 @@ export default function App() {
       !window.rooms ||
       !!(import.meta.env.DEV && new URLSearchParams(window.location.search).has('fixture')),
   );
+  // The saved session's server came back after launch: leave the sign-in screen.
+  useEffect(() => {
+    const restored = () => {
+      if (location.pathname.startsWith('/setup/')) navigate('/home', { replace: true });
+    };
+    window.addEventListener('rooms:session-restored', restored);
+    return () => window.removeEventListener('rooms:session-restored', restored);
+  }, [location.pathname, navigate]);
   useEffect(() => {
     if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('fixture')) return;
     let current = true;

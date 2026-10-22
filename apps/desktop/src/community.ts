@@ -120,7 +120,19 @@ async function applySession(session: SocialSession, request = sessionEpoch) {
   nativeSessionEpoch = session.sessionEpoch ?? null;
   clearConversations();
   if (!session.user) {
-    useCommunity.setState({ ...blank, status: session.status });
+    useCommunity.setState({
+      ...blank,
+      status: session.status,
+      // A saved session is kept while its server is unreachable; the main process retries.
+      remembered: session.remembered,
+      serverUrl: session.instanceUrl ?? '',
+      error:
+        session.restore === 'expired'
+          ? 'Oturumunun süresi doldu. Çıkış yapıp yeniden giriş yap.'
+          : session.restore === 'unreachable'
+            ? SERVER_UNREACHABLE_MESSAGE
+            : null,
+    });
     return;
   }
   const { leaveVoice } = await import('./realtime');
@@ -138,6 +150,9 @@ async function applySession(session: SocialSession, request = sessionEpoch) {
   });
   await useCommunity.getState().refresh();
 }
+/** A saved session waits for its server; nothing needs to be typed again. */
+export const SERVER_UNREACHABLE_MESSAGE =
+  'Kayıtlı sunucuna şu an ulaşılamıyor. Oturumun duruyor; bağlantı gelince kendiliğinden açılacak.';
 export const useCommunity = create<CommunityState>((set, get) => ({
   ...blank,
   connect: async (input) => {
@@ -681,7 +696,17 @@ function onEvent(event: GatewayEvent) {
       status: event.data as ConnectionStatus,
       ...(event.data !== 'connected' ? { typing: {} } : {}),
     });
-  else if (event.type === 'AUTH_EXPIRED') {
+  else if (event.type === 'SESSION_RESTORED') {
+    // The saved session's server answered (or refused it) after launch.
+    const request = ++sessionEpoch;
+    void bridge()
+      .session()
+      .then(async (session) => {
+        await applySession(session, request);
+        if (session.user) window.dispatchEvent(new Event('rooms:session-restored'));
+      })
+      .catch(() => {});
+  } else if (event.type === 'AUTH_EXPIRED') {
     nativeSessionEpoch = null;
     clearConversations();
     sessionEpoch++;

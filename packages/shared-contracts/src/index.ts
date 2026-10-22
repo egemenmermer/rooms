@@ -253,6 +253,11 @@ export interface SocialSession {
   user: import('@rooms/social').SocialUser | null;
   status: ConnectionStatus;
   remembered: boolean;
+  /**
+   * Why a saved session is not in use: the server refused it (`expired`), or it could not be
+   * reached at launch and is retried (`unreachable`).
+   */
+  restore?: 'expired' | 'unreachable' | null;
   sessionEpoch?: number;
 }
 export interface SocialPasswordRecoveryCapabilities {

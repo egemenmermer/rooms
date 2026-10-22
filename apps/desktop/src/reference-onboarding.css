@@ -773,3 +773,9 @@
 .ref-auth-field-help {
   margin: 0 0 17px;
 }
+.ref-auth-waiting {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-subtle, rgb(255 255 255 / 0.12));
+  border-radius: 10px;
+  color: var(--color-text-secondary, inherit);
+}
