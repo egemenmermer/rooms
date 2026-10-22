@@ -42,6 +42,8 @@ let pendingTarget: string | null = null,
   pendingPromise: Promise<void> | null = null;
 let desiredMuted = true,
   microphoneScope = '';
+/** Deafen carried through a join that is still in progress (a second join reuses it). */
+let pendingDeafened = false;
 const sessionScope = () =>
   `${useCommunity.getState().serverUrl}:${useCommunity.getState().user?.id ?? ''}`;
 function serialize(work: () => Promise<void>) {
@@ -114,6 +116,10 @@ export function joinVoice(channelId: string, roomName: string): Promise<void> {
     activeChannel ??= context.channelId;
     desiredMuted = snapshot.muted;
   }
+  // Leaving the old room resets deafen in the provider; a move, a rejoin after a drop or a
+  // room switch must keep it (a deafened person may be away with speakers on).
+  const keepDeafened = !context.busy ? snapshot.deafened : pendingDeafened;
+  pendingDeafened = keepDeafened;
   const epoch = ++transitionEpoch,
     scope = sessionScope();
   if (microphoneScope !== scope) {
@@ -144,7 +150,10 @@ export function joinVoice(channelId: string, roomName: string): Promise<void> {
         throw new Error('Önce özel görüşmeyi bitir.');
       activeChannel = channelId;
       await mediaProvider().connectRoom(grant.roomName, grant.token, grant.serverUrl);
-      if (mediaProvider().snapshot().deafened) announceDeafen(channelId, true);
+      if (keepDeafened && current()) {
+        await mediaProvider().deafen(true);
+        announceDeafen(channelId, true);
+      }
       if (!current()) {
         await disconnectActive();
         return;
