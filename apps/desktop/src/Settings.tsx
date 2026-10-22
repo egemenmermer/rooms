@@ -70,6 +70,7 @@ import {
 import { Avatar, IconButton, Modal, Toggle } from '@rooms/design';
 import { useRooms, withInputLevel } from './store';
 import { PushToTalkKeyField } from './PushToTalkKeyField';
+import { formatPushToTalkKey, pushToTalkKey } from './push-to-talk-key';
 import { ConnectionPane } from './ConnectionPane';
 import { useModerationRights } from './VoiceModeration';
 import { useCommunity } from './community';
@@ -510,6 +511,22 @@ export default function Settings({
     return false;
   };
   const [error, setError] = useState('');
+  // Diagnostics show the running build, not a version typed into the source.
+  const [appInfo, setAppInfo] = useState<{
+    version: string;
+    arch: string;
+    electron: string;
+  } | null>(null);
+  useEffect(() => {
+    let active = true;
+    void window.rooms
+      ?.applicationInfo?.()
+      .then((value) => active && setAppInfo(value))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
   const [narrowSettings, setNarrowSettings] = useState(
     () => window.matchMedia('(max-width: 959px)').matches,
   );
@@ -1584,7 +1601,10 @@ export default function Settings({
                   [tr('Home / Spaces / Chat / Voice / Cinema'), '⌘ / Ctrl 1–5'],
                   [tr('Open settings'), '⌘ / Ctrl ,'],
                   [tr('Mikrofonu aç / kapat'), '⌘ / Ctrl Shift M'],
-                  [tr('Push to talk (when enabled)'), 'Ctrl Shift Space'],
+                  [
+                    tr('Push to talk (when enabled)'),
+                    formatPushToTalkKey(pushToTalkKey(p.pushToTalkKey)),
+                  ],
                   [tr('Play / pause local media'), 'Space'],
                   [tr('Seek local media 5 seconds'), '← / →'],
                   [tr('Close topmost dialog'), 'Esc'],
@@ -1816,8 +1836,16 @@ export default function Settings({
                 <h3>{'Tan\u0131lama'}</h3>
                 <div className="diagnostic-list">
                   {[
-                    [tr('Application'), tr('Tayfa 0.1.14 / Desktop')],
-                    [tr('Runtime'), window.rooms ? 'Electron 44.7.0' : tr('Browser preview')],
+                    [
+                      tr('Application'),
+                      appInfo
+                        ? `Tayfa ${appInfo.version} / ${appInfo.arch}`
+                        : tr('Browser preview'),
+                    ],
+                    [
+                      tr('Runtime'),
+                      appInfo ? `Electron ${appInfo.electron}` : tr('Browser preview'),
+                    ],
                     [tr('Platform'), window.rooms?.platform ?? tr('Browser')],
                     [tr('Social / gateway'), community.status],
                     ['WebRTC / SFU', realtime.status],
