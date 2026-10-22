@@ -474,8 +474,9 @@ describe('saved audio devices that are gone', () => {
     expect(room.switchActiveDevice).not.toHaveBeenCalledWith('audiooutput', 'airpods-out');
     expect(provider.snapshot()).toMatchObject({ status: 'connected', error: null });
     await provider.mute(false);
+    // Still asked for as a preference, so the headset is used again once it is back.
     expect(createLocalAudioTrack).toHaveBeenLastCalledWith(
-      expect.objectContaining({ deviceId: undefined }),
+      expect.objectContaining({ deviceId: 'airpods-mic' }),
     );
     expect(provider.snapshot()).toMatchObject({ muted: false, error: null });
     await provider.disconnect();
