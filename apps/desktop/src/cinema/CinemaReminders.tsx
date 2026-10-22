@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Bell, Play, X } from 'lucide-react';
 import { hhmm } from './hall-model';
 import { requestHallOpen, takeDue, type Reminder } from './reminders';
+import { useCommunity } from '../community';
 
 /**
  * Programme reminders, wherever the app is: when one starts, the system notification and a
@@ -50,9 +51,15 @@ export function CinemaReminders() {
           <button
             className="button primary small"
             onClick={() => {
-              requestHallOpen(reminder.hallId, reminder.ref);
               dismiss(reminder);
-              navigate('/cinema');
+              void (async () => {
+                // The hall page shows the active community's hall: switch to this one first.
+                const community = useCommunity.getState();
+                if (reminder.communityId && community.activeSpaceId !== reminder.communityId)
+                  await community.openSpace(reminder.communityId).catch(() => {});
+                requestHallOpen(reminder.hallId, reminder.ref);
+                navigate('/cinema');
+              })();
             }}
           >
             <Play size={14} />
