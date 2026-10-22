@@ -5,6 +5,13 @@ const mock = vi.hoisted(() => ({
   handlers: new Map<string, Function>(),
   instances: [] as { url: string; token?: string }[],
   requestSignup: vi.fn(),
+  status: {
+    status: 'pending',
+    inviteCode: null as string | null,
+    createdAt: null,
+    expiresAt: null,
+  },
+  register: vi.fn(),
   decide: vi.fn(),
 }));
 vi.mock('electron', () => ({
@@ -36,11 +43,30 @@ vi.mock('@rooms/stoat', async () => ({
     }
     requestSignup(input: unknown) {
       mock.requestSignup(input);
+      return Promise.resolve({ requestId: 'a'.repeat(32), pollSecret: 'S'.repeat(43) });
+    }
+    signupStatus() {
+      return Promise.resolve(mock.status);
+    }
+    cancelSignup() {
+      return Promise.resolve();
+    }
+    register(input: unknown) {
+      mock.register(input);
       this.token = 'fixture-private-session';
       return Promise.resolve({
         id: 'NEWUSER',
         username: 'friend',
         displayName: 'friend',
+        avatar: null,
+      });
+    }
+    login() {
+      this.token = 'fixture-private-session';
+      return Promise.resolve({
+        id: 'ADMIN',
+        username: 'admin',
+        displayName: 'admin',
         avatar: null,
       });
     }
@@ -87,6 +113,8 @@ beforeEach(async () => {
   mock.handlers.clear();
   mock.instances.length = 0;
   mock.requestSignup.mockReset();
+  mock.register.mockReset();
+  mock.status = { status: 'pending', inviteCode: null, createdAt: null, expiresAt: null };
   mock.decide.mockReset().mockResolvedValue(undefined);
   const community = await setupCommunity(
     () => windowFixture,
@@ -122,21 +150,45 @@ describe('approved sign-up IPC (mocked Stoat/Electron, no remote calls)', () => 
     expect(mock.requestSignup).not.toHaveBeenCalled();
   });
 
-  it('signs in to the new account without handing its session to the renderer', async () => {
-    const session = await invoke('rooms:social-signup-request', form);
-    expect(session).toMatchObject({ user: { id: 'NEWUSER' }, instanceUrl: form.serverUrl });
-    expect(JSON.stringify(session)).not.toContain('fixture-private-session');
-    expect(mock.requestSignup).toHaveBeenCalledWith(form);
+  it('creates no session for a request, and keeps the password out of the renderer', async () => {
+    const pending = await invoke('rooms:social-signup-request', form);
+    expect(mock.requestSignup).toHaveBeenCalledWith({ email: form.email, username: 'friend' });
+    expect(pending).toMatchObject({ status: 'pending', passwordKnown: true });
+    expect(JSON.stringify(pending)).not.toContain(form.password);
+    expect(await invoke('rooms:social-session')).toMatchObject({ user: null });
+    expect(await invoke('rooms:social-signup-check')).toMatchObject({ session: null });
+    expect(mock.register).not.toHaveBeenCalled();
   });
 
-  it('accepts only approve or reject decisions on valid ids', async () => {
+  it('creates the account through invitation registration once approved', async () => {
     await invoke('rooms:social-signup-request', form);
-    await invoke('rooms:social-signup-decide', 'SPACE', 'U1', 'approve');
-    expect(mock.decide).toHaveBeenCalledWith('SPACE', 'U1', 'approve');
-    await expect(invoke('rooms:social-signup-decide', 'SPACE', 'U1', 'delete')).rejects.toThrow(
-      'Check the supplied fields',
-    );
-    await expect(invoke('rooms:social-signup-decide', 'SPACE', '../x', 'reject')).rejects.toThrow(
+    mock.status = { ...mock.status, status: 'approved', inviteCode: 'f'.repeat(64) };
+    const result = await invoke('rooms:social-signup-check');
+    expect(mock.register).toHaveBeenCalledWith({
+      serverUrl: form.serverUrl,
+      email: form.email,
+      password: form.password,
+      username: 'friend',
+      inviteCode: 'f'.repeat(64),
+    });
+    expect(result.session).toMatchObject({ user: { id: 'NEWUSER' } });
+    expect(JSON.stringify(result)).not.toContain('fixture-private-session');
+    expect(await invoke('rooms:social-signup-pending')).toBeNull();
+  });
+
+  it('accepts only approve or reject decisions on valid request ids', async () => {
+    await invoke('rooms:social-login', {
+      serverUrl: 'https://friends.example',
+      email: 'admin@example.com',
+      password: 'admin-password',
+    });
+    const requestId = 'b'.repeat(32);
+    await invoke('rooms:social-signup-decide', 'SPACE', requestId, 'approve');
+    expect(mock.decide).toHaveBeenCalledWith('SPACE', requestId, 'approve');
+    await expect(
+      invoke('rooms:social-signup-decide', 'SPACE', requestId, 'delete'),
+    ).rejects.toThrow('Check the supplied fields');
+    await expect(invoke('rooms:social-signup-decide', 'SPACE', 'U1', 'reject')).rejects.toThrow(
       'Check the supplied fields',
     );
     expect(mock.decide).toHaveBeenCalledTimes(1);

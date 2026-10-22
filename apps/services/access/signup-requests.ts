@@ -1,51 +1,70 @@
 import type { FastifyInstance } from 'fastify';
 import { mkdir, open, readFile, rename, stat, unlink } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { StoatClient, StoatError } from '@rooms/stoat';
 import { SOCIAL_ID_PATTERN } from '@rooms/social';
-import { seedAccountInvite, type AccountInviteSink } from './account-invites';
+import type { RegistrationGate } from './registration';
 
 /** A request nobody decided on stops counting against the queue after this many days. */
 export const SIGNUP_PENDING_DAYS = 14;
 /** Decided and expired requests stay readable this long so the person can see the outcome. */
 const KEEP_DAYS = 30;
 const DAY_MS = 86400 * 1000;
+/** How long the single-use registration link minted at approval stays valid. */
+export const SIGNUP_INVITE_SECONDS = 7 * 86400;
 export const SIGNUP_LIMITS = { perIpPerHour: 3, globalPerHour: 20, maxPending: 50 } as const;
 export type SignupLimits = { perIpPerHour: number; globalPerHour: number; maxPending: number };
+export const SIGNUP_REQUEST_ID = /^[a-f0-9]{32}$/;
+const POLL_SECRET = /^[A-Za-z0-9_-]{43}$/;
 
 const datetime = z.string().datetime();
 const socialId = z.string().regex(SOCIAL_ID_PATTERN);
+const hex64 = z.string().regex(/^[a-f0-9]{64}$/);
 const entrySchema = z
   .object({
     spaceId: socialId,
     username: z.string().min(2).max(32),
+    /** sha256 of the normalised email; only used to refuse a second open request. */
+    emailHash: hex64,
+    /** sha256 of the poll secret the requester holds; the secret itself is never stored. */
+    secretHash: hex64,
     createdAt: datetime,
-    state: z.enum(['pending', 'approved', 'joined', 'rejected']),
+    state: z.enum(['pending', 'approved', 'delivered', 'rejected', 'cancelled']),
     decidedAt: datetime.optional(),
     decidedBy: socialId.optional(),
+    /** Management id of the single-use registration link minted at approval. */
+    inviteId: z
+      .string()
+      .regex(/^[a-f0-9]{16}$/)
+      .optional(),
+    /** The link itself, kept only until the requester has fetched it once. */
+    inviteCode: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
+    inviteExpiresAt: datetime.optional(),
   })
   .strict();
 const fileSchema = z
   .object({
-    version: z.literal(1),
-    /** Keyed by the upstream user id; no email, password or session is ever stored. */
-    requests: z.record(socialId, entrySchema),
-    /** Broker-owned upstream community invitations that admit approved people; never sent out. */
-    communityInvites: z.record(socialId, z.string().min(2).max(128)),
+    version: z.literal(2),
+    requests: z.record(z.string().regex(SIGNUP_REQUEST_ID), entrySchema),
   })
   .strict();
 type SignupFile = z.infer<typeof fileSchema>;
 type Entry = z.infer<typeof entrySchema>;
-export type SignupStatus = 'none' | 'pending' | 'approved' | 'joined' | 'rejected' | 'expired';
+export type SignupStatus = 'pending' | 'approved' | 'issued' | 'rejected' | 'expired';
 export interface SignupRequestSummary {
-  userId: string;
+  id: string;
   username: string;
   createdAt: string;
   state: 'pending' | 'approved';
 }
 
+const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
+export const signupEmailHash = (email: string) => sha256(email.trim().toLowerCase());
 export const signupUsername = z
   .string()
   .trim()
@@ -53,11 +72,7 @@ export const signupUsername = z
   .max(32)
   .regex(/^[\p{L}\d_.-]+$/u);
 const signupBody = z
-  .object({
-    email: z.string().trim().email().max(254),
-    password: z.string().min(8).max(256),
-    username: signupUsername,
-  })
+  .object({ email: z.string().trim().email().max(254), username: signupUsername })
   .strict();
 
 /** Counts events in a rolling window; used for the server-wide sign-up budget. */
@@ -80,8 +95,9 @@ export class WindowLimiter {
 const queues = new Map<string, Promise<unknown>>();
 
 /**
- * Durable queue of approved sign-up requests. Writes are atomic (temp file, fsync, rename) and
- * serialized in this process and across processes sharing the file, like the invitation ledger.
+ * Durable queue of approved sign-up requests. No account exists for a request: it holds the
+ * chosen name, an email hash and a poll-secret hash. Writes are atomic and serialized in this
+ * process and across processes sharing the file, like the invitation ledger.
  */
 export class SignupRequestStore {
   private readonly now: () => number;
@@ -98,31 +114,33 @@ export class SignupRequestStore {
     try {
       raw = JSON.parse(await readFile(this.path, 'utf8'));
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT')
-        return { version: 1, requests: {}, communityInvites: {} };
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return { version: 2, requests: {} };
       throw new StoatError(503, 'SIGNUP_STORE_INVALID');
     }
     const parsed = fileSchema.safeParse(raw);
     if (!parsed.success) throw new StoatError(503, 'SIGNUP_STORE_INVALID');
     return parsed.data;
   }
-  private expired(entry: Entry) {
+  expired(entry: Entry) {
     return (
       entry.state === 'pending' &&
       this.now() - Date.parse(entry.createdAt) >= SIGNUP_PENDING_DAYS * DAY_MS
     );
   }
+  private open(entry: Entry) {
+    return entry.state === 'approved' || (entry.state === 'pending' && !this.expired(entry));
+  }
   private async persist(data: SignupFile) {
     const now = this.now();
-    for (const [userId, entry] of Object.entries(data.requests)) {
-      // Approved people keep their place until they join; everything else is pruned in time.
+    for (const [id, entry] of Object.entries(data.requests)) {
+      // An approved link waits for its requester; everything else is pruned in time.
       const until =
         entry.state === 'pending'
           ? Date.parse(entry.createdAt) + (SIGNUP_PENDING_DAYS + KEEP_DAYS) * DAY_MS
           : entry.state === 'approved'
-            ? Infinity
+            ? Date.parse(entry.inviteExpiresAt ?? entry.createdAt) + KEEP_DAYS * DAY_MS
             : Date.parse(entry.decidedAt ?? entry.createdAt) + KEEP_DAYS * DAY_MS;
-      if (now >= until) delete data.requests[userId];
+      if (now >= until) delete data.requests[id];
     }
     const temp = `${this.path}.${randomUUID()}.tmp`;
     const file = await open(temp, 'wx', 0o600);
@@ -181,111 +199,157 @@ export class SignupRequestStore {
       (entry) => entry.state === 'pending' && !this.expired(entry),
     ).length;
   }
-  async status(userId: string): Promise<{ status: SignupStatus; entry: Entry | null }> {
-    const entry = (await this.load()).requests[userId];
-    if (!entry) return { status: 'none', entry: null };
-    return { status: this.expired(entry) ? 'expired' : entry.state, entry };
-  }
-  /** Read-only early check so a full queue refuses before any upstream account is created. */
-  async assertCapacity(maxPending: number) {
-    if (this.pendingCount(await this.load()) >= maxPending)
-      throw new StoatError(503, 'SIGNUP_QUEUE_FULL');
-  }
-  /**
-   * Records a request. `maxPending` is enforced only where no account was created for this call;
-   * an account that already exists is always queued so it is never left without a request.
-   */
-  async add(userId: string, spaceId: string, username: string, maxPending?: number) {
+  /** Queues a request and returns its id and the poll secret, which only the requester holds. */
+  async add(input: { spaceId: string; username: string; email: string }, maxPending: number) {
     return this.withLock(async (data) => {
-      const existing = data.requests[userId];
-      if (existing && !this.expired(existing))
+      const emailHash = signupEmailHash(input.email);
+      if (
+        Object.values(data.requests).some(
+          (entry) => entry.emailHash === emailHash && this.open(entry),
+        )
+      )
         throw new StoatError(409, 'SIGNUP_ALREADY_REQUESTED');
-      if (maxPending !== undefined && this.pendingCount(data) >= maxPending)
-        throw new StoatError(503, 'SIGNUP_QUEUE_FULL');
-      data.requests[userId] = {
-        spaceId,
-        username,
+      if (this.pendingCount(data) >= maxPending) throw new StoatError(503, 'SIGNUP_QUEUE_FULL');
+      const id = randomBytes(16).toString('hex');
+      const pollSecret = randomBytes(32).toString('base64url');
+      data.requests[id] = {
+        spaceId: input.spaceId,
+        username: input.username,
+        emailHash,
+        secretHash: sha256(pollSecret),
         createdAt: new Date(this.now()).toISOString(),
         state: 'pending',
       };
       await this.persist(data);
+      return { id, pollSecret };
+    });
+  }
+  private authenticate(data: SignupFile, id: string, pollSecret: string) {
+    const entry = SIGNUP_REQUEST_ID.test(id) ? data.requests[id] : undefined;
+    const given = Buffer.from(sha256(pollSecret), 'hex');
+    // Unknown ids and wrong secrets look the same to the caller.
+    if (
+      !entry ||
+      !POLL_SECRET.test(pollSecret) ||
+      !timingSafeEqual(given, Buffer.from(entry.secretHash, 'hex'))
+    )
+      throw new StoatError(404, 'SIGNUP_REQUEST_NOT_FOUND');
+    return entry;
+  }
+  /**
+   * The requester's view. An approved request hands out its single-use registration link exactly
+   * once; the broker forgets the link afterwards.
+   */
+  async poll(id: string, pollSecret: string) {
+    return this.withLock(async (data) => {
+      const entry = this.authenticate(data, id, pollSecret);
+      if (entry.state === 'cancelled') throw new StoatError(404, 'SIGNUP_REQUEST_NOT_FOUND');
+      const base = { createdAt: entry.createdAt, username: entry.username };
+      if (entry.state === 'approved' && entry.inviteCode) {
+        const inviteCode = entry.inviteCode;
+        entry.state = 'delivered';
+        delete entry.inviteCode;
+        await this.persist(data);
+        return {
+          ...base,
+          status: 'approved' as const,
+          inviteCode,
+          expiresAt: entry.inviteExpiresAt ?? null,
+        };
+      }
+      const status: SignupStatus =
+        entry.state === 'delivered'
+          ? 'issued'
+          : entry.state === 'approved'
+            ? 'pending'
+            : this.expired(entry)
+              ? 'expired'
+              : (entry.state as 'pending' | 'rejected');
+      return { ...base, status, inviteCode: null, expiresAt: entry.inviteExpiresAt ?? null };
+    });
+  }
+  /** The requester withdraws; returns the link to revoke when one was minted but not fetched. */
+  async cancel(id: string, pollSecret: string) {
+    return this.withLock(async (data) => {
+      const entry = this.authenticate(data, id, pollSecret);
+      // A link that was minted but never used must not outlive the withdrawn request.
+      const inviteId =
+        entry.state === 'approved' || entry.state === 'delivered' ? entry.inviteId : undefined;
+      entry.state = 'cancelled';
+      entry.decidedAt = new Date(this.now()).toISOString();
+      delete entry.inviteCode;
+      await this.persist(data);
+      return { spaceId: entry.spaceId, inviteId };
     });
   }
   async list(spaceId: string): Promise<SignupRequestSummary[]> {
     const data = await this.load();
     return Object.entries(data.requests)
-      .filter(
-        ([, entry]) =>
-          entry.spaceId === spaceId &&
-          (entry.state === 'approved' || (entry.state === 'pending' && !this.expired(entry))),
-      )
-      .map(([userId, entry]) => ({
-        userId,
+      .filter(([, entry]) => entry.spaceId === spaceId && this.open(entry))
+      .map(([id, entry]) => ({
+        id,
         username: entry.username,
         createdAt: entry.createdAt,
         state: entry.state as 'pending' | 'approved',
       }))
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   }
-  /** Open requests only: a pending one, or an approved one whose person has not joined yet. */
-  async find(spaceId: string, userId: string) {
-    const entry = (await this.load()).requests[userId];
-    if (
-      !entry ||
-      entry.spaceId !== spaceId ||
-      !(entry.state === 'approved' || (entry.state === 'pending' && !this.expired(entry)))
-    )
+  /** Open requests only: a pending one, or an approved one whose link was not fetched yet. */
+  async find(spaceId: string, id: string) {
+    const entry = (await this.load()).requests[id];
+    if (!entry || entry.spaceId !== spaceId || !this.open(entry))
       throw new StoatError(404, 'SIGNUP_REQUEST_NOT_FOUND');
     return entry;
   }
-  async decide(spaceId: string, userId: string, state: 'approved' | 'rejected', by: string) {
+  /** Records an approval with its freshly minted link; returns a previous link to revoke. */
+  async approve(
+    spaceId: string,
+    id: string,
+    by: string,
+    invite: { id: string; code: string; expiresAt: string },
+  ) {
     return this.withLock(async (data) => {
-      const entry = data.requests[userId];
-      if (
-        !entry ||
-        entry.spaceId !== spaceId ||
-        !(entry.state === 'approved' || (entry.state === 'pending' && !this.expired(entry)))
-      )
+      const entry = data.requests[id];
+      if (!entry || entry.spaceId !== spaceId || !this.open(entry))
         throw new StoatError(404, 'SIGNUP_REQUEST_NOT_FOUND');
-      entry.state = state;
+      const replaced = entry.inviteId;
+      Object.assign(entry, {
+        state: 'approved',
+        decidedAt: new Date(this.now()).toISOString(),
+        decidedBy: by,
+        inviteId: invite.id,
+        inviteCode: invite.code,
+        inviteExpiresAt: invite.expiresAt,
+      });
+      await this.persist(data);
+      return { replaced };
+    });
+  }
+  async reject(spaceId: string, id: string, by: string) {
+    return this.withLock(async (data) => {
+      const entry = data.requests[id];
+      if (!entry || entry.spaceId !== spaceId || !this.open(entry))
+        throw new StoatError(404, 'SIGNUP_REQUEST_NOT_FOUND');
+      const inviteId = entry.inviteId;
+      entry.state = 'rejected';
       entry.decidedAt = new Date(this.now()).toISOString();
       entry.decidedBy = by;
+      delete entry.inviteCode;
       await this.persist(data);
-    });
-  }
-  async markJoined(userId: string) {
-    return this.withLock(async (data) => {
-      const entry = data.requests[userId];
-      if (!entry || entry.state !== 'approved') return;
-      entry.state = 'joined';
-      await this.persist(data);
-    });
-  }
-  async communityInvite(spaceId: string) {
-    return (await this.load()).communityInvites[spaceId] ?? null;
-  }
-  async setCommunityInvite(spaceId: string, code: string) {
-    return this.withLock(async (data) => {
-      data.communityInvites[spaceId] = code;
-      await this.persist(data);
+      return { inviteId };
     });
   }
 }
-
-const definiteRefusal = (error: unknown) =>
-  error instanceof StoatError &&
-  error.status >= 400 &&
-  error.status < 500 &&
-  ![408, 429].includes(error.status);
 
 export interface SignupRequestOptions {
   /** Community approved people join; unset keeps approved sign-up off. */
   spaceId?: string;
   store: SignupRequestStore;
-  accountInvites: AccountInviteSink | null;
+  /** The invitation ledger behind /v1/auth/register and /v1/auth/invites/:code/join. */
+  registration: RegistrationGate;
+  /** Invitation-link sign-up needs this to create accounts; approved sign-up relies on it. */
+  provisioning: boolean;
   limits?: Partial<SignupLimits>;
-  stoat(token?: string): StoatClient;
-  tokenOf(header: string | undefined): string;
   /** The space owner or an owner-equivalent admin, as for invitation links. */
   requireSpaceAdmin(
     authorization: string | undefined,
@@ -294,38 +358,38 @@ export interface SignupRequestOptions {
 }
 
 /**
- * Sign-up without an invitation link. The broker creates the upstream account itself with a
- * freshly seeded account invitation (the public proxy keeps blocking raw account creation), so
- * the new account exists but belongs to no community. An owner or admin approves the request;
- * the person then joins through a broker-owned community invitation on their next status check.
+ * Sign-up without an invitation link. A request creates nothing upstream: the requester gets a
+ * poll secret. When an owner or admin approves, the broker mints a single-use registration link
+ * in the invitation ledger and hands it to the requester once; the existing registration flow then
+ * creates the account and joins the community in one step. Rejected or expired requests never get
+ * an account.
  */
 export function registerSignupRequests(server: FastifyInstance, options: SignupRequestOptions) {
   const limits: SignupLimits = { ...SIGNUP_LIMITS };
   for (const [key, value] of Object.entries(options.limits ?? {}))
     if (value !== undefined) limits[key as keyof SignupLimits] = value;
   const budget = new WindowLimiter(limits.globalPerHour, 3600 * 1000);
-  const enabled = () => !!options.spaceId && !!options.accountInvites;
-  const joins = new Map<string, Promise<unknown>>();
-  const approvals = new Map<string, Promise<unknown>>();
-  const serialized = <T>(
-    locks: Map<string, Promise<unknown>>,
-    key: string,
-    work: () => Promise<T>,
-  ) => {
-    const run = (locks.get(key) ?? Promise.resolve()).catch(() => {}).then(work);
-    locks.set(key, run);
-    return run.finally(() => {
-      if (locks.get(key) === run) locks.delete(key);
-    });
+  const enabled = () => !!options.spaceId && options.provisioning;
+  const secretOf = (header: string | undefined) => {
+    const value = header?.replace(/^Bearer /, '') ?? '';
+    if (!POLL_SECRET.test(value)) throw new StoatError(404, 'SIGNUP_REQUEST_NOT_FOUND');
+    return value;
   };
-  const isMember = (client: StoatClient, spaceId: string, userId: string) =>
-    client.getMember(spaceId, userId).then(
-      () => true,
-      (error) => {
-        if (error instanceof StoatError && [403, 404].includes(error.status)) return false;
-        throw error;
-      },
-    );
+  const idParams = z.object({ id: z.string().regex(SIGNUP_REQUEST_ID) });
+  const revokeQuietly = async (
+    spaceId: string,
+    inviteId: string | undefined,
+    client?: StoatClient,
+  ) => {
+    if (!inviteId) return;
+    try {
+      const revoked = await options.registration.revoke(spaceId, inviteId);
+      if (revoked.releaseUpstream && client)
+        await client.deleteUpstreamInvite(revoked.communityInviteCode).catch(() => {});
+    } catch {
+      // Already used, revoked or expired: nothing left to close.
+    }
+  };
 
   server.get(
     '/v1/auth/signup',
@@ -337,88 +401,35 @@ export function registerSignupRequests(server: FastifyInstance, options: SignupR
     { config: { rateLimit: { max: limits.perIpPerHour, timeWindow: '1 hour' } } },
     async (request) => {
       const body = signupBody.parse(request.body);
-      if (!enabled() || !options.spaceId || !options.accountInvites)
-        throw new StoatError(501, 'SIGNUP_UNAVAILABLE');
-      await options.store.assertCapacity(limits.maxPending);
+      if (!enabled() || !options.spaceId) throw new StoatError(501, 'SIGNUP_UNAVAILABLE');
       if (!budget.take()) throw new StoatError(429, 'SIGNUP_BUSY');
-      let accountInviteCode: string;
-      try {
-        accountInviteCode = await seedAccountInvite(options.accountInvites);
-      } catch {
-        throw new StoatError(503, 'INVITE_PROVISIONING_UNAVAILABLE');
-      }
-      const client = options.stoat();
-      let stage: 'prepare' | 'account-create' | 'account-created' = 'prepare';
-      let user;
-      try {
-        user = await client.createUpstreamAccount(
-          { ...body, accountInviteCode },
-          { onStage: (next) => (stage = next) },
-        );
-      } catch (error) {
-        // An account may exist once creation was attempted without a definite refusal.
-        if (stage === 'prepare' || (stage === 'account-create' && definiteRefusal(error)))
-          throw error;
-        throw new StoatError(502, 'REGISTRATION_UNCERTAIN');
-      }
-      const token = client.getToken();
-      if (!token) throw new StoatError(502, 'INVALID_SESSION_RESPONSE');
-      // The account exists now; queue it even when the queue filled up meanwhile.
-      await options.store.add(user.id, options.spaceId, body.username);
-      return { token, status: 'pending' as const };
+      const created = await options.store.add(
+        { spaceId: options.spaceId, username: body.username, email: body.email },
+        limits.maxPending,
+      );
+      return { requestId: created.id, pollSecret: created.pollSecret, status: 'pending' as const };
     },
   );
   server.get(
-    '/v1/auth/signup-requests/me',
+    '/v1/auth/signup-requests/:id',
     { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
     async (request) => {
-      const client = options.stoat(options.tokenOf(request.headers.authorization));
-      const user = await client.getCurrentUser();
-      const { status, entry } = await options.store.status(user.id);
-      if (status !== 'approved' || !entry)
-        return { status, enabled: enabled(), createdAt: entry?.createdAt ?? null };
-      return serialized(joins, user.id, async () => {
-        const current = await options.store.status(user.id);
-        if (current.status !== 'approved') return { status: current.status, enabled: enabled() };
-        const spaceId = entry.spaceId;
-        if (!(await isMember(client, spaceId, user.id))) {
-          const code = await options.store.communityInvite(spaceId);
-          if (!code) throw new StoatError(409, 'SIGNUP_JOIN_FAILED');
-          try {
-            await client.acceptInvite(code);
-          } catch (error) {
-            // Banned, or the invitation was removed upstream: an admin approves again.
-            if (definiteRefusal(error)) throw new StoatError(409, 'SIGNUP_JOIN_FAILED');
-            throw error;
-          }
-        }
-        await options.store.markJoined(user.id);
-        const space = await client.getServer(spaceId).catch(() => null);
-        return {
-          status: 'joined' as const,
-          enabled: enabled(),
-          space: { id: spaceId, name: typeof space?.name === 'string' ? space.name : '' },
-        };
-      });
+      const { id } = idParams.parse(request.params);
+      return options.store.poll(id, secretOf(request.headers.authorization));
     },
   );
-  // An existing account without a request (expired, or its request could not be written) asks again.
-  server.post(
-    '/v1/auth/signup-requests/me',
-    { config: { rateLimit: { max: limits.perIpPerHour, timeWindow: '1 hour' } } },
+  server.delete(
+    '/v1/auth/signup-requests/:id',
+    { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
     async (request) => {
-      if (!enabled() || !options.spaceId) throw new StoatError(501, 'SIGNUP_UNAVAILABLE');
-      const client = options.stoat(options.tokenOf(request.headers.authorization));
-      const user = await client.getCurrentUser();
-      if (await isMember(client, options.spaceId, user.id))
-        throw new StoatError(409, 'SIGNUP_ALREADY_MEMBER');
-      const username = (user.username || user.displayName).slice(0, 32).padEnd(2, '_');
-      await options.store.add(user.id, options.spaceId, username, limits.maxPending);
-      return { status: 'pending' as const, enabled: true };
+      const { id } = idParams.parse(request.params);
+      const cancelled = await options.store.cancel(id, secretOf(request.headers.authorization));
+      await revokeQuietly(cancelled.spaceId, cancelled.inviteId);
+      return { cancelled: true };
     },
   );
   const spaceParams = z.object({ spaceId: socialId });
-  const decisionParams = z.object({ spaceId: socialId, userId: socialId });
+  const decisionParams = z.object({ spaceId: socialId, id: z.string().regex(SIGNUP_REQUEST_ID) });
   server.get(
     '/v1/spaces/:spaceId/signup-requests',
     { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
@@ -430,47 +441,59 @@ export function registerSignupRequests(server: FastifyInstance, options: SignupR
     },
   );
   server.post(
-    '/v1/spaces/:spaceId/signup-requests/:userId/approve',
+    '/v1/spaces/:spaceId/signup-requests/:id/approve',
     { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
     async (request) => {
-      const { spaceId, userId } = decisionParams.parse(request.params);
+      const { spaceId, id } = decisionParams.parse(request.params);
       const admin = await options.requireSpaceAdmin(request.headers.authorization, spaceId);
       if (!enabled() || options.spaceId !== spaceId)
         throw new StoatError(404, 'SIGNUP_NOT_ENABLED');
-      await options.store.find(spaceId, userId);
-      await serialized(approvals, spaceId, async () => {
-        const known = await options.store.communityInvite(spaceId);
-        const usable =
-          known &&
-          (await admin.client.inspectUpstreamInvite(known).then(
-            (invite) => invite.space?.id === spaceId,
-            (error) => {
-              if (definiteRefusal(error)) return false;
-              throw error;
-            },
-          ));
-        if (usable) return;
-        const space = (await admin.client.getServer(spaceId)) as { channels?: unknown };
-        const channelId = Array.isArray(space.channels)
-          ? space.channels.find((id): id is string => typeof id === 'string')
-          : undefined;
-        if (!channelId) throw new StoatError(409, 'SIGNUP_CHANNEL_REQUIRED');
-        const created = await admin.client.createUpstreamInvite(channelId);
-        await options.store.setCommunityInvite(spaceId, created.code);
-      });
-      await options.store.decide(spaceId, userId, 'approved', admin.userId);
+      await options.store.find(spaceId, id);
+      // Same shape as an app invitation link, limited to one use; it appears under Davetler.
+      const space = (await admin.client.getServer(spaceId)) as { channels?: unknown };
+      const channelId = Array.isArray(space.channels)
+        ? space.channels.find((value): value is string => typeof value === 'string')
+        : undefined;
+      if (!channelId) throw new StoatError(409, 'SIGNUP_CHANNEL_REQUIRED');
+      const upstream = await admin.client.createUpstreamInvite(channelId);
+      let issued;
+      try {
+        issued = await options.registration.issue({
+          communityInviteCode: upstream.code,
+          spaceId,
+          createdBy: admin.userId,
+          source: 'admin',
+          upstreamOwned: true,
+          maxUses: 1,
+          seconds: SIGNUP_INVITE_SECONDS,
+        });
+      } catch (error) {
+        await admin.client.deleteUpstreamInvite(upstream.code).catch(() => {});
+        throw error;
+      }
+      let approved;
+      try {
+        approved = await options.store.approve(spaceId, id, admin.userId, issued);
+      } catch (error) {
+        await revokeQuietly(spaceId, issued.id, admin.client);
+        throw error;
+      }
+      // Approving again replaces a link the requester has not fetched yet.
+      if (approved.replaced && approved.replaced !== issued.id)
+        await revokeQuietly(spaceId, approved.replaced, admin.client);
       return { state: 'approved' as const };
     },
   );
   server.post(
-    '/v1/spaces/:spaceId/signup-requests/:userId/reject',
+    '/v1/spaces/:spaceId/signup-requests/:id/reject',
     { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
     async (request) => {
-      const { spaceId, userId } = decisionParams.parse(request.params);
+      const { spaceId, id } = decisionParams.parse(request.params);
       const admin = await options.requireSpaceAdmin(request.headers.authorization, spaceId);
       if (!enabled() || options.spaceId !== spaceId)
         throw new StoatError(404, 'SIGNUP_NOT_ENABLED');
-      await options.store.decide(spaceId, userId, 'rejected', admin.userId);
+      const rejected = await options.store.reject(spaceId, id, admin.userId);
+      await revokeQuietly(spaceId, rejected.inviteId, admin.client);
       return { state: 'rejected' as const };
     },
   );

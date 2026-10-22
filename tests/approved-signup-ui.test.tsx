@@ -2,22 +2,36 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import type { SocialSignupRequests, SocialSignupState } from '@rooms/social';
+import type { SocialPendingSignup, SocialSignupRequests } from '@rooms/social';
 import { ConnectionPane } from '../apps/desktop/src/ConnectionPane';
-import { SignupPendingScreen, useSignupGate } from '../apps/desktop/src/SignupPending';
+import { SignupPendingScreen } from '../apps/desktop/src/SignupPending';
 import { CommunitySignupRequestsTab } from '../apps/desktop/src/CommunitySignupRequestsTab';
+import { signupScreenVisible, useSignup } from '../apps/desktop/src/signup-state';
 import { useCommunity } from '../apps/desktop/src/community';
 import { useRooms } from '../apps/desktop/src/store';
 
 const user = { id: 'NEWUSER', username: 'friend', displayName: 'Friend', avatar: null };
-const state = (status: SocialSignupState['status'], enabled = true): SocialSignupState => ({
-  status,
-  enabled,
+const pending = (extra: Partial<SocialPendingSignup> = {}): SocialPendingSignup => ({
+  serverUrl: 'https://friends.example',
+  email: 'friend@example.test',
+  username: 'friend',
   createdAt: '2026-10-20T10:00:00.000Z',
-  space: null,
+  status: 'pending',
+  ready: false,
+  passwordKnown: true,
+  error: null,
+  ...extra,
 });
+const session = {
+  instanceUrl: 'https://friends.example',
+  user,
+  status: 'connected',
+  remembered: true,
+  sessionEpoch: 1,
+};
 beforeEach(() => {
   useRooms.getState().setPreference('serverUrl', '');
+  useSignup.setState({ pending: null, hidden: false, checking: false, error: '' });
 });
 afterEach(() => {
   cleanup();
@@ -25,6 +39,25 @@ afterEach(() => {
   delete (window as any).rooms;
   useCommunity.setState({ user: null, spaces: [], busy: false, error: null, serverUrl: '' });
 });
+/** Social bridge stub with the calls the sign-up screens and a fresh session use. */
+const bridge = (extra: Record<string, unknown> = {}) => {
+  const social = {
+    signupAvailable: vi.fn(async () => true),
+    requestSignup: vi.fn(async () => pending()),
+    pendingSignup: vi.fn(async () => useSignup.getState().pending),
+    checkSignup: vi.fn(async () => ({ pending: pending(), session: null })),
+    completeSignup: vi.fn(async () => session),
+    cancelSignup: vi.fn(async () => {}),
+    session: vi.fn(async () => session),
+    spaces: vi.fn(async () => []),
+    dms: vi.fn(async () => []),
+    readStates: vi.fn(async () => []),
+    channels: vi.fn(async () => []),
+    ...extra,
+  };
+  (window as any).rooms = { social };
+  return social;
+};
 
 describe('Kayıt ol with approval instead of an invitation link', () => {
   const fill = () => {
@@ -39,14 +72,10 @@ describe('Kayıt ol with approval instead of an invitation link', () => {
     fireEvent.change(screen.getByLabelText('Şifre'), { target: { value: 'unique-test-password' } });
   };
 
-  it('asks the server, then creates the account and signs in to wait for approval', async () => {
-    const signupAvailable = vi.fn(async () => true);
-    (window as any).rooms = { social: { signupAvailable } };
+  it('sends a request that creates no account and no session', async () => {
+    const social = bridge();
     const done = vi.fn();
-    const requestSignup = vi.fn(async () => {
-      useCommunity.setState({ user, busy: false });
-    });
-    useCommunity.setState({ user: null, busy: false, error: null, requestSignup });
+    useCommunity.setState({ user: null, busy: false, error: null });
     render(
       <MemoryRouter>
         <ConnectionPane referenceMode="register" onAuthenticated={done} />
@@ -55,24 +84,25 @@ describe('Kayıt ol with approval instead of an invitation link', () => {
     // The invitation-link path stays the default.
     expect(screen.getByLabelText('Davet bağlantısı')).toBeTruthy();
     fill();
-    expect(screen.queryByLabelText('Davet bağlantısı')).toBeNull();
-    await waitFor(() => expect(signupAvailable).toHaveBeenCalledWith('https://friends.example'));
-    await screen.findByText(/bir yönetici isteğini onaylayınca katılırsın/);
-    fireEvent.click(screen.getByRole('button', { name: /Hesap oluştur ve onay iste/ }));
-    await waitFor(() => expect(done).toHaveBeenCalledTimes(1));
-    expect(requestSignup).toHaveBeenCalledWith({
+    await waitFor(() =>
+      expect(social.signupAvailable).toHaveBeenCalledWith('https://friends.example'),
+    );
+    await screen.findByText(/Hesabın, bir yönetici onaylayınca oluşur/);
+    fireEvent.click(screen.getByRole('button', { name: /Kayıt isteği gönder/ }));
+    await waitFor(() => expect(useSignup.getState().pending).not.toBeNull());
+    expect(social.requestSignup).toHaveBeenCalledWith({
       serverUrl: 'https://friends.example',
       email: 'friend@example.test',
       password: 'unique-test-password',
       username: 'friend',
     });
-    expect(useRooms.getState().preferences.serverUrl).toBe('https://friends.example');
+    expect(useCommunity.getState().user).toBeNull();
+    expect(done).not.toHaveBeenCalled();
   });
 
   it('explains a server without approved sign-up and keeps the button off', async () => {
-    (window as any).rooms = { social: { signupAvailable: vi.fn(async () => false) } };
-    const requestSignup = vi.fn();
-    useCommunity.setState({ user: null, busy: false, error: null, requestSignup });
+    const social = bridge({ signupAvailable: vi.fn(async () => false) });
+    useCommunity.setState({ user: null, busy: false, error: null });
     render(
       <MemoryRouter>
         <ConnectionPane referenceMode="register" />
@@ -80,74 +110,75 @@ describe('Kayıt ol with approval instead of an invitation link', () => {
     );
     fill();
     await screen.findByText(/Bu sunucu davetsiz kaydı açmamış/);
-    const submit = screen.getByRole('button', { name: /Hesap oluştur ve onay iste/ });
+    const submit = screen.getByRole('button', { name: /Kayıt isteği gönder/ });
     expect((submit as HTMLButtonElement).disabled).toBe(true);
-    expect(requestSignup).not.toHaveBeenCalled();
+    expect(social.requestSignup).not.toHaveBeenCalled();
   });
 });
 
-function Gate() {
-  const gate = useSignupGate();
-  return gate.blocking ? <SignupPendingScreen gate={gate} /> : <p>Uygulama</p>;
-}
-const bridge = (status: () => SocialSignupState, spaces: unknown[] = []) => {
-  const social = {
-    signupStatus: vi.fn(async () => status()),
-    reapplySignup: vi.fn(async () => {}),
-    spaces: vi.fn(async () => spaces),
-    dms: vi.fn(async () => []),
-    readStates: vi.fn(async () => []),
-    channels: vi.fn(async () => []),
-  };
-  (window as any).rooms = { social };
-  return social;
-};
-
 describe('waiting for approval', () => {
-  it('shows the waiting screen with sign out, and opens the app once joined', async () => {
+  it('never shows for a signed-in account, even one without communities', () => {
+    const state = { ...useSignup.getState(), pending: pending() };
+    expect(signupScreenVisible(state, true)).toBe(false);
+    expect(signupScreenVisible(state, false)).toBe(true);
+    expect(signupScreenVisible({ ...state, hidden: true }, false)).toBe(false);
+    expect(signupScreenVisible({ ...state, pending: null }, false)).toBe(false);
+  });
+
+  it.each([
+    pending(),
+    pending({ status: 'approved', ready: true, passwordKnown: false }),
+    pending({ status: 'expired' }),
+    pending({ status: 'issued' }),
+  ])('can always be left: %o', async (value) => {
+    bridge({ checkSignup: vi.fn(async () => ({ pending: value, session: null })) });
+    useSignup.setState({ pending: value });
+    render(<SignupPendingScreen />);
+    fireEvent.click(await screen.findByRole('button', { name: /Giriş ekranına dön/ }));
+    expect(useSignup.getState().hidden).toBe(true);
+  });
+
+  it('polls and opens the new session once the approved account is created', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    let current = state('pending');
-    const social = bridge(() => current);
-    useCommunity.setState({ user, serverUrl: 'https://friends.example', spaces: [] });
-    render(<Gate />);
+    const social = bridge();
+    useSignup.setState({ pending: pending() });
+    render(<SignupPendingScreen />);
     await screen.findByRole('heading', { name: 'Onay bekliyor' });
-    expect(screen.getByRole('button', { name: /Çıkış yap/ })).toBeTruthy();
-    current = { ...state('joined'), space: { id: 'SPACE', name: 'Tayfa' } };
-    social.spaces.mockResolvedValue([{ id: 'SPACE', name: 'Tayfa', icon: null }]);
+    social.checkSignup.mockResolvedValue({ pending: null, session } as never);
     await act(async () => {
       await vi.advanceTimersByTimeAsync(30000);
     });
-    await screen.findByText('Uygulama');
+    await waitFor(() => expect(useCommunity.getState().user?.id).toBe('NEWUSER'));
+    expect(useSignup.getState().pending).toBeNull();
   });
 
-  it('tells a rejected person plainly', async () => {
-    bridge(() => state('rejected'));
-    useCommunity.setState({ user, serverUrl: 'https://friends.example', spaces: [] });
-    render(<Gate />);
-    await screen.findByRole('heading', { name: 'Kayıt isteğin reddedildi' });
-    expect(screen.queryByRole('button', { name: /Durumu yenile/ })).toBeNull();
-  });
-
-  it('lets an expired request be sent again', async () => {
-    let current = state('expired');
-    const social = bridge(() => current);
-    social.reapplySignup.mockImplementation(async () => {
-      current = state('pending');
+  it('asks for the password after a restart and creates the account with it', async () => {
+    const value = pending({ status: 'approved', ready: true, passwordKnown: false });
+    const social = bridge({ checkSignup: vi.fn(async () => ({ pending: value, session: null })) });
+    useSignup.setState({ pending: value });
+    render(<SignupPendingScreen />);
+    fireEvent.change(await screen.findByLabelText('Şifre'), {
+      target: { value: 'unique-test-password' },
     });
-    useCommunity.setState({ user, serverUrl: 'https://friends.example', spaces: [] });
-    render(<Gate />);
-    fireEvent.click(await screen.findByRole('button', { name: /Yeniden istek gönder/ }));
-    await screen.findByRole('heading', { name: 'Onay bekliyor' });
-    expect(social.reapplySignup).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Hesabı oluştur ve katıl' }));
+    await waitFor(() =>
+      expect(social.completeSignup).toHaveBeenCalledWith({
+        email: 'friend@example.test',
+        password: 'unique-test-password',
+      }),
+    );
+    await waitFor(() => expect(useCommunity.getState().user?.id).toBe('NEWUSER'));
   });
 
-  it('never covers the app for an account that belongs to a community', async () => {
-    const social = bridge(() => state('pending'), [{ id: 'SPACE', name: 'Tayfa', icon: null }]);
-    useCommunity.setState({ user, serverUrl: 'https://friends.example', spaces: [] });
-    render(<Gate />);
-    await waitFor(() => expect(social.spaces).toHaveBeenCalled());
-    expect(screen.getByText('Uygulama')).toBeTruthy();
-    expect(screen.queryByRole('heading', { name: 'Onay bekliyor' })).toBeNull();
+  it('tells a rejected person plainly and forgets the request on Tamam', async () => {
+    const value = pending({ status: 'rejected' });
+    const social = bridge({ checkSignup: vi.fn(async () => ({ pending: value, session: null })) });
+    useSignup.setState({ pending: value });
+    render(<SignupPendingScreen />);
+    await screen.findByRole('heading', { name: 'Kayıt isteğin reddedildi' });
+    fireEvent.click(screen.getByRole('button', { name: /Tamam/ }));
+    await waitFor(() => expect(social.cancelSignup).toHaveBeenCalled());
+    expect(useSignup.getState().pending).toBeNull();
   });
 });
 
@@ -161,9 +192,14 @@ describe('Kayıt istekleri in community management', () => {
     let value: SocialSignupRequests = {
       enabled: true,
       requests: [
-        { userId: 'U1', username: 'ayse', createdAt: '2026-10-20T10:00:00.000Z', state: 'pending' },
         {
-          userId: 'U2',
+          id: 'a'.repeat(32),
+          username: 'ayse',
+          createdAt: '2026-10-20T10:00:00.000Z',
+          state: 'pending',
+        },
+        {
+          id: 'b'.repeat(32),
           username: 'mehmet',
           createdAt: '2026-10-20T11:00:00.000Z',
           state: 'pending',
@@ -172,8 +208,8 @@ describe('Kayıt istekleri in community management', () => {
     };
     const tabBridge = {
       signupRequests: vi.fn(async () => value),
-      decideSignupRequest: vi.fn(async (_space: string, userId: string) => {
-        value = { ...value, requests: value.requests.filter((item) => item.userId !== userId) };
+      decideSignupRequest: vi.fn(async (_space: string, id: string) => {
+        value = { ...value, requests: value.requests.filter((item) => item.id !== id) };
       }),
     };
     render(
@@ -182,14 +218,18 @@ describe('Kayıt istekleri in community management', () => {
     await screen.findByText('ayse');
     fireEvent.click(screen.getAllByRole('button', { name: /Onayla/ })[0]!);
     await waitFor(() =>
-      expect(tabBridge.decideSignupRequest).toHaveBeenCalledWith('SPACE', 'U1', 'approve'),
+      expect(tabBridge.decideSignupRequest).toHaveBeenCalledWith(
+        'SPACE',
+        'a'.repeat(32),
+        'approve',
+      ),
     );
     await waitFor(() => expect(screen.queryByText('ayse')).toBeNull());
     fireEvent.click(screen.getByRole('button', { name: /Reddet/ }));
     expect(tabBridge.decideSignupRequest).toHaveBeenCalledTimes(1);
     fireEvent.click(await screen.findByRole('button', { name: 'İsteği reddet' }));
     await waitFor(() =>
-      expect(tabBridge.decideSignupRequest).toHaveBeenCalledWith('SPACE', 'U2', 'reject'),
+      expect(tabBridge.decideSignupRequest).toHaveBeenCalledWith('SPACE', 'b'.repeat(32), 'reject'),
     );
     await screen.findByText('Bekleyen kayıt isteği yok.');
   });

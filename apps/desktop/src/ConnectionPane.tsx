@@ -14,6 +14,7 @@ import {
 } from '@rooms/social';
 import { SERVER_UNREACHABLE_MESSAGE, useCommunity } from './community';
 import { useRooms } from './store';
+import { useSignup } from './signup-state';
 import './onboarding.css';
 const normalizedServer = (value: string) => value.trim().replace(/\/+$/, '');
 const serverHost = (value: string) => {
@@ -80,6 +81,8 @@ export function ConnectionPane({
   const linkInvalid = !!link.trim() && !pasted;
   const signupInvite = fromLink ?? pasted;
   const approval = registration && !fromLink && signupKind === 'approval';
+  const pendingSignup = useSignup((state) => state.pending);
+  const showPendingSignup = useSignup((state) => state.show);
   const approvalServer = normalizedServer(server);
   const approvalUrlValid = /^https?:\/\/[^/\s]+/i.test(approvalServer);
   useEffect(() => {
@@ -146,14 +149,13 @@ export function ConnectionPane({
     setWorking(true);
     try {
       if (approval) {
-        await c.requestSignup({
+        // No account yet: the request waits for an admin; the app shows the waiting screen.
+        await useSignup.getState().request({
           serverUrl: approvalServer,
           email: email.trim(),
           password,
           username: username.trim(),
         });
-        if (!useCommunity.getState().user)
-          throw new Error('Sunucu bir hesap oturumu döndürmedi. Yeniden giriş yap.');
         useRooms.getState().setPreference('serverUrl', approvalServer);
       } else if (registration) {
         if (!signupInvite) throw new Error(NOT_AN_INVITE);
@@ -287,6 +289,16 @@ export function ConnectionPane({
                     </div>
                   </>
                 ))}
+              {approval && pendingSignup && (
+                <div className="ref-auth-notice">
+                  <span>
+                    {pendingSignup.username} adına gönderilmiş bir kayıt isteğin var.{' '}
+                    <button type="button" className="ref-auth-back" onClick={showPendingSignup}>
+                      İsteği göster
+                    </button>
+                  </span>
+                </div>
+              )}
               {approval && (
                 <>
                   <label className="field-label ref-auth-field-with-help">
@@ -316,7 +328,7 @@ export function ConnectionPane({
                           : approvalOpen === null
                             ? 'Sunucu kontrol ediliyor…'
                             : approvalOpen
-                              ? 'Hesabın hemen oluşur. Topluluğa, bir yönetici isteğini onaylayınca katılırsın.'
+                              ? 'İsteğin yöneticiye gider. Hesabın, bir yönetici onaylayınca oluşur ve topluluğa katılırsın.'
                               : 'Bu sunucu davetsiz kaydı açmamış. Topluluktan bir davet bağlantısı iste.'}
                   </p>
                 </>
@@ -470,7 +482,7 @@ export function ConnectionPane({
                 ) : (
                   <>
                     {approval
-                      ? 'Hesap oluştur ve onay iste'
+                      ? 'Kayıt isteği gönder'
                       : registration
                         ? 'Hesap oluştur ve katıl'
                         : fromLink

@@ -612,10 +612,9 @@ export async function createAccessServer(config: AccessConfig) {
   registerSignupRequests(server, {
     spaceId: config.signupSpaceId,
     store: new SignupRequestStore(config.signupRequestsFile ?? '.local/stoat/signup-requests.json'),
-    accountInvites,
+    registration,
+    provisioning: !!accountInvites,
     limits: config.signupLimits,
-    stoat,
-    tokenOf,
     requireSpaceAdmin,
   });
   server.post('/v1/invites', async (request) => {

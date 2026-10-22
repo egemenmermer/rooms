@@ -33,6 +33,7 @@ import { enumerateCaptureSources, CaptureSourcesError } from './capture-sources'
 import { findBrowserWindow } from './browser-video';
 import { ConversationVault } from './conversation-vault';
 import { PasswordRecoveryBroker } from './password-recovery';
+import { PendingSignupBroker, type SignupRegistration } from './signup-broker';
 import { requestDmCall } from './dm-call-http';
 import {
   dmCallStartSchema,
@@ -165,6 +166,9 @@ export async function setupCommunity(
       .max(32)
       .regex(/^[\p{L}\d_.-]+$/u),
   });
+  const signupCompletion = z
+    .object({ email: z.string().email().max(254).optional(), password: z.string().min(8).max(256) })
+    .strict();
   const recoveryServer = z.string().min(1).max(2048);
   const recoveryInput = z
     .object({ serverUrl: recoveryServer, email: z.string().email().max(254) })
@@ -349,6 +353,10 @@ export async function setupCommunity(
           'rooms:social-register',
           'rooms:social-signup-available',
           'rooms:social-signup-request',
+          'rooms:social-signup-pending',
+          'rooms:social-signup-check',
+          'rooms:social-signup-complete',
+          'rooms:social-signup-cancel',
           'rooms:social-logout',
           'rooms:social-password-recovery-capabilities',
           'rooms:social-password-recovery-request',
@@ -456,29 +464,59 @@ export async function setupCommunity(
   handle('rooms:social-signup-available', (serverUrl) =>
     new StoatClient(recoveryServer.parse(serverUrl)).signupAvailable(),
   );
-  // Approved sign-up: the new session belongs to no community until an admin approves it.
-  handle('rooms:social-signup-request', async (input) => {
+  // Approved sign-up: no account exists until an admin approves. The password stays in this
+  // process's memory; the poll secret and the approved link are kept with safeStorage.
+  const signups = new PendingSignupBroker({
+    path: join(app.getPath('userData'), 'signup-request-v1.bin'),
+    storage: safeStorage,
+    client: (serverUrl) => new StoatClient(serverUrl),
+  });
+  /** Runs the existing invitation registration with the approved single-use link. */
+  const completeSignup = async (registration: SignupRegistration) => {
     recoveryEpoch++;
     passwordReset.clear();
     const request = ++authRequestEpoch;
-    const body = signupRequest.parse(input);
-    const next = new StoatClient(body.serverUrl);
+    const next = new StoatClient(registration.serverUrl);
     try {
-      return await replaceSession(next, await next.requestSignup(body), request);
+      const session = await replaceSession(next, await next.register(registration), request);
+      signups.completed();
+      return session;
     } catch (error) {
       if (client !== next) await next.disconnect().catch(() => {});
+      signups.failed(error instanceof Error ? error.message : 'REGISTRATION_UNCERTAIN');
       throw error;
     }
+  };
+  handle('rooms:social-signup-request', async (input) =>
+    signups.request(signupRequest.parse(input)),
+  );
+  handle('rooms:social-signup-pending', () => signups.snapshot());
+  handle('rooms:social-signup-check', async () => {
+    const { pending, registration } = await signups.check();
+    if (!registration) return { pending, session: null };
+    try {
+      return { pending: null, session: await completeSignup(registration) };
+    } catch {
+      return { pending: signups.snapshot(), session: null };
+    }
   });
-  handle('rooms:social-signup-status', () => requireClient().signupStatus());
-  handle('rooms:social-signup-reapply', () => requireClient().reapplySignup());
+  handle('rooms:social-signup-complete', async (input) => {
+    const body = signupCompletion.parse(input);
+    const registration = signups.registration(body);
+    if (!registration) throw new SocialInputError('Bu istek için onaylı kayıt bağlantısı yok.');
+    return completeSignup(registration);
+  });
+  handle('rooms:social-signup-cancel', () => signups.cancel());
   handle('rooms:social-signup-requests', (spaceId) =>
     requireClient().listSignupRequests(id.parse(spaceId)),
   );
-  handle('rooms:social-signup-decide', (spaceId, userId, decision) =>
+  handle('rooms:social-signup-decide', (spaceId, requestId, decision) =>
     requireClient().decideSignupRequest(
       id.parse(spaceId),
-      id.parse(userId),
+      z
+        .string()
+        .regex(/^[a-f0-9]{32}$/)
+        .parse(requestId),
       z.enum(['approve', 'reject']).parse(decision),
     ),
   );

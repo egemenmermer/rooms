@@ -760,17 +760,13 @@ const errorMessages: Record<string, string> = {
     'Şu anda çok fazla kayıt isteği geliyor. Biraz sonra yeniden dene.',
   'Too many sign-up requests are waiting for approval. Try again later.':
     'Onay bekleyen çok fazla kayıt isteği var. Biraz sonra yeniden dene.',
-  'This account already has a sign-up request.': 'Bu hesabın zaten bir kayıt isteği var.',
-  'This account is already a member of the community.': 'Bu hesap zaten topluluğun üyesi.',
-  'Your request was approved but joining the community failed. Ask an administrator to approve it again.':
-    'İsteğin onaylandı ama topluluğa katılamadın. Bir yöneticiden isteği yeniden onaylamasını iste.',
+  'This email address already has a sign-up request waiting.':
+    'Bu e-posta adresiyle gönderilmiş, bekleyen bir kayıt isteği zaten var.',
   'This sign-up request is no longer open.': 'Bu kayıt isteği artık açık değil. Listeyi yenile.',
   'Approved sign-up is not enabled for this community.':
     'Bu topluluk için davetsiz kayıt açık değil.',
   'Create a channel in this community before approving requests.':
     'İstekleri onaylamadan önce toplulukta bir kanal oluştur.',
-  'An account with this email already exists. Sign in instead.':
-    'Bu e-posta adresiyle bir hesap zaten var. Giriş yap sekmesini kullan.',
   'Verify your email before signing in.': 'Giriş yapmadan önce e-posta adresini doğrula.',
   'This account needs additional authentication. Complete the official Stoat sign-in flow.':
     'Bu hesap ek doğrulama istiyor. Sunucunun web uygulamasında girişini tamamla.',

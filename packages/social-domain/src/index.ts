@@ -66,21 +66,31 @@ export interface SocialInviteLinkSummary {
   state: 'active' | 'full';
 }
 /**
- * Approved sign-up (no invitation link): where this account's request stands. `joined` is
- * returned once, by the check that admitted the person into the community.
+ * Approved sign-up (no invitation link). A request creates no account; on approval the requester
+ * receives a single-use registration link once (`inviteCode`) and signs up with it.
  */
-export type SocialSignupStatus =
-  'none' | 'pending' | 'approved' | 'joined' | 'rejected' | 'expired';
-export interface SocialSignupState {
-  status: SocialSignupStatus;
-  /** The server accepts new requests. */
-  enabled: boolean;
+export interface SocialSignupPoll {
+  status: 'pending' | 'approved' | 'issued' | 'rejected' | 'expired';
+  inviteCode: string | null;
   createdAt: string | null;
-  space: { id: string; name: string } | null;
+  expiresAt: string | null;
 }
-/** Owner/admin view of one open request; email and password are never stored or listed. */
+/** The sign-up this device started and is following; the password is never part of it. */
+export interface SocialPendingSignup {
+  serverUrl: string;
+  email: string;
+  username: string;
+  createdAt: string | null;
+  status: SocialSignupPoll['status'] | 'unknown';
+  /** Approved and the link is held; the account can be created now. */
+  ready: boolean;
+  /** The password typed for this request is still in memory (the app was not restarted). */
+  passwordKnown: boolean;
+  error: string | null;
+}
+/** Owner/admin view of one open request; no email or password is stored or listed. */
 export interface SocialSignupRequest {
-  userId: string;
+  id: string;
   username: string;
   createdAt: string;
   state: 'pending' | 'approved';

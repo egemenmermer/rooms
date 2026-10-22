@@ -36,7 +36,8 @@ import {
 } from './ReferenceOnboarding';
 import { FriendsPanel } from './People';
 import { InviteLanding } from './Invite';
-import { SignupPendingScreen, useSignupGate } from './SignupPending';
+import { SignupPendingScreen } from './SignupPending';
+import { signupScreenVisible, useSignup } from './signup-state';
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -129,7 +130,21 @@ export default function App() {
   }, [location.pathname, location.search]);
   const { preferences: p, setPreference } = useRooms();
   const community = useCommunity();
-  const signupGate = useSignupGate();
+  const signup = useSignup();
+  // Only this device's own request, and only while signed out: never blocks an account.
+  const showSignup = signupScreenVisible(signup, !!community.user);
+  useEffect(() => {
+    void useSignup.getState().load();
+  }, []);
+  const followedSignup = useRef(false);
+  useEffect(() => {
+    // The approved request just became an account: continue with the new-account steps.
+    if (showSignup) followedSignup.current = true;
+    else if (followedSignup.current && community.user) {
+      followedSignup.current = false;
+      navigate('/setup/profile', { replace: true });
+    } else if (!signup.pending) followedSignup.current = false;
+  }, [showSignup, community.user, signup.pending, navigate]);
   const communityAdmin = useModerationRights(community.activeSpaceId).communityAdmin;
   const realtime = useRealtime();
   useEffect(() => {
@@ -567,6 +582,21 @@ export default function App() {
         <StartupSplash />
       </div>
     );
+  // Approved sign-up this device started; dismissible, and gone once signed in.
+  if (showSignup)
+    return (
+      <div className="app onboarding-mode">
+        <div className="window-chrome">
+          <span className="window-wordmark">
+            <img src="./reference-brand/brand/logo-symbol-white.svg" alt="" />
+            Tayfa
+          </span>
+        </div>
+        <ReferenceAuthFrame mode="register">
+          <SignupPendingScreen />
+        </ReferenceAuthFrame>
+      </div>
+    );
   if (setupMode === 'welcome' || (setupMode === 'invite' && !community.user))
     return (
       <Navigate
@@ -613,32 +643,6 @@ export default function App() {
           <InviteLanding invite={nativeInvite} onClose={closeInvite} notify={notify} />
         )}
         <FriendRequiredDialog notify={notify} />
-        {toast && (
-          <div role="status" className="toast">
-            {toast}
-          </div>
-        )}
-      </div>
-    );
-  // Approved sign-up: an account that belongs to no community waits here for an admin.
-  if (signupGate.blocking)
-    return (
-      <div className="app onboarding-mode">
-        <div className="window-chrome">
-          <span className="window-wordmark">
-            <img src="./reference-brand/brand/logo-symbol-white.svg" alt="" />
-            Tayfa
-          </span>
-        </div>
-        <ReferenceAuthFrame mode="register">
-          <SignupPendingScreen
-            gate={signupGate}
-            onSignedOut={() => navigate('/setup/signin', { replace: true })}
-          />
-        </ReferenceAuthFrame>
-        {nativeInvite && community.user && (
-          <InviteLanding invite={nativeInvite} onClose={closeInvite} notify={notify} />
-        )}
         {toast && (
           <div role="status" className="toast">
             {toast}

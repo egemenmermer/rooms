@@ -12,7 +12,7 @@ export interface CommunitySignupRequestsBridge {
   signupRequests(spaceId: string): Promise<SocialSignupRequests>;
   decideSignupRequest(
     spaceId: string,
-    userId: string,
+    requestId: string,
     decision: 'approve' | 'reject',
   ): Promise<void>;
 }
@@ -67,10 +67,10 @@ export function CommunitySignupRequestsTab({
   }, [load]);
   const decide = async (item: SocialSignupRequest, decision: 'approve' | 'reject') => {
     if (deciding || !bridge) return;
-    setDeciding(item.userId);
+    setDeciding(item.id);
     setError('');
     try {
-      await bridge.decideSignupRequest(spaceId, item.userId, decision);
+      await bridge.decideSignupRequest(spaceId, item.id, decision);
       setConfirm(null);
       await load();
     } catch (failure) {
@@ -109,8 +109,9 @@ export function CommunitySignupRequestsTab({
         </button>
       </div>
       <p className="rcm-invites-note">
-        Davet bağlantısı olmadan kayıt olanlar burada bekler. Onayladığın kişi uygulamayı açınca
-        topluluğa katılır; reddettiğin kişiye bu söylenir.
+        Davet bağlantısı olmadan kayıt isteği gönderenler burada bekler; henüz hesapları yok.
+        Onayladığın kişiye tek kullanımlık bir kayıt bağlantısı verilir (Davetler listesinde
+        görünür); hesabı o zaman oluşur ve topluluğa katılır. Reddettiğin kişiye bu söylenir.
       </p>
       {error && !confirm && (
         <p className="rcm-invites-error" role="alert">
@@ -135,7 +136,7 @@ export function CommunitySignupRequestsTab({
       ) : value.requests.length ? (
         <ul className="rcm-invite-list" aria-label="Bekleyen kayıt istekleri">
           {value.requests.map((item) => (
-            <li key={item.userId}>
+            <li key={item.id}>
               <div>
                 <strong>{item.username}</strong>
                 <span
@@ -145,7 +146,7 @@ export function CommunitySignupRequestsTab({
                 </span>
                 <small>
                   İstek: {formatDate(item.createdAt)}
-                  {item.state === 'approved' && ' · Uygulamayı açınca katılacak'}
+                  {item.state === 'approved' && ' · Uygulamayı açınca hesabı oluşacak'}
                 </small>
               </div>
               <div className="rcm-signup-actions">
@@ -180,7 +181,7 @@ export function CommunitySignupRequestsTab({
           }}
         >
           <p className="modal-description">
-            Bu kişi topluluğa katılamaz ve isteğinin reddedildiğini görür. Hesabı silinmez.
+            Bu kişi için hesap oluşturulmaz ve isteğinin reddedildiğini görür.
           </p>
           <div className="rcm-invite-actions">
             <button

@@ -28,7 +28,8 @@ function stubFetch(routes: Record<string, () => Response>) {
   );
   return calls;
 }
-const me = () => json({ _id: 'NEWUSER', username: 'friend', display_name: 'Friend' });
+const id = 'a'.repeat(32);
+const secret = 'S'.repeat(43);
 
 describe('approved sign-up in the Stoat adapter', () => {
   it('reports whether the server accepts requests, treating old brokers as closed', async () => {
@@ -38,24 +39,20 @@ describe('approved sign-up in the Stoat adapter', () => {
     expect(await new StoatClient('https://friends.example').signupAvailable()).toBe(false);
   });
 
-  it('sends only the form to the broker and keeps the returned session', async () => {
+  it('sends only the email and name, and receives no session', async () => {
     const calls = stubFetch({
       '/rooms-access/v1/auth/signup-requests': () =>
-        json({ token: 'session-token', status: 'pending' }),
-      '/users/@me': me,
+        json({ requestId: id, pollSecret: secret, status: 'pending' }),
     });
     const client = new StoatClient('https://friends.example');
-    const user = await client.requestSignup({
-      email: 'friend@example.com',
-      password: 'correct horse battery',
-      username: 'friend',
-    });
-    expect(user.id).toBe('NEWUSER');
-    expect(client.getToken()).toBe('session-token');
+    expect(await client.requestSignup({ email: 'friend@example.com', username: 'friend' })).toEqual(
+      { requestId: id, pollSecret: secret },
+    );
+    expect(client.getToken()).toBeFalsy();
     expect(calls[0]).toMatchObject({
-      url: 'https://friends.example/rooms-access/v1/auth/signup-requests',
       method: 'POST',
-      body: { email: 'friend@example.com', password: 'correct horse battery', username: 'friend' },
+      auth: null,
+      body: { email: 'friend@example.com', username: 'friend' },
     });
   });
 
@@ -64,32 +61,52 @@ describe('approved sign-up in the Stoat adapter', () => {
       '/rooms-access/v1/auth/signup-requests': () => json({ error: 'SIGNUP_QUEUE_FULL' }, 503),
     });
     const failure = await new StoatClient('https://friends.example')
-      .requestSignup({ email: 'a@example.com', password: 'longenough', username: 'ab' })
+      .requestSignup({ email: 'a@example.com', username: 'ab' })
       .catch((error) => error);
     expect(failure).toBeInstanceOf(StoatError);
     expect(failure.code).toBe('SIGNUP_QUEUE_FULL');
     expect(failure.message).toMatch(/waiting for approval/);
   });
 
-  it('reads the request status with the session and refreshes after joining', async () => {
+  it('polls with the secret and reads the one-time code on approval', async () => {
+    const code = 'f'.repeat(64);
     const calls = stubFetch({
-      '/rooms-access/v1/auth/signup-requests/me': () =>
-        json({ status: 'joined', enabled: true, space: { id: 'SPACE', name: 'Tayfa' } }),
+      [`/rooms-access/v1/auth/signup-requests/${id}`]: () =>
+        json({ status: 'approved', inviteCode: code, createdAt: '2026-10-20T10:00:00.000Z' }),
     });
-    const client = new StoatClient('https://friends.example', 'session-token');
-    const events: string[] = [];
-    client.subscribe((event) => events.push(event.type));
-    expect(await client.signupStatus()).toEqual({
-      status: 'joined',
-      enabled: true,
-      createdAt: null,
-      space: { id: 'SPACE', name: 'Tayfa' },
+    const client = new StoatClient('https://friends.example');
+    expect(await client.signupStatus(id, secret)).toEqual({
+      status: 'approved',
+      inviteCode: code,
+      createdAt: '2026-10-20T10:00:00.000Z',
+      expiresAt: null,
     });
-    expect(calls[0]!.auth).toBe('Bearer session-token');
-    expect(events).toContain('SOCIAL_REFRESH');
-    // A broker without approved sign-up answers 404: nothing to wait for.
-    stubFetch({});
-    expect((await client.signupStatus()).status).toBe('none');
+    expect(calls[0]!.auth).toBe(`Bearer ${secret}`);
+    stubFetch({
+      [`/rooms-access/v1/auth/signup-requests/${id}`]: () => json({ status: 'approved' }),
+    });
+    await expect(client.signupStatus(id, secret)).rejects.toMatchObject({
+      code: 'INVALID_SIGNUP_RESPONSE',
+    });
+  });
+
+  it('says plainly that an email already has an account when registration hits it', async () => {
+    // Upstream 500 OperationFailed reaches the client as the broker's 409 OperationFailed.
+    stubFetch({
+      '/rooms-access/v1/auth/register': () => json({ error: 'OperationFailed' }, 409),
+    });
+    const failure = await new StoatClient('https://friends.example')
+      .register({
+        email: 'taken@example.com',
+        password: 'correct horse battery',
+        username: 'friend',
+        inviteCode: 'f'.repeat(64),
+      })
+      .catch((error) => error);
+    expect(failure.status).toBe(409);
+    expect(failure.message).toBe(
+      'This email address already has an account. Sign in with it, or use a different email address.',
+    );
   });
 
   it('lists and decides requests for admins and rejects malformed lists', async () => {
@@ -97,29 +114,23 @@ describe('approved sign-up in the Stoat adapter', () => {
       '/rooms-access/v1/spaces/SPACE/signup-requests': () =>
         json({
           enabled: true,
-          requests: [
-            { userId: 'U1', username: 'friend', createdAt: '2026-10-20T10:00:00.000Z', state: 'x' },
-          ],
+          requests: [{ id, username: 'friend', createdAt: '2026-10-20T10:00:00.000Z', state: 'x' }],
         }),
-      '/rooms-access/v1/spaces/SPACE/signup-requests/U1/approve': () => json({ state: 'approved' }),
+      [`/rooms-access/v1/spaces/SPACE/signup-requests/${id}/approve`]: () =>
+        json({ state: 'approved' }),
     });
     const client = new StoatClient('https://friends.example', 'admin-token');
     expect(await client.listSignupRequests('SPACE')).toEqual({
       enabled: true,
       requests: [
-        {
-          userId: 'U1',
-          username: 'friend',
-          createdAt: '2026-10-20T10:00:00.000Z',
-          state: 'pending',
-        },
+        { id, username: 'friend', createdAt: '2026-10-20T10:00:00.000Z', state: 'pending' },
       ],
     });
-    await client.decideSignupRequest('SPACE', 'U1', 'approve');
+    await client.decideSignupRequest('SPACE', id, 'approve');
     expect(calls[1]).toMatchObject({ method: 'POST', auth: 'Bearer admin-token' });
     stubFetch({
       '/rooms-access/v1/spaces/SPACE/signup-requests': () =>
-        json({ enabled: true, requests: [{ userId: '../x', username: 1 }] }),
+        json({ enabled: true, requests: [{ id: '../x', username: 1 }] }),
     });
     await expect(client.listSignupRequests('SPACE')).rejects.toMatchObject({
       code: 'INVALID_SIGNUP_RESPONSE',

@@ -14,8 +14,8 @@ import {
   type SocialMessage,
   type SocialInvite,
   type SocialInviteLinkSummary,
+  type SocialSignupPoll,
   type SocialSignupRequests,
-  type SocialSignupState,
   type SocialAttachment,
   type SocialFriend,
   type SocialMember,
@@ -89,14 +89,10 @@ const inviteErrors: Record<string, string> = {
   SIGNUP_UNAVAILABLE: 'This server does not accept sign-up requests without an invitation link.',
   SIGNUP_BUSY: 'Many people are signing up right now. Try again later.',
   SIGNUP_QUEUE_FULL: 'Too many sign-up requests are waiting for approval. Try again later.',
-  SIGNUP_ALREADY_REQUESTED: 'This account already has a sign-up request.',
-  SIGNUP_ALREADY_MEMBER: 'This account is already a member of the community.',
-  SIGNUP_JOIN_FAILED:
-    'Your request was approved but joining the community failed. Ask an administrator to approve it again.',
+  SIGNUP_ALREADY_REQUESTED: 'This email address already has a sign-up request waiting.',
   SIGNUP_REQUEST_NOT_FOUND: 'This sign-up request is no longer open.',
   SIGNUP_NOT_ENABLED: 'Approved sign-up is not enabled for this community.',
   SIGNUP_CHANNEL_REQUIRED: 'Create a channel in this community before approving requests.',
-  EmailInUse: 'An account with this email already exists. Sign in instead.',
   INVITE_PERMISSION_REQUIRED: 'You do not have permission to invite people to this community.',
 };
 const ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
@@ -678,18 +674,6 @@ export class StoatClient {
     hooks: { onStage?(stage: 'account-create' | 'account-created'): void } = {},
   ) {
     await this.inspectUpstreamInvite(input.inviteCode);
-    await this.createUpstreamAccount(input, hooks);
-    await this.acceptInvite(input.inviteCode);
-    return this.getCurrentUser();
-  }
-  /**
-   * Broker-only: creates, signs in and onboards an account with a seeded one-time account
-   * invitation. It joins no community; approved sign-up admits the person later.
-   */
-  async createUpstreamAccount(
-    input: { email: string; password: string; username: string; accountInviteCode: string },
-    hooks: { onStage?(stage: 'account-create' | 'account-created'): void } = {},
-  ) {
     // The broker uses these stages to tell a definite rejection from an uncertain account.
     hooks.onStage?.('account-create');
     try {
@@ -710,6 +694,7 @@ export class StoatClient {
     const onboarding = await this.request<{ onboarding: boolean }>('/onboard/hello');
     if (onboarding.onboarding)
       await this.request('/onboard/complete', 'POST', { username: input.username });
+    await this.acceptInvite(input.inviteCode);
     return this.getCurrentUser();
   }
   async getCurrentUser() {
@@ -2110,86 +2095,96 @@ export class StoatClient {
       throw new StoatError(response.status, String(data.error ?? 'INVITE_UNAVAILABLE'));
     return data as T;
   }
-  /** Whether this server accepts sign-up requests without an invitation link. */
-  async signupAvailable() {
+  /** Unauthenticated call to the access service for approved sign-up. */
+  private async signupFetch(
+    path: string,
+    init: { method?: string; body?: unknown; secret?: string } = {},
+  ): Promise<Raw> {
     let response: Response;
     try {
-      response = await fetch(`${new URL(this.instanceUrl).origin}/rooms-access/v1/auth/signup`, {
+      response = await fetch(`${new URL(this.instanceUrl).origin}/rooms-access${path}`, {
+        method: init.method ?? 'GET',
+        headers: {
+          ...(init.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+          ...(init.secret ? { Authorization: `Bearer ${init.secret}` } : {}),
+        },
+        body: init.body === undefined ? undefined : JSON.stringify(init.body),
         redirect: 'error',
         signal: AbortSignal.timeout(15000),
       });
     } catch {
       throw new StoatError(503, 'NETWORK_UNAVAILABLE');
     }
-    // Brokers from before approved sign-up do not know the route.
-    if (response.status === 404) return false;
-    const data = (await response.json().catch(() => ({}))) as Raw;
-    if (!response.ok) throw new StoatError(response.status, String(data.error ?? 'REQUEST_FAILED'));
-    return data.enabled === true;
-  }
-  /** Approved sign-up: the broker creates the account; it joins no community until approved. */
-  async requestSignup(input: { email: string; password: string; username: string }) {
-    let response: Response;
-    try {
-      response = await fetch(
-        `${new URL(this.instanceUrl).origin}/rooms-access/v1/auth/signup-requests`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: input.email,
-            password: input.password,
-            username: input.username,
-          }),
-          redirect: 'error',
-          signal: AbortSignal.timeout(60000),
-        },
-      );
-    } catch {
-      throw new StoatError(503, 'REGISTRATION_UNCERTAIN');
-    }
     const data = (await response.json().catch(() => ({}))) as Raw;
     if (!response.ok)
-      throw new StoatError(
-        response.status,
-        response.status === 404 ? 'SIGNUP_UNAVAILABLE' : String(data.error ?? 'REQUEST_FAILED'),
-      );
-    if (typeof data.token !== 'string') throw new StoatError(502, 'INVALID_SESSION_RESPONSE');
-    this.token = data.token;
-    return this.getCurrentUser();
+      throw new StoatError(response.status, String(data.error ?? 'SIGNUP_UNAVAILABLE'));
+    return data;
   }
-  /** Where this account's approved sign-up request stands; joining happens on this call. */
-  async signupStatus(): Promise<SocialSignupState> {
-    let data: Raw;
+  /** Whether this server accepts sign-up requests without an invitation link. */
+  async signupAvailable() {
     try {
-      data = await this.broker<Raw>('/v1/auth/signup-requests/me', { timeoutMs: 20000 });
+      return (await this.signupFetch('/v1/auth/signup')).enabled === true;
     } catch (error) {
-      // Older brokers have no approved sign-up at all.
-      if (error instanceof StoatError && error.status === 404)
-        return { status: 'none', enabled: false, createdAt: null, space: null };
+      // Brokers from before approved sign-up do not know the route.
+      if (error instanceof StoatError && error.status === 404) return false;
       throw error;
     }
-    const status = ['none', 'pending', 'approved', 'joined', 'rejected', 'expired'].includes(
-      data.status,
+  }
+  /**
+   * Approved sign-up: queues a request. No account exists until an admin approves; the
+   * returned poll secret is the only way to follow the request.
+   */
+  async requestSignup(input: { email: string; username: string }) {
+    let data: Raw;
+    try {
+      data = await this.signupFetch('/v1/auth/signup-requests', {
+        method: 'POST',
+        body: { email: input.email, username: input.username },
+      });
+    } catch (error) {
+      if (error instanceof StoatError && error.status === 404)
+        throw new StoatError(501, 'SIGNUP_UNAVAILABLE');
+      throw error;
+    }
+    if (
+      typeof data.requestId !== 'string' ||
+      !/^[a-f0-9]{32}$/.test(data.requestId) ||
+      typeof data.pollSecret !== 'string' ||
+      !/^[A-Za-z0-9_-]{43}$/.test(data.pollSecret)
     )
-      ? (data.status as SocialSignupState['status'])
+      throw new StoatError(502, 'INVALID_SIGNUP_RESPONSE');
+    return { requestId: data.requestId, pollSecret: data.pollSecret };
+  }
+  /** Where a request stands. An approval returns its single-use registration link once. */
+  async signupStatus(requestId: string, pollSecret: string): Promise<SocialSignupPoll> {
+    if (!/^[a-f0-9]{32}$/.test(requestId)) throw new StoatError(400, 'INVALID_ID');
+    const data = await this.signupFetch(`/v1/auth/signup-requests/${requestId}`, {
+      secret: pollSecret,
+    });
+    const status = ['pending', 'approved', 'issued', 'rejected', 'expired'].includes(data.status)
+      ? (data.status as SocialSignupPoll['status'])
       : null;
     if (!status) throw new StoatError(502, 'INVALID_SIGNUP_RESPONSE');
-    const space =
-      data.space && typeof data.space.id === 'string' && SOCIAL_ID_PATTERN.test(data.space.id)
-        ? { id: data.space.id, name: typeof data.space.name === 'string' ? data.space.name : '' }
+    const inviteCode =
+      status === 'approved' &&
+      typeof data.inviteCode === 'string' &&
+      /^[a-f0-9]{64}$/.test(data.inviteCode)
+        ? data.inviteCode
         : null;
-    if (status === 'joined') this.emit('SOCIAL_REFRESH', null);
+    if (status === 'approved' && !inviteCode) throw new StoatError(502, 'INVALID_SIGNUP_RESPONSE');
     return {
       status,
-      enabled: data.enabled === true,
+      inviteCode,
       createdAt: typeof data.createdAt === 'string' ? data.createdAt : null,
-      space,
+      expiresAt: typeof data.expiresAt === 'string' ? data.expiresAt : null,
     };
   }
-  /** Asks again for an account whose request expired or was never written. */
-  async reapplySignup() {
-    await this.broker('/v1/auth/signup-requests/me', { method: 'POST' });
+  async cancelSignup(requestId: string, pollSecret: string) {
+    if (!/^[a-f0-9]{32}$/.test(requestId)) throw new StoatError(400, 'INVALID_ID');
+    await this.signupFetch(`/v1/auth/signup-requests/${requestId}`, {
+      method: 'DELETE',
+      secret: pollSecret,
+    });
   }
   async listSignupRequests(spaceId: string): Promise<SocialSignupRequests> {
     const data = await this.broker<Raw>(`/v1/spaces/${checked(spaceId)}/signup-requests`);
@@ -2199,14 +2194,14 @@ export class StoatClient {
       enabled: data.enabled === true,
       requests: data.requests.map((raw: Raw) => {
         if (
-          typeof raw?.userId !== 'string' ||
-          !SOCIAL_ID_PATTERN.test(raw.userId) ||
+          typeof raw?.id !== 'string' ||
+          !/^[a-f0-9]{32}$/.test(raw.id) ||
           typeof raw.username !== 'string' ||
           typeof raw.createdAt !== 'string'
         )
           throw new StoatError(502, 'INVALID_SIGNUP_RESPONSE');
         return {
-          userId: raw.userId,
+          id: raw.id,
           username: raw.username.slice(0, 32),
           createdAt: raw.createdAt,
           state: raw.state === 'approved' ? ('approved' as const) : ('pending' as const),
@@ -2214,11 +2209,11 @@ export class StoatClient {
       }),
     };
   }
-  async decideSignupRequest(spaceId: string, userId: string, decision: 'approve' | 'reject') {
-    await this.broker(
-      `/v1/spaces/${checked(spaceId)}/signup-requests/${checked(userId)}/${decision}`,
-      { method: 'POST' },
-    );
+  async decideSignupRequest(spaceId: string, requestId: string, decision: 'approve' | 'reject') {
+    if (!/^[a-f0-9]{32}$/.test(requestId)) throw new StoatError(400, 'INVALID_ID');
+    await this.broker(`/v1/spaces/${checked(spaceId)}/signup-requests/${requestId}/${decision}`, {
+      method: 'POST',
+    });
   }
   /** Active invitation links of a space; only its owner may list them. */
   async listInviteLinks(spaceId: string): Promise<SocialInviteLinkSummary[]> {

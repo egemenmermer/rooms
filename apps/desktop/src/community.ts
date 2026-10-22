@@ -14,7 +14,6 @@ import type {
   SocialAttachment,
   SocialReadState,
   SocialSignupRequests,
-  SocialSignupState,
   GatewayEvent,
 } from '@rooms/social';
 
@@ -49,19 +48,10 @@ export interface CommunityState {
     inviteCode: string;
     accountInviteCode?: string;
   }): Promise<void>;
-  /** Approved sign-up: signs in to a new account that waits for an admin's approval. */
-  requestSignup(input: {
-    serverUrl: string;
-    email: string;
-    password: string;
-    username: string;
-  }): Promise<void>;
-  signupStatus(): Promise<SocialSignupState>;
-  reapplySignup(): Promise<void>;
   signupRequests(spaceId: string): Promise<SocialSignupRequests>;
   decideSignupRequest(
     spaceId: string,
-    userId: string,
+    requestId: string,
     decision: 'approve' | 'reject',
   ): Promise<void>;
   logout(): Promise<void>;
@@ -173,7 +163,7 @@ export const MESSAGE_WINDOW = 5000;
 export const SERVER_UNREACHABLE_MESSAGE =
   'Kayıtlı sunucuna şu an ulaşılamıyor. Oturumun duruyor; bağlantı gelince kendiliğinden açılacak.';
 /** Sign-in style session start shared by invitation sign-up and approved sign-up. */
-async function startSession(open: () => Promise<SocialSession>) {
+export async function startSession(open: () => Promise<SocialSession>) {
   const request = ++sessionEpoch;
   nativeSessionEpoch = null;
   clearConversations();
@@ -223,28 +213,15 @@ export const useCommunity = create<CommunityState>((set, get) => ({
     }
   },
   register: (input) => startSession(() => bridge().register(input)),
-  requestSignup: (input) => startSession(() => bridge().requestSignup(input)),
-  signupStatus: async () => {
-    const session = captureSession();
-    const value = await bridge().signupStatus();
-    if (!session.valid()) throw new Error('Oturum değişti. Kayıt durumu gösterilmedi.');
-    if (value.status === 'joined') await get().refresh();
-    return value;
-  },
-  reapplySignup: async () => {
-    const session = captureSession();
-    await bridge().reapplySignup();
-    if (!session.valid()) throw new Error('Oturum değişti. Kayıt isteği doğrulanamadı.');
-  },
   signupRequests: async (spaceId) => {
     const session = captureSession();
     const value = await bridge().signupRequests(spaceId);
     if (!session.valid()) throw new Error('Oturum değişti. Kayıt istekleri gösterilmedi.');
     return value;
   },
-  decideSignupRequest: async (spaceId, userId, decision) => {
+  decideSignupRequest: async (spaceId, requestId, decision) => {
     const session = captureSession();
-    await bridge().decideSignupRequest(spaceId, userId, decision);
+    await bridge().decideSignupRequest(spaceId, requestId, decision);
     if (!session.valid()) throw new Error('Oturum değişti. Karar doğrulanamadı.');
   },
   logout: async () => {
