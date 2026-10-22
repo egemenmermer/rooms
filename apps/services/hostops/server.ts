@@ -14,6 +14,7 @@ import {
 } from '../../../packages/shared-contracts/src/hostops';
 import { HostOpsStore } from './store';
 import { TerminalHub } from './terminals';
+import { ingressLimit, TRUSTED_PROXIES } from '../shared/ingress';
 export interface HostSpec {
   id: string;
   label: string;
@@ -41,7 +42,8 @@ export function createHostOpsServer(config: {
     visibleRooms?(userId: string, host: HostSpec, roomIds: string[]): Promise<string[]>;
   };
 }) {
-  const app = Fastify({ logger: false, bodyLimit: 16384 });
+  const app = Fastify({ logger: false, trustProxy: TRUSTED_PROXIES, bodyLimit: 16384 });
+  ingressLimit(app, { perMinute: 1200, error: 'RATE_LIMITED' });
   void app.register(rateLimit, {
     max: 180,
     timeWindow: '1 minute',

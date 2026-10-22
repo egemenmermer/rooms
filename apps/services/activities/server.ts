@@ -18,6 +18,7 @@ import {
 import type { ActivityRepository, StoredRoom } from './repository';
 import { heartbeatGame } from './games';
 import { StoatError } from '@rooms/stoat';
+import { ingressLimit, TRUSTED_PROXIES } from '../shared/ingress';
 
 export interface ActivityServerOptions {
   repository: ActivityRepository;
@@ -31,7 +32,8 @@ export interface ActivityServerOptions {
 }
 export async function createActivityServer(options: ActivityServerOptions) {
   const operationalError = activityOperationalReporter(options.onOperationalEvent);
-  const app = Fastify({ logger: false, bodyLimit: 65536 });
+  const app = Fastify({ logger: false, trustProxy: TRUSTED_PROXIES, bodyLimit: 65536 });
+  ingressLimit(app, { perMinute: 1200, error: 'RATE_LIMITED' });
   const limits = z
     .object({
       ingressPerMinute: z.number().int().min(1).max(10000),
@@ -39,8 +41,8 @@ export async function createActivityServer(options: ActivityServerOptions) {
     })
     .strict()
     .parse(options.rateLimits ?? { ingressPerMinute: 600, identityPerMinute: 120 });
-  // Keep an anonymous ingress cap even when all clients share the reverse proxy.
-  // Never trust a forwarded identity, spoofable header or unverified bearer as a key.
+  // An anonymous ingress cap per client address (only the reverse proxy's hop is trusted).
+  // Never trust a forwarded identity or an unverified bearer as a key.
   await app.register(rateLimit, { max: limits.ingressPerMinute, timeWindow: '1 minute' });
   const identities = new WeakMap<FastifyRequest, ActivityIdentity>();
   const identityLimit = app.createRateLimit({

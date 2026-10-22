@@ -28,6 +28,7 @@ import { AgentApprovalRequired, AgentUncertainEffect, projectAgentAudit } from '
 import { AgentInterrupted } from './shared-host';
 import type { WorkspaceTerminals } from './workspace-terminals';
 import { registerWorkspaceTerminals } from './workspace-wire';
+import { ingressLimit, TRUSTED_PROXIES } from '../shared/ingress';
 export interface AgentPrincipal {
   userId: string;
   roomIds: string[];
@@ -173,7 +174,8 @@ function artifactPreview(
 export async function createAgentServer(config: AgentConfig) {
   const repo = config.repository;
   const now = config.clock ?? Date.now;
-  const app = Fastify({ logger: false, bodyLimit: 1024 * 1024 });
+  const app = Fastify({ logger: false, trustProxy: TRUSTED_PROXIES, bodyLimit: 1024 * 1024 });
+  ingressLimit(app, { perMinute: 1200, error: 'RATE_LIMITED' });
   await app.register(rateLimit, { max: 60, timeWindow: '1 minute' });
   const jobs = new Map<string, AbortController>();
   const completions = new Map<string, Promise<void>>();
