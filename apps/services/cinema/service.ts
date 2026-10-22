@@ -194,6 +194,8 @@ export type CinemaServiceOptions = {
   maxRelays?: number;
   /** Stremio's API and add-ons; absent, the hall cannot link a Stremio account. */
   stremio?: StremioFetch;
+  /** User agent and network policy for Stremio subtitle downloads. */
+  stremioNetwork?: { userAgent: string; allowPrivateNetwork?: boolean };
   log?: (line: string) => void;
   now?: () => number;
 };
@@ -239,6 +241,8 @@ export class CinemaService {
         configs.update(communityId, (config) => ({ ...config, stremioPicks: picks })),
       saveAccount: (communityId, account) =>
         configs.update(communityId, (config) => ({ ...config, stremio: account })),
+      userAgent: options.stremioNetwork?.userAgent,
+      allowPrivateNetwork: options.stremioNetwork?.allowPrivateNetwork,
       now: options.now,
     });
   }

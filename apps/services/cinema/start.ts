@@ -75,6 +75,7 @@ async function main() {
     image: (url) => importer.image(url),
     subtitles: new SubtitleSearch({ userAgent }),
     stremio: stremioFetch({ userAgent, allowPrivateNetwork }),
+    stremioNetwork: { userAgent, allowPrivateNetwork },
     metadata: new TitleMetadata({ userAgent }),
     rmdb,
     maxRelays: Number(process.env.ROOMS_CINEMA_MAX_RELAYS ?? 1),

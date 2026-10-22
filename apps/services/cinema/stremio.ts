@@ -69,6 +69,8 @@ export type StremioPick = {
 
 export const STREMIO_TYPE = z.enum(['movie', 'series']);
 const MAX_PICKS = 300;
+/** Picks carry debrid-signed links; older ones are dropped instead of kept forever. */
+const PICK_TTL_MS = 30 * 86_400_000;
 const ADDONS_MS = 5 * 60_000;
 const OFFER_MS = 2 * 3600_000;
 const MAX_OFFERS = 4000;
@@ -221,6 +223,9 @@ export class StremioCinema {
       picks(communityId: string): StremioPick[];
       savePicks(communityId: string, picks: StremioPick[]): void;
       saveAccount(communityId: string, account: StremioAccount | null): void;
+      /** Same identity and network policy as the JSON requests (subtitle files). */
+      userAgent?: string;
+      allowPrivateNetwork?: boolean;
       now?: () => number;
     },
   ) {}
@@ -555,7 +560,8 @@ export class StremioCinema {
     );
     const details = await this.details(communityId, type, metaId).catch(() => null);
     const video = details?.videos.find((entry) => entry.id === videoId) ?? null;
-    let skippedTorrents = 0;
+    let skippedTorrents = 0,
+      skippedOther = 0;
     const failedAddons: string[] = [];
     const blockedAddons: string[] = [];
     const answers = await Promise.all(
@@ -584,6 +590,7 @@ export class StremioCinema {
         const url = httpUrl(entry.url);
         if (!url) {
           if (typeof entry.infoHash === 'string') skippedTorrents++;
+          else skippedOther++;
           continue;
         }
         if (seen.has(url)) continue;
@@ -612,6 +619,7 @@ export class StremioCinema {
     return {
       streams,
       skippedTorrents,
+      skippedOther,
       failedAddons,
       blockedAddons,
       assist: blockedAddons.length > 0 && !!viewerId && account.linkedBy === viewerId,
@@ -709,6 +717,7 @@ export class StremioCinema {
       ? { ...existing, at: this.now() }
       : { ...chosen, ref: `x-${randomBytes(16).toString('base64url')}`, at: this.now() };
     const next = [pick, ...picks.filter((other) => other.ref !== pick.ref)]
+      .filter((other) => this.now() - other.at < PICK_TTL_MS)
       .sort((a, b) => b.at - a.at)
       .slice(0, MAX_PICKS);
     this.options.savePicks(communityId, next);
@@ -818,7 +827,9 @@ export class StremioCinema {
     let body: string;
     try {
       const value = await privateFetch(entry.url, {
+        headers: { 'User-Agent': this.options.userAgent ?? 'ROOMS-Cinema/1.0' },
         allowedProtocols: ['https:', 'http:'],
+        allowPrivateNetwork: this.options.allowPrivateNetwork,
         signal: AbortSignal.timeout(20_000),
       });
       if (!value.ok) throw new Error('subtitle');

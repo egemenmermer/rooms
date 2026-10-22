@@ -315,6 +315,8 @@ describe('Stremio in the community cinema', () => {
     expect(streams.status).toBe(200);
     expect(streams.raw).not.toContain('SECRETDEBRIDKEY');
     expect(streams.body.skippedTorrents).toBe(1);
+    // The magnet link is neither a direct link nor a torrent hash: counted as "other".
+    expect(streams.body.skippedOther).toBe(1);
     expect(streams.body.streams).toEqual([
       expect.objectContaining({
         addon: 'Torrentio',
@@ -448,4 +450,36 @@ describe('Stremio in the community cinema', () => {
       size: '2.1 GB',
     });
   });
+});
+
+it('drops picks older than 30 days when a new one is kept', async () => {
+  const { StremioCinema } = await import('../apps/services/cinema/stremio');
+  let now = Date.UTC(2026, 9, 22);
+  let saved: { ref: string; url: string; at: number }[] = [
+    { ref: 'x-old', url: 'https://cdn.example/old.mkv', at: now - 31 * 86_400_000 },
+    { ref: 'x-recent', url: 'https://cdn.example/recent.mkv', at: now - 86_400_000 },
+  ];
+  const cinema = new StremioCinema({
+    fetch: async () => ({}),
+    account: () => ({ authKey: 'k', email: null, linkedBy: 'owner', linkedAt: now }),
+    picks: () => saved as never,
+    savePicks: (_id, picks) => {
+      saved = picks as never;
+    },
+    saveAccount: () => {},
+    now: () => now,
+  });
+  now += 1000;
+  (cinema as unknown as { keep(id: string, pick: unknown): unknown }).keep('community1', {
+    url: 'https://cdn.example/new.mkv',
+    headers: {},
+    title: 'New',
+    type: 'movie',
+    metaId: 'tt1',
+    videoId: 'tt1',
+  });
+  expect(saved.map((pick) => pick.url)).toEqual([
+    'https://cdn.example/new.mkv',
+    'https://cdn.example/recent.mkv',
+  ]);
 });

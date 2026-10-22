@@ -418,6 +418,8 @@ export type StremioStreams = {
   streams: StremioStream[];
   /** Torrent-only streams the server does not play (no debrid link). */
   skippedTorrents: number;
+  /** Other streams the hall cannot play (external pages, YouTube ids, Usenet). */
+  skippedOther?: number;
   failedAddons: string[];
   /** Add-ons Cloudflare refuses the server for (Torrentio blocks data-centre addresses). */
   blockedAddons: string[];

@@ -446,7 +446,9 @@ function StreamList({
         <p className="hall-empty-note">
           {streams.data?.skippedTorrents
             ? `${streams.data.skippedTorrents} torrent bulundu ama sunucu yalnızca doğrudan bağlantıları oynatır. Stremio’daki Torrentio ayarına Real-Debrid gibi bir debrid hesabı ekle.`
-            : 'Bu içerik için eklentilerin bir kaynak bulamadı.'}
+            : streams.data?.skippedOther
+              ? `${streams.data.skippedOther} kaynak bulundu ama hiçbiri salonda oynatılabilen doğrudan bir bağlantı değil (dış sayfa, YouTube veya Usenet).`
+              : 'Bu içerik için eklentilerin bir kaynak bulamadı.'}
         </p>
       ) : (
         <ol>
