@@ -1145,6 +1145,7 @@ export async function setupCommunity(
   handle('rooms:social-typing', (channel, active) =>
     requireClient().typing(id.parse(channel), z.boolean().parse(active)),
   );
+  handle('rooms:social-own-profile', () => requireClient().ownProfile());
   handle('rooms:social-presence', (status) =>
     requireClient().updatePresence(z.enum(['online', 'idle', 'dnd', 'invisible']).parse(status)),
   );

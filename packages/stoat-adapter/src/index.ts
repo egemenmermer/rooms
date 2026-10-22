@@ -2180,6 +2180,28 @@ export class StoatClient {
       expiresAt: null,
     };
   }
+  /** The signed-in user's bio, status text and presence, as Settings shows them. */
+  async ownProfile(): Promise<{
+    bio: string;
+    statusText: string;
+    presence: 'online' | 'idle' | 'dnd' | 'invisible';
+  }> {
+    const raw = await this.request<Raw>('/users/@me');
+    const profile = await this.request<Raw>('/users/@me/profile').catch(() => null);
+    const presence = raw.status?.presence;
+    return {
+      bio: typeof profile?.content === 'string' ? profile.content.slice(0, 2000) : '',
+      statusText: typeof raw.status?.text === 'string' ? raw.status.text.slice(0, 128) : '',
+      presence:
+        presence === 'Idle'
+          ? 'idle'
+          : presence === 'Busy' || presence === 'Focus'
+            ? 'dnd'
+            : presence === 'Invisible'
+              ? 'invisible'
+              : 'online',
+    };
+  }
   async updatePresence(status: 'online' | 'idle' | 'dnd' | 'invisible') {
     await this.request('/users/@me', 'PATCH', {
       status: {
