@@ -1,6 +1,7 @@
 import { queryClient } from './query-client';
 import { CommunityRoles } from './CommunityRoles';
 import { CommunityInvitesTab } from './CommunityInvitesTab';
+import { CommunitySignupRequestsTab } from './CommunitySignupRequestsTab';
 import './reference-community-management.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -93,7 +94,7 @@ function ManagementScope({
   const [loading, setLoading] = useState(true),
     [working, setWorking] = useState(false),
     [error, setError] = useState('');
-  const [tab, setTab] = useState<'members' | 'roles' | 'invites'>('members'),
+  const [tab, setTab] = useState<'members' | 'roles' | 'invites' | 'signups'>('members'),
     [query, setQuery] = useState('');
   const [dialog, setDialog] = useState<{
       kind: 'role' | 'remove' | 'ban';
@@ -487,8 +488,31 @@ function ManagementScope({
         >
           Davetler
         </button>
+        <button
+          role="tab"
+          aria-selected={tab === 'signups'}
+          onClick={() => {
+            setTab('signups');
+            setMenu(null);
+          }}
+        >
+          Kayıt istekleri
+        </button>
       </div>
-      {tab === 'roles' ? (
+      {tab === 'signups' ? (
+        <CommunitySignupRequestsTab
+          spaceId={snapshot.spaceId}
+          capability={snapshot.invites}
+          bridge={fixtureMode ? null : community}
+          disabledReason={
+            fixtureMode
+              ? fixtureReason
+              : !connected
+                ? 'Topluluk bağlantısı bekleniyor. Bağlantı gelince yeniden dene.'
+                : undefined
+          }
+        />
+      ) : tab === 'roles' ? (
         <CommunityRoles
           snapshot={snapshot}
           busy={busy}

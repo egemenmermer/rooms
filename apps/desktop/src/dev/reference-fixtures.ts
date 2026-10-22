@@ -380,6 +380,11 @@ export async function installReferenceFixture(id: string, value: string): Promis
     hasOlder: false,
     connect: async () => rejectExternalAction(),
     register: async () => rejectExternalAction(),
+    requestSignup: async () => rejectExternalAction(),
+    signupStatus: async () => rejectExternalAction(),
+    reapplySignup: async () => rejectExternalAction(),
+    signupRequests: async () => rejectExternalAction(),
+    decideSignupRequest: async () => rejectExternalAction(),
     logout: async () => rejectExternalAction(),
     refresh: async () => undefined,
     openSpace: async (nextSpaceId) => {

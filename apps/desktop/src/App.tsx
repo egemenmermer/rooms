@@ -29,12 +29,14 @@ import { useChannelAccess } from './channel-access';
 import { ChannelAccessState, CommunityEditor } from './CommunitySettings';
 import { SocialNotificationsPage, SocialReferenceOverlay } from './SocialReferenceEntry';
 import {
+  ReferenceAuthFrame,
   ReferenceOnboarding,
   defaultStartTab,
   type ReferenceOnboardingMode,
 } from './ReferenceOnboarding';
 import { FriendsPanel } from './People';
 import { InviteLanding } from './Invite';
+import { SignupPendingScreen, useSignupGate } from './SignupPending';
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -127,6 +129,7 @@ export default function App() {
   }, [location.pathname, location.search]);
   const { preferences: p, setPreference } = useRooms();
   const community = useCommunity();
+  const signupGate = useSignupGate();
   const communityAdmin = useModerationRights(community.activeSpaceId).communityAdmin;
   const realtime = useRealtime();
   useEffect(() => {
@@ -604,6 +607,32 @@ export default function App() {
           <InviteLanding invite={nativeInvite} onClose={closeInvite} notify={notify} />
         )}
         <FriendRequiredDialog notify={notify} />
+        {toast && (
+          <div role="status" className="toast">
+            {toast}
+          </div>
+        )}
+      </div>
+    );
+  // Approved sign-up: an account that belongs to no community waits here for an admin.
+  if (signupGate.blocking)
+    return (
+      <div className="app onboarding-mode">
+        <div className="window-chrome">
+          <span className="window-wordmark">
+            <img src="./reference-brand/brand/logo-symbol-white.svg" alt="" />
+            Tayfa
+          </span>
+        </div>
+        <ReferenceAuthFrame mode="register">
+          <SignupPendingScreen
+            gate={signupGate}
+            onSignedOut={() => navigate('/setup/signin', { replace: true })}
+          />
+        </ReferenceAuthFrame>
+        {nativeInvite && community.user && (
+          <InviteLanding invite={nativeInvite} onClose={closeInvite} notify={notify} />
+        )}
         {toast && (
           <div role="status" className="toast">
             {toast}

@@ -281,6 +281,22 @@ export interface SocialBridge {
     inviteCode: string;
     accountInviteCode?: string;
   }): Promise<SocialSession>;
+  /** Approved sign-up without an invitation link; see docs/SELF_HOSTING.md. */
+  signupAvailable(serverUrl: string): Promise<boolean>;
+  requestSignup(input: {
+    serverUrl: string;
+    email: string;
+    password: string;
+    username: string;
+  }): Promise<SocialSession>;
+  signupStatus(): Promise<import('@rooms/social').SocialSignupState>;
+  reapplySignup(): Promise<void>;
+  signupRequests(spaceId: string): Promise<import('@rooms/social').SocialSignupRequests>;
+  decideSignupRequest(
+    spaceId: string,
+    userId: string,
+    decision: 'approve' | 'reject',
+  ): Promise<void>;
   passwordRecoveryCapabilities(serverUrl: string): Promise<SocialPasswordRecoveryCapabilities>;
   requestPasswordRecovery(input: { serverUrl: string; email: string }): Promise<{ accepted: true }>;
   importPasswordRecoveryLink(input: {

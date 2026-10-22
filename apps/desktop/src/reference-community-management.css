@@ -662,3 +662,8 @@
   background: #4a3d2a;
   color: #d8bd80;
 }
+.rcm-signup-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}

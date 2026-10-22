@@ -13,6 +13,8 @@ import type {
   SocialUser,
   SocialAttachment,
   SocialReadState,
+  SocialSignupRequests,
+  SocialSignupState,
   GatewayEvent,
 } from '@rooms/social';
 
@@ -47,6 +49,21 @@ export interface CommunityState {
     inviteCode: string;
     accountInviteCode?: string;
   }): Promise<void>;
+  /** Approved sign-up: signs in to a new account that waits for an admin's approval. */
+  requestSignup(input: {
+    serverUrl: string;
+    email: string;
+    password: string;
+    username: string;
+  }): Promise<void>;
+  signupStatus(): Promise<SocialSignupState>;
+  reapplySignup(): Promise<void>;
+  signupRequests(spaceId: string): Promise<SocialSignupRequests>;
+  decideSignupRequest(
+    spaceId: string,
+    userId: string,
+    decision: 'approve' | 'reject',
+  ): Promise<void>;
   logout(): Promise<void>;
   refresh(): Promise<void>;
   openSpace(id: string): Promise<void>;
@@ -155,6 +172,32 @@ export const MESSAGE_WINDOW = 5000;
 /** A saved session waits for its server; nothing needs to be typed again. */
 export const SERVER_UNREACHABLE_MESSAGE =
   'Kayıtlı sunucuna şu an ulaşılamıyor. Oturumun duruyor; bağlantı gelince kendiliğinden açılacak.';
+/** Sign-in style session start shared by invitation sign-up and approved sign-up. */
+async function startSession(open: () => Promise<SocialSession>) {
+  const request = ++sessionEpoch;
+  nativeSessionEpoch = null;
+  clearConversations();
+  selectionEpoch++;
+  useChannelAccess.setState({ checks: {} });
+  useCommunity.setState({ ...blank, status: 'connecting', busy: true });
+  try {
+    const session = await open();
+    if (request === sessionEpoch) await applySession(session, request);
+  } catch (error) {
+    if (request === sessionEpoch) {
+      try {
+        await applySession(await bridge().session(), request);
+      } catch {}
+      useCommunity.setState((state) => ({
+        status: state.user ? state.status : 'error',
+        error: safeError(error),
+      }));
+    }
+    throw error;
+  } finally {
+    if (request === sessionEpoch) useCommunity.setState({ busy: false });
+  }
+}
 export const useCommunity = create<CommunityState>((set, get) => ({
   ...blank,
   connect: async (input) => {
@@ -179,27 +222,30 @@ export const useCommunity = create<CommunityState>((set, get) => ({
       if (request === sessionEpoch) set({ busy: false });
     }
   },
-  register: async (input) => {
-    const request = ++sessionEpoch;
-    nativeSessionEpoch = null;
-    clearConversations();
-    selectionEpoch++;
-    useChannelAccess.setState({ checks: {} });
-    set({ ...blank, status: 'connecting', busy: true });
-    try {
-      const session = await bridge().register(input);
-      if (request === sessionEpoch) await applySession(session, request);
-    } catch (error) {
-      if (request === sessionEpoch) {
-        try {
-          await applySession(await bridge().session(), request);
-        } catch {}
-        set((state) => ({ status: state.user ? state.status : 'error', error: safeError(error) }));
-      }
-      throw error;
-    } finally {
-      if (request === sessionEpoch) set({ busy: false });
-    }
+  register: (input) => startSession(() => bridge().register(input)),
+  requestSignup: (input) => startSession(() => bridge().requestSignup(input)),
+  signupStatus: async () => {
+    const session = captureSession();
+    const value = await bridge().signupStatus();
+    if (!session.valid()) throw new Error('Oturum değişti. Kayıt durumu gösterilmedi.');
+    if (value.status === 'joined') await get().refresh();
+    return value;
+  },
+  reapplySignup: async () => {
+    const session = captureSession();
+    await bridge().reapplySignup();
+    if (!session.valid()) throw new Error('Oturum değişti. Kayıt isteği doğrulanamadı.');
+  },
+  signupRequests: async (spaceId) => {
+    const session = captureSession();
+    const value = await bridge().signupRequests(spaceId);
+    if (!session.valid()) throw new Error('Oturum değişti. Kayıt istekleri gösterilmedi.');
+    return value;
+  },
+  decideSignupRequest: async (spaceId, userId, decision) => {
+    const session = captureSession();
+    await bridge().decideSignupRequest(spaceId, userId, decision);
+    if (!session.valid()) throw new Error('Oturum değişti. Karar doğrulanamadı.');
   },
   logout: async () => {
     const request = ++sessionEpoch;

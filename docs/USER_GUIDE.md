@@ -41,6 +41,8 @@ Başka bir sunucuda oturumun açıkken davet bağlantısı açarsan **Çıkış 
 
 Bir davet bağlantısı birden çok kişiye gönderilebilir; varsayılan olarak 7 gün ve 10 kişi geçerlidir. Süresi dolmuşsa, kişi sınırı dolmuşsa veya iptal edildiyse seni davet edenden yeni bağlantı iste. Kayıt yarıda kaldıysa önce **Giriş yap** ile dene; hesabın oluşmuş olabilir. Sürekli yeniden denemek, kısmen oluşturulmuş bir hesabı güvenle onarmaz.
 
+**Davet bağlantın yoksa:** sunucu izin veriyorsa **Kayıt ol** sekmesinde **Onay isteğiyle** seçeneğini kullan. Sunucu adresini, kullanıcı adını, e-postanı ve şifreni (en az 8 karakter) gir. Hesabın hemen oluşur ama topluluğa girmezsin; **Onay bekliyor** ekranını görürsün. Ekran yarım dakikada bir kendini yeniler; kapatıp sonra **Giriş yap** ile dönebilirsin. Bir yönetici onaylayınca topluluğa katılır ve kanalları görürsün. Reddedilirse bunu açıkça söyleyen bir ekran çıkar. 14 gün içinde karar verilmezse isteği yeniden gönderebilirsin. Sunucu bu seçeneği açmadıysa form bunu söyler; topluluktan davet bağlantısı iste.
+
 Kaynaktan alınan derleme hazır sunucu adresi olmadan başlar. Bu beklenen davranıştır; davet bağlantısını kullan veya **Giriş yap** sekmesinde yöneticinin adresini gir. Boş alan, eksik bir merkezî Tayfa hizmeti olduğu anlamına gelmez.
 
 ## Ekranları tanı
@@ -98,6 +100,8 @@ Kişisel medya bağlantıları, sana ait yetkili sağlayıcı erişimini kullan�
 Yetkili bir yönetici **Ayarlar → Üyeler ve roller → Roller** bölümünde rol adı, renk ve temel izinleri düzenleyebilir. Kanka, Yayıncı ve Moderatör şablonları düzenlenebilir taslaklardır; seçmek kendiliğinden üyeye yetki vermez. Kaydedilen rol ayrıca üyeye atanır. Ayrıntılar [rol rehberindedir](COMMUNITY_ROLES.md).
 
 Topluluktaki her üye **Davet oluştur** ile bir davet bağlantısı oluşturabilir (7 gün, 10 kişi). Topluluk sahibi bu izni Stoat rolleriyle kısabilir. Bağlantı yalnızca oluşturulduğu anda kopyalanabilir; kaybettiysen yenisini oluştur. Etkin bağlantıları topluluk sahibi **Ayarlar → Üyeler ve roller → Davetler** bölümünde görür: kullanım (ör. 3/10 kişi), son geçerlilik, oluşturan ve Etkin/Dolu durumu. **İptal et** bağlantıyı hemen kapatır; bağlantıyla katılmış olanlar toplulukta kalır. Bir toplulukta en fazla 50 etkin bağlantı olabilir. Bağlantıyı bilen herkes kayıt olabilir; yalnızca davet etmek istediğin kişilerle paylaş.
+
+Sunucu [onaylı kaydı](SELF_HOSTING.md#onaylı-kayıt-davet-bağlantısı-olmadan) açtıysa topluluk sahibi ve yöneticiler davetsiz kayıt isteklerini **Ayarlar → Üyeler ve roller → Kayıt istekleri** bölümünde görür. **Onayla** kişiyi topluluğa alır (kişi uygulamayı açınca katılır), **Reddet** bir onaydan sonra isteği kapatır ve kişiye reddedildiğini gösterir; hesap silinmez.
 
 Sunucu izleme/terminal gibi yönetim özellikleri normal üyelikten ayrı yetki ister. Core sunucu ile Agent makinesi farklı sistemler olabilir; seçtiğin makineye dikkat et. [Sunucu yönetimi](SERVER_OPERATIONS.md) belgesini izle.
 

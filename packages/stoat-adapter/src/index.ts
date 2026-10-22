@@ -14,6 +14,8 @@ import {
   type SocialMessage,
   type SocialInvite,
   type SocialInviteLinkSummary,
+  type SocialSignupRequests,
+  type SocialSignupState,
   type SocialAttachment,
   type SocialFriend,
   type SocialMember,
@@ -84,6 +86,17 @@ const inviteErrors: Record<string, string> = {
   INVITE_LIMIT_REACHED:
     'This community already has many active invitation links. Cancel one under Community management, Invitations.',
   REGISTRATION_BUSY: 'Another signup is in progress. Try again in a moment.',
+  SIGNUP_UNAVAILABLE: 'This server does not accept sign-up requests without an invitation link.',
+  SIGNUP_BUSY: 'Many people are signing up right now. Try again later.',
+  SIGNUP_QUEUE_FULL: 'Too many sign-up requests are waiting for approval. Try again later.',
+  SIGNUP_ALREADY_REQUESTED: 'This account already has a sign-up request.',
+  SIGNUP_ALREADY_MEMBER: 'This account is already a member of the community.',
+  SIGNUP_JOIN_FAILED:
+    'Your request was approved but joining the community failed. Ask an administrator to approve it again.',
+  SIGNUP_REQUEST_NOT_FOUND: 'This sign-up request is no longer open.',
+  SIGNUP_NOT_ENABLED: 'Approved sign-up is not enabled for this community.',
+  SIGNUP_CHANNEL_REQUIRED: 'Create a channel in this community before approving requests.',
+  EmailInUse: 'An account with this email already exists. Sign in instead.',
   INVITE_PERMISSION_REQUIRED: 'You do not have permission to invite people to this community.',
 };
 const ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
@@ -2088,6 +2101,116 @@ export class StoatClient {
     if (!response.ok)
       throw new StoatError(response.status, String(data.error ?? 'INVITE_UNAVAILABLE'));
     return data as T;
+  }
+  /** Whether this server accepts sign-up requests without an invitation link. */
+  async signupAvailable() {
+    let response: Response;
+    try {
+      response = await fetch(`${new URL(this.instanceUrl).origin}/rooms-access/v1/auth/signup`, {
+        redirect: 'error',
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch {
+      throw new StoatError(503, 'NETWORK_UNAVAILABLE');
+    }
+    // Brokers from before approved sign-up do not know the route.
+    if (response.status === 404) return false;
+    const data = (await response.json().catch(() => ({}))) as Raw;
+    if (!response.ok) throw new StoatError(response.status, String(data.error ?? 'REQUEST_FAILED'));
+    return data.enabled === true;
+  }
+  /** Approved sign-up: the broker creates the account; it joins no community until approved. */
+  async requestSignup(input: { email: string; password: string; username: string }) {
+    let response: Response;
+    try {
+      response = await fetch(
+        `${new URL(this.instanceUrl).origin}/rooms-access/v1/auth/signup-requests`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: input.email,
+            password: input.password,
+            username: input.username,
+          }),
+          redirect: 'error',
+          signal: AbortSignal.timeout(60000),
+        },
+      );
+    } catch {
+      throw new StoatError(503, 'REGISTRATION_UNCERTAIN');
+    }
+    const data = (await response.json().catch(() => ({}))) as Raw;
+    if (!response.ok)
+      throw new StoatError(
+        response.status,
+        response.status === 404 ? 'SIGNUP_UNAVAILABLE' : String(data.error ?? 'REQUEST_FAILED'),
+      );
+    if (typeof data.token !== 'string') throw new StoatError(502, 'INVALID_SESSION_RESPONSE');
+    this.token = data.token;
+    return this.getCurrentUser();
+  }
+  /** Where this account's approved sign-up request stands; joining happens on this call. */
+  async signupStatus(): Promise<SocialSignupState> {
+    let data: Raw;
+    try {
+      data = await this.broker<Raw>('/v1/auth/signup-requests/me', { timeoutMs: 20000 });
+    } catch (error) {
+      // Older brokers have no approved sign-up at all.
+      if (error instanceof StoatError && error.status === 404)
+        return { status: 'none', enabled: false, createdAt: null, space: null };
+      throw error;
+    }
+    const status = ['none', 'pending', 'approved', 'joined', 'rejected', 'expired'].includes(
+      data.status,
+    )
+      ? (data.status as SocialSignupState['status'])
+      : null;
+    if (!status) throw new StoatError(502, 'INVALID_SIGNUP_RESPONSE');
+    const space =
+      data.space && typeof data.space.id === 'string' && SOCIAL_ID_PATTERN.test(data.space.id)
+        ? { id: data.space.id, name: typeof data.space.name === 'string' ? data.space.name : '' }
+        : null;
+    if (status === 'joined') this.emit('SOCIAL_REFRESH', null);
+    return {
+      status,
+      enabled: data.enabled === true,
+      createdAt: typeof data.createdAt === 'string' ? data.createdAt : null,
+      space,
+    };
+  }
+  /** Asks again for an account whose request expired or was never written. */
+  async reapplySignup() {
+    await this.broker('/v1/auth/signup-requests/me', { method: 'POST' });
+  }
+  async listSignupRequests(spaceId: string): Promise<SocialSignupRequests> {
+    const data = await this.broker<Raw>(`/v1/spaces/${checked(spaceId)}/signup-requests`);
+    if (!Array.isArray(data.requests) || data.requests.length > 1000)
+      throw new StoatError(502, 'INVALID_SIGNUP_RESPONSE');
+    return {
+      enabled: data.enabled === true,
+      requests: data.requests.map((raw: Raw) => {
+        if (
+          typeof raw?.userId !== 'string' ||
+          !SOCIAL_ID_PATTERN.test(raw.userId) ||
+          typeof raw.username !== 'string' ||
+          typeof raw.createdAt !== 'string'
+        )
+          throw new StoatError(502, 'INVALID_SIGNUP_RESPONSE');
+        return {
+          userId: raw.userId,
+          username: raw.username.slice(0, 32),
+          createdAt: raw.createdAt,
+          state: raw.state === 'approved' ? ('approved' as const) : ('pending' as const),
+        };
+      }),
+    };
+  }
+  async decideSignupRequest(spaceId: string, userId: string, decision: 'approve' | 'reject') {
+    await this.broker(
+      `/v1/spaces/${checked(spaceId)}/signup-requests/${checked(userId)}/${decision}`,
+      { method: 'POST' },
+    );
   }
   /** Active invitation links of a space; only its owner may list them. */
   async listInviteLinks(spaceId: string): Promise<SocialInviteLinkSummary[]> {

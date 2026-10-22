@@ -155,6 +155,15 @@ export async function setupCommunity(
       .regex(/^[a-zA-Z0-9_-]{2,128}$/)
       .optional(),
   });
+  const signupRequest = auth.extend({
+    password: z.string().min(8).max(256),
+    username: z
+      .string()
+      .trim()
+      .min(2)
+      .max(32)
+      .regex(/^[\p{L}\d_.-]+$/u),
+  });
   const recoveryServer = z.string().min(1).max(2048);
   const recoveryInput = z
     .object({ serverUrl: recoveryServer, email: z.string().email().max(254) })
@@ -336,6 +345,8 @@ export async function setupCommunity(
           'rooms:social-session',
           'rooms:social-login',
           'rooms:social-register',
+          'rooms:social-signup-available',
+          'rooms:social-signup-request',
           'rooms:social-logout',
           'rooms:social-password-recovery-capabilities',
           'rooms:social-password-recovery-request',
@@ -440,6 +451,35 @@ export async function setupCommunity(
       throw error;
     }
   });
+  handle('rooms:social-signup-available', (serverUrl) =>
+    new StoatClient(recoveryServer.parse(serverUrl)).signupAvailable(),
+  );
+  // Approved sign-up: the new session belongs to no community until an admin approves it.
+  handle('rooms:social-signup-request', async (input) => {
+    recoveryEpoch++;
+    passwordReset.clear();
+    const request = ++authRequestEpoch;
+    const body = signupRequest.parse(input);
+    const next = new StoatClient(body.serverUrl);
+    try {
+      return await replaceSession(next, await next.requestSignup(body), request);
+    } catch (error) {
+      if (client !== next) await next.disconnect().catch(() => {});
+      throw error;
+    }
+  });
+  handle('rooms:social-signup-status', () => requireClient().signupStatus());
+  handle('rooms:social-signup-reapply', () => requireClient().reapplySignup());
+  handle('rooms:social-signup-requests', (spaceId) =>
+    requireClient().listSignupRequests(id.parse(spaceId)),
+  );
+  handle('rooms:social-signup-decide', (spaceId, userId, decision) =>
+    requireClient().decideSignupRequest(
+      id.parse(spaceId),
+      id.parse(userId),
+      z.enum(['approve', 'reject']).parse(decision),
+    ),
+  );
   handle('rooms:social-password-recovery-capabilities', (serverUrl) =>
     new StoatClient(recoveryServer.parse(serverUrl)).passwordRecoveryCapabilities(),
   );

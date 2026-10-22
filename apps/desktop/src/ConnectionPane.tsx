@@ -28,6 +28,8 @@ export const sameInviteServer = (a: string, b: string) => {
   const origin = inviteOrigin(normalizedServer(a));
   return !!origin && origin === inviteOrigin(normalizedServer(b));
 };
+/** How a new person joins: with an invitation link, or by asking an admin to approve them. */
+export type SignupKind = 'invite' | 'approval';
 const NOT_AN_INVITE =
   'Bu bir Tayfa davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.';
 const formatExpiry = (iso: string | null | undefined) => {
@@ -67,12 +69,39 @@ export function ConnectionPane({
   const [localError, setLocalError] = useState('');
   const [working, setWorking] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [signupKind, setSignupKind] = useState<SignupKind>('invite');
+  /** Approved sign-up on the typed server: null while unknown or being checked. */
+  const [approvalOpen, setApprovalOpen] = useState<boolean | null>(null);
+  const [approvalCheckError, setApprovalCheckError] = useState('');
   const errorRef = useRef<HTMLDivElement>(null);
   const busy = c.busy || working;
   const error = localError || c.error;
   const pasted = link.trim() ? parseInviteLink(link, { fallbackServer: savedServer() }) : null;
   const linkInvalid = !!link.trim() && !pasted;
   const signupInvite = fromLink ?? pasted;
+  const approval = registration && !fromLink && signupKind === 'approval';
+  const approvalServer = normalizedServer(server);
+  const approvalUrlValid = /^https?:\/\/[^/\s]+/i.test(approvalServer);
+  useEffect(() => {
+    setApprovalOpen(null);
+    setApprovalCheckError('');
+    if (!approval || !approvalUrlValid || !window.rooms?.social) return;
+    let stale = false;
+    const timer = setTimeout(() => {
+      window.rooms!.social.signupAvailable(approvalServer).then(
+        (open) => {
+          if (!stale) setApprovalOpen(open);
+        },
+        (err) => {
+          if (!stale) setApprovalCheckError(uiError(err));
+        },
+      );
+    }, 400);
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
+  }, [approval, approvalServer]);
   const fromLinkKey = fromLink ? `${fromLink.serverUrl} ${fromLink.code}` : '';
   useEffect(() => {
     if (!fromLink) return;
@@ -116,7 +145,17 @@ export function ConnectionPane({
     clearError();
     setWorking(true);
     try {
-      if (registration) {
+      if (approval) {
+        await c.requestSignup({
+          serverUrl: approvalServer,
+          email: email.trim(),
+          password,
+          username: username.trim(),
+        });
+        if (!useCommunity.getState().user)
+          throw new Error('Sunucu bir hesap oturumu döndürmedi. Yeniden giriş yap.');
+        useRooms.getState().setPreference('serverUrl', approvalServer);
+      } else if (registration) {
         if (!signupInvite) throw new Error(NOT_AN_INVITE);
         await c.register({
           serverUrl: signupInvite.serverUrl,
@@ -230,33 +269,87 @@ export function ConnectionPane({
                   </div>
                 ) : (
                   <>
-                    <label className="field-label ref-auth-field-with-help">
-                      Davet bağlantısı
-                      <input
-                        required
-                        autoComplete="off"
-                        autoCapitalize="none"
-                        spellCheck={false}
-                        maxLength={4096}
-                        value={link}
-                        aria-invalid={linkInvalid}
-                        aria-describedby="reference-invite-help"
-                        onChange={(e) => setLink(e.target.value)}
-                        placeholder="https://…/davet/…"
-                      />
-                    </label>
-                    <p
-                      id="reference-invite-help"
-                      className={`ref-auth-help ref-auth-field-help${linkInvalid ? ' invalid' : ''}`}
-                    >
-                      {linkInvalid
-                        ? NOT_AN_INVITE
-                        : pasted
-                          ? `Sunucu: ${serverHost(pasted.serverUrl)}`
-                          : 'Topluluktaki her üye davet bağlantısı oluşturabilir. Arkadaşının gönderdiği bağlantıyı buraya yapıştır.'}
-                    </p>
+                    <div className="ref-auth-choice" role="group" aria-label="Nasıl katılacaksın?">
+                      <button
+                        type="button"
+                        aria-pressed={signupKind === 'invite'}
+                        onClick={() => setSignupKind('invite')}
+                      >
+                        Davet bağlantım var
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={signupKind === 'approval'}
+                        onClick={() => setSignupKind('approval')}
+                      >
+                        Onay isteğiyle
+                      </button>
+                    </div>
                   </>
                 ))}
+              {approval && (
+                <>
+                  <label className="field-label ref-auth-field-with-help">
+                    Sunucu adresi
+                    <input
+                      required
+                      type="url"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      value={server}
+                      aria-describedby="reference-approval-help"
+                      onChange={(e) => setServer(e.target.value)}
+                      placeholder="https://sunucun.example"
+                    />
+                  </label>
+                  <p
+                    id="reference-approval-help"
+                    className={`ref-auth-help ref-auth-field-help${approvalOpen === false || approvalCheckError ? ' invalid' : ''}`}
+                    role="status"
+                  >
+                    {!approvalServer
+                      ? 'Katılmak istediğin topluluğun sunucu adresini yaz. Davet bağlantısı gerekmez.'
+                      : !approvalUrlValid
+                        ? 'Adresi https:// ile başlayarak yaz.'
+                        : approvalCheckError
+                          ? approvalCheckError
+                          : approvalOpen === null
+                            ? 'Sunucu kontrol ediliyor…'
+                            : approvalOpen
+                              ? 'Hesabın hemen oluşur. Topluluğa, bir yönetici isteğini onaylayınca katılırsın.'
+                              : 'Bu sunucu davetsiz kaydı açmamış. Topluluktan bir davet bağlantısı iste.'}
+                  </p>
+                </>
+              )}
+              {registration && !fromLink && !approval && (
+                <>
+                  <label className="field-label ref-auth-field-with-help">
+                    Davet bağlantısı
+                    <input
+                      required
+                      autoComplete="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      maxLength={4096}
+                      value={link}
+                      aria-invalid={linkInvalid}
+                      aria-describedby="reference-invite-help"
+                      onChange={(e) => setLink(e.target.value)}
+                      placeholder="https://…/davet/…"
+                    />
+                  </label>
+                  <p
+                    id="reference-invite-help"
+                    className={`ref-auth-help ref-auth-field-help${linkInvalid ? ' invalid' : ''}`}
+                  >
+                    {linkInvalid
+                      ? NOT_AN_INVITE
+                      : pasted
+                        ? `Sunucu: ${serverHost(pasted.serverUrl)}`
+                        : 'Topluluktaki her üye davet bağlantısı oluşturabilir. Arkadaşının gönderdiği bağlantıyı buraya yapıştır.'}
+                  </p>
+                </>
+              )}
               {registration && (
                 <label className="field-label">
                   Kullanıcı adı
@@ -358,23 +451,33 @@ export function ConnectionPane({
                   busy ||
                   !email.trim() ||
                   !password ||
-                  (registration ? !signupInvite || !username.trim() : !server.trim())
+                  (approval
+                    ? approvalOpen !== true || !username.trim()
+                    : registration
+                      ? !signupInvite || !username.trim()
+                      : !server.trim())
                 }
               >
                 {busy ? (
                   <>
                     <LoaderCircle size={16} className="spin" />
-                    {registration ? 'Hesap oluşturuluyor…' : 'Giriş yapılıyor…'}
+                    {approval
+                      ? 'İstek gönderiliyor…'
+                      : registration
+                        ? 'Hesap oluşturuluyor…'
+                        : 'Giriş yapılıyor…'}
                   </>
                 ) : (
                   <>
-                    {registration
-                      ? 'Hesap oluştur ve katıl'
-                      : fromLink
-                        ? 'Giriş yap ve katıl'
-                        : sessionExpired
-                          ? 'Giriş yap ve devam et'
-                          : 'Giriş yap'}
+                    {approval
+                      ? 'Hesap oluştur ve onay iste'
+                      : registration
+                        ? 'Hesap oluştur ve katıl'
+                        : fromLink
+                          ? 'Giriş yap ve katıl'
+                          : sessionExpired
+                            ? 'Giriş yap ve devam et'
+                            : 'Giriş yap'}
                     <ArrowRight size={16} />
                   </>
                 )}
@@ -450,7 +553,8 @@ export function ConnectionPane({
       ) : (
         <div className="onboarding-signed-out">
           <p>
-            Hesabınla giriş yap. Hesabın yoksa arkadaşının gönderdiği davet bağlantısıyla kayıt ol.
+            Hesabınla giriş yap. Hesabın yoksa davet bağlantısıyla ya da sunucu izin veriyorsa onay
+            isteğiyle kayıt ol.
           </p>
           <div className="onboarding-signed-out-actions">
             <button className="button primary" onClick={() => navigate('/setup/signin')}>

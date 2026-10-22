@@ -65,6 +65,31 @@ export interface SocialInviteLinkSummary {
   createdBy: string | null;
   state: 'active' | 'full';
 }
+/**
+ * Approved sign-up (no invitation link): where this account's request stands. `joined` is
+ * returned once, by the check that admitted the person into the community.
+ */
+export type SocialSignupStatus =
+  'none' | 'pending' | 'approved' | 'joined' | 'rejected' | 'expired';
+export interface SocialSignupState {
+  status: SocialSignupStatus;
+  /** The server accepts new requests. */
+  enabled: boolean;
+  createdAt: string | null;
+  space: { id: string; name: string } | null;
+}
+/** Owner/admin view of one open request; email and password are never stored or listed. */
+export interface SocialSignupRequest {
+  userId: string;
+  username: string;
+  createdAt: string;
+  state: 'pending' | 'approved';
+}
+export interface SocialSignupRequests {
+  /** False when this server does not run approved sign-up for this community. */
+  enabled: boolean;
+  requests: SocialSignupRequest[];
+}
 /** Native desktop events carry the auth-session generation that produced them. */
 export interface GatewayEvent {
   type: string;
