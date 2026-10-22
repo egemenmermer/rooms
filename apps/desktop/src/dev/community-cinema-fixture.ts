@@ -51,6 +51,8 @@ export const COMMUNITY_CINEMA_FIXTURE_VARIANTS = [
   'error',
   'remote',
   'rmdb_empty',
+  /** No IPTV account; Stremio is linked. */
+  'stremio',
 ] as const;
 export type CommunityCinemaFixtureVariant = (typeof COMMUNITY_CINEMA_FIXTURE_VARIANTS)[number];
 
@@ -728,13 +730,13 @@ export function createCommunityCinemaFixtureBridge(
     communityId: FIXTURE_COMMUNITY_ID,
     hallChannelId: variant === 'no_hall' ? null : FIXTURE_HALL_ID,
     isOwner: variant !== 'member' && variant !== 'remote',
-    connected: variant !== 'not_connected' && variant !== 'member',
+    connected: variant !== 'not_connected' && variant !== 'member' && variant !== 'stremio',
     source:
-      variant === 'not_connected' || variant === 'member'
+      variant === 'not_connected' || variant === 'member' || variant === 'stremio'
         ? null
         : { kind: 'xtream', label: 'https://ipt***:8080', hasCustomGuide: false },
     account:
-      variant === 'not_connected' || variant === 'member'
+      variant === 'not_connected' || variant === 'member' || variant === 'stremio'
         ? null
         : { status: 'Active', expiresAt: now + 140 * day, maxConnections: 2 },
     catalog: {
@@ -757,7 +759,13 @@ export function createCommunityCinemaFixtureBridge(
         : null,
     relaySlots: 1,
     subtitleSearch: variant === 'vod',
+    stremio:
+      variant === 'stremio'
+        ? { linked: true, email: 'demo@ornek.test', linkedAt: now - 2 * day }
+        : { linked: false, email: null, linkedAt: null },
   };
+  /** DEV Stremio picks: `x-` ref → what was picked. */
+  const stremioPicks = new Map<string, { title: string; imdbId: string }>();
   const demoStremio: StremioTitle[] = [
     { type: 'movie', id: 'tt9000001', name: 'DEMO Stremio Filmi', year: '2024', art: null },
     { type: 'series', id: 'tt9000002', name: 'DEMO Stremio Dizisi', year: '2022–', art: null },
@@ -766,7 +774,7 @@ export function createCommunityCinemaFixtureBridge(
     new Promise<T>((resolve) => setTimeout(() => resolve(structuredClone(value)), ms));
   const hall = (hallId: string) => {
     if (hallId !== status.hallChannelId) throw new Error('CINEMA_HALL_REQUIRED');
-    if (!status.connected) throw new Error('CINEMA_NOT_CONNECTED');
+    if (!status.connected && !status.stremio?.linked) throw new Error('CINEMA_NOT_CONNECTED');
   };
 
   // DEMO RMDB: lives apart from the IPTV account, like the service's own record.
@@ -938,6 +946,31 @@ export function createCommunityCinemaFixtureBridge(
     },
     details: async (hallId, ref) => {
       hall(hallId);
+      const pick = stremioPicks.get(ref);
+      if (pick)
+        return delay({
+          item: {
+            ref,
+            kind: 'movie',
+            title: pick.title,
+            badges: [],
+            categoryId: null,
+            number: null,
+            art: null,
+            year: 2024,
+            rating: null,
+            addedAt: null,
+            hasGuide: false,
+          },
+          plot: 'DEMO: Stremio’dan seçilen kaynak.',
+          genre: 'Dram',
+          cast: null,
+          director: null,
+          durationSec: null,
+          backdrop: null,
+          seasons: [],
+          tmdbId: null,
+        });
       const value = catalog.details.get(ref);
       if (!value) throw new Error('CINEMA_ITEM_NOT_FOUND');
       return delay(value);
@@ -1334,7 +1367,14 @@ export function createCommunityCinemaFixtureBridge(
         },
         500,
       ),
-    stremioPick: async () => delay({ ref: 'm-3003', title: 'Mavi Saat', art: null }, 150),
+    stremioPick: async (_hallId, streamId) => {
+      const ref = `x-DEMO${streamId
+        .replace(/[^A-Za-z0-9]/g, '')
+        .padEnd(18, '0')
+        .slice(0, 18)}`;
+      stremioPicks.set(ref, { title: 'DEMO Stremio Filmi', imdbId: 'tt9000001' });
+      return delay({ ref, title: 'DEMO Stremio Filmi', art: null }, 150);
+    },
     chooseSubtitleFile: async () =>
       delay(
         {

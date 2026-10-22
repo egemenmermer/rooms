@@ -38,18 +38,18 @@ Bunlar farklı sistemlerdir. Sosyal websocket'in çalışması medyanın erişil
 
 ## Durum ve kalıcılık
 
-| Durum | Sorumlu bileşen |
-| --- | --- |
-| Hesap, mesajlar ve sosyal üyelik | Stoat, veritabanı ve nesne deposu |
-| Yerel hesap/oturum ve yerel tercihler | Seçilen masaüstü profili ve yerel kimlik bilgisi sınırı |
-| Aktif medya oturumu | Sayfalardan bağımsız gerçek zamanlı istemci durumu, LiveKit ve erişim izinleri |
-| Davet bağlantıları ve kullanımları | Erişim servisinin kalıcı defteri (`ROOMS_REGISTRATION_INVITES_FILE`, sürüm 2) ve üst sistem hesap oluşturma |
-| Etkinlik/oyun durumu | Dosya veya PostgreSQL kullanan tek yetkili Activities süreci |
-| Müzik kuyruğu/kaynak yaşam döngüsü | İsteğe bağlı müzik servisi; dinleyici ses seviyesi yereldir |
-| Topluluk Sineması hesabı, kataloğu ve aktarımları | İsteğe bağlı sinema servisi; hesap ve katalog şifreli, aktarım yalnızca bellekte ([Topluluk Sineması](COMMUNITY_CINEMA.md)) |
-| RMDB: salonun izleme kaydı, puan, yorum ve günlük | Sinema servisi `/state/rmdb`; IPTV hesabından ayrı şifreli dosya ve afiş kopyaları, hesap kaldırılınca da kalır ([RMDB](COMMUNITY_CINEMA.md#rmdb)) |
-| Kişisel giriş ve çıkış sesleri | Erişim servisi `/state/personal-sounds`; seçim LiveKit iznine sunucu özelliği olarak eklenir, çalma dinleyicide yereldir ([Giriş sesi](PERSONAL_SOUNDS.md)) |
-| Agent görevleri/izinleri/şifreli yapılandırma | İsteğe bağlı yalıtılmış Agent servisi |
+| Durum                                             | Sorumlu bileşen                                                                                                                                                                                               |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hesap, mesajlar ve sosyal üyelik                  | Stoat, veritabanı ve nesne deposu                                                                                                                                                                             |
+| Yerel hesap/oturum ve yerel tercihler             | Seçilen masaüstü profili ve yerel kimlik bilgisi sınırı                                                                                                                                                       |
+| Aktif medya oturumu                               | Sayfalardan bağımsız gerçek zamanlı istemci durumu, LiveKit ve erişim izinleri                                                                                                                                |
+| Davet bağlantıları ve kullanımları                | Erişim servisinin kalıcı defteri (`ROOMS_REGISTRATION_INVITES_FILE`, sürüm 2) ve üst sistem hesap oluşturma                                                                                                   |
+| Etkinlik/oyun durumu                              | Dosya veya PostgreSQL kullanan tek yetkili Activities süreci                                                                                                                                                  |
+| Müzik kuyruğu/kaynak yaşam döngüsü                | İsteğe bağlı müzik servisi; dinleyici ses seviyesi yereldir                                                                                                                                                   |
+| Topluluk Sineması hesabı, kataloğu ve aktarımları | İsteğe bağlı sinema servisi; IPTV hesabı, Stremio oturumu, Stremio seçimleri ve katalog şifreli, aktarım yalnızca bellekte ([Topluluk Sineması](COMMUNITY_CINEMA.md), [Stremio](COMMUNITY_CINEMA.md#stremio)) |
+| RMDB: salonun izleme kaydı, puan, yorum ve günlük | Sinema servisi `/state/rmdb`; IPTV hesabından ayrı şifreli dosya ve afiş kopyaları, hesap kaldırılınca da kalır ([RMDB](COMMUNITY_CINEMA.md#rmdb))                                                            |
+| Kişisel giriş ve çıkış sesleri                    | Erişim servisi `/state/personal-sounds`; seçim LiveKit iznine sunucu özelliği olarak eklenir, çalma dinleyicide yereldir ([Giriş sesi](PERSONAL_SOUNDS.md))                                                   |
+| Agent görevleri/izinleri/şifreli yapılandırma     | İsteğe bağlı yalıtılmış Agent servisi                                                                                                                                                                         |
 
 Kaynak kod kopyası veritabanı yedeği değildir. Her kalıcı depoyu uyumlu yapılandırma ve şifreleme anahtarlarıyla yedekle; sürüm yükseltmeden geri yüklemeyi doğrula. Aktarım şifrelemesi E2EE değildir; uçtan uca şifreleme yapılandırılmamıştır.
 

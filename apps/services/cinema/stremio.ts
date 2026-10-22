@@ -739,9 +739,19 @@ export class StremioCinema {
         signal: AbortSignal.timeout(20_000),
       });
       if (!value.ok) throw new Error('subtitle');
-      const bytes = new Uint8Array(await value.arrayBuffer());
-      if (bytes.length > 4 * 1024 * 1024) throw new Error('subtitle');
-      body = decodeSubtitle(bytes);
+      // Read with a running cap: a hostile add-on must not make the service buffer gigabytes.
+      const reader = value.body?.getReader();
+      const chunks: Uint8Array[] = [];
+      let total = 0;
+      for (let chunk = await reader?.read(); chunk && !chunk.done; chunk = await reader!.read()) {
+        total += chunk.value.length;
+        if (total > 4 * 1024 * 1024) {
+          await reader!.cancel().catch(() => {});
+          throw new Error('subtitle');
+        }
+        chunks.push(chunk.value);
+      }
+      body = decodeSubtitle(Buffer.concat(chunks));
     } catch {
       return fail('CINEMA_SUBTITLE_UNAVAILABLE');
     }

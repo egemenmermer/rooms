@@ -133,11 +133,9 @@ describe('Stremio in the cinema hall', { timeout: 30_000 }, () => {
     expect(screen.queryByRole('button', { name: /Bağlantıyı kur/ })).toBeNull();
   });
 
-  it('lists an episode’s streams and plays the picked one in the hall', async () => {
-    mount('default');
-    await bridge.stremioLinkPoll(FIXTURE_COMMUNITY_ID);
-    cleanup();
-    mount('default', true);
+  it('lists an episode’s streams and plays the pick without an IPTV account', async () => {
+    mount('stremio');
+    const watch = vi.spyOn(bridge, 'watch');
     fireEvent.click(within(await hallTabs()).getByRole('tab', { name: 'Stremio' }));
     const continuing = await screen.findByRole('region', { name: 'İzlemeye devam et' });
     fireEvent.click(await within(continuing).findByRole('button', { name: /DEMO Stremio Dizisi/ }));
@@ -150,7 +148,20 @@ describe('Stremio in the cinema hall', { timeout: 30_000 }, () => {
       within(streams).getAllByRole('button', { name: /salonda oynat|sıraya öner/ })[0]!,
     );
     await waitFor(() => expect(pick).toHaveBeenCalledWith(FIXTURE_HALL_ID, 'demo-stream-4k'));
-    // The fixture's pick is a film already in the hall's queue: the hall switches to it.
-    await waitFor(() => expect(sent.map((command) => command.type)).toContain('queue.select'));
+    await waitFor(() =>
+      expect(
+        sent.some(
+          (command) =>
+            command.type === 'queue.add' &&
+            command.media.kind === 'community-media' &&
+            command.media.ref.startsWith('x-'),
+        ),
+      ).toBe(true),
+    );
+    // The stage asks the service for the pick; no IPTV account is needed.
+    await waitFor(() => expect(watch).toHaveBeenCalledWith(FIXTURE_HALL_ID));
+    await waitFor(() => expect(watch).toHaveResolved());
+    expect(screen.queryByText(/IPTV hesabı yok/)).toBeNull();
+    expect(screen.queryByText('Sahip henüz bir kaynak bağlamadı')).toBeNull();
   });
 });
