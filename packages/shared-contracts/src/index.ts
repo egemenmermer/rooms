@@ -102,6 +102,8 @@ export interface DesktopBridge {
       value: boolean,
     ): Promise<{ enabled: boolean; sound: boolean; pauseDuringVoice: boolean; supported: boolean }>;
     setVoiceActive(value: boolean): Promise<void>;
+    /** A content-free OS notification for an incoming private call (not while focused). */
+    incomingCall?(): Promise<void>;
   };
   social: SocialBridge;
   music: {

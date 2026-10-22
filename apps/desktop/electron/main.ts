@@ -148,6 +148,9 @@ function createWindow() {
       sandbox: true,
       nodeIntegration: false,
       webSecurity: true,
+      // Incoming private calls are found by polling; a window in the background must keep
+      // polling at its pace instead of once a minute (calls ring for 45 s).
+      backgroundThrottling: false,
     },
   });
   win.webContents.setWindowOpenHandler(({ url }) => {

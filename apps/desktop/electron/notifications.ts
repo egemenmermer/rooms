@@ -128,6 +128,25 @@ export function setupNotifications(
     }
     return { muted: value.muted };
   });
+  // A ringing private call shows even during voice (it is the point of being reachable), but
+  // never while the window is focused, where the call card already rings.
+  ipcMain.handle('rooms:notification-incoming-call', (event) => {
+    assertSender(event);
+    const window = getWindow();
+    if (!enabled || !Notification.isSupported() || window?.isFocused()) return;
+    const notification = new Notification({
+      title: 'Tayfa',
+      body: 'Özel bir arama geliyor.',
+      silent: !sound,
+    });
+    notification.on('click', () => {
+      const current = getWindow();
+      if (!current) return;
+      showWindow(current);
+      current.focus();
+    });
+    notification.show();
+  });
   // A short renderer lease expires after crash/suspension and is never persisted.
   ipcMain.handle('rooms:notification-voice-active', (event, value) => {
     assertSender(event);

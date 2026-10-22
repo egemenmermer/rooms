@@ -214,6 +214,18 @@ it('uses content-free mention copy while preserving opt-out and channel mute pre
   ]);
 });
 describe('notification delivery', () => {
+  it('announces an incoming private call without content, only when the window is not in front', () => {
+    setup();
+    invoke('incoming-call');
+    expect(mock.shown).toHaveLength(0);
+    invoke('opt-in', true);
+    mock.focused = true;
+    invoke('incoming-call');
+    expect(mock.shown).toHaveLength(0);
+    mock.focused = false;
+    invoke('incoming-call');
+    expect(mock.shown).toEqual([{ title: 'Tayfa', body: 'Özel bir arama geliyor.', silent: true }]);
+  });
   it('shows a mention right after another message and opens its channel on click', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-10-11T07:00:00Z'));
