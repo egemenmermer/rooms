@@ -598,7 +598,7 @@ function ManagementScope({
                         ) : (
                           <>
                             <button
-                              disabled={(!assign && !remove) || busy}
+                              disabled={(!assign && !remove && !ban) || busy}
                               title={
                                 !assign && !remove
                                   ? 'Yetki veya rol hiyerarşisi bu üyeyi yönetmeye izin vermiyor'
