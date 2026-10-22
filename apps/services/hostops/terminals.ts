@@ -328,6 +328,18 @@ export class TerminalHub {
       ),
     ];
   }
+  /** Closes the sessions this user owns on one profile; the rest of their access stays. */
+  closeOwned(host: string, user: string, profileId: string) {
+    for (const r of this.sessions.values())
+      if (
+        r.info.hostId === host &&
+        r.profileId === profileId &&
+        r.info.ownerId === user &&
+        ['active', 'detached'].includes(r.info.state)
+      )
+        this.action(host, r.info.id, user, 'close');
+    this.save();
+  }
   revokeUser(host: string, user: string) {
     for (const r of this.sessions.values())
       if (r.info.hostId === host) {

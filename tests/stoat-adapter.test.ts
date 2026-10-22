@@ -124,6 +124,27 @@ describe('Stoat official REST protocol fixtures', () => {
     expect(stages).toEqual(['account-create']);
     expect(calls).not.toContain('POST /api/auth/session/login');
   });
+  it('reads the own bio through the profile route by user id', async () => {
+    const paths: string[] = [];
+    const url = await fixture((path) => {
+      paths.push(path);
+      if (path.endsWith('/users/01ARZ3NDEKTSV4RRFFQ69G5FAV/profile'))
+        return { content: 'Film gecesi' };
+      if (path.endsWith('/profile')) return { type: 'NotFound' };
+      return {
+        _id: '01ARZ3NDEKTSV4RRFFQ69G5FAV',
+        username: 'friend',
+        status: { text: 'Dizide', presence: 'Idle' },
+      };
+    });
+    const client = new StoatClient(url, 'fixture-token');
+    await expect(client.ownProfile()).resolves.toEqual({
+      bio: 'Film gecesi',
+      statusText: 'Dizide',
+      presence: 'idle',
+    });
+    expect(paths.some((path) => path.includes('@me/profile'))).toBe(false);
+  });
   it('does not send social tokens to an unrelated events host discovered in upstream response', async () => {
     const url = await fixture(() => ({ ws: 'wss://unexpected.example/ws' }));
     const client = new StoatClient(url, 'fixture-token');

@@ -414,15 +414,20 @@ export function createHostOpsServer(config: {
       for (const h of config.hosts) {
         if (!h.ownerProfileId) continue;
         for (const user of config.terminals.owners(h.id, h.ownerProfileId)) {
-          if (config.store.grant(h.id, user)?.permissions.includes('terminal')) continue;
           let still = true;
           try {
             still = await config.stillOwner(user, h);
-          } catch {
-            continue;
+          } catch (error) {
+            // Kicked, banned or gone is a definite answer; an unreachable store closes nothing.
+            const status = (error as { status?: unknown; statusCode?: unknown })?.status;
+            if (status !== 401 && status !== 403 && status !== 404) continue;
+            still = false;
           }
           if (still || stopped) continue;
-          config.terminals.revokeUser(h.id, user);
+          // An operator grant of their own keeps their profile; the owner's shell still closes.
+          if (config.store.grant(h.id, user)?.permissions.includes('terminal'))
+            config.terminals.closeOwned(h.id, user, h.ownerProfileId);
+          else config.terminals.revokeUser(h.id, user);
           config.store.audit(user, h.id, 'terminal-revoked', user);
         }
       }

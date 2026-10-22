@@ -2195,7 +2195,10 @@ export class StoatClient {
     presence: 'online' | 'idle' | 'dnd' | 'invisible';
   }> {
     const raw = await this.request<Raw>('/users/@me');
-    const profile = await this.request<Raw>('/users/@me/profile').catch(() => null);
+    // The profile route takes a user id; '@me' only works for /users/@me itself.
+    const profile = await this.request<Raw>(`/users/${checked(String(raw._id))}/profile`).catch(
+      () => null,
+    );
     const presence = raw.status?.presence;
     return {
       bio: typeof profile?.content === 'string' ? profile.content.slice(0, 2000) : '',
