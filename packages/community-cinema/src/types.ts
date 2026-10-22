@@ -419,6 +419,10 @@ export type StremioStreams = {
   /** Torrent-only streams the server does not play (no debrid link). */
   skippedTorrents: number;
   failedAddons: string[];
+  /** Add-ons Cloudflare refuses the server for (Torrentio blocks data-centre addresses). */
+  blockedAddons: string[];
+  /** This viewer linked the account: their desktop can ask the refused add-ons itself. */
+  assist: boolean;
 };
 
 export type StremioPicked = { ref: string; title: string; art: string | null };

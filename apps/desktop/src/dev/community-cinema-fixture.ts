@@ -22,6 +22,7 @@ import {
   type RmdbReview,
   type RmdbWorkDetails,
   type RmdbWorkSummary,
+  type StremioStream,
   type StremioTitle,
 } from '../../../../packages/community-cinema/src/types';
 import type {
@@ -766,6 +767,35 @@ export function createCommunityCinemaFixtureBridge(
   };
   /** DEV Stremio picks: `x-` ref → what was picked. */
   const stremioPicks = new Map<string, { title: string; imdbId: string }>();
+  const demoStreams = [
+    {
+      id: 'demo-stream-4k',
+      addon: 'Torrentio',
+      name: '[RD+] Torrentio\n4k',
+      title: 'DEMO.2160p.WEB-DL.mkv\n👤 120 💾 14.2 GB ⚙️ Örnek',
+      cached: true,
+      resolution: '4K',
+      size: '14.2 GB',
+    },
+    {
+      id: 'demo-stream-1080',
+      addon: 'Torrentio',
+      name: '[RD download] Torrentio\n1080p',
+      title: 'DEMO.1080p.BluRay.mkv\n👤 48 💾 2.1 GB ⚙️ Örnek',
+      cached: false,
+      resolution: '1080p',
+      size: '2.1 GB',
+    },
+    {
+      id: 'demo-stream-mf',
+      addon: 'MediaFusion',
+      name: 'MediaFusion 1080p',
+      title: 'DEMO.1080p.WEB.mkv\n💾 3.4 GB',
+      cached: null,
+      resolution: '1080p',
+      size: '3.4 GB',
+    },
+  ] satisfies StremioStream[];
   const demoStremio: StremioTitle[] = [
     { type: 'movie', id: 'tt9000001', name: 'DEMO Stremio Filmi', year: '2024', art: null },
     { type: 'series', id: 'tt9000002', name: 'DEMO Stremio Dizisi', year: '2022–', art: null },
@@ -1339,34 +1369,37 @@ export function createCommunityCinemaFixtureBridge(
         200,
       );
     },
-    stremioStreams: async () =>
-      delay(
+    // In the Stremio-only variant Torrentio refuses the "server" (as Cloudflare does for
+    // data-centre IPs) and the linker's computer lists it instead.
+    stremioStreams: async () => {
+      owner();
+      const blocked = variant === 'stremio';
+      return delay(
         {
-          streams: [
-            {
-              id: 'demo-stream-4k',
-              addon: 'Torrentio',
-              name: '[RD+] Torrentio\n4k',
-              title: 'DEMO.2160p.WEB-DL.mkv\n👤 120 💾 14.2 GB ⚙️ Örnek',
-              cached: true,
-              resolution: '4K',
-              size: '14.2 GB',
-            },
-            {
-              id: 'demo-stream-1080',
-              addon: 'Torrentio',
-              name: '[RD download] Torrentio\n1080p',
-              title: 'DEMO.1080p.BluRay.mkv\n👤 48 💾 2.1 GB ⚙️ Örnek',
-              cached: false,
-              resolution: '1080p',
-              size: '2.1 GB',
-            },
-          ],
-          skippedTorrents: 3,
+          streams: blocked ? [demoStreams[2]!] : demoStreams.slice(0, 2),
+          skippedTorrents: blocked ? 0 : 3,
           failedAddons: [],
+          blockedAddons: blocked ? ['Torrentio'] : [],
+          assist: blocked,
         },
         500,
-      ),
+      );
+    },
+    stremioAssist: async () => {
+      owner();
+      return delay(
+        demoStreams.slice(0, 2).map((stream) => ({ ...stream, id: `local-${stream.id}` })),
+        600,
+      );
+    },
+    stremioPickLocal: async (_hallId, streamId) => {
+      const ref = `x-DEMOlocal${streamId
+        .replace(/[^A-Za-z0-9]/g, '')
+        .padEnd(11, '0')
+        .slice(0, 11)}`;
+      stremioPicks.set(ref, { title: 'DEMO Stremio Filmi', imdbId: 'tt9000001' });
+      return delay({ ref, title: 'DEMO Stremio Filmi', art: null }, 400);
+    },
     stremioPick: async (_hallId, streamId) => {
       const ref = `x-DEMO${streamId
         .replace(/[^A-Za-z0-9]/g, '')

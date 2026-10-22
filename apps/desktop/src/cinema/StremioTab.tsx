@@ -337,7 +337,11 @@ function StremioDetailsView({
   );
 }
 
-/** What the account's add-ons offer for one film or episode; a click plays it in the hall. */
+/**
+ * What the account's add-ons offer for one film or episode; a click plays it in the hall.
+ * Add-ons that refuse the server (Torrentio blocks data-centre addresses) are asked from
+ * this computer when it is the one that linked the account.
+ */
 function StreamList({
   type,
   id,
@@ -355,10 +359,23 @@ function StreamList({
   useEffect(() => {
     if (reveal) section.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
   }, [reveal]);
+  const admin = hall.status.isOwner;
   const streams = useBridgeRead<StremioStreams>(
-    `${hall.hallId}:stremio-streams:${type}:${videoId}`,
+    admin ? `${hall.hallId}:stremio-streams:${type}:${videoId}` : null,
     (bridge) => bridge.stremioStreams(hall.hallId, type, id, videoId),
   );
+  const assist = !!streams.data?.assist;
+  const local = useBridgeRead<StremioStream[]>(
+    assist
+      ? `${hall.hallId}:stremio-assist:${type}:${videoId}:${streams.data?.streams.length}`
+      : null,
+    (bridge) => bridge.stremioAssist(hall.hallId, type, id, videoId),
+  );
+  const localIds = useMemo(
+    () => new Set((local.data ?? []).map((stream) => stream.id)),
+    [local.data],
+  );
+  const all = [...(local.data ?? []), ...(streams.data?.streams ?? [])];
   const [picking, setPicking] = useState<string | null>(null);
   const steer = hall.canDirect || !hall.primary;
   const play = async (stream: StremioStream) => {
@@ -366,7 +383,9 @@ function StreamList({
     if (!bridge || picking) return;
     setPicking(stream.id);
     try {
-      const picked = await bridge.stremioPick(hall.hallId, stream.id);
+      const picked = localIds.has(stream.id)
+        ? await bridge.stremioPickLocal(hall.hallId, stream.id)
+        : await bridge.stremioPick(hall.hallId, stream.id);
       await hall.open({
         kind: 'community-media',
         ref: picked.ref,
@@ -377,37 +396,53 @@ function StreamList({
     } catch (error) {
       const text = cinemaErrorText(error);
       hall.notify(text);
-      if (/eskidi/.test(text)) streams.reload();
+      if (/eskidi/.test(text)) {
+        streams.reload();
+        local.reload();
+      }
     } finally {
       setPicking(null);
     }
   };
+  if (!admin)
+    return (
+      <section className="stremio-streams" aria-label="Kaynaklar">
+        <p className="hall-empty-note">
+          Kaynakları topluluk sahibi ve yöneticiler seçer; açtıkları şey salonda herkes için oynar.
+        </p>
+      </section>
+    );
+  const loading = (streams.loading && !streams.data) || (assist && local.loading && !local.data);
+  const blocked = streams.data?.blockedAddons ?? [];
   return (
     <section
       ref={section}
       className="stremio-streams"
       aria-label="Kaynaklar"
-      aria-busy={streams.loading}
+      aria-busy={streams.loading || local.loading}
     >
       <header>
         <h3>Kaynaklar</h3>
         <button
           className="hall-text-button"
-          onClick={streams.reload}
-          disabled={streams.loading}
+          onClick={() => {
+            streams.reload();
+            if (assist) local.reload();
+          }}
+          disabled={streams.loading || local.loading}
           aria-label="Kaynakları yeniden ara"
         >
           <RefreshCw size={14} />
           Yenile
         </button>
       </header>
-      {streams.loading && !streams.data ? (
+      {loading ? (
         <p className="hall-empty-note" role="status">
           Eklentiler kaynak arıyor… Bu birkaç saniye sürebilir.
         </p>
       ) : streams.error ? (
         <p className="hall-empty-note">{streams.error}</p>
-      ) : !streams.data?.streams.length ? (
+      ) : !all.length ? (
         <p className="hall-empty-note">
           {streams.data?.skippedTorrents
             ? `${streams.data.skippedTorrents} torrent bulundu ama sunucu yalnızca doğrudan bağlantıları oynatır. Stremio’daki Torrentio ayarına Real-Debrid gibi bir debrid hesabı ekle.`
@@ -415,7 +450,7 @@ function StreamList({
         </p>
       ) : (
         <ol>
-          {streams.data.streams.map((stream) => {
+          {all.map((stream) => {
             const [first, ...rest] = stream.title.split('\n');
             return (
               <li key={stream.id}>
@@ -464,6 +499,17 @@ function StreamList({
             );
           })}
         </ol>
+      )}
+      {blocked.length > 0 && !assist && (
+        <p className="hall-detail-note">
+          {blocked.join(', ')} sunucunun adresini engelliyor; bu kaynakları yalnızca Stremio’yu
+          bağlayan kişinin bilgisayarı listeleyebilir.
+        </p>
+      )}
+      {assist && local.error && (
+        <p className="hall-detail-note">
+          {blocked.join(', ')} bu bilgisayardan da yanıt vermedi: {local.error}
+        </p>
       )}
       {!!streams.data?.failedAddons.length && (
         <p className="hall-detail-note">

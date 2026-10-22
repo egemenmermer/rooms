@@ -18,6 +18,12 @@ import type {
   StremioType,
 } from '../../../packages/community-cinema/src/types';
 import { CinemaError } from './importer';
+import { STREMIO_ID, streamFacts } from '../../../packages/community-cinema/src/stremio';
+
+export { STREMIO_ID, streamFacts };
+
+/** Cloudflare refuses the server's address (Torrentio blocks data-centre IPs). */
+export class StremioBlockedError extends Error {}
 
 // Stremio's own endpoints, as stremio-core calls them (types/api/request.rs, constants.rs).
 export const STREMIO_API = 'https://api.strem.io/api/';
@@ -61,7 +67,6 @@ export type StremioPick = {
   at: number;
 };
 
-export const STREMIO_ID = /^[A-Za-z0-9:._%-]{1,160}$/;
 export const STREMIO_TYPE = z.enum(['movie', 'series']);
 const MAX_PICKS = 300;
 const ADDONS_MS = 5 * 60_000;
@@ -110,6 +115,10 @@ const httpUrl = (value: unknown) => {
     return null;
   }
 };
+const episodeOf = (videoId: string | null) => {
+  const match = videoId ? /:(\d{1,4}):(\d{1,5})$/.exec(videoId) : null;
+  return match ? { season: Number(match[1]), episode: Number(match[2]) } : null;
+};
 const yearOf = (value: unknown) => {
   const match = typeof value === 'string' ? /\d{4}/.exec(value) : null;
   return match ? Number(match[0]) : typeof value === 'number' ? value : null;
@@ -134,23 +143,6 @@ export const addonBase = (transportUrl: string) => {
   const url = httpUrl(transportUrl);
   return url && /\/manifest\.json$/.test(url) ? url.replace(/\/manifest\.json$/, '') : null;
 };
-
-/** Torrentio-style labels: `[RD+]` is in the debrid cache, `[RD download]` is not yet. */
-export function streamFacts(name: string, title: string) {
-  const all = `${name}\n${title}`;
-  const cached = /\[[A-Z]{2,3}\+\]/.test(name) ? true : /download\]/i.test(name) ? false : null;
-  const resolution = /\b(2160p|4k|uhd)\b/i.test(all)
-    ? '4K'
-    : /\b1080p\b/i.test(all)
-      ? '1080p'
-      : /\b720p\b/i.test(all)
-        ? '720p'
-        : /\b(480p|576p|sd)\b/i.test(all)
-          ? 'SD'
-          : null;
-  const size = /([\d.,]+\s?[GM]B)\b/.exec(all)?.[1] ?? null;
-  return { cached, resolution, size };
-}
 
 const safeHeaders = (value: unknown) => {
   const out: Record<string, string> = {};
@@ -189,6 +181,13 @@ export function stremioFetch(options: {
       allowPrivateNetwork: options.allowPrivateNetwork,
       signal: AbortSignal.timeout(init.timeoutMs ?? 12_000),
     });
+    if (
+      (response.status === 403 || response.status === 429) &&
+      (/cloudflare/i.test(response.headers.get('server') ?? '') || response.headers.has('cf-ray'))
+    ) {
+      await response.body?.cancel().catch(() => {});
+      throw new StremioBlockedError('blocked');
+    }
     return JSON.parse(await limitedText(response, 8_000_000)) as unknown;
   };
 }
@@ -208,6 +207,8 @@ export class StremioCinema {
     { communityId: string; at: number; pick: Omit<StremioPick, 'ref' | 'at'> }
   >();
   private readonly art = new Map<string, string>();
+  /** `communityId\naddon id` → when Cloudflare last refused the server for that add-on. */
+  private readonly blocked = new Map<string, number>();
   private readonly subtitleLists = new Map<
     string,
     { at: number; list: { id: string; url: string; lang: string }[] }
@@ -381,16 +382,22 @@ export class StremioCinema {
   }
 
   /** Continue watching and the library of the linked account, and what is popular now. */
-  async home(communityId: string): Promise<StremioHome> {
-    const { authKey } = this.session(communityId);
+  /**
+   * What is popular, and for whoever linked the account its continue-watching row and
+   * library: what the owner watches stays theirs.
+   */
+  async home(communityId: string, viewerId?: string): Promise<StremioHome> {
+    const { authKey, linkedBy } = this.session(communityId);
+    const own = !!viewerId && viewerId === linkedBy;
     const [library, movie, series] = await Promise.all([
-      this.api('datastoreGet', { authKey, collection: 'libraryItem', ids: [], all: true }).catch(
-        (error) => {
-          if (error instanceof CinemaError && error.message === 'CINEMA_STREMIO_LOGGED_OUT')
-            throw error;
-          return [];
-        },
-      ),
+      (own
+        ? this.api('datastoreGet', { authKey, collection: 'libraryItem', ids: [], all: true })
+        : Promise.resolve([])
+      ).catch((error) => {
+        if (error instanceof CinemaError && error.message === 'CINEMA_STREMIO_LOGGED_OUT')
+          throw error;
+        return [];
+      }),
       this.catalog('movie', 'top').catch(() => []),
       this.catalog('series', 'top').catch(() => []),
     ]);
@@ -434,8 +441,9 @@ export class StremioCinema {
           {
             ...title,
             videoId: videoId && STREMIO_ID.test(videoId) ? videoId : null,
-            season: num(item.state?.season) || null,
-            episode: num(item.state?.episode) || null,
+            // Stremio keeps the episode in the video id (`tt0903747:1:2`).
+            season: episodeOf(videoId)?.season ?? null,
+            episode: episodeOf(videoId)?.episode ?? null,
             progress: duration ? Math.min(1, offset / duration) : null,
             watchedAt: time(item.state?.lastWatched) || null,
           },
@@ -539,7 +547,9 @@ export class StremioCinema {
     type: StremioType,
     metaId: string,
     videoId: string,
+    viewerId?: string,
   ): Promise<StremioStreams> {
+    const account = this.session(communityId);
     const addons = (await this.collection(communityId)).filter((addon) =>
       supports(addon, 'stream', type, videoId),
     );
@@ -547,6 +557,7 @@ export class StremioCinema {
     const video = details?.videos.find((entry) => entry.id === videoId) ?? null;
     let skippedTorrents = 0;
     const failedAddons: string[] = [];
+    const blockedAddons: string[] = [];
     const answers = await Promise.all(
       addons.map(async (addon) => {
         try {
@@ -554,9 +565,13 @@ export class StremioCinema {
             `${addonBase(addon.transportUrl)}/stream/${type}/${encodeURIComponent(videoId)}.json`,
             { timeoutMs: 20_000 },
           )) as { streams?: unknown };
+          this.blocked.delete(`${communityId}\n${addon.manifest.id}`);
           return { addon, streams: Array.isArray(value?.streams) ? value.streams : [] };
-        } catch {
-          failedAddons.push(addon.manifest.name);
+        } catch (error) {
+          if (error instanceof StremioBlockedError) {
+            blockedAddons.push(addon.manifest.name);
+            this.blocked.set(`${communityId}\n${addon.manifest.id}`, this.now());
+          } else failedAddons.push(addon.manifest.name);
           return { addon, streams: [] };
         }
       }),
@@ -577,35 +592,99 @@ export class StremioCinema {
         const title = text(entry.title, 600) ?? text(entry.description, 600) ?? '';
         const hints = (entry.behaviorHints ?? {}) as { proxyHeaders?: { request?: unknown } };
         const id = randomBytes(12).toString('base64url');
-        const workTitle = details?.name ?? metaId;
         this.offers.set(id, {
           communityId,
           at: this.now(),
-          pick: {
-            url,
-            headers: safeHeaders(hints.proxyHeaders?.request),
-            title: video
-              ? `${workTitle} · ${video.season}. Sezon ${video.episode}. Bölüm`
-              : workTitle,
+          pick: this.pickOf(
+            details,
+            video,
             type,
             metaId,
             videoId,
-            season: video?.season ?? null,
-            episode: video?.episode ?? null,
-            poster: details?.art ? (this.art.get(details.art) ?? null) : null,
-            background: details?.backdrop ? (this.art.get(details.backdrop) ?? null) : null,
-            plot: video?.plot ?? details?.plot ?? null,
-            genre: details?.genres.join(', ') || null,
-            cast: details?.cast.join(', ') || null,
-            director: details?.director.join(', ') || null,
-            year: yearOf(details?.year),
-          },
+            url,
+            hints.proxyHeaders?.request,
+          ),
         });
         streams.push({ id, addon: addon.manifest.name, name, title, ...streamFacts(name, title) });
         if (streams.length >= 200) break;
       }
     this.pruneOffers();
-    return { streams, skippedTorrents, failedAddons };
+    return {
+      streams,
+      skippedTorrents,
+      failedAddons,
+      blockedAddons,
+      assist: blockedAddons.length > 0 && !!viewerId && account.linkedBy === viewerId,
+    };
+  }
+
+  private pickOf(
+    details: StremioDetails | null,
+    video: StremioDetails['videos'][number] | null,
+    type: StremioType,
+    metaId: string,
+    videoId: string,
+    url: string,
+    headers: unknown,
+  ): Omit<StremioPick, 'ref' | 'at'> {
+    const workTitle = details?.name ?? metaId;
+    return {
+      url,
+      headers: safeHeaders(headers),
+      title: video ? `${workTitle} · ${video.season}. Sezon ${video.episode}. Bölüm` : workTitle,
+      type,
+      metaId,
+      videoId,
+      season: video?.season ?? null,
+      episode: video?.episode ?? null,
+      poster: details?.art ? (this.art.get(details.art) ?? null) : null,
+      background: details?.backdrop ? (this.art.get(details.backdrop) ?? null) : null,
+      plot: video?.plot ?? details?.plot ?? null,
+      genre: details?.genres.join(', ') || null,
+      cast: details?.cast.join(', ') || null,
+      director: details?.director.join(', ') || null,
+      year: yearOf(details?.year),
+    };
+  }
+
+  /**
+   * Add-ons Cloudflare refused the server for, as URLs for the desktop of whoever linked the
+   * account: their own key, asked from their own (home) address. Nobody else gets them.
+   */
+  async assistTargets(communityId: string, userId: string, type: StremioType, videoId: string) {
+    const account = this.session(communityId);
+    if (account.linkedBy !== userId) return fail('CINEMA_ACCESS_DENIED');
+    const since = this.now() - 3600_000;
+    return (await this.collection(communityId))
+      .filter(
+        (addon) =>
+          supports(addon, 'stream', type, videoId) &&
+          (this.blocked.get(`${communityId}\n${addon.manifest.id}`) ?? 0) > since,
+      )
+      .map((addon) => ({
+        addon: addon.manifest.name,
+        url: `${addonBase(addon.transportUrl)}/stream/${type}/${encodeURIComponent(videoId)}.json`,
+      }));
+  }
+
+  /**
+   * The linker's desktop resolved a refused add-on's stream to its final link (the debrid
+   * download) and hands it over; it is kept like any other pick.
+   */
+  async pickDirect(
+    communityId: string,
+    userId: string,
+    input: { url: string; type: StremioType; metaId: string; videoId: string },
+  ): Promise<StremioPicked> {
+    const account = this.session(communityId);
+    if (account.linkedBy !== userId) return fail('CINEMA_ACCESS_DENIED');
+    const url = httpUrl(input.url) ?? fail('CINEMA_SOURCE_INVALID');
+    const details = await this.details(communityId, input.type, input.metaId).catch(() => null);
+    const video = details?.videos.find((entry) => entry.id === input.videoId) ?? null;
+    return this.keep(
+      communityId,
+      this.pickOf(details, video, input.type, input.metaId, input.videoId, url, null),
+    );
   }
 
   private pruneOffers() {
@@ -620,11 +699,15 @@ export class StremioCinema {
     const offer = this.offers.get(streamId);
     if (!offer || offer.communityId !== communityId || this.now() - offer.at > OFFER_MS)
       return fail('CINEMA_STREMIO_STREAM_EXPIRED');
+    return this.keep(communityId, offer.pick);
+  }
+
+  private keep(communityId: string, chosen: Omit<StremioPick, 'ref' | 'at'>): StremioPicked {
     const picks = this.options.picks(communityId);
-    const existing = picks.find((pick) => pick.url === offer.pick.url);
+    const existing = picks.find((pick) => pick.url === chosen.url);
     const pick: StremioPick = existing
       ? { ...existing, at: this.now() }
-      : { ...offer.pick, ref: `x-${randomBytes(16).toString('base64url')}`, at: this.now() };
+      : { ...chosen, ref: `x-${randomBytes(16).toString('base64url')}`, at: this.now() };
     const next = [pick, ...picks.filter((other) => other.ref !== pick.ref)]
       .sort((a, b) => b.at - a.at)
       .slice(0, MAX_PICKS);

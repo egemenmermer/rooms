@@ -248,8 +248,15 @@ export async function createCinemaServer(options: CinemaServerOptions) {
 
   server.get<Hall>('/v1/halls/:hallId/stremio/home', async (request) => {
     const identity = await viewer(request, request.params.hallId);
-    return service.stremio.home(identity.communityId);
+    return service.stremio.home(identity.communityId, identity.userId);
   });
+
+  /** Streams run through the owner's add-ons and debrid account: owner and admins pick. */
+  const picker = async (request: FastifyRequest, hallId: string) => {
+    const identity = await viewer(request, hallId);
+    if (!identity.isOwner) throw new CinemaError('CINEMA_OWNER_REQUIRED');
+    return identity;
+  };
 
   server.get<Hall>('/v1/halls/:hallId/stremio/search', async (request) => {
     const identity = await viewer(request, request.params.hallId);
@@ -264,20 +271,53 @@ export async function createCinemaServer(options: CinemaServerOptions) {
   });
 
   server.get<Hall>('/v1/halls/:hallId/stremio/streams', async (request) => {
-    const identity = await viewer(request, request.params.hallId);
+    const identity = await picker(request, request.params.hallId);
     const query = z
       .object({ type: STREMIO_TYPE, id: stremioId, videoId: stremioId })
       .parse(request.query);
-    return service.stremio.streams(identity.communityId, query.type, query.id, query.videoId);
+    return service.stremio.streams(
+      identity.communityId,
+      query.type,
+      query.id,
+      query.videoId,
+      identity.userId,
+    );
   });
 
   server.post<Hall>('/v1/halls/:hallId/stremio/pick', async (request) => {
-    const identity = await viewer(request, request.params.hallId);
+    const identity = await picker(request, request.params.hallId);
     const { streamId } = z
       .object({ streamId: z.string().regex(/^[A-Za-z0-9_-]{8,40}$/) })
       .strict()
       .parse(request.body);
     return service.stremio.pick(identity.communityId, streamId);
+  });
+
+  /** Whoever linked the account: add-ons that refuse the server, for their desktop to ask. */
+  server.get<Hall>('/v1/halls/:hallId/stremio/assist', async (request) => {
+    const identity = await picker(request, request.params.hallId);
+    const query = z.object({ type: STREMIO_TYPE, videoId: stremioId }).parse(request.query);
+    return service.stremio.assistTargets(
+      identity.communityId,
+      identity.userId,
+      query.type,
+      query.videoId,
+    );
+  });
+
+  /** Whoever linked the account: the final link their desktop resolved. */
+  server.post<Hall>('/v1/halls/:hallId/stremio/pick-direct', async (request) => {
+    const identity = await picker(request, request.params.hallId);
+    const body = z
+      .object({
+        url: z.string().max(4096),
+        type: STREMIO_TYPE,
+        metaId: stremioId,
+        videoId: stremioId,
+      })
+      .strict()
+      .parse(request.body);
+    return service.stremio.pickDirect(identity.communityId, identity.userId, body);
   });
 
   server.get<Hall>('/v1/halls/:hallId/categories', async (request) => {

@@ -15,6 +15,7 @@ import {
   CINEMETA,
   STREMIO_API,
   STREMIO_LINK_API,
+  StremioBlockedError,
   streamFacts,
   supports,
   type StremioFetch,
@@ -88,7 +89,7 @@ async function setup() {
       Date.now(),
     );
   const calls: { url: string; body?: unknown }[] = [];
-  const state = { approved: false, sessionValid: true };
+  const state = { approved: false, sessionValid: true, blocked: false };
   const fetch: StremioFetch = async (url, init) => {
     calls.push({ url, body: init?.body });
     if (url === `${STREMIO_LINK_API}create?type=Create`)
@@ -121,8 +122,6 @@ async function setup() {
                 duration: 2_400_000,
                 video_id: 'tt0903747:1:2',
                 lastWatched: '2026-10-21T20:00:00.000Z',
-                season: 1,
-                episode: 2,
               },
             },
             { _id: 'tt1', name: 'Removed', type: 'movie', removed: true, temp: false, state: {} },
@@ -141,7 +140,8 @@ async function setup() {
           director: ['Denis Villeneuve'],
         },
       };
-    if (url === 'https://addon.example/SECRETDEBRIDKEY/stream/movie/tt1160419.json')
+    if (url === 'https://addon.example/SECRETDEBRIDKEY/stream/movie/tt1160419.json') {
+      if (state.blocked) throw new StremioBlockedError('blocked');
       return {
         streams: [
           { name: '[RD+] Torrentio\n4k', title: 'Dune.2021.2160p.mkv\n💾 40.1 GB', url: DEBRID },
@@ -149,6 +149,7 @@ async function setup() {
           { name: 'Bad', url: 'magnet:?xt=urn:btih:abc' },
         ],
       };
+    }
     if (url === 'https://subs.example/subtitles/movie/tt1160419.json')
       return {
         subtitles: [
@@ -279,8 +280,10 @@ describe('Stremio in the community cinema', () => {
       error: 'CINEMA_STREMIO_NOT_LINKED',
     });
     await s.link();
+    const theirs = await s.call('GET', `/v1/halls/${HALL}/stremio/home`, 'member-token');
+    expect(theirs.body).toMatchObject({ continue: [], library: [] });
     s.calls.length = 0;
-    const home = await s.call('GET', `/v1/halls/${HALL}/stremio/home`, 'member-token');
+    const home = await s.call('GET', `/v1/halls/${HALL}/stremio/home`, 'owner-token');
     expect(home.body.continue).toEqual([
       expect.objectContaining({
         id: 'tt0903747',
@@ -304,11 +307,11 @@ describe('Stremio in the community cinema', () => {
 
   it('plays a picked debrid stream without an IPTV account and never exposes its link', async () => {
     await s.link();
-    const streams = await s.call(
-      'GET',
-      `/v1/halls/${HALL}/stremio/streams?type=movie&id=tt1160419&videoId=tt1160419`,
-      'member-token',
-    );
+    const url = `/v1/halls/${HALL}/stremio/streams?type=movie&id=tt1160419&videoId=tt1160419`;
+    expect((await s.call('GET', url, 'member-token')).body).toEqual({
+      error: 'CINEMA_OWNER_REQUIRED',
+    });
+    const streams = await s.call('GET', url, 'owner-token');
     expect(streams.status).toBe(200);
     expect(streams.raw).not.toContain('SECRETDEBRIDKEY');
     expect(streams.body.skippedTorrents).toBe(1);
@@ -320,14 +323,21 @@ describe('Stremio in the community cinema', () => {
         size: '40.1 GB',
       }),
     ]);
-    const picked = await s.call('POST', `/v1/halls/${HALL}/stremio/pick`, 'member-token', {
+    expect(
+      (
+        await s.call('POST', `/v1/halls/${HALL}/stremio/pick`, 'member-token', {
+          streamId: streams.body.streams[0].id,
+        })
+      ).body,
+    ).toEqual({ error: 'CINEMA_OWNER_REQUIRED' });
+    const picked = await s.call('POST', `/v1/halls/${HALL}/stremio/pick`, 'owner-token', {
       streamId: streams.body.streams[0].id,
     });
     expect(picked.body).toMatchObject({
       title: 'Dune',
       ref: expect.stringMatching(/^x-[A-Za-z0-9_-]{22}$/),
     });
-    const again = await s.call('POST', `/v1/halls/${HALL}/stremio/pick`, 'member-token', {
+    const again = await s.call('POST', `/v1/halls/${HALL}/stremio/pick`, 'owner-token', {
       streamId: streams.body.streams[0].id,
     });
     expect(again.body.ref).toBe(picked.body.ref);
@@ -375,10 +385,55 @@ describe('Stremio in the community cinema', () => {
     });
   });
 
+  it('lets the linker’s desktop ask add-ons that refuse the server', async () => {
+    await s.link();
+    s.state.blocked = true;
+    const url = `/v1/halls/${HALL}/stremio/streams?type=movie&id=tt1160419&videoId=tt1160419`;
+    const streams = await s.call('GET', url, 'owner-token');
+    expect(streams.body).toMatchObject({ streams: [], blockedAddons: ['Torrentio'], assist: true });
+    const targets = await s.call(
+      'GET',
+      `/v1/halls/${HALL}/stremio/assist?type=movie&videoId=tt1160419`,
+      'owner-token',
+    );
+    expect(targets.body).toEqual([
+      {
+        addon: 'Torrentio',
+        url: 'https://addon.example/SECRETDEBRIDKEY/stream/movie/tt1160419.json',
+      },
+    ]);
+    // The member never gets the add-on's link (it carries the debrid key).
+    const member = await s.call(
+      'GET',
+      `/v1/halls/${HALL}/stremio/assist?type=movie&videoId=tt1160419`,
+      'member-token',
+    );
+    expect(member.raw).not.toContain('SECRETDEBRIDKEY');
+    const direct = await s.call('POST', `/v1/halls/${HALL}/stremio/pick-direct`, 'owner-token', {
+      url: 'https://cdn.debrid.example/d/ABC/Dune.mkv',
+      type: 'movie',
+      metaId: 'tt1160419',
+      videoId: 'tt1160419',
+    });
+    expect(direct.body).toMatchObject({ title: 'Dune', ref: expect.stringMatching(/^x-/) });
+    expect(s.service.stremio.relaySource(COMMUNITY, direct.body.ref)).toEqual({
+      url: 'https://cdn.debrid.example/d/ABC/Dune.mkv',
+      headers: {},
+      live: false,
+    });
+    const bad = await s.call('POST', `/v1/halls/${HALL}/stremio/pick-direct`, 'owner-token', {
+      url: 'file:///etc/passwd',
+      type: 'movie',
+      metaId: 'tt1160419',
+      videoId: 'tt1160419',
+    });
+    expect(bad.body).toEqual({ error: 'CINEMA_SOURCE_INVALID' });
+  });
+
   it('asks the owner to link again when Stremio drops the session', async () => {
     await s.link();
     s.state.sessionValid = false;
-    const home = await s.call('GET', `/v1/halls/${HALL}/stremio/home`, 'member-token');
+    const home = await s.call('GET', `/v1/halls/${HALL}/stremio/home`, 'owner-token');
     expect(home.body).toEqual({ error: 'CINEMA_STREMIO_LOGGED_OUT' });
   });
 

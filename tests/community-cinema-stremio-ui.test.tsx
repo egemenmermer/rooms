@@ -143,11 +143,13 @@ describe('Stremio in the cinema hall', { timeout: 30_000 }, () => {
     const streams = await screen.findByRole('region', { name: 'Kaynaklar' });
     expect(await within(streams).findByText('Hazır')).toBeTruthy();
     expect(within(streams).getByText('İndirilecek')).toBeTruthy();
-    const pick = vi.spyOn(bridge, 'stremioPick');
+    // Torrentio refuses the server here; this computer (the linker's) listed it.
+    expect(within(streams).getByText(/MediaFusion/)).toBeTruthy();
+    const pick = vi.spyOn(bridge, 'stremioPickLocal');
     fireEvent.click(
       within(streams).getAllByRole('button', { name: /salonda oynat|sıraya öner/ })[0]!,
     );
-    await waitFor(() => expect(pick).toHaveBeenCalledWith(FIXTURE_HALL_ID, 'demo-stream-4k'));
+    await waitFor(() => expect(pick).toHaveBeenCalledWith(FIXTURE_HALL_ID, 'local-demo-stream-4k'));
     await waitFor(() =>
       expect(
         sent.some(

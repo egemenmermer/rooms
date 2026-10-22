@@ -292,6 +292,10 @@ const bridge: DesktopBridge = {
       ipcRenderer.invoke('rooms:cinema-stremio-streams', hallId, type, id, videoId),
     stremioPick: (hallId, streamId) =>
       ipcRenderer.invoke('rooms:cinema-stremio-pick', hallId, streamId),
+    stremioAssist: (hallId, type, id, videoId) =>
+      ipcRenderer.invoke('rooms:cinema-stremio-assist', hallId, type, id, videoId),
+    stremioPickLocal: (hallId, streamId) =>
+      ipcRenderer.invoke('rooms:cinema-stremio-pick-local', hallId, streamId),
   },
   remoteControl: {
     register: (room, track) => ipcRenderer.invoke('rooms:remote-register', room, track),

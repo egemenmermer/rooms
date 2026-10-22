@@ -69,6 +69,8 @@ const copy: Record<CinemaErrorCode, string> = {
   CINEMA_STREMIO_UNAVAILABLE: "Stremio'ya şu an ulaşılamadı. Biraz sonra yeniden dene.",
   CINEMA_STREMIO_LINK_EXPIRED: 'Bağlantı kodunun süresi doldu. Yeniden bağlanmayı dene.',
   CINEMA_STREMIO_STREAM_EXPIRED: 'Kaynak listesi eskidi. Kaynakları yeniden yükle.',
+  CINEMA_STREMIO_NOT_CACHED:
+    'Bu kaynak debrid önbelleğinde değil; indirme başladı. Biraz sonra yeniden dene ya da “Hazır” bir kaynak seç.',
 };
 
 /** The bridge code inside an error, if any (IPC wraps messages). */

@@ -23,6 +23,7 @@ import type {
   StremioHome,
   StremioLinkCode,
   StremioPicked,
+  StremioStream,
   StremioStreams,
   StremioTitle,
   StremioType,
@@ -127,7 +128,9 @@ export type CinemaErrorCode =
   | 'CINEMA_STREMIO_UNAVAILABLE'
   | 'CINEMA_STREMIO_LINK_EXPIRED'
   /** The stream list is old; list the streams again. */
-  | 'CINEMA_STREMIO_STREAM_EXPIRED';
+  | 'CINEMA_STREMIO_STREAM_EXPIRED'
+  /** The debrid service does not have this stream yet (it started downloading it). */
+  | 'CINEMA_STREMIO_NOT_CACHED';
 
 export interface CinemaBridge {
   status(communityId: string): Promise<CinemaStatus>;
@@ -217,4 +220,16 @@ export interface CinemaBridge {
   ): Promise<StremioStreams>;
   /** Makes a listed stream a hall ref to open like a catalog film. */
   stremioPick(hallId: string, streamId: string): Promise<StremioPicked>;
+  /**
+   * Whoever linked the account: asks the add-ons that refuse the server (`blockedAddons`)
+   * from this computer. The links stay in the main process.
+   */
+  stremioAssist(
+    hallId: string,
+    type: StremioType,
+    id: string,
+    videoId: string,
+  ): Promise<StremioStream[]>;
+  /** Resolves a stream from `stremioAssist` here and hands its final link to the hall. */
+  stremioPickLocal(hallId: string, streamId: string): Promise<StremioPicked>;
 }
