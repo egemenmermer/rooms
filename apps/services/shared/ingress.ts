@@ -14,10 +14,17 @@ export const TRUSTED_PROXIES = ['loopback', 'linklocal', 'uniquelocal'];
  */
 export function ingressLimit(
   app: FastifyInstance,
-  options: { perMinute: number; error: string; now?: () => number },
+  options: {
+    perMinute: number;
+    error: string;
+    /** Routes with their own budget that must not share this one (cinema HLS segments). */
+    skip?: (url: string) => boolean;
+    now?: () => number;
+  },
 ) {
   const windows = new Map<string, { start: number; count: number }>();
   app.addHook('onRequest', async (request, reply) => {
+    if (options.skip?.(request.url)) return;
     const now = options.now?.() ?? Date.now();
     const key = request.ip;
     let window = windows.get(key);

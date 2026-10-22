@@ -76,7 +76,12 @@ export type CinemaServerOptions = {
 export async function createCinemaServer(options: CinemaServerOptions) {
   const { service, configs, authority } = options;
   const server = Fastify({ logger: false, trustProxy: TRUSTED_PROXIES, bodyLimit: 16384 });
-  ingressLimit(server, { perMinute: 1200, error: 'CINEMA_RATE_LIMITED' });
+  // Relay files are budgeted per ticket; a full hall must not exhaust one address's budget.
+  ingressLimit(server, {
+    perMinute: 1200,
+    error: 'CINEMA_RATE_LIMITED',
+    skip: (url) => url.startsWith('/v1/relay/'),
+  });
   await server.register(rateLimit, {
     max: 1200,
     timeWindow: '1 minute',
