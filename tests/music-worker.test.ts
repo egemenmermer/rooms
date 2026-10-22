@@ -549,6 +549,33 @@ it('picks a stream that broke off mid-song up where it stopped, then moves on', 
     status: 'playing',
     error: 'MUSIC_TRACK_SKIPPED',
   });
+  expect(worker.snapshot('drop-room').queue[0]!.title).toBe('One · yarıda kesildi, atlandı');
+});
+it('does not mark a song that broke off in its last seconds', async () => {
+  const { publisher, lease } = await setup(),
+    failures: Array<(error?: Error) => void> = [];
+  const worker = new MusicWorker({
+    publisher: () => ({
+      ...publisher,
+      position: () => 199,
+      playYouTube: vi.fn(async (_source: string, _position: number, _ended, onError) => {
+        failures.push(onError);
+      }),
+    }),
+    lease: async () => lease,
+    youtubeReferences: async () => [
+      { source: 'https://www.youtube.com/watch?v=w2BTr6qsLFc', title: 'One', durationSec: 200 },
+      { source: 'https://www.youtube.com/watch?v=vKHu4uPOJVg', title: 'Two', durationSec: 203 },
+    ],
+  });
+  workers.push(worker);
+  const first = await worker.command('end-room', lease, {
+    type: 'add',
+    url: 'https://www.youtube.com/playlist?list=PLabcdefgh123',
+  });
+  failures.at(-1)!(Error('MUSIC_DECODE_FAILED'));
+  await vi.waitFor(() => expect(worker.snapshot('end-room').currentId).toBe(first.queue[1]!.id));
+  expect(worker.snapshot('end-room').queue[0]!.title).toBe('One');
 });
 it('skips tracks that cannot start when a song ends, but stops on an access refusal', async () => {
   const { publisher, lease } = await setup(),
@@ -797,6 +824,52 @@ describe('a playlist that plays on its own', () => {
       error: 'MUSIC_MIRROR_NOT_FOUND',
       currentId: added.queue[9]!.id,
     });
+  });
+
+  it('lets another room add while a list searches past missing songs', async () => {
+    const { publisher, lease } = await setup();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const worker = new MusicWorker({
+      publisher: () => ({ ...publisher, playYouTube: vi.fn(async () => {}) }),
+      lease: async () => lease,
+      matchingYouTubeReference: async () => {
+        await gate;
+        throw new Error('MUSIC_MIRROR_NOT_FOUND');
+      },
+      youtubeReferences: async (source) => [{ source, title: 'Other room', durationSec: 100 }],
+    });
+    workers.push(worker);
+    const slow = worker.command('room-a', lease, {
+      type: 'add-list',
+      tracks: [listed(1, 'Gone'), listed(2, 'Gone too')],
+    });
+    await vi.waitFor(() => expect(worker.snapshot('room-a').queue).toHaveLength(2));
+    await expect(
+      worker.command('room-b', lease, {
+        type: 'add',
+        url: 'https://www.youtube.com/watch?v=w2BTr6qsLFc',
+      }),
+    ).resolves.toMatchObject({ status: 'playing' });
+    release();
+    await slow;
+  });
+
+  it('never marks the track the DJ stops on, nor one that broke off at its very end', async () => {
+    const { worker, lease, ends } = await playlistWorker();
+    const added = await worker.command('stop-room', lease, {
+      type: 'add-list',
+      tracks: [listed(0, 'Gone'), listed(1, 'One'), listed(2, 'Two')],
+    });
+    await expect(
+      worker.command('stop-room', lease, { type: 'select', id: added.queue[0]!.id }),
+    ).rejects.toThrow('MUSIC_MIRROR_NOT_FOUND');
+    expect(worker.snapshot('stop-room')).toMatchObject({
+      status: 'error',
+      currentId: added.queue[0]!.id,
+    });
+    expect(worker.snapshot('stop-room').queue[0]!.title).toBe('Gone');
+    expect(ends).toHaveLength(1);
   });
 
   it('keeps playing at a song change when access answers only for a moment', async () => {

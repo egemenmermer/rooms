@@ -247,3 +247,73 @@ it('lets a playlist take a looser recording of the same song, never a cover, rem
   };
   expect(looseSong(listed, [video, audio])).toEqual(audio);
 });
+it('keeps a loose match off live takes, other mixes and other-language or live versions', () => {
+  const oasis = {
+    provider: 'spotify' as const,
+    title: 'Live Forever',
+    artists: ['Oasis'],
+    durationSec: 276,
+  };
+  const studio = {
+    id: 'abcdefghijk',
+    title: 'Oasis - Live Forever (Official Video)',
+    duration: 280,
+  };
+  expect(looseSong(oasis, [studio])).toEqual(studio);
+  expect(
+    looseSong(oasis, [
+      { ...studio, title: 'Oasis - Live Forever (Live at Knebworth 1996)', duration: 300 },
+    ]),
+  ).toBeNull();
+  const levels = {
+    provider: 'spotify' as const,
+    title: 'Levels',
+    artists: ['Avicii'],
+    durationSec: 200,
+  };
+  const original = { id: 'lmnopqrstuv', title: 'Avicii - Levels', duration: 202 };
+  expect(
+    looseSong(levels, [{ ...original, title: 'Avicii - Levels (Skrillex Edit)', duration: 222 }]),
+  ).toBeNull();
+  expect(
+    looseSong(levels, [{ ...original, title: 'Avicii - Levels (Radio Edit)' }]),
+  ).not.toBeNull();
+  const live = {
+    provider: 'spotify' as const,
+    title: 'Gül Pembe - Canlı',
+    artists: ['Barış Manço'],
+    durationSec: 260,
+  };
+  expect(
+    looseSong(live, [
+      { ...original, title: 'Barış Manço - Gül Pembe (Official Audio)', duration: 240 },
+    ]),
+  ).toBeNull();
+  expect(
+    looseSong(live, [{ ...original, title: 'Barış Manço - Gül Pembe (Canlı)', duration: 262 }]),
+  ).not.toBeNull();
+  const english = {
+    provider: 'spotify' as const,
+    title: 'Bailando - English Version',
+    artists: ['Enrique Iglesias', 'Sean Paul'],
+    durationSec: 243,
+  };
+  expect(
+    looseSong(english, [
+      {
+        ...original,
+        title: 'Enrique Iglesias - Bailando ft. Descemer Bueno, Gente De Zona',
+        duration: 260,
+      },
+    ]),
+  ).toBeNull();
+  expect(
+    looseSong(english, [
+      {
+        ...original,
+        title: 'Enrique Iglesias - Bailando (English Version) ft. Sean Paul',
+        duration: 260,
+      },
+    ]),
+  ).not.toBeNull();
+});

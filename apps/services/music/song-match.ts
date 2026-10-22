@@ -34,8 +34,20 @@ const variants = [
 ];
 const has = (value: string, variant: string) =>
   new RegExp(`(?:^| )${variant === 'remaster' ? 'remaster(?:ed)?' : variant}(?: |$)`).test(value);
+const count = (value: string, variant: string) =>
+  value.match(
+    new RegExp(`(?:^| )${variant === 'remaster' ? 'remaster(?:ed)?' : variant}(?= |$)`, 'g'),
+  )?.length ?? 0;
 /** Variants that only label the same recording; the others change what is heard. */
 const labels = ['remaster', 'edit', 'extended'];
+/** An edit that is still the artist's own recording; "(Skrillex Edit)" is another mix. */
+const sameEdit = /(?:^| )(?:radio|single|album|clean|explicit|short|video) edit(?: |$)/;
+/** Title words that credit or label a recording rather than name a different one. */
+const creditWords = new Set(
+  'feat ft featuring with from remaster remastered edit radio single album version extended mono stereo original official audio video explicit clean bonus deluxe edition'.split(
+    ' ',
+  ),
+);
 /** The title without bracketed or dashed additions: "Song (feat. X) - 2011 Remaster" is "Song". */
 export const coreTitle = (title: string) =>
   title
@@ -116,7 +128,19 @@ export function looseSong(
   const primary = normalize(song.artists[0] ?? '').replace(/ /g, '');
   if (!words.length || !primary) return null;
   const target = normalize(song.title);
-  const wanted = variants.filter((v) => has(target, v));
+  // Words the core title drops that name a version ("Canlı", "English Version") must stay.
+  const credited = new Set(normalize(song.artists.slice(1).join(' ')).split(' '));
+  const marks = target
+    .split(' ')
+    .filter(
+      (w) =>
+        w &&
+        !words.includes(w) &&
+        !/^\d+$/.test(w) &&
+        !creditWords.has(w) &&
+        !credited.has(w) &&
+        !variants.includes(w),
+    );
   const fits = candidates.filter((c) => {
     if (
       !/^[A-Za-z0-9_-]{11}$/.test(c.id) ||
@@ -129,10 +153,12 @@ export function looseSong(
     )
       return false;
     const title = normalize(c.title);
-    if (variants.some((v) => !labels.includes(v) && has(title, v) !== wanted.includes(v)))
+    // Counted, so "Live Forever (Live at Knebworth)" is a live take of "Live Forever".
+    if (variants.some((v) => !labels.includes(v) && count(title, v) !== count(target, v)))
       return false;
+    if (count(title, 'edit') > count(target, 'edit') && !sameEdit.test(title)) return false;
     const tokens = new Set(title.split(' '));
-    if (!words.every((w) => tokens.has(w))) return false;
+    if (!words.every((w) => tokens.has(w)) || !marks.every((w) => tokens.has(w))) return false;
     const identity = normalize(
       `${c.title} ${c.channel ?? ''} ${c.uploader ?? ''} ${(c.artists ?? []).join(' ')}`,
     ).replace(/ /g, '');
