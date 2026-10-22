@@ -176,7 +176,9 @@ export async function createAgentServer(config: AgentConfig) {
   const now = config.clock ?? Date.now;
   const app = Fastify({ logger: false, trustProxy: TRUSTED_PROXIES, bodyLimit: 1024 * 1024 });
   ingressLimit(app, { perMinute: 1200, error: 'RATE_LIMITED' });
-  await app.register(rateLimit, { max: 60, timeWindow: '1 minute' });
+  // One open Agent window refreshes about 30 times a minute; leave room for actions and a
+  // second window. Clients are told apart by address now (trusted proxy hops only).
+  await app.register(rateLimit, { max: 240, timeWindow: '1 minute' });
   const jobs = new Map<string, AbortController>();
   const completions = new Map<string, Promise<void>>();
   let busy = false;

@@ -39,9 +39,7 @@ describe('Masadan kalk', () => {
     expect(ece.bot).toBe(true);
     for (let now = 3000; table.status === 'playing' && now < 200_000; now += 1000) {
       const turn = table.holdem?.turn;
-      const current = table.seats.find(
-        (seat) => seat.seat === table.holdem?.seats[turn ?? -1]?.seat,
-      );
+      const current = turn === null || turn === undefined ? null : table.holdem?.seats[turn];
       if (current?.userId === 'owner')
         gameCommand(table, { type: 'game.action', action: 'fold' }, actor('owner'), now);
       else advanceGameBots(table, now);
