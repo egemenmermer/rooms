@@ -420,6 +420,12 @@ export interface SocialBridge {
   ackRead(channelId: string, messageId: string): Promise<void>;
   readStates(): Promise<import('@rooms/social').SocialReadState[]>;
   presence(status: 'online' | 'idle' | 'dnd' | 'invisible'): Promise<void>;
+  /** Bio, status text and presence as stored on the server, for Settings to start from. */
+  ownProfile?(): Promise<{
+    bio: string;
+    statusText: string;
+    presence: 'online' | 'idle' | 'dnd' | 'invisible';
+  }>;
   typing(channelId: string, active: boolean): Promise<boolean>;
   onEvent(listener: (event: import('@rooms/social').GatewayEvent) => void): () => void;
 }

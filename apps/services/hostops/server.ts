@@ -36,6 +36,12 @@ export function createHostOpsServer(config: {
   sample?: () => Promise<HostSample>;
   now?: () => number;
   onAlert?: (input: { hostId: string; alertId: string; message: string }) => Promise<void>;
+  /**
+   * Whether a user is still the owner or an owner-equivalent admin, read without their token.
+   * Sessions on the owner profile of someone who is no longer one are closed. A failed read
+   * closes nothing.
+   */
+  stillOwner?(userId: string, host: HostSpec): Promise<boolean>;
   internalAgent?: {
     key: string;
     identifyUser(userId: string, host: HostSpec): Promise<OpsIdentity>;
@@ -398,16 +404,52 @@ export function createHostOpsServer(config: {
     }
   };
   let timer: ReturnType<typeof setInterval> | undefined;
+  let ownership: ReturnType<typeof setInterval> | undefined;
+  let checking = false;
+  /** An admin who lost the role keeps no running shell on the owner's profile. */
+  const reviewOwners = async () => {
+    if (checking || stopped || !config.terminals || !config.stillOwner) return;
+    checking = true;
+    try {
+      for (const h of config.hosts) {
+        if (!h.ownerProfileId) continue;
+        for (const user of config.terminals.owners(h.id, h.ownerProfileId)) {
+          let still = true;
+          try {
+            still = await config.stillOwner(user, h);
+          } catch (error) {
+            // Kicked, banned or gone is a definite answer; an unreachable store closes nothing.
+            const status = (error as { status?: unknown; statusCode?: unknown })?.status;
+            if (status !== 401 && status !== 403 && status !== 404) continue;
+            still = false;
+          }
+          if (still || stopped) continue;
+          // An operator grant of their own keeps their profile; the owner's shell still closes.
+          if (config.store.grant(h.id, user)?.permissions.includes('terminal'))
+            config.terminals.closeOwned(h.id, user, h.ownerProfileId);
+          else config.terminals.revokeUser(h.id, user);
+          config.store.audit(user, h.id, 'terminal-revoked', user);
+        }
+      }
+    } finally {
+      checking = false;
+    }
+  };
   app.addHook('onReady', async () => {
     await collect();
     if (config.sample || config.terminals) {
       timer = setInterval(() => void collect(), 5000);
       timer.unref();
     }
+    if (config.terminals && config.stillOwner) {
+      ownership = setInterval(() => void reviewOwners(), 60_000);
+      ownership.unref();
+    }
   });
   app.addHook('onClose', async () => {
     stopped = true;
     if (timer) clearInterval(timer);
+    if (ownership) clearInterval(ownership);
     for (const ws of wsServer.clients) ws.terminate();
     wsServer.close();
     config.terminals?.shutdown();

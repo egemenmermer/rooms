@@ -790,8 +790,8 @@ const errorMessages: Record<string, string> = {
     'Kısa sürede çok fazla işlem yapıldı. Biraz bekleyip yeniden dene.',
   'The social server is unavailable. Retry shortly.':
     'Topluluk hizmeti isteği tamamlayamadı. Daha sonra yeniden dene.',
-  'Account creation could not be completed. If you already have an account, sign in instead. Contact the server administrator if you cannot sign in.':
-    'Hesap oluşturulamadı. Mevcut hesabın varsa Giriş yap seçeneğini kullan. Giriş yapamıyorsan sunucu yöneticine başvur.',
+  'This email address already has an account. Sign in with it, or use a different email address.':
+    'Bu e-posta adresiyle zaten bir hesap var. O hesapla giriş yap veya farklı bir e-posta adresi kullan.',
   'Account creation could not be confirmed. Try signing in before submitting another invitation.':
     'Hesabın oluşturulup oluşturulmadığı doğrulanamadı. Yeni davet kullanmadan önce giriş yapmayı dene.',
   'The social server rejected this request. Check the supplied details.':

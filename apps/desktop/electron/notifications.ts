@@ -182,6 +182,26 @@ export function setupNotifications(
     voiceActiveUntil = value ? Date.now() + 30000 : 0;
   });
   return {
+    /**
+     * A server alert for an owner or developer-role admin. It shows even with chat notifications
+     * off: it is about the machine everyone uses, and only admins get it.
+     */
+    serverAlert: (text: string, open?: () => void) => {
+      if (!Notification.isSupported()) return;
+      const notification = new Notification({
+        title: 'Tayfa · Sunucu uyarısı',
+        body: text.slice(0, 200),
+        silent: !sound,
+      });
+      notification.on('click', () => {
+        const current = getWindow();
+        if (!current) return;
+        showWindow(current);
+        current.focus();
+        open?.();
+      });
+      notification.show();
+    },
     voiceActive: () => voiceActiveUntil > Date.now(),
     message: (
       scope?: ChannelNotificationScope,

@@ -64,7 +64,7 @@ vi.mock('@rooms/stoat', async () => {
       ) {
         if (stoat.register === 'invalid-invite') throw new real.StoatError(404, 'NotFound');
         hooks.onStage?.('account-create');
-        if (stoat.register === 'email-taken') throw new real.StoatError(409, 'EmailInUse');
+        if (stoat.register === 'email-taken') throw new real.StoatError(409, 'OperationFailed');
         if (stoat.register === 'timeout') throw new real.StoatError(503, 'NETWORK_UNAVAILABLE');
         hooks.onStage?.('account-created');
         if (stoat.register === 'after-create') throw new real.StoatError(409, 'UsernameTaken');
@@ -242,7 +242,9 @@ describe('invitation links in the access service', () => {
       stoat.register = 'invalid-invite';
       expect((await register(server, code, 1)).statusCode).toBe(404);
       stoat.register = 'email-taken';
-      expect((await register(server, code, 2)).statusCode).toBe(409);
+      const taken = await register(server, code, 2);
+      expect(taken.statusCode).toBe(409);
+      expect(taken.json().error).toBe('OperationFailed');
       expect((await listLinks(server))[0].uses).toBe(0);
       stoat.register = 'timeout';
       expect((await register(server, code, 3)).statusCode).toBe(503);

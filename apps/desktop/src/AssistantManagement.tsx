@@ -28,10 +28,19 @@ const scopeIcons = {
   research: 'search',
   browser: 'globe',
 };
-const actions: Record<string, string> = {
+export const auditActionLabels: Record<string, string> = {
+  'model-connected': 'Model bağlandı',
+  'model-disconnected': 'Model bağlantısı kaldırıldı',
   'yolo-enabled': 'YOLO açıldı',
   'yolo-disabled': 'YOLO kapatıldı',
-  'task-submitted': 'Görev başlatıldı',
+  'yolo-task-resumed': 'Görev YOLO ile sürdü',
+  'task-created': 'Görev başlatıldı',
+  'task-interrupted': 'Görev yarıda kaldı',
+  'reminder-created': 'Hatırlatıcı kuruldu',
+  'operation-awaiting-approval': 'İşlem onay bekliyor',
+  'operation-record-result': 'İşlem sonucu elle kaydedildi',
+  'operation-confirm-not-applied': 'İşlemin uygulanmadığı onaylandı',
+  'mention-ingested': 'Sohbetten görev alındı',
   'task-completed': 'Görev tamamlandı',
   'task-failed': 'Görev başarısız',
   'task-cancelled': 'Görev iptal edildi',
@@ -346,7 +355,7 @@ export function AssistantManagement() {
                   <option value="">Tüm işlemler</option>
                   {[...new Set(audit?.entries.map((e) => e.action))].map((id) => (
                     <option key={id} value={id}>
-                      {actions[id] ?? id}
+                      {auditActionLabels[id] ?? id}
                     </option>
                   ))}
                 </select>
@@ -375,7 +384,7 @@ export function AssistantManagement() {
                               })}
                         </time>
                         <div>
-                          {name(entry.userId)} · {actions[entry.action] ?? entry.action}
+                          {name(entry.userId)} · {auditActionLabels[entry.action] ?? entry.action}
                           <small>{channel?.name ?? 'Oda'} · işlem kaydı</small>
                         </div>
                         {badge && (

@@ -748,7 +748,10 @@ function onEvent(event: GatewayEvent) {
       status: event.data as ConnectionStatus,
       ...(event.data !== 'connected' ? { typing: {} } : {}),
     });
-  else if (event.type === 'OPEN_CHANNEL') {
+  else if (event.type === 'OPEN_SERVER_SETTINGS') {
+    // A clicked server alert: App opens Sunucu makinesi.
+    window.dispatchEvent(new Event('rooms:open-server-settings'));
+  } else if (event.type === 'OPEN_CHANNEL') {
     // A clicked desktop notification: App opens the channel.
     const channelId = (event.data as { channelId?: unknown })?.channelId;
     if (typeof channelId === 'string')

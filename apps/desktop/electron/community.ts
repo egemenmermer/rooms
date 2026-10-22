@@ -91,6 +91,7 @@ export async function setupCommunity(
     mentioned?: boolean,
     open?: () => void,
   ) => void = () => {},
+  onServerAlert: (message: string, open: () => void) => void = () => {},
 ) {
   let dmNativeEpoch = 0;
   let pendingDmCall: { client: StoatClient; id: string } | null = null;
@@ -334,6 +335,7 @@ export async function setupCommunity(
     },
     getWindow,
     assertSender,
+    (message) => onServerAlert(message, () => emit({ type: 'OPEN_SERVER_SETTINGS', data: null })),
   );
   const handle = (name: string, handler: (...args: unknown[]) => unknown) =>
     ipcMain.handle(name, async (event, ...args) => {
@@ -1185,6 +1187,7 @@ export async function setupCommunity(
   handle('rooms:social-typing', (channel, active) =>
     requireClient().typing(id.parse(channel), z.boolean().parse(active)),
   );
+  handle('rooms:social-own-profile', () => requireClient().ownProfile());
   handle('rooms:social-presence', (status) =>
     requireClient().updatePresence(z.enum(['online', 'idle', 'dnd', 'invisible']).parse(status)),
   );
@@ -2073,7 +2076,7 @@ export async function setupCommunity(
     serveCinema: cinema.serve,
     close: async () => {
       recoveryEpoch++;
-      hostOps.close();
+      hostOps.dispose();
       remote.dispose();
       passwordReset.clear();
       await closeDmCall();

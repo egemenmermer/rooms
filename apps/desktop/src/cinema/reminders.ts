@@ -3,6 +3,8 @@ import { useSyncExternalStore } from 'react';
 /** "Başlayınca haber ver" for a programme in the guide; kept on this device. */
 export type Reminder = {
   hallId: string;
+  /** The hall's community; "Salonda aç" switches to it first (older reminders lack it). */
+  communityId?: string;
   ref: string;
   channel: string;
   title: string;
@@ -31,7 +33,8 @@ export function reminders(): Reminder[] {
             typeof r.ref === 'string' &&
             typeof r.channel === 'string' &&
             typeof r.title === 'string' &&
-            typeof r.start === 'number',
+            typeof r.start === 'number' &&
+            (r.communityId === undefined || typeof r.communityId === 'string'),
         )
       : [];
   } catch {
@@ -78,11 +81,14 @@ export const useReminders = () =>
   }, reminders);
 
 // "Salonda aç" from a reminder: the hall page opens and plays this channel once it is ready.
-let pendingOpen: { hallId: string; ref: string } | null = null;
+let pendingOpen: { hallId: string; ref: string; at: number } | null = null;
+/** An open that no hall took within this long is dropped, so it cannot fire by surprise later. */
+const OPEN_TTL_MS = 30_000;
 export const requestHallOpen = (hallId: string, ref: string) => {
-  pendingOpen = { hallId, ref };
+  pendingOpen = { hallId, ref, at: Date.now() };
 };
 export function takeHallOpen(hallId: string) {
+  if (pendingOpen && Date.now() - pendingOpen.at > OPEN_TTL_MS) pendingOpen = null;
   if (pendingOpen?.hallId !== hallId) return null;
   const ref = pendingOpen.ref;
   pendingOpen = null;

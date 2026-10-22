@@ -144,6 +144,7 @@ const bridge: DesktopBridge = {
     ackRead: (channel, id) => ipcRenderer.invoke('rooms:social-ack', channel, id),
     typing: (channel, active) => ipcRenderer.invoke('rooms:social-typing', channel, active),
     presence: (status) => ipcRenderer.invoke('rooms:social-presence', status),
+    ownProfile: () => ipcRenderer.invoke('rooms:social-own-profile'),
     onEvent: (listener) => {
       const handler = (
         _event: Electron.IpcRendererEvent,

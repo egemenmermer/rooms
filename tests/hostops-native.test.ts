@@ -78,3 +78,65 @@ it('explains an unconfigured SPA fallback without exposing schema diagnostics', 
   await expect(handlers.get('rooms:hostops-hosts')!({})).rejects.toThrow('henüz yapılandırılmadı');
   bridge.close();
 });
+it('notifies an owner-equivalent admin of new server alerts once, and nobody else', async () => {
+  const alert = (id: string, message: string) => ({
+    id,
+    hostId: 'core',
+    kind: 'disk',
+    message,
+    createdAt: 1,
+    updatedAt: 1,
+    resolvedAt: null,
+    delivery: 'pending',
+  });
+  const host = (id: string, owner: boolean) => ({
+    id,
+    label: id === 'core' ? 'Tayfa sunucusu' : 'Diğer',
+    physicalHostId: 'primary',
+    mode: 'shared',
+    owner,
+    permissions: ['monitor'],
+    terminalAvailable: true,
+    agentAvailable: false,
+    reason: null,
+  });
+  const acked: string[] = [];
+  let pending = [alert('11111111-1111-4111-8111-111111111111', 'Disk %92 dolu')];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: URL, init?: RequestInit) => {
+      const path = url.pathname;
+      if (path.endsWith('/hosts'))
+        return Response.json({ hosts: [host('core', true), host('other', false)] });
+      if (path.endsWith('/alerts/ack')) {
+        acked.push(...JSON.parse(String(init?.body)).ids);
+        pending = [];
+        return Response.json({ ok: true });
+      }
+      if (path.endsWith('/snapshot'))
+        return Response.json({
+          host: host(path.includes('/core/') ? 'core' : 'other', path.includes('/core/')),
+          sample: null,
+          stale: false,
+          thresholds: { cpuPercent: 85, cpuSeconds: 60, diskFreePercent: 15, backupHours: 24 },
+          alerts: path.includes('/core/')
+            ? pending
+            : [alert('22222222-2222-4222-8222-222222222222', 'x')],
+        });
+      return new Response('{}', { status: 404 });
+    }),
+  );
+  const shown: string[] = [];
+  const client = { instanceUrl: 'https://qa.invalid', getToken: () => 'token' };
+  const bridge = setupHostOps(
+    () => client,
+    () => null,
+    () => {},
+    (message) => shown.push(message),
+  );
+  await bridge.checkAlerts();
+  await bridge.checkAlerts();
+  expect(shown).toEqual(['Tayfa sunucusu: Disk %92 dolu']);
+  expect(acked).toEqual(['11111111-1111-4111-8111-111111111111']);
+  bridge.dispose();
+});

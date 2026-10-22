@@ -146,6 +146,16 @@ async function start() {
     store,
     terminals: terminal,
     sample: () => collector.sample(),
+    // Read from the membership store; without it, demoted admins are only cut off on their next
+    // request (their sessions then end at the 24 h expiry).
+    ...(reader
+      ? {
+          stillOwner: async (userId: string, host: { communityId: string }) => {
+            const { server, member } = await reader.community(host.communityId, userId);
+            return stoatCommunityAdmin(server, member, userId);
+          },
+        }
+      : {}),
     ...(config.agentAuthority
       ? {
           internalAgent: {
