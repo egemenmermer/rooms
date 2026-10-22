@@ -423,3 +423,55 @@ describe('community ownership for host operations', () => {
     expect(client.getServer).not.toHaveBeenCalled();
   });
 });
+describe('operator grants', () => {
+  it('revokes a grant whose terminal profile was removed from the machine', async () => {
+    const store = new HostOpsStore(':memory:');
+    const revoked: string[] = [];
+    const app = createHostOpsServer({
+      store,
+      hosts: [
+        {
+          id: 'core',
+          label: 'Core',
+          physicalHostId: 'primary',
+          mode: 'shared',
+          communityId: 'space',
+          ownerProfileId: null,
+          agentAvailable: false,
+        },
+      ],
+      terminals: {
+        hasProfile: () => false,
+        revokeUser: (_host: string, user: string) => revoked.push(user),
+        detachAll: () => {},
+        expire: () => {},
+        shutdown: () => {},
+      } as never,
+      identify: async (token) => ({ userId: token, owner: token === 'owner' }),
+    });
+    try {
+      store.setGrant('core', {
+        userId: 'ops',
+        permissions: ['monitor', 'terminal'],
+        profileId: 'gone',
+      });
+      const put = (payload: unknown) =>
+        app.inject({
+          method: 'PUT',
+          url: '/v1/hosts/core/operators',
+          headers: { authorization: 'owner' },
+          payload: payload as object,
+        });
+      expect(
+        (await put({ userId: 'ops', permissions: ['terminal'], profileId: 'gone' })).json(),
+      ).toEqual({ error: 'TERMINAL_PROFILE_UNAVAILABLE' });
+      expect((await put({ userId: 'ops', permissions: [], profileId: 'gone' })).statusCode).toBe(
+        200,
+      );
+      expect(store.grant('core', 'ops')?.permissions ?? []).toEqual([]);
+      expect(revoked).toContain('ops');
+    } finally {
+      await app.close();
+    }
+  });
+});

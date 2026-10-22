@@ -188,7 +188,13 @@ export function createHostOpsServer(config: {
       p = await authorize(req.headers.authorization, h);
     if (!p.owner) throw failure('OWNER_REQUIRED');
     const g = opsGrantSchema.parse(req.body);
-    if (g.profileId && !config.terminals?.hasProfile(g.profileId))
+    // The profile matters only for terminal access: revoking a grant whose profile was removed
+    // from the machine must still work.
+    if (
+      g.permissions.includes('terminal') &&
+      g.profileId &&
+      !config.terminals?.hasProfile(g.profileId)
+    )
       throw failure('TERMINAL_PROFILE_UNAVAILABLE', 400);
     const previous = config.store.grant(h.id, g.userId);
     if (
