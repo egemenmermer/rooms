@@ -214,6 +214,20 @@ it('uses content-free mention copy while preserving opt-out and channel mute pre
   ]);
 });
 describe('notification delivery', () => {
+  it('shows a programme reminder even with chat notifications off, but not in front', () => {
+    setup();
+    const remind = (value: unknown) =>
+      mock.handlers.get('rooms:notification-reminder')!(event, value);
+    expect(() => remind({ title: '', detail: 'x' })).toThrow('Invalid reminder.');
+    mock.focused = true;
+    remind({ title: 'Haberler başladı', detail: 'TRT 1 · 20:00' });
+    expect(mock.shown).toHaveLength(0);
+    mock.focused = false;
+    remind({ title: 'Haberler başladı', detail: 'TRT 1 · 20:00' });
+    expect(mock.shown).toEqual([
+      { title: 'Haberler başladı', body: 'TRT 1 · 20:00', silent: true },
+    ]);
+  });
   it('announces an incoming private call without content, only when the window is not in front', () => {
     setup();
     invoke('incoming-call');

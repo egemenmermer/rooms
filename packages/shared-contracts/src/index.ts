@@ -106,6 +106,8 @@ export interface DesktopBridge {
     setVoiceActive(value: boolean): Promise<void>;
     /** A content-free OS notification for an incoming private call (not while focused). */
     incomingCall?(): Promise<void>;
+    /** A programme reminder the member set themselves (not while focused). */
+    reminder?(input: { title: string; detail: string }): Promise<void>;
   };
   social: SocialBridge;
   music: {

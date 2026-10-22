@@ -204,6 +204,7 @@ const bridge: DesktopBridge = {
     setPauseDuringVoice: (value) => ipcRenderer.invoke('rooms:notification-pause-voice', value),
     setVoiceActive: (value) => ipcRenderer.invoke('rooms:notification-voice-active', value),
     incomingCall: () => ipcRenderer.invoke('rooms:notification-incoming-call'),
+    reminder: (input) => ipcRenderer.invoke('rooms:notification-reminder', input),
   },
   providers: {
     nativePlayer: {

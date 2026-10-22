@@ -126,7 +126,7 @@ Salon, `hall` adlı ana etkinliktir; `roomId` salon kanalının kimliğidir. Sı
 - **Ses dili.** Sahip "Türkçe dublaj" ile "Orijinal" arasında seçim yapar. Röle filmin ilk ses izini bu seçime göre seçer; kumandası olan kişi ses dilini film sırasında değiştirebilir. Altyazı dili (Türkçe, İngilizce ya da Kapalı) her izleyicinin kendi tercihidir.
 - **Yayın bilgisi.** Röle ffprobe'dan çözünürlüğü, fps değerini ve kodeki bildirir; bit hızını oynatıcı son parçalardan ölçer. Canlı yayında "canlıdan X sn geride" bilgisi de gösterilir. Film ya da bölüm açılınca bu bilgi 3 saniye ekranda kalır.
 - **Favori kanallar.** Her üyenin listesi Tayfa dosyasında, üye başına en fazla 300 kanal olarak tutulur ve `GET` ile `PUT /v1/halls/:salon/favorites` uçlarından okunup yazılır. Favoriler açıkken ↑/↓ yalnızca favori kanallar arasında gezer.
-- **Hatırlatıcılar.** Bir programın hatırlatması cihazda saklanır. Program başlayınca sistem bildirimi ve "Salonda aç" kartı gelir. Uygulama kapalıysa hatırlatma çalışmaz. Kartta isteyen için "Salona duyur" düğmesi de var; salon sohbetine kişinin kendi adıyla yazar, kendiliğinden bir şey göndermez.
+- **Hatırlatıcılar.** Bir programın hatırlatması cihazda saklanır. Program başlayınca "Salonda aç" kartı gelir; pencere önde değilse bir sistem bildirimi de çıkar (sohbet bildirimleri kapalı olsa bile). Uygulama kapalıysa hatırlatma çalışmaz. Kartta isteyen için "Salona duyur" düğmesi de var; salon sohbetine kişinin kendi adıyla yazar, kendiliğinden bir şey göndermez.
 - **Kısayollar.** Salonun tuşları Ayarlar → Klavye'den değiştirilebilir. Çakışan tuş yeni komuta geçer ve eski komut kısayolsuz kalır; Esc, rakamlar ve ⌘/Ctrl K sabittir. `?` tuşu kısayol kartını açar.
 
 ## Stremio

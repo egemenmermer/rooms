@@ -18,15 +18,15 @@ export function CinemaReminders() {
       if (!due.length) return;
       setShown((current) => [...current, ...due].slice(-3));
       for (const reminder of due) {
-        try {
-          if (typeof Notification !== 'undefined' && Notification.permission === 'granted')
-            new Notification(`${reminder.title} başladı`, {
-              body: `${reminder.channel} · ${hhmm(reminder.start)}`,
-              silent: false,
-            });
-        } catch {
-          // The card below says it anyway.
-        }
+        // The renderer cannot show OS notifications in Electron; the main process does.
+        void window.rooms?.notifications
+          ?.reminder?.({
+            title: `${reminder.title} başladı`.slice(0, 200),
+            detail: `${reminder.channel} · ${hhmm(reminder.start)}`.slice(0, 200),
+          })
+          .catch(() => {
+            // The card below says it anyway.
+          });
       }
     };
     check();

@@ -147,6 +147,34 @@ export function setupNotifications(
     });
     notification.show();
   });
+  // A programme reminder is something the member asked for: it shows even when chat
+  // notifications are off, but not while the window is in front (the card is there).
+  ipcMain.handle('rooms:notification-reminder', (event, input) => {
+    assertSender(event);
+    const value = input as { title?: unknown; detail?: unknown } | null;
+    if (
+      typeof value?.title !== 'string' ||
+      typeof value.detail !== 'string' ||
+      !value.title.trim() ||
+      value.title.length > 200 ||
+      value.detail.length > 200
+    )
+      throw new Error('Invalid reminder.');
+    const window = getWindow();
+    if (!Notification.isSupported() || window?.isFocused()) return;
+    const notification = new Notification({
+      title: value.title,
+      body: value.detail,
+      silent: !sound,
+    });
+    notification.on('click', () => {
+      const current = getWindow();
+      if (!current) return;
+      showWindow(current);
+      current.focus();
+    });
+    notification.show();
+  });
   // A short renderer lease expires after crash/suspension and is never persisted.
   ipcMain.handle('rooms:notification-voice-active', (event, value) => {
     assertSender(event);
