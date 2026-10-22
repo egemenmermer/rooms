@@ -485,3 +485,60 @@ describe('operator grants', () => {
     }
   });
 });
+describe('admins who lose the role', () => {
+  it('closes their terminals on the owner profile, and only on a definite answer', async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    const store = new HostOpsStore(':memory:');
+    const owners: Record<string, boolean | 'error' | 'kicked'> = {
+      owner: true,
+      osman: true,
+      ece: 'error',
+      kerem: 'kicked',
+      deniz: false,
+    };
+    const app = createHostOpsServer({
+      store,
+      terminals: f.hub,
+      hosts: [
+        {
+          id: 'core',
+          label: 'Core',
+          physicalHostId: 'primary',
+          mode: 'shared',
+          communityId: 'space',
+          ownerProfileId: 'operator',
+          agentAvailable: false,
+        },
+      ],
+      identify: async (token) => ({ userId: token, owner: true }),
+      stillOwner: async (user) => {
+        if (owners[user] === 'error') throw new Error('store unreachable');
+        if (owners[user] === 'kicked') throw new StoatError(403, 'ROOM_ACCESS_DENIED');
+        return owners[user] === true;
+      },
+    });
+    try {
+      await app.ready();
+      const osman = f.hub.create('core', 'osman', 'operator', undefined, { sharedProfile: true });
+      const ece = f.hub.create('core', 'ece', 'operator', undefined, { sharedProfile: true });
+      const kerem = f.hub.create('core', 'kerem', 'operator', undefined, { sharedProfile: true });
+      // Demoted, but holding an operator grant of their own: the owner's shell still closes.
+      store.setGrant('core', { userId: 'deniz', permissions: ['terminal'], profileId: 'operator' });
+      const deniz = f.hub.create('core', 'deniz', 'operator', undefined, { sharedProfile: true });
+      await vi.advanceTimersByTimeAsync(60_000);
+      // Kicked from the community is a definite answer.
+      expect(f.alive.has(kerem.id)).toBe(false);
+      expect(f.alive.has(deniz.id)).toBe(false);
+      expect(f.alive.has(osman.id)).toBe(true);
+      owners.osman = false;
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(f.alive.has(osman.id)).toBe(false);
+      // A failed read of the membership store closes nothing.
+      expect(f.alive.has(ece.id)).toBe(true);
+    } finally {
+      await app.close();
+      vi.useRealTimers();
+    }
+  });
+});

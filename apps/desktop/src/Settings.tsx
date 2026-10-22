@@ -130,10 +130,29 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
     [error, setError] = useState(''),
     [saved, setSaved] = useState(false),
     [logout, setLogout] = useState(false);
+  // What the server holds, so the fields start from it, Vazgeç returns to it, and emptying a
+  // field clears it on the server.
+  const stored = useRef({ bio: '', statusText: '' });
+  useEffect(() => {
+    let active = true;
+    void window.rooms?.social
+      ?.ownProfile?.()
+      .then((profile) => {
+        if (!active) return;
+        stored.current = { bio: profile.bio, statusText: profile.statusText };
+        setBio(profile.bio);
+        setStatus(profile.statusText);
+        setPresence(profile.presence);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [c.user?.id]);
   const reset = () => {
     setName(c.user?.displayName ?? '');
-    setBio('');
-    setStatus('');
+    setBio(stored.current.bio);
+    setStatus(stored.current.statusText);
     setSaved(false);
   };
   if (!c.user)
@@ -160,11 +179,15 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
             setError('');
             setSaved(false);
             try {
+              const nextBio = bio.trim(),
+                nextStatus = status.trim();
+              // Send only what changed; an emptied field is sent empty so the server clears it.
               const user = await window.rooms!.social.updateProfile({
                 displayName: name.trim(),
-                ...(bio.trim() ? { bio: bio.trim() } : {}),
-                ...(status.trim() ? { statusText: status.trim() } : {}),
+                ...(nextBio !== stored.current.bio ? { bio: nextBio } : {}),
+                ...(nextStatus !== stored.current.statusText ? { statusText: nextStatus } : {}),
               });
+              stored.current = { bio: nextBio, statusText: nextStatus };
               useCommunity.setState({ user });
               setSaved(true);
             } catch (e) {

@@ -198,6 +198,12 @@ export default function App() {
       void window.rooms?.setBadge?.(0).catch(() => {});
     };
   }, []);
+  // A clicked server alert opens Sunucu makinesi.
+  useEffect(() => {
+    const open = () => navigate('/settings?tab=hostops');
+    window.addEventListener('rooms:open-server-settings', open);
+    return () => window.removeEventListener('rooms:open-server-settings', open);
+  }, [navigate]);
   // A clicked desktop notification opens its channel or conversation.
   useEffect(() => {
     const open = (event: Event) => {

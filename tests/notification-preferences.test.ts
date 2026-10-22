@@ -214,6 +214,13 @@ it('uses content-free mention copy while preserving opt-out and channel mute pre
   ]);
 });
 describe('notification delivery', () => {
+  it('shows a server alert for admins even with chat notifications off', () => {
+    const service = setup();
+    service.serverAlert('Tayfa sunucusu: Disk %92 dolu');
+    expect(mock.shown).toEqual([
+      { title: 'Tayfa · Sunucu uyarısı', body: 'Tayfa sunucusu: Disk %92 dolu', silent: true },
+    ]);
+  });
   it('shows a programme reminder even with chat notifications off, but not in front', () => {
     setup();
     const remind = (value: unknown) =>
