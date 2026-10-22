@@ -20,7 +20,8 @@ export function redactPreview(value: unknown): string {
 import type { AgentPrincipal } from './server';
 import type { AgentData } from './repository';
 import type { AgentAuditSnapshot } from '../../../packages/agent-contracts/src/index';
-const auditActions = new Set([
+/** Actions the audit history shows; the desktop has a label for each (see the test). */
+export const auditActions = new Set([
   'model-connected',
   'model-disconnected',
   'yolo-enabled',

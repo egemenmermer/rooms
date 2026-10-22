@@ -49,3 +49,9 @@ it('shows a member the "yetkin yok" view and their own history instead of an err
   expect(audit).toHaveBeenCalledWith();
   expect(audit).not.toHaveBeenCalledWith('room');
 });
+
+it('has a Turkish label for every action the Agent audit can show', async () => {
+  const { auditActions } = await import('../apps/services/agent/authority');
+  const { auditActionLabels } = await import('../apps/desktop/src/AssistantManagement');
+  expect([...auditActions].filter((action) => !auditActionLabels[action])).toEqual([]);
+});
