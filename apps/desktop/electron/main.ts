@@ -197,7 +197,13 @@ app.whenReady().then(async () => {
     notifications.voiceActive,
     () => quitting,
   );
-  const community = await setupCommunity(() => win, assertSender, isTrusted, notifications.message);
+  const community = await setupCommunity(
+    () => win,
+    assertSender,
+    isTrusted,
+    notifications.message,
+    notifications.serverAlert,
+  );
   protocol.handle('rooms-cinema', community.serveCinema);
   const providers = setupProviders(
     assertSender,

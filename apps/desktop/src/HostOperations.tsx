@@ -520,8 +520,8 @@ function HostOperationsScope() {
                 </ul>
               )}
               <p className="ops-note">
-                Uyarılar şimdilik yalnızca bu ekranda görünür; uygulama kapalıyken veya başka bir
-                sayfadayken bildirim gönderilmez.
+                Yeni uyarılar sahibe ve developer rolündekilere masaüstü bildirimi olarak da gelir
+                (Tayfa açıkken, pencere kapalı olsa bile).
               </p>
               <section>
                 <div className="ops-actions">
