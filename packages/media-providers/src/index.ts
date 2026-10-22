@@ -176,6 +176,25 @@ function personalSounds(attributes: Readonly<Record<string, string>> | undefined
   }
   return sounds;
 }
+/** The browser's answer when a device id names nothing that is plugged in or paired now. */
+function isMissingDevice(error: unknown) {
+  const failure = error as { name?: string; constraint?: string } | null;
+  return (
+    failure?.name === 'NotFoundError' ||
+    (failure?.name === 'OverconstrainedError' &&
+      (!failure.constraint || failure.constraint === 'deviceId'))
+  );
+}
+/** False only when the system lists devices of this kind by id and the id is not among them. */
+async function deviceListed(kind: MediaDeviceKind, id: string) {
+  try {
+    const devices = (await navigator.mediaDevices?.enumerateDevices?.()) ?? [];
+    const ids = devices.filter((d) => d.kind === kind && d.deviceId).map((d) => d.deviceId);
+    return !ids.length || ids.includes(id);
+  } catch {
+    return true;
+  }
+}
 const emptyDiagnostics = (): MediaDiagnostics => ({ bitrate: null, packetLoss: null, rtt: null });
 /** No auth credentials other than the in-memory, short-lived room token enter this adapter. */
 export class LiveKitMediaProvider implements RealtimeMediaProvider {
@@ -387,9 +406,12 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     mixer.setInputLevel(this.inputLevel);
     this.pendingMixer = mixer;
     try {
-      await (context as AudioContext & { setSinkId?(id: string): Promise<void> }).setSinkId?.(
-        this.outputDeviceId,
-      );
+      // A speaker gone mid-call leaves this on the default output; it never costs the microphone.
+      await (context as AudioContext & { setSinkId?(id: string): Promise<void> })
+        .setSinkId?.(this.outputDeviceId)
+        ?.catch((error: unknown) => {
+          if (!isMissingDevice(error)) throw error;
+        });
       await track.setProcessor(mixer);
       await context.resume();
       if (epoch !== this.epoch || serial !== this.microphoneSerial)
@@ -840,15 +862,7 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     try {
       return await createLocalAudioTrack(options);
     } catch (error) {
-      const failure = error as { name?: string; constraint?: string };
-      if (
-        failure?.name !== 'NotFoundError' &&
-        !(
-          failure?.name === 'OverconstrainedError' &&
-          (!failure.constraint || failure.constraint === 'deviceId')
-        )
-      )
-        throw error;
+      if (!isMissingDevice(error)) throw error;
       if (this.room !== room || serial !== this.microphoneSerial || this.state.deafened)
         throw error;
       if (!(await room.switchActiveDevice('audioinput', 'default'))) throw error;
@@ -1222,19 +1236,32 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
       throw new Error(this.state.error ?? 'Media operation failed.');
     }
   }
+  /**
+   * A saved headset that is gone (unplugged, or AirPods taken by a phone) must not end the
+   * join: the call uses the system default and the saved choice stays for when it returns.
+   * Returns the id now in use, '' for the default.
+   */
+  private async switchDevice(room: Room, kind: 'audioinput' | 'audiooutput', id: string) {
+    if (id && !(await deviceListed(kind, id))) id = '';
+    try {
+      if (await room.switchActiveDevice(kind, id || 'default')) return id;
+    } catch (error) {
+      if (!id || !isMissingDevice(error)) throw error;
+      if (await room.switchActiveDevice(kind, 'default')) return '';
+    }
+    throw new Error(kind === 'audioinput' ? 'Input unavailable.' : 'Output unavailable.');
+  }
   async deviceSelection(inputId: string, outputId: string) {
     try {
       const room = this.requireRoom();
-      if (!(await room.switchActiveDevice('audioinput', inputId || 'default')))
-        throw new Error('Input unavailable.');
-      if (!(await room.switchActiveDevice('audiooutput', outputId || 'default')))
-        throw new Error('Output unavailable.');
+      const input = await this.switchDevice(room, 'audioinput', inputId || '');
+      const output = await this.switchDevice(room, 'audiooutput', outputId || '');
       for (const context of [this.soundContext, this.equalizerContext])
         await (
           context as (AudioContext & { setSinkId?(id: string): Promise<void> }) | null
-        )?.setSinkId?.(outputId || '');
-      this.outputDeviceId = outputId || '';
-      this.inputDeviceId = inputId || undefined;
+        )?.setSinkId?.(output);
+      this.outputDeviceId = output;
+      this.inputDeviceId = input || undefined;
       this.patch({ error: null, inputDeviceFallback: false });
       this.sync();
       void this.describeCurrentInput(room);
