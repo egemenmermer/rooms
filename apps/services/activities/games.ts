@@ -388,7 +388,11 @@ export function gameCommand(
       if (command.buyIn !== undefined) {
         if (table.kind !== 'holdem') throw new Error('HOLDEM_BUY_IN_ONLY');
         if (table.status === 'playing') throw new Error('CHIP_CHANGE_DURING_HAND');
-        player.chips = buyIn(table, command.buyIn);
+        // Chip totals are conserved: a seated player only buys back in once below the minimum,
+        // and never above the maximum stack.
+        const rules = rulesOf(table);
+        if (player.chips >= rules.minBuyIn) throw new Error('CHIP_CHANGE_NOT_ALLOWED');
+        player.chips = Math.min(rules.maxBuyIn, player.chips + buyIn(table, command.buyIn));
       }
       player.connected = true;
       player.disconnectedAt = null;

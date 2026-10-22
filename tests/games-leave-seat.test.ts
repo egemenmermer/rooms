@@ -49,3 +49,31 @@ describe('Masadan kalk', () => {
     expect(table.seats.map((seat) => seat.userId)).toEqual(['owner']);
   });
 });
+
+describe('Holdem buy-in', () => {
+  it('lets a seated player rebuy only below the minimum and never past the maximum', () => {
+    const table = createGame({ type: 'game.create', game: 'holdem' }, actor('owner'));
+    const rules = table.holdemRules!;
+    if (!table.seats.some((seat) => seat.userId === 'owner'))
+      gameCommand(table, { type: 'game.sit', seat: 0 }, actor('owner'), 1000);
+    const seat = table.seats.find((value) => value.userId === 'owner')!;
+    const before = seat.chips;
+    expect(() =>
+      gameCommand(
+        table,
+        { type: 'game.sit', seat: seat.seat, buyIn: rules.maxBuyIn },
+        actor('owner'),
+        1000,
+      ),
+    ).toThrow('CHIP_CHANGE_NOT_ALLOWED');
+    expect(seat.chips).toBe(before);
+    seat.chips = 5;
+    gameCommand(
+      table,
+      { type: 'game.sit', seat: seat.seat, buyIn: rules.maxBuyIn },
+      actor('owner'),
+      1000,
+    );
+    expect(seat.chips).toBe(rules.maxBuyIn);
+  });
+});
