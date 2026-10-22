@@ -16,7 +16,8 @@ import {
   musicFailedSongSchema,
 } from '../../../packages/shared-contracts/src/music';
 import { registerMusicSearch } from './search-route';
-import { MusicWorker, type MusicLease } from './worker';
+import { MusicWorker } from './worker';
+import { renewMusicLease } from './lease';
 import { LiveMusicPublisher } from './publisher';
 const secret = process.env.ROOMS_MUSIC_SECRET;
 if (!secret || secret.length < 32) throw new Error('Music service secret is required');
@@ -33,26 +34,13 @@ server.addHook('onRequest', async (request, reply) => {
 const worker = new MusicWorker({
   history: new MusicHistory(process.env.ROOMS_MUSIC_HISTORY_FILE ?? '/state/music-history.json'),
   publisher: () => new LiveMusicPublisher(),
-  lease: async (channelId, leaseId) => {
-    const response = await fetch(
-      `${process.env.ROOMS_ACCESS_INTERNAL_URL ?? 'http://access:3002'}/v1/music/internal/lease`,
-      {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channelId, leaseId }),
-        redirect: 'error',
-        signal: AbortSignal.timeout(10000),
-      },
-    );
-    // 401/403: the lease is gone for good. Anything else is passing; the worker tries again.
-    if (!response.ok)
-      throw new Error(
-        response.status === 401 || response.status === 403
-          ? 'MUSIC_LEASE_REVOKED'
-          : 'MUSIC_LEASE_UNAVAILABLE',
-      );
-    return (await response.json()) as MusicLease;
-  },
+  lease: (channelId, leaseId) =>
+    renewMusicLease(
+      process.env.ROOMS_ACCESS_INTERNAL_URL ?? 'http://access:3002',
+      secret,
+      channelId,
+      leaseId,
+    ),
 });
 const id = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 server.get('/health', async () => ({ service: 'music', status: 'ok' }));

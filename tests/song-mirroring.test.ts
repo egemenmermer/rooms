@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import { parseSongLink } from '../packages/shared-contracts/src/song-links';
 import { songMetadata } from '../apps/services/music/song-metadata';
-import { matchingSong } from '../apps/services/music/song-match';
+import { looseSong, matchingSong } from '../apps/services/music/song-match';
 import { privateFetch } from '../packages/personal-media/src/network';
 const id = '4cOdK2wGLETKBW3PvgPWqT',
   url = `https://open.spotify.com/track/${id}`;
@@ -207,4 +207,43 @@ it('matches Turkish dotless-i credits without accepting a shorter music-video ed
       { ...topic, id: 'M7lc1UVf-VE', artists: [] },
     ]),
   ).toBeNull();
+});
+it('lets a playlist take a looser recording of the same song, never a cover, remix or live take', () => {
+  const listed = {
+    ...song,
+    title: 'Never Gonna Give You Up (feat. Someone) - 2011 Remaster',
+    artists: ['Rick Astley', 'Someone'],
+    durationSec: 213,
+  };
+  const video = {
+    ...exact,
+    title: 'Rick Astley - Never Gonna Give You Up (Official Music Video)',
+    duration: 245,
+  };
+  expect(matchingSong(listed, [video])).toBeNull();
+  expect(looseSong(listed, [video])).toEqual(video);
+  expect(looseSong(listed, [{ ...video, title: video.title + ' (Remastered)' }])).not.toBeNull();
+  for (const title of [
+    'Rick Astley - Never Gonna Give You Up (Cover)',
+    'Rick Astley - Never Gonna Give You Up (Live)',
+    'Rick Astley - Never Gonna Give You Up Remix',
+    'Rick Astley - Never Gonna Give You Up Karaoke',
+    'Rick Astley - Never Gonna Give You Up (Sped Up)',
+    'Other Artist - Never Gonna Give You Up',
+    'Rick Astley - Never Gonna Give',
+  ])
+    expect(looseSong(listed, [{ ...video, title }])).toBeNull();
+  expect(looseSong(listed, [{ ...video, duration: 300 }])).toBeNull();
+  expect(looseSong(listed, [{ ...video, is_live: true }])).toBeNull();
+  // A remix the list asked for still has to be a remix.
+  expect(looseSong({ ...listed, title: 'Never Gonna Give You Up - Remix' }, [video])).toBeNull();
+  // The closest length wins among fitting recordings.
+  const audio = {
+    ...video,
+    id: 'abcdefghijk',
+    title: 'Never Gonna Give You Up',
+    channel: 'Rick Astley - Topic',
+    duration: 214,
+  };
+  expect(looseSong(listed, [video, audio])).toEqual(audio);
 });

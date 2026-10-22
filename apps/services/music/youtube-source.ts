@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { existsSync, statSync } from 'node:fs';
 import { parseDJLink } from '../../../packages/shared-contracts/src/music-links';
-import { matchingSong, type YouTubeCandidate } from './song-match';
+import { coreTitle, looseSong, matchingSong, type YouTubeCandidate } from './song-match';
 import type { SongMetadata } from './song-metadata';
 import type { MusicFile } from './audio-file';
 import {
@@ -314,23 +314,37 @@ export async function openYouTubeAudio(raw: string, position = 0) {
   };
 }
 
-export async function matchingYouTubeReference(song: SongMetadata): Promise<MusicReference> {
-  const query = `${song.artists.join(' ')} ${song.title}`
-    .replace(/[\x00-\x1f]/g, ' ')
-    .slice(0, 400);
+async function searchCandidates(query: string, count: number): Promise<YouTubeCandidate[]> {
   const output = await run(
-    ['--flat-playlist', '--skip-download', '--dump-single-json', `ytsearch5:${query}`],
+    ['--flat-playlist', '--skip-download', '--dump-single-json', `ytsearch${count}:${query}`],
     45000,
   );
-  let entries: YouTubeCandidate[];
   try {
     const value = JSON.parse(output);
     if (!Array.isArray(value?.entries)) throw new Error('MUSIC_SEARCH_UNAVAILABLE');
-    entries = value.entries.filter((entry: unknown) => entry !== null && typeof entry === 'object');
+    return value.entries.filter((entry: unknown) => entry !== null && typeof entry === 'object');
   } catch {
     throw new Error('MUSIC_SEARCH_UNAVAILABLE');
   }
-  const match = matchingSong(song, entries);
+}
+
+/**
+ * `loose` is for a playlist that plays on its own: when no exact match turns up it accepts a
+ * looser one and searches once more with the plain artist and title before giving up.
+ */
+export async function matchingYouTubeReference(
+  song: SongMetadata,
+  { loose = false }: { loose?: boolean } = {},
+): Promise<MusicReference> {
+  const clean = (text: string) => text.replace(/[\x00-\x1f]/g, ' ').slice(0, 400);
+  const query = clean(`${song.artists.join(' ')} ${song.title}`);
+  const entries = await searchCandidates(query, 5);
+  let match = matchingSong(song, entries) ?? (loose ? looseSong(song, entries) : null);
+  const plain = clean(`${song.artists[0] ?? ''} ${coreTitle(song.title)}`).trim();
+  if (!match && loose && plain && plain !== query) {
+    const more = await searchCandidates(plain, 10).catch(() => []);
+    match = matchingSong(song, more) ?? looseSong(song, more);
+  }
   if (!match)
     throw Object.assign(new Error('MUSIC_MIRROR_NOT_FOUND'), {
       song: { title: song.title, artists: song.artists },

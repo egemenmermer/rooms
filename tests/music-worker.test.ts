@@ -1,4 +1,4 @@
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mkdtemp, writeFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -700,4 +700,129 @@ it('removes a failed current track and clears an errored queue', async () => {
   await vi.waitFor(() => expect(worker.snapshot('failed').status).toBe('error'));
   const cleared = await worker.command('failed', lease, { type: 'clear' });
   expect(cleared.queue).toHaveLength(0);
+});
+describe('a playlist that plays on its own', () => {
+  const ids: Record<string, string> = {
+    One: 'w2BTr6qsLFc',
+    Two: 'vKHu4uPOJVg',
+    Three: 'dQw4w9WgXcQ',
+  };
+  const listed = (n: number, title: string) => ({
+    spotifyTrackId: `${'A'.repeat(21)}${n}`,
+    title,
+    artists: ['Artist'],
+    durationSec: 200,
+  });
+  async function playlistWorker(options: { lease?: () => Promise<unknown> } = {}) {
+    const { publisher, lease } = await setup(),
+      ends: Array<() => void> = [];
+    const playYouTube = vi.fn(async (_source: string, _position: number, ended: () => void) => {
+      ends.push(ended);
+    });
+    const match = vi.fn(async (song: { title: string }, _options?: { loose?: boolean }) => {
+      if (!ids[song.title]) throw new Error('MUSIC_MIRROR_NOT_FOUND');
+      return {
+        source: `https://www.youtube.com/watch?v=${ids[song.title]}`,
+        title: song.title,
+        durationSec: 200,
+        requestedProvider: 'spotify' as const,
+      };
+    });
+    const worker = new MusicWorker({
+      publisher: () => ({ ...publisher, playYouTube }),
+      lease: (options.lease as never) ?? (async () => lease),
+      matchingYouTubeReference: match,
+    });
+    workers.push(worker);
+    return { worker, lease, ends, match, playYouTube };
+  }
+
+  it('skips songs YouTube does not have, more than three in a row, and marks them', async () => {
+    const { worker, lease, ends, match } = await playlistWorker();
+    const tracks = [
+      listed(0, 'Gone 0'),
+      listed(1, 'One'),
+      ...[1, 2, 3, 4, 5].map((n) => listed(n + 1, `Gone ${n}`)),
+      listed(7, 'Two'),
+    ];
+    const added = await worker.command('list-room', lease, { type: 'add-list', tracks });
+    // The first song of the list is not found: the list starts on the next one.
+    expect(added).toMatchObject({
+      status: 'playing',
+      currentId: added.queue[1]!.id,
+      error: 'MUSIC_TRACK_SKIPPED',
+    });
+    expect(added.queue[0]!.title).toBe('Gone 0 · bulunamadı, atlandı');
+    expect(match).toHaveBeenCalledWith(expect.objectContaining({ title: 'Gone 0' }), {
+      loose: true,
+    });
+    ends.at(-1)!();
+    await vi.waitFor(() => expect(worker.snapshot('list-room').currentId).toBe(added.queue[7]!.id));
+    const snapshot = worker.snapshot('list-room');
+    expect(snapshot).toMatchObject({ status: 'playing', error: 'MUSIC_TRACK_SKIPPED' });
+    expect(snapshot.queue.map((item) => item.title)).toEqual([
+      'Gone 0 · bulunamadı, atlandı',
+      'One · YouTube',
+      ...[1, 2, 3, 4, 5].map((n) => `Gone ${n} · bulunamadı, atlandı`),
+      'Two · YouTube',
+    ]);
+  });
+
+  it('Next goes past a song that cannot be found instead of stopping', async () => {
+    const { worker, lease } = await playlistWorker();
+    const added = await worker.command('next-room', lease, {
+      type: 'add-list',
+      tracks: [listed(1, 'One'), listed(2, 'Gone'), listed(3, 'Two')],
+    });
+    const next = await worker.command('next-room', lease, { type: 'next' });
+    expect(next).toMatchObject({
+      status: 'playing',
+      currentId: added.queue[2]!.id,
+      error: 'MUSIC_TRACK_SKIPPED',
+    });
+    expect(next.queue[1]!.title).toBe('Gone · bulunamadı, atlandı');
+  });
+
+  it('stops after ten missing songs in a row and says why', async () => {
+    const { worker, lease } = await playlistWorker();
+    const added = await worker.command('gone-room', lease, {
+      type: 'add-list',
+      tracks: [
+        ...Array.from({ length: 10 }, (_, n) => listed(n % 10, `Gone ${n}`)),
+        listed(1, 'One'),
+      ],
+    });
+    expect(added).toMatchObject({
+      status: 'error',
+      error: 'MUSIC_MIRROR_NOT_FOUND',
+      currentId: added.queue[9]!.id,
+    });
+  });
+
+  it('keeps playing at a song change when access answers only for a moment', async () => {
+    let passing = false;
+    const grant = {
+      leaseId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      url: 'ws://127.0.0.1',
+      token: 'test-token',
+    };
+    const { worker, ends } = await playlistWorker({
+      lease: async () => {
+        if (passing) throw new Error('MUSIC_LEASE_UNAVAILABLE');
+        return grant;
+      },
+    });
+    const added = await worker.command('blip-room', grant, {
+      type: 'add-list',
+      tracks: [listed(1, 'One'), listed(2, 'Two')],
+    });
+    passing = true;
+    ends.at(-1)!();
+    await vi.waitFor(() =>
+      expect(worker.snapshot('blip-room')).toMatchObject({
+        status: 'playing',
+        currentId: added.queue[1]!.id,
+      }),
+    );
+  });
 });
