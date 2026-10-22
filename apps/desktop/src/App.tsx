@@ -72,7 +72,7 @@ import {
 } from 'lucide-react';
 import { Avatar, IconButton, Modal } from '@rooms/design';
 import { useRooms } from './store';
-import { useCommunity, initializeCommunity } from './community';
+import { badgeCount, useCommunity, initializeCommunity } from './community';
 import { useModerationRights } from './VoiceModeration';
 import { useRealtime, joinVoice, toggleMic } from './realtime';
 import { PushToTalk } from './PushToTalk';
@@ -181,6 +181,23 @@ export default function App() {
       !window.rooms ||
       !!(import.meta.env.DEV && new URLSearchParams(window.location.search).has('fixture')),
   );
+  // The Dock badge follows unread mentions and conversations.
+  useEffect(() => {
+    if (!window.rooms?.setBadge) return;
+    let last = -1;
+    const update = (state: ReturnType<typeof useCommunity.getState>) => {
+      const count = badgeCount(state);
+      if (count === last) return;
+      last = count;
+      void window.rooms?.setBadge?.(count).catch(() => {});
+    };
+    update(useCommunity.getState());
+    const unsubscribe = useCommunity.subscribe(update);
+    return () => {
+      unsubscribe();
+      void window.rooms?.setBadge?.(0).catch(() => {});
+    };
+  }, []);
   // A clicked desktop notification opens its channel or conversation.
   useEffect(() => {
     const open = (event: Event) => {

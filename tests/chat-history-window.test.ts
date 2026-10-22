@@ -74,3 +74,19 @@ it('stops offering older messages at the window instead of looping', async () =>
   expect(state.messages).toHaveLength(MESSAGE_WINDOW);
   expect(state.hasOlder).toBe(false);
 });
+
+it('counts unread mentions and unread conversations for the Dock badge', async () => {
+  const { badgeCount } = await import('../apps/desktop/src/community');
+  const user = { id: 'me', username: 'me', displayName: 'Me', avatar: null };
+  expect(
+    badgeCount({
+      user,
+      readStates: {
+        general: { channelId: 'general', lastReadMessageId: null, mentionMessageIds: ['a', 'b'] },
+      },
+      unread: { general: true, dm1: true, dm2: false },
+      dms: [{ id: 'dm1' }, { id: 'dm2' }] as never,
+    }),
+  ).toBe(3);
+  expect(badgeCount({ user: null, readStates: {}, unread: {}, dms: [] })).toBe(0);
+});

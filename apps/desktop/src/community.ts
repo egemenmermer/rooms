@@ -833,3 +833,14 @@ export function initializeCommunity(): Promise<void> {
   })();
   return initialization;
 }
+
+/** What the Dock badge counts: unread mentions, plus conversations with unread messages. */
+export function badgeCount(state: Pick<CommunityState, 'readStates' | 'unread' | 'dms' | 'user'>) {
+  if (!state.user) return 0;
+  const mentions = Object.values(state.readStates).reduce(
+    (sum, read) => sum + (read.mentionMessageIds?.length ?? 0),
+    0,
+  );
+  const conversations = state.dms.filter((dm) => state.unread[dm.id]).length;
+  return Math.min(9999, mentions + conversations);
+}

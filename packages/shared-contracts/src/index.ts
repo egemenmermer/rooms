@@ -78,6 +78,8 @@ export interface DesktopBridge {
   chooseCaption(mediaUrl: string): Promise<{ content: string; name: string } | null>;
   openMediaExternal(url: string): Promise<boolean>;
   applicationInfo(): Promise<{ version: string; platform: string; arch: string; electron: string }>;
+  /** Unread mentions and conversations on the Dock or launcher icon (0 clears it). */
+  setBadge?(count: number): Promise<void>;
   diagnosticsPreview(): Promise<string>;
   thirdPartyNotices(): Promise<string>;
   exportDiagnostics(): Promise<boolean>;

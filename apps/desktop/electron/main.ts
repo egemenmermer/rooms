@@ -467,6 +467,12 @@ app.whenReady().then(async () => {
       null,
       2,
     );
+  ipcMain.handle('rooms:set-badge', (event, count) => {
+    assertSender(event);
+    if (!Number.isInteger(count) || count < 0 || count > 9999) throw new Error('Invalid badge.');
+    // macOS and Linux launchers; Windows has no count badge for a plain window icon.
+    app.setBadgeCount(count);
+  });
   ipcMain.handle('rooms:application-info', (event) => {
     assertSender(event);
     return {

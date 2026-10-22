@@ -44,6 +44,7 @@ const bridge: DesktopBridge = {
   chooseCaption: (mediaUrl: string) => ipcRenderer.invoke('rooms:choose-caption', mediaUrl),
   openMediaExternal: (url) => ipcRenderer.invoke('rooms:external-media', url),
   applicationInfo: () => ipcRenderer.invoke('rooms:application-info'),
+  setBadge: (count) => ipcRenderer.invoke('rooms:set-badge', count),
   diagnosticsPreview: () => ipcRenderer.invoke('rooms:diagnostics-preview'),
   thirdPartyNotices: () => ipcRenderer.invoke('rooms:third-party-notices'),
   exportDiagnostics: () => ipcRenderer.invoke('rooms:export-diagnostics'),
