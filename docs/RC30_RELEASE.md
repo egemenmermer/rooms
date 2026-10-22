@@ -45,6 +45,10 @@ Sinema'ya Stremio geldi. Ayrıca 2026-10-22'deki çok ajanlı tam proje denetimi
 - **Diğer:**
   - Holdem'de oturan oyuncu kendi fişini yeniden yazamıyor.
   - Klavye sekmesi gerçek bas-konuş tuşunu, Tanılama gerçek sürümü gösteriyor.
+  - Var olan hesapla giriş yapınca ilk kurulum adımları tekrar açılmıyor.
+  - Yalnızca yasaklama yetkisi olan moderatör üye menüsüne erişebiliyor.
+  - "Yeniden başlat ve güncelle" yalnızca güncelleme inince çıkıyor.
+  - DJ'de başarısız olan parça kaldırılabiliyor; "Temizle" onu da siliyor.
 
 ## Yeni küçük özellikler
 
