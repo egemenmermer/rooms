@@ -100,7 +100,11 @@ export function registerMusicPlaylists(
   server: FastifyInstance,
   options: {
     directory?: string;
-    authorize(token: string, channelId: string): Promise<{ communityId: string; userId: string }>;
+    /** `canControl`: may run the DJ (Speak and Listen); needed to change the shared lists. */
+    authorize(
+      token: string,
+      channelId: string,
+    ): Promise<{ communityId: string; userId: string; canControl: boolean }>;
     references(channelId: string, source: { sessionId?: string; url?: string }): Promise<unknown>;
   },
 ) {
@@ -155,6 +159,9 @@ export function registerMusicPlaylists(
     try {
       const who = await member(req),
         change = playlistChangeSchema.parse(req.body);
+      // Reading needs view and connect; changing the community's lists (and running an
+      // import on the music service) needs the same right as running the DJ.
+      if (!who.canControl) throw Error('MUSIC_PERMISSION_DENIED');
       const write =
         change.op === 'save' || change.op === 'remove'
           ? change
@@ -180,7 +187,11 @@ export function registerMusicPlaylists(
         throw Error('MUSIC_PLAYLIST_EMPTY');
       return await store.change(who.communityId, write, async () => {
         const fresh = await member(req);
-        if (fresh.userId !== who.userId || fresh.communityId !== who.communityId)
+        if (
+          fresh.userId !== who.userId ||
+          fresh.communityId !== who.communityId ||
+          !fresh.canControl
+        )
           throw Error('MUSIC_PERMISSION_DENIED');
       });
     } catch (e) {

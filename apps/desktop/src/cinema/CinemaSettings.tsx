@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import {
   CalendarClock,
   Captions,
+  Clapperboard,
+  ExternalLink,
   Eye,
   EyeOff,
   LoaderCircle,
@@ -61,7 +63,7 @@ export function CinemaSettings({ notify }: { notify(message: string): void }) {
   const channels = useCommunity((s) => s.channels);
   const bridge = getCinemaBridge();
   const [busy, setBusy] = useState<
-    'hall' | 'connect' | 'reload' | 'disconnect' | 'subtitles' | 'tmdb' | 'audio' | null
+    'hall' | 'connect' | 'reload' | 'disconnect' | 'subtitles' | 'tmdb' | 'audio' | 'stremio' | null
   >(null);
   const [error, setError] = useState('');
   const [confirm, setConfirm] = useState(false);
@@ -183,6 +185,22 @@ export function CinemaSettings({ notify }: { notify(message: string): void }) {
         />
       )}
       <hr />
+      <StremioSection
+        communityId={communityId}
+        status={status}
+        owner={owner}
+        busy={busy === 'stremio'}
+        disabled={!!busy}
+        notify={notify}
+        onUnlink={() =>
+          void run(
+            'stremio',
+            () => bridge.stremioUnlink(communityId),
+            'Stremio bağlantısı kaldırıldı.',
+          )
+        }
+      />
+      <hr />
       <section className="cs-section">
         <h2>{t('Ses dili')}</h2>
         <p>
@@ -280,6 +298,140 @@ export function CinemaSettings({ notify }: { notify(message: string): void }) {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Stremio: the owner approves a code at link.stremio.com (the browser opens it) and the
+ * server keeps the session. The page asks every 3 s until Stremio says the code was approved.
+ */
+function StremioSection({
+  communityId,
+  status,
+  owner,
+  busy,
+  disabled,
+  notify,
+  onUnlink,
+}: {
+  communityId: string;
+  status: CinemaStatus;
+  owner: boolean;
+  busy: boolean;
+  disabled: boolean;
+  notify(message: string): void;
+  onUnlink(): void;
+}) {
+  const [code, setCode] = useState<{ code: string; link: string } | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [error, setError] = useState('');
+  const linked = !!status.stremio?.linked;
+  useEffect(() => {
+    if (!code || linked) return;
+    const bridge = getCinemaBridge();
+    let active = true;
+    const timer = setInterval(() => {
+      bridge
+        ?.stremioLinkPoll(communityId)
+        .then((next) => {
+          if (!active || !next.stremio?.linked) return;
+          acceptCinemaStatus(next);
+          setCode(null);
+          notify('Stremio hesabı bağlandı. Salonda Stremio sekmesi açıldı.');
+        })
+        .catch((reason) => {
+          if (!active) return;
+          setCode(null);
+          setError(cinemaErrorText(reason));
+        });
+    }, 3000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [code, linked, communityId, notify]);
+  const start = async () => {
+    const bridge = getCinemaBridge();
+    if (!bridge) return;
+    setStarting(true);
+    setError('');
+    try {
+      setCode(await bridge.stremioLinkStart(communityId));
+    } catch (reason) {
+      setError(cinemaErrorText(reason));
+    } finally {
+      setStarting(false);
+    }
+  };
+  return (
+    <section className="cs-section">
+      <h2>Stremio</h2>
+      <p>
+        Stremio hesabını bağla; salon, Stremio’da kurulu eklentilerinin (ör. Real-Debrid ile
+        Torrentio) bulduğu kaynakları sunucudan herkese aynı anda oynatsın. IPTV bağlı olmasa da
+        çalışır. Şifren Tayfa’ya hiç gelmez; Stremio’nun kendi onay sayfasında giriş yaparsın. Hesap
+        ve debrid anahtarların sunucuda kalır, üyelere gitmez. Yalnızca doğrudan bağlantılar oynar;
+        sunucu torrent indirmez.
+      </p>
+      {linked ? (
+        <div className="cs-card">
+          <div className="cs-card-head">
+            <span className="cs-state connected">
+              <i /> Bağlı
+            </span>
+            <strong>{status.stremio?.email ?? 'Topluluk sahibi bağladı'}</strong>
+          </div>
+          {status.stremio?.linkedAt && (
+            <dl className="cs-facts">
+              <div>
+                <dt>Bağlandı</dt>
+                <dd>{dateFormat.format(new Date(status.stremio.linkedAt))}</dd>
+              </div>
+            </dl>
+          )}
+          {owner && (
+            <div className="cs-actions">
+              <button className="button secondary" disabled={disabled} onClick={onUnlink}>
+                {busy ? <LoaderCircle size={16} className="spin" /> : <Unplug size={16} />}
+                Bağlantıyı kaldır
+              </button>
+            </div>
+          )}
+        </div>
+      ) : !owner ? (
+        <p className="cs-note inline">Topluluk sahibi henüz bir Stremio hesabı bağlamadı.</p>
+      ) : code ? (
+        <div className="cs-card" role="status">
+          <p>
+            Tarayıcıda açılan Stremio sayfasında giriş yap ve <strong>{code.code}</strong> kodunu
+            onayla. Onaylayınca burası kendiliğinden güncellenir.
+          </p>
+          <div className="cs-actions">
+            <a className="button secondary" href={code.link} target="_blank" rel="noreferrer">
+              <ExternalLink size={16} />
+              Sayfayı yeniden aç
+            </a>
+            <button className="button secondary" onClick={() => setCode(null)}>
+              Vazgeç
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          className="button primary"
+          disabled={disabled || starting}
+          onClick={() => void start()}
+        >
+          {starting ? <LoaderCircle size={16} className="spin" /> : <Clapperboard size={16} />}
+          Stremio’yu bağla
+        </button>
+      )}
+      {error && (
+        <p className="cs-error" role="alert">
+          {error}
+        </p>
+      )}
+    </section>
   );
 }
 

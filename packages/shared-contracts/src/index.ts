@@ -81,6 +81,8 @@ export interface DesktopBridge {
   chooseCaption(mediaUrl: string): Promise<{ content: string; name: string } | null>;
   openMediaExternal(url: string): Promise<boolean>;
   applicationInfo(): Promise<{ version: string; platform: string; arch: string; electron: string }>;
+  /** Unread mentions and conversations on the Dock or launcher icon (0 clears it). */
+  setBadge?(count: number): Promise<void>;
   diagnosticsPreview(): Promise<string>;
   thirdPartyNotices(): Promise<string>;
   exportDiagnostics(): Promise<boolean>;
@@ -105,6 +107,10 @@ export interface DesktopBridge {
       value: boolean,
     ): Promise<{ enabled: boolean; sound: boolean; pauseDuringVoice: boolean; supported: boolean }>;
     setVoiceActive(value: boolean): Promise<void>;
+    /** A content-free OS notification for an incoming private call (not while focused). */
+    incomingCall?(): Promise<void>;
+    /** A programme reminder the member set themselves (not while focused). */
+    reminder?(input: { title: string; detail: string }): Promise<void>;
   };
   social: SocialBridge;
   music: {
@@ -256,6 +262,11 @@ export interface SocialSession {
   user: import('@rooms/social').SocialUser | null;
   status: ConnectionStatus;
   remembered: boolean;
+  /**
+   * Why a saved session is not in use: the server refused it (`expired`), or it could not be
+   * reached at launch and is retried (`unreachable`).
+   */
+  restore?: 'expired' | 'unreachable' | null;
   sessionEpoch?: number;
 }
 export interface SocialPasswordRecoveryCapabilities {
@@ -273,6 +284,30 @@ export interface SocialBridge {
     inviteCode: string;
     accountInviteCode?: string;
   }): Promise<SocialSession>;
+  /**
+   * Approved sign-up without an invitation link; see docs/SELF_HOSTING.md. A request creates no
+   * account; after approval the account is created through the invitation registration.
+   */
+  signupAvailable(serverUrl: string): Promise<boolean>;
+  requestSignup(input: {
+    serverUrl: string;
+    email: string;
+    password: string;
+    username: string;
+  }): Promise<import('@rooms/social').SocialPendingSignup>;
+  pendingSignup(): Promise<import('@rooms/social').SocialPendingSignup | null>;
+  checkSignup(): Promise<{
+    pending: import('@rooms/social').SocialPendingSignup | null;
+    session: SocialSession | null;
+  }>;
+  completeSignup(input: { email?: string; password: string }): Promise<SocialSession>;
+  cancelSignup(): Promise<void>;
+  signupRequests(spaceId: string): Promise<import('@rooms/social').SocialSignupRequests>;
+  decideSignupRequest(
+    spaceId: string,
+    requestId: string,
+    decision: 'approve' | 'reject',
+  ): Promise<void>;
   passwordRecoveryCapabilities(serverUrl: string): Promise<SocialPasswordRecoveryCapabilities>;
   requestPasswordRecovery(input: { serverUrl: string; email: string }): Promise<{ accepted: true }>;
   importPasswordRecoveryLink(input: {
@@ -396,6 +431,12 @@ export interface SocialBridge {
   ackRead(channelId: string, messageId: string): Promise<void>;
   readStates(): Promise<import('@rooms/social').SocialReadState[]>;
   presence(status: 'online' | 'idle' | 'dnd' | 'invisible'): Promise<void>;
+  /** Bio, status text and presence as stored on the server, for Settings to start from. */
+  ownProfile?(): Promise<{
+    bio: string;
+    statusText: string;
+    presence: 'online' | 'idle' | 'dnd' | 'invisible';
+  }>;
   typing(channelId: string, active: boolean): Promise<boolean>;
   onEvent(listener: (event: import('@rooms/social').GatewayEvent) => void): () => void;
 }

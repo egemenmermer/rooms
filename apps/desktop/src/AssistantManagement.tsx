@@ -28,10 +28,19 @@ const scopeIcons = {
   research: 'search',
   browser: 'globe',
 };
-const actions: Record<string, string> = {
+export const auditActionLabels: Record<string, string> = {
+  'model-connected': t('Model bağlandı'),
+  'model-disconnected': t('Model bağlantısı kaldırıldı'),
   'yolo-enabled': t('YOLO açıldı'),
   'yolo-disabled': t('YOLO kapatıldı'),
-  'task-submitted': t('Görev başlatıldı'),
+  'yolo-task-resumed': t('Görev YOLO ile sürdü'),
+  'task-created': t('Görev başlatıldı'),
+  'task-interrupted': t('Görev yarıda kaldı'),
+  'reminder-created': t('Hatırlatıcı kuruldu'),
+  'operation-awaiting-approval': t('İşlem onay bekliyor'),
+  'operation-record-result': t('İşlem sonucu elle kaydedildi'),
+  'operation-confirm-not-applied': t('İşlemin uygulanmadığı onaylandı'),
+  'mention-ingested': t('Sohbetten görev alındı'),
   'task-completed': t('Görev tamamlandı'),
   'task-failed': t('Görev başarısız'),
   'task-cancelled': t('Görev iptal edildi'),
@@ -112,10 +121,13 @@ export function AssistantManagement() {
         const status = await window.rooms!.agent.status();
         if (!live()) return;
         if (!status.connected) throw new Error(status.reason || t('Agent sunucusu bağlı değil.'));
-        const [authority, audit] = await Promise.all([
-          window.rooms!.agent.authority(roomId),
-          window.rooms!.agent.audit(roomId),
-        ]);
+        // The room's history is for managers; everyone else reads their own, and sees the
+        // "yetkin yok" view for the permissions instead of an error.
+        const authority = await window.rooms!.agent.authority(roomId);
+        if (!live()) return;
+        const audit = authority.canManage
+          ? await window.rooms!.agent.audit(roomId)
+          : await window.rooms!.agent.audit();
         if (!live()) return;
         const names: Record<string, string> = { [c.user!.id]: c.user!.displayName };
         if (c.activeSpaceId) {
@@ -348,7 +360,7 @@ export function AssistantManagement() {
                   <option value="">{t('Tüm işlemler')}</option>
                   {[...new Set(audit?.entries.map((e) => e.action))].map((id) => (
                     <option key={id} value={id}>
-                      {actions[id] ?? id}
+                      {auditActionLabels[id] ?? id}
                     </option>
                   ))}
                 </select>
@@ -381,7 +393,7 @@ export function AssistantManagement() {
                               })}
                         </time>
                         <div>
-                          {name(entry.userId)} · {actions[entry.action] ?? entry.action}
+                          {name(entry.userId)} · {auditActionLabels[entry.action] ?? entry.action}
                           <small>
                             {t('{channel} · işlem kaydı', { channel: channel?.name ?? t('Oda') })}
                           </small>

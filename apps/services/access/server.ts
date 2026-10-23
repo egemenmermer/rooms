@@ -13,6 +13,7 @@ import {
   type AccountInviteSink,
 } from './account-invites';
 import { INVITE_PAGE_HEADERS, renderInvitePage } from './invite-page';
+import { registerSignupRequests, SignupRequestStore, type SignupLimits } from './signup-requests';
 import { MongoClient } from 'mongodb';
 import { StoatAuthorizationReader } from './stoat-authorization';
 import { createHash, randomUUID } from 'node:crypto';
@@ -35,11 +36,13 @@ import {
 } from '@rooms/social';
 import {
   stoatChannelPermissions,
+  stoatCommunityAdmin,
   StoatPermissions as Permissions,
   type StoatServer,
   type StoatChannel,
   type StoatMember,
 } from './stoat-permissions';
+import { ingressLimit, TRUSTED_PROXIES } from '../shared/ingress';
 
 export interface AccessConfig {
   soundboardDirectory?: string;
@@ -66,6 +69,10 @@ export interface AccessConfig {
   /** Where invitation pages send people to download the desktop app. */
   downloadUrl?: string;
   socialReadMongoUrl?: string;
+  /** Community that approved sign-up (no invitation link) asks to join; unset turns it off. */
+  signupSpaceId?: string;
+  signupRequestsFile?: string;
+  signupLimits?: Partial<SignupLimits>;
   /** KLIPY app key for GIF search; kept on the server, never sent to clients. */
   klipyKey?: string;
 }
@@ -87,8 +94,9 @@ const registrationBody = credentialBody.extend({
 /** Server-owned LiveKit participant attribute; clients cannot edit their own metadata. */
 export const DEAFENED_ATTRIBUTE = 'rooms.deafened';
 export async function createAccessServer(config: AccessConfig) {
-  const server = Fastify({ logger: false, bodyLimit: 16384 });
-  // Media polling and room changes share this ingress budget, including proxied peers.
+  const server = Fastify({ logger: false, trustProxy: TRUSTED_PROXIES, bodyLimit: 16384 });
+  ingressLimit(server, { perMinute: 1200, error: 'RATE_LIMITED' });
+  // Media polling and room changes share this budget per client address (Caddy is trusted).
   await server.register(rateLimit, { max: 600, timeWindow: '1 minute' });
   const rawBodies = new WeakMap<FastifyRequest, string>();
   server.removeContentTypeParser('application/json');
@@ -181,6 +189,26 @@ export async function createAccessServer(config: AccessConfig) {
     await reader?.close();
   });
   const roomName = (id: string) => `stoat-channel-${id}`;
+  /**
+   * Grants live in memory, so a restart forgets everyone already in a room. A caller whose
+   * session was just authorized and who is still a participant in the LiveKit room is
+   * registered again with that session instead of being told to rejoin.
+   */
+  const memberGrant = async (token: string, channelId: string, userId: string) => {
+    const key = `${channelId}:${userId}`;
+    const known = grants.get(key);
+    if (known) return known;
+    let participant;
+    try {
+      participant = await roomService.getParticipant(roomName(channelId), userId);
+    } catch {
+      return undefined;
+    }
+    if (participant?.identity !== userId) return undefined;
+    const grant = { userId, channelId, token, lastSeen: Date.now() };
+    grants.set(key, grant);
+    return grant;
+  };
   const dmCalls = registerDmCalls(server, {
     apiKey: config.apiKey,
     apiSecret: config.apiSecret,
@@ -241,7 +269,7 @@ export async function createAccessServer(config: AccessConfig) {
       permissions,
       communityId: channel.server,
       ownerId: (rawServer as StoatServer).owner,
-      canManage: rawServer.owner === user.id,
+      canManage: stoatCommunityAdmin(rawServer as StoatServer, rawMember as StoatMember, user.id),
     };
   };
   registerSoundboard(server, {
@@ -306,7 +334,13 @@ export async function createAccessServer(config: AccessConfig) {
     directory: config.musicPlaylistsDirectory,
     authorize: async (token, channelId) => {
       const value = await authorize(token, channelId);
-      return { communityId: value.communityId, userId: value.user.id };
+      return {
+        communityId: value.communityId,
+        userId: value.user.id,
+        canControl:
+          (value.permissions & Permissions.SPEAK) !== 0n &&
+          (value.permissions & Permissions.LISTEN) !== 0n,
+      };
     },
     references: async (channelId, source) => {
       if (!config.musicUrl || !config.musicSecret) throw Error('MUSIC_NOT_CONFIGURED');
@@ -366,7 +400,7 @@ export async function createAccessServer(config: AccessConfig) {
       invalidateScreenUser(channelId, result.user.id);
       throw new StoatError(403, 'PRESENT_PERMISSION_REQUIRED');
     }
-    const grant = grants.get(`${channelId}:${result.user.id}`);
+    const grant = await memberGrant(token, channelId, result.user.id);
     if (!grant || grant.token !== token) throw new StoatError(403, 'JOIN_VOICE_FIRST');
     let participant;
     try {
@@ -384,7 +418,7 @@ export async function createAccessServer(config: AccessConfig) {
   const leaseContext = z.object({ channelId: opaqueId, leaseId: z.string().uuid() }).strict();
   const remoteMember = async (token: string, channelId: string) => {
     const result = await authorize(token, channelId);
-    const grant = grants.get(`${channelId}:${result.user.id}`);
+    const grant = await memberGrant(token, channelId, result.user.id);
     if (!grant || grant.token !== token || (result.permissions & Permissions.LISTEN) === 0n)
       throw new StoatError(403, 'JOIN_VOICE_FIRST');
     const person = await roomService.getParticipant(roomName(channelId), result.user.id);
@@ -560,14 +594,29 @@ export async function createAccessServer(config: AccessConfig) {
   const stoat = (token?: string) =>
     new StoatClient(config.stoatUrl ?? 'http://127.0.0.1:3022', token, socialOptions);
   const inviteCode = z.object({ code: z.string().regex(LEGACY_INVITE_CODE_PATTERN) });
-  /** Listing and revoking links stays with the space owner, whoever created a link. */
-  const requireSpaceOwner = async (authorization: string | undefined, spaceId: string) => {
+  /** Listing and revoking links stays with the space owner and owner-equivalent admins. */
+  const requireSpaceAdmin = async (authorization: string | undefined, spaceId: string) => {
     const client = stoat(tokenOf(authorization));
     const user = await client.getCurrentUser();
-    const space = (await client.getServer(spaceId)) as { owner?: string };
-    if (space.owner !== user.id) throw new StoatError(403, 'INVITE_ADMIN_REQUIRED');
-    return client;
+    const space = (await client.getServer(spaceId)) as unknown as StoatServer;
+    const member =
+      space.owner === user.id
+        ? null
+        : ((await client.getMember(spaceId, user.id).catch(() => null)) as StoatMember | null);
+    if (!stoatCommunityAdmin(space, member, user.id))
+      throw new StoatError(403, 'INVITE_ADMIN_REQUIRED');
+    return { client, userId: user.id };
   };
+  const requireSpaceOwner = async (authorization: string | undefined, spaceId: string) =>
+    (await requireSpaceAdmin(authorization, spaceId)).client;
+  registerSignupRequests(server, {
+    spaceId: config.signupSpaceId,
+    store: new SignupRequestStore(config.signupRequestsFile ?? '.local/stoat/signup-requests.json'),
+    registration,
+    provisioning: !!accountInvites,
+    limits: config.signupLimits,
+    requireSpaceAdmin,
+  });
   server.post('/v1/invites', async (request) => {
     const { channelId } = channelBody.parse(request.body);
     const token = tokenOf(request.headers.authorization);
@@ -797,7 +846,7 @@ export async function createAccessServer(config: AccessConfig) {
         .parse(request.body);
       const token = tokenOf(request.headers.authorization);
       const { user } = await authorize(token, channelId);
-      const grant = grants.get(`${channelId}:${user.id}`);
+      const grant = await memberGrant(token, channelId, user.id);
       if (!grant || grant.token !== token) throw new StoatError(403, 'JOIN_VOICE_FIRST');
       await roomService.updateParticipant(roomName(channelId), user.id, {
         attributes: { [DEAFENED_ATTRIBUTE]: deafened ? '1' : '' },

@@ -77,7 +77,7 @@ Known limits:
 | `sudo rooms invite` | Creates a new invite link (default 7 days, 10 people; `--uses`, `--days`, `--count`) |
 | `sudo rooms logs [service]` | Follows the logs (for example `rooms logs access`) |
 | `sudo rooms backup` | Backs up the database, files and configuration under `/opt/rooms/deploy/backups` |
-| `sudo rooms update` | Takes a backup, updates to the latest version and restarts Caddy |
+| `sudo rooms update [version]` | Takes a backup, then updates to the latest `main` (or to the given release tag, e.g. `v0.1.18-rc.30`) and restarts Caddy |
 | `sudo rooms restart` / `stop` | Restarts / stops the services (data is kept) |
 
 The backup holds passwords and messages. Copy it somewhere safe off the server, and try restoring it now and then.
@@ -187,7 +187,7 @@ Bilinen sınırlar:
 | `sudo rooms invite` | Yeni davet bağlantısı üretir (varsayılan 7 gün, 10 kişi; `--uses`, `--days`, `--count`) |
 | `sudo rooms logs [servis]` | Günlükleri izler (örnek: `rooms logs access`) |
 | `sudo rooms backup` | Veritabanı, dosyalar ve yapılandırmanın yedeğini `/opt/rooms/deploy/backups` altına alır |
-| `sudo rooms update` | Önce yedek alır, sonra en son sürüme günceller ve Caddy'yi yeniden başlatır |
+| `sudo rooms update [sürüm]` | Önce yedek alır, sonra `main` dalının son haline (ya da verilen sürüm etiketine, ör. `v0.1.18-rc.30`) günceller ve Caddy'yi yeniden başlatır |
 | `sudo rooms restart` / `stop` | Servisleri yeniden başlatır / durdurur (veriler korunur) |
 
 Yedek dosyası parolaları ve mesajları içerir. Onu sunucunun dışında güvenli bir yere kopyala ve ara sıra geri yüklemeyi dene.
@@ -335,6 +335,9 @@ PowerShell'de eşdeğer dosya işlemleri için `New-Item -ItemType Directory -Fo
 | `ROOMS_ACTIVITY_DATABASE_URL` | İsteğe bağlı Activities PostgreSQL bağlantısı |
 | `ROOMS_REGISTRATION_INVITES_FILE` | Kalıcı davet bağlantısı defteri |
 | `ROOMS_ACCOUNT_INVITE_MONGO_URL` | Her kayıtta yeni üst sistem hesap daveti eklemek için kapsamlı Mongo bağlantısı; yoksa uygulamadan davet oluşturulamaz |
+| `ROOMS_SIGNUP_SPACE_ID` | İsteğe bağlı [onaylı kayıt](#onaylı-kayıt-davet-bağlantısı-olmadan) için topluluk kimliği; boşsa kapalı |
+| `ROOMS_SIGNUP_REQUESTS_FILE` | Kalıcı kayıt isteği dosyası; varsayılan `.local/stoat/signup-requests.json` |
+| `ROOMS_SIGNUP_PER_IP_PER_HOUR` / `ROOMS_SIGNUP_PER_HOUR` / `ROOMS_SIGNUP_MAX_PENDING` | Onaylı kayıt sınırları; varsayılan 3 / 20 / 50 |
 | `ROOMS_PUBLIC_URL` | `/davet` sayfasındaki **Tayfa'da aç** bağlantısının herkese açık HTTPS adresi; yoksa isteğin `Host` başlığı kullanılır |
 | `ROOMS_DOWNLOAD_URL` | `/davet` sayfasındaki **Uygulamayı indir** adresi; varsayılan GitHub `releases/latest` (ön sürümleri göstermez) |
 | `ROOMS_SOCIAL_READ_MONGO_URL` | İsteğe bağlı sınırlı sosyal yetki okuma bağlantısı |
@@ -385,6 +388,40 @@ Eski sürüm 1 defter ilk yazmada sürüm 2'ye çevrilir; özgün dosya bir kez 
 
 Ayrıntılı entegrasyon notları üst sistem kabul açıklarını kaydeder. API yolunun belgelenmesi, kendi ilk hesap/kayıt akışının denendiği anlamına gelmez.
 
+#### Onaylı kayıt (davet bağlantısı olmadan)
+
+İsteğe bağlıdır ve varsayılan olarak kapalıdır. Açıkken masaüstündeki ve iPhone'daki **Kayıt ol** ekranında **Onay isteğiyle** seçeneği çıkar: kişi kullanıcı adını, e-postasını ve şifresini girer (masaüstünde sunucu adresini de), davet bağlantısı gerekmez. **İstek gönderilince hesap oluşmaz.** Topluluk sahibi veya yöneticisi (davet bağlantılarını yönetebilen kişiler) isteği **Ayarlar → Üyeler ve roller → Kayıt istekleri** bölümünde onaylar ya da reddeder. Onaydan sonra hesap, mevcut davet bağlantılı kayıtla oluşur ve kişi topluluğa aynı adımda katılır. Reddedilen veya süresi dolan isteğe hiç hesap açılmaz.
+
+Nasıl çalışır:
+
+- Ters vekil ham hesap oluşturmayı engellemeye devam eder; Caddy yapılandırması değişmez. Yeni yollar zaten iletilen `/rooms-access/*` altındadır.
+- İstek yalnızca e-posta ve kullanıcı adı taşır; şifre sunucuya gitmez. Erişim aracı Stoat'a hiçbir çağrı yapmaz, hesap daveti eklemez. Kişiye rastgele bir **izleme anahtarı** (poll secret) döner; isteğin durumu yalnızca bu anahtarla sorulur.
+- İstekler `ROOMS_SIGNUP_REQUESTS_FILE` dosyasında kalıcı tutulur (atomik yazma, dosya kilidi, `0600`). Dosyada istek kimliği, seçilen ad, e-postanın SHA-256 özeti (aynı adresle ikinci açık isteği engellemek için), izleme anahtarının SHA-256 özeti, zamanlar ve kararı veren yöneticinin kimliği durur. E-posta, şifre ve anahtarın kendisi yazılmaz.
+- Onayda aracı, onaylayan yöneticinin oturumuyla topluluğun ilk kanalına bir Stoat topluluk daveti açar ve davet defterine (`ROOMS_REGISTRATION_INVITES_FILE`) **tek kullanımlık, 7 günlük** bir kayıt bağlantısı ekler. Bu bağlantı **Davetler** listesinde görünür ve oradan iptal edilebilir. Kişinin bir sonraki sorgusu bağlantıyı **bir kez** alır; aracı onu sonra unutur. İstemci hesabı `/v1/auth/register` ile oluşturur (hesap daveti o anda eklenir, topluluğa katılım aynı adımdadır). Bu yüzden `ROOMS_ACCOUNT_INVITE_MONGO_URL` gerekir.
+- Bağlantı alınmadan önce reddetmek, yeniden onaylamak veya kişinin isteği geri çekmesi bağlantıyı kapatır. Alınmış ama kullanılmamış bağlantı **Davetler** listesinden iptal edilebilir veya 7 gün sonra kendiliğinden kapanır.
+- Masaüstü izleme anahtarını ve onay bağlantısını ana süreçte işletim sisteminin anahtar zinciriyle (safeStorage) şifreli tutar; iPhone Keychain kullanır. Şifre yalnızca bellekte durur; uygulama kapanırsa kişi onaydan sonra şifresini yeniden girer.
+- Karar verilmeyen istek 14 gün sonra süresi dolmuş sayılır ve kuyruktan düşer; kişi yeni istek gönderebilir. Karar verilmiş ve süresi dolmuş kayıtlar 30 gün sonra dosyadan silinir.
+
+Kötüye kullanım sınırları: adres başına saatte 3 kayıt isteği (`ROOMS_SIGNUP_PER_IP_PER_HOUR`), sunucu genelinde saatte 20 (`ROOMS_SIGNUP_PER_HOUR`), en fazla 50 bekleyen istek (`ROOMS_SIGNUP_MAX_PENDING`) ve e-posta başına bir açık istek. Kullanıcı adı 2–32 harf, rakam, `_`, `.` veya `-` olmalıdır; istemciler şifreyi en az 8 karakter ister. Sınır sayaçları bellekte tutulur ve servis yeniden başlayınca sıfırlanır; kalıcı sınır bekleyen istek sayısıdır. E-postası zaten bir hesaba ait kişi onaydan sonra kayıtta açık bir hata görür; tek kullanımlık bağlantı bu durumda harcanmaz.
+
+Açmak için:
+
+1. Topluluğun kimliğini bul (Stoat'taki sunucu kimliği; uygulamada topluluk bağlantısındaki 26 karakterlik ULID). Toplulukta en az bir kanal olmalı.
+2. Hızlı kurulumda `/opt/rooms/deploy/.env` dosyasına `ROOMS_SIGNUP_SPACE_ID=<topluluk kimliği>` ekle. İstersen sınırları da ekle. Ardından `sudo rooms up` çalıştır. `ROOMS_SIGNUP_REQUESTS_FILE` Compose dosyasında `/state/signup-requests.json` olarak gelir ve `rooms backup` yedeğine girer.
+3. Elle kurulumda erişim servisine `ROOMS_SIGNUP_SPACE_ID`, `ROOMS_SIGNUP_REQUESTS_FILE`, `ROOMS_REGISTRATION_INVITES_FILE` ve `ROOMS_ACCOUNT_INVITE_MONGO_URL` ver.
+
+Kapatmak için `ROOMS_SIGNUP_SPACE_ID` değerini boşalt ve servisi yeniden başlat. Bekleyen istekler dosyada kalır; yeniden açtığında görünür. Verilmiş tek kullanımlık bağlantılar davet defterindedir ve süreleri dolana kadar geçerlidir. Davet bağlantıları ve tek kullanımlık kayıt betiği bu ayardan etkilenmez.
+
+| Yol (`/rooms-access` altında) | Kim | İş |
+| --- | --- | --- |
+| `GET /v1/auth/signup` | Herkes | Onaylı kaydın açık olup olmadığı |
+| `POST /v1/auth/signup-requests` | Herkes (sınırlı) | `{email, username}` ile isteği kuyruğa ekler; `{requestId, pollSecret}` döner, hesap açmaz |
+| `GET /v1/auth/signup-requests/:id` | İzleme anahtarı (`Authorization: Bearer`) | Durum; onaylandıysa tek kullanımlık kayıt bağlantısını bir kez döner |
+| `DELETE /v1/auth/signup-requests/:id` | İzleme anahtarı | İsteği geri çeker, alınmamış bağlantıyı kapatır |
+| `GET /v1/spaces/:spaceId/signup-requests` | Sahip/yönetici | Bekleyen ve onaylanıp bağlantısı henüz alınmamış istekler |
+| `POST /v1/spaces/:spaceId/signup-requests/:id/approve` | Sahip/yönetici | Onaylar, tek kullanımlık bağlantı üretir |
+| `POST /v1/spaces/:spaceId/signup-requests/:id/reject` | Sahip/yönetici | Reddeder |
+
 ### 6. Masaüstü istemcisini bağla
 
 Uyumlu masaüstü derlemesini aç veya kur. **Giriş yap** sekmesinde aynı makinede yerel ters vekil adresini; uzak üyelerde gerçek herkese açık HTTPS kaynak adresini gir. Yeni üye, önceki adımın davet bağlantısını **Kayıt ol** sekmesine yapıştırır; sunucuyu bağlantı belirler.
@@ -429,6 +466,7 @@ Temel giriş, sohbet, izinler ve medya çalıştıktan sonra ekle:
 | Sosyal hesaplar/mesajlar | Stoat veritabanı veri birimleri | Uyumlu üst sistem yedek/geri yükleme |
 | Yüklenen dosyalar | Stoat nesne deposu veri birimleri | İlgili üstveri ve anahtarlarla birlikte yedek |
 | Kayıt durumu | `ROOMS_REGISTRATION_INVITES_FILE` (varsa `.v1.bak` yedeği) | Kullanım sayılarını ve belirsiz kayıtları koru |
+| Kayıt istekleri | `ROOMS_SIGNUP_REQUESTS_FILE` | Bekleyen ve onaylanan istekleri koru; onay bağlantıları davet defterindedir |
 | Etkinlikler | `ROOMS_ACTIVITY_DATA` veya PostgreSQL | Uyumlu seri hale getirilmiş durum |
 | Soundboard | `ROOMS_SOUNDBOARD_DIRECTORY` | Dosyaları ve sahipliği koru |
 | Giriş sesleri | `ROOMS_PERSONAL_SOUNDS_DIRECTORY` | Kişi klasörlerini olduğu gibi koru |

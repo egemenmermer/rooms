@@ -192,3 +192,50 @@ it('keeps mention acknowledgements cleared when a reconnect repeats a delivered 
   listener(event);
   expect(useCommunity.getState().readStates.chat.mentionMessageIds).toEqual([]);
 });
+it('keeps a saved session whose server is unreachable and opens it when the server answers', async () => {
+  let listener!: (event: { type: string; data: unknown; sessionEpoch?: number }) => void;
+  const user = { id: 'member', username: 'member', displayName: 'Member', avatar: null };
+  const sessions: SocialSession[] = [
+    {
+      instanceUrl: 'https://example.test',
+      user: null,
+      status: 'reconnecting',
+      remembered: true,
+      restore: 'unreachable',
+      sessionEpoch: 4,
+    },
+    {
+      instanceUrl: 'https://example.test',
+      user,
+      status: 'connected',
+      remembered: true,
+      restore: null,
+      sessionEpoch: 4,
+    },
+  ];
+  window.rooms = {
+    social: {
+      session: vi.fn(async () => sessions.shift()!),
+      onEvent: (callback: typeof listener) => {
+        listener = callback;
+        return () => {};
+      },
+      spaces: async () => [],
+      dms: async () => [],
+      readStates: async () => [],
+    },
+  } as unknown as DesktopBridge;
+  const { initializeCommunity, useCommunity, SERVER_UNREACHABLE_MESSAGE } =
+    await import('../apps/desktop/src/community');
+  await initializeCommunity();
+  const waiting = useCommunity.getState();
+  expect(waiting.user).toBeNull();
+  expect(waiting.remembered).toBe(true);
+  expect(waiting.error).toBe(SERVER_UNREACHABLE_MESSAGE);
+  const restored = vi.fn();
+  window.addEventListener('rooms:session-restored', restored);
+  listener({ type: 'SESSION_RESTORED', data: null, sessionEpoch: 4 });
+  await vi.waitFor(() => expect(useCommunity.getState().user?.id).toBe('member'));
+  await vi.waitFor(() => expect(restored).toHaveBeenCalled());
+  expect(useCommunity.getState().error).toBeNull();
+});

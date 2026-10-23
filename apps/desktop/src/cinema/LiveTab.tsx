@@ -94,6 +94,7 @@ export function LiveTab({
     if (!next) return [];
     const reminder = {
       hallId: hall.hallId,
+      communityId: hall.status.communityId,
       ref: item.ref,
       channel: item.title,
       title: next.title,

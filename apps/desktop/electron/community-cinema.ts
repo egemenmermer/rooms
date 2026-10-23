@@ -1,8 +1,11 @@
 import { z } from 'zod';
 import type { StoatClient } from '@rooms/stoat';
 import { SOCIAL_ID_PATTERN } from '@rooms/social';
+import { randomBytes } from 'node:crypto';
+import { isIP } from 'node:net';
 import { t } from '@rooms/i18n';
 import { CINEMA_REF_PATTERN, RMDB_REVIEW_MAX } from '../../../packages/community-cinema/src/types';
+import { STREMIO_ID, streamFacts } from '../../../packages/community-cinema/src/stremio';
 
 /** The account the cinema request was made with; a request finishing in another account fails. */
 export type CinemaAccount = { client: StoatClient; token: string; origin: string };
@@ -16,6 +19,35 @@ const relayFile = /^[A-Za-z0-9_.-]{1,80}$/;
 const sessionId = /^[A-Za-z0-9_-]{1,80}$/;
 const rmdbWork = z.string().regex(/^w-[A-Za-z0-9_-]{8,40}$/);
 const rmdbEntry = z.string().regex(/^d-[A-Za-z0-9_-]{8,40}$/);
+const stremioType = z.enum(['movie', 'series']);
+const stremioId = z.string().regex(STREMIO_ID);
+const assistTargets = z
+  .array(z.object({ addon: z.string().max(200), url: z.string().max(4096) }))
+  .max(20);
+
+/** An https link to a public host: add-on answers never steer this computer into its LAN. */
+function publicHttps(value: unknown) {
+  if (typeof value !== 'string' || value.length > 4096) return null;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+    if (url.protocol !== 'https:' || url.username || url.password) return null;
+    if (host === 'localhost' || host.endsWith('.local') || host.endsWith('.localhost')) return null;
+    if (isIP(host)) return null;
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+const textOf = (value: unknown, max: number) =>
+  typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : null;
+const stremioStream = z.string().regex(/^[A-Za-z0-9_-]{8,40}$/);
+const stremioLink = z
+  .object({
+    code: z.string().regex(/^[A-Za-z0-9]{3,16}$/),
+    link: z.string().regex(/^https:\/\/link\.stremio\.com\/[A-Za-z0-9]{3,16}$/),
+  })
+  .strict();
 const rmdbReview = z
   .object({
     rating: z.number().int().min(1).max(10).nullable(),
@@ -149,6 +181,8 @@ export function setupCommunityCinema(options: {
   account(): CinemaAccount;
   /** Whether `account` is still the signed-in one. */
   isCurrent(account: CinemaAccount): boolean;
+  /** Opens Stremio's link page in the browser. */
+  openExternal?(url: string): Promise<void>;
   fetch?: typeof fetch;
 }) {
   const request = options.fetch ?? fetch;
@@ -395,6 +429,163 @@ export function setupCommunityCinema(options: {
   options.handle('rooms:cinema-rmdb-remove', async (hallId, workId) => {
     await api('DELETE', work(hallId, workId));
   });
+  // Stremio: the main process opens only Stremio's own link page, whatever the service says.
+  options.handle('rooms:cinema-stremio-link', async (communityId) => {
+    const code = stremioLink.parse(await api('POST', `${community(communityId)}/stremio/link`, {}));
+    await options.openExternal?.(code.link);
+    return code;
+  });
+  options.handle('rooms:cinema-stremio-poll', (communityId) =>
+    api('POST', `${community(communityId)}/stremio/poll`, {}, 20_000),
+  );
+  options.handle('rooms:cinema-stremio-unlink', (communityId) =>
+    api('DELETE', `${community(communityId)}/stremio`),
+  );
+  options.handle('rooms:cinema-stremio-home', (hallId) =>
+    api('GET', `${hall(hallId)}/stremio/home`, undefined, 30_000),
+  );
+  options.handle('rooms:cinema-stremio-search', (hallId, text) =>
+    api(
+      'GET',
+      `${hall(hallId)}/stremio/search?${new URLSearchParams({ q: z.string().max(200).parse(text) })}`,
+      undefined,
+      30_000,
+    ),
+  );
+  options.handle('rooms:cinema-stremio-details', (hallId, type, id) =>
+    api(
+      'GET',
+      `${hall(hallId)}/stremio/details?${new URLSearchParams({
+        type: stremioType.parse(type),
+        id: stremioId.parse(id),
+      })}`,
+      undefined,
+      30_000,
+    ),
+  );
+  // Add-ons answer slowly (debrid lookups); the service waits up to 20 s for each.
+  options.handle('rooms:cinema-stremio-streams', (hallId, type, id, videoId) =>
+    api(
+      'GET',
+      `${hall(hallId)}/stremio/streams?${new URLSearchParams({
+        type: stremioType.parse(type),
+        id: stremioId.parse(id),
+        videoId: stremioId.parse(videoId),
+      })}`,
+      undefined,
+      60_000,
+    ),
+  );
+  /**
+   * Torrentio refuses data-centre addresses. For whoever linked the account, this computer
+   * asks those add-ons itself; the links (they carry the debrid key) stay in this process.
+   */
+  const assisted = new Map<
+    string,
+    {
+      hallId: string;
+      url: string;
+      type: 'movie' | 'series';
+      metaId: string;
+      videoId: string;
+      at: number;
+    }
+  >();
+  options.handle('rooms:cinema-stremio-assist', async (hallId, type, id, videoId) => {
+    const kind = stremioType.parse(type);
+    const metaId = stremioId.parse(id);
+    const video = stremioId.parse(videoId);
+    const hallKey = socialId.parse(hallId);
+    const targets = assistTargets.parse(
+      await api(
+        'GET',
+        `${hall(hallKey)}/stremio/assist?${new URLSearchParams({ type: kind, videoId: video })}`,
+      ),
+    );
+    const found: unknown[] = [];
+    await Promise.all(
+      targets.map(async (target) => {
+        const url = publicHttps(target.url);
+        if (!url) return;
+        let body: { streams?: unknown } | null = null;
+        try {
+          const response = await request(url, {
+            headers: { Accept: 'application/json' },
+            signal: AbortSignal.timeout(20_000),
+          });
+          if (response.ok) body = (await response.json()) as { streams?: unknown };
+        } catch {
+          return;
+        }
+        const streams = Array.isArray(body?.streams) ? body.streams.slice(0, 200) : [];
+        for (const entry of streams as Record<string, unknown>[]) {
+          const link = publicHttps(entry?.url);
+          if (!link) continue;
+          const name = textOf(entry.name, 200) ?? target.addon;
+          const title = textOf(entry.title, 600) ?? textOf(entry.description, 600) ?? '';
+          const localId = randomBytes(12).toString('base64url');
+          assisted.set(localId, {
+            hallId: hallKey,
+            url: link,
+            type: kind,
+            metaId,
+            videoId: video,
+            at: Date.now(),
+          });
+          found.push({
+            id: localId,
+            addon: target.addon,
+            name,
+            title,
+            ...streamFacts(name, title),
+          });
+        }
+      }),
+    );
+    for (const [key, entry] of assisted)
+      if (Date.now() - entry.at > 2 * 3600_000 || assisted.size > 2000) assisted.delete(key);
+    return found;
+  });
+  options.handle('rooms:cinema-stremio-pick-local', async (hallId, streamId) => {
+    const entry = assisted.get(stremioStream.parse(streamId));
+    if (!entry || entry.hallId !== socialId.parse(hallId))
+      throw new CinemaRequestError('CINEMA_STREMIO_STREAM_EXPIRED');
+    // Follow the add-on's redirects (Torrentio → the debrid download) from this computer.
+    const origin = new URL(entry.url).hostname;
+    let current = entry.url;
+    for (let hop = 0; hop < 6; hop++) {
+      let response: Response;
+      try {
+        response = await request(current, {
+          redirect: 'manual',
+          signal: AbortSignal.timeout(30_000),
+        });
+      } catch {
+        throw new CinemaRequestError('CINEMA_STREMIO_UNAVAILABLE');
+      }
+      const location = response.headers.get('location');
+      await response.body?.cancel().catch(() => {});
+      if (response.status >= 300 && response.status < 400 && location) {
+        current = publicHttps(new URL(location, current).href) ?? '';
+        if (!current) throw new CinemaRequestError('CINEMA_STREMIO_UNAVAILABLE');
+        continue;
+      }
+      if (!response.ok) throw new CinemaRequestError('CINEMA_STREMIO_UNAVAILABLE');
+      break;
+    }
+    // Still on the add-on: Torrentio answers an uncached stream with its own "downloading" clip.
+    if (new URL(current).hostname === origin)
+      throw new CinemaRequestError('CINEMA_STREMIO_NOT_CACHED');
+    return api('POST', `${hall(hallId)}/stremio/pick-direct`, {
+      url: current,
+      type: entry.type,
+      metaId: entry.metaId,
+      videoId: entry.videoId,
+    });
+  });
+  options.handle('rooms:cinema-stremio-pick', (hallId, streamId) =>
+    api('POST', `${hall(hallId)}/stremio/pick`, { streamId: stremioStream.parse(streamId) }),
+  );
 
   /**
    * The session's ticket, renewed when it is close to expiry (or `force`d after a 401).

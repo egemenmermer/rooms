@@ -473,7 +473,10 @@ export function MinimalSidebar({
             <div className="minimal-voice-controls">
               <IconButton
                 label={r.muted ? t('Mikrofonu aç') : t('Mikrofonu kapat')}
-                disabled={r.status !== 'connected' || r.busy}
+                // While reconnecting the microphone can still be muted (not unmuted).
+                disabled={
+                  (r.status !== 'connected' && !(r.status === 'reconnecting' && !r.muted)) || r.busy
+                }
                 onClick={() => run(toggleMic())}
               >
                 {r.muted ? <MicOff size={17} /> : <Mic size={17} />}

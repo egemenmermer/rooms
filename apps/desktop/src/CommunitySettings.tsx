@@ -1206,11 +1206,19 @@ export function ChannelPermissions(props: ChannelPermissionsProps) {
     ),
     [saved, setSaved] = useState(false);
   const op = useOperation(props.channel?.id ?? 'unknown', props);
+  // Reset on what the permissions are, not on object identity: the surface re-renders on
+  // every message, typing and voice event. The snapshot that comes back after our own save
+  // keeps the selection and the "saved" notice.
+  const snapshotKey = `${props.channel?.id ?? ''}\n${JSON.stringify(props.snapshot ?? null)}`;
+  const savedKey = useRef<string | null>(null);
   useEffect(() => {
+    if (savedKey.current === snapshotKey) return;
+    savedKey.current = null;
     setDraft(props.snapshot);
     setSelected(props.initialSubjectId ?? props.snapshot?.subjects[0]?.id ?? '');
     setSaved(false);
-  }, [props.channel?.id, props.snapshot, props.initialSubjectId, props.access]);
+    // props.snapshot is read through snapshotKey.
+  }, [snapshotKey, props.initialSubjectId, props.access]);
   if (props.access === 'denied' || props.access === 'removed')
     return (
       <ChannelAccessState
@@ -1282,6 +1290,7 @@ export function ChannelPermissions(props: ChannelPermissionsProps) {
                 () => props.onSave!(draft),
                 (result) => {
                   if (result.channelId !== props.channel!.id) return;
+                  savedKey.current = `${result.channelId}\n${JSON.stringify(result)}`;
                   setDraft(result);
                   setSaved(true);
                 },

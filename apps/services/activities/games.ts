@@ -48,6 +48,8 @@ interface TableSeat {
   disconnectedAt: number | null;
   pendingReturn: boolean;
   recoveryEvents?: GameRecoveryEvent[];
+  /** Left with "Masadan kalk" during a hand: a bot finishes it, then the seat is freed. */
+  left?: boolean;
 }
 export interface GameTable {
   kind: GamePublicState['kind'];
@@ -386,10 +388,15 @@ export function gameCommand(
       if (command.buyIn !== undefined) {
         if (table.kind !== 'holdem') throw new Error('HOLDEM_BUY_IN_ONLY');
         if (table.status === 'playing') throw new Error('CHIP_CHANGE_DURING_HAND');
-        player.chips = buyIn(table, command.buyIn);
+        // Chip totals are conserved: a seated player only buys back in once below the minimum,
+        // and never above the maximum stack.
+        const rules = rulesOf(table);
+        if (player.chips >= rules.minBuyIn) throw new Error('CHIP_CHANGE_NOT_ALLOWED');
+        player.chips = Math.min(rules.maxBuyIn, player.chips + buyIn(table, command.buyIn));
       }
       player.connected = true;
       player.disconnectedAt = null;
+      if (player.left) delete player.left;
       const requested = player.bot && !player.pendingReturn;
       player.pendingReturn = player.bot;
       if (requested) recoveryEvent(table, player, 'return-requested', now);
@@ -443,8 +450,19 @@ export function gameCommand(
   }
   if (!player) throw new Error('TAKE_A_SEAT_FIRST');
   if (command.type === 'game.leave') {
+    // Between hands the seat is freed now; during a hand a bot plays it to the end.
+    if (table.status !== 'playing') {
+      table.seats = table.seats.filter((seat) => seat !== player);
+      return;
+    }
+    player.left = true;
     player.connected = false;
     player.disconnectedAt = now;
+    if (!player.bot) {
+      player.bot = true;
+      player.pendingReturn = false;
+      recoveryEvent(table, player, 'takeover-started', now);
+    }
     return;
   }
   if (command.type !== 'game.action') throw new Error('INVALID_GAME_COMMAND');
@@ -515,10 +533,18 @@ export function gameCommand(
   )
     table.turnDeadline = now + 45000;
   recordFinished(table, now);
+  releaseLeftSeats(table);
+}
+/** Seats whose players left during a hand are freed once no hand is running. */
+function releaseLeftSeats(table: GameTable) {
+  if (table.status === 'playing' || !table.seats.some((seat) => seat.left)) return false;
+  table.seats = table.seats.filter((seat) => !seat.left);
+  return true;
 }
 export function heartbeatGame(table: GameTable, userId: string) {
   const seat = seated(table, userId);
-  if (seat && !seat.permanentBot) {
+  // Polling must not undo "Masadan kalk".
+  if (seat && !seat.permanentBot && !seat.left) {
     seat.connected = true;
     seat.disconnectedAt = null;
   }
@@ -563,7 +589,7 @@ function botMelds(hand: OkeyTile[]): OkeyTile[][] {
   return melds;
 }
 export function advanceGameBots(table: GameTable, now: number): boolean {
-  let changed = false;
+  let changed = releaseLeftSeats(table);
   for (const player of table.seats)
     if (
       !player.connected &&

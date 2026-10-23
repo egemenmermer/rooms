@@ -493,6 +493,9 @@ function AgentWorkspaceScope({
       if (scope.current !== roomId || request !== refreshSequence.current) return;
       setStatus(next);
       if (!next.connected || next.userId !== community.user?.id || !roomId) {
+        // A passing outage (no identity in the answer) keeps what is on screen; a missing
+        // connection or another identity clears it.
+        if (next.configured && !next.userId && roomId) return;
         setTasks([]);
         setModels([]);
         setModelId('');
@@ -513,12 +516,8 @@ function AgentWorkspaceScope({
       );
       setSelected((id) => (jobs.some((job) => job.id === id && job.roomId === roomId) ? id : null));
     } catch (e) {
-      if (scope.current === roomId && request === refreshSequence.current) {
-        setError(reason(e));
-        setTasks([]);
-        setMemories([]);
-        setModels([]);
-      }
+      // Keep the last lists: a rate limit or a dropped request should not blank the screen.
+      if (scope.current === roomId && request === refreshSequence.current) setError(reason(e));
     } finally {
       if (scope.current === roomId && request === refreshSequence.current) setLoading(false);
     }
@@ -536,7 +535,7 @@ function AgentWorkspaceScope({
     void refresh();
     const timer = setInterval(() => {
       if (!document.hidden) void refresh();
-    }, 4000);
+    }, 8000);
     return () => {
       clearInterval(timer);
       refreshSequence.current++;

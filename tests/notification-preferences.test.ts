@@ -4,6 +4,7 @@ const mock = vi.hoisted(() => ({
   saved: '{}',
   fail: false,
   shown: [] as Record<string, unknown>[],
+  clicks: [] as (() => void)[],
   focused: false,
 }));
 vi.mock('electron', () => ({
@@ -16,7 +17,9 @@ vi.mock('electron', () => ({
     constructor(options: Record<string, unknown>) {
       mock.shown.push(options);
     }
-    on() {}
+    on(name: string, handler: () => void) {
+      if (name === 'click') mock.clicks.push(handler);
+    }
     show() {}
   },
 }));
@@ -40,6 +43,10 @@ function setup() {
     () =>
       ({
         isFocused: () => mock.focused,
+        isMinimized: () => false,
+        isVisible: () => true,
+        show: () => {},
+        focus: () => {},
         webContents: { getURL: () => 'https://rooms.example' },
       }) as unknown as BrowserWindow,
     (e) => {
@@ -53,6 +60,7 @@ beforeEach(() => {
   mock.saved = '{}';
   mock.fail = false;
   mock.shown = [];
+  mock.clicks = [];
   mock.focused = false;
   scope = { serverUrl: 'https://rooms.example', userId: 'owner' };
 });
@@ -204,4 +212,56 @@ it('uses content-free mention copy while preserving opt-out and channel mute pre
   expect(mock.shown).toEqual([
     { title: 'Tayfa', body: 'Topluluğunda biri seni etiketledi.', silent: true },
   ]);
+});
+describe('notification delivery', () => {
+  it('shows a server alert for admins even with chat notifications off', () => {
+    const service = setup();
+    service.serverAlert('Tayfa sunucusu: Disk %92 dolu');
+    expect(mock.shown).toEqual([
+      { title: 'Tayfa · Sunucu uyarısı', body: 'Tayfa sunucusu: Disk %92 dolu', silent: true },
+    ]);
+  });
+  it('shows a programme reminder even with chat notifications off, but not in front', () => {
+    setup();
+    const remind = (value: unknown) =>
+      mock.handlers.get('rooms:notification-reminder')!(event, value);
+    expect(() => remind({ title: '', detail: 'x' })).toThrow('Invalid reminder.');
+    mock.focused = true;
+    remind({ title: 'Haberler başladı', detail: 'TRT 1 · 20:00' });
+    expect(mock.shown).toHaveLength(0);
+    mock.focused = false;
+    remind({ title: 'Haberler başladı', detail: 'TRT 1 · 20:00' });
+    expect(mock.shown).toEqual([
+      { title: 'Haberler başladı', body: 'TRT 1 · 20:00', silent: true },
+    ]);
+  });
+  it('announces an incoming private call without content, only when the window is not in front', () => {
+    setup();
+    invoke('incoming-call');
+    expect(mock.shown).toHaveLength(0);
+    invoke('opt-in', true);
+    mock.focused = true;
+    invoke('incoming-call');
+    expect(mock.shown).toHaveLength(0);
+    mock.focused = false;
+    invoke('incoming-call');
+    expect(mock.shown).toEqual([{ title: 'Tayfa', body: 'Özel bir arama geliyor.', silent: true }]);
+  });
+  it('shows a mention right after another message and opens its channel on click', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-11T07:00:00Z'));
+    const service = setup();
+    invoke('opt-in', true);
+    service.message(scope, 'general');
+    vi.advanceTimersByTime(2000);
+    const open = vi.fn();
+    service.message(scope, 'general', true, open);
+    expect(mock.shown).toHaveLength(2);
+    expect(mock.shown[1]!.body).toBe('Topluluğunda biri seni etiketledi.');
+    mock.clicks[1]!();
+    expect(open).toHaveBeenCalled();
+    // Ordinary messages keep the 5 s throttle.
+    service.message(scope, 'general');
+    expect(mock.shown).toHaveLength(2);
+  });
 });

@@ -46,6 +46,7 @@ const bridge: DesktopBridge = {
   chooseCaption: (mediaUrl: string) => ipcRenderer.invoke('rooms:choose-caption', mediaUrl),
   openMediaExternal: (url) => ipcRenderer.invoke('rooms:external-media', url),
   applicationInfo: () => ipcRenderer.invoke('rooms:application-info'),
+  setBadge: (count) => ipcRenderer.invoke('rooms:set-badge', count),
   diagnosticsPreview: () => ipcRenderer.invoke('rooms:diagnostics-preview'),
   thirdPartyNotices: () => ipcRenderer.invoke('rooms:third-party-notices'),
   exportDiagnostics: () => ipcRenderer.invoke('rooms:export-diagnostics'),
@@ -59,6 +60,15 @@ const bridge: DesktopBridge = {
     session: () => ipcRenderer.invoke('rooms:social-session'),
     login: (input) => ipcRenderer.invoke('rooms:social-login', input),
     register: (input) => ipcRenderer.invoke('rooms:social-register', input),
+    signupAvailable: (serverUrl) => ipcRenderer.invoke('rooms:social-signup-available', serverUrl),
+    requestSignup: (input) => ipcRenderer.invoke('rooms:social-signup-request', input),
+    pendingSignup: () => ipcRenderer.invoke('rooms:social-signup-pending'),
+    checkSignup: () => ipcRenderer.invoke('rooms:social-signup-check'),
+    completeSignup: (input) => ipcRenderer.invoke('rooms:social-signup-complete', input),
+    cancelSignup: () => ipcRenderer.invoke('rooms:social-signup-cancel'),
+    signupRequests: (spaceId) => ipcRenderer.invoke('rooms:social-signup-requests', spaceId),
+    decideSignupRequest: (spaceId, requestId, decision) =>
+      ipcRenderer.invoke('rooms:social-signup-decide', spaceId, requestId, decision),
     passwordRecoveryCapabilities: (serverUrl) =>
       ipcRenderer.invoke('rooms:social-password-recovery-capabilities', serverUrl),
     requestPasswordRecovery: (input) =>
@@ -138,6 +148,7 @@ const bridge: DesktopBridge = {
     ackRead: (channel, id) => ipcRenderer.invoke('rooms:social-ack', channel, id),
     typing: (channel, active) => ipcRenderer.invoke('rooms:social-typing', channel, active),
     presence: (status) => ipcRenderer.invoke('rooms:social-presence', status),
+    ownProfile: () => ipcRenderer.invoke('rooms:social-own-profile'),
     onEvent: (listener) => {
       const handler = (
         _event: Electron.IpcRendererEvent,
@@ -204,6 +215,8 @@ const bridge: DesktopBridge = {
     setSound: (value) => ipcRenderer.invoke('rooms:notification-sound', value),
     setPauseDuringVoice: (value) => ipcRenderer.invoke('rooms:notification-pause-voice', value),
     setVoiceActive: (value) => ipcRenderer.invoke('rooms:notification-voice-active', value),
+    incomingCall: () => ipcRenderer.invoke('rooms:notification-incoming-call'),
+    reminder: (input) => ipcRenderer.invoke('rooms:notification-reminder', input),
   },
   providers: {
     nativePlayer: {
@@ -282,6 +295,22 @@ const bridge: DesktopBridge = {
     rmdbRemoveLog: (hallId, workId, entryId) =>
       ipcRenderer.invoke('rooms:cinema-rmdb-remove-log', hallId, workId, entryId),
     rmdbRemove: (hallId, workId) => ipcRenderer.invoke('rooms:cinema-rmdb-remove', hallId, workId),
+    stremioLinkStart: (communityId) => ipcRenderer.invoke('rooms:cinema-stremio-link', communityId),
+    stremioLinkPoll: (communityId) => ipcRenderer.invoke('rooms:cinema-stremio-poll', communityId),
+    stremioUnlink: (communityId) => ipcRenderer.invoke('rooms:cinema-stremio-unlink', communityId),
+    stremioHome: (hallId) => ipcRenderer.invoke('rooms:cinema-stremio-home', hallId),
+    stremioSearch: (hallId, text) =>
+      ipcRenderer.invoke('rooms:cinema-stremio-search', hallId, text),
+    stremioDetails: (hallId, type, id) =>
+      ipcRenderer.invoke('rooms:cinema-stremio-details', hallId, type, id),
+    stremioStreams: (hallId, type, id, videoId) =>
+      ipcRenderer.invoke('rooms:cinema-stremio-streams', hallId, type, id, videoId),
+    stremioPick: (hallId, streamId) =>
+      ipcRenderer.invoke('rooms:cinema-stremio-pick', hallId, streamId),
+    stremioAssist: (hallId, type, id, videoId) =>
+      ipcRenderer.invoke('rooms:cinema-stremio-assist', hallId, type, id, videoId),
+    stremioPickLocal: (hallId, streamId) =>
+      ipcRenderer.invoke('rooms:cinema-stremio-pick-local', hallId, streamId),
   },
   remoteControl: {
     register: (room, track) => ipcRenderer.invoke('rooms:remote-register', room, track),

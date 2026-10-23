@@ -22,6 +22,8 @@ import {
   type RmdbReview,
   type RmdbWorkDetails,
   type RmdbWorkSummary,
+  type StremioStream,
+  type StremioTitle,
 } from '../../../../packages/community-cinema/src/types';
 import type {
   CinemaBridge,
@@ -51,6 +53,8 @@ export const COMMUNITY_CINEMA_FIXTURE_VARIANTS = [
   'error',
   'remote',
   'rmdb_empty',
+  /** No IPTV account; Stremio is linked. */
+  'stremio',
 ] as const;
 export type CommunityCinemaFixtureVariant = (typeof COMMUNITY_CINEMA_FIXTURE_VARIANTS)[number];
 
@@ -864,13 +868,13 @@ export function createCommunityCinemaFixtureBridge(
     communityId: FIXTURE_COMMUNITY_ID,
     hallChannelId: variant === 'no_hall' ? null : FIXTURE_HALL_ID,
     isOwner: variant !== 'member' && variant !== 'remote',
-    connected: variant !== 'not_connected' && variant !== 'member',
+    connected: variant !== 'not_connected' && variant !== 'member' && variant !== 'stremio',
     source:
-      variant === 'not_connected' || variant === 'member'
+      variant === 'not_connected' || variant === 'member' || variant === 'stremio'
         ? null
         : { kind: 'xtream', label: 'https://ipt***:8080', hasCustomGuide: false },
     account:
-      variant === 'not_connected' || variant === 'member'
+      variant === 'not_connected' || variant === 'member' || variant === 'stremio'
         ? null
         : { status: 'Active', expiresAt: now + 140 * day, maxConnections: 2 },
     catalog: {
@@ -893,12 +897,51 @@ export function createCommunityCinemaFixtureBridge(
         : null,
     relaySlots: 1,
     subtitleSearch: variant === 'vod',
+    stremio:
+      variant === 'stremio'
+        ? { linked: true, email: 'demo@ornek.test', linkedAt: now - 2 * day }
+        : { linked: false, email: null, linkedAt: null },
   };
+  /** DEV Stremio picks: `x-` ref → what was picked. */
+  const stremioPicks = new Map<string, { title: string; imdbId: string }>();
+  const demoStreams = [
+    {
+      id: 'demo-stream-4k',
+      addon: 'Torrentio',
+      name: '[RD+] Torrentio\n4k',
+      title: 'DEMO.2160p.WEB-DL.mkv\n👤 120 💾 14.2 GB ⚙️ Örnek',
+      cached: true,
+      resolution: '4K',
+      size: '14.2 GB',
+    },
+    {
+      id: 'demo-stream-1080',
+      addon: 'Torrentio',
+      name: '[RD download] Torrentio\n1080p',
+      title: 'DEMO.1080p.BluRay.mkv\n👤 48 💾 2.1 GB ⚙️ Örnek',
+      cached: false,
+      resolution: '1080p',
+      size: '2.1 GB',
+    },
+    {
+      id: 'demo-stream-mf',
+      addon: 'MediaFusion',
+      name: 'MediaFusion 1080p',
+      title: 'DEMO.1080p.WEB.mkv\n💾 3.4 GB',
+      cached: null,
+      resolution: '1080p',
+      size: '3.4 GB',
+    },
+  ] satisfies StremioStream[];
+  const demoStremio: StremioTitle[] = [
+    { type: 'movie', id: 'tt9000001', name: 'DEMO Stremio Filmi', year: '2024', art: null },
+    { type: 'series', id: 'tt9000002', name: 'DEMO Stremio Dizisi', year: '2022–', art: null },
+  ];
   const delay = <T>(value: T, ms = 120) =>
     new Promise<T>((resolve) => setTimeout(() => resolve(structuredClone(value)), ms));
   const hall = (hallId: string) => {
     if (hallId !== status.hallChannelId) throw new Error('CINEMA_HALL_REQUIRED');
-    if (!status.connected) throw new Error('CINEMA_NOT_CONNECTED');
+    if (!status.connected && !status.stremio?.linked) throw new Error('CINEMA_NOT_CONNECTED');
   };
 
   // DEMO RMDB: lives apart from the IPTV account, like the service's own record.
@@ -1073,6 +1116,31 @@ export function createCommunityCinemaFixtureBridge(
     },
     details: async (hallId, ref) => {
       hall(hallId);
+      const pick = stremioPicks.get(ref);
+      if (pick)
+        return delay({
+          item: {
+            ref,
+            kind: 'movie',
+            title: pick.title,
+            badges: [],
+            categoryId: null,
+            number: null,
+            art: null,
+            year: 2024,
+            rating: null,
+            addedAt: null,
+            hasGuide: false,
+          },
+          plot: 'DEMO: Stremio’dan seçilen kaynak.',
+          genre: 'Dram',
+          cast: null,
+          director: null,
+          durationSec: null,
+          backdrop: null,
+          seasons: [],
+          tmdbId: null,
+        });
       const value = catalog.details.get(ref);
       if (!value) throw new Error('CINEMA_ITEM_NOT_FOUND');
       return delay(value);
@@ -1369,6 +1437,119 @@ export function createCommunityCinemaFixtureBridge(
       work(workId);
       works = works.filter((value) => value.id !== workId);
       await delay(null, 140);
+    },
+    // DEV fixture Stremio: labelled sample titles; a picked stream plays the demo film.
+    stremioLinkStart: async () => {
+      owner();
+      return delay({ code: 'DEMO', link: 'https://link.stremio.com/DEMO' }, 200);
+    },
+    stremioLinkPoll: async () => {
+      owner();
+      status = {
+        ...status,
+        stremio: { linked: true, email: 'demo@ornek.test', linkedAt: Date.now() },
+      };
+      return delay(status, 300);
+    },
+    stremioUnlink: async () => {
+      owner();
+      status = { ...status, stremio: { linked: false, email: null, linkedAt: null } };
+      return delay(status);
+    },
+    stremioHome: async () => {
+      if (!status.stremio?.linked) throw new Error('CINEMA_STREMIO_NOT_LINKED');
+      return delay(
+        {
+          continue: [
+            {
+              ...demoStremio[1]!,
+              videoId: 'tt9000002:1:3',
+              season: 1,
+              episode: 3,
+              progress: 0.4,
+              watchedAt: Date.now() - 86_400_000,
+            },
+          ],
+          library: demoStremio,
+          popular: { movie: demoStremio.filter((t) => t.type === 'movie'), series: [] },
+        },
+        240,
+      );
+    },
+    stremioSearch: async (_hallId, text) =>
+      delay(
+        demoStremio.filter((title) =>
+          title.name.toLocaleLowerCase('tr').includes(text.toLocaleLowerCase('tr')),
+        ),
+        200,
+      ),
+    stremioDetails: async (_hallId, type, id) => {
+      const title = demoStremio.find((t) => t.id === id && t.type === type);
+      if (!title) throw new Error('CINEMA_ITEM_NOT_FOUND');
+      return delay(
+        {
+          ...title,
+          plot: 'DEMO: Stremio örneği. Gerçek hesapta Cinemeta açıklaması görünür.',
+          genres: ['Dram'],
+          runtime: '1h 52min',
+          rating: '7.4',
+          backdrop: null,
+          cast: ['Örnek Oyuncu'],
+          director: ['Örnek Yönetmen'],
+          videos:
+            type === 'series'
+              ? Array.from({ length: 6 }, (_, i) => ({
+                  id: `${id}:${i < 3 ? 1 : 2}:${(i % 3) + 1}`,
+                  season: i < 3 ? 1 : 2,
+                  episode: (i % 3) + 1,
+                  title: `DEMO bölüm ${(i % 3) + 1}`,
+                  plot: null,
+                  released: Date.now() - (6 - i) * 7 * 86_400_000,
+                  art: null,
+                }))
+              : [],
+        },
+        200,
+      );
+    },
+    // In the Stremio-only variant Torrentio refuses the "server" (as Cloudflare does for
+    // data-centre IPs) and the linker's computer lists it instead.
+    stremioStreams: async () => {
+      owner();
+      const blocked = variant === 'stremio';
+      return delay(
+        {
+          streams: blocked ? [demoStreams[2]!] : demoStreams.slice(0, 2),
+          skippedTorrents: blocked ? 0 : 3,
+          failedAddons: [],
+          blockedAddons: blocked ? ['Torrentio'] : [],
+          assist: blocked,
+        },
+        500,
+      );
+    },
+    stremioAssist: async () => {
+      owner();
+      return delay(
+        demoStreams.slice(0, 2).map((stream) => ({ ...stream, id: `local-${stream.id}` })),
+        600,
+      );
+    },
+    stremioPickLocal: async (_hallId, streamId) => {
+      const ref = `x-DEMOlocal${streamId
+        .replace(/[^A-Za-z0-9]/g, '')
+        .padEnd(11, '0')
+        .slice(0, 11)}`;
+      stremioPicks.set(ref, { title: 'DEMO Stremio Filmi', imdbId: 'tt9000001' });
+      return delay({ ref, title: 'DEMO Stremio Filmi', art: null }, 400);
+    },
+    stremioPick: async (_hallId, streamId) => {
+      const ref = `x-DEMO${streamId
+        .replace(/[^A-Za-z0-9]/g, '')
+        .padEnd(18, '0')
+        .slice(0, 18)}`;
+      stremioPicks.set(ref, { title: 'DEMO Stremio Filmi', imdbId: 'tt9000001' });
+      return delay({ ref, title: 'DEMO Stremio Filmi', art: null }, 150);
     },
     chooseSubtitleFile: async () =>
       delay(

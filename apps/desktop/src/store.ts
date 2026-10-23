@@ -20,11 +20,15 @@ export interface Preferences {
   serverUrl: string;
   inputId: string;
   outputId: string;
+  /** Camera for rooms and calls; empty is the system default. */
+  cameraId: string;
   notifications: boolean;
   chatFontSize: number;
   accent: 'pearl' | 'sage';
   /** The microphone as the person last left it; a first join starts muted. */
   microphoneOn: boolean;
+  /** Microphone level per device name, 0–200 % (100 sends it as captured). */
+  inputLevels: Record<string, number>;
 }
 const defaults: Preferences = {
   roomEventSounds: true,
@@ -42,10 +46,12 @@ const defaults: Preferences = {
   serverUrl: '',
   inputId: '',
   outputId: '',
+  cameraId: '',
   notifications: false,
   chatFontSize: 15,
   accent: 'pearl',
   microphoneOn: false,
+  inputLevels: {},
 };
 interface RoomsState {
   preferences: Preferences;
@@ -54,6 +60,30 @@ interface RoomsState {
 }
 export function normalizeSoundEffectsLevel(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 1;
+}
+export const INPUT_LEVEL_DEVICES = 32;
+export function normalizeInputLevel(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.max(0, Math.min(200, Math.round(value)))
+    : 100;
+}
+/** Keeps the newest named devices; an unknown or malformed entry is dropped, never guessed. */
+export function normalizeInputLevels(value: unknown): Record<string, number> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const entries = Object.entries(value as Record<string, unknown>).filter(
+    ([name, level]) =>
+      name.length > 0 && name.length <= 200 && typeof level === 'number' && Number.isFinite(level),
+  );
+  return Object.fromEntries(
+    entries.slice(-INPUT_LEVEL_DEVICES).map(([name, level]) => [name, normalizeInputLevel(level)]),
+  );
+}
+/** The levels with one device's level set; it moves to the newest end of the list. */
+export function withInputLevel(levels: Record<string, number>, device: string, percent: number) {
+  const next = { ...levels };
+  delete next[device];
+  next[device] = normalizeInputLevel(percent);
+  return normalizeInputLevels(next);
 }
 export function normalizeChatFontSize(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value)
@@ -83,6 +113,10 @@ function preferencesFrom(value: unknown): Preferences {
       result.soundEffectsLevel = normalizeSoundEffectsLevel(previous[key]);
       continue;
     }
+    if (key === 'inputLevels') {
+      result.inputLevels = normalizeInputLevels(previous[key]);
+      continue;
+    }
     if (
       typeof previous[key] === typeof defaults[key] &&
       (key !== 'accent' || previous[key] === 'pearl' || previous[key] === 'sage')
@@ -105,7 +139,9 @@ export const useRooms = create<RoomsState>()(
                 ? normalizeChatFontSize(value)
                 : key === 'soundEffectsLevel'
                   ? normalizeSoundEffectsLevel(value)
-                  : value,
+                  : key === 'inputLevels'
+                    ? normalizeInputLevels(value)
+                    : value,
           },
         })),
     }),

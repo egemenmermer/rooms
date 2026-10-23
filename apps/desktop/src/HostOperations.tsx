@@ -536,6 +536,10 @@ function HostOperationsScope() {
                     ))}
                 </ul>
               )}
+              <p className="ops-note">
+                Yeni uyarılar sahibe ve developer rolündekilere masaüstü bildirimi olarak da gelir
+                (Tayfa açıkken, pencere kapalı olsa bile).
+              </p>
               <section>
                 <div className="ops-actions">
                   <h2>{t('Geçmiş')}</h2>
@@ -710,7 +714,11 @@ function HostOperationsScope() {
                       disabled={busy}
                       onClick={() =>
                         void act(async (current) => {
-                          await api!.setOperator(host.id, { ...g, permissions: [] });
+                          await api!.setOperator(host.id, {
+                            ...g,
+                            permissions: [],
+                            profileId: null,
+                          });
                           const list = await api!.operators(host.id);
                           if (current()) setOperators(list);
                         })

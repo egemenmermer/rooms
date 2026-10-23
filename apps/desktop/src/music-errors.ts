@@ -39,7 +39,7 @@ export function musicPlaybackError(code: string, title?: string) {
       },
     ),
     MUSIC_TRACK_SKIPPED: t(
-      'Bir parça çalınamadı ya da yarıda kesildi; DJ kuyrukta sıradakine geçti.',
+      'Bir parça bulunamadı ya da çalınamadı; DJ sıradakine geçti. Atlanan parça kuyrukta işaretli.',
     ),
     MUSIC_TRANSPORT_UNAVAILABLE: t(
       'DJ ses odasına bağlanamadı. Oda bağlantısını kontrol edip yeniden dene.',

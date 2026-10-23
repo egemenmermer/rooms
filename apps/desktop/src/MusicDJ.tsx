@@ -640,7 +640,8 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
             <History size={14} />
             {t('Geçmiş')}
           </button>
-          {(snapshot?.queue.length ?? 0) > 1 && (
+          {((snapshot?.queue.length ?? 0) > 1 ||
+            (snapshot?.status === 'error' && !!snapshot.queue.length)) && (
             <button
               className={clearing ? 'danger' : undefined}
               disabled={!available || busy}
@@ -654,7 +655,9 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
               <Trash2 size={13} />
               {clearing
                 ? t('{count} parçayı kaldır', {
-                    count: (snapshot?.queue.length ?? 1) - (active ? 1 : 0),
+                    count:
+                      (snapshot?.queue.length ?? 1) -
+                      (active && snapshot?.status !== 'error' ? 1 : 0),
                   })
                 : t('Temizle')}
             </button>
@@ -725,7 +728,13 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
                 </div>
                 <button
                   aria-label={t('{title} sıradan kaldır', { title: item.title })}
-                  disabled={!available || busy || item.id === active?.id}
+                  disabled={
+                    !available ||
+                    busy ||
+                    (item.id === active?.id &&
+                      snapshot.status !== 'error' &&
+                      snapshot.status !== 'paused')
+                  }
                   onClick={() => void run({ type: 'remove', id: item.id })}
                 >
                   <Trash2 size={14} />

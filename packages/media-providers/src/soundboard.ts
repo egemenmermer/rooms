@@ -36,6 +36,9 @@ export class SoundboardMixer implements TrackProcessor<Track.Kind.Audio, AudioPr
   }
   processedTrack?: MediaStreamTrack;
   private input?: MediaStreamAudioSourceNode;
+  /** The person's input level for the current microphone, applied before the noise filter. */
+  private level?: GainNode;
+  private inputLevel = 1;
   private destination?: MediaStreamAudioDestinationNode;
   private clip?: AudioBufferSourceNode;
   private gain?: GainNode;
@@ -46,13 +49,16 @@ export class SoundboardMixer implements TrackProcessor<Track.Kind.Audio, AudioPr
     this.context = options.audioContext ?? this.context;
     if (!this.context) throw new Error('Microphone audio context is unavailable.');
     this.input = this.context.createMediaStreamSource(new MediaStream([options.track]));
+    this.level = this.context.createGain();
+    this.level.gain.value = this.inputLevel;
+    this.input.connect(this.level);
     this.destination = this.context.createMediaStreamDestination();
     try {
       if (this.noiseSuppression) {
         this.denoiser = await this.createDenoiser();
-        this.input.connect(this.denoiser);
+        this.level.connect(this.denoiser);
         this.denoiser.connect(this.destination);
-      } else this.input.connect(this.destination);
+      } else this.level.connect(this.destination);
       this.processedTrack = this.destination.stream.getAudioTracks()[0];
     } catch (error) {
       await this.destroy();
@@ -68,7 +74,7 @@ export class SoundboardMixer implements TrackProcessor<Track.Kind.Audio, AudioPr
   }
   async setNoiseSuppression(value: boolean, mode: NoiseSuppressionMode = this.mode) {
     if (value === this.noiseSuppression && mode === this.mode) return;
-    if (!this.context || !this.input || !this.destination)
+    if (!this.context || !this.level || !this.destination)
       throw new Error('Microphone processor is unavailable.');
     const previousMode = this.mode;
     this.mode = mode;
@@ -79,14 +85,20 @@ export class SoundboardMixer implements TrackProcessor<Track.Kind.Audio, AudioPr
       this.mode = previousMode;
       throw error;
     }
-    this.input.disconnect();
+    this.level.disconnect();
     this.denoiser?.destroy();
     this.denoiser = node;
     if (node) {
-      this.input.connect(node);
+      this.level.connect(node);
       node.connect(this.destination);
-    } else this.input.connect(this.destination);
+    } else this.level.connect(this.destination);
     this.noiseSuppression = value;
+  }
+  /** 1 sends the microphone as captured; 0–2 scales what the room hears. */
+  setInputLevel(value: number) {
+    this.inputLevel = value;
+    if (this.level && this.context)
+      this.level.gain.setTargetAtTime(value, this.context.currentTime, 0.02);
   }
   stop() {
     const clip = this.clip;
@@ -127,6 +139,8 @@ export class SoundboardMixer implements TrackProcessor<Track.Kind.Audio, AudioPr
     this.processingAbort = undefined;
     this.stop();
     this.input?.disconnect();
+    this.level?.disconnect();
+    this.level = undefined;
     this.denoiser?.disconnect();
     this.denoiser?.destroy();
     this.denoiser = undefined;

@@ -34,6 +34,7 @@ import { enumerateCaptureSources, CaptureSourcesError } from './capture-sources'
 import { findBrowserWindow } from './browser-video';
 import { ConversationVault } from './conversation-vault';
 import { PasswordRecoveryBroker } from './password-recovery';
+import { PendingSignupBroker, type SignupRegistration } from './signup-broker';
 import { requestDmCall } from './dm-call-http';
 import {
   dmCallStartSchema,
@@ -90,7 +91,9 @@ export async function setupCommunity(
     scope: { serverUrl: string; userId: string },
     channelId: string,
     mentioned?: boolean,
+    open?: () => void,
   ) => void = () => {},
+  onServerAlert: (message: string, open: () => void) => void = () => {},
 ) {
   let dmNativeEpoch = 0;
   let pendingDmCall: { client: StoatClient; id: string } | null = null;
@@ -155,6 +158,18 @@ export async function setupCommunity(
       .regex(/^[a-zA-Z0-9_-]{2,128}$/)
       .optional(),
   });
+  const signupRequest = auth.extend({
+    password: z.string().min(8).max(256),
+    username: z
+      .string()
+      .trim()
+      .min(2)
+      .max(32)
+      .regex(/^[\p{L}\d_.-]+$/u),
+  });
+  const signupCompletion = z
+    .object({ email: z.string().email().max(254).optional(), password: z.string().min(8).max(256) })
+    .strict();
   const recoveryServer = z.string().min(1).max(2048);
   const recoveryInput = z
     .object({ serverUrl: recoveryServer, email: z.string().email().max(254) })
@@ -172,14 +187,27 @@ export async function setupCommunity(
     if (win && !win.webContents.isDestroyed() && !fixtureWindow())
       win.webContents.send('rooms:social-event', { ...event, sessionEpoch });
   };
+  /**
+   * A saved session whose server could not be reached at launch (offline, DNS, 5xx). The token
+   * is kept and the restore retried, so a short outage does not look like being signed out.
+   */
+  let pendingRestore: { url: string; token: string } | null = null;
+  /** Why the saved session is not in use: the server refused it, or it is still unreachable. */
+  let restoreState: 'expired' | 'unreachable' | null = null;
   const snapshot = (): SocialSession => ({
-    instanceUrl: client?.instanceUrl ?? null,
+    instanceUrl: client?.instanceUrl ?? pendingRestore?.url ?? null,
     user,
-    status: client?.status ?? 'not-configured',
-    remembered,
+    status:
+      client?.status ??
+      (pendingRestore ? 'reconnecting' : restoreState === 'expired' ? 'error' : 'not-configured'),
+    remembered: remembered || !!pendingRestore,
+    restore: restoreState,
     sessionEpoch,
   });
   function bind(next: StoatClient, generation: number) {
+    // Any session in use supersedes a saved one still waiting for its server.
+    pendingRestore = null;
+    restoreState = null;
     if (client && client !== next) void closeDmCall();
     unsubscribe?.();
     client = next;
@@ -224,10 +252,14 @@ export async function setupCommunity(
           deliveredMessages.add(message.id);
           if (deliveredMessages.size > 2000)
             deliveredMessages.delete(deliveredMessages.values().next().value!);
+          const channelId = message.channelId;
           onIncomingMessage(
             { serverUrl: next.instanceUrl, userId: user.id },
-            message.channelId,
+            channelId,
             message.mentions?.includes(user.id) ?? false,
+            () => {
+              if (client === next) emit({ type: 'OPEN_CHANNEL', data: { channelId } });
+            },
           );
         }
       }
@@ -308,6 +340,7 @@ export async function setupCommunity(
     },
     getWindow,
     assertSender,
+    (message) => onServerAlert(message, () => emit({ type: 'OPEN_SERVER_SETTINGS', data: null })),
   );
   const handle = (name: string, handler: (...args: unknown[]) => unknown) =>
     ipcMain.handle(name, async (event, ...args) => {
@@ -319,6 +352,12 @@ export async function setupCommunity(
           'rooms:social-session',
           'rooms:social-login',
           'rooms:social-register',
+          'rooms:social-signup-available',
+          'rooms:social-signup-request',
+          'rooms:social-signup-pending',
+          'rooms:social-signup-check',
+          'rooms:social-signup-complete',
+          'rooms:social-signup-cancel',
           'rooms:social-logout',
           'rooms:social-password-recovery-capabilities',
           'rooms:social-password-recovery-request',
@@ -347,6 +386,7 @@ export async function setupCommunity(
   handle('rooms:social-session', () => snapshot());
   handle('rooms:social-read-states', () => requireClient().readStates());
   const cinema = setupCommunityCinema({
+    openExternal: (url) => shell.openExternal(url),
     handle: (name, handler) =>
       handle(name, async (...args) => {
         try {
@@ -422,6 +462,65 @@ export async function setupCommunity(
       throw error;
     }
   });
+  handle('rooms:social-signup-available', (serverUrl) =>
+    new StoatClient(recoveryServer.parse(serverUrl)).signupAvailable(),
+  );
+  // Approved sign-up: no account exists until an admin approves. The password stays in this
+  // process's memory; the poll secret and the approved link are kept with safeStorage.
+  const signups = new PendingSignupBroker({
+    path: join(app.getPath('userData'), 'signup-request-v1.bin'),
+    storage: safeStorage,
+    client: (serverUrl) => new StoatClient(serverUrl),
+  });
+  /** Runs the existing invitation registration with the approved single-use link. */
+  const completeSignup = async (registration: SignupRegistration) => {
+    recoveryEpoch++;
+    passwordReset.clear();
+    const request = ++authRequestEpoch;
+    const next = new StoatClient(registration.serverUrl);
+    try {
+      const session = await replaceSession(next, await next.register(registration), request);
+      signups.completed();
+      return session;
+    } catch (error) {
+      if (client !== next) await next.disconnect().catch(() => {});
+      signups.failed(error instanceof Error ? error.message : 'REGISTRATION_UNCERTAIN');
+      throw error;
+    }
+  };
+  handle('rooms:social-signup-request', async (input) =>
+    signups.request(signupRequest.parse(input)),
+  );
+  handle('rooms:social-signup-pending', () => signups.snapshot());
+  handle('rooms:social-signup-check', async () => {
+    const { pending, registration } = await signups.check();
+    if (!registration) return { pending, session: null };
+    try {
+      return { pending: null, session: await completeSignup(registration) };
+    } catch {
+      return { pending: signups.snapshot(), session: null };
+    }
+  });
+  handle('rooms:social-signup-complete', async (input) => {
+    const body = signupCompletion.parse(input);
+    const registration = signups.registration(body);
+    if (!registration) throw new SocialInputError('Bu istek için onaylı kayıt bağlantısı yok.');
+    return completeSignup(registration);
+  });
+  handle('rooms:social-signup-cancel', () => signups.cancel());
+  handle('rooms:social-signup-requests', (spaceId) =>
+    requireClient().listSignupRequests(id.parse(spaceId)),
+  );
+  handle('rooms:social-signup-decide', (spaceId, requestId, decision) =>
+    requireClient().decideSignupRequest(
+      id.parse(spaceId),
+      z
+        .string()
+        .regex(/^[a-f0-9]{32}$/)
+        .parse(requestId),
+      z.enum(['approve', 'reject']).parse(decision),
+    ),
+  );
   handle('rooms:social-password-recovery-capabilities', (serverUrl) =>
     new StoatClient(recoveryServer.parse(serverUrl)).passwordRecoveryCapabilities(),
   );
@@ -479,6 +578,8 @@ export async function setupCommunity(
     }),
   );
   handle('rooms:social-logout', async () => {
+    pendingRestore = null;
+    restoreState = null;
     conversationVault.clear();
     recoveryEpoch++;
     passwordReset.clear();
@@ -1131,6 +1232,7 @@ export async function setupCommunity(
   handle('rooms:social-typing', (channel, active) =>
     requireClient().typing(id.parse(channel), z.boolean().parse(active)),
   );
+  handle('rooms:social-own-profile', () => requireClient().ownProfile());
   handle('rooms:social-presence', (status) =>
     requireClient().updatePresence(z.enum(['online', 'idle', 'dnd', 'invisible']).parse(status)),
   );
@@ -1501,7 +1603,9 @@ export async function setupCommunity(
         MUSIC_PLAYLIST_EMPTY: t('Kaydedilebilecek parça yok.'),
         MUSIC_PLAYLISTS_NOT_CONFIGURED: t('Ortak listeler sunucuda henüz açılmadı.'),
         MUSIC_NOT_CONFIGURED: t('Sunucunun DJ hizmeti henüz açılmadı.'),
-        MUSIC_PERMISSION_DENIED: t('Bu odanın listelerine erişimin yok. Oda erişimini kontrol et.'),
+        MUSIC_PERMISSION_DENIED: t(
+          'Bu odanın listelerine erişimin yok ya da listeleri değiştirmek için odada konuşma iznin yok.',
+        ),
         AUTH_REQUIRED: t('Oturum doğrulanamadı. Bağlantıyı yenileyip yeniden dene.'),
         MUSIC_PLAYLIST_LIMIT: t(
           'Topluluğun liste sınırına ulaşıldı. Kullanılmayan listeleri veya parçaları kaldır.',
@@ -1941,6 +2045,35 @@ export async function setupCommunity(
     },
     { useSystemPicker: false },
   );
+  const expiredSession = (error: unknown) =>
+    error instanceof StoatError && error.status === 401 && error.code !== 'SESSION_CHANGED';
+  const restoreSaved = async (stored: { url: string; token: string }) => {
+    const restored = new StoatClient(stored.url, stored.token);
+    const me = await restored.getCurrentUser();
+    if (client || (pendingRestore && pendingRestore !== stored)) return;
+    user = me;
+    conversationVault.select(restored.instanceUrl, me.id);
+    bind(restored, sessionEpoch);
+    remembered = true;
+    void restored.connect().catch(() => {});
+  };
+  const retryRestore = (stored: { url: string; token: string }, delayMs: number) => {
+    setTimeout(() => {
+      if (pendingRestore !== stored || client) return;
+      void restoreSaved(stored)
+        .then(() => {
+          if (client) emit({ type: 'SESSION_RESTORED', data: null });
+        })
+        .catch((error: unknown) => {
+          if (pendingRestore !== stored) return;
+          if (expiredSession(error)) {
+            pendingRestore = null;
+            restoreState = 'expired';
+            emit({ type: 'SESSION_RESTORED', data: null });
+          } else retryRestore(stored, Math.min(60_000, delayMs * 2));
+        });
+    }, delayMs).unref?.();
+  };
   try {
     if (existsSync(vault) && safeStorage.isEncryptionAvailable()) {
       const stored = z
@@ -1951,12 +2084,17 @@ export async function setupCommunity(
           token: z.string().min(1),
         })
         .parse(JSON.parse(safeStorage.decryptString(readFileSync(vault))));
-      const restored = new StoatClient(stored.url, stored.token);
-      user = await restored.getCurrentUser();
-      conversationVault.select(restored.instanceUrl, user.id);
-      bind(restored, sessionEpoch);
-      remembered = true;
-      void restored.connect().catch(() => {});
+      try {
+        await restoreSaved(stored);
+      } catch (error) {
+        if (expiredSession(error)) restoreState = 'expired';
+        else {
+          // Unreachable (offline, DNS, 5xx, rate limit): keep the token and try again.
+          pendingRestore = stored;
+          restoreState = 'unreachable';
+          retryRestore(stored, 5_000);
+        }
+      }
     }
   } catch {
     user = null;
@@ -2019,7 +2157,7 @@ export async function setupCommunity(
     serveCinema: cinema.serve,
     close: async () => {
       recoveryEpoch++;
-      hostOps.close();
+      hostOps.dispose();
       remote.dispose();
       passwordReset.clear();
       await closeDmCall();

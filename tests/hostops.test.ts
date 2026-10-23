@@ -248,6 +248,16 @@ describe('HostOps telemetry and authority', () => {
   });
 });
 describe('operator terminal lifecycle', () => {
+  it('lets owner-equivalent admins open terminals on the shared owner profile', () => {
+    const f = fixture();
+    const owner = f.hub.create('core', 'owner', 'operator', undefined, { sharedProfile: true });
+    f.hub.attach('core', owner.id, 'owner', () => {}).detach();
+    // An operator with their own grant still cannot use someone else's profile.
+    expect(() => f.hub.create('core', 'ops', 'operator')).toThrow('TERMINAL_PROFILE_IN_USE');
+    const admin = f.hub.create('core', 'osman', 'operator', undefined, { sharedProfile: true });
+    expect(admin.ownerId).toBe('osman');
+    expect(f.hub.list('core', 'owner').map((t) => t.id)).toEqual([owner.id]);
+  });
   it('keeps detached processes, resumes after broker restart and expires at 24h', () => {
     const f = fixture();
     const t = f.hub.create('core', 'owner', 'operator');
@@ -385,6 +395,31 @@ describe('community ownership for host operations', () => {
     expect(await communityOwnership(reader as never, other, 'space', 'member')).toBe(false);
     expect(other.getMember).toHaveBeenCalledWith('space', 'member');
   });
+  it('counts a member whose roles grant every permission as the owner', async () => {
+    const full = String((1n << 52n) - 1n);
+    const server = {
+      _id: 'space',
+      owner: 'owner',
+      default_permissions: '0',
+      roles: { developer: { rank: 0, permissions: { a: full, d: '0' } } },
+    };
+    const developer = { _id: { server: 'space', user: 'dev' }, roles: ['developer'] };
+    const reader = { community: vi.fn(async () => ({ server, member: developer })) };
+    expect(await communityOwnership(reader as never, api('owner'), 'space', 'dev')).toBe(true);
+    const down = {
+      community: vi.fn(async () => {
+        throw Error('connect ECONNREFUSED 172.18.0.3:27017');
+      }),
+    };
+    const client = {
+      getServer: vi.fn(async () => server),
+      getMember: vi.fn(async () => developer),
+    };
+    expect(await communityOwnership(down as never, client, 'space', 'dev')).toBe(true);
+    const plain = { _id: { server: 'space', user: 'dev' }, roles: [] };
+    reader.community.mockResolvedValueOnce({ server, member: plain });
+    expect(await communityOwnership(reader as never, api('owner'), 'space', 'dev')).toBe(false);
+  });
   it('keeps a refusal from the store as a refusal', async () => {
     const reader = {
       community: vi.fn(async () => {
@@ -396,5 +431,114 @@ describe('community ownership for host operations', () => {
       status: 403,
     });
     expect(client.getServer).not.toHaveBeenCalled();
+  });
+});
+describe('operator grants', () => {
+  it('revokes a grant whose terminal profile was removed from the machine', async () => {
+    const store = new HostOpsStore(':memory:');
+    const revoked: string[] = [];
+    const app = createHostOpsServer({
+      store,
+      hosts: [
+        {
+          id: 'core',
+          label: 'Core',
+          physicalHostId: 'primary',
+          mode: 'shared',
+          communityId: 'space',
+          ownerProfileId: null,
+          agentAvailable: false,
+        },
+      ],
+      terminals: {
+        hasProfile: () => false,
+        revokeUser: (_host: string, user: string) => revoked.push(user),
+        detachAll: () => {},
+        expire: () => {},
+        shutdown: () => {},
+      } as never,
+      identify: async (token) => ({ userId: token, owner: token === 'owner' }),
+    });
+    try {
+      store.setGrant('core', {
+        userId: 'ops',
+        permissions: ['monitor', 'terminal'],
+        profileId: 'gone',
+      });
+      const put = (payload: unknown) =>
+        app.inject({
+          method: 'PUT',
+          url: '/v1/hosts/core/operators',
+          headers: { authorization: 'owner' },
+          payload: payload as object,
+        });
+      expect(
+        (await put({ userId: 'ops', permissions: ['terminal'], profileId: 'gone' })).json(),
+      ).toEqual({ error: 'TERMINAL_PROFILE_UNAVAILABLE' });
+      expect((await put({ userId: 'ops', permissions: [], profileId: 'gone' })).statusCode).toBe(
+        200,
+      );
+      expect(store.grant('core', 'ops')?.permissions ?? []).toEqual([]);
+      expect(revoked).toContain('ops');
+    } finally {
+      await app.close();
+    }
+  });
+});
+describe('admins who lose the role', () => {
+  it('closes their terminals on the owner profile, and only on a definite answer', async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    const store = new HostOpsStore(':memory:');
+    const owners: Record<string, boolean | 'error' | 'kicked'> = {
+      owner: true,
+      osman: true,
+      ece: 'error',
+      kerem: 'kicked',
+      deniz: false,
+    };
+    const app = createHostOpsServer({
+      store,
+      terminals: f.hub,
+      hosts: [
+        {
+          id: 'core',
+          label: 'Core',
+          physicalHostId: 'primary',
+          mode: 'shared',
+          communityId: 'space',
+          ownerProfileId: 'operator',
+          agentAvailable: false,
+        },
+      ],
+      identify: async (token) => ({ userId: token, owner: true }),
+      stillOwner: async (user) => {
+        if (owners[user] === 'error') throw new Error('store unreachable');
+        if (owners[user] === 'kicked') throw new StoatError(403, 'ROOM_ACCESS_DENIED');
+        return owners[user] === true;
+      },
+    });
+    try {
+      await app.ready();
+      const osman = f.hub.create('core', 'osman', 'operator', undefined, { sharedProfile: true });
+      const ece = f.hub.create('core', 'ece', 'operator', undefined, { sharedProfile: true });
+      const kerem = f.hub.create('core', 'kerem', 'operator', undefined, { sharedProfile: true });
+      // Demoted, but holding an operator grant of their own: the owner's shell still closes.
+      store.setGrant('core', { userId: 'deniz', permissions: ['terminal'], profileId: 'operator' });
+      const deniz = f.hub.create('core', 'deniz', 'operator', undefined, { sharedProfile: true });
+      await vi.advanceTimersByTimeAsync(60_000);
+      // Kicked from the community is a definite answer.
+      expect(f.alive.has(kerem.id)).toBe(false);
+      expect(f.alive.has(deniz.id)).toBe(false);
+      expect(f.alive.has(osman.id)).toBe(true);
+      owners.osman = false;
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(f.alive.has(osman.id)).toBe(false);
+      // A failed read of the membership store closes nothing.
+      expect(f.alive.has(ece.id)).toBe(true);
+    } finally {
+      await app.close();
+      vi.useRealTimers();
+    }
   });
 });

@@ -8,8 +8,8 @@
 
 [![Latest release](https://img.shields.io/github/v/release/egemenmermer/rooms?style=flat-square&label=latest&color=8B5CF6)](https://github.com/egemenmermer/rooms/releases/latest)
 [![MIT license](https://img.shields.io/badge/license-MIT-64748B?style=flat-square)](LICENSE)
-[![Download for macOS](https://img.shields.io/badge/macOS-download-18181B?style=flat-square&logo=apple&logoColor=white)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.28/ROOMS-0.1.18-rc.28-arm64.dmg)
-[![Download for Windows](https://img.shields.io/badge/Windows-download-2563EB?style=flat-square)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.28/ROOMS-0.1.18-rc.28-windows-x64-setup.exe)
+[![Download for macOS](https://img.shields.io/badge/macOS-download-18181B?style=flat-square&logo=apple&logoColor=white)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-arm64.dmg)
+[![Download for Windows](https://img.shields.io/badge/Windows-download-2563EB?style=flat-square)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-windows-x64-setup.exe)
 
 Voice rooms, screen sharing, chat, music and shared activities — in one desktop app.
 
@@ -44,12 +44,12 @@ The client uses Electron, React and TypeScript. Accounts and chat run on an unmo
 
 ## Download and join a community
 
-Current builds are on the [GitHub releases](https://github.com/egemenmermer/rooms/releases/latest) page. The latest friends-test build is **RC28**:
+Current builds are on the [GitHub releases](https://github.com/egemenmermer/rooms/releases/latest) page. The latest friends-test build is **RC32**:
 
 | Platform | Package | Status |
 | --- | --- | --- |
-| macOS 14+ / Apple Silicon | [Download RC28 DMG](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.28/ROOMS-0.1.18-rc.28-arm64.dmg) | Signed and notarized by Apple |
-| Windows x64 | [Download RC28 EXE](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.28/ROOMS-0.1.18-rc.28-windows-x64-setup.exe) | Unsigned friends-test build; Windows may show a warning |
+| macOS 14+ / Apple Silicon | [Download RC32 DMG](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-arm64.dmg) | Signed and notarized by Apple |
+| Windows x64 | [Download RC32 EXE](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-windows-x64-setup.exe) | Unsigned friends-test build; Windows may show a warning |
 
 1. Download the package for your platform and install the app.
 2. Get an invite link (`https://<server>/davet/…`) from your community admin.
@@ -175,7 +175,7 @@ The open client ships an original static DJ illustration. Each community can ser
 
 ## Documentation
 
-Most guides are in Turkish for now: [all documents and reading order](docs/README.md) · [RC28 release and verification record](docs/RC28_RELEASE.md)
+Most guides are in Turkish for now: [all documents and reading order](docs/README.md) · [RC32 release and verification record](docs/RC32_RELEASE.md)
 
 | Guide | Covers |
 | --- | --- |
@@ -253,12 +253,12 @@ Tayfa, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında 
 
 ### İndir ve topluluğa katıl
 
-Güncel paketler [GitHub sürümleri](https://github.com/egemenmermer/rooms/releases/latest) sayfasındadır. Son yayımlanan arkadaş test sürümü **RC28**:
+Güncel paketler [GitHub sürümleri](https://github.com/egemenmermer/rooms/releases/latest) sayfasındadır. Son yayımlanan arkadaş test sürümü **RC32**:
 
 | Platform | Paket | Durum |
 | --- | --- | --- |
-| macOS 14+ / Apple Silicon | [RC28 DMG indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.28/ROOMS-0.1.18-rc.28-arm64.dmg) | Apple imzalı ve noter onaylı |
-| Windows x64 | [RC28 EXE indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.28/ROOMS-0.1.18-rc.28-windows-x64-setup.exe) | İmzasız arkadaş test paketi; sistem uyarısı gösterebilir |
+| macOS 14+ / Apple Silicon | [RC32 DMG indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-arm64.dmg) | Apple imzalı ve noter onaylı |
+| Windows x64 | [RC32 EXE indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-windows-x64-setup.exe) | İmzasız arkadaş test paketi; sistem uyarısı gösterebilir |
 
 1. Platformuna uygun paketi indirip uygulamayı kur.
 2. Topluluk yöneticisinden davet bağlantısını (`https://<sunucu>/davet/…`) al.
@@ -383,7 +383,7 @@ Açık istemcide özgün bir statik DJ çizimi bulunur. Her topluluk kendi adın
 
 ### Belgeler
 
-[Tüm belgeler ve okuma sırası](docs/README.md) · [RC28 yayın ve doğrulama kaydı](docs/RC28_RELEASE.md)
+[Tüm belgeler ve okuma sırası](docs/README.md) · [RC32 yayın ve doğrulama kaydı](docs/RC32_RELEASE.md)
 
 | Rehber | İçeriği |
 | --- | --- |

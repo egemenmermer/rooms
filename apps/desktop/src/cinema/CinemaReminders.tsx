@@ -5,6 +5,7 @@ import { Bell, Play, X } from 'lucide-react';
 import { t } from '../i18n';
 import { hhmm } from './hall-model';
 import { requestHallOpen, takeDue, type Reminder } from './reminders';
+import { useCommunity } from '../community';
 
 /**
  * Programme reminders, wherever the app is: when one starts, the system notification and a
@@ -19,15 +20,15 @@ export function CinemaReminders() {
       if (!due.length) return;
       setShown((current) => [...current, ...due].slice(-3));
       for (const reminder of due) {
-        try {
-          if (typeof Notification !== 'undefined' && Notification.permission === 'granted')
-            new Notification(t('{title} başladı', { title: reminder.title }), {
-              body: `${reminder.channel} · ${hhmm(reminder.start)}`,
-              silent: false,
-            });
-        } catch {
-          // The card below says it anyway.
-        }
+        // The renderer cannot show OS notifications in Electron; the main process does.
+        void window.rooms?.notifications
+          ?.reminder?.({
+            title: t('{title} başladı', { title: reminder.title }).slice(0, 200),
+            detail: `${reminder.channel} · ${hhmm(reminder.start)}`.slice(0, 200),
+          })
+          .catch(() => {
+            // The card below says it anyway.
+          });
       }
     };
     check();
@@ -54,9 +55,15 @@ export function CinemaReminders() {
           <button
             className="button primary small"
             onClick={() => {
-              requestHallOpen(reminder.hallId, reminder.ref);
               dismiss(reminder);
-              navigate('/cinema');
+              void (async () => {
+                // The hall page shows the active community's hall: switch to this one first.
+                const community = useCommunity.getState();
+                if (reminder.communityId && community.activeSpaceId !== reminder.communityId)
+                  await community.openSpace(reminder.communityId).catch(() => {});
+                requestHallOpen(reminder.hallId, reminder.ref);
+                navigate('/cinema');
+              })();
             }}
           >
             <Play size={14} />

@@ -19,8 +19,15 @@ export interface ModerationRights {
   moveMembers: boolean;
   kickMembers: boolean;
   banMembers: boolean;
+  /** Owner or owner-equivalent admin (a role with every permission); see `communityAdmin`. */
+  communityAdmin: boolean;
 }
-const none: ModerationRights = { moveMembers: false, kickMembers: false, banMembers: false };
+const none: ModerationRights = {
+  moveMembers: false,
+  kickMembers: false,
+  banMembers: false,
+  communityAdmin: false,
+};
 
 /** This account's moderation rights in the community; nothing while unknown or offline. */
 export function useModerationRights(spaceId: string | null): ModerationRights {
@@ -47,6 +54,7 @@ export function useModerationRights(spaceId: string | null): ModerationRights {
               moveMembers: !!value.moveMembers,
               kickMembers: value.kickMembers,
               banMembers: !!value.banMembers,
+              communityAdmin: !!value.communityAdmin,
             },
           });
       })

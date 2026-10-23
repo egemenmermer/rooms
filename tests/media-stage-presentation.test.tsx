@@ -2,8 +2,15 @@
 import React from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-const { attach, detach } = vi.hoisted(() => ({ attach: vi.fn(), detach: vi.fn() }));
-vi.mock('../apps/desktop/src/realtime', () => ({ attachMediaTrack: attach }));
+const { attach, detach, media } = vi.hoisted(() => ({
+  attach: vi.fn(),
+  detach: vi.fn(),
+  media: { status: 'connected' },
+}));
+vi.mock('../apps/desktop/src/realtime', () => ({
+  attachMediaTrack: attach,
+  useRealtime: () => media,
+}));
 import { MediaStage } from '../apps/desktop/src/MediaStage';
 afterEach(() => {
   cleanup();
@@ -66,4 +73,27 @@ it('cancels frame observation and detaches exactly once when changing streams', 
   expect(detach).toHaveBeenCalledTimes(2);
   Reflect.deleteProperty(HTMLVideoElement.prototype, 'requestVideoFrameCallback');
   Reflect.deleteProperty(HTMLVideoElement.prototype, 'cancelVideoFrameCallback');
+});
+
+it('waits while the room reconnects and attaches again once it is back', () => {
+  attach.mockReturnValue(detach);
+  media.status = 'reconnecting';
+  const view = render(<MediaStage id="stream" label="Screen" />);
+  expect(attach).not.toHaveBeenCalled();
+  expect(screen.getByRole('status').textContent).toContain('bekleniyor');
+  media.status = 'connected';
+  view.rerender(<MediaStage id="stream" label="Screen" />);
+  expect(attach).toHaveBeenCalledOnce();
+});
+
+it('offers to try a failed stream again', () => {
+  attach
+    .mockImplementationOnce(() => {
+      throw new Error('Gone');
+    })
+    .mockReturnValue(detach);
+  render(<MediaStage id="stream" label="Screen" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Yeniden dene' }));
+  expect(attach).toHaveBeenCalledTimes(2);
+  expect(screen.queryByRole('alert')).toBeNull();
 });

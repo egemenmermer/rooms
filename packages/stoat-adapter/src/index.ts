@@ -14,6 +14,8 @@ import {
   type SocialMessage,
   type SocialInvite,
   type SocialInviteLinkSummary,
+  type SocialSignupPoll,
+  type SocialSignupRequests,
   type SocialAttachment,
   type SocialFriend,
   type SocialMember,
@@ -84,6 +86,13 @@ const inviteErrors: Record<string, string> = {
   INVITE_LIMIT_REACHED:
     'This community already has many active invitation links. Cancel one under Community management, Invitations.',
   REGISTRATION_BUSY: 'Another signup is in progress. Try again in a moment.',
+  SIGNUP_UNAVAILABLE: 'This server does not accept sign-up requests without an invitation link.',
+  SIGNUP_BUSY: 'Many people are signing up right now. Try again later.',
+  SIGNUP_QUEUE_FULL: 'Too many sign-up requests are waiting for approval. Try again later.',
+  SIGNUP_ALREADY_REQUESTED: 'This email address already has a sign-up request waiting.',
+  SIGNUP_REQUEST_NOT_FOUND: 'This sign-up request is no longer open.',
+  SIGNUP_NOT_ENABLED: 'Approved sign-up is not enabled for this community.',
+  SIGNUP_CHANNEL_REQUIRED: 'Create a channel in this community before approving requests.',
   INVITE_PERMISSION_REQUIRED: 'You do not have permission to invite people to this community.',
 };
 const ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
@@ -99,7 +108,7 @@ export class StoatError extends Error {
         directMessageErrors[code] ??
         inviteErrors[code] ??
         (code === 'REGISTRATION_REQUIRES_SIGN_IN'
-          ? 'Account creation could not be completed. If you already have an account, sign in instead. Contact the server administrator if you cannot sign in.'
+          ? 'This email address already has an account. Sign in with it, or use a different email address.'
           : code === 'REGISTRATION_UNCERTAIN'
             ? 'Account creation could not be confirmed. Try signing in before submitting another invitation.'
             : code === 'INVITE_PROVISIONING_UNAVAILABLE'
@@ -667,11 +676,19 @@ export class StoatClient {
     await this.inspectUpstreamInvite(input.inviteCode);
     // The broker uses these stages to tell a definite rejection from an uncertain account.
     hooks.onStage?.('account-create');
-    await this.request('/auth/account/create', 'POST', {
-      email: input.email,
-      password: input.password,
-      invite: input.accountInviteCode,
-    });
+    try {
+      await this.request('/auth/account/create', 'POST', {
+        email: input.email,
+        password: input.password,
+        invite: input.accountInviteCode,
+      });
+    } catch (error) {
+      // Upstream answers 500 OperationFailed when the (normalised) email already has an account
+      // and it cannot mail a reset; nothing was created, so report a definite refusal.
+      if (error instanceof StoatError && error.code === 'OperationFailed')
+        throw new StoatError(409, 'OperationFailed');
+      throw error;
+    }
     hooks.onStage?.('account-created');
     await this.authenticate(input.email, input.password);
     const onboarding = await this.request<{ onboarding: boolean }>('/onboard/hello');
@@ -1523,9 +1540,11 @@ export class StoatClient {
       ? null
       : checkedMember(await this.getMember(spaceId, self._id), spaceId, self._id);
     const bits = managementPermissionBits(self, server, member, roles),
-      rank = bypass ? -Infinity : memberRank(member!, roles);
+      rank = bypass ? -Infinity : memberRank(member!, roles),
+      // Matches the services' stoatCommunityAdmin: the owner, or roles granting every permission.
+      admin = self._id === server.owner || (!!member && bits === safeMask);
     this.assertManagementContext(epoch, session);
-    return { self, server, roles, bits, rank, epoch, session };
+    return { self, server, roles, bits, rank, admin, epoch, session };
   }
   private assertManagementContext(epoch: number, session: number) {
     if (session !== this.sessionEpoch) throw new StoatError(401, 'SESSION_CHANGED');
@@ -1597,16 +1616,15 @@ export class StoatClient {
           permissions: rolePermissionValues(role.permissions),
         }))
         .sort((a, b) => a.rank - b.rank || a.id.localeCompare(b.id));
-      // Invitation links are created by the owner only, so only the owner manages them.
-      result.invites =
-        context.server.owner === context.self._id
-          ? { source: 'rooms-broker', state: 'supported', managementSupported: true }
-          : {
-              source: 'rooms-broker',
-              state: 'unsupported',
-              managementSupported: false,
-              reason: 'Only the community owner can manage invitation links.',
-            };
+      // Members may create links; listing and revoking stay with the owner and admins.
+      result.invites = context.admin
+        ? { source: 'rooms-broker', state: 'supported', managementSupported: true }
+        : {
+            source: 'rooms-broker',
+            state: 'unsupported',
+            managementSupported: false,
+            reason: 'Only the community owner or an admin can manage invitation links.',
+          };
       this.assertManagementContext(context.epoch, context.session);
       result.access = 'allowed';
       return result;
@@ -1740,9 +1758,12 @@ export class StoatClient {
   async communityCapabilities(spaceId: string): Promise<SocialCommunityManagement['capabilities']> {
     checked(spaceId);
     const context = await this.managementContext(spaceId);
-    return Object.fromEntries(
-      Object.entries(managementBits).map(([key, bit]) => [key, !!(context.bits & bit)]),
-    ) as SocialCommunityManagement['capabilities'];
+    return {
+      ...Object.fromEntries(
+        Object.entries(managementBits).map(([key, bit]) => [key, !!(context.bits & bit)]),
+      ),
+      communityAdmin: context.admin,
+    } as SocialCommunityManagement['capabilities'];
   }
   /** Bans someone below this account's rank; they leave the community and cannot rejoin. */
   async banCommunityMember(change: SocialMemberRemoval): Promise<SocialCommunityManagement> {
@@ -2074,6 +2095,126 @@ export class StoatClient {
       throw new StoatError(response.status, String(data.error ?? 'INVITE_UNAVAILABLE'));
     return data as T;
   }
+  /** Unauthenticated call to the access service for approved sign-up. */
+  private async signupFetch(
+    path: string,
+    init: { method?: string; body?: unknown; secret?: string } = {},
+  ): Promise<Raw> {
+    let response: Response;
+    try {
+      response = await fetch(`${new URL(this.instanceUrl).origin}/rooms-access${path}`, {
+        method: init.method ?? 'GET',
+        headers: {
+          ...(init.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+          ...(init.secret ? { Authorization: `Bearer ${init.secret}` } : {}),
+        },
+        body: init.body === undefined ? undefined : JSON.stringify(init.body),
+        redirect: 'error',
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch {
+      throw new StoatError(503, 'NETWORK_UNAVAILABLE');
+    }
+    const data = (await response.json().catch(() => ({}))) as Raw;
+    if (!response.ok)
+      throw new StoatError(response.status, String(data.error ?? 'SIGNUP_UNAVAILABLE'));
+    return data;
+  }
+  /** Whether this server accepts sign-up requests without an invitation link. */
+  async signupAvailable() {
+    try {
+      return (await this.signupFetch('/v1/auth/signup')).enabled === true;
+    } catch (error) {
+      // Brokers from before approved sign-up do not know the route.
+      if (error instanceof StoatError && error.status === 404) return false;
+      throw error;
+    }
+  }
+  /**
+   * Approved sign-up: queues a request. No account exists until an admin approves; the
+   * returned poll secret is the only way to follow the request.
+   */
+  async requestSignup(input: { email: string; username: string }) {
+    let data: Raw;
+    try {
+      data = await this.signupFetch('/v1/auth/signup-requests', {
+        method: 'POST',
+        body: { email: input.email, username: input.username },
+      });
+    } catch (error) {
+      if (error instanceof StoatError && error.status === 404)
+        throw new StoatError(501, 'SIGNUP_UNAVAILABLE');
+      throw error;
+    }
+    if (
+      typeof data.requestId !== 'string' ||
+      !/^[a-f0-9]{32}$/.test(data.requestId) ||
+      typeof data.pollSecret !== 'string' ||
+      !/^[A-Za-z0-9_-]{43}$/.test(data.pollSecret)
+    )
+      throw new StoatError(502, 'INVALID_SIGNUP_RESPONSE');
+    return { requestId: data.requestId, pollSecret: data.pollSecret };
+  }
+  /** Where a request stands. An approval returns its single-use registration link once. */
+  async signupStatus(requestId: string, pollSecret: string): Promise<SocialSignupPoll> {
+    if (!/^[a-f0-9]{32}$/.test(requestId)) throw new StoatError(400, 'INVALID_ID');
+    const data = await this.signupFetch(`/v1/auth/signup-requests/${requestId}`, {
+      secret: pollSecret,
+    });
+    const status = ['pending', 'approved', 'issued', 'rejected', 'expired'].includes(data.status)
+      ? (data.status as SocialSignupPoll['status'])
+      : null;
+    if (!status) throw new StoatError(502, 'INVALID_SIGNUP_RESPONSE');
+    const inviteCode =
+      status === 'approved' &&
+      typeof data.inviteCode === 'string' &&
+      /^[a-f0-9]{64}$/.test(data.inviteCode)
+        ? data.inviteCode
+        : null;
+    if (status === 'approved' && !inviteCode) throw new StoatError(502, 'INVALID_SIGNUP_RESPONSE');
+    return {
+      status,
+      inviteCode,
+      createdAt: typeof data.createdAt === 'string' ? data.createdAt : null,
+      expiresAt: typeof data.expiresAt === 'string' ? data.expiresAt : null,
+    };
+  }
+  async cancelSignup(requestId: string, pollSecret: string) {
+    if (!/^[a-f0-9]{32}$/.test(requestId)) throw new StoatError(400, 'INVALID_ID');
+    await this.signupFetch(`/v1/auth/signup-requests/${requestId}`, {
+      method: 'DELETE',
+      secret: pollSecret,
+    });
+  }
+  async listSignupRequests(spaceId: string): Promise<SocialSignupRequests> {
+    const data = await this.broker<Raw>(`/v1/spaces/${checked(spaceId)}/signup-requests`);
+    if (!Array.isArray(data.requests) || data.requests.length > 1000)
+      throw new StoatError(502, 'INVALID_SIGNUP_RESPONSE');
+    return {
+      enabled: data.enabled === true,
+      requests: data.requests.map((raw: Raw) => {
+        if (
+          typeof raw?.id !== 'string' ||
+          !/^[a-f0-9]{32}$/.test(raw.id) ||
+          typeof raw.username !== 'string' ||
+          typeof raw.createdAt !== 'string'
+        )
+          throw new StoatError(502, 'INVALID_SIGNUP_RESPONSE');
+        return {
+          id: raw.id,
+          username: raw.username.slice(0, 32),
+          createdAt: raw.createdAt,
+          state: raw.state === 'approved' ? ('approved' as const) : ('pending' as const),
+        };
+      }),
+    };
+  }
+  async decideSignupRequest(spaceId: string, requestId: string, decision: 'approve' | 'reject') {
+    if (!/^[a-f0-9]{32}$/.test(requestId)) throw new StoatError(400, 'INVALID_ID');
+    await this.broker(`/v1/spaces/${checked(spaceId)}/signup-requests/${requestId}/${decision}`, {
+      method: 'POST',
+    });
+  }
   /** Active invitation links of a space; only its owner may list them. */
   async listInviteLinks(spaceId: string): Promise<SocialInviteLinkSummary[]> {
     const data = await this.broker<{ invites?: unknown }>(`/v1/spaces/${checked(spaceId)}/invites`);
@@ -2174,6 +2315,31 @@ export class StoatClient {
           ? this.normalizeChannel(joined.channels[0])
           : null,
       expiresAt: null,
+    };
+  }
+  /** The signed-in user's bio, status text and presence, as Settings shows them. */
+  async ownProfile(): Promise<{
+    bio: string;
+    statusText: string;
+    presence: 'online' | 'idle' | 'dnd' | 'invisible';
+  }> {
+    const raw = await this.request<Raw>('/users/@me');
+    // The profile route takes a user id; '@me' only works for /users/@me itself.
+    const profile = await this.request<Raw>(`/users/${checked(String(raw._id))}/profile`).catch(
+      () => null,
+    );
+    const presence = raw.status?.presence;
+    return {
+      bio: typeof profile?.content === 'string' ? profile.content.slice(0, 2000) : '',
+      statusText: typeof raw.status?.text === 'string' ? raw.status.text.slice(0, 128) : '',
+      presence:
+        presence === 'Idle'
+          ? 'idle'
+          : presence === 'Busy' || presence === 'Focus'
+            ? 'dnd'
+            : presence === 'Invisible'
+              ? 'invisible'
+              : 'online',
     };
   }
   async updatePresence(status: 'online' | 'idle' | 'dnd' | 'invisible') {

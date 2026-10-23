@@ -135,7 +135,35 @@ describe('S04 integrated onboarding and exact DEV entry (local mocked components
         password: 'fixture-current-password',
       }),
     );
+    // Without an app shell to return to, the first-run steps are the only way on.
     await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('profile'));
+  });
+  it('sends a returning user who signs in straight to the app, not the first-run steps', async () => {
+    runtime();
+    const onNavigate = vi.fn(),
+      onComplete = vi.fn(),
+      connect = vi.fn().mockImplementation(async () => {
+        useCommunity.setState({
+          user: { id: 'signed-in-user', username: 'Owner', displayName: 'Owner', avatar: null },
+          status: 'connected',
+          error: null,
+        });
+      });
+    useCommunity.setState({ status: 'not-configured', user: null, error: null, connect });
+    render(
+      <MemoryRouter>
+        <ReferenceOnboarding mode="signin" onNavigate={onNavigate} onComplete={onComplete} />
+      </MemoryRouter>,
+    );
+    fireEvent.change(screen.getByLabelText('E-posta adresi'), {
+      target: { value: 'owner@example.test' },
+    });
+    fireEvent.change(screen.getByLabelText('Şifre'), {
+      target: { value: 'fixture-current-password' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^Giriş yap/ }));
+    await waitFor(() => expect(onComplete).toHaveBeenCalled());
+    expect(onNavigate).not.toHaveBeenCalledWith('profile');
   });
   it('does not reinterpret ordinary failures or expired query flags as an expired session', () => {
     runtime();

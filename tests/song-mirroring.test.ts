@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import { parseSongLink } from '../packages/shared-contracts/src/song-links';
 import { songMetadata } from '../apps/services/music/song-metadata';
-import { matchingSong } from '../apps/services/music/song-match';
+import { looseSong, matchingSong } from '../apps/services/music/song-match';
 import { privateFetch } from '../packages/personal-media/src/network';
 const id = '4cOdK2wGLETKBW3PvgPWqT',
   url = `https://open.spotify.com/track/${id}`;
@@ -207,4 +207,113 @@ it('matches Turkish dotless-i credits without accepting a shorter music-video ed
       { ...topic, id: 'M7lc1UVf-VE', artists: [] },
     ]),
   ).toBeNull();
+});
+it('lets a playlist take a looser recording of the same song, never a cover, remix or live take', () => {
+  const listed = {
+    ...song,
+    title: 'Never Gonna Give You Up (feat. Someone) - 2011 Remaster',
+    artists: ['Rick Astley', 'Someone'],
+    durationSec: 213,
+  };
+  const video = {
+    ...exact,
+    title: 'Rick Astley - Never Gonna Give You Up (Official Music Video)',
+    duration: 245,
+  };
+  expect(matchingSong(listed, [video])).toBeNull();
+  expect(looseSong(listed, [video])).toEqual(video);
+  expect(looseSong(listed, [{ ...video, title: video.title + ' (Remastered)' }])).not.toBeNull();
+  for (const title of [
+    'Rick Astley - Never Gonna Give You Up (Cover)',
+    'Rick Astley - Never Gonna Give You Up (Live)',
+    'Rick Astley - Never Gonna Give You Up Remix',
+    'Rick Astley - Never Gonna Give You Up Karaoke',
+    'Rick Astley - Never Gonna Give You Up (Sped Up)',
+    'Other Artist - Never Gonna Give You Up',
+    'Rick Astley - Never Gonna Give',
+  ])
+    expect(looseSong(listed, [{ ...video, title }])).toBeNull();
+  expect(looseSong(listed, [{ ...video, duration: 300 }])).toBeNull();
+  expect(looseSong(listed, [{ ...video, is_live: true }])).toBeNull();
+  // A remix the list asked for still has to be a remix.
+  expect(looseSong({ ...listed, title: 'Never Gonna Give You Up - Remix' }, [video])).toBeNull();
+  // The closest length wins among fitting recordings.
+  const audio = {
+    ...video,
+    id: 'abcdefghijk',
+    title: 'Never Gonna Give You Up',
+    channel: 'Rick Astley - Topic',
+    duration: 214,
+  };
+  expect(looseSong(listed, [video, audio])).toEqual(audio);
+});
+it('keeps a loose match off live takes, other mixes and other-language or live versions', () => {
+  const oasis = {
+    provider: 'spotify' as const,
+    title: 'Live Forever',
+    artists: ['Oasis'],
+    durationSec: 276,
+  };
+  const studio = {
+    id: 'abcdefghijk',
+    title: 'Oasis - Live Forever (Official Video)',
+    duration: 280,
+  };
+  expect(looseSong(oasis, [studio])).toEqual(studio);
+  expect(
+    looseSong(oasis, [
+      { ...studio, title: 'Oasis - Live Forever (Live at Knebworth 1996)', duration: 300 },
+    ]),
+  ).toBeNull();
+  const levels = {
+    provider: 'spotify' as const,
+    title: 'Levels',
+    artists: ['Avicii'],
+    durationSec: 200,
+  };
+  const original = { id: 'lmnopqrstuv', title: 'Avicii - Levels', duration: 202 };
+  expect(
+    looseSong(levels, [{ ...original, title: 'Avicii - Levels (Skrillex Edit)', duration: 222 }]),
+  ).toBeNull();
+  expect(
+    looseSong(levels, [{ ...original, title: 'Avicii - Levels (Radio Edit)' }]),
+  ).not.toBeNull();
+  const live = {
+    provider: 'spotify' as const,
+    title: 'Gül Pembe - Canlı',
+    artists: ['Barış Manço'],
+    durationSec: 260,
+  };
+  expect(
+    looseSong(live, [
+      { ...original, title: 'Barış Manço - Gül Pembe (Official Audio)', duration: 240 },
+    ]),
+  ).toBeNull();
+  expect(
+    looseSong(live, [{ ...original, title: 'Barış Manço - Gül Pembe (Canlı)', duration: 262 }]),
+  ).not.toBeNull();
+  const english = {
+    provider: 'spotify' as const,
+    title: 'Bailando - English Version',
+    artists: ['Enrique Iglesias', 'Sean Paul'],
+    durationSec: 243,
+  };
+  expect(
+    looseSong(english, [
+      {
+        ...original,
+        title: 'Enrique Iglesias - Bailando ft. Descemer Bueno, Gente De Zona',
+        duration: 260,
+      },
+    ]),
+  ).toBeNull();
+  expect(
+    looseSong(english, [
+      {
+        ...original,
+        title: 'Enrique Iglesias - Bailando (English Version) ft. Sean Paul',
+        duration: 260,
+      },
+    ]),
+  ).not.toBeNull();
 });

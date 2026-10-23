@@ -65,6 +65,41 @@ export interface SocialInviteLinkSummary {
   createdBy: string | null;
   state: 'active' | 'full';
 }
+/**
+ * Approved sign-up (no invitation link). A request creates no account; on approval the requester
+ * receives a single-use registration link once (`inviteCode`) and signs up with it.
+ */
+export interface SocialSignupPoll {
+  status: 'pending' | 'approved' | 'issued' | 'rejected' | 'expired';
+  inviteCode: string | null;
+  createdAt: string | null;
+  expiresAt: string | null;
+}
+/** The sign-up this device started and is following; the password is never part of it. */
+export interface SocialPendingSignup {
+  serverUrl: string;
+  email: string;
+  username: string;
+  createdAt: string | null;
+  status: SocialSignupPoll['status'] | 'unknown';
+  /** Approved and the link is held; the account can be created now. */
+  ready: boolean;
+  /** The password typed for this request is still in memory (the app was not restarted). */
+  passwordKnown: boolean;
+  error: string | null;
+}
+/** Owner/admin view of one open request; no email or password is stored or listed. */
+export interface SocialSignupRequest {
+  id: string;
+  username: string;
+  createdAt: string;
+  state: 'pending' | 'approved';
+}
+export interface SocialSignupRequests {
+  /** False when this server does not run approved sign-up for this community. */
+  enabled: boolean;
+  requests: SocialSignupRequest[];
+}
 /** Native desktop events carry the auth-session generation that produced them. */
 export interface GatewayEvent {
   type: string;
@@ -202,6 +237,11 @@ export interface SocialCommunityManagement {
     banMembers?: boolean;
     /** Stoat MoveMembers: move people between voice rooms or disconnect them. */
     moveMembers?: boolean;
+    /**
+     * Owner, or a member whose roles grant every Stoat permission; ROOMS services treat both as
+     * the owner (invite links, Sinema account, host operations). Absent from older projections.
+     */
+    communityAdmin?: boolean;
   };
   roles: SocialCommunityRole[];
   grantablePermissions: SocialRolePermissionKey[];

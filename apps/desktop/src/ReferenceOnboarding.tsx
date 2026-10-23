@@ -338,7 +338,9 @@ export function ReferenceOnboarding({
       const next = new URLSearchParams(params);
       next.delete('invite');
       setParams(next, { replace: true });
-      onNavigate('profile');
+      // Someone already signed in joined another community: no first-run steps again.
+      if (onComplete) onComplete();
+      else onNavigate('profile');
     } catch (e) {
       setError(uiError(e));
     } finally {
@@ -382,7 +384,10 @@ export function ReferenceOnboarding({
               <ConnectionPane
                 referenceMode={mode}
                 sessionExpired={sessionExpired}
-                onAuthenticated={() => onNavigate('profile')}
+                // Profile and device steps are for a new account; signing in goes to the app.
+                onAuthenticated={() =>
+                  mode === 'register' || !onComplete ? onNavigate('profile') : onComplete()
+                }
                 onRecovery={() => onNavigate('recovery')}
               />
             )}
@@ -397,7 +402,6 @@ export function ReferenceOnboarding({
             >
               <i className="active" />
               <i className={mode === 'devices' ? 'active' : ''} />
-              <i />
             </div>
           )}
           {mode === 'recovery' &&

@@ -836,6 +836,19 @@ export const errorMessages: Record<string, string> = {
     'Bu toplulukta çok fazla etkin davet bağlantısı var. Topluluk yönetimi → Davetler bölümünden birini iptal et.',
   'Another signup is in progress. Try again in a moment.':
     'Şu anda başka bir kayıt sürüyor. Birkaç saniye sonra yeniden dene.',
+  'This server does not accept sign-up requests without an invitation link.':
+    'Bu sunucu davetsiz kaydı açmamış. Topluluktan bir davet bağlantısı iste.',
+  'Many people are signing up right now. Try again later.':
+    'Şu anda çok fazla kayıt isteği geliyor. Biraz sonra yeniden dene.',
+  'Too many sign-up requests are waiting for approval. Try again later.':
+    'Onay bekleyen çok fazla kayıt isteği var. Biraz sonra yeniden dene.',
+  'This email address already has a sign-up request waiting.':
+    'Bu e-posta adresiyle gönderilmiş, bekleyen bir kayıt isteği zaten var.',
+  'This sign-up request is no longer open.': 'Bu kayıt isteği artık açık değil. Listeyi yenile.',
+  'Approved sign-up is not enabled for this community.':
+    'Bu topluluk için davetsiz kayıt açık değil.',
+  'Create a channel in this community before approving requests.':
+    'İstekleri onaylamadan önce toplulukta bir kanal oluştur.',
   'Verify your email before signing in.': 'Giriş yapmadan önce e-posta adresini doğrula.',
   'This account needs additional authentication. Complete the official Stoat sign-in flow.':
     'Bu hesap ek doğrulama istiyor. Sunucunun web uygulamasında girişini tamamla.',
@@ -855,8 +868,8 @@ export const errorMessages: Record<string, string> = {
     'Kısa sürede çok fazla işlem yapıldı. Biraz bekleyip yeniden dene.',
   'The social server is unavailable. Retry shortly.':
     'Topluluk hizmeti isteği tamamlayamadı. Daha sonra yeniden dene.',
-  'Account creation could not be completed. If you already have an account, sign in instead. Contact the server administrator if you cannot sign in.':
-    'Hesap oluşturulamadı. Mevcut hesabın varsa Giriş yap seçeneğini kullan. Giriş yapamıyorsan sunucu yöneticine başvur.',
+  'This email address already has an account. Sign in with it, or use a different email address.':
+    'Bu e-posta adresiyle zaten bir hesap var. O hesapla giriş yap veya farklı bir e-posta adresi kullan.',
   'Account creation could not be confirmed. Try signing in before submitting another invitation.':
     'Hesabın oluşturulup oluşturulmadığı doğrulanamadı. Yeni davet kullanmadan önce giriş yapmayı dene.',
   'The social server rejected this request. Check the supplied details.':

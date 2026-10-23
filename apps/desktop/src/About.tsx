@@ -85,7 +85,9 @@ export function About({ notify }: { notify(message: string): void }) {
       if (timer) clearInterval(timer);
     };
   }, []);
-  const installable = status?.state === 'ready' || status?.state === 'available';
+  // Only a downloaded, verified update can restart into the new version; 'available' is
+  // still downloading, and "install" would just open Sparkle's own check.
+  const installable = status?.state === 'ready';
   // The sidebar update notice links here with install=1 and expects the restart prompt at once.
   useEffect(() => {
     if (!params.has('install') || !status) return;

@@ -68,6 +68,16 @@ const copy: Record<CinemaErrorCode, string> = {
   CINEMA_METADATA_UNAVAILABLE: t('Yapım bilgisine şu an ulaşılamadı. Biraz sonra yeniden dene.'),
   CINEMA_RMDB_NOT_FOUND: t("Bu kayıt artık Tayfa'da yok."),
   CINEMA_RMDB_INVALID: t('Puan veya yorum kaydedilemedi; uzunluğu ve tarihi kontrol et.'),
+  CINEMA_STREMIO_NOT_LINKED: t('Topluluk sahibi henüz bir Stremio hesabı bağlamadı.'),
+  CINEMA_STREMIO_LOGGED_OUT: t(
+    "Stremio bu oturumu artık kabul etmiyor. Sahibin Sinema ayarlarından Stremio'yu yeniden bağlaması gerekiyor.",
+  ),
+  CINEMA_STREMIO_UNAVAILABLE: t("Stremio'ya şu an ulaşılamadı. Biraz sonra yeniden dene."),
+  CINEMA_STREMIO_LINK_EXPIRED: t('Bağlantı kodunun süresi doldu. Yeniden bağlanmayı dene.'),
+  CINEMA_STREMIO_STREAM_EXPIRED: t('Kaynak listesi eskidi. Kaynakları yeniden yükle.'),
+  CINEMA_STREMIO_NOT_CACHED: t(
+    'Bu kaynak debrid önbelleğinde değil; indirme başladı. Biraz sonra yeniden dene ya da “Hazır” bir kaynak seç.',
+  ),
 };
 
 /** The bridge code inside an error, if any (IPC wraps messages). */

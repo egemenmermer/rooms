@@ -140,6 +140,11 @@ export class TerminalHub {
     user: string,
     profileId: string,
     workspace?: { taskId: string },
+    /**
+     * The host owner's profile, used by the owner and every owner-equivalent admin: they are the
+     * same OS account already, so one person's detached session must not lock out the others.
+     */
+    options: { sharedProfile?: boolean } = {},
   ): OpsTerminal {
     if (this.stopped) throw Error('TERMINAL_BROKER_CLOSED');
     this.expire();
@@ -148,6 +153,7 @@ export class TerminalHub {
     if (this.list(host, user).filter((r) => r.ownerId === user).length >= 3)
       throw Object.assign(Error('TERMINAL_LIMIT'), { statusCode: 409 });
     if (
+      !options.sharedProfile &&
       [...this.sessions.values()].some(
         (r) =>
           r.profileId === profileId &&
@@ -306,6 +312,33 @@ export class TerminalHub {
         this.broadcast(r);
         this.save();
       }
+  }
+  /** Users who own a live session on this profile (active or detached). */
+  owners(host: string, profileId: string) {
+    return [
+      ...new Set(
+        [...this.sessions.values()]
+          .filter(
+            (r) =>
+              r.info.hostId === host &&
+              r.profileId === profileId &&
+              ['active', 'detached'].includes(r.info.state),
+          )
+          .map((r) => r.info.ownerId),
+      ),
+    ];
+  }
+  /** Closes the sessions this user owns on one profile; the rest of their access stays. */
+  closeOwned(host: string, user: string, profileId: string) {
+    for (const r of this.sessions.values())
+      if (
+        r.info.hostId === host &&
+        r.profileId === profileId &&
+        r.info.ownerId === user &&
+        ['active', 'detached'].includes(r.info.state)
+      )
+        this.action(host, r.info.id, user, 'close');
+    this.save();
   }
   revokeUser(host: string, user: string) {
     for (const r of this.sessions.values())

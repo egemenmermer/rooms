@@ -75,6 +75,7 @@ import { HallContext, useHall, useHallState } from './use-hall';
 import { VodTab, type VodView } from './VodTab';
 import { YouTubeTab } from './YouTubeTab';
 import { RmdbTab } from './RmdbTab';
+import { StremioTab, type StremioView } from './StremioTab';
 import type { RmdbView } from './rmdb-model';
 import { t } from '../i18n';
 
@@ -85,6 +86,7 @@ const tabs: { id: View; label: string }[] = [
   { id: 'live', label: t('Canlı TV') },
   { id: 'movies', label: t('Filmler') },
   { id: 'series', label: t('Diziler') },
+  { id: 'stremio', label: 'Stremio' },
   { id: 'youtube', label: 'YouTube' },
   { id: 'rmdb', label: 'Tayfa' },
 ];
@@ -176,6 +178,7 @@ function HallLayout() {
     series: { mode: 'home' },
   });
   const [rmdb, setRmdb] = useState<RmdbView>({ mode: 'home' });
+  const [stremio, setStremio] = useState<StremioView>({ mode: 'home', query: '' });
   const [panel, setPanel] = useState<{ open: boolean; tab: PanelTab }>(() => ({
     open: readPanel(),
     tab: 'chat',
@@ -599,6 +602,8 @@ function HallLayout() {
                 if (tab.id === view && vodKey === tab.id)
                   setVod((value) => ({ ...value, [tab.id]: { mode: 'home' } }));
                 if (tab.id === view && tab.id === 'rmdb') setRmdb({ mode: 'home' });
+                if (tab.id === view && tab.id === 'stremio')
+                  setStremio({ mode: 'home', query: '' });
                 goTo(tab.id);
               }}
             >
@@ -628,7 +633,7 @@ function HallLayout() {
             </div>
           ) : (
             <div className={`hall-browse ${hall.current ? 'with-mini' : ''}`}>
-              {!connected && view !== 'youtube' && view !== 'rmdb' ? (
+              {!connected && view !== 'youtube' && view !== 'rmdb' && view !== 'stremio' ? (
                 <NotConnected />
               ) : view === 'live' ? (
                 <LiveTab
@@ -648,6 +653,8 @@ function HallLayout() {
                 />
               ) : view === 'rmdb' ? (
                 <RmdbTab view={rmdb} onView={setRmdb} onBrowse={goTo} />
+              ) : view === 'stremio' ? (
+                <StremioTab view={stremio} onView={setStremio} />
               ) : (
                 <YouTubeTab />
               )}
@@ -817,6 +824,7 @@ function NowBar() {
               <ReminderBell
                 reminder={{
                   hallId: hall.hallId,
+                  communityId: hall.status.communityId,
                   ref: item.media.ref,
                   channel: item.media.title,
                   title: next.title,
@@ -879,6 +887,7 @@ function ReminderBell({ reminder }: { reminder: Reminder }) {
 function Welcome({ onBrowse, onOpen }: { onBrowse(view: View): void; onOpen(): void }) {
   const hall = useHall();
   const connected = hall.status.connected;
+  const stremioLinked = !!hall.status.stremio?.linked;
   const channels = useAllItems(hall.hallId, 'live', null);
   const now = useNow();
   const candidates = useMemo(
@@ -897,7 +906,7 @@ function Welcome({ onBrowse, onOpen }: { onBrowse(view: View): void; onOpen(): v
       </span>
       <h2>{t('Bu akşam ne izliyoruz?')}</h2>
       <p>
-        {connected
+        {connected || stremioLinked
           ? t('Açtığın şey salondaki herkes için aynı anda oynar.')
           : hall.status.isOwner
             ? t(
@@ -925,6 +934,12 @@ function Welcome({ onBrowse, onOpen }: { onBrowse(view: View): void; onOpen(): v
         ) : (
           <button className="button secondary" onClick={() => onBrowse('youtube')}>
             YouTube
+          </button>
+        )}
+        {stremioLinked && (
+          <button className="button secondary" onClick={() => onBrowse('stremio')}>
+            <Clapperboard size={16} />
+            Stremio
           </button>
         )}
       </div>

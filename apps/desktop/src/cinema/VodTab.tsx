@@ -25,7 +25,13 @@ import { cinemaArt, cinemaErrorText, getCinemaBridge } from './cinema-bridge';
 import { cleanEpisodeTitle } from '../../../../packages/community-cinema/src/titles';
 import { useCinemaPreferences } from './cinema-preferences';
 import { CinemaArt, QualityBadges } from './CinemaArt';
-import { rememberItems, useBridgeRead, useCategories, useItems } from './catalog-cache';
+import {
+  rememberItems,
+  useBridgeRead,
+  useCategories,
+  useItems,
+  usePagedItems,
+} from './catalog-cache';
 import { minutesLabel } from './hall-model';
 import { RmdbCatalogActions } from './RmdbCatalogActions';
 import { useHall } from './use-hall';
@@ -714,20 +720,19 @@ function VodGrid({
 }) {
   const hall = useHall();
   const [sort, setSort] = useState<'added' | 'name' | 'rating'>('added');
-  const [limit, setLimit] = useState(60);
-  const items = useItems(hall.hallId, kind, categoryId, sort, limit);
+  const items = usePagedItems(hall.hallId, kind, categoryId, sort);
   const sentinel = useRef<HTMLDivElement>(null);
-  const total = items.data?.total ?? 0;
+  const total = items.total;
+  const { more } = items;
   useEffect(() => {
     const element = sentinel.current;
     if (!element) return;
     const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting) && limit < total)
-        setLimit((value) => value + 60);
+      if (entries.some((entry) => entry.isIntersecting)) more();
     });
     observer.observe(element);
     return () => observer.disconnect();
-  }, [limit, total]);
+  }, [more]);
   const now = Date.now();
   return (
     <div className="hall-vod grid-view">
@@ -748,9 +753,8 @@ function VodGrid({
           </select>
         </label>
       </header>
-      {items.error && <p className="hall-empty-note">{items.error}</p>}
       <div className="hall-poster-grid">
-        {items.data?.items.map((item) => (
+        {items.items.map((item) => (
           <Poster
             key={item.ref}
             item={item}
@@ -764,6 +768,14 @@ function VodGrid({
             <span key={index} className="hall-skeleton poster" />
           ))}
       </div>
+      {items.error && (
+        <p className="hall-empty-note">
+          {items.error}{' '}
+          <button className="hall-text-button" onClick={items.retry}>
+            Yeniden dene
+          </button>
+        </p>
+      )}
       <div ref={sentinel} className="hall-sentinel" />
     </div>
   );

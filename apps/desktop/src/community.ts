@@ -13,6 +13,7 @@ import type {
   SocialUser,
   SocialAttachment,
   SocialReadState,
+  SocialSignupRequests,
   GatewayEvent,
 } from '@rooms/social';
 
@@ -47,6 +48,12 @@ export interface CommunityState {
     inviteCode: string;
     accountInviteCode?: string;
   }): Promise<void>;
+  signupRequests(spaceId: string): Promise<SocialSignupRequests>;
+  decideSignupRequest(
+    spaceId: string,
+    requestId: string,
+    decision: 'approve' | 'reject',
+  ): Promise<void>;
   logout(): Promise<void>;
   refresh(): Promise<void>;
   openSpace(id: string): Promise<void>;
@@ -120,7 +127,19 @@ async function applySession(session: SocialSession, request = sessionEpoch) {
   nativeSessionEpoch = session.sessionEpoch ?? null;
   clearConversations();
   if (!session.user) {
-    useCommunity.setState({ ...blank, status: session.status });
+    useCommunity.setState({
+      ...blank,
+      status: session.status,
+      // A saved session is kept while its server is unreachable; the main process retries.
+      remembered: session.remembered,
+      serverUrl: session.instanceUrl ?? '',
+      error:
+        session.restore === 'expired'
+          ? 'Oturumunun süresi doldu. Çıkış yapıp yeniden giriş yap.'
+          : session.restore === 'unreachable'
+            ? SERVER_UNREACHABLE_MESSAGE
+            : null,
+    });
     return;
   }
   const { leaveVoice } = await import('./realtime');
@@ -137,6 +156,37 @@ async function applySession(session: SocialSession, request = sessionEpoch) {
     error: null,
   });
   await useCommunity.getState().refresh();
+}
+/** Messages one channel view keeps; past this, "Önceki mesajlar" stops instead of looping. */
+export const MESSAGE_WINDOW = 5000;
+/** A saved session waits for its server; nothing needs to be typed again. */
+export const SERVER_UNREACHABLE_MESSAGE =
+  'Kayıtlı sunucuna şu an ulaşılamıyor. Oturumun duruyor; bağlantı gelince kendiliğinden açılacak.';
+/** Sign-in style session start shared by invitation sign-up and approved sign-up. */
+export async function startSession(open: () => Promise<SocialSession>) {
+  const request = ++sessionEpoch;
+  nativeSessionEpoch = null;
+  clearConversations();
+  selectionEpoch++;
+  useChannelAccess.setState({ checks: {} });
+  useCommunity.setState({ ...blank, status: 'connecting', busy: true });
+  try {
+    const session = await open();
+    if (request === sessionEpoch) await applySession(session, request);
+  } catch (error) {
+    if (request === sessionEpoch) {
+      try {
+        await applySession(await bridge().session(), request);
+      } catch {}
+      useCommunity.setState((state) => ({
+        status: state.user ? state.status : 'error',
+        error: safeError(error),
+      }));
+    }
+    throw error;
+  } finally {
+    if (request === sessionEpoch) useCommunity.setState({ busy: false });
+  }
 }
 export const useCommunity = create<CommunityState>((set, get) => ({
   ...blank,
@@ -162,27 +212,17 @@ export const useCommunity = create<CommunityState>((set, get) => ({
       if (request === sessionEpoch) set({ busy: false });
     }
   },
-  register: async (input) => {
-    const request = ++sessionEpoch;
-    nativeSessionEpoch = null;
-    clearConversations();
-    selectionEpoch++;
-    useChannelAccess.setState({ checks: {} });
-    set({ ...blank, status: 'connecting', busy: true });
-    try {
-      const session = await bridge().register(input);
-      if (request === sessionEpoch) await applySession(session, request);
-    } catch (error) {
-      if (request === sessionEpoch) {
-        try {
-          await applySession(await bridge().session(), request);
-        } catch {}
-        set((state) => ({ status: state.user ? state.status : 'error', error: safeError(error) }));
-      }
-      throw error;
-    } finally {
-      if (request === sessionEpoch) set({ busy: false });
-    }
+  register: (input) => startSession(() => bridge().register(input)),
+  signupRequests: async (spaceId) => {
+    const session = captureSession();
+    const value = await bridge().signupRequests(spaceId);
+    if (!session.valid()) throw new Error('Oturum değişti. Kayıt istekleri gösterilmedi.');
+    return value;
+  },
+  decideSignupRequest: async (spaceId, requestId, decision) => {
+    const session = captureSession();
+    await bridge().decideSignupRequest(spaceId, requestId, decision);
+    if (!session.valid()) throw new Error('Oturum değişti. Karar doğrulanamadı.');
   },
   logout: async () => {
     const request = ++sessionEpoch;
@@ -495,12 +535,16 @@ export const useCommunity = create<CommunityState>((set, get) => ({
     try {
       const older = await bridge().messages(channelId, oldest.id);
       if (current())
-        set((state) => ({
-          messages: [...older, ...state.messages]
-            .filter((m, i, a) => a.findIndex((x) => x.id === m.id) === i)
-            .slice(-1000),
-          hasOlder: older.length === 50,
-        }));
+        set((state) => {
+          const known = new Set(state.messages.map((m) => m.id));
+          const merged = [...older.filter((m) => !known.has(m.id)), ...state.messages];
+          // Trimming the oldest end would throw away the page just fetched (and loop forever).
+          const full = merged.length >= MESSAGE_WINDOW;
+          return {
+            messages: full ? merged.slice(-MESSAGE_WINDOW) : merged,
+            hasOlder: older.length === 50 && !full,
+          };
+        });
     } catch (error) {
       if (current()) set({ error: safeError(error) });
     } finally {
@@ -681,7 +725,25 @@ function onEvent(event: GatewayEvent) {
       status: event.data as ConnectionStatus,
       ...(event.data !== 'connected' ? { typing: {} } : {}),
     });
-  else if (event.type === 'AUTH_EXPIRED') {
+  else if (event.type === 'OPEN_SERVER_SETTINGS') {
+    // A clicked server alert: App opens Sunucu makinesi.
+    window.dispatchEvent(new Event('rooms:open-server-settings'));
+  } else if (event.type === 'OPEN_CHANNEL') {
+    // A clicked desktop notification: App opens the channel.
+    const channelId = (event.data as { channelId?: unknown })?.channelId;
+    if (typeof channelId === 'string')
+      window.dispatchEvent(new CustomEvent('rooms:open-channel', { detail: channelId }));
+  } else if (event.type === 'SESSION_RESTORED') {
+    // The saved session's server answered (or refused it) after launch.
+    const request = ++sessionEpoch;
+    void bridge()
+      .session()
+      .then(async (session) => {
+        await applySession(session, request);
+        if (session.user) window.dispatchEvent(new Event('rooms:session-restored'));
+      })
+      .catch(() => {});
+  } else if (event.type === 'AUTH_EXPIRED') {
     nativeSessionEpoch = null;
     clearConversations();
     sessionEpoch++;
@@ -734,19 +796,20 @@ function onEvent(event: GatewayEvent) {
         ),
         unread: { ...s.unread, [message.channelId]: message.author.id !== s.user?.id },
       }));
+    // An edit or reaction on a message that is not loaded must not drop it into the log out
+    // of context; it arrives in place when older pages load.
+    const upsert = (messages: SocialMessage[]) =>
+      event.type === 'MESSAGE_UPDATE' && !messages.some((m) => m.id === message.id)
+        ? messages
+        : [...messages.filter((m) => m.id !== message.id), message].sort(
+            (a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp),
+          );
     const cached = conversations.get(message.channelId);
     if (cached)
-      conversations.put(message.channelId, {
-        ...cached,
-        messages: [...cached.messages.filter((m) => m.id !== message.id), message].sort(
-          (a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp),
-        ),
-      });
+      conversations.put(message.channelId, { ...cached, messages: upsert(cached.messages) });
     if (message.channelId === state.activeChannelId) {
       useCommunity.setState((s) => ({
-        messages: [...s.messages.filter((m) => m.id !== message.id), message]
-          .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
-          .slice(-1000),
+        messages: upsert(s.messages).slice(-MESSAGE_WINDOW),
       }));
     }
     if (
@@ -795,4 +858,15 @@ export function initializeCommunity(): Promise<void> {
     }
   })();
   return initialization;
+}
+
+/** What the Dock badge counts: unread mentions, plus conversations with unread messages. */
+export function badgeCount(state: Pick<CommunityState, 'readStates' | 'unread' | 'dms' | 'user'>) {
+  if (!state.user) return 0;
+  const mentions = Object.values(state.readStates).reduce(
+    (sum, read) => sum + (read.mentionMessageIds?.length ?? 0),
+    0,
+  );
+  const conversations = state.dms.filter((dm) => state.unread[dm.id]).length;
+  return Math.min(9999, mentions + conversations);
 }

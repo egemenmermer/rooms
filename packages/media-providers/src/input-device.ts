@@ -40,3 +40,20 @@ export function inputDeviceLabel(
     named.find((d) => !!capture.groupId && d.groupId === capture.groupId);
   return match?.label ?? null;
 }
+
+/**
+ * The OS name of the microphone a selection points at before any capture opens: a device id
+ * names itself, and Chromium's `default` / `communications` stand-ins name the physical
+ * device in their group. Null when the list does not say.
+ */
+export function selectedInputLabel(
+  devices: readonly InputDeviceEntry[],
+  selected: string,
+): string | null {
+  const entry = devices.find(
+    (d) => d.kind === 'audioinput' && d.deviceId === (selected || 'default'),
+  );
+  if (!entry) return null;
+  if (physical(entry)) return entry.label || null;
+  return inputDeviceLabel(devices, { groupId: entry.groupId });
+}

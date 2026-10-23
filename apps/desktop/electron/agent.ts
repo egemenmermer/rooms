@@ -21,6 +21,8 @@ export function setupAgent(
   } catch {
     /* Reconnect if vault is unreadable. */
   }
+  /** The last identity check, reused for 30 s so every call does not cost a status request. */
+  let verified: { connection: typeof connection; userId: string; at: number } | null = null;
   async function request(
     endpoint: string,
     method = 'GET',
@@ -31,10 +33,18 @@ export function setupAgent(
       selectedUser = getSocialUserId();
     if (!connection) throw new Error('Connect the separate agent server in Settings first.');
     if (!getSocialUserId()) throw new Error('Sign in to your community before using the agent.');
-    if (endpoint !== '/v1/status') {
+    if (
+      endpoint !== '/v1/status' &&
+      !(
+        verified?.connection === connection &&
+        verified.userId === getSocialUserId() &&
+        Date.now() - verified.at < 30_000
+      )
+    ) {
       const status = (await request('/v1/status')) as any;
       if (status.userId !== getSocialUserId())
         throw new Error('This agent connection belongs to another community identity.');
+      verified = { connection, userId: status.userId, at: Date.now() };
     }
     if (connection !== selectedConnection || getSocialUserId() !== selectedUser)
       throw new Error('The account changed. Retry with your own agent connection.');
@@ -137,6 +147,10 @@ export function setupAgent(
       };
     try {
       const status = (await request('/v1/status')) as any;
+      verified =
+        status.userId === getSocialUserId()
+          ? { connection, userId: status.userId, at: Date.now() }
+          : null;
       if (status.userId !== getSocialUserId())
         return {
           configured: true,

@@ -3,7 +3,7 @@ import { HallKeySettings } from './cinema/CinemaViewerSettings';
 import { setWindowOnTop, useWindowOnTop } from './window-on-top';
 import { mediaProvider } from './runtime-sources';
 import { NoiseComparison } from './NoiseComparison';
-import { createNoiseSuppressionNode } from '@rooms/media';
+import { createNoiseSuppressionNode, selectedInputLabel } from '@rooms/media';
 import { locale, t, tr, uiError } from './i18n';
 import type { DesktopBridge } from '@rooms/contracts';
 import { ChannelNotifications } from './ChannelNotifications';
@@ -69,9 +69,11 @@ import {
   X,
 } from 'lucide-react';
 import { Avatar, IconButton, Modal, Toggle } from '@rooms/design';
-import { useRooms } from './store';
+import { useRooms, withInputLevel } from './store';
 import { PushToTalkKeyField } from './PushToTalkKeyField';
+import { formatPushToTalkKey, pushToTalkKey } from './push-to-talk-key';
 import { ConnectionPane } from './ConnectionPane';
+import { useModerationRights } from './VoiceModeration';
 import { useCommunity } from './community';
 import { useRealtime, setNoiseSuppression } from './realtime';
 const tabs = [
@@ -129,10 +131,29 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
     [error, setError] = useState(''),
     [saved, setSaved] = useState(false),
     [logout, setLogout] = useState(false);
+  // What the server holds, so the fields start from it, Vazgeç returns to it, and emptying a
+  // field clears it on the server.
+  const stored = useRef({ bio: '', statusText: '' });
+  useEffect(() => {
+    let active = true;
+    void window.rooms?.social
+      ?.ownProfile?.()
+      .then((profile) => {
+        if (!active) return;
+        stored.current = { bio: profile.bio, statusText: profile.statusText };
+        setBio(profile.bio);
+        setStatus(profile.statusText);
+        setPresence(profile.presence);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [c.user?.id]);
   const reset = () => {
     setName(c.user?.displayName ?? '');
-    setBio('');
-    setStatus('');
+    setBio(stored.current.bio);
+    setStatus(stored.current.statusText);
     setSaved(false);
   };
   if (!c.user)
@@ -159,11 +180,15 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
             setError('');
             setSaved(false);
             try {
+              const nextBio = bio.trim(),
+                nextStatus = status.trim();
+              // Send only what changed; an emptied field is sent empty so the server clears it.
               const user = await window.rooms!.social.updateProfile({
                 displayName: name.trim(),
-                ...(bio.trim() ? { bio: bio.trim() } : {}),
-                ...(status.trim() ? { statusText: status.trim() } : {}),
+                ...(nextBio !== stored.current.bio ? { bio: nextBio } : {}),
+                ...(nextStatus !== stored.current.statusText ? { statusText: nextStatus } : {}),
               });
+              stored.current = { bio: nextBio, statusText: nextStatus };
               useCommunity.setState({ user });
               setSaved(true);
             } catch (e) {
@@ -425,6 +450,10 @@ export default function Settings({
   onInvite?(): void;
 }) {
   const community = useCommunity();
+  const communityAdmin =
+    useModerationRights(community.activeSpaceId).communityAdmin ||
+    community.spaces.find((space) => space.id === community.activeSpaceId)?.ownerId ===
+      community.user?.id;
   const realtime = useRealtime();
   const [params, setParams] = useSearchParams();
   const tab = tabs.some((entry) => entry.id === params.get('tab'))
@@ -432,14 +461,25 @@ export default function Settings({
     : 'appearance';
   const savedPreferences = useRooms((state) => state.preferences);
   const [p, setDraftPreferences] = useState(() => ({ ...savedPreferences }));
+  // What the draft started from. Other writers change the store while Settings is open
+  // (the microphone keeps microphoneOn, a narrow window keeps showFriends); comparing with
+  // this instead of the live store keeps their changes out of "unsaved" and out of Save.
+  const baseline = useRef({ ...savedPreferences });
   const setPreference = <K extends keyof typeof p>(key: K, value: (typeof p)[K]) =>
     setDraftPreferences((current) => ({ ...current, [key]: value }));
-  const dirty = JSON.stringify(p) !== JSON.stringify(savedPreferences);
+  const changedKeys = (Object.keys(p) as (keyof typeof p)[]).filter(
+    (key) => JSON.stringify(p[key]) !== JSON.stringify(baseline.current[key]),
+  );
+  const dirty = changedKeys.length > 0;
+  const resetDraft = () => {
+    baseline.current = { ...useRooms.getState().preferences };
+    setDraftPreferences({ ...baseline.current });
+  };
   const [saving, setSaving] = useState(false),
     [confirmDiscard, setConfirmDiscard] = useState(false);
   const approvedClose = useRef(false);
   useEffect(() => {
-    setDraftPreferences({ ...useRooms.getState().preferences });
+    resetDraft();
     setConfirmDiscard(false);
     approvedClose.current = false;
   }, [community.user?.id, community.serverUrl]);
@@ -457,35 +497,40 @@ export default function Settings({
     if (saving) return false;
     const accountId = community.user?.id,
       serverUrl = community.serverUrl;
+    const before = { ...useRooms.getState().preferences };
     setSaving(true);
     setError('');
     try {
       if (realtime.status === 'connected') {
         await setNoiseSuppression(p.noiseSuppression, p.noiseSuppressionMode);
         await mediaProvider().deviceSelection(p.inputId, p.outputId);
+        await mediaProvider().selectCamera?.(p.cameraId);
       }
       if (
         useCommunity.getState().user?.id !== accountId ||
         useCommunity.getState().serverUrl !== serverUrl
       )
         throw new Error(t('Oturum değişti. Ayarları yeniden aç.'));
-      useRooms.getState().setPreferences(p);
+      const next = { ...useRooms.getState().preferences };
+      for (const key of changedKeys) Object.assign(next, { [key]: p[key] });
+      useRooms.getState().setPreferences(next);
+      baseline.current = { ...next };
+      setDraftPreferences({ ...next });
       notify(t('Ayarlar kaydedildi.'));
       return true;
     } catch (failure) {
       try {
-        useRooms.getState().setPreferences(savedPreferences);
+        useRooms.getState().setPreferences(before);
       } catch {
         /* Preserve the error when device storage is unavailable. */
       }
       setError(uiError(failure));
       if (realtime.status === 'connected') {
-        await setNoiseSuppression(
-          savedPreferences.noiseSuppression,
-          savedPreferences.noiseSuppressionMode,
-        ).catch(() => {});
+        await setNoiseSuppression(before.noiseSuppression, before.noiseSuppressionMode).catch(
+          () => {},
+        );
         await mediaProvider()
-          .deviceSelection(savedPreferences.inputId, savedPreferences.outputId)
+          .deviceSelection(before.inputId, before.outputId)
           .catch(() => {});
       }
     } finally {
@@ -494,6 +539,22 @@ export default function Settings({
     return false;
   };
   const [error, setError] = useState('');
+  // Diagnostics show the running build, not a version typed into the source.
+  const [appInfo, setAppInfo] = useState<{
+    version: string;
+    arch: string;
+    electron: string;
+  } | null>(null);
+  useEffect(() => {
+    let active = true;
+    void window.rooms
+      ?.applicationInfo?.()
+      .then((value) => active && setAppInfo(value))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
   const [narrowSettings, setNarrowSettings] = useState(
     () => window.matchMedia('(max-width: 959px)').matches,
   );
@@ -581,7 +642,14 @@ export default function Settings({
   const cameraEpoch = useRef(0);
   const [testing, setTesting] = useState(false);
   const [level, setLevel] = useState(0);
-  const [cameraId, setCameraId] = useState('');
+  // Named after the selected microphone, or the one the room hears when the list cannot tell.
+  const inputName =
+      selectedInputLabel(devices, p.inputId) ??
+      (realtime.status === 'connected' ? (realtime.inputDevice ?? null) : null),
+    inputLevel = (inputName ? p.inputLevels[inputName] : undefined) ?? 100;
+  const inputPercent = useRef(100);
+  inputPercent.current = inputLevel;
+  const cameraId = p.cameraId;
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const cameraRef = useRef<MediaStream | null>(null);
   const cameraVideo = useRef<HTMLVideoElement | null>(null);
@@ -779,7 +847,14 @@ export default function Settings({
       const tick = (now: number) => {
         if (now - last > 100) {
           analyser.getByteFrequencyData(values);
-          setLevel(Math.min(100, (values.reduce((a, b) => a + b, 0) / values.length) * 1.8));
+          setLevel(
+            Math.min(
+              100,
+              (values.reduce((a, b) => a + b, 0) / values.length) *
+                1.8 *
+                (inputPercent.current / 100),
+            ),
+          );
           last = now;
         }
         frame.current = requestAnimationFrame(tick);
@@ -951,11 +1026,8 @@ export default function Settings({
                   'channel-permissions',
                   'assistant-permissions',
                   'automation',
-                  // The machine behind the server is the owner's concern, not every member's.
-                  ...(community.spaces.find((space) => space.id === community.activeSpaceId)
-                    ?.ownerId === community.user?.id
-                    ? ['hostops']
-                    : []),
+                  // The machine behind the server is the owner's (and admins') concern, not every member's.
+                  ...(communityAdmin ? ['hostops'] : []),
                 ],
               },
               { label: 'Tayfa', ids: ['about'] },
@@ -1228,6 +1300,36 @@ export default function Settings({
                         {t('Odada duyulan mikrofon: {device}', { device: realtime.inputDevice })}
                       </p>
                     )}
+                    {inputName ? (
+                      <Row
+                        title="Mikrofon seviyesi"
+                        description={`${inputName} için hatırlanır; bu mikrofona geçince kendiliğinden uygulanır.`}
+                      >
+                        <label className="personal-sound-level">
+                          <input
+                            type="range"
+                            aria-label="Mikrofon seviyesi"
+                            aria-valuetext={`${inputLevel}%`}
+                            min={0}
+                            max={200}
+                            step={5}
+                            value={inputLevel}
+                            onChange={(e) =>
+                              setPreference(
+                                'inputLevels',
+                                withInputLevel(p.inputLevels, inputName, Number(e.target.value)),
+                              )
+                            }
+                          />
+                          <span>{inputLevel}%</span>
+                        </label>
+                      </Row>
+                    ) : (
+                      <p className="ref-settings-note">
+                        Mikrofon seviyesi, mikrofonun adı görünce ayarlanabilir. Mikrofonu dene veya
+                        bir ses odasına katıl.
+                      </p>
+                    )}
                     <Row
                       title={t('Giriş seviyesi')}
                       description={t('Mikrofon denemesinde ölçülen yerel seviye.')}
@@ -1422,10 +1524,18 @@ export default function Settings({
                         value={cameraId}
                         onChange={(e) => {
                           stopCamera();
-                          setCameraId(e.target.value);
+                          setPreference('cameraId', e.target.value);
                         }}
                       >
                         <option value="">{t('Sistem varsayılanı')}</option>
+                        {cameraId &&
+                          !devices.some(
+                            (d) => d.kind === 'videoinput' && d.deviceId === cameraId,
+                          ) && (
+                            <option value={cameraId}>
+                              {t('Seçili kamera bağlı değil (varsayılan kullanılır)')}
+                            </option>
+                          )}
                         {devices
                           .filter((d) => d.kind === 'videoinput')
                           .map((d, i) => (
@@ -1439,7 +1549,11 @@ export default function Settings({
                       <Video size={16} />
                       {cameraStream ? t('Önizlemeyi kapat') : t('Kamerayı dene')}
                     </button>
-                    <p className="ref-settings-note">{t('Kamera denemesi odaya yayınlanmaz.')}</p>
+                    <p className="ref-settings-note">
+                      {t(
+                        'Seçtiğin kamera odalarda ve özel görüşmelerde kullanılır. Kamera denemesi odaya yayınlanmaz.',
+                      )}
+                    </p>
                     <div className="ref-camera-preview">
                       {cameraStream ? (
                         <video
@@ -1542,7 +1656,10 @@ export default function Settings({
                   [tr('Home / Spaces / Chat / Voice / Cinema'), '⌘ / Ctrl 1–5'],
                   [tr('Open settings'), '⌘ / Ctrl ,'],
                   [t('Mikrofonu aç / kapat'), '⌘ / Ctrl Shift M'],
-                  [tr('Push to talk (when enabled)'), 'Ctrl Shift Space'],
+                  [
+                    tr('Push to talk (when enabled)'),
+                    formatPushToTalkKey(pushToTalkKey(p.pushToTalkKey)),
+                  ],
                   [tr('Play / pause local media'), 'Space'],
                   [tr('Seek local media 5 seconds'), '← / →'],
                   [tr('Close topmost dialog'), 'Esc'],
@@ -1781,8 +1898,16 @@ export default function Settings({
                 <h3>{t('Tanılama')}</h3>
                 <div className="diagnostic-list">
                   {[
-                    [tr('Application'), tr('Tayfa 0.1.14 / Desktop')],
-                    [tr('Runtime'), window.rooms ? 'Electron 44.7.0' : tr('Browser preview')],
+                    [
+                      tr('Application'),
+                      appInfo
+                        ? `Tayfa ${appInfo.version} / ${appInfo.arch}`
+                        : tr('Browser preview'),
+                    ],
+                    [
+                      tr('Runtime'),
+                      appInfo ? `Electron ${appInfo.electron}` : tr('Browser preview'),
+                    ],
                     [tr('Platform'), window.rooms?.platform ?? tr('Browser')],
                     [tr('Social / gateway'), community.status],
                     ['WebRTC / SFU', realtime.status],
@@ -1842,7 +1967,7 @@ export default function Settings({
                 className="button secondary"
                 disabled={saving}
                 onClick={() => {
-                  setDraftPreferences({ ...savedPreferences });
+                  resetDraft();
                   setError('');
                 }}
               >

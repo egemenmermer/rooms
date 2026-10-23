@@ -19,6 +19,14 @@ import type {
   RmdbReviewInput,
   RmdbWorkDetails,
   RmdbWorkSummary,
+  StremioDetails,
+  StremioHome,
+  StremioLinkCode,
+  StremioPicked,
+  StremioStream,
+  StremioStreams,
+  StremioTitle,
+  StremioType,
 } from './types';
 
 export const CINEMA_SCHEME = 'rooms-cinema';
@@ -112,7 +120,17 @@ export type CinemaErrorCode =
   /** RMDB has no such work, review or diary entry (removed meanwhile). */
   | 'CINEMA_RMDB_NOT_FOUND'
   /** A rating, review or date RMDB does not accept (e.g. text over `RMDB_REVIEW_MAX`). */
-  | 'CINEMA_RMDB_INVALID';
+  | 'CINEMA_RMDB_INVALID'
+  /** The owner has not linked a Stremio account. */
+  | 'CINEMA_STREMIO_NOT_LINKED'
+  /** Stremio no longer accepts the linked session; the owner links again. */
+  | 'CINEMA_STREMIO_LOGGED_OUT'
+  | 'CINEMA_STREMIO_UNAVAILABLE'
+  | 'CINEMA_STREMIO_LINK_EXPIRED'
+  /** The stream list is old; list the streams again. */
+  | 'CINEMA_STREMIO_STREAM_EXPIRED'
+  /** The debrid service does not have this stream yet (it started downloading it). */
+  | 'CINEMA_STREMIO_NOT_CACHED';
 
 export interface CinemaBridge {
   status(communityId: string): Promise<CinemaStatus>;
@@ -184,4 +202,34 @@ export interface CinemaBridge {
   rmdbRemoveLog(hallId: string, workId: string, entryId: string): Promise<RmdbWorkDetails>;
   /** Owner: removes a work with its reviews, diary and poster. */
   rmdbRemove(hallId: string, workId: string): Promise<void>;
+  /** Owner: a code to approve at link.stremio.com; the browser opens the link. */
+  stremioLinkStart(communityId: string): Promise<StremioLinkCode>;
+  /** Owner: the status once the code is approved; `linked` stays false until then. */
+  stremioLinkPoll(communityId: string): Promise<CinemaStatus>;
+  /** Owner: forgets the Stremio session and every stream picked with it. */
+  stremioUnlink(communityId: string): Promise<CinemaStatus>;
+  stremioHome(hallId: string): Promise<StremioHome>;
+  stremioSearch(hallId: string, text: string): Promise<StremioTitle[]>;
+  stremioDetails(hallId: string, type: StremioType, id: string): Promise<StremioDetails>;
+  /** The streams the account's add-ons offer for a film (`videoId` = its id) or an episode. */
+  stremioStreams(
+    hallId: string,
+    type: StremioType,
+    id: string,
+    videoId: string,
+  ): Promise<StremioStreams>;
+  /** Makes a listed stream a hall ref to open like a catalog film. */
+  stremioPick(hallId: string, streamId: string): Promise<StremioPicked>;
+  /**
+   * Whoever linked the account: asks the add-ons that refuse the server (`blockedAddons`)
+   * from this computer. The links stay in the main process.
+   */
+  stremioAssist(
+    hallId: string,
+    type: StremioType,
+    id: string,
+    videoId: string,
+  ): Promise<StremioStream[]>;
+  /** Resolves a stream from `stremioAssist` here and hands its final link to the hall. */
+  stremioPickLocal(hallId: string, streamId: string): Promise<StremioPicked>;
 }

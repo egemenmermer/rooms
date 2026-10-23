@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   ConnectionState,
   RoomEvent,
@@ -22,6 +22,7 @@ vi.mock('../packages/media-providers/src/soundboard', () => ({
     class {
       processedTrack = { readyState: 'live' };
       setNoiseSuppression = vi.fn(async () => {});
+      setInputLevel = vi.fn();
       destroy = vi.fn(async () => {});
       stop = vi.fn();
       play = vi.fn(async () => {});
@@ -101,7 +102,7 @@ function fixture() {
       emit(RoomEvent.Disconnected);
     }),
     removeAllListeners: vi.fn(),
-    switchActiveDevice: vi.fn(async () => true),
+    switchActiveDevice: vi.fn(async (_kind: string, _id: string) => true),
     startAudio: vi.fn(async () => {}),
   };
   const provider = new LiveKitMediaProvider(() => room as unknown as Room);
@@ -282,6 +283,39 @@ describe('LiveKit adapter lifecycle', () => {
     expect(provider.snapshot().sharing).toBe(false);
     await provider.disconnect();
   });
+  it('publishes the chosen camera, falls back to the default and switches a live camera', async () => {
+    const { provider, local, room } = fixture();
+    await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+    local.setCameraEnabled.mockRejectedValueOnce(new Error('OverconstrainedError'));
+    await provider.publishCamera(true, 'usb-cam');
+    expect(local.setCameraEnabled).toHaveBeenNthCalledWith(
+      1,
+      true,
+      expect.objectContaining({ deviceId: 'usb-cam' }),
+    );
+    expect(local.setCameraEnabled).toHaveBeenNthCalledWith(
+      2,
+      true,
+      expect.objectContaining({ deviceId: undefined }),
+    );
+    local.isCameraEnabled = true;
+    await provider.selectCamera('laptop-cam');
+    expect(room.switchActiveDevice).toHaveBeenCalledWith('videoinput', 'laptop-cam');
+    await provider.disconnect();
+  });
+  it('mutes the microphone while the room is reconnecting', async () => {
+    const { provider, local, emit } = fixture();
+    await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+    const mute = vi.fn(async () => {});
+    local.getTrackPublication.mockReturnValue({ track: { mute } });
+    emit(RoomEvent.ConnectionStateChanged, ConnectionState.Reconnecting);
+    local.setMicrophoneEnabled.mockClear();
+    await expect(provider.mute(true)).resolves.toBeUndefined();
+    expect(mute).toHaveBeenCalled();
+    expect(local.setMicrophoneEnabled).not.toHaveBeenCalled();
+    expect(provider.snapshot().muted).toBe(true);
+    await provider.disconnect();
+  });
   it('tracks reconnect state without reacquiring microphone or screen', async () => {
     const { provider, emit, local } = fixture();
     await provider.connectRoom('room', 'token', 'ws://localhost:7880');
@@ -411,6 +445,93 @@ it('does not retry capture after a permission denial', async () => {
   expect(createLocalAudioTrack).toHaveBeenCalledTimes(1);
   expect(room.switchActiveDevice).not.toHaveBeenCalled();
   await provider.disconnect();
+});
+describe('saved audio devices that are gone', () => {
+  const listDevices = (...devices: Pick<MediaDeviceInfo, 'kind' | 'deviceId'>[]) =>
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { enumerateDevices: vi.fn(async () => devices) },
+    });
+  const builtIn = [
+    { kind: 'audioinput', deviceId: 'default' },
+    { kind: 'audioinput', deviceId: 'built-in-mic' },
+    { kind: 'audiooutput', deviceId: 'default' },
+    { kind: 'audiooutput', deviceId: 'built-in-speaker' },
+  ] as const;
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    Reflect.deleteProperty(navigator, 'mediaDevices');
+  });
+
+  it('joins on the system default when the saved headset is no longer listed', async () => {
+    listDevices(...builtIn);
+    const { provider, room } = fixture();
+    await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+    await provider.deviceSelection('airpods-mic', 'airpods-out');
+    expect(room.switchActiveDevice).toHaveBeenCalledWith('audioinput', 'default');
+    expect(room.switchActiveDevice).toHaveBeenCalledWith('audiooutput', 'default');
+    expect(room.switchActiveDevice).not.toHaveBeenCalledWith('audioinput', 'airpods-mic');
+    expect(room.switchActiveDevice).not.toHaveBeenCalledWith('audiooutput', 'airpods-out');
+    expect(provider.snapshot()).toMatchObject({ status: 'connected', error: null });
+    await provider.mute(false);
+    // Still asked for as a preference, so the headset is used again once it is back.
+    expect(createLocalAudioTrack).toHaveBeenLastCalledWith(
+      expect.objectContaining({ deviceId: 'airpods-mic' }),
+    );
+    expect(provider.snapshot()).toMatchObject({ muted: false, error: null });
+    await provider.disconnect();
+  });
+
+  it('falls back when a listed speaker cannot be found while switching', async () => {
+    listDevices(...builtIn, { kind: 'audiooutput', deviceId: 'airpods-out' });
+    const { provider, room } = fixture();
+    await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+    room.switchActiveDevice.mockImplementation(async (kind: string, id: string) => {
+      if (kind === 'audiooutput' && id === 'airpods-out')
+        throw new DOMException('Requested device not found', 'NotFoundError');
+      return true;
+    });
+    await provider.deviceSelection('', 'airpods-out');
+    expect(room.switchActiveDevice).toHaveBeenLastCalledWith('audiooutput', 'default');
+    expect(provider.snapshot().error).toBeNull();
+    await provider.disconnect();
+  });
+
+  it('still reports failures a fallback cannot fix', async () => {
+    listDevices(...builtIn);
+    const { provider, room } = fixture();
+    await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+    room.switchActiveDevice.mockRejectedValueOnce(new DOMException('Busy', 'NotReadableError'));
+    await expect(provider.deviceSelection('built-in-mic', '')).rejects.toThrow('Cihaz açılamadı');
+    expect(room.switchActiveDevice).toHaveBeenCalledTimes(1);
+    room.switchActiveDevice.mockRejectedValueOnce(new DOMException('None', 'NotFoundError'));
+    await expect(provider.deviceSelection('', '')).rejects.toThrow('Seçili cihaz bulunamadı');
+    expect(room.switchActiveDevice).toHaveBeenCalledTimes(2);
+    await provider.disconnect();
+  });
+
+  it('opens the microphone after the chosen speaker left mid-call', async () => {
+    listDevices(...builtIn, { kind: 'audiooutput', deviceId: 'airpods-out' });
+    const { provider } = fixture();
+    await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+    await provider.deviceSelection('', 'airpods-out');
+    const sinks: string[] = [];
+    vi.stubGlobal(
+      'AudioContext',
+      class {
+        resume = vi.fn(async () => {});
+        close = vi.fn(async () => {});
+        setSinkId = vi.fn(async (id: string) => {
+          sinks.push(id);
+          throw new DOMException('Requested device not found', 'NotFoundError');
+        });
+      },
+    );
+    await provider.mute(false);
+    expect(sinks).toEqual(['airpods-out']);
+    expect(provider.snapshot()).toMatchObject({ muted: false, error: null });
+    await provider.disconnect();
+  });
 });
 function screenPublication(trackSid: string, source: Track.Source) {
   const publication = {

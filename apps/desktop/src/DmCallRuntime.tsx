@@ -33,6 +33,7 @@ import {
 } from './dm-call';
 import { VoiceAvatar } from './VoiceAvatar';
 import { t } from './i18n';
+import { roomCueSource } from './room-event-sounds';
 import './reference-dm-call.css';
 function CallVideo({ trackId }: { trackId: string }) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -91,6 +92,22 @@ export default function DmCallRuntime() {
   useEffect(() => {
     if (!account) void resetDmCalls();
   }, [account]);
+  // An incoming call rings: a soft repeated cue in the app and, when the window is not in
+  // front, one OS notification.
+  const ringingIn =
+    call?.state === 'ringing' && call.calleeId === community.user?.id ? call.id : null;
+  useEffect(() => {
+    if (!ringingIn) return;
+    void window.rooms?.notifications?.incomingCall?.().catch(() => {});
+    const ring = () => {
+      const audio = new Audio(roomCueSource('enter'));
+      audio.volume = 0.6;
+      void audio.play().catch(() => {});
+    };
+    ring();
+    const timer = setInterval(ring, 2000);
+    return () => clearInterval(timer);
+  }, [ringingIn]);
   useEffect(() => {
     const next = new Set(community.dms.map((dm) => dm.id));
     if (call && knownDms.current.has(call.dmId) && !next.has(call.dmId)) void endDmCall();

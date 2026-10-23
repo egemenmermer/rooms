@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { attachMediaTrack } from './realtime';
+import { attachMediaTrack, useRealtime } from './realtime';
 import { t } from './i18n';
 
 /** Presentation observes the track; it never creates or disconnects a media room. */
@@ -14,10 +14,17 @@ export function MediaStage({
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [status, setStatus] = useState({ id, phase: 'loading' as 'loading' | 'ready' | 'error' });
+  const [attempt, setAttempt] = useState(0);
+  // While the room reconnects nothing can attach; attach again once it is back.
+  const reconnecting = useRealtime().status === 'reconnecting';
   const phase = status.id === id ? status.phase : 'loading';
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
+    if (reconnecting) {
+      setStatus({ id, phase: 'loading' });
+      return;
+    }
     let active = true;
     let frame: number | undefined;
     let detach: (() => void) | undefined;
@@ -49,7 +56,7 @@ export function MediaStage({
       video.removeEventListener('error', failed);
       detach?.();
     };
-  }, [id]);
+  }, [id, reconnecting, attempt]);
   return (
     <>
       <video
@@ -69,6 +76,11 @@ export function MediaStage({
           {phase === 'error'
             ? t('Yayın açılamadı veya sona erdi.')
             : t('Yayın görüntüsü bekleniyor…')}
+          {phase === 'error' && (
+            <button className="text-button" onClick={() => setAttempt((value) => value + 1)}>
+              {t('Yeniden dene')}
+            </button>
+          )}
         </span>
       )}
     </>

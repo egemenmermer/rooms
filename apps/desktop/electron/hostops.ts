@@ -37,6 +37,8 @@ export function setupHostOps(
   getClient: () => NativeIdentity,
   getWindow: () => BrowserWindow | null,
   assertSender: (event: IpcMainInvokeEvent) => void,
+  /** A new server alert for an owner or developer-role admin (shown as an OS notification). */
+  onAlert?: (message: string) => void,
 ) {
   let socket: WebSocket | undefined,
     epoch = 0,
@@ -261,5 +263,47 @@ export function setupHostOps(
     socket.send(JSON.stringify(event));
   });
   handle('detach', detach);
-  return { close: detach };
+  /**
+   * Server alerts reach owners and owner-equivalent admins (the developer role) even when the
+   * Sunucu makinesi tab is closed: once a minute, unseen alerts become notifications and are
+   * marked delivered for this person, so another device does not repeat them.
+   */
+  let alertCheck = false;
+  const checkAlerts = async () => {
+    if (alertCheck || !onAlert) return;
+    alertCheck = true;
+    try {
+      try {
+        if (!getClient().getToken()) return;
+      } catch {
+        return;
+      }
+      const hosts = z
+        .object({ hosts: z.array(opsHostSchema).max(20) })
+        .strict()
+        .parse(await request('hosts')).hosts;
+      for (const h of hosts.filter((value) => value.owner)) {
+        const snapshot = opsSnapshotSchema.parse(await request(host(h.id) + '/snapshot'));
+        const fresh = snapshot.alerts.filter((a) => !a.resolvedAt && a.delivery === 'pending');
+        if (!fresh.length) continue;
+        for (const alert of fresh.slice(0, 3)) onAlert(`${h.label}: ${alert.message}`);
+        await request(host(h.id) + '/alerts/ack', 'POST', { ids: fresh.map((a) => a.id) });
+      }
+    } catch {
+      // No host operations on this server, or it is unreachable: try again later.
+    } finally {
+      alertCheck = false;
+    }
+  };
+  const alerts = onAlert ? setInterval(() => void checkAlerts(), 60_000) : undefined;
+  alerts?.unref?.();
+  return {
+    /** Ends the terminal; alerts keep coming while the app runs without a window. */
+    close: detach,
+    dispose: () => {
+      detach();
+      if (alerts) clearInterval(alerts);
+    },
+    checkAlerts,
+  };
 }

@@ -42,6 +42,8 @@ let pendingTarget: string | null = null,
   pendingPromise: Promise<void> | null = null;
 let desiredMuted = true,
   microphoneScope = '';
+/** Deafen carried through a join that is still in progress (a second join reuses it). */
+let pendingDeafened = false;
 const sessionScope = () =>
   `${useCommunity.getState().serverUrl}:${useCommunity.getState().user?.id ?? ''}`;
 function serialize(work: () => Promise<void>) {
@@ -57,6 +59,26 @@ const updateListenerScope = () => {
 };
 updateListenerScope();
 // A moderator moved this person: join the target through the normal grant check.
+/** The level the person chose for the microphone the room hears now; 100 % when unset. */
+function applyInputLevel() {
+  const name = mediaProvider().snapshot().inputDevice;
+  const percent = (name ? useRooms.getState().preferences.inputLevels[name] : undefined) ?? 100;
+  try {
+    mediaProvider().setInputLevel?.(percent / 100);
+  } catch {
+    /* A malformed level leaves the microphone as captured. */
+  }
+}
+let heardInput: string | null | undefined;
+mediaProvider().subscribeState(() => {
+  const name = mediaProvider().snapshot().inputDevice;
+  if (name === heardInput) return;
+  heardInput = name;
+  applyInputLevel();
+});
+useRooms.subscribe((state, previous) => {
+  if (state.preferences.inputLevels !== previous.preferences.inputLevels) applyInputLevel();
+});
 mediaProvider().onMove?.((channelId) => {
   if (useVoiceContext.getState().channelId === channelId) return;
   const name = useCommunity.getState().channels.find((c) => c.id === channelId)?.name ?? t('Oda');
@@ -96,6 +118,10 @@ export function joinVoice(channelId: string, roomName: string): Promise<void> {
     activeChannel ??= context.channelId;
     desiredMuted = snapshot.muted;
   }
+  // Leaving the old room resets deafen in the provider; a move, a rejoin after a drop or a
+  // room switch must keep it (a deafened person may be away with speakers on).
+  const keepDeafened = !context.busy ? snapshot.deafened : pendingDeafened;
+  pendingDeafened = keepDeafened;
   const epoch = ++transitionEpoch,
     scope = sessionScope();
   if (microphoneScope !== scope) {
@@ -126,7 +152,10 @@ export function joinVoice(channelId: string, roomName: string): Promise<void> {
         throw new Error(t('Önce özel görüşmeyi bitir.'));
       activeChannel = channelId;
       await mediaProvider().connectRoom(grant.roomName, grant.token, grant.serverUrl);
-      if (mediaProvider().snapshot().deafened) announceDeafen(channelId, true);
+      if (keepDeafened && current()) {
+        await mediaProvider().deafen(true);
+        announceDeafen(channelId, true);
+      }
       if (!current()) {
         await disconnectActive();
         return;
@@ -218,7 +247,12 @@ export async function toggleDeafen() {
   });
 }
 export async function toggleCamera() {
-  await run(() => mediaProvider().publishCamera(!mediaProvider().snapshot().camera));
+  await run(() =>
+    mediaProvider().publishCamera(
+      !mediaProvider().snapshot().camera,
+      useRooms.getState().preferences.cameraId || undefined,
+    ),
+  );
 }
 export async function startScreen(
   sourceId?: string,
