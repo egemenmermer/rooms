@@ -137,7 +137,7 @@ export function setupNotifications(
     if (!enabled || !Notification.isSupported() || window?.isFocused()) return;
     const notification = new Notification({
       title: 'Tayfa',
-      body: 'Özel bir arama geliyor.',
+      body: t('Özel bir arama geliyor.'),
       silent: !sound,
     });
     notification.on('click', () => {
@@ -190,7 +190,7 @@ export function setupNotifications(
     serverAlert: (text: string, open?: () => void) => {
       if (!Notification.isSupported()) return;
       const notification = new Notification({
-        title: 'Tayfa · Sunucu uyarısı',
+        title: t('Tayfa · Sunucu uyarısı'),
         body: text.slice(0, 200),
         silent: !sound,
       });

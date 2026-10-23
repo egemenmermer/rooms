@@ -26,4 +26,41 @@ it('translates server error codes for English readers', async () => {
   expect(uiError(new Error('SOME_UNKNOWN_CODE'))).toBe(
     'The action could not be completed. Try again.',
   );
+  expect(uiError(new Error('Approved sign-up is not enabled for this community.'))).toBe(
+    'Sign-up without an invite isn’t enabled for this community.',
+  );
+});
+
+it('shows approved sign-up requests in English', async () => {
+  const { CommunitySignupRequestsTab } =
+    await import('../apps/desktop/src/CommunitySignupRequestsTab');
+  const bridge = {
+    signupRequests: vi.fn(async () => ({
+      enabled: true,
+      requests: [
+        { id: 'r1', username: 'ada', createdAt: '2026-10-20T10:00:00.000Z', state: 'pending' },
+        { id: 'r2', username: 'lin', createdAt: '2026-10-20T11:00:00.000Z', state: 'approved' },
+      ],
+    })),
+    decideSignupRequest: vi.fn(async () => {}),
+  } as const;
+  render(
+    <CommunitySignupRequestsTab
+      spaceId="SPACE"
+      capability={{ managementSupported: true } as never}
+      bridge={bridge as never}
+    />,
+  );
+  expect(await screen.findByText('Pending')).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'Sign-up requests' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Approve again' })).toBeTruthy();
+  expect(document.body.textContent).not.toMatch(/[çğıöşüÇĞİÖŞÜ]/);
+});
+
+it('keys the stale Stremio source reload on the error code, not on Turkish text', async () => {
+  const { cinemaErrorCode, cinemaErrorText } =
+    await import('../apps/desktop/src/cinema/cinema-bridge');
+  const stale = new Error('Error invoking remote method: CINEMA_STREMIO_STREAM_EXPIRED');
+  expect(cinemaErrorText(stale)).toBe('The source list is out of date. Reload the sources.');
+  expect(cinemaErrorCode(stale)).toBe('CINEMA_STREMIO_STREAM_EXPIRED');
 });

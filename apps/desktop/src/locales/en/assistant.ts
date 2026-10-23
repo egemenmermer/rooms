@@ -605,4 +605,13 @@ export const assistant: Catalog = {
   'Bu dosya türü metin olarak önizlenemiyor.': "This file type can't be previewed as text.",
   'Önizlemeyi kapat': 'Close preview',
   'Kaydediliyor…': 'Saving…',
+  'Model bağlandı': 'Model connected',
+  'Model bağlantısı kaldırıldı': 'Model disconnected',
+  'Görev YOLO ile sürdü': 'Task continued with YOLO',
+  'Görev yarıda kaldı': 'Task interrupted',
+  'Hatırlatıcı kuruldu': 'Reminder set',
+  'İşlem onay bekliyor': 'Action awaiting approval',
+  'İşlem sonucu elle kaydedildi': 'Action result recorded manually',
+  'İşlemin uygulanmadığı onaylandı': 'Confirmed the action wasn’t applied',
+  'Sohbetten görev alındı': 'Task taken from chat',
 };

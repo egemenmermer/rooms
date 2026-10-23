@@ -1302,13 +1302,16 @@ export default function Settings({
                     )}
                     {inputName ? (
                       <Row
-                        title="Mikrofon seviyesi"
-                        description={`${inputName} için hatırlanır; bu mikrofona geçince kendiliğinden uygulanır.`}
+                        title={t('Mikrofon seviyesi')}
+                        description={t(
+                          '{device} için hatırlanır; bu mikrofona geçince kendiliğinden uygulanır.',
+                          { device: inputName },
+                        )}
                       >
                         <label className="personal-sound-level">
                           <input
                             type="range"
-                            aria-label="Mikrofon seviyesi"
+                            aria-label={t('Mikrofon seviyesi')}
                             aria-valuetext={`${inputLevel}%`}
                             min={0}
                             max={200}
@@ -1326,8 +1329,9 @@ export default function Settings({
                       </Row>
                     ) : (
                       <p className="ref-settings-note">
-                        Mikrofon seviyesi, mikrofonun adı görünce ayarlanabilir. Mikrofonu dene veya
-                        bir ses odasına katıl.
+                        {t(
+                          'Mikrofon seviyesi, mikrofonun adı görünce ayarlanabilir. Mikrofonu dene veya bir ses odasına katıl.',
+                        )}
                       </p>
                     )}
                     <Row

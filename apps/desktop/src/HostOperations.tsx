@@ -537,8 +537,9 @@ function HostOperationsScope() {
                 </ul>
               )}
               <p className="ops-note">
-                Yeni uyarılar sahibe ve developer rolündekilere masaüstü bildirimi olarak da gelir
-                (Tayfa açıkken, pencere kapalı olsa bile).
+                {t(
+                  'Yeni uyarılar sahibe ve developer rolündekilere masaüstü bildirimi olarak da gelir (Tayfa açıkken, pencere kapalı olsa bile).',
+                )}
               </p>
               <section>
                 <div className="ops-actions">

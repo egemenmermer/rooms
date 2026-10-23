@@ -454,7 +454,6 @@ export const social: Catalog = {
   'Mesaj sabitleme bu sunucu bağlantısında desteklenmiyor':
     'Pinning messages isn’t supported on this server connection',
   'Mesajı sabitle': 'Pin message',
-  'Yalnızca kendi mesajını silebilirsin': 'You can only delete your own messages',
   'Mesajı sil': 'Delete message',
   'Asistana gönder': 'Send to the assistant',
   Hatırlat: 'Remind me',
@@ -605,4 +604,8 @@ export const social: Catalog = {
   'Davet oluştur': 'Create invite',
   'Arkadaşların bu bağlantıyla kendi hesaplarını açıp topluluğa katılır.':
     'Your friends use this link to create their own accounts and join the community.',
+  'Bu görünümde en fazla {limit} mesaj tutulur; daha eskiler burada açılamıyor.':
+    'This view keeps at most {limit} messages; older ones can’t be opened here.',
+  'Başkasının mesajını silmek için bu kanalda mesajları yönetme iznin olmalı':
+    'To delete someone else’s message, you need permission to manage messages in this channel',
 };

@@ -506,7 +506,7 @@ function ManagementScope({
             setMenu(null);
           }}
         >
-          Kayıt istekleri
+          {t('Kayıt istekleri')}
         </button>
       </div>
       {tab === 'signups' ? (
@@ -518,7 +518,7 @@ function ManagementScope({
             fixtureMode
               ? fixtureReason
               : !connected
-                ? 'Topluluk bağlantısı bekleniyor. Bağlantı gelince yeniden dene.'
+                ? t('Topluluk bağlantısı bekleniyor. Bağlantı gelince yeniden dene.')
                 : undefined
           }
         />

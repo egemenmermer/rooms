@@ -705,4 +705,74 @@ export const cinema: Catalog = {
     },
   'Salonda şu an bir yayın açık. Bağlantıyı kaldırınca yayın herkes için durur.':
     'A stream is open in the hall right now. Removing the connection stops the stream for everyone.',
+  'Stremio bağlantısı kaldırıldı.': 'Stremio connection removed.',
+  'Stremio hesabı bağlandı. Salonda Stremio sekmesi açıldı.':
+    'Stremio account connected. The hall now has a Stremio tab.',
+  'Tarayıcıda açılan Stremio sayfasında giriş yap ve {code} kodunu onayla. Onaylayınca burası kendiliğinden güncellenir.':
+    'Sign in on the Stremio page that opened in your browser and confirm the code {code}. This updates by itself once you confirm.',
+  'Stremio hesabını bağla; salon, Stremio’da kurulu eklentilerinin (ör. Real-Debrid ile Torrentio) bulduğu kaynakları sunucudan herkese aynı anda oynatsın. IPTV bağlı olmasa da çalışır. Şifren Tayfa’ya hiç gelmez; Stremio’nun kendi onay sayfasında giriş yaparsın. Hesap ve debrid anahtarların sunucuda kalır, üyelere gitmez. Yalnızca doğrudan bağlantılar oynar; sunucu torrent indirmez.':
+    'Connect a Stremio account and the hall plays the sources your Stremio add-ons find (e.g. Torrentio with Real-Debrid) from the server, for everyone at once. It works without IPTV too. Your password never reaches Tayfa; you sign in on Stremio’s own approval page. Your account and debrid keys stay on the server and never go to members. Only direct links play; the server doesn’t download torrents.',
+  Bağlandı: 'Connected on',
+  'Topluluk sahibi henüz bir Stremio hesabı bağlamadı.':
+    'The community owner hasn’t connected a Stremio account yet.',
+  'Sayfayı yeniden aç': 'Open the page again',
+  'Stremio’yu bağla': 'Connect Stremio',
+  'Stremio hesabını bağla': 'Connect your Stremio account',
+  'Stremio bağlı değil': 'Stremio isn’t connected',
+  'Stremio’da kurulu eklentilerin (Torrentio ve Real-Debrid gibi) buradaki filmler ve diziler için kaynak bulur. Seçtiğin kaynak sunucudan herkese aynı anda oynar. Hesap anahtarın ve debrid anahtarın hiçbir üyeye gitmez.':
+    'The add-ons installed in your Stremio (like Torrentio and Real-Debrid) find sources for the movies and series here. The source you pick plays from the server for everyone at once. Your account key and debrid key never go to any member.',
+  'Topluluk sahibi Stremio hesabını bağladığında filmler ve diziler burada olacak.':
+    'Movies and series will be here once the community owner connects a Stremio account.',
+  'Stremio’da film veya dizi ara': 'Search Stremio for movies or series',
+  'Stremio’da ara': 'Search Stremio',
+  'Arama sonuçları': 'Search results',
+  'İzlemeye devam et': 'Continue watching',
+  Kitaplığın: 'Your library',
+  'Popüler filmler': 'Popular movies',
+  'Popüler diziler': 'Popular series',
+  '{title}: kaldığın yerden kaynak seç': '{title}: pick a source to continue where you left off',
+  Özel: 'Specials',
+  'Bu dizinin bölüm listesi yok.': 'This series has no episode list.',
+  'Kaynakları topluluk sahibi ve yöneticiler seçer; açtıkları şey salonda herkes için oynar.':
+    'The community owner and admins pick sources; what they open plays for everyone in the hall.',
+  'Kaynakları yeniden ara': 'Search for sources again',
+  'Eklentiler kaynak arıyor… Bu birkaç saniye sürebilir.':
+    'Add-ons are looking for sources… This can take a few seconds.',
+  '{count} torrent bulundu ama sunucu yalnızca doğrudan bağlantıları oynatır. Stremio’daki Torrentio ayarına Real-Debrid gibi bir debrid hesabı ekle.':
+    {
+      one: '{count} torrent was found, but the server only plays direct links. Add a debrid account such as Real-Debrid to your Torrentio settings in Stremio.',
+      other:
+        '{count} torrents were found, but the server only plays direct links. Add a debrid account such as Real-Debrid to your Torrentio settings in Stremio.',
+    },
+  '{count} kaynak bulundu ama hiçbiri salonda oynatılabilen doğrudan bir bağlantı değil (dış sayfa, YouTube veya Usenet).':
+    {
+      one: '{count} source was found, but it isn’t a direct link the hall can play (an external page, YouTube or Usenet).',
+      other:
+        '{count} sources were found, but none is a direct link the hall can play (external pages, YouTube or Usenet).',
+    },
+  'Bu içerik için eklentilerin bir kaynak bulamadı.':
+    'Your add-ons found no source for this title.',
+  '{quality} {title}: salonda oynat': '{quality} {title}: play in the hall',
+  '{quality} {title}: sıraya öner': '{quality} {title}: suggest for the queue',
+  'Debrid önbelleğinde: hemen açılır.': 'In the debrid cache: opens right away.',
+  'Debrid önce indirmeli: açılması uzun sürebilir ya da açılmayabilir.':
+    'The debrid service has to download it first: it may take a long time to open, or not open at all.',
+  Hazır: 'Ready',
+  İndirilecek: 'Needs download',
+  '{addons} sunucunun adresini engelliyor; bu kaynakları yalnızca Stremio’yu bağlayan kişinin bilgisayarı listeleyebilir.':
+    '{addons} blocks the server’s address; only the computer of the person who connected Stremio can list these sources.',
+  '{addons} bu bilgisayardan da yanıt vermedi: {error}':
+    '{addons} didn’t answer from this computer either: {error}',
+  'Yanıt vermeyen eklenti: {addons}': 'Add-ons not answering: {addons}',
+  'Seçtiğin kaynak sıraya önerilir.': 'The source you pick is suggested for the queue.',
+  "Stremio bu oturumu artık kabul etmiyor. Sahibin Sinema ayarlarından Stremio'yu yeniden bağlaması gerekiyor.":
+    'Stremio no longer accepts this session. The owner needs to connect Stremio again in the cinema settings.',
+  "Stremio'ya şu an ulaşılamadı. Biraz sonra yeniden dene.":
+    'Couldn’t reach Stremio right now. Try again in a moment.',
+  'Bağlantı kodunun süresi doldu. Yeniden bağlanmayı dene.':
+    'The link code expired. Try connecting again.',
+  'Kaynak listesi eskidi. Kaynakları yeniden yükle.':
+    'The source list is out of date. Reload the sources.',
+  'Bu kaynak debrid önbelleğinde değil; indirme başladı. Biraz sonra yeniden dene ya da “Hazır” bir kaynak seç.':
+    'This source isn’t in the debrid cache; the download has started. Try again in a moment or pick a “Ready” source.',
 };

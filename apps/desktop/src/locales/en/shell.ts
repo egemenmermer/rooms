@@ -265,8 +265,6 @@ export const shell: Catalog = {
   'Henüz burada bir şey yok': 'Nothing here yet',
   'Hesabın oluşturulup oluşturulmadığı doğrulanamadı. Yeni davet kullanmadan önce giriş yapmayı dene.':
     'Couldn’t confirm whether the account was created. Try signing in before using another invite.',
-  'Hesabınla giriş yap. Hesabın yoksa arkadaşının gönderdiği davet bağlantısıyla kayıt ol.':
-    'Sign in with your account. If you don’t have one, sign up with the invite link your friend sent you.',
   'Hesabını oluşturunca bu topluluğa katılacaksın.':
     'You’ll join this community once you create your account.',
   Hesap: 'Account',
@@ -274,8 +272,6 @@ export const shell: Catalog = {
     'Only the community owner can create an account invite.',
   'Hesap oluştur': 'Create account',
   'Hesap oluştur ve katıl': 'Create account and join',
-  'Hesap oluşturulamadı. Mevcut hesabın varsa Giriş yap seçeneğini kullan. Giriş yapamıyorsan sunucu yöneticine başvur.':
-    'Couldn’t create the account. If you already have one, use Sign in. If you can’t sign in, contact the server administrator.',
   'Hesap oluşturuluyor…': 'Creating account…',
   'Hesap veya sunucu değişti. Kurtarma bağlantısını mevcut sunucu için yeniden aktar.':
     'The account or server changed. Import the recovery link again for the current server.',
@@ -699,4 +695,61 @@ export const shell: Catalog = {
   'Şu anda sıra sende değil. Masa güncellendiğinde yeniden dene.':
     'It isn’t your turn right now. Try again once the table updates.',
   '“{query}” için bir şey bulunamadı.': 'Nothing found for “{query}”.',
+  'Nasıl katılacaksın?': 'How will you join?',
+  'Davet bağlantım var': 'I have an invite link',
+  'Onay isteğiyle': 'Ask for approval',
+  '{name} adına gönderilmiş bir kayıt isteğin var.': 'You have a sign-up request sent as {name}.',
+  'İsteği göster': 'Show request',
+  'Katılmak istediğin topluluğun sunucu adresini yaz. Davet bağlantısı gerekmez.':
+    'Enter the server address of the community you want to join. No invite link needed.',
+  'Adresi https:// ile başlayarak yaz.': 'Enter the address starting with https://.',
+  'Sunucu kontrol ediliyor…': 'Checking the server…',
+  'İsteğin yöneticiye gider. Hesabın, bir yönetici onaylayınca oluşur ve topluluğa katılırsın.':
+    'Your request goes to an admin. Your account is created when an admin approves it, and you join the community.',
+  'Bu sunucu davetsiz kaydı açmamış. Topluluktan bir davet bağlantısı iste.':
+    'This server doesn’t accept sign-ups without an invite. Ask the community for an invite link.',
+  'Kayıt isteği gönder': 'Send sign-up request',
+  'Hesabınla giriş yap. Hesabın yoksa davet bağlantısıyla ya da sunucu izin veriyorsa onay isteğiyle kayıt ol.':
+    'Sign in with your account. If you don’t have one, sign up with an invite link or, if the server allows it, by asking for approval.',
+  Onaylandın: 'You’re approved',
+  'Hesabın oluşturuluyor…': 'Creating your account…',
+  'Topluluk yöneticisi isteğini onayladı. Hesabını oluşturmak ve topluluğa katılmak için şifreni gir. Şifren bu cihazda saklanmaz.':
+    'A community admin approved your request. Enter your password to create your account and join the community. Your password isn’t stored on this device.',
+  'Hesabı oluştur ve katıl': 'Create account and join',
+  'İsteği bırak': 'Drop request',
+  'Kayıt isteğin reddedildi': 'Your sign-up request was rejected',
+  'Topluluk yöneticisi bu isteği onaylamadı. Hesap oluşturulmadı. Bir yanlışlık olduğunu düşünüyorsan topluluktan birinden davet bağlantısı iste.':
+    'A community admin didn’t approve this request. No account was created. If you think this is a mistake, ask someone in the community for an invite link.',
+  Tamam: 'OK',
+  'İsteğinin süresi doldu': 'Your request expired',
+  'Bağlantı kullanılamıyor': 'The link can’t be used',
+  '14 gün içinde kimse karar vermediği için isteğin kapandı. İstersen yeni bir istek gönderebilirsin.':
+    'Your request closed because nobody decided on it within 14 days. You can send a new one if you like.',
+  'Onay bağlantısı bu cihazda değil. Yeni bir istek gönder ya da topluluktan davet bağlantısı iste.':
+    'The approval link isn’t on this device. Send a new request or ask the community for an invite link.',
+  'Yeni istek gönder': 'Send a new request',
+  '{name}, isteğin topluluk yöneticisine iletildi. Onaylanınca hesabın oluşturulur ve topluluğa katılırsın. Bu ekran kendiliğinden yenilenir; uygulamayı kapatırsan onaydan sonra şifreni yeniden girmen yeterli.':
+    '{name}, your request was sent to the community admins. Once it’s approved, your account is created and you join the community. This screen refreshes by itself; if you close the app, just enter your password again after approval.',
+  'İstek zamanı: {time}': 'Requested at: {time}',
+  'Kayıtlı sunucuna şu an ulaşılamıyor. Oturumun duruyor; bağlantı gelince kendiliğinden açılacak.':
+    'Your saved server can’t be reached right now. Your session is kept and will open by itself once the connection is back.',
+  'Oturum değişti. Kayıt istekleri gösterilmedi.':
+    'Your session changed. Sign-up requests weren’t shown.',
+  'Oturum değişti. Karar doğrulanamadı.':
+    'Your session changed. The decision couldn’t be confirmed.',
+  'Kayıt isteği için masaüstü uygulamasını aç.': 'Open the desktop app to send a sign-up request.',
+  'Şu anda çok fazla kayıt isteği geliyor. Biraz sonra yeniden dene.':
+    'Lots of people are signing up right now. Try again a bit later.',
+  'Onay bekleyen çok fazla kayıt isteği var. Biraz sonra yeniden dene.':
+    'Too many sign-up requests are waiting for approval. Try again a bit later.',
+  'Bu e-posta adresiyle gönderilmiş, bekleyen bir kayıt isteği zaten var.':
+    'A sign-up request sent with this email address is already waiting.',
+  'Bu kayıt isteği artık açık değil. Listeyi yenile.':
+    'This sign-up request is no longer open. Refresh the list.',
+  'Bu topluluk için davetsiz kayıt açık değil.':
+    'Sign-up without an invite isn’t enabled for this community.',
+  'İstekleri onaylamadan önce toplulukta bir kanal oluştur.':
+    'Create a channel in the community before approving requests.',
+  'Bu e-posta adresiyle zaten bir hesap var. O hesapla giriş yap veya farklı bir e-posta adresi kullan.':
+    'This email address already has an account. Sign in with it, or use a different email address.',
 };

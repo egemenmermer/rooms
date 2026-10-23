@@ -20,11 +20,12 @@ import type {
   StremioType,
   StremioVideo,
 } from '../../../../packages/community-cinema/src/types';
-import { cinemaErrorText, getCinemaBridge } from './cinema-bridge';
+import { cinemaErrorCode, cinemaErrorText, getCinemaBridge } from './cinema-bridge';
 import { CinemaArt } from './CinemaArt';
 import { useBridgeRead } from './catalog-cache';
 import { useHall } from './use-hall';
 import { Credits, DetailsHead, HallRow, PosterCard, VodSkeleton } from './VodTab';
+import { t } from '../i18n';
 
 export type StremioView =
   | { mode: 'home'; query: string }
@@ -65,16 +66,18 @@ function NotLinked() {
       <span className="hall-message-icon">
         <Clapperboard size={28} />
       </span>
-      <h2>{hall.status.isOwner ? 'Stremio hesabını bağla' : 'Stremio bağlı değil'}</h2>
+      <h2>{hall.status.isOwner ? t('Stremio hesabını bağla') : t('Stremio bağlı değil')}</h2>
       <p>
         {hall.status.isOwner
-          ? 'Stremio’da kurulu eklentilerin (Torrentio ve Real-Debrid gibi) buradaki filmler ve diziler için kaynak bulur. Seçtiğin kaynak sunucudan herkese aynı anda oynar. Hesap anahtarın ve debrid anahtarın hiçbir üyeye gitmez.'
-          : 'Topluluk sahibi Stremio hesabını bağladığında filmler ve diziler burada olacak.'}
+          ? t(
+              'Stremio’da kurulu eklentilerin (Torrentio ve Real-Debrid gibi) buradaki filmler ve diziler için kaynak bulur. Seçtiğin kaynak sunucudan herkese aynı anda oynar. Hesap anahtarın ve debrid anahtarın hiçbir üyeye gitmez.',
+            )
+          : t('Topluluk sahibi Stremio hesabını bağladığında filmler ve diziler burada olacak.')}
       </p>
       {hall.status.isOwner && (
         <button className="button primary" onClick={() => navigate('/settings?tab=cinema')}>
           <Settings2 size={16} />
-          Bağlantıyı kur
+          {t('Bağlantıyı kur')}
         </button>
       )}
     </div>
@@ -106,8 +109,8 @@ function StremioHomeView({ query, onView }: { query: string; onView(view: Stremi
           <Search size={15} />
           <input
             value={text}
-            placeholder="Stremio’da film veya dizi ara"
-            aria-label="Stremio’da ara"
+            placeholder={t('Stremio’da film veya dizi ara')}
+            aria-label={t('Stremio’da ara')}
             onChange={(event) => setText(event.target.value)}
             onKeyDown={(event) => event.key === 'Escape' && setText('')}
           />
@@ -119,9 +122,11 @@ function StremioHomeView({ query, onView }: { query: string; onView(view: Stremi
         ) : results.error ? (
           <p className="hall-empty-note">{results.error}</p>
         ) : !results.data?.length ? (
-          <p className="hall-empty-note">“{searched}” için bir şey bulunamadı.</p>
+          <p className="hall-empty-note">
+            {t('“{query}” için bir şey bulunamadı.', { query: searched })}
+          </p>
         ) : (
-          <div className="hall-poster-grid" aria-label="Arama sonuçları">
+          <div className="hall-poster-grid" aria-label={t('Arama sonuçları')}>
             {results.data.map((title) => (
               <TitleCard
                 key={`${title.type}:${title.id}`}
@@ -136,7 +141,7 @@ function StremioHomeView({ query, onView }: { query: string; onView(view: Stremi
       ) : (
         <>
           {(home.loading || !!home.data?.continue.length) && (
-            <HallRow title="İzlemeye devam et" loading={!home.data}>
+            <HallRow title={t('İzlemeye devam et')} loading={!home.data}>
               {home.data?.continue.map((item) => (
                 <ContinueCard
                   key={`${item.type}:${item.id}`}
@@ -147,7 +152,7 @@ function StremioHomeView({ query, onView }: { query: string; onView(view: Stremi
             </HallRow>
           )}
           {(home.loading || !!home.data?.library.length) && (
-            <HallRow title="Kitaplığın" loading={!home.data}>
+            <HallRow title={t('Kitaplığın')} loading={!home.data}>
               {home.data?.library.map((title) => (
                 <TitleCard
                   key={`${title.type}:${title.id}`}
@@ -157,12 +162,12 @@ function StremioHomeView({ query, onView }: { query: string; onView(view: Stremi
               ))}
             </HallRow>
           )}
-          <HallRow title="Popüler filmler" loading={!home.data}>
+          <HallRow title={t('Popüler filmler')} loading={!home.data}>
             {home.data?.popular.movie.map((title) => (
               <TitleCard key={title.id} title={title} onOpen={() => open(title)} />
             ))}
           </HallRow>
-          <HallRow title="Popüler diziler" loading={!home.data}>
+          <HallRow title={t('Popüler diziler')} loading={!home.data}>
             {home.data?.popular.series.map((title) => (
               <TitleCard key={title.id} title={title} onOpen={() => open(title)} />
             ))}
@@ -180,7 +185,9 @@ function TitleCard({ title, onOpen }: { title: StremioTitle; onOpen(): void }) {
       hallId={hall.hallId}
       art={title.art}
       title={title.name}
-      meta={[title.year, title.type === 'series' ? 'Dizi' : 'Film'].filter(Boolean).join(' · ')}
+      meta={[title.year, title.type === 'series' ? t('Dizi') : t('Film')]
+        .filter(Boolean)
+        .join(' · ')}
       onOpen={onOpen}
     />
   );
@@ -194,9 +201,11 @@ function ContinueCard({ item, onOpen }: { item: StremioContinueItem; onOpen(): v
       art={item.art}
       title={item.name}
       meta={
-        item.season && item.episode ? `S${item.season} B${item.episode}` : (item.year ?? 'Film')
+        item.season && item.episode
+          ? t('S{season} B{episode}', { season: item.season, episode: item.episode })
+          : (item.year ?? t('Film'))
       }
-      label={`${item.name}: kaldığın yerden kaynak seç`}
+      label={t('{title}: kaldığın yerden kaynak seç', { title: item.name })}
       onOpen={onOpen}
     >
       {item.progress !== null && (
@@ -248,7 +257,7 @@ function StremioDetailsView({
       {details.loading && !data ? (
         <VodSkeleton />
       ) : details.error || !data ? (
-        <p className="hall-empty-note">{details.error ?? 'Ayrıntılar alınamadı.'}</p>
+        <p className="hall-empty-note">{details.error ?? t('Ayrıntılar alınamadı.')}</p>
       ) : (
         <>
           <DetailsHead
@@ -257,7 +266,9 @@ function StremioDetailsView({
             art={data.art}
             title={data.name}
           >
-            <span className="hall-eyebrow">{type === 'movie' ? 'Film' : 'Dizi'} · Stremio</span>
+            <span className="hall-eyebrow">
+              {type === 'movie' ? t('Film') : t('Dizi')} · Stremio
+            </span>
             <h2>{data.name}</h2>
             <p className="hall-meta">
               {data.rating && (
@@ -279,8 +290,8 @@ function StremioDetailsView({
             />
           </DetailsHead>
           {type === 'series' && (
-            <section className="hall-episodes" aria-label="Bölümler">
-              <div className="hall-season-tabs" role="tablist" aria-label="Sezonlar">
+            <section className="hall-episodes" aria-label={t('Bölümler')}>
+              <div className="hall-season-tabs" role="tablist" aria-label={t('Sezonlar')}>
                 {seasons.map(([value]) => (
                   <button
                     key={value}
@@ -289,7 +300,7 @@ function StremioDetailsView({
                     className={value === activeSeason ? 'selected' : ''}
                     onClick={() => setSeason(value)}
                   >
-                    {value === 0 ? 'Özel' : `${value}. Sezon`}
+                    {value === 0 ? t('Özel') : t('{season}. Sezon', { season: value })}
                   </button>
                 ))}
               </div>
@@ -309,7 +320,10 @@ function StremioDetailsView({
                           shape="wide"
                         />
                         <small>
-                          S{video.season} B{video.episode}
+                          {t('S{season} B{episode}', {
+                            season: video.season,
+                            episode: video.episode,
+                          })}
                         </small>
                       </span>
                       <span className="hall-episode-text">
@@ -325,7 +339,9 @@ function StremioDetailsView({
                   </li>
                 ))}
               </ol>
-              {!episodes.length && <p className="hall-empty-note">Bu dizinin bölüm listesi yok.</p>}
+              {!episodes.length && (
+                <p className="hall-empty-note">{t('Bu dizinin bölüm listesi yok.')}</p>
+              )}
             </section>
           )}
           {type === 'movie' && streamsFor && (
@@ -396,7 +412,7 @@ function StreamList({
     } catch (error) {
       const text = cinemaErrorText(error);
       hall.notify(text);
-      if (/eskidi/.test(text)) {
+      if (cinemaErrorCode(error) === 'CINEMA_STREMIO_STREAM_EXPIRED') {
         streams.reload();
         local.reload();
       }
@@ -406,9 +422,11 @@ function StreamList({
   };
   if (!admin)
     return (
-      <section className="stremio-streams" aria-label="Kaynaklar">
+      <section className="stremio-streams" aria-label={t('Kaynaklar')}>
         <p className="hall-empty-note">
-          Kaynakları topluluk sahibi ve yöneticiler seçer; açtıkları şey salonda herkes için oynar.
+          {t(
+            'Kaynakları topluluk sahibi ve yöneticiler seçer; açtıkları şey salonda herkes için oynar.',
+          )}
         </p>
       </section>
     );
@@ -418,11 +436,11 @@ function StreamList({
     <section
       ref={section}
       className="stremio-streams"
-      aria-label="Kaynaklar"
+      aria-label={t('Kaynaklar')}
       aria-busy={streams.loading || local.loading}
     >
       <header>
-        <h3>Kaynaklar</h3>
+        <h3>{t('Kaynaklar')}</h3>
         <button
           className="hall-text-button"
           onClick={() => {
@@ -430,25 +448,31 @@ function StreamList({
             if (assist) local.reload();
           }}
           disabled={streams.loading || local.loading}
-          aria-label="Kaynakları yeniden ara"
+          aria-label={t('Kaynakları yeniden ara')}
         >
           <RefreshCw size={14} />
-          Yenile
+          {t('Yenile')}
         </button>
       </header>
       {loading ? (
         <p className="hall-empty-note" role="status">
-          Eklentiler kaynak arıyor… Bu birkaç saniye sürebilir.
+          {t('Eklentiler kaynak arıyor… Bu birkaç saniye sürebilir.')}
         </p>
       ) : streams.error ? (
         <p className="hall-empty-note">{streams.error}</p>
       ) : !all.length ? (
         <p className="hall-empty-note">
           {streams.data?.skippedTorrents
-            ? `${streams.data.skippedTorrents} torrent bulundu ama sunucu yalnızca doğrudan bağlantıları oynatır. Stremio’daki Torrentio ayarına Real-Debrid gibi bir debrid hesabı ekle.`
+            ? t(
+                '{count} torrent bulundu ama sunucu yalnızca doğrudan bağlantıları oynatır. Stremio’daki Torrentio ayarına Real-Debrid gibi bir debrid hesabı ekle.',
+                { count: streams.data.skippedTorrents },
+              )
             : streams.data?.skippedOther
-              ? `${streams.data.skippedOther} kaynak bulundu ama hiçbiri salonda oynatılabilen doğrudan bir bağlantı değil (dış sayfa, YouTube veya Usenet).`
-              : 'Bu içerik için eklentilerin bir kaynak bulamadı.'}
+              ? t(
+                  '{count} kaynak bulundu ama hiçbiri salonda oynatılabilen doğrudan bir bağlantı değil (dış sayfa, YouTube veya Usenet).',
+                  { count: streams.data.skippedOther },
+                )
+              : t('Bu içerik için eklentilerin bir kaynak bulamadı.')}
         </p>
       ) : (
         <ol>
@@ -460,7 +484,17 @@ function StreamList({
                   className="stremio-stream"
                   disabled={!!picking}
                   onClick={() => void play(stream)}
-                  aria-label={`${stream.resolution ?? ''} ${first}: ${steer ? 'salonda oynat' : 'sıraya öner'}`}
+                  aria-label={
+                    steer
+                      ? t('{quality} {title}: salonda oynat', {
+                          quality: stream.resolution ?? '',
+                          title: first,
+                        })
+                      : t('{quality} {title}: sıraya öner', {
+                          quality: stream.resolution ?? '',
+                          title: first,
+                        })
+                  }
                 >
                   <span className="stremio-stream-quality">{stream.resolution ?? '—'}</span>
                   <span className="stremio-stream-text">
@@ -480,11 +514,11 @@ function StreamList({
                       className={`stremio-stream-cache ${stream.cached ? 'ready' : ''}`}
                       title={
                         stream.cached
-                          ? 'Debrid önbelleğinde: hemen açılır.'
-                          : 'Debrid önce indirmeli: açılması uzun sürebilir ya da açılmayabilir.'
+                          ? t('Debrid önbelleğinde: hemen açılır.')
+                          : t('Debrid önce indirmeli: açılması uzun sürebilir ya da açılmayabilir.')
                       }
                     >
-                      {stream.cached ? 'Hazır' : 'İndirilecek'}
+                      {stream.cached ? t('Hazır') : t('İndirilecek')}
                     </span>
                   )}
                   <span className="stremio-stream-play" aria-hidden="true">
@@ -504,23 +538,30 @@ function StreamList({
       )}
       {blocked.length > 0 && !assist && (
         <p className="hall-detail-note">
-          {blocked.join(', ')} sunucunun adresini engelliyor; bu kaynakları yalnızca Stremio’yu
-          bağlayan kişinin bilgisayarı listeleyebilir.
+          {t(
+            '{addons} sunucunun adresini engelliyor; bu kaynakları yalnızca Stremio’yu bağlayan kişinin bilgisayarı listeleyebilir.',
+            { addons: blocked.join(', ') },
+          )}
         </p>
       )}
       {assist && local.error && (
         <p className="hall-detail-note">
-          {blocked.join(', ')} bu bilgisayardan da yanıt vermedi: {local.error}
+          {t('{addons} bu bilgisayardan da yanıt vermedi: {error}', {
+            addons: blocked.join(', '),
+            error: local.error,
+          })}
         </p>
       )}
       {!!streams.data?.failedAddons.length && (
         <p className="hall-detail-note">
-          Yanıt vermeyen eklenti: {streams.data.failedAddons.join(', ')}
+          {t('Yanıt vermeyen eklenti: {addons}', {
+            addons: streams.data.failedAddons.join(', '),
+          })}
         </p>
       )}
       {!steer && (
         <p className="hall-detail-note">
-          {hall.directReason ?? 'Seçtiğin kaynak sıraya önerilir.'}
+          {hall.directReason ?? t('Seçtiğin kaynak sıraya önerilir.')}
         </p>
       )}
     </section>

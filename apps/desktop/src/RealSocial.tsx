@@ -747,8 +747,9 @@ export function CommunityChat({
         )}
         {!c.hasOlder && c.messages.length >= MESSAGE_WINDOW && (
           <p className="load-older-limit">
-            Bu görünümde en fazla {MESSAGE_WINDOW.toLocaleString('tr-TR')} mesaj tutulur; daha
-            eskiler burada açılamıyor.
+            {t('Bu görünümde en fazla {limit} mesaj tutulur; daha eskiler burada açılamıyor.', {
+              limit: MESSAGE_WINDOW.toLocaleString(locale),
+            })}
           </p>
         )}
         {!c.messages.length && !c.loadingMessages && (

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Clock, LoaderCircle, RefreshCw, Trash2, UserCheck, UserX } from 'lucide-react';
 import { SIGNUP_POLL_MS, useSignup } from './signup-state';
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 
 const formatTime = (iso: string | null) => {
   const time = iso ? Date.parse(iso) : NaN;
-  return Number.isFinite(time) ? new Date(time).toLocaleString('tr-TR') : null;
+  return Number.isFinite(time) ? new Date(time).toLocaleString(locale) : null;
 };
 
 /**
@@ -46,7 +46,7 @@ export function SignupPendingScreen({ onCreated }: { onCreated?(): void } = {}) 
   const back = (
     <button type="button" className="button secondary full" onClick={signup.hide}>
       <ArrowLeft size={16} />
-      Giriş ekranına dön
+      {t('Giriş ekranına dön')}
     </button>
   );
   const forget = (label: string) => (
@@ -66,20 +66,21 @@ export function SignupPendingScreen({ onCreated }: { onCreated?(): void } = {}) 
       {pending.ready ? (
         <>
           <UserCheck size={34} aria-hidden="true" />
-          <h2>Onaylandın</h2>
+          <h2>{t('Onaylandın')}</h2>
           {signup.checking || working ? (
             <p role="status">
-              <LoaderCircle size={16} className="spin" /> Hesabın oluşturuluyor…
+              <LoaderCircle size={16} className="spin" /> {t('Hesabın oluşturuluyor…')}
             </p>
           ) : (
             <>
               <p>
-                Topluluk yöneticisi isteğini onayladı. Hesabını oluşturmak ve topluluğa katılmak
-                için şifreni gir. Şifren bu cihazda saklanmaz.
+                {t(
+                  'Topluluk yöneticisi isteğini onayladı. Hesabını oluşturmak ve topluluğa katılmak için şifreni gir. Şifren bu cihazda saklanmaz.',
+                )}
               </p>
               <form onSubmit={(e) => void create(e)}>
                 <label className="field-label">
-                  E-posta adresi
+                  {t('E-posta adresi')}
                   <input
                     required
                     type="email"
@@ -89,7 +90,7 @@ export function SignupPendingScreen({ onCreated }: { onCreated?(): void } = {}) 
                   />
                 </label>
                 <label className="field-label">
-                  Şifre
+                  {t('Şifre')}
                   <input
                     required
                     type="password"
@@ -97,7 +98,7 @@ export function SignupPendingScreen({ onCreated }: { onCreated?(): void } = {}) 
                     minLength={8}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="En az 8 karakter"
+                    placeholder={t('En az 8 karakter')}
                   />
                 </label>
                 <button
@@ -105,36 +106,43 @@ export function SignupPendingScreen({ onCreated }: { onCreated?(): void } = {}) 
                   type="submit"
                   disabled={working || password.length < 8}
                 >
-                  Hesabı oluştur ve katıl
+                  {t('Hesabı oluştur ve katıl')}
                 </button>
               </form>
             </>
           )}
           {back}
-          {forget('İsteği bırak')}
+          {forget(t('İsteği bırak'))}
         </>
       ) : pending.status === 'rejected' ? (
         <>
           <UserX size={34} aria-hidden="true" />
-          <h2>Kayıt isteğin reddedildi</h2>
+          <h2>{t('Kayıt isteğin reddedildi')}</h2>
           <p>
-            Topluluk yöneticisi bu isteği onaylamadı. Hesap oluşturulmadı. Bir yanlışlık olduğunu
-            düşünüyorsan topluluktan birinden davet bağlantısı iste.
+            {t(
+              'Topluluk yöneticisi bu isteği onaylamadı. Hesap oluşturulmadı. Bir yanlışlık olduğunu düşünüyorsan topluluktan birinden davet bağlantısı iste.',
+            )}
           </p>
-          {forget('Tamam')}
+          {forget(t('Tamam'))}
         </>
       ) : pending.status === 'expired' || pending.status === 'issued' ? (
         <>
           <Clock size={34} aria-hidden="true" />
           <h2>
-            {pending.status === 'expired' ? 'İsteğinin süresi doldu' : 'Bağlantı kullanılamıyor'}
+            {pending.status === 'expired'
+              ? t('İsteğinin süresi doldu')
+              : t('Bağlantı kullanılamıyor')}
           </h2>
           <p>
             {pending.status === 'expired'
-              ? '14 gün içinde kimse karar vermediği için isteğin kapandı. İstersen yeni bir istek gönderebilirsin.'
-              : 'Onay bağlantısı bu cihazda değil. Yeni bir istek gönder ya da topluluktan davet bağlantısı iste.'}
+              ? t(
+                  '14 gün içinde kimse karar vermediği için isteğin kapandı. İstersen yeni bir istek gönderebilirsin.',
+                )
+              : t(
+                  'Onay bağlantısı bu cihazda değil. Yeni bir istek gönder ya da topluluktan davet bağlantısı iste.',
+                )}
           </p>
-          {forget('Yeni istek gönder')}
+          {forget(t('Yeni istek gönder'))}
           {back}
         </>
       ) : (
@@ -142,23 +150,26 @@ export function SignupPendingScreen({ onCreated }: { onCreated?(): void } = {}) 
           <span className="ref-signup-pending-icon" aria-hidden="true">
             <Clock size={30} />
           </span>
-          <h2>Onay bekliyor</h2>
+          <h2>{t('Onay bekliyor')}</h2>
           <p role="status">
-            {pending.username}, isteğin topluluk yöneticisine iletildi. Onaylanınca hesabın
-            oluşturulur ve topluluğa katılırsın. Bu ekran kendiliğinden yenilenir; uygulamayı
-            kapatırsan onaydan sonra şifreni yeniden girmen yeterli.
+            {t(
+              '{name}, isteğin topluluk yöneticisine iletildi. Onaylanınca hesabın oluşturulur ve topluluğa katılırsın. Bu ekran kendiliğinden yenilenir; uygulamayı kapatırsan onaydan sonra şifreni yeniden girmen yeterli.',
+              { name: pending.username },
+            )}
           </p>
-          {requested && <p className="ref-auth-help">İstek zamanı: {requested}</p>}
+          {requested && (
+            <p className="ref-auth-help">{t('İstek zamanı: {time}', { time: requested })}</p>
+          )}
           <button
             className="button primary full"
             disabled={signup.checking}
             onClick={() => void signup.check()}
           >
             <RefreshCw size={16} />
-            {signup.checking ? 'Kontrol ediliyor…' : 'Durumu yenile'}
+            {signup.checking ? t('Kontrol ediliyor…') : t('Durumu yenile')}
           </button>
           {back}
-          {forget('İsteği geri çek')}
+          {forget(t('İsteği geri çek'))}
         </>
       )}
       {(signup.error || pending.error) && (

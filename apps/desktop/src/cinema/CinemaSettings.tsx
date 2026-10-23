@@ -196,7 +196,7 @@ export function CinemaSettings({ notify }: { notify(message: string): void }) {
           void run(
             'stremio',
             () => bridge.stremioUnlink(communityId),
-            'Stremio bağlantısı kaldırıldı.',
+            t('Stremio bağlantısı kaldırıldı.'),
           )
         }
       />
@@ -337,7 +337,7 @@ function StremioSection({
           if (!active || !next.stremio?.linked) return;
           acceptCinemaStatus(next);
           setCode(null);
-          notify('Stremio hesabı bağlandı. Salonda Stremio sekmesi açıldı.');
+          notify(t('Stremio hesabı bağlandı. Salonda Stremio sekmesi açıldı.'));
         })
         .catch((reason) => {
           if (!active) return;
@@ -363,28 +363,29 @@ function StremioSection({
       setStarting(false);
     }
   };
+  const linkPrompt = t(
+    'Tarayıcıda açılan Stremio sayfasında giriş yap ve {code} kodunu onayla. Onaylayınca burası kendiliğinden güncellenir.',
+  ).split('{code}');
   return (
     <section className="cs-section">
       <h2>Stremio</h2>
       <p>
-        Stremio hesabını bağla; salon, Stremio’da kurulu eklentilerinin (ör. Real-Debrid ile
-        Torrentio) bulduğu kaynakları sunucudan herkese aynı anda oynatsın. IPTV bağlı olmasa da
-        çalışır. Şifren Tayfa’ya hiç gelmez; Stremio’nun kendi onay sayfasında giriş yaparsın. Hesap
-        ve debrid anahtarların sunucuda kalır, üyelere gitmez. Yalnızca doğrudan bağlantılar oynar;
-        sunucu torrent indirmez.
+        {t(
+          'Stremio hesabını bağla; salon, Stremio’da kurulu eklentilerinin (ör. Real-Debrid ile Torrentio) bulduğu kaynakları sunucudan herkese aynı anda oynatsın. IPTV bağlı olmasa da çalışır. Şifren Tayfa’ya hiç gelmez; Stremio’nun kendi onay sayfasında giriş yaparsın. Hesap ve debrid anahtarların sunucuda kalır, üyelere gitmez. Yalnızca doğrudan bağlantılar oynar; sunucu torrent indirmez.',
+        )}
       </p>
       {linked ? (
         <div className="cs-card">
           <div className="cs-card-head">
             <span className="cs-state connected">
-              <i /> Bağlı
+              <i /> {t('Bağlı')}
             </span>
-            <strong>{status.stremio?.email ?? 'Topluluk sahibi bağladı'}</strong>
+            <strong>{status.stremio?.email ?? t('Topluluk sahibi bağladı')}</strong>
           </div>
           {status.stremio?.linkedAt && (
             <dl className="cs-facts">
               <div>
-                <dt>Bağlandı</dt>
+                <dt>{t('Bağlandı')}</dt>
                 <dd>{dateFormat.format(new Date(status.stremio.linkedAt))}</dd>
               </div>
             </dl>
@@ -393,26 +394,28 @@ function StremioSection({
             <div className="cs-actions">
               <button className="button secondary" disabled={disabled} onClick={onUnlink}>
                 {busy ? <LoaderCircle size={16} className="spin" /> : <Unplug size={16} />}
-                Bağlantıyı kaldır
+                {t('Bağlantıyı kaldır')}
               </button>
             </div>
           )}
         </div>
       ) : !owner ? (
-        <p className="cs-note inline">Topluluk sahibi henüz bir Stremio hesabı bağlamadı.</p>
+        <p className="cs-note inline">{t('Topluluk sahibi henüz bir Stremio hesabı bağlamadı.')}</p>
       ) : code ? (
         <div className="cs-card" role="status">
           <p>
-            Tarayıcıda açılan Stremio sayfasında giriş yap ve <strong>{code.code}</strong> kodunu
-            onayla. Onaylayınca burası kendiliğinden güncellenir.
+            {/* One message; the code is shown in bold where {code} stands. */}
+            {linkPrompt[0]}
+            <strong>{code.code}</strong>
+            {linkPrompt[1]}
           </p>
           <div className="cs-actions">
             <a className="button secondary" href={code.link} target="_blank" rel="noreferrer">
               <ExternalLink size={16} />
-              Sayfayı yeniden aç
+              {t('Sayfayı yeniden aç')}
             </a>
             <button className="button secondary" onClick={() => setCode(null)}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
           </div>
         </div>
@@ -423,7 +426,7 @@ function StremioSection({
           onClick={() => void start()}
         >
           {starting ? <LoaderCircle size={16} className="spin" /> : <Clapperboard size={16} />}
-          Stremio’yu bağla
+          {t('Stremio’yu bağla')}
         </button>
       )}
       {error && (

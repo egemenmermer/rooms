@@ -504,7 +504,7 @@ export async function setupCommunity(
   handle('rooms:social-signup-complete', async (input) => {
     const body = signupCompletion.parse(input);
     const registration = signups.registration(body);
-    if (!registration) throw new SocialInputError('Bu istek için onaylı kayıt bağlantısı yok.');
+    if (!registration) throw new SocialInputError(t('Bu istek için onaylı kayıt bağlantısı yok.'));
     return completeSignup(registration);
   });
   handle('rooms:social-signup-cancel', () => signups.cancel());

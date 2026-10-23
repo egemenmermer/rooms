@@ -772,7 +772,7 @@ function VodGrid({
         <p className="hall-empty-note">
           {items.error}{' '}
           <button className="hall-text-button" onClick={items.retry}>
-            Yeniden dene
+            {t('Yeniden dene')}
           </button>
         </p>
       )}

@@ -130,8 +130,6 @@ export const media: Catalog = {
     '{song} timed out while loading. Try again; if it keeps happening, pick another recording.',
   '{song} bulundu ancak ses akışı başlatılamadı veya kesildi. Parçayı yeniden seçerek dene.':
     "{song} was found but its audio stream couldn't start or was interrupted. Try selecting the track again.",
-  'Bir parça çalınamadı ya da yarıda kesildi; DJ kuyrukta sıradakine geçti.':
-    "A track couldn't be played or was cut short; the DJ moved on to the next one in the queue.",
   'DJ ses odasına bağlanamadı. Oda bağlantısını kontrol edip yeniden dene.':
     "The DJ couldn't connect to the voice room. Check the room connection and try again.",
   'Müzik bağlantısı korunuyor, ancak DJ geçmişi kaydedilemedi.':
@@ -733,4 +731,6 @@ export const media: Catalog = {
   Kristal: 'Crystal',
   Kapanış: 'Closing',
   'Hoşça kal': 'Goodbye',
+  'Bir parça bulunamadı ya da çalınamadı; DJ sıradakine geçti. Atlanan parça kuyrukta işaretli.':
+    'A track couldn’t be found or played; the DJ moved on to the next one. The skipped track is marked in the queue.',
 };

@@ -219,8 +219,6 @@ export const main: Catalog = {
   'Ortak listeler sunucuda henüz açılmadı.':
     'Shared playlists aren’t turned on for the server yet.',
   'Sunucunun DJ hizmeti henüz açılmadı.': 'The server’s DJ service isn’t turned on yet.',
-  'Bu odanın listelerine erişimin yok. Oda erişimini kontrol et.':
-    'You don’t have access to this room’s playlists. Check your room access.',
   'Topluluğun liste sınırına ulaşıldı. Kullanılmayan listeleri veya parçaları kaldır.':
     'The community has reached its playlist limit. Remove unused playlists or tracks.',
   'Liste bilgisi geçersiz. Desteklenen YouTube/Spotify bağlantılarını ve parça sınırını kontrol et.':
@@ -315,4 +313,10 @@ export const main: Catalog = {
     "VLC couldn't start the stream. Check the source link and try again.",
   // Application menu (main.ts).
   Görüntü: 'View',
+  'Bu istek için onaylı kayıt bağlantısı yok.':
+    'There’s no approved sign-up link for this request.',
+  'Bu odanın listelerine erişimin yok ya da listeleri değiştirmek için odada konuşma iznin yok.':
+    'You don’t have access to this room’s playlists, or you don’t have permission to speak in the room, which changing them needs.',
+  'Özel bir arama geliyor.': 'A private call is coming in.',
+  'Tayfa · Sunucu uyarısı': 'Tayfa · Server alert',
 };

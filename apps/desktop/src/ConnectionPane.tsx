@@ -276,20 +276,24 @@ export function ConnectionPane({
                   </div>
                 ) : (
                   <>
-                    <div className="ref-auth-choice" role="group" aria-label="Nasıl katılacaksın?">
+                    <div
+                      className="ref-auth-choice"
+                      role="group"
+                      aria-label={t('Nasıl katılacaksın?')}
+                    >
                       <button
                         type="button"
                         aria-pressed={signupKind === 'invite'}
                         onClick={() => setSignupKind('invite')}
                       >
-                        Davet bağlantım var
+                        {t('Davet bağlantım var')}
                       </button>
                       <button
                         type="button"
                         aria-pressed={signupKind === 'approval'}
                         onClick={() => setSignupKind('approval')}
                       >
-                        Onay isteğiyle
+                        {t('Onay isteğiyle')}
                       </button>
                     </div>
                   </>
@@ -297,9 +301,11 @@ export function ConnectionPane({
               {approval && pendingSignup && (
                 <div className="ref-auth-notice">
                   <span>
-                    {pendingSignup.username} adına gönderilmiş bir kayıt isteğin var.{' '}
+                    {t('{name} adına gönderilmiş bir kayıt isteğin var.', {
+                      name: pendingSignup.username,
+                    })}{' '}
                     <button type="button" className="ref-auth-back" onClick={showPendingSignup}>
-                      İsteği göster
+                      {t('İsteği göster')}
                     </button>
                   </span>
                 </div>
@@ -307,7 +313,7 @@ export function ConnectionPane({
               {approval && (
                 <>
                   <label className="field-label ref-auth-field-with-help">
-                    Sunucu adresi
+                    {t('Sunucu adresi')}
                     <input
                       required
                       type="url"
@@ -316,7 +322,7 @@ export function ConnectionPane({
                       value={server}
                       aria-describedby="reference-approval-help"
                       onChange={(e) => setServer(e.target.value)}
-                      placeholder="https://sunucun.example"
+                      placeholder={t('https://sunucun.example')}
                     />
                   </label>
                   <p
@@ -325,23 +331,29 @@ export function ConnectionPane({
                     role="status"
                   >
                     {!approvalServer
-                      ? 'Katılmak istediğin topluluğun sunucu adresini yaz. Davet bağlantısı gerekmez.'
+                      ? t(
+                          'Katılmak istediğin topluluğun sunucu adresini yaz. Davet bağlantısı gerekmez.',
+                        )
                       : !approvalUrlValid
-                        ? 'Adresi https:// ile başlayarak yaz.'
+                        ? t('Adresi https:// ile başlayarak yaz.')
                         : approvalCheckError
                           ? approvalCheckError
                           : approvalOpen === null
-                            ? 'Sunucu kontrol ediliyor…'
+                            ? t('Sunucu kontrol ediliyor…')
                             : approvalOpen
-                              ? 'İsteğin yöneticiye gider. Hesabın, bir yönetici onaylayınca oluşur ve topluluğa katılırsın.'
-                              : 'Bu sunucu davetsiz kaydı açmamış. Topluluktan bir davet bağlantısı iste.'}
+                              ? t(
+                                  'İsteğin yöneticiye gider. Hesabın, bir yönetici onaylayınca oluşur ve topluluğa katılırsın.',
+                                )
+                              : t(
+                                  'Bu sunucu davetsiz kaydı açmamış. Topluluktan bir davet bağlantısı iste.',
+                                )}
                   </p>
                 </>
               )}
               {registration && !fromLink && !approval && (
                 <>
                   <label className="field-label ref-auth-field-with-help">
-                    Davet bağlantısı
+                    {t('Davet bağlantısı')}
                     <input
                       required
                       autoComplete="off"
@@ -362,8 +374,10 @@ export function ConnectionPane({
                     {linkInvalid
                       ? NOT_AN_INVITE
                       : pasted
-                        ? `Sunucu: ${serverHost(pasted.serverUrl)}`
-                        : 'Topluluktaki her üye davet bağlantısı oluşturabilir. Arkadaşının gönderdiği bağlantıyı buraya yapıştır.'}
+                        ? t('Sunucu: {host}', { host: serverHost(pasted.serverUrl) })
+                        : t(
+                            'Topluluktaki her üye davet bağlantısı oluşturabilir. Arkadaşının gönderdiği bağlantıyı buraya yapıştır.',
+                          )}
                   </p>
                 </>
               )}

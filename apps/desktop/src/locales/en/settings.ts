@@ -154,7 +154,6 @@ export const settings: Catalog = {
   Kamera: 'Camera',
   'Kamera {number}': 'Camera {number}',
   'Kamerayı dene': 'Test camera',
-  'Kamera denemesi odaya yayınlanmaz.': 'The camera test isn’t broadcast to the room.',
   'Yerel kamera önizlemesi': 'Local camera preview',
   'Kamera kapalı': 'Camera off',
   'Ekran paylaşımında sistem sesi': 'System audio when screen sharing',
@@ -603,8 +602,6 @@ export const settings: Catalog = {
   'Eski üye': 'Former member',
   'Davet bağlantıları': 'Invite links',
   'Davetleri burada yönetemezsin': 'You can’t manage invites here',
-  'Davet bağlantılarını yalnızca topluluk sahibi görebilir ve iptal edebilir.':
-    'Only the community owner can see and revoke invite links.',
   'Bu sunucu davet bağlantılarını listelemiyor.': 'This server doesn’t list invite links.',
   'Davetleri yenile': 'Refresh invites',
   'Bağlantılar yalnızca oluşturulurken kopyalanabilir. Kaybettiysen yenisini oluştur, eskisini iptal et.':
@@ -805,4 +802,39 @@ export const settings: Catalog = {
   'Bekleniyor…': 'Waiting…',
   '↓ {amount}/sn': '↓ {amount}/s',
   '↑ {amount}/sn': '↑ {amount}/s',
+  'Davet bağlantılarını yalnızca topluluk sahibi ve yöneticiler görebilir ve iptal edebilir.':
+    'Only the community owner and admins can see and revoke invite links.',
+  'Kayıt istekleri': 'Sign-up requests',
+  'Kayıt isteklerini burada yönetemezsin': 'You can’t manage sign-up requests here',
+  'Davetsiz kayıt isteklerini yalnızca topluluk sahibi ve yöneticiler görebilir ve onaylayabilir.':
+    'Only the community owner and admins can see and approve sign-up requests made without an invite.',
+  'Kayıt isteklerini yenile': 'Refresh sign-up requests',
+  'Davet bağlantısı olmadan kayıt isteği gönderenler burada bekler; henüz hesapları yok. Onayladığın kişiye tek kullanımlık bir kayıt bağlantısı verilir (Davetler listesinde görünür); hesabı o zaman oluşur ve topluluğa katılır. Reddettiğin kişiye bu söylenir.':
+    'People who asked to sign up without an invite link wait here; they don’t have accounts yet. Someone you approve gets a single-use sign-up link (it shows in the Invites list); their account is created then and they join the community. Someone you reject is told so.',
+  'Kayıt istekleri yükleniyor…': 'Loading sign-up requests…',
+  'Kayıt istekleri alınamadı.': 'Couldn’t load sign-up requests.',
+  'Bu topluluk için davetsiz kayıt kapalı': 'Sign-up without an invite is off for this community',
+  'Sunucu yöneticisi erişim servisinde ROOMS_SIGNUP_SPACE_ID ayarını bu topluluğa verince istekler burada görünür.':
+    'Requests show up here once the server admin sets ROOMS_SIGNUP_SPACE_ID to this community in the access service.',
+  'Bekleyen kayıt istekleri': 'Pending sign-up requests',
+  Bekliyor: 'Pending',
+  'İstek: {date}': 'Requested: {date}',
+  'Uygulamayı açınca hesabı oluşacak': 'Their account is created when they open the app',
+  'Yeniden onayla': 'Approve again',
+  'Bekleyen kayıt isteği yok.': 'No pending sign-up requests.',
+  '{name} reddedilsin mi?': 'Reject {name}?',
+  'Bu kişi için hesap oluşturulmaz ve isteğinin reddedildiğini görür.':
+    'No account is created for this person, and they’ll see that their request was rejected.',
+  'Reddediliyor…': 'Rejecting…',
+  'Yeni uyarılar sahibe ve developer rolündekilere masaüstü bildirimi olarak da gelir (Tayfa açıkken, pencere kapalı olsa bile).':
+    'New alerts also reach the owner and members with the developer role as desktop notifications (while Tayfa is running, even with its window closed).',
+  'Mikrofon seviyesi': 'Microphone level',
+  '{device} için hatırlanır; bu mikrofona geçince kendiliğinden uygulanır.':
+    'Remembered for {device}; applied automatically when you switch to this microphone.',
+  'Mikrofon seviyesi, mikrofonun adı görünce ayarlanabilir. Mikrofonu dene veya bir ses odasına katıl.':
+    'The microphone level can be set once the microphone’s name is known. Test the microphone or join a voice room.',
+  'Seçili kamera bağlı değil (varsayılan kullanılır)':
+    'Selected camera isn’t connected (the default is used)',
+  'Seçtiğin kamera odalarda ve özel görüşmelerde kullanılır. Kamera denemesi odaya yayınlanmaz.':
+    'The camera you choose is used in rooms and private calls. The camera test isn’t broadcast to the room.',
 };

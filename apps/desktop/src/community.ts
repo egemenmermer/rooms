@@ -135,7 +135,7 @@ async function applySession(session: SocialSession, request = sessionEpoch) {
       serverUrl: session.instanceUrl ?? '',
       error:
         session.restore === 'expired'
-          ? 'Oturumunun süresi doldu. Çıkış yapıp yeniden giriş yap.'
+          ? t('Oturumunun süresi doldu. Çıkış yapıp yeniden giriş yap.')
           : session.restore === 'unreachable'
             ? SERVER_UNREACHABLE_MESSAGE
             : null,
@@ -160,8 +160,9 @@ async function applySession(session: SocialSession, request = sessionEpoch) {
 /** Messages one channel view keeps; past this, "Önceki mesajlar" stops instead of looping. */
 export const MESSAGE_WINDOW = 5000;
 /** A saved session waits for its server; nothing needs to be typed again. */
-export const SERVER_UNREACHABLE_MESSAGE =
-  'Kayıtlı sunucuna şu an ulaşılamıyor. Oturumun duruyor; bağlantı gelince kendiliğinden açılacak.';
+export const SERVER_UNREACHABLE_MESSAGE = t(
+  'Kayıtlı sunucuna şu an ulaşılamıyor. Oturumun duruyor; bağlantı gelince kendiliğinden açılacak.',
+);
 /** Sign-in style session start shared by invitation sign-up and approved sign-up. */
 export async function startSession(open: () => Promise<SocialSession>) {
   const request = ++sessionEpoch;
@@ -216,13 +217,13 @@ export const useCommunity = create<CommunityState>((set, get) => ({
   signupRequests: async (spaceId) => {
     const session = captureSession();
     const value = await bridge().signupRequests(spaceId);
-    if (!session.valid()) throw new Error('Oturum değişti. Kayıt istekleri gösterilmedi.');
+    if (!session.valid()) throw new Error(t('Oturum değişti. Kayıt istekleri gösterilmedi.'));
     return value;
   },
   decideSignupRequest: async (spaceId, requestId, decision) => {
     const session = captureSession();
     await bridge().decideSignupRequest(spaceId, requestId, decision);
-    if (!session.valid()) throw new Error('Oturum değişti. Karar doğrulanamadı.');
+    if (!session.valid()) throw new Error(t('Oturum değişti. Karar doğrulanamadı.'));
   },
   logout: async () => {
     const request = ++sessionEpoch;
