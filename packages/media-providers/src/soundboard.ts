@@ -1,3 +1,4 @@
+import { t } from '@rooms/i18n';
 import { Track, type TrackProcessor, type AudioProcessorOptions } from 'livekit-client';
 import {
   createNoiseSuppressionNode,
@@ -101,7 +102,7 @@ export class SoundboardMixer implements TrackProcessor<Track.Kind.Audio, AudioPr
     this.gain = undefined;
   }
   async play(buffer: AudioBuffer, volume: number, canPlay: () => boolean) {
-    if (!this.context || !this.destination) throw new Error('Mikrofon kullanılamıyor.');
+    if (!this.context || !this.destination) throw new Error(t('Mikrofon kullanılamıyor.'));
     this.stop();
     await this.context.resume();
     if (!canPlay()) return;

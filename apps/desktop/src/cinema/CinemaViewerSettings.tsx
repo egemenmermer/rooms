@@ -14,6 +14,7 @@ import {
   useHallKeys,
   type HallCommand,
 } from './hall-keys';
+import { t } from '../i18n';
 
 const subtitleChoices: {
   value: CinemaPreferences['subtitleLanguage'];
@@ -22,15 +23,17 @@ const subtitleChoices: {
 }[] = [
   {
     value: 'auto',
-    label: 'Türkçe',
-    detail: 'Film başka bir dildeyse Türkçe altyazı açılır; Türkçe seste yalnızca zorunlu altyazı.',
+    label: t('Türkçe'),
+    detail: t(
+      'Film başka bir dildeyse Türkçe altyazı açılır; Türkçe seste yalnızca zorunlu altyazı.',
+    ),
   },
   {
     value: 'eng',
-    label: 'İngilizce',
-    detail: 'Film başka bir dildeyse İngilizce altyazı açılır.',
+    label: t('İngilizce'),
+    detail: t('Film başka bir dildeyse İngilizce altyazı açılır.'),
   },
-  { value: 'off', label: 'Kapalı', detail: 'Altyazıyı yalnızca menüden sen açarsın.' },
+  { value: 'off', label: t('Kapalı'), detail: t('Altyazıyı yalnızca menüden sen açarsın.') },
 ];
 
 /** This viewer's own cinema choices; nothing here changes what the hall sees. */
@@ -38,10 +41,10 @@ export function CinemaViewerSettings() {
   const preferences = useCinemaPreferences();
   return (
     <section className="cs-section">
-      <h2>Benim tercihlerim</h2>
-      <p>Bunlar yalnızca senin ekranını değiştirir; salondaki diğer kişiler etkilenmez.</p>
-      <div className="cs-choices" role="radiogroup" aria-label="Varsayılan altyazı dili">
-        <strong className="cs-choices-title">Varsayılan altyazı</strong>
+      <h2>{t('Benim tercihlerim')}</h2>
+      <p>{t('Bunlar yalnızca senin ekranını değiştirir; salondaki diğer kişiler etkilenmez.')}</p>
+      <div className="cs-choices" role="radiogroup" aria-label={t('Varsayılan altyazı dili')}>
+        <strong className="cs-choices-title">{t('Varsayılan altyazı')}</strong>
         {subtitleChoices.map((choice) => (
           <label key={choice.value} className="cs-choice">
             <input
@@ -64,9 +67,9 @@ export function CinemaViewerSettings() {
           onChange={(event) => setCinemaPreferences({ blurUnwatched: event.target.checked })}
         />
         <span>
-          <strong>İzlenmemiş bölümleri bulanıklaştır</strong>
+          <strong>{t('İzlenmemiş bölümleri bulanıklaştır')}</strong>
           <small>
-            Dizi sayfasında salonun henüz bitirmediği bölümlerin görseli ve özeti gizlenir.
+            {t('Dizi sayfasında salonun henüz bitirmediği bölümlerin görseli ve özeti gizlenir.')}
           </small>
         </span>
       </label>
@@ -86,7 +89,9 @@ export function HallKeySettings() {
       event.stopPropagation();
       if (event.key === 'Escape') return setListening(null);
       if (event.metaKey || event.ctrlKey || event.altKey) {
-        setNote('Sinema kısayolları ⌘, Ctrl ya da Alt ile birlikte kullanılmaz; Shift olabilir.');
+        setNote(
+          t('Sinema kısayolları ⌘, Ctrl ya da Alt ile birlikte kullanılmaz; Shift olabilir.'),
+        );
         return;
       }
       if (['Shift', 'Meta', 'Control', 'Alt', 'CapsLock'].includes(event.key)) return;
@@ -96,9 +101,13 @@ export function HallKeySettings() {
       const name = (id: HallCommand) => hallCommands.find((c) => c.id === id)!.label;
       setNote(
         result === 'reserved'
-          ? 'Bu tuş ayrılmış (Esc, Tab, Enter ve rakamlar değiştirilemez).'
+          ? t('Bu tuş ayrılmış (Esc, Tab, Enter ve rakamlar değiştirilemez).')
           : result
-            ? `${keyLabel(chordOf(event))} artık “${name(command)}”. “${name(result)}” kısayolsuz kaldı.`
+            ? t('{key} artık “{command}”. “{other}” kısayolsuz kaldı.', {
+                key: keyLabel(chordOf(event)),
+                command: name(command),
+                other: name(result),
+              })
             : '',
       );
     };
@@ -107,26 +116,26 @@ export function HallKeySettings() {
   }, [listening]);
   return (
     <section className="hall-key-settings">
-      <h3>Sinema salonu</h3>
-      <p>Bir kısayolu değiştirmek için tıkla ve yeni tuşa bas. Esc vazgeçer.</p>
+      <h3>{t('Sinema salonu')}</h3>
+      <p>{t('Bir kısayolu değiştirmek için tıkla ve yeni tuşa bas. Esc vazgeçer.')}</p>
       {hallCommands.map(({ id, label }) => (
         <div className="shortcut-row" key={id}>
           <span>{label}</span>
           <span className="hall-key-edit">
             <button
               className={`hall-key-button ${listening === id ? 'listening' : ''}`}
-              aria-label={`${label}: ${keyLabel(keys[id])}. Değiştir`}
+              aria-label={t('{label}: {key}. Değiştir', { label, key: keyLabel(keys[id]) })}
               onClick={() => {
                 setNote('');
                 setListening(listening === id ? null : id);
               }}
             >
-              {listening === id ? 'Bir tuşa bas…' : <kbd>{keyLabel(keys[id])}</kbd>}
+              {listening === id ? t('Bir tuşa bas…') : <kbd>{keyLabel(keys[id])}</kbd>}
             </button>
             <button
               className="hall-key-reset"
-              aria-label={`${label}: varsayılana döndür`}
-              title="Varsayılana döndür"
+              aria-label={t('{label}: varsayılana döndür', { label })}
+              title={t('Varsayılana döndür')}
               onClick={() => resetHallKeys(id)}
             >
               <RotateCcw size={13} />
@@ -143,11 +152,11 @@ export function HallKeySettings() {
         className="button secondary small"
         onClick={() => {
           resetHallKeys();
-          setNote('Sinema kısayolları varsayılana döndü.');
+          setNote(t('Sinema kısayolları varsayılana döndü.'));
         }}
       >
         <RotateCcw size={14} />
-        Hepsini varsayılana döndür
+        {t('Hepsini varsayılana döndür')}
       </button>
     </section>
   );

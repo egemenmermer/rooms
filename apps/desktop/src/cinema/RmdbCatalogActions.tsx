@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Bookmark, BookmarkCheck, NotebookPen, Plus } from 'lucide-react';
 import type { CinemaItem } from '../../../../packages/community-cinema/src/types';
 import { useCommunity } from '../community';
+import { t } from '../i18n';
 import { cinemaErrorText } from './cinema-bridge';
 import { matchWork, withWatchlist } from './rmdb-model';
 import { addToRmdb, mutateRmdbWork, useRmdbList } from './rmdb-store';
@@ -35,7 +36,9 @@ export function RmdbCatalogActions({
     try {
       await addToRmdb(hall.hallId, item.ref, watchlist);
       hall.notify(
-        watchlist ? `${item.title} İzlenecekler'e eklendi.` : `${item.title} Tayfa'ya eklendi.`,
+        watchlist
+          ? t("{title} İzlenecekler'e eklendi.", { title: item.title })
+          : t("{title} Tayfa'ya eklendi.", { title: item.title }),
       );
     } catch (error) {
       hall.notify(cinemaErrorText(error));
@@ -66,11 +69,11 @@ export function RmdbCatalogActions({
       <>
         <button className="button secondary" disabled={!!busy} onClick={() => void add(false)}>
           <Plus size={16} />
-          Tayfa'ya ekle
+          {t("Tayfa'ya ekle")}
         </button>
         <button className="button secondary" disabled={!!busy} onClick={() => void add(true)}>
           <Bookmark size={16} />
-          İzlenecekler'e ekle
+          {t("İzlenecekler'e ekle")}
         </button>
       </>
     );
@@ -79,7 +82,7 @@ export function RmdbCatalogActions({
       {onRmdb && (
         <button className="button secondary" onClick={() => onRmdb(workId)}>
           <NotebookPen size={16} />
-          Tayfa'da aç
+          {t("Tayfa'da aç")}
         </button>
       )}
       <button
@@ -89,7 +92,7 @@ export function RmdbCatalogActions({
         onClick={() => void (work ? toggleWatchlist(workId) : add(true))}
       >
         {onWatchlist ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
-        {onWatchlist ? "İzlenecekler'de" : "İzlenecekler'e ekle"}
+        {onWatchlist ? t("İzlenecekler'de") : t("İzlenecekler'e ekle")}
       </button>
     </>
   );

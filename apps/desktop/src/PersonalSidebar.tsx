@@ -6,7 +6,8 @@ import { useRealtime, leaveVoice, toggleMic, toggleDeafen } from './realtime';
 import { VoiceAvatar } from './VoiceAvatar';
 import { ReferenceIcon } from './ReferenceIcon';
 import { preserveReferenceFixtureRoute } from './dev/fixture-navigation';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
+import { places } from './dev/sample';
 import './reference-home.css';
 
 export function PersonalSidebar({
@@ -106,9 +107,9 @@ export function PersonalSidebar({
   return (
     <aside className="voice-channel-sidebar personal-sidebar">
       <header>
-        <strong>Senin alanın</strong>
+        <strong>{t('Senin alanın')}</strong>
         <IconButton
-          label="Toplulukları aç"
+          label={t('Toplulukları aç')}
           onClick={() => navigate(preserveReferenceFixtureRoute('/spaces'))}
         >
           <ReferenceIcon name="chevron-down" size={17} />
@@ -120,18 +121,18 @@ export function PersonalSidebar({
           onClick={() => navigate(preserveReferenceFixtureRoute('/home'))}
         >
           <ReferenceIcon name="home" size={19} />
-          <span>Ana sayfa</span>
+          <span>{t('Ana sayfa')}</span>
         </button>
         <button
           className={`room-channel ${path === '/friends' ? 'selected' : ''}`}
           onClick={() => navigate(preserveReferenceFixtureRoute('/friends'))}
         >
           <ReferenceIcon name="users" size={19} />
-          <span>Arkadaşlar</span>
+          <span>{t('Arkadaşlar')}</span>
           {incomingRequests !== null && incomingRequests > 0 && (
             <span
               className="personal-count"
-              aria-label={`${incomingRequests} yeni arkadaşlık isteği`}
+              aria-label={t('{count} yeni arkadaşlık isteği', { count: incomingRequests })}
             >
               {incomingRequests}
             </span>
@@ -142,20 +143,20 @@ export function PersonalSidebar({
           onClick={() => navigate(preserveReferenceFixtureRoute('/notifications'))}
         >
           <ReferenceIcon name="bell" size={19} />
-          <span>Bildirimler</span>
+          <span>{t('Bildirimler')}</span>
           {unreadNotifications !== null && unreadNotifications > 0 && (
             <span
               className="personal-count"
-              aria-label={`${unreadNotifications} okunmamış bildirim`}
+              aria-label={t('{count} okunmamış bildirim', { count: unreadNotifications })}
             >
               {unreadNotifications}
             </span>
           )}
         </button>
         <div className="section-label">
-          ÖZEL MESAJLAR
+          {t('ÖZEL MESAJLAR')}
           <IconButton
-            label="Arkadaş listesini aç"
+            label={t('Arkadaş listesini aç')}
             onClick={() => navigate(preserveReferenceFixtureRoute('/friends'))}
           >
             <ReferenceIcon name="plus" size={14} />
@@ -177,7 +178,10 @@ export function PersonalSidebar({
               )}
               <span>{user?.displayName || dm.name}</span>
               {count !== undefined ? (
-                <span className="personal-count" aria-label={`${count} okunmamış mesaj`}>
+                <span
+                  className="personal-count"
+                  aria-label={t('{count} okunmamış mesaj', { count })}
+                >
                   {count}
                 </span>
               ) : (
@@ -186,25 +190,25 @@ export function PersonalSidebar({
             </button>
           );
         })}
-        <div className="section-label">KİŞİSEL</div>
+        <div className="section-label">{t('KİŞİSEL')}</div>
         <button
           className="room-channel"
           onClick={() => navigate(preserveReferenceFixtureRoute('/media'))}
         >
           <ReferenceIcon name="film" size={19} />
-          <span>Medyam</span>
+          <span>{t('Medyam')}</span>
         </button>
         <button
           className="room-channel"
           onClick={() => navigate(preserveReferenceFixtureRoute('/agent?tab=schedules'))}
         >
           <ReferenceIcon name="calendar" size={19} />
-          <span>Planlanan görevler</span>
+          <span>{t('Planlanan görevler')}</span>
         </button>
         {!c.spaces.length && (
           <button className="room-channel" onClick={() => navigate('/setup/invite')}>
             <ReferenceIcon name="plus" size={19} />
-            <span>Davet bağlantısı aç</span>
+            <span>{t('Davet bağlantısı aç')}</span>
           </button>
         )}
       </div>
@@ -215,16 +219,16 @@ export function PersonalSidebar({
             <span>
               <strong>
                 {r.status === 'connected'
-                  ? 'Ses bağlı'
+                  ? t('Ses bağlı')
                   : r.status === 'reconnecting'
-                    ? 'Yeniden bağlanıyor'
-                    : 'Bağlantı kesildi'}
+                    ? t('Yeniden bağlanıyor')
+                    : t('Bağlantı kesildi')}
               </strong>
               <small>
                 {r.roomName} / {c.spaces.find((s) => s.id === c.activeSpaceId)?.name}
               </small>
             </span>
-            <IconButton label="Sesten ayrıl" onClick={() => run(leaveVoice())}>
+            <IconButton label={t('Sesten ayrıl')} onClick={() => run(leaveVoice())}>
               <ReferenceIcon name="logout" size={17} />
             </IconButton>
           </div>
@@ -241,23 +245,28 @@ export function PersonalSidebar({
               onClick={() => navigate(preserveReferenceFixtureRoute('/voice?view=share&choose=1'))}
             >
               <ReferenceIcon name="monitor" size={14} />
-              Ekran
+              {t('Ekran')}
             </button>
           </div>
         </div>
       ) : (
         localVoiceFixture && (
-          <div className="sidebar-call local-voice-fixture" aria-label="Yerel ses odası örneği">
+          <div
+            className="sidebar-call local-voice-fixture"
+            aria-label={t('Yerel ses odası örneği')}
+          >
             <div>
               <ReferenceIcon name="wifi" size={18} />
               <span>
-                <strong>Ses bağlı</strong>
-                <small>Salon / Bizim Oda</small>
+                <strong>{t('Ses bağlı')}</strong>
+                <small>
+                  {places.lounge} / {places.community}
+                </small>
               </span>
               <IconButton
-                label="Yerel örnekte ses bağlantısı yok"
+                label={t('Yerel örnekte ses bağlantısı yok')}
                 disabled
-                title="Bu ekran yerel bir görsel örnektir; gerçek ses bağlantısı yok."
+                title={t('Bu ekran yerel bir görsel örnektir; gerçek ses bağlantısı yok.')}
               >
                 <ReferenceIcon name="logout" size={17} />
               </IconButton>
@@ -265,17 +274,17 @@ export function PersonalSidebar({
             <div className="sidebar-call-actions">
               <button
                 disabled
-                title="Bu ekran yerel bir görsel örnektir; gerçek arama başlatılmaz."
+                title={t('Bu ekran yerel bir görsel örnektir; gerçek arama başlatılmaz.')}
               >
                 <ReferenceIcon name="video" size={14} />
                 Video
               </button>
               <button
                 disabled
-                title="Bu ekran yerel bir görsel örnektir; gerçek ekran paylaşımı başlatılmaz."
+                title={t('Bu ekran yerel bir görsel örnektir; gerçek ekran paylaşımı başlatılmaz.')}
               >
                 <ReferenceIcon name="monitor" size={14} />
-                Ekran
+                {t('Ekran')}
               </button>
             </div>
           </div>
@@ -290,21 +299,21 @@ export function PersonalSidebar({
           <strong>{c.user?.displayName || c.user?.username}</strong>
         </button>
         <IconButton
-          label={r.muted ? 'Mikrofonu aç' : 'Mikrofonu kapat'}
+          label={r.muted ? t('Mikrofonu aç') : t('Mikrofonu kapat')}
           disabled={r.status !== 'connected'}
           onClick={() => run(toggleMic())}
         >
           <ReferenceIcon name={r.muted ? 'mic-off' : 'mic'} size={17} />
         </IconButton>
         <IconButton
-          label={r.deafened ? 'Sesi aç' : 'Sağırlaştır'}
+          label={r.deafened ? t('Sesi aç') : t('Sağırlaştır')}
           disabled={r.status !== 'connected'}
           onClick={() => run(toggleDeafen())}
         >
           <ReferenceIcon name="headphones" size={17} />
         </IconButton>
         <IconButton
-          label="Ayarlar"
+          label={t('Ayarlar')}
           onClick={() => navigate(preserveReferenceFixtureRoute('/settings'))}
         >
           <ReferenceIcon name="settings" size={17} />

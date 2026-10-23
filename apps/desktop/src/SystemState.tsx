@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCommunity } from './community';
 import { useRealtime } from './realtime';
 import { ReferenceIcon } from './ReferenceIcon';
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 import './reference-system.css';
 
 export type SystemStateKind =
@@ -17,42 +17,50 @@ export type SystemStateKind =
   | 'permission_denied'
   | 'unsupported';
 const descriptions: Record<SystemStateKind, [string, string, string]> = {
-  connected: ['Bağlısın', 'Topluluk bağlantısı açık.', 'Sohbete dön'],
+  connected: [t('Bağlısın'), t('Topluluk bağlantısı açık.'), t('Sohbete dön')],
   offline: [
-    'Çevrimdışısın',
-    'İnternet bağlantın kesildi. Daha önce yüklenen mesajları okuyabilirsin; yeni mesaj ve işlemler bağlantı geldiğinde gönderilebilir.',
-    'Yeniden bağlan',
+    t('Çevrimdışısın'),
+    t(
+      'İnternet bağlantın kesildi. Daha önce yüklenen mesajları okuyabilirsin; yeni mesaj ve işlemler bağlantı geldiğinde gönderilebilir.',
+    ),
+    t('Yeniden bağlan'),
   ],
   reconnect: [
-    'Odaya yeniden bağlanıyoruz',
-    'Mesajların ve odadaki etkinliğin son durumu kontrol ediliyor. Bağlantı kurulana kadar yeni işlem başlatılmıyor.',
-    'Tekrar dene',
+    t('Odaya yeniden bağlanıyoruz'),
+    t(
+      'Mesajların ve odadaki etkinliğin son durumu kontrol ediliyor. Bağlantı kurulana kadar yeni işlem başlatılmıyor.',
+    ),
+    t('Tekrar dene'),
   ],
-  loading: ['Odan hazırlanıyor', 'Mesajlar ve üyeler yükleniyor.', ''],
+  loading: [t('Odan hazırlanıyor'), t('Mesajlar ve üyeler yükleniyor.'), ''],
   empty: [
-    'Henüz burada bir şey yok',
-    'Bu alana ilk mesajı veya dosyayı ekleyerek birlikte başlayabilirsiniz.',
-    'Sohbete dön',
+    t('Henüz burada bir şey yok'),
+    t('Bu alana ilk mesajı veya dosyayı ekleyerek birlikte başlayabilirsiniz.'),
+    t('Sohbete dön'),
   ],
   session_expired: [
-    'Yeniden giriş yapman gerekiyor',
-    'Özel topluluğuna devam etmek için hesabınla tekrar giriş yap.',
-    'Giriş yap',
+    t('Yeniden giriş yapman gerekiyor'),
+    t('Özel topluluğuna devam etmek için hesabınla tekrar giriş yap.'),
+    t('Giriş yap'),
   ],
   unavailable: [
-    'Şu anda bağlanamıyoruz',
-    'Topluluk hizmetine ulaşılamıyor. Mesajların bu ekranda yeniden gönderilmeyecek.',
-    'Yeniden dene',
+    t('Şu anda bağlanamıyoruz'),
+    t('Topluluk hizmetine ulaşılamıyor. Mesajların bu ekranda yeniden gönderilmeyecek.'),
+    t('Yeniden dene'),
   ],
   permission_denied: [
-    'Bu alan için iznin yok',
-    'Bu içeriği görüntülemek için erişim gerekiyor. Kanalın özel içeriği ve önizlemesi gösterilmez.',
-    'Genel kanala dön',
+    t('Bu alan için iznin yok'),
+    t(
+      'Bu içeriği görüntülemek için erişim gerekiyor. Kanalın özel içeriği ve önizlemesi gösterilmez.',
+    ),
+    t('Genel kanala dön'),
   ],
   unsupported: [
-    'Sistem sesi burada kullanılamıyor',
-    'Bu cihaz ve paylaşım yöntemi için sistem sesi desteği doğrulanmadı. Ekranını sistem sesi olmadan paylaşabilirsin.',
-    'Ekran seçimine dön',
+    t('Sistem sesi burada kullanılamıyor'),
+    t(
+      'Bu cihaz ve paylaşım yöntemi için sistem sesi desteği doğrulanmadı. Ekranını sistem sesi olmadan paylaşabilirsin.',
+    ),
+    t('Ekran seçimine dön'),
   ],
 };
 
@@ -125,28 +133,28 @@ export function SystemState({
         <div className="system-detail">
           <strong>
             <span className="system-spinner" />
-            Bağlantı kontrol ediliyor
+            {t('Bağlantı kontrol ediliyor')}
           </strong>
           <p>
-            Ses odası: {voiceStatus ?? 'bağlı değil'}
+            {t('Ses odası: {status}', { status: voiceStatus ?? t('bağlı değil') })}
             <br />
-            Etkinlik: bağlantı sonrası güncellenecek
+            {t('Etkinlik: bağlantı sonrası güncellenecek')}
           </p>
         </div>
       )}
       {kind === 'unsupported' && (
         <div className="system-detail">
-          <strong>Sistem sesi</strong>
+          <strong>{t('Sistem sesi')}</strong>
           <div className="system-audio">
-            <span>Bu cihazda kullanılamıyor</span>
+            <span>{t('Bu cihazda kullanılamıyor')}</span>
             <button
               role="switch"
-              aria-label="Sistem sesi kullanılamıyor"
+              aria-label={t('Sistem sesi kullanılamıyor')}
               aria-checked={false}
               disabled
             />
           </div>
-          <p>Paylaşım kaynağını ve mikrofonunu ayrı seçebilirsin.</p>
+          <p>{t('Paylaşım kaynağını ve mikrofonunu ayrı seçebilirsin.')}</p>
         </div>
       )}
       {action && (
@@ -155,11 +163,11 @@ export function SystemState({
             {['offline', 'reconnect', 'unavailable'].includes(kind) && (
               <ReferenceIcon name="refresh-cw" size={17} />
             )}{' '}
-            {busy ? 'Kontrol ediliyor…' : action}
+            {busy ? t('Kontrol ediliyor…') : action}
           </button>
           {['offline', 'reconnect', 'unavailable'].includes(kind) && (
             <button className="button secondary" disabled={!onReturn} onClick={onReturn}>
-              Yüklenen mesajlara dön
+              {t('Yüklenen mesajlara dön')}
             </button>
           )}
         </div>
@@ -171,11 +179,18 @@ export function SystemState({
       )}
       <small>
         {kind === 'permission_denied'
-          ? 'Erişim değişiklikleri topluluk yöneticileri tarafından yapılır.'
+          ? t('Erişim değişiklikleri topluluk yöneticileri tarafından yapılır.')
           : kind === 'unsupported'
-            ? 'Sistem izni vermek, desteklenmeyen bir özelliği etkinleştirmez.'
+            ? t('Sistem izni vermek, desteklenmeyen bir özelliği etkinleştirmez.')
             : checkedAt
-              ? `Son kontrol: ${new Date(checkedAt).toLocaleString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`
+              ? t('Son kontrol: {date}', {
+                  date: new Date(checkedAt).toLocaleString(locale, {
+                    day: 'numeric',
+                    month: 'long',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }),
+                })
               : null}
       </small>
     </section>
@@ -245,10 +260,10 @@ export default function ConnectionStatusSurface() {
       checkedAt={checkedAt}
       voiceStatus={
         media.status === 'connected'
-          ? 'bağlı'
+          ? t('bağlı')
           : media.status === 'reconnecting'
-            ? 'yeniden bağlanıyor'
-            : 'bağlı değil'
+            ? t('yeniden bağlanıyor')
+            : t('bağlı değil')
       }
       onRetry={() => void retry()}
       onReturn={() => navigate('/chat')}
@@ -262,9 +277,9 @@ export function StartupSplash({ referenceCopy = false }: { referenceCopy?: boole
     <div className="reference-splash" role="status">
       <div>
         <img src="./reference-brand/brand/logo-lockup-lilac.svg" alt="Tayfa" />
-        {import.meta.env.DEV && referenceCopy && <h1>Aynı yere dönmek güzel.</h1>}
-        <p>Odan hazırlanıyor.</p>
-        <progress aria-label="Uygulama açılıyor" />
+        {import.meta.env.DEV && referenceCopy && <h1>{t('Aynı yere dönmek güzel.')}</h1>}
+        <p>{t('Odan hazırlanıyor.')}</p>
+        <progress aria-label={t('Uygulama açılıyor')} />
       </div>
     </div>
   );

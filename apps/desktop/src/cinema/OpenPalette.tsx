@@ -9,13 +9,14 @@ import { cinemaErrorText, getCinemaBridge } from './cinema-bridge';
 import { useGuides, useNow } from './guide-cache';
 import { programmeAt } from './hall-model';
 import { useHall } from './use-hall';
+import { t } from '../i18n';
 
 type Result = { kind: 'item'; item: CinemaItem } | { kind: 'youtube'; videoId: string };
 
 const groups: { kind: CinemaItem['kind']; label: string }[] = [
-  { kind: 'live', label: 'Kanallar' },
-  { kind: 'movie', label: 'Filmler' },
-  { kind: 'series', label: 'Diziler' },
+  { kind: 'live', label: t('Kanallar') },
+  { kind: 'movie', label: t('Filmler') },
+  { kind: 'series', label: t('Diziler') },
 ];
 
 /**
@@ -107,14 +108,14 @@ export function OpenPalette({
           details = null;
         }
         if (details && details.playable === false) {
-          hall.notify('Bu YouTube videosu gizli ya da kaldırılmış.');
+          hall.notify(t('Bu YouTube videosu gizli ya da kaldırılmış.'));
           return;
         }
-        const title = details && details.playable ? details.title : 'YouTube videosu';
+        const title = details && details.playable ? details.title : t('YouTube videosu');
         await hall.open({
           kind: 'youtube',
           videoId,
-          title: title.trim().slice(0, 240) || 'YouTube videosu',
+          title: title.trim().slice(0, 240) || t('YouTube videosu'),
         });
       })();
       return;
@@ -134,7 +135,7 @@ export function OpenPalette({
         className="hall-palette"
         role="dialog"
         aria-modal="true"
-        aria-label="Salonda aç"
+        aria-label={t('Salonda aç')}
         onPointerDown={(event) => event.stopPropagation()}
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
@@ -159,8 +160,8 @@ export function OpenPalette({
           <input
             ref={input}
             value={text}
-            placeholder="Kanal, film, dizi ara ya da YouTube bağlantısı yapıştır"
-            aria-label="Aranacak içerik"
+            placeholder={t('Kanal, film, dizi ara ya da YouTube bağlantısı yapıştır')}
+            aria-label={t('Aranacak içerik')}
             aria-controls="hall-palette-results"
             aria-activedescendant={results[active] ? `hall-palette-${active}` : undefined}
             onChange={(event) => setText(event.target.value)}
@@ -170,14 +171,16 @@ export function OpenPalette({
         <div id="hall-palette-results" className="hall-palette-results" role="listbox">
           {!text.trim() && (
             <p className="hall-palette-hint">
-              Bir şey yaz: “trt”, “mavi saat” ya da bir YouTube bağlantısı.{' '}
+              {t('Bir şey yaz: “trt”, “mavi saat” ya da bir YouTube bağlantısı.')}{' '}
               {steer
-                ? 'Enter salonda herkes için açar.'
-                : 'Kumanda ev sahibinde; Enter sıraya önerir.'}
+                ? t('Enter salonda herkes için açar.')
+                : t('Kumanda ev sahibinde; Enter sıraya önerir.')}
             </p>
           )}
           {text.trim() && !videoId && !searching && !items.length && !error && (
-            <p className="hall-palette-hint">“{text.trim()}” için sonuç yok.</p>
+            <p className="hall-palette-hint">
+              {t('“{query}” için sonuç yok.', { query: text.trim() })}
+            </p>
           )}
           {error && <p className="hall-palette-hint error">{error}</p>}
           {results.map((result, index) => {
@@ -212,7 +215,7 @@ export function OpenPalette({
                       </span>
                       <span className="hall-palette-text">
                         <strong>
-                          <MonitorPlay size={14} /> YouTube videosu
+                          <MonitorPlay size={14} /> {t('YouTube videosu')}
                         </strong>
                         <small>{result.videoId}</small>
                       </span>
@@ -233,12 +236,15 @@ export function OpenPalette({
                         </strong>
                         <small>
                           {onAir
-                            ? `Şimdi: ${onAir.title}`
+                            ? t('Şimdi: {title}', { title: onAir.title })
                             : result.item.kind === 'live'
                               ? result.item.number !== null
-                                ? `Kanal ${result.item.number}`
-                                : 'Canlı kanal'
-                              : [result.item.year, result.item.kind === 'series' ? 'Dizi' : 'Film']
+                                ? t('Kanal {number}', { number: result.item.number })
+                                : t('Canlı kanal')
+                              : [
+                                  result.item.year,
+                                  result.item.kind === 'series' ? t('Dizi') : t('Film'),
+                                ]
                                   .filter(Boolean)
                                   .join(' · ')}
                         </small>
@@ -248,10 +254,10 @@ export function OpenPalette({
                   {index === active && (
                     <span className="hall-palette-action">
                       {result.kind === 'item' && result.item.kind === 'series'
-                        ? 'Bölümleri gör'
+                        ? t('Bölümleri gör')
                         : steer
-                          ? 'Salonda aç'
-                          : 'Sıraya öner'}
+                          ? t('Salonda aç')
+                          : t('Sıraya öner')}
                       <CornerDownLeft size={13} />
                     </span>
                   )}

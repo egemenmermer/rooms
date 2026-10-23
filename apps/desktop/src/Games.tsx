@@ -11,7 +11,7 @@ import type { Card as EngineCard, Suit } from '../../../packages/games/src/cards
 import { VoiceAvatar } from './VoiceAvatar';
 import { InviteLinkCard } from './InviteLinkCard';
 import type { SocialInvite } from '@rooms/social';
-import { tr, uiError } from './i18n';
+import { locale, t, tr, uiError } from './i18n';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -69,17 +69,22 @@ const tableTitle = (title: string | undefined, kind: GameKind | undefined) =>
 const suits: Record<string, string> = { clubs: '♣', diamonds: '♦', hearts: '♥', spades: '♠' };
 // Spoken names: screen readers say "Kupa As", not "14 ♥".
 const suitNames: Record<string, string> = {
-  clubs: 'Sinek',
-  diamonds: 'Karo',
-  hearts: 'Kupa',
-  spades: 'Maça',
+  clubs: t('Sinek'),
+  diamonds: t('Karo'),
+  hearts: t('Kupa'),
+  spades: t('Maça'),
 };
-const rankNames: Record<number, string> = { 11: 'Vale', 12: 'Kız', 13: 'Papaz', 14: 'As' };
+const rankNames: Record<number, string> = {
+  11: t('Vale'),
+  12: t('Kız'),
+  13: t('Papaz'),
+  14: t('As'),
+};
 const tileColors: Record<string, string> = {
-  red: 'Kırmızı',
-  black: 'Siyah',
-  blue: 'Mavi',
-  yellow: 'Sarı',
+  red: t('Kırmızı'),
+  black: t('Siyah'),
+  blue: t('Mavi'),
+  yellow: t('Sarı'),
 };
 const array = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 const object = (value: unknown): Record<string, unknown> =>
@@ -182,16 +187,16 @@ export default function Games() {
         blocked={
           activity.room?.participants.find((p) => p.userId === community.user?.id)?.canCreate ===
           false
-            ? 'Bu odada masa açma yetkin yok.'
+            ? t('Bu odada masa açma yetkin yok.')
             : ''
         }
         otherActivity={
           activity.room?.primary && !game
             ? retiredActivity(activity.room.primary.activity)
-              ? 'eski Sinema oturumu'
+              ? t('eski Sinema oturumu')
               : activity.room.primary.activity === 'screen'
-                ? 'ekran paylaşımı'
-                : (tableTitle(activity.room.primary.title, undefined) ?? 'bir etkinlik')
+                ? t('ekran paylaşımı')
+                : (tableTitle(activity.room.primary.title, undefined) ?? t('bir etkinlik'))
             : null
         }
         onCreate={setCreate}
@@ -204,7 +209,7 @@ export default function Games() {
     return (
       <>
         <button className="coffeehouse-return" onClick={() => navigate('/games')}>
-          ← Kıraathaneye dön
+          {t('← Kıraathaneye dön')}
         </button>
         <ReferenceOtherGame
           key={`${roomId}:${activity.room?.primary?.startedAt}`}
@@ -222,7 +227,7 @@ export default function Games() {
           navigate('/games');
         }}
       >
-        ← Kıraathaneye dön
+        {t('← Kıraathaneye dön')}
       </button>
       <ReferenceGames
         activity={activity}
@@ -288,7 +293,7 @@ function ReferenceGames({
     [buyIn, setBuyIn] = useState<number | null>(null),
     [now, setNow] = useState(Date.now());
   const fixture = import.meta.env.DEV && new URLSearchParams(location.search).has('fixture');
-  const fixtureReason = 'Yerel görsel örnekte gerçek oyun işlemi kapalı';
+  const fixtureReason = t('Yerel görsel örnekte gerçek oyun işlemi kapalı');
   useEffect(() => {
     activity.clearError();
   }, [create, activity.clearError]);
@@ -365,9 +370,9 @@ function ReferenceGames({
   };
   const selectedSeat = buyIn === null ? null : game?.seats.find((seat) => seat.seat === buyIn);
   const seatReason = selectedSeat
-    ? 'Bu koltuk artık dolu. Başka bir koltuk seç.'
+    ? t('Bu koltuk artık dolu. Başka bir koltuk seç.')
     : own
-      ? 'Zaten masadasın.'
+      ? t('Zaten masadasın.')
       : '';
 
   const legal = array<string>(view.legalActions),
@@ -439,27 +444,28 @@ function ReferenceGames({
     if (!fixture && (!playing || !myTurn || !legal.includes('raise'))) setRaise(false);
   }, [fixture, playing, myTurn, legal.join(',')]);
   const startReason = !own
-    ? 'Oyunu başlatmak için önce otur'
+    ? t('Oyunu başlatmak için önce otur')
     : !owner
-      ? 'Oyunu yalnızca masa sahibi başlatabilir'
+      ? t('Oyunu yalnızca masa sahibi başlatabilir')
       : !ready
-        ? 'Etkinlik bağlantısı bekleniyor'
+        ? t('Etkinlik bağlantısı bekleniyor')
         : !game ||
             game.seats.length <
               (game.kind === 'holdem' ? 2 : game.kind === 'blackjack' ? 1 : capacity)
-          ? 'Başlamak için koltukları doldurun'
+          ? t('Başlamak için koltukları doldurun')
           : game.kind === 'holdem' &&
               game.seats.some(
                 (seat) => seat.chips < Number(view.rules?.bigBlind ?? view.bigBlind ?? 20),
               )
-            ? 'Bir oyuncunun fişi blind için yetersiz'
+            ? t('Bir oyuncunun fişi blind için yetersiz')
             : '';
-  const roomName = c.channels.find((channel) => channel.id === roomId)?.name ?? 'Oda';
+  const roomName = c.channels.find((channel) => channel.id === roomId)?.name ?? t('Oda');
   const title =
     view.tableName ??
     tableTitle(activity.room?.primary?.title, game?.kind) ??
-    (game ? names[game.kind] : 'Oyun alanı');
-  const seatName = (id: string) => game?.seats.find((seat) => seat.userId === id)?.name ?? 'Oyuncu';
+    (game ? names[game.kind] : t('Oyun alanı'));
+  const seatName = (id: string) =>
+    game?.seats.find((seat) => seat.userId === id)?.name ?? t('Oyuncu');
   const payouts = object(view.payouts),
     winners = Object.entries(payouts).filter(([, value]) => Number(value) > 0);
   // Highlight only server-delivered winning evaluations after public settlement.
@@ -545,20 +551,23 @@ function ReferenceGames({
   }, [buyIn]);
   const nativeRules = view.rules;
   const ruleRows: [string, string][] = [
-    ['Oyun', game ? names[game.kind] : create ? names[create] : '—'],
-    ['Koltuk', String(capacity)],
+    [t('Oyun'), game ? names[game.kind] : create ? names[create] : '—'],
+    [t('Koltuk'), String(capacity)],
     ...(game?.kind === 'holdem'
       ? [
           [
             'Blind',
-            `${nativeRules?.smallBlind ?? '—'} / ${nativeRules?.bigBlind ?? view.bigBlind ?? '—'} sanal fiş`,
+            t('{small} / {big} sanal fiş', {
+              small: nativeRules?.smallBlind ?? '—',
+              big: nativeRules?.bigBlind ?? String(view.bigBlind ?? '—'),
+            }),
           ] as [string, string],
         ]
       : []),
     ...(game?.kind === 'holdem'
       ? ([
-          ['Giriş', `${nativeRules?.minBuyIn ?? '—'} – ${nativeRules?.maxBuyIn ?? '—'}`],
-          ['İzleyici', nativeRules?.spectatorsAllowed ? 'Açık' : 'Kapalı'],
+          [t('Giriş'), `${nativeRules?.minBuyIn ?? '—'} – ${nativeRules?.maxBuyIn ?? '—'}`],
+          [t('İzleyici'), nativeRules?.spectatorsAllowed ? t('Açık') : t('Kapalı')],
         ] as [string, string][])
       : []),
   ];
@@ -590,15 +599,17 @@ function ReferenceGames({
           fixture
             ? fixtureReason
             : !ready
-              ? 'Etkinlik bağlantısı gerekli'
+              ? t('Etkinlik bağlantısı gerekli')
               : currentPrimary && !canReplace
-                ? 'Açık etkinliği yalnızca hostu kapatabilir. Kapatıldığında masa açabilirsin.'
+                ? t('Açık etkinliği yalnızca hostu kapatabilir. Kapatıldığında masa açabilirsin.')
                 : ''
         }
         consent={
           currentPrimary && canReplace
             ? {
-                label: `${tableTitle(currentPrimary.title, game?.kind)} etkinliğini bitir ve bu masayı kur`,
+                label: t('{tableTitle} etkinliğini bitir ve bu masayı kur', {
+                  tableTitle: tableTitle(currentPrimary.title, game?.kind) ?? '',
+                }),
                 checked: replacementMatches,
                 onChange: (checked) =>
                   setReplaceConsent(
@@ -629,21 +640,21 @@ function ReferenceGames({
             <h1>
               {game
                 ? game.status === 'finished'
-                  ? 'El tamamlandı'
+                  ? t('El tamamlandı')
                   : title
-                : 'Masa hazır. Sen de gel.'}
+                : t('Masa hazır. Sen de gel.')}
             </h1>
             {game && (
               <span>
                 {game.seats.length} / {capacity}
               </span>
             )}
-            {playing && <span>Kurallar kilitli</span>}
+            {playing && <span>{t('Kurallar kilitli')}</span>}
           </div>
           <p>
             {game
-              ? `${roomName} · ${names[game.kind]} · Sanal fiş`
-              : 'Bir oyun seç, arkadaşlarınla aynı masaya otur.'}
+              ? t('{roomName} · {names} · Sanal fiş', { roomName, names: names[game.kind] })
+              : t('Bir oyun seç, arkadaşlarınla aynı masaya otur.')}
           </p>
         </div>
         <div>
@@ -654,13 +665,13 @@ function ReferenceGames({
                 fixture
                   ? fixtureReason
                   : c.status !== 'connected'
-                    ? 'Topluluk bağlantısı gerekli'
+                    ? t('Topluluk bağlantısı gerekli')
                     : undefined
               }
               onClick={() => setInviteOpen(true)}
             >
               <UserPlus size={16} />
-              Arkadaş davet et
+              {t('Arkadaş davet et')}
             </button>
           )}
           {game && own && (
@@ -670,19 +681,19 @@ function ReferenceGames({
               onClick={() => void send({ type: 'game.leave' })}
             >
               <X size={16} />
-              Masadan kalk
+              {t('Masadan kalk')}
             </button>
           )}
           <button
             disabled={!!game && !access}
-            title={game && !access ? 'Geçmiş için izleyici olarak katıl' : undefined}
+            title={game && !access ? t('Geçmiş için izleyici olarak katıl') : undefined}
             onClick={() => navigate('/games?tab=history')}
           >
             <History size={16} />
-            {game ? 'Geçmiş' : 'Masa geçmişi'}
+            {game ? t('Geçmiş') : t('Masa geçmişi')}
           </button>
           {game && (
-            <IconButton label="Masayı yenile" onClick={refresh}>
+            <IconButton label={t('Masayı yenile')} onClick={refresh}>
               <RefreshCw size={17} />
             </IconButton>
           )}
@@ -692,12 +703,12 @@ function ReferenceGames({
       {!ready && (
         <div className={`rg-banner ${activity.status === 'error' ? 'error' : ''}`} role="status">
           {activity.status === 'loading'
-            ? 'Masalar getiriliyor…'
+            ? t('Masalar getiriliyor…')
             : !roomId
-              ? 'Oyun için bir oda seç.'
-              : 'Oyun hizmeti bağlantısı bekleniyor.'}
+              ? t('Oyun için bir oda seç.')
+              : t('Oyun hizmeti bağlantısı bekleniyor.')}
           <button onClick={() => (!roomId ? navigate('/settings?tab=connections') : refresh())}>
-            {!roomId ? 'Topluluğa bağlan' : 'Yeniden dene'}
+            {!roomId ? t('Topluluğa bağlan') : t('Yeniden dene')}
           </button>
         </div>
       )}
@@ -732,50 +743,51 @@ function ReferenceGames({
                   <h3>{names[kind]}</h3>
                   <p>
                     {kind === 'holdem'
-                      ? '2–9 oyuncu · Sanal fiş'
+                      ? t('2–9 oyuncu · Sanal fiş')
                       : kind === 'blackjack'
-                        ? 'Otomatik krupiye · Sanal fiş'
+                        ? t('Otomatik krupiye · Sanal fiş')
                         : kind === 'batak'
-                          ? '4 tür · 3 veya 4 oyuncu'
-                          : '4 oyuncu · Tekli veya eşli'}
+                          ? t('4 tür · 3 veya 4 oyuncu')
+                          : t('4 oyuncu · Tekli veya eşli')}
                   </p>
                   <button className="button secondary" onClick={() => onCreate(kind)}>
                     <Plus size={16} />
-                    Masa oluştur
+                    {t('Masa oluştur')}
                   </button>
                 </div>
               </article>
             ))}
           </div>
           <section className="rg-active-tables">
-            <h3>Odanın masası</h3>
+            <h3>{t('Odanın masası')}</h3>
             <div>
               <Gamepad2 size={29} />
               <div>
                 <strong>
                   {activity.status === 'loading'
-                    ? 'Masalar getiriliyor'
+                    ? t('Masalar getiriliyor')
                     : !ready
-                      ? 'Masa bağlantısı bekleniyor'
-                      : 'Açık oyun masası yok'}
+                      ? t('Masa bağlantısı bekleniyor')
+                      : t('Açık oyun masası yok')}
                 </strong>
                 <p>
                   {activity.room?.primary
-                    ? `Bu odada ${activity.room.primary.title} etkinliği açık.`
+                    ? t('Bu odada {title} etkinliği açık.', { title: activity.room.primary.title })
                     : !ready
-                      ? 'Masa durumu bağlantı kurulunca alınır.'
-                      : 'Bir oyun seçerek masa oluşturabilirsin.'}
+                      ? t('Masa durumu bağlantı kurulunca alınır.')
+                      : t('Bir oyun seçerek masa oluşturabilirsin.')}
                 </p>
               </div>
             </div>
           </section>
           <div className="rg-voice-note">
             <Headphones size={17} />
-            <span>Oyun penceresini kapatmak ses bağlantını kesmez.</span>
+            <span>{t('Oyun penceresini kapatmak ses bağlantını kesmez.')}</span>
           </div>
           <p className="rg-footer-note">
-            Yalnızca sanal fiş ve puan. Bir odada aynı anda tek ana medya veya oyun etkinliği
-            başlatılabilir.
+            {t(
+              'Yalnızca sanal fiş ve puan. Bir odada aynı anda tek ana medya veya oyun etkinliği başlatılabilir.',
+            )}
           </p>
         </>
       ) : waiting ? (
@@ -783,9 +795,9 @@ function ReferenceGames({
           <div className="rg-lobby">
             <section>
               <div className="rg-section-heading">
-                <h3>Koltuklar</h3>
+                <h3>{t('Koltuklar')}</h3>
                 <span>
-                  {capacity} koltuk · {names[game.kind]}
+                  {t('{capacity} koltuk · {names}', { capacity, names: names[game.kind] })}
                 </span>
               </div>
               <div className="rg-seat-grid">
@@ -802,26 +814,28 @@ function ReferenceGames({
                           <strong>{seat.name}</strong>
                           <small>
                             {seat.bot
-                              ? 'Oyun botu'
+                              ? t('Oyun botu')
                               : seat.userId === game.ownerId
-                                ? 'Masa sahibi'
+                                ? t('Masa sahibi')
                                 : seat.connected
-                                  ? 'Masada'
-                                  : 'Bağlantısı kesildi'}
-                            {seat.userId === c.user?.id ? ' · sen' : ''}
+                                  ? t('Masada')
+                                  : t('Bağlantısı kesildi')}
+                            {seat.userId === c.user?.id ? t(' · sen') : ''}
                           </small>
                         </>
                       ) : (
                         <>
                           <Plus size={23} />
-                          <span>Koltuk {index + 1} boş</span>
+                          <span>{t('Koltuk {number} boş', { number: index + 1 })}</span>
                           <div>
                             <button
                               disabled={!!own || !ready || fixture || activity.busy}
-                              title={fixture ? fixtureReason : own ? 'Zaten masadasın' : undefined}
+                              title={
+                                fixture ? fixtureReason : own ? t('Zaten masadasın') : undefined
+                              }
                               onClick={() => setBuyIn(index)}
                             >
-                              Otur
+                              {t('Otur')}
                             </button>
                             {owner && (
                               <button
@@ -830,7 +844,7 @@ function ReferenceGames({
                                 onClick={() => void send({ type: 'game.bot.add', seat: index })}
                               >
                                 <Bot size={12} />
-                                Bot ekle
+                                {t('Bot ekle')}
                               </button>
                             )}
                           </div>
@@ -842,11 +856,11 @@ function ReferenceGames({
               </div>
               <div className="rg-spectators">
                 <Eye size={19} />
-                <strong>İzleyici</strong>
+                <strong>{t('İzleyici')}</strong>
                 <p>
                   {array<{ name: string }>(view.spectators)
                     .map((person) => person.name)
-                    .join(' · ') || 'İzleyici yok'}
+                    .join(' · ') || t('İzleyici yok')}
                 </p>
                 {!own && (
                   <button
@@ -860,14 +874,14 @@ function ReferenceGames({
                       void send({ type: 'game.watch', watching: view.watching !== true })
                     }
                   >
-                    {view.watching ? 'İzlemeyi bırak' : 'İzle'}
+                    {view.watching ? t('İzlemeyi bırak') : t('İzle')}
                   </button>
                 )}
               </div>
             </section>
             <aside className="rg-rules">
               <h3>
-                Masa kuralları <SlidersHorizontal size={19} />
+                {t('Masa kuralları')} <SlidersHorizontal size={19} />
               </h3>
               {game.kind === 'holdem' && owner && waiting && !game.history.length && (
                 <button
@@ -880,7 +894,7 @@ function ReferenceGames({
                     }
                   }}
                 >
-                  Düzenle
+                  {t('Düzenle')}
                 </button>
               )}
               {ruleRows.map(([label, value]) => (
@@ -889,17 +903,17 @@ function ReferenceGames({
                   <strong>{value}</strong>
                 </div>
               ))}
-              <p>Kurallar oyun başladığında kilitlenir.</p>
+              <p>{t('Kurallar oyun başladığında kilitlenir.')}</p>
             </aside>
           </div>
           <div className="rg-hand-strip">
             <div>
-              <h3>{game.seats.length === capacity ? 'Masa dolu' : 'Oyuncular bekleniyor'}</h3>
-              <p>{startReason || 'Yeni el başlayabilir.'}</p>
+              <h3>{game.seats.length === capacity ? t('Masa dolu') : t('Oyuncular bekleniyor')}</h3>
+              <p>{startReason || t('Yeni el başlayabilir.')}</p>
             </div>
             {game.kind === 'blackjack' && own && (
               <label className="rg-lobby-bet">
-                Sanal bahis
+                {t('Sanal bahis')}
                 <input
                   type="number"
                   min={2}
@@ -920,11 +934,11 @@ function ReferenceGames({
                   }
                   onClick={() => void send({ type: 'game.action', action: 'bet', amount })}
                 >
-                  Bahsi belirle
+                  {t('Bahsi belirle')}
                 </button>
               </label>
             )}
-            <button onClick={() => setRules(true)}>Masa kuralları</button>
+            <button onClick={() => setRules(true)}>{t('Masa kuralları')}</button>
             <button
               className="button primary"
               disabled={!!startReason || !can('start')}
@@ -932,18 +946,18 @@ function ReferenceGames({
               onClick={newHand}
             >
               <Spade size={17} />
-              Oyunu başlat
+              {t('Oyunu başlat')}
             </button>
           </div>
         </>
       ) : !access ? (
         <section className="rx-watch">
           <Eye size={32} />
-          <h2>Masayı izle</h2>
+          <h2>{t('Masayı izle')}</h2>
           <p>
             {game?.kind === 'holdem' && view.rules?.spectatorsAllowed === false
-              ? 'Bu masada izleyici erişimi kapalı.'
-              : 'Masaya izleyici olarak katıl.'}
+              ? t('Bu masada izleyici erişimi kapalı.')
+              : t('Masaya izleyici olarak katıl.')}
           </p>
           <button
             className="button primary"
@@ -955,19 +969,19 @@ function ReferenceGames({
             }
             onClick={() => void send({ type: 'game.watch', watching: true })}
           >
-            İzle
+            {t('İzle')}
           </button>
         </section>
       ) : (
         <>
           {!own && (
             <div className="rg-banner">
-              İzleyici · Gizli kartlar gösterilmez.
+              {t('İzleyici · Gizli kartlar gösterilmez.')}
               <button
                 disabled={fixture || !ready || activity.busy}
                 onClick={() => void send({ type: 'game.watch', watching: false })}
               >
-                İzlemeyi bırak
+                {t('İzlemeyi bırak')}
               </button>
             </div>
           )}
@@ -981,13 +995,13 @@ function ReferenceGames({
                     flop: 'Flop',
                     turn: 'Turn',
                     river: 'River',
-                    ended: 'El tamamlandı',
+                    ended: t('El tamamlandı'),
                   } as Record<string, string>
-                )[String(view.stage)] ?? 'Masa'}
+                )[String(view.stage)] ?? t('Masa')}
               </small>
               <strong>
                 <Coins size={18} />
-                {pot.toLocaleString('tr-TR')} <span>pot</span>
+                {pot.toLocaleString(locale)} <span>{t('pot')}</span>
               </strong>
               <div>
                 {array<Card>(view.board).map((card) => (
@@ -1004,11 +1018,13 @@ function ReferenceGames({
                 <div className="rg-pot-details">
                   {view.pots.map((item, index) => (
                     <span key={index}>
-                      {item.kind === 'main' ? 'Ana pot' : `Yan pot ${index}`} ·{' '}
-                      {item.amount.toLocaleString('tr-TR')}
-                      {item.split ? ' · Paylaşıldı' : ''}
+                      {item.kind === 'main'
+                        ? t('Ana pot')
+                        : t('Yan pot {number}', { number: index })}{' '}
+                      · {item.amount.toLocaleString(locale)}
+                      {item.split ? t(' · Paylaşıldı') : ''}
                       {item.winners.length
-                        ? ` · ${item.winners.map((id) => `${seatName(id)}${Number.isFinite(item.awards[id]) ? ` +${item.awards[id].toLocaleString('tr-TR')}` : ''}`).join(', ')}`
+                        ? ` · ${item.winners.map((id) => `${seatName(id)}${Number.isFinite(item.awards[id]) ? ` +${item.awards[id].toLocaleString(locale)}` : ''}`).join(', ')}`
                         : ''}
                     </span>
                   ))}
@@ -1064,10 +1080,10 @@ function ReferenceGames({
                         <div>
                           <strong>
                             {seat.name}
-                            {isOwn ? ' · sen' : ''}
+                            {isOwn ? t(' · sen') : ''}
                           </strong>
                           <small>
-                            {Number(details?.chips ?? seat.chips).toLocaleString('tr-TR')} fiş
+                            {Number(details?.chips ?? seat.chips).toLocaleString(locale)} {t('fiş')}
                             {seat.bot ? ' · BOT' : ''}
                           </small>
                         </div>
@@ -1076,22 +1092,22 @@ function ReferenceGames({
                       </div>
                       <small>
                         {seat.pendingNextHand
-                          ? 'Sonraki el bekleniyor'
+                          ? t('Sonraki el bekleniyor')
                           : details?.folded
-                            ? 'Eli bıraktı'
+                            ? t('Eli bıraktı')
                             : game.status === 'finished' && Number(payouts[seat.userId]) > 0
-                              ? `${splitPot ? 'Ortak kazanan' : 'Kazanan'}${view.showdown?.[seat.userId] ? ` · ${pokerCategory(view.showdown[seat.userId].category)}` : ''}`
+                              ? `${splitPot ? t('Ortak kazanan') : t('Kazanan')}${view.showdown?.[seat.userId] ? ` · ${pokerCategory(view.showdown[seat.userId].category)}` : ''}`
                               : details && Number(details.chips) === 0 && playing
                                 ? 'All-in'
                                 : game.turn === index
                                   ? isOwn
-                                    ? 'Sıra sende'
-                                    : `Sıra ${seat.name} kişisinde`
+                                    ? t('Sıra sende')
+                                    : t('Sıra {name} kişisinde', { name: seat.name })
                                   : !seat.connected
-                                    ? 'Bağlantısı kesildi'
+                                    ? t('Bağlantısı kesildi')
                                     : details && Number(details.streetBet) > 0
-                                      ? `Bahis · ${details.streetBet}`
-                                      : 'Masada'}
+                                      ? t('Bahis · {amount}', { amount: String(details.streetBet) })
+                                      : t('Masada')}
                       </small>
                     </>
                   ) : (
@@ -1102,15 +1118,15 @@ function ReferenceGames({
                         fixture
                           ? fixtureReason
                           : own
-                            ? 'Zaten masadasın'
+                            ? t('Zaten masadasın')
                             : playing
-                              ? 'Sonraki el için katıl'
+                              ? t('Sonraki el için katıl')
                               : undefined
                       }
                       onClick={() => setBuyIn(index)}
                     >
                       <Plus size={20} />
-                      Boş koltuk
+                      {t('Boş koltuk')}
                     </button>
                   )}
                 </div>
@@ -1124,37 +1140,39 @@ function ReferenceGames({
                   <h3>
                     <Trophy size={20} />
                     {splitPot
-                      ? 'Pot paylaşıldı'
+                      ? t('Pot paylaşıldı')
                       : winners.length > 1
-                        ? 'Potlar dağıtıldı'
-                        : 'El tamamlandı'}
+                        ? t('Potlar dağıtıldı')
+                        : t('El tamamlandı')}
                   </h3>
                   <p>
                     {winners
                       .map(
                         ([id, value]) =>
-                          `${seatName(id)} · ${Number(value).toLocaleString('tr-TR')} fiş${view.showdown?.[id] ? ` · ${pokerCategory(view.showdown[id].category)}` : ''}`,
+                          `${t('{name} · {chips} fiş', { name: seatName(id), chips: Number(value).toLocaleString(locale) })}${view.showdown?.[id] ? ` · ${pokerCategory(view.showdown[id].category)}` : ''}`,
                       )
-                      .join(' / ') || 'Sonuç ayrıntısı bu yanıtta bulunmuyor.'}
+                      .join(' / ') || t('Sonuç ayrıntısı bu yanıtta bulunmuyor.')}
                   </p>
                 </>
               ) : (
                 <>
-                  <span className="eyebrow">{own ? 'ELİN' : 'CANLI MASA'}</span>
+                  <span className="eyebrow">{own ? t('ELİN') : t('CANLI MASA')}</span>
                   <h3>
                     {mine?.folded
-                      ? 'Bu eli bıraktın'
+                      ? t('Bu eli bıraktın')
                       : mine && Number(mine.chips) === 0
-                        ? 'Bütün fişlerin masada'
+                        ? t('Bütün fişlerin masada')
                         : myTurn
-                          ? 'Sıra sende'
+                          ? t('Sıra sende')
                           : game.seats.find((seat) => seat.seat === game.turn)?.name
-                            ? `${game.seats.find((seat) => seat.seat === game.turn)!.name} bekleniyor`
-                            : 'El devam ediyor'}
+                            ? t('{name} bekleniyor', {
+                                name: game.seats.find((seat) => seat.seat === game.turn)!.name,
+                              })
+                            : t('El devam ediyor')}
                   </h3>
                   {own && (
                     <p>
-                      Kalan fişin: {chips.toLocaleString('tr-TR')}
+                      {t('Kalan fişin: {chips}', { chips: chips.toLocaleString(locale) })}
                       {view.ownHand ? ` · ${pokerCategory(view.ownHand.category)}` : ''}
                     </p>
                   )}
@@ -1165,8 +1183,8 @@ function ReferenceGames({
               <div className="rg-timer">
                 <b>{Math.max(0, Math.ceil((deadline - now - activity.serverOffsetMs) / 1000))}</b>
                 <span>
-                  {myTurn ? 'Sıra sende' : 'Oyuncu bekleniyor'}
-                  <small>Sunucu hamle süresi</small>
+                  {myTurn ? t('Sıra sende') : t('Oyuncu bekleniyor')}
+                  <small>{t('Sunucu hamle süresi')}</small>
                 </span>
               </div>
             )}
@@ -1178,7 +1196,7 @@ function ReferenceGames({
                   title={fixture ? fixtureReason : undefined}
                   onClick={() => action('fold')}
                 >
-                  Bırak
+                  {t('Bırak')}
                 </button>
                 {legal.includes('check') ? (
                   <button
@@ -1186,7 +1204,7 @@ function ReferenceGames({
                     disabled={!can('check')}
                     onClick={() => action('check')}
                   >
-                    Kontrol et
+                    {t('Kontrol et')}
                   </button>
                 ) : (
                   <button
@@ -1194,11 +1212,11 @@ function ReferenceGames({
                     disabled={!can('call')}
                     onClick={() => action('call')}
                   >
-                    Gör · {Math.min(chips, call)}
+                    {t('Gör · {min}', { min: Math.min(chips, call) })}
                   </button>
                 )}
                 <button className="button primary" disabled={!can('raise')} onClick={openRaise}>
-                  Artır · {Math.min(maxRaise, minRaise)}
+                  {t('Artır · {min}', { min: Math.min(maxRaise, minRaise) })}
                 </button>
               </div>
             )}
@@ -1209,7 +1227,7 @@ function ReferenceGames({
                 title={fixture ? fixtureReason : startReason}
                 onClick={newHand}
               >
-                Sonraki el
+                {t('Sonraki el')}
               </button>
             )}
             {own && !own.connected && (
@@ -1218,12 +1236,14 @@ function ReferenceGames({
                 disabled={fixture || !ready || activity.busy}
                 onClick={() => void send({ type: 'game.sit', seat: own.seat })}
               >
-                Masaya geri dön
+                {t('Masaya geri dön')}
               </button>
             )}
           </div>
           <p className="rg-footer-note">
-            Yalnızca sunucunun açtığı eller görünür. Katlanmış eller diğer oyunculara gösterilmez.
+            {t(
+              'Yalnızca sunucunun açtığı eller görünür. Katlanmış eller diğer oyunculara gösterilmez.',
+            )}
           </p>
         </>
       )}
@@ -1234,7 +1254,7 @@ function ReferenceGames({
           title={fixture ? fixtureReason : undefined}
           onClick={() => setEnd(true)}
         >
-          Masayı kapat
+          {t('Masayı kapat')}
         </button>
       )}
       {activity.error && (
@@ -1243,29 +1263,34 @@ function ReferenceGames({
         </div>
       )}
       {history && (!game || access) && (
-        <Modal title="Masa geçmişi" className="rg-modal" onClose={() => setHistory(false)}>
+        <Modal title={t('Masa geçmişi')} className="rg-modal" onClose={() => setHistory(false)}>
           <div className="rg-modal-body">
             {game?.history.length ? (
               game.history.map((hand) => (
                 <div className="rg-history-row" key={hand.hand}>
                   <Trophy size={17} />
-                  <strong>El {hand.hand}</strong>
-                  <small>{new Date(hand.endedAt).toLocaleTimeString('tr-TR')}</small>
+                  <strong>{t('El {hand}', { hand: hand.hand })}</strong>
+                  <small>{new Date(hand.endedAt).toLocaleTimeString(locale)}</small>
                   <p>
                     {Object.entries(object(hand.result.payouts))
-                      .map(([id, value]) => `${seatName(id)} · ${value} fiş`)
-                      .join(' / ') || 'El tamamlandı'}
+                      .map(([id, value]) =>
+                        t('{seatName} · {chips} fiş', {
+                          seatName: seatName(id),
+                          chips: String(value),
+                        }),
+                      )
+                      .join(' / ') || t('El tamamlandı')}
                   </p>
                 </div>
               ))
             ) : (
-              <p>Tamamlanmış el yok.</p>
+              <p>{t('Tamamlanmış el yok.')}</p>
             )}
           </div>
         </Modal>
       )}
       {rules && (
-        <Modal title="Masa kuralları" className="rg-modal" onClose={() => setRules(false)}>
+        <Modal title={t('Masa kuralları')} className="rg-modal" onClose={() => setRules(false)}>
           <div className="rg-modal-body rg-rules">
             {ruleRows.map(([label, value]) => (
               <div key={label}>
@@ -1277,16 +1302,16 @@ function ReferenceGames({
         </Modal>
       )}
       {buyIn !== null && (
-        <Modal title="Masaya katıl" className="rg-modal" onClose={() => setBuyIn(null)}>
+        <Modal title={t('Masaya katıl')} className="rg-modal" onClose={() => setBuyIn(null)}>
           <div className="rg-modal-body">
             {game?.kind === 'holdem' ? (
               <>
                 <div className="rg-buy-in">
                   <Coins size={28} />
-                  <strong>Sanal fiş</strong>
+                  <strong>{t('Sanal fiş')}</strong>
                 </div>
                 <label>
-                  Giriş miktarı
+                  {t('Giriş miktarı')}
                   <input
                     autoFocus
                     type="number"
@@ -1298,13 +1323,16 @@ function ReferenceGames({
                 </label>
                 <p>
                   {nativeRules
-                    ? `${nativeRules.minBuyIn} – ${nativeRules.maxBuyIn} sanal fiş`
-                    : 'Masa giriş kuralları henüz alınmadı.'}
+                    ? t('{minBuyIn} – {maxBuyIn} sanal fiş', {
+                        minBuyIn: nativeRules.minBuyIn,
+                        maxBuyIn: nativeRules.maxBuyIn,
+                      })
+                    : t('Masa giriş kuralları henüz alınmadı.')}
                 </p>
-                {playing && <p>Bu el dağıtıldı. Sonraki elde oynayacaksın.</p>}
+                {playing && <p>{t('Bu el dağıtıldı. Sonraki elde oynayacaksın.')}</p>}
               </>
             ) : (
-              <p>Koltuk {buyIn + 1}</p>
+              <p>{t('Koltuk {number}', { number: buyIn + 1 })}</p>
             )}
             {seatReason && <p role="status">{seatReason}</p>}
             {activity.error && (
@@ -1315,7 +1343,7 @@ function ReferenceGames({
           </div>
           <footer className="rg-modal-footer">
             <button className="button secondary" onClick={() => setBuyIn(null)}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button primary"
@@ -1339,20 +1367,24 @@ function ReferenceGames({
                   });
               }}
             >
-              Katıl
+              {t('Katıl')}
             </button>
           </footer>
         </Modal>
       )}
       {raise && (
-        <Modal title="Artırma tutarı" className="rg-modal rg-raise" onClose={() => setRaise(false)}>
+        <Modal
+          title={t('Artırma tutarı')}
+          className="rg-modal rg-raise"
+          onClose={() => setRaise(false)}
+        >
           <div className="rg-modal-body">
             <div className="rg-raise-call">
-              <span>Karşılanacak bahis</span>
-              <strong>{call} sanal fiş</strong>
+              <span>{t('Karşılanacak bahis')}</span>
+              <strong>{t('{call} sanal fiş', { call })}</strong>
             </div>
             <label>
-              Bu turdaki toplam tutarın
+              {t('Bu turdaki toplam tutarın')}
               <input
                 type="number"
                 min={Math.min(minRaise, maxRaise)}
@@ -1364,7 +1396,7 @@ function ReferenceGames({
             <div className="rg-range">
               <span>{Math.min(minRaise, maxRaise)}</span>
               <input
-                aria-label="Artırma tutarı"
+                aria-label={t('Artırma tutarı')}
                 type="range"
                 min={Math.min(minRaise, maxRaise)}
                 max={maxRaise}
@@ -1378,16 +1410,25 @@ function ReferenceGames({
                 className="button secondary"
                 onClick={() => setAmount(Math.min(minRaise, maxRaise))}
               >
-                Minimum {Math.min(minRaise, maxRaise)}
+                {t('Minimum {min}', { min: Math.min(minRaise, maxRaise) })}
               </button>
               <button className="button secondary" onClick={() => setAmount(maxRaise)}>
-                All-in · {maxRaise}
+                {t('All-in · {maxRaise}', { maxRaise })}
               </button>
             </div>
             <p>
               {maxRaise < minRaise
-                ? `All-in toplamı ${maxRaise.toLocaleString('tr-TR')}. Minimum artırma için yeterli fişin yok.`
-                : `Minimum toplam artırma ${minRaise.toLocaleString('tr-TR')}. Bunun ${call.toLocaleString('tr-TR')} fişi görme, ${Math.max(0, minRaise - maximumBet).toLocaleString('tr-TR')} fişi artırmadır.`}
+                ? t('All-in toplamı {maxRaise}. Minimum artırma için yeterli fişin yok.', {
+                    maxRaise: maxRaise.toLocaleString(locale),
+                  })
+                : t(
+                    'Minimum toplam artırma {minRaise}. Bunun {call} fişi görme, {max} fişi artırmadır.',
+                    {
+                      minRaise: minRaise.toLocaleString(locale),
+                      call: call.toLocaleString(locale),
+                      max: Math.max(0, minRaise - maximumBet).toLocaleString(locale),
+                    },
+                  )}
             </p>
             {activity.error && (
               <div className="rg-banner error" role="alert">
@@ -1397,7 +1438,7 @@ function ReferenceGames({
           </div>
           <footer className="rg-modal-footer">
             <button className="button secondary" onClick={() => setRaise(false)}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button primary"
@@ -1409,15 +1450,15 @@ function ReferenceGames({
               }
               onClick={() => void send({ type: 'game.action', action: 'raise', amount })}
             >
-              {amount} fişe artır
+              {t('{amount} fişe artır', { amount })}
             </button>
           </footer>
         </Modal>
       )}
       {end && (
-        <Modal title="Masayı kapat?" className="rg-modal" onClose={() => setEnd(false)}>
+        <Modal title={t('Masayı kapat?')} className="rg-modal" onClose={() => setEnd(false)}>
           <div className="rg-modal-body">
-            <p>Oyun etkinliği biter. Ses bağlantısı bu işlemden bağımsızdır.</p>
+            <p>{t('Oyun etkinliği biter. Ses bağlantısı bu işlemden bağımsızdır.')}</p>
             {activity.error && (
               <div className="rg-banner error" role="alert">
                 {activity.error}
@@ -1426,7 +1467,7 @@ function ReferenceGames({
           </div>
           <footer className="rg-modal-footer">
             <button className="button secondary" onClick={() => setEnd(false)}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button danger"
@@ -1437,14 +1478,14 @@ function ReferenceGames({
                 })
               }
             >
-              Masayı kapat
+              {t('Masayı kapat')}
             </button>
           </footer>
         </Modal>
       )}
       {configure && (
         <Modal
-          title="Masa kurallarını düzenle"
+          title={t('Masa kurallarını düzenle')}
           className="rg-modal"
           onClose={() => setConfigure(false)}
         >
@@ -1454,7 +1495,7 @@ function ReferenceGames({
           </div>
           <footer className="rg-modal-footer">
             <button className="button secondary" onClick={() => setConfigure(false)}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button primary"
@@ -1473,15 +1514,19 @@ function ReferenceGames({
                 })
               }
             >
-              Kaydet
+              {t('Kaydet')}
             </button>
           </footer>
         </Modal>
       )}
       {inviteOpen && (
-        <Modal title={`${roomName} daveti`} className="rg-modal rg-invite" onClose={closeInvite}>
+        <Modal
+          title={t('{roomName} daveti', { roomName })}
+          className="rg-modal rg-invite"
+          onClose={closeInvite}
+        >
           <div className="rg-modal-body">
-            <p>Bu davet topluluğa katılmak içindir. Masada koltuk ayırmaz.</p>
+            <p>{t('Bu davet topluluğa katılmak içindir. Masada koltuk ayırmaz.')}</p>
             {invite ? (
               <InviteLinkCard serverUrl={c.serverUrl} invite={invite} autoFocus />
             ) : (
@@ -1491,7 +1536,7 @@ function ReferenceGames({
                 title={fixture ? fixtureReason : undefined}
                 onClick={() => void generateInvite()}
               >
-                {inviteBusy ? 'Oluşturuluyor…' : 'Davet oluştur'}
+                {inviteBusy ? t('Oluşturuluyor…') : t('Davet oluştur')}
               </button>
             )}
             {inviteError && (
@@ -1504,7 +1549,7 @@ function ReferenceGames({
       )}
       {create && (
         <Modal
-          title={`${names[create]} masası`}
+          title={t('{names} masası', { names: names[create] })}
           className="rg-modal"
           onClose={() => onCreate(null)}
         >
@@ -1512,10 +1557,12 @@ function ReferenceGames({
             {create === 'holdem' && (
               <HoldemRulesForm value={holdemRules} onChange={setHoldemRules} />
             )}
-            <p>Yalnızca sanal fiş ve puan.</p>
+            <p>{t('Yalnızca sanal fiş ve puan.')}</p>
             {activity.room?.primary && (
               <div className="rg-banner">
-                {tableTitle(activity.room.primary.title, game?.kind)} etkinliği açık.
+                {t('{tableTitle} etkinliği açık.', {
+                  tableTitle: tableTitle(activity.room.primary.title, game?.kind) ?? '',
+                })}
                 {/* An old-cinema session has no page here; the consent below can still end it. */}
                 {!retiredActivity(activity.room.primary.activity) && (
                   <button
@@ -1524,7 +1571,7 @@ function ReferenceGames({
                       navigate(game ? '/games?tab=table' : '/voice');
                     }}
                   >
-                    Etkinliği aç
+                    {t('Etkinliği aç')}
                   </button>
                 )}
                 <label className="rg-replace-consent">
@@ -1544,20 +1591,25 @@ function ReferenceGames({
                     }
                   />
                   <span>
-                    {tableTitle(currentPrimary?.title, game?.kind)} etkinliğini bitir ve yeni masayı
-                    kur
+                    {t('{tableTitle} etkinliğini bitir ve yeni masayı kur', {
+                      tableTitle: tableTitle(currentPrimary?.title, game?.kind) ?? '',
+                    })}
                   </span>
                 </label>
                 {!canReplace && (
-                  <p>Açık etkinliği yalnızca hostu kapatabilir. Kapatıldığında masa açabilirsin.</p>
+                  <p>
+                    {t(
+                      'Açık etkinliği yalnızca hostu kapatabilir. Kapatıldığında masa açabilirsin.',
+                    )}
+                  </p>
                 )}
-                <p>Ses bağlantısı devam eder. Mevcut kuyruk korunur.</p>
+                <p>{t('Ses bağlantısı devam eder. Mevcut kuyruk korunur.')}</p>
               </div>
             )}
           </div>
           <footer className="rg-modal-footer">
             <button className="button secondary" onClick={() => onCreate(null)}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button primary"
@@ -1572,9 +1624,9 @@ function ReferenceGames({
                 fixture
                   ? fixtureReason
                   : createConflict
-                    ? 'Etkinliği değiştirmeyi onayla veya önce bitir'
+                    ? t('Etkinliği değiştirmeyi onayla veya önce bitir')
                     : !ready
-                      ? 'Etkinlik bağlantısı gerekli'
+                      ? t('Etkinlik bağlantısı gerekli')
                       : undefined
               }
               onClick={() =>
@@ -1586,7 +1638,7 @@ function ReferenceGames({
                 })
               }
             >
-              Masayı kur
+              {t('Masayı kur')}
             </button>
           </footer>
           {activity.error && (
@@ -1682,58 +1734,59 @@ function ReferenceOtherGame({
       : null;
   const ui: TableUI = { game, userId: c.user?.id, can, action, timer, busy };
   const roomName =
-    c.channels.find((channel) => channel.id === activity.room?.roomId)?.name ?? 'Oda';
+    c.channels.find((channel) => channel.id === activity.room?.roomId)?.name ?? t('Oda');
   const ruleRows: [string, string][] =
     game.kind === 'blackjack'
       ? [
-          ['Deste', '6'],
-          ['Krupiye', 'Soft 17’de durur (S17)'],
+          [t('Deste'), '6'],
+          [t('Krupiye'), t('Soft 17’de durur (S17)')],
           ['Blackjack', '3:2'],
-          ['Insurance', 'Kapalı'],
-          ['Double', 'İlk iki kartta'],
-          ['Split', 'Aynı puan değeri · En fazla 4 el'],
-          ['Split As', 'Tek kart · yeniden ayırma kapalı'],
+          ['Insurance', t('Kapalı')],
+          ['Double', t('İlk iki kartta')],
+          ['Split', t('Aynı puan değeri · En fazla 4 el')],
+          [t('Split As'), t('Tek kart · yeniden ayırma kapalı')],
         ]
       : game.kind === 'batak'
         ? [
-            ['Tür', String(view.variant ?? '—')],
-            ['Koz', suits[String(view.trump)] ?? '—'],
-            ['Oyuncu', String(game.seats.length)],
-            ['Gömmeli akışı', 'İhale → koz → 4 kart gömme → oyun'],
+            [t('Tür'), String(view.variant ?? '—')],
+            [t('Koz'), suits[String(view.trump)] ?? '—'],
+            [t('Oyuncu'), String(game.seats.length)],
+            [t('Gömmeli akışı'), t('İhale → koz → 4 kart gömme → oyun')],
           ]
         : [
-            ['Açılış', '101'],
-            ['Çift açılışı', '5 çift'],
-            ['Katlamalı', object(view.rules).folding ? 'Açık' : 'Kapalı'],
-            ['Eşli', object(view.rules).teams ? 'Açık' : 'Kapalı'],
-            ['Bitirme', 'Son taş atılır'],
+            [t('Açılış'), '101'],
+            [t('Çift açılışı'), t('5 çift')],
+            [t('Katlamalı'), object(view.rules).folding ? t('Açık') : t('Kapalı')],
+            [t('Eşli'), object(view.rules).teams ? t('Açık') : t('Kapalı')],
+            [t('Bitirme'), t('Son taş atılır')],
           ];
   return (
     <div className={`rg-page rx-game rx-${game.kind}`}>
       <header className="rg-heading">
         <div>
           <div className="rg-title">
-            <h1>{game.status === 'finished' ? 'El tamamlandı' : names[game.kind]}</h1>
-            <span>Kurallar kilitli</span>
+            <h1>{game.status === 'finished' ? t('El tamamlandı') : names[game.kind]}</h1>
+            <span>{t('Kurallar kilitli')}</span>
           </div>
           <p>
-            {roomName} · {names[game.kind]} · Sanal {game.kind === 'blackjack' ? 'fiş' : 'puan'}
+            {roomName} · {names[game.kind]} ·{' '}
+            {game.kind === 'blackjack' ? t('Sanal fiş') : t('Sanal puan')}
           </p>
         </div>
         <div>
           <button onClick={() => setRules(true)}>
             <ShieldCheck size={16} />
-            Masa kuralları
+            {t('Masa kuralları')}
           </button>
           <button
             disabled={!access}
-            title={!access ? 'Geçmiş için izleyici olarak katıl' : undefined}
+            title={!access ? t('Geçmiş için izleyici olarak katıl') : undefined}
             onClick={() => navigate('/games?tab=history')}
           >
             <History size={16} />
-            Geçmiş
+            {t('Geçmiş')}
           </button>
-          <IconButton label="Masayı yenile" onClick={() => void activity.refresh()}>
+          <IconButton label={t('Masayı yenile')} onClick={() => void activity.refresh()}>
             <RefreshCw size={16} />
           </IconButton>
           {own && (
@@ -1741,7 +1794,7 @@ function ReferenceOtherGame({
               disabled={fixture || !ready || busy}
               onClick={() => void send({ type: 'game.leave' })}
             >
-              Masadan kalk
+              {t('Masadan kalk')}
             </button>
           )}
         </div>
@@ -1750,23 +1803,23 @@ function ReferenceOtherGame({
       {activity.error && (
         <div className="rg-banner error" role="alert">
           <span>{activity.error}</span>
-          <button onClick={() => void activity.refresh()}>Yeniden dene</button>
+          <button onClick={() => void activity.refresh()}>{t('Yeniden dene')}</button>
         </div>
       )}
       {!ready && !activity.error && (
         <div className="rg-banner" role="status">
-          <span>Masa bağlantısı bekleniyor.</span>
-          <button onClick={() => void activity.refresh()}>Yeniden dene</button>
+          <span>{t('Masa bağlantısı bekleniyor.')}</span>
+          <button onClick={() => void activity.refresh()}>{t('Yeniden dene')}</button>
         </div>
       )}
       {!access ? (
         <section className="rx-watch">
           <Eye size={32} />
-          <h2>Masayı izle</h2>
+          <h2>{t('Masayı izle')}</h2>
           <p>
             {game.kind === 'holdem' && view.rules?.spectatorsAllowed === false
-              ? 'Bu masada izleyici erişimi kapalı.'
-              : 'Masaya izleyici olarak katıl.'}
+              ? t('Bu masada izleyici erişimi kapalı.')
+              : t('Masaya izleyici olarak katıl.')}
           </p>
           <button
             className="button primary"
@@ -1778,14 +1831,14 @@ function ReferenceOtherGame({
             }
             title={
               fixture
-                ? 'Yerel örnekte hesap işlemleri kapalı'
+                ? t('Yerel örnekte hesap işlemleri kapalı')
                 : game?.kind === 'holdem' && view.rules?.spectatorsAllowed === false
-                  ? 'Masa izleyici kabul etmiyor'
+                  ? t('Masa izleyici kabul etmiyor')
                   : undefined
             }
             onClick={() => void send({ type: 'game.watch', watching: true })}
           >
-            İzle
+            {t('İzle')}
           </button>
         </section>
       ) : (
@@ -1793,12 +1846,12 @@ function ReferenceOtherGame({
           {!own && (
             <div className="rg-banner">
               <Eye size={17} />
-              İzleyici · Gizli eller gösterilmez.
+              {t('İzleyici · Gizli eller gösterilmez.')}
               <button
                 disabled={fixture || !ready || busy}
                 onClick={() => void send({ type: 'game.watch', watching: false })}
               >
-                İzlemeyi bırak
+                {t('İzlemeyi bırak')}
               </button>
             </div>
           )}
@@ -1817,16 +1870,16 @@ function ReferenceOtherGame({
           <div>
             <h3>
               <Trophy size={19} />
-              El tamamlandı
+              {t('El tamamlandı')}
             </h3>
-            <p>{owner ? 'Yeni el başlatabilirsin.' : 'Masa sahibi bekleniyor.'}</p>
+            <p>{owner ? t('Yeni el başlatabilirsin.') : t('Masa sahibi bekleniyor.')}</p>
           </div>
           <button
             className="button primary"
             disabled={!can('start')}
             onClick={() => void action('start')}
           >
-            Sonraki el
+            {t('Sonraki el')}
           </button>
         </div>
       )}
@@ -1836,11 +1889,11 @@ function ReferenceOtherGame({
           disabled={fixture || busy || !ready}
           onClick={() => setEnd(true)}
         >
-          Masayı kapat
+          {t('Masayı kapat')}
         </button>
       )}
       {rules && (
-        <Modal title="Masa kuralları" className="rg-modal" onClose={() => setRules(false)}>
+        <Modal title={t('Masa kuralları')} className="rg-modal" onClose={() => setRules(false)}>
           <div className="rg-modal-body rg-rules">
             {ruleRows.map(([label, value]) => (
               <div key={label}>
@@ -1852,32 +1905,32 @@ function ReferenceOtherGame({
         </Modal>
       )}
       {history && access && (
-        <Modal title="Masa geçmişi" className="rg-modal" onClose={() => setHistory(false)}>
+        <Modal title={t('Masa geçmişi')} className="rg-modal" onClose={() => setHistory(false)}>
           <div className="rg-modal-body">
             {game.history.length ? (
               game.history.map((hand) => (
                 <div className="rg-history-row" key={hand.hand}>
                   <Trophy size={16} />
-                  <strong>El {hand.hand}</strong>
-                  <small>{new Date(hand.endedAt).toLocaleString('tr-TR')}</small>
+                  <strong>{t('El {hand}', { hand: hand.hand })}</strong>
+                  <small>{new Date(hand.endedAt).toLocaleString(locale)}</small>
                   <GameResults game={game} result={hand.result} />
                 </div>
               ))
             ) : (
-              <p>Tamamlanmış el yok.</p>
+              <p>{t('Tamamlanmış el yok.')}</p>
             )}
           </div>
         </Modal>
       )}
       {end && (
-        <Modal title="Masayı kapat?" className="rg-modal" onClose={() => setEnd(false)}>
+        <Modal title={t('Masayı kapat?')} className="rg-modal" onClose={() => setEnd(false)}>
           <div className="rg-modal-body">
-            <p>Oyun etkinliği biter. Ses bağlantısı açık kalır.</p>
+            <p>{t('Oyun etkinliği biter. Ses bağlantısı açık kalır.')}</p>
             {activity.error && <p role="alert">{activity.error}</p>}
           </div>
           <footer className="rg-modal-footer">
             <button className="button secondary" onClick={() => setEnd(false)}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button danger"
@@ -1888,7 +1941,7 @@ function ReferenceOtherGame({
                 })
               }
             >
-              Masayı kapat
+              {t('Masayı kapat')}
             </button>
           </footer>
         </Modal>
@@ -1904,8 +1957,8 @@ function GameResults({ game, result }: { game: GamePublicState; result: Record<s
       <table className="rx-results">
         <thead>
           <tr>
-            <th>Oyuncu</th>
-            <th>Puan</th>
+            <th>{t('Oyuncu')}</th>
+            <th>{t('Puan')}</th>
           </tr>
         </thead>
         <tbody>
@@ -1923,29 +1976,32 @@ function GameResults({ game, result }: { game: GamePublicState; result: Record<s
       <div className="rx-results">
         {results.map((item, index) => (
           <p key={index}>
-            {game.seats.find((seat) => seat.userId === item.userId)?.name ?? 'Oyuncu'} · El{' '}
-            {Number(item.hand) + 1} ·{' '}
+            {t('{name} · El {hand}', {
+              name: game.seats.find((seat) => seat.userId === item.userId)?.name ?? t('Oyuncu'),
+              hand: Number(item.hand) + 1,
+            })}{' '}
+            ·{' '}
             {(
               {
-                win: 'Kazandı',
-                lose: 'Kaybetti',
-                push: 'Berabere',
+                win: t('Kazandı'),
+                lose: t('Kaybetti'),
+                push: t('Berabere'),
                 blackjack: 'Blackjack',
               } as Record<string, string>
-            )[String(item.outcome)] ?? String(item.outcome ?? 'Sonuç')}{' '}
-            · {Number(item.returned)} fiş geri aldı
+            )[String(item.outcome)] ?? String(item.outcome ?? t('Sonuç'))}{' '}
+            {t('· {amount} fiş geri aldı', { amount: Number(item.returned) })}
           </p>
         ))}
       </div>
     );
-  return <p>Sonuç ayrıntısı bu yanıtta bulunmuyor.</p>;
+  return <p>{t('Sonuç ayrıntısı bu yanıtta bulunmuyor.')}</p>;
 }
 function TurnClock({ timer }: { timer: number | null }) {
   return timer === null ? null : (
     <div className="rg-timer">
       <Clock3 size={18} />
       <b>{timer}</b>
-      <span>saniye</span>
+      <span>{t('saniye')}</span>
     </div>
   );
 }
@@ -1960,15 +2016,15 @@ function ReferenceBlackjack({ game, userId, can, action, timer }: TableUI) {
   return (
     <>
       <div className="rx-badges">
-        <span>6 deste</span>
+        <span>{t('6 deste')}</span>
         <span>Soft 17 · S17</span>
         <span>Blackjack 3:2</span>
-        <span>Insurance kapalı</span>
-        <span>El {game.history.length + 1}</span>
+        <span>{t('Insurance kapalı')}</span>
+        <span>{t('El {hand}', { hand: game.history.length + 1 })}</span>
       </div>
       <section className="rx-blackjack-felt">
         <div className="rx-dealer">
-          <small>KRUPİYE</small>
+          <small>{t('KRUPİYE')}</small>
           <div>
             {dealer.map((card) => (
               <PlayingCard key={card.id} card={card} />
@@ -1998,14 +2054,14 @@ function ReferenceBlackjack({ game, userId, can, action, timer }: TableUI) {
                 key={index}
               >
                 <small>
-                  EL {index + 1} ·{' '}
+                  {t('EL {hand} ·', { hand: index + 1 })}{' '}
                   {active
-                    ? 'Sıra sende'
+                    ? t('Sıra sende')
                     : hand.state === 'bust'
-                      ? 'Aştı'
+                      ? t('Aştı')
                       : hand.state === 'stood'
-                        ? 'Durdu'
-                        : 'El tamamlandı'}
+                        ? t('Durdu')
+                        : t('El tamamlandı')}
                 </small>
                 <div>
                   {cards.map((card) => (
@@ -2013,7 +2069,7 @@ function ReferenceBlackjack({ game, userId, can, action, timer }: TableUI) {
                   ))}
                 </div>
                 <strong>{blackjackTotal(cards as EngineCard[])}</strong>
-                <p>{Number(hand.bet)} sanal fiş</p>
+                <p>{t('{amount} sanal fiş', { amount: Number(hand.bet) })}</p>
               </article>
             );
           })}
@@ -2026,13 +2082,13 @@ function ReferenceBlackjack({ game, userId, can, action, timer }: TableUI) {
             <div>
               <strong>
                 {seat.name}
-                {seat.userId === userId ? ' · sen' : ''}
+                {seat.userId === userId ? t(' · sen') : ''}
               </strong>
               <small>
                 {Number(
                   players.find((player) => player.userId === seat.userId)?.credits ?? seat.chips,
                 )}{' '}
-                fiş
+                {t('fiş')}
               </small>
             </div>
           </article>
@@ -2044,10 +2100,10 @@ function ReferenceBlackjack({ game, userId, can, action, timer }: TableUI) {
           <div>
             <h3>
               {own.seat === game.turn
-                ? 'Sıra sende'
+                ? t('Sıra sende')
                 : game.status === 'finished'
-                  ? 'El tamamlandı'
-                  : 'Oyuncu bekleniyor'}
+                  ? t('El tamamlandı')
+                  : t('Oyuncu bekleniyor')}
             </h3>
           </div>
           <TurnClock timer={timer} />
@@ -2055,17 +2111,19 @@ function ReferenceBlackjack({ game, userId, can, action, timer }: TableUI) {
             <div className="rg-actions">
               {(
                 [
-                  ['hit', 'Kart al'],
-                  ['stand', 'Dur'],
-                  ['double', 'İkiye katla'],
-                  ['split', 'Ayır'],
+                  ['hit', t('Kart al')],
+                  ['stand', t('Dur')],
+                  ['double', t('İkiye katla')],
+                  ['split', t('Ayır')],
                 ] as const
               ).map(([name, label]) => (
                 <button
                   className={`button ${name === 'hit' ? 'primary' : 'secondary'}`}
                   key={name}
                   disabled={!can(name)}
-                  title={!can(name) ? 'Bu hamle şu anda sunucu tarafından izinli değil' : undefined}
+                  title={
+                    !can(name) ? t('Bu hamle şu anda sunucu tarafından izinli değil') : undefined
+                  }
                   onClick={() => void action(name)}
                 >
                   {label}
@@ -2074,7 +2132,7 @@ function ReferenceBlackjack({ game, userId, can, action, timer }: TableUI) {
             </div>
           ) : (
             <label className="rg-lobby-bet">
-              Sonraki el bahsi
+              {t('Sonraki el bahsi')}
               <input
                 type="number"
                 min={2}
@@ -2093,7 +2151,7 @@ function ReferenceBlackjack({ game, userId, can, action, timer }: TableUI) {
                 }
                 onClick={() => void action('bet', { amount: bet })}
               >
-                Bahsi belirle
+                {t('Bahsi belirle')}
               </button>
             </label>
           )}
@@ -2148,26 +2206,34 @@ function ReferenceBatak({ game, userId, can, action, timer }: TableUI) {
         <span>
           {(
             {
-              ihaleli: 'İhaleli',
-              esli: 'Eşli',
-              'koz-maca': 'Koz Maça',
-              gommeli: 'Gömmeli',
+              ihaleli: t('İhaleli'),
+              esli: t('Eşli'),
+              'koz-maca': t('Koz Maça'),
+              gommeli: t('Gömmeli'),
             } as Record<string, string>
           )[variant] ?? 'Batak'}
         </span>
-        <span>İhale {view.bid ? String(view.bid) : '—'}</span>
+        <span>{t('İhale {bid}', { bid: view.bid ? String(view.bid) : '—' })}</span>
         <span>
-          Koz{' '}
-          {stage === 'bidding' && variant !== 'koz-maca' ? '—' : (suits[String(view.trump)] ?? '—')}
+          {t('Koz {trump}', {
+            trump:
+              stage === 'bidding' && variant !== 'koz-maca'
+                ? '—'
+                : (suits[String(view.trump)] ?? '—'),
+          })}
         </span>
-        <span>El {game.history.length + 1}</span>
+        <span>{t('El {hand}', { hand: game.history.length + 1 })}</span>
       </div>
       {['bidding', 'trump', 'bury'].includes(stage) ? (
         <div className="rx-batak-setup">
           <section>
             <header>
               <h2>
-                {stage === 'bidding' ? 'İhale ver' : stage === 'trump' ? 'Koz seç' : '4 kart göm'}
+                {stage === 'bidding'
+                  ? t('İhale ver')
+                  : stage === 'trump'
+                    ? t('Koz seç')
+                    : t('4 kart göm')}
               </h2>
               <TurnClock timer={timer} />
             </header>
@@ -2175,8 +2241,11 @@ function ReferenceBatak({ game, userId, can, action, timer }: TableUI) {
               <>
                 <p>
                   {own?.seat === game.turn
-                    ? 'Sıra sende'
-                    : `${game.seats.find((seat) => seat.seat === game.turn)?.name ?? 'Oyuncu'} bekleniyor`}
+                    ? t('Sıra sende')
+                    : t('{name} bekleniyor', {
+                        name:
+                          game.seats.find((seat) => seat.seat === game.turn)?.name ?? t('Oyuncu'),
+                      })}
                 </p>
                 <div className="rx-bid-grid">
                   {Array.from(
@@ -2199,14 +2268,14 @@ function ReferenceBatak({ game, userId, can, action, timer }: TableUI) {
                     disabled={!can('pass')}
                     onClick={() => void action('pass')}
                   >
-                    Pas
+                    {t('Pas')}
                   </button>
                   <button
                     className="button primary"
                     disabled={!can('bid') || bid < minimum || bid > maximum}
                     onClick={() => void action('bid', { amount: bid })}
                   >
-                    {bid} · İhale ver
+                    {t('{bid} · İhale ver', { bid })}
                   </button>
                 </footer>
               </>
@@ -2225,10 +2294,10 @@ function ReferenceBatak({ game, userId, can, action, timer }: TableUI) {
                         {
                           (
                             {
-                              clubs: 'Sinek',
-                              diamonds: 'Karo',
-                              hearts: 'Kupa',
-                              spades: 'Maça',
+                              clubs: t('Sinek'),
+                              diamonds: t('Karo'),
+                              hearts: t('Kupa'),
+                              spades: t('Maça'),
                             } as Record<string, string>
                           )[suit]
                         }
@@ -2242,7 +2311,7 @@ function ReferenceBatak({ game, userId, can, action, timer }: TableUI) {
                     disabled={!can('trump')}
                     onClick={() => void action('trump', { trump })}
                   >
-                    Kozu onayla
+                    {t('Kozu onayla')}
                   </button>
                 </footer>
               </>
@@ -2262,7 +2331,7 @@ function ReferenceBatak({ game, userId, can, action, timer }: TableUI) {
                   ))}
                 </div>
                 <footer>
-                  <span>{selected.length} / 4 kart</span>
+                  <span>{t('{selectedCount} / 4 kart', { selectedCount: selected.length })}</span>
                   <button
                     className="button primary"
                     disabled={!can('bury') || selected.length !== 4}
@@ -2272,23 +2341,23 @@ function ReferenceBatak({ game, userId, can, action, timer }: TableUI) {
                       })
                     }
                   >
-                    4 kartı göm
+                    {t('4 kartı göm')}
                   </button>
                 </footer>
               </>
             )}
           </section>
           <aside>
-            <h3>Oyuncular</h3>
+            <h3>{t('Oyuncular')}</h3>
             {game.seats.map((seat) => (
               <div className="rx-bid-player" key={seat.userId}>
                 <Avatar name={seat.name} />
                 <strong>{seat.name}</strong>
                 <span>
                   {bids[seat.seat] > 0
-                    ? `${bids[seat.seat]} ihale`
+                    ? t('{bid} ihale', { bid: bids[seat.seat] })
                     : seat.seat === game.turn
-                      ? 'Sıra onda'
+                      ? t('Sıra onda')
                       : '—'}
                 </span>
               </div>
@@ -2307,7 +2376,9 @@ function ReferenceBatak({ game, userId, can, action, timer }: TableUI) {
                   </div>
                 ))
               ) : (
-                <span>{game.status === 'finished' ? 'El tamamlandı' : 'Kart bekleniyor'}</span>
+                <span>
+                  {game.status === 'finished' ? t('El tamamlandı') : t('Kart bekleniyor')}
+                </span>
               )}
             </div>
             {game.seats.map((seat) => {
@@ -2321,8 +2392,10 @@ function ReferenceBatak({ game, userId, can, action, timer }: TableUI) {
                   <Avatar name={seat.name} />
                   <strong>{seat.name}</strong>
                   <small>
-                    {tricks[seat.seat] ?? 0} el ·{' '}
-                    {Number(hands.find((hand) => hand.seat === seat.seat)?.count ?? 0)} kart
+                    {t('{tricks} el · {cards} kart', {
+                      tricks: tricks[seat.seat] ?? 0,
+                      cards: Number(hands.find((hand) => hand.seat === seat.seat)?.count ?? 0),
+                    })}
                   </small>
                   {seat.userId !== userId &&
                     Number(hands.find((hand) => hand.seat === seat.seat)?.count ?? 0) > 0 && (
@@ -2338,7 +2411,7 @@ function ReferenceBatak({ game, userId, can, action, timer }: TableUI) {
       {own && stage !== 'bury' && game.status === 'playing' && (
         <section className="rx-rack">
           <header>
-            <strong>ELİN · {cards.length} kart</strong>
+            <strong>{t('ELİN · {count} kart', { count: cards.length })}</strong>
             <TurnClock timer={['bidding', 'trump'].includes(stage) ? null : timer} />
           </header>
           <div className="rx-card-rack">
@@ -2377,7 +2450,7 @@ function OkeyTileView({
       onClick={onClick}
       aria-pressed={onClick ? !!selected : undefined}
       aria-label={
-        tile.joker ? 'Okey taşı' : `${tileColors[tile.color] ?? tile.color} ${tile.value}`
+        tile.joker ? t('Okey taşı') : `${tileColors[tile.color] ?? tile.color} ${tile.value}`
       }
     >
       <strong>{tile.joker ? '★' : tile.value}</strong>
@@ -2493,8 +2566,8 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
   try {
     const preview = grouped.map((group) => previewOkeyGroup(group, pairs));
     total = preview.flat().reduce((sum, tile) => sum + tile.value, 0);
-    if (!groups.length) validation = 'Açmak için seri veya çift hazırla';
-    else if (used.length >= tiles.length) validation = 'Atmak için bir taş bırak';
+    if (!groups.length) validation = t('Açmak için seri veya çift hazırla');
+    else if (used.length >= tiles.length) validation = t('Atmak için bir taş bırak');
     else if (!opened) {
       const profile = {
         id: 'rooms-101-v1' as const,
@@ -2520,16 +2593,16 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
             group[0].value !== group[1].value,
         )
       )
-        validation = 'Geçerli çift hazırla';
+        validation = t('Geçerli çift hazırla');
     } else preview.forEach(validate101Meld);
   } catch (error) {
     const code = error instanceof Error ? error.message : '';
     validation =
       code === 'OPENING_TOO_LOW'
-        ? `Açılış için en az ${threshold} puan gerekir`
+        ? t('Açılış için en az {threshold} puan gerekir', { threshold })
         : code === 'INVALID_PAIRS_OPENING'
-          ? 'En az 5 geçerli çift gerekir'
-          : 'Hazır gruplardan biri geçersiz';
+          ? t('En az 5 geçerli çift gerekir')
+          : t('Hazır gruplardan biri geçersiz');
   }
   const discards = array<Tile[]>(view.discards),
     previous = own ? discards[(own.seat + 3) % 4]?.[0] : undefined;
@@ -2543,11 +2616,11 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
   return (
     <>
       <div className="rx-badges">
-        <span>{rules.folding ? 'Katlamalı' : 'Katlamasız'}</span>
-        <span>{rules.teams ? 'Eşli' : 'Tekli'}</span>
-        <span>Açılış {threshold}</span>
-        <span>5 çift</span>
-        <span>El {game.history.length + 1}</span>
+        <span>{rules.folding ? t('Katlamalı') : t('Katlamasız')}</span>
+        <span>{rules.teams ? t('Eşli') : t('Tekli')}</span>
+        <span>{t('Açılış {threshold}', { threshold })}</span>
+        <span>{t('5 çift')}</span>
+        <span>{t('El {hand}', { hand: game.history.length + 1 })}</span>
       </div>
       <section className="rx-okey-felt">
         <div className="rx-okey-players">
@@ -2558,8 +2631,10 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
                 <Avatar name={seat.name} />
                 <strong>{seat.name}</strong>
                 <small>
-                  {Number(hands.find((hand) => hand.seat === seat.seat)?.count ?? 0)} taş ·{' '}
-                  {array<string | null>(view.opened)[seat.seat] ? 'Açtı' : 'Açmadı'}
+                  {t('{count} taş · {state}', {
+                    count: Number(hands.find((hand) => hand.seat === seat.seat)?.count ?? 0),
+                    state: array<string | null>(view.opened)[seat.seat] ? t('Açtı') : t('Açmadı'),
+                  })}
                 </small>
               </article>
             ))}
@@ -2578,8 +2653,8 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
                   }}
                 >
                   <small>
-                    {game.seats.find((seat) => seat.seat === meld.owner)?.name ?? 'Oyuncu'} ·{' '}
-                    {meld.pairs ? 'Çift' : 'Seri'}
+                    {game.seats.find((seat) => seat.seat === meld.owner)?.name ?? t('Oyuncu')} ·{' '}
+                    {meld.pairs ? t('Çift') : t('Seri')}
                   </small>
                   <span>
                     {meld.tiles.map((tile) => (
@@ -2591,15 +2666,15 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
                 </button>
               ))
             ) : (
-              <p>Henüz seri açılmadı.</p>
+              <p>{t('Henüz seri açılmadı.')}</p>
             )}
           </div>
           <aside>
-            <span>Kapalı taşlar</span>
+            <span>{t('Kapalı taşlar')}</span>
             <strong>{String(view.remainingStock ?? '—')}</strong>
             {!!view.indicator && (
               <>
-                <small>Gösterge</small>
+                <small>{t('Gösterge')}</small>
                 <OkeyTileView tile={view.indicator as Tile} />
               </>
             )}
@@ -2609,8 +2684,11 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
           {discards.map((stack, index) => (
             <div key={index}>
               <small>
-                {game.seats.find((seat) => seat.seat === index)?.name ?? `Koltuk ${index + 1}`} ·
-                Son atılan
+                {t('{name} · Son atılan', {
+                  name:
+                    game.seats.find((seat) => seat.seat === index)?.name ??
+                    t('Koltuk {number}', { number: index + 1 }),
+                })}
               </small>
               {stack[0] ? <OkeyTileView tile={stack[0]} /> : <span>—</span>}
             </div>
@@ -2622,10 +2700,10 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
         <>
           <section className="rx-rack">
             <header>
-              <strong>ELİN · {tiles.length} taş</strong>
+              <strong>{t('ELİN · {count} taş', { count: tiles.length })}</strong>
               <div>
                 <button className="text-button" onClick={() => setSorted((value) => !value)}>
-                  Diz · {sorted ? 'Renk' : 'Dağıtım'}
+                  {sorted ? t('Diz · Renk') : t('Diz · Dağıtım')}
                 </button>
                 <TurnClock timer={timer} />
               </div>
@@ -2645,7 +2723,7 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
           {stage === 'discard' && (
             <section className="rx-meld-editor">
               <header>
-                <h3>{opened ? 'Taş işle veya yeni grup aç' : 'Açılış hazırla'}</h3>
+                <h3>{opened ? t('Taş işle veya yeni grup aç') : t('Açılış hazırla')}</h3>
                 <div>
                   <button
                     className={!pairs ? 'selected' : ''}
@@ -2656,7 +2734,7 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
                       setSelected([]);
                     }}
                   >
-                    Seri
+                    {t('Seri')}
                   </button>
                   <button
                     className={pairs ? 'selected' : ''}
@@ -2667,7 +2745,7 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
                       setSelected([]);
                     }}
                   >
-                    Çift
+                    {t('Çift')}
                   </button>
                 </div>
               </header>
@@ -2678,7 +2756,7 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
                       <OkeyTileView small key={tile.id} tile={tile} />
                     ))}
                     <button
-                      aria-label={`Grup ${index + 1} kaldır`}
+                      aria-label={t('Grup {number} kaldır', { number: index + 1 })}
                       onClick={() => setGroups((values) => values.filter((_, i) => i !== index))}
                     >
                       <X size={14} />
@@ -2700,30 +2778,33 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
                     setSelected([]);
                   }}
                 >
-                  Seçimi {pairs ? 'çift' : 'seri'} yap
+                  {pairs ? t('Seçimi çift yap') : t('Seçimi seri yap')}
                 </button>
                 <span role="status" className={validation && groups.length ? 'invalid' : ''}>
-                  {validation || (pairs ? `${groups.length} çift` : `${total} puan · Hazır`)}
+                  {validation ||
+                    (pairs
+                      ? t('{count} çift', { count: groups.length })
+                      : t('{total} puan · Hazır', { total }))}
                 </span>
                 <button
                   className="button primary"
                   disabled={!can(pairs ? 'open-pairs' : 'open') || !!validation}
                   onClick={commit}
                 >
-                  {pairs ? 'Çift aç' : 'Seri aç'}
+                  {pairs ? t('Çift aç') : t('Seri aç')}
                 </button>
               </footer>
               {target !== null && melds[target] && (
                 <div className="rx-process">
                   <label>
-                    Seri {target + 1}
+                    {t('Seri {number}', { number: target + 1 })}
                     <select value={joker} onChange={(event) => setJoker(event.target.value)}>
-                      <option value="">Uçtan işle</option>
+                      <option value="">{t('Uçtan işle')}</option>
                       {melds[target].tiles
                         .filter((tile) => tile.joker)
                         .map((tile) => (
                           <option key={tile.id} value={tile.id}>
-                            Okeyi değiştir · {tile.value}
+                            {t('Okeyi değiştir · {number}', { number: tile.value })}
                           </option>
                         ))}
                     </select>
@@ -2749,7 +2830,7 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
                       })
                     }
                   >
-                    Seçili taşları işle
+                    {t('Seçili taşları işle')}
                   </button>
                   <button
                     className="text-button"
@@ -2758,7 +2839,7 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
                       setJoker('');
                     }}
                   >
-                    Vazgeç
+                    {t('Vazgeç')}
                   </button>
                 </div>
               )}
@@ -2769,11 +2850,17 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
               <h3>
                 {own.seat === game.turn
                   ? stage === 'draw'
-                    ? 'Taş çek'
-                    : 'Taş at'
-                  : 'Oyuncu bekleniyor'}
+                    ? t('Taş çek')
+                    : t('Taş at')
+                  : t('Oyuncu bekleniyor')}
               </h3>
-              <p>{opened ? (opened === 'pairs' ? 'Çift açtın' : 'Seri açtın') : 'Henüz açmadın'}</p>
+              <p>
+                {opened
+                  ? opened === 'pairs'
+                    ? t('Çift açtın')
+                    : t('Seri açtın')
+                  : t('Henüz açmadın')}
+              </p>
             </div>
             <div className="rg-actions">
               {stage === 'draw' ? (
@@ -2783,21 +2870,21 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
                     disabled={!can('draw') || !previous}
                     onClick={() => void action('draw', { cardId: 'discard' })}
                   >
-                    Önceki taşı al
+                    {t('Önceki taşı al')}
                   </button>
                   <button
                     className="button primary"
                     disabled={!can('draw')}
                     onClick={() => void action('draw')}
                   >
-                    Kapalı taş çek
+                    {t('Kapalı taş çek')}
                   </button>
                 </>
               ) : (
                 <>
                   {stage === 'discard' && can('draw') && (
                     <button className="button secondary" onClick={() => void action('draw')}>
-                      Aldığın taşı geri bırak ve kapalı çek
+                      {t('Aldığın taşı geri bırak ve kapalı çek')}
                     </button>
                   )}
                   <button
@@ -2811,7 +2898,7 @@ function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
                       })
                     }
                   >
-                    {tiles.length === 1 ? 'Bitir · Son taşı at' : 'Seçili taşı at'}
+                    {tiles.length === 1 ? t('Bitir · Son taşı at') : t('Seçili taşı at')}
                   </button>
                 </>
               )}
@@ -2826,17 +2913,17 @@ function pokerCategory(category: string) {
   return (
     (
       {
-        'high-card': 'Yüksek kart',
-        'one-pair': 'Bir çift',
-        'two-pair': 'İki çift',
-        'three-of-a-kind': 'Üçlü',
-        straight: 'Kent',
-        flush: 'Renk',
+        'high-card': t('Yüksek kart'),
+        'one-pair': t('Bir çift'),
+        'two-pair': t('İki çift'),
+        'three-of-a-kind': t('Üçlü'),
+        straight: t('Kent'),
+        flush: t('Renk'),
         'full-house': 'Full house',
-        'four-of-a-kind': 'Kare',
-        'straight-flush': 'Sıralı renk',
+        'four-of-a-kind': t('Kare'),
+        'straight-flush': t('Sıralı renk'),
       } as Record<string, string>
-    )[category] ?? 'El'
+    )[category] ?? t('El')
   );
 }
 function validHoldemRules(value: HoldemTableRules) {
@@ -2868,7 +2955,7 @@ function HoldemRulesForm({
   return (
     <div className="rg-holdem-form">
       <label className="wide">
-        Masa adı
+        {t('Masa adı')}
         <input
           autoFocus
           maxLength={32}
@@ -2878,12 +2965,12 @@ function HoldemRulesForm({
       </label>
       {(
         [
-          ['capacity', 'Koltuk sayısı', 2, 9],
+          ['capacity', t('Koltuk sayısı'), 2, 9],
           ['smallBlind', 'Small blind', 1, 100000],
           ['bigBlind', 'Big blind', 1, 100000],
-          ['minBuyIn', 'Minimum giriş', 1, 1000000],
-          ['maxBuyIn', 'Maksimum giriş', 1, 1000000],
-          ['initialChips', 'Başlangıç fişi', 1, 1000000],
+          ['minBuyIn', t('Minimum giriş'), 1, 1000000],
+          ['maxBuyIn', t('Maksimum giriş'), 1, 1000000],
+          ['initialChips', t('Başlangıç fişi'), 1, 1000000],
         ] as const
       ).map(([key, label, min, max]) => (
         <label key={key}>
@@ -2903,11 +2990,11 @@ function HoldemRulesForm({
           checked={value.spectatorsAllowed}
           onChange={(event) => onChange({ ...value, spectatorsAllowed: event.target.checked })}
         />{' '}
-        İzleyici kabul et
+        {t('İzleyici kabul et')}
       </label>
       {!validHoldemRules(value) && (
         <p className="wide" role="status">
-          Blind ve giriş aralıklarını kontrol et. Başlangıç fişi giriş aralığında olmalı.
+          {t('Blind ve giriş aralıklarını kontrol et. Başlangıç fişi giriş aralığında olmalı.')}
         </p>
       )}
     </div>
@@ -2954,26 +3041,26 @@ function ReferenceCreateGame({
   }, [fixtureMetadata]);
   const count = kind === 'batak' && variant === 'gommeli' ? 3 : 4;
   const modes = [
-    ['ihaleli', 'İhaleli', '♣', '4 oyuncu · Tekli'],
-    ['esli', 'Eşli', '♠', '4 oyuncu · 2 + 2'],
-    ['koz-maca', 'Koz Maça', '♠', '4 oyuncu · Sabit koz'],
-    ['gommeli', 'Gömmeli', '♦', '3 oyuncu · 4 kart gömme'],
+    ['ihaleli', t('İhaleli'), '♣', t('4 oyuncu · Tekli')],
+    ['esli', t('Eşli'), '♠', t('4 oyuncu · 2 + 2')],
+    ['koz-maca', t('Koz Maça'), '♠', t('4 oyuncu · Sabit koz')],
+    ['gommeli', t('Gömmeli'), '♦', t('3 oyuncu · 4 kart gömme')],
   ] as const;
   return (
     <div className="rg-page rx-create">
       <header className="rg-heading">
         <div>
-          <h1>{kind === 'batak' ? 'Hangi Batak?' : '101 Okey masası'}</h1>
-          <p>{kind === 'batak' ? 'Batak türünü seç.' : 'Masa kurallarını seç.'}</p>
+          <h1>{kind === 'batak' ? t('Hangi Batak?') : t('101 Okey masası')}</h1>
+          <p>{kind === 'batak' ? t('Batak türünü seç.') : t('Masa kurallarını seç.')}</p>
         </div>
         <div>
           <button onClick={() => setRulesOpen(true)}>
             <ShieldCheck size={16} />
-            Masa kuralları
+            {t('Masa kuralları')}
           </button>
           <button onClick={onCancel}>
             <X size={16} />
-            Vazgeç
+            {t('Vazgeç')}
           </button>
         </div>
       </header>
@@ -3000,8 +3087,8 @@ function ReferenceCreateGame({
                 key={String(value)}
                 onClick={() => setFolding(value)}
               >
-                <strong>{value ? 'Katlamalı' : 'Katlamasız'}</strong>
-                <small>{value ? 'Önceki açılış toplamını geç' : 'Açılış en az 101'}</small>
+                <strong>{value ? t('Katlamalı') : t('Katlamasız')}</strong>
+                <small>{value ? t('Önceki açılış toplamını geç') : t('Açılış en az 101')}</small>
               </button>
             ))}
           </div>
@@ -3012,8 +3099,8 @@ function ReferenceCreateGame({
                 key={String(value)}
                 onClick={() => setTeams(value)}
               >
-                <strong>{value ? 'Eşli' : 'Tekli'}</strong>
-                <small>{value ? '2 + 2 oyuncu' : '4 oyuncu'}</small>
+                <strong>{value ? t('Eşli') : t('Tekli')}</strong>
+                <small>{value ? t('2 + 2 oyuncu') : t('4 oyuncu')}</small>
               </button>
             ))}
           </div>
@@ -3021,7 +3108,7 @@ function ReferenceCreateGame({
       )}
       <div className="rx-create-body">
         <section>
-          <h3>Odadaki kişiler</h3>
+          <h3>{t('Odadaki kişiler')}</h3>
           {participants.length ? (
             participants.map((person) => (
               <div className="rx-create-participant" key={person.userId}>
@@ -3030,56 +3117,56 @@ function ReferenceCreateGame({
               </div>
             ))
           ) : (
-            <p>Katılımcı bilgisi henüz alınmadı.</p>
+            <p>{t('Katılımcı bilgisi henüz alınmadı.')}</p>
           )}
-          <p className="rg-footer-note">Masa kurulduktan sonra oyuncular koltuk seçer.</p>
+          <p className="rg-footer-note">{t('Masa kurulduktan sonra oyuncular koltuk seçer.')}</p>
         </section>
         <aside className="rg-rules">
-          <h3>Masa özeti</h3>
+          <h3>{t('Masa özeti')}</h3>
           <div>
-            <span>Oyun</span>
+            <span>{t('Oyun')}</span>
             <strong>{names[kind]}</strong>
           </div>
           <div>
-            <span>Oyuncu</span>
+            <span>{t('Oyuncu')}</span>
             <strong>{count}</strong>
           </div>
           {kind === 'batak' ? (
             <>
               <div>
-                <span>Tür</span>
+                <span>{t('Tür')}</span>
                 <strong>{modes.find((mode) => mode[0] === variant)?.[1]}</strong>
               </div>
               <div>
-                <span>Akış</span>
+                <span>{t('Akış')}</span>
                 <strong>
                   {variant === 'gommeli'
-                    ? 'İhale · Koz · Gömme · Oyun'
+                    ? t('İhale · Koz · Gömme · Oyun')
                     : variant === 'koz-maca'
-                      ? 'Tahmin · Oyun'
-                      : 'İhale · Koz · Oyun'}
+                      ? t('Tahmin · Oyun')
+                      : t('İhale · Koz · Oyun')}
                 </strong>
               </div>
             </>
           ) : (
             <>
               <div>
-                <span>Açılış</span>
-                <strong>101 · 5 çift</strong>
+                <span>{t('Açılış')}</span>
+                <strong>{t('101 · 5 çift')}</strong>
               </div>
               <div>
-                <span>Katlamalı</span>
-                <strong>{folding ? 'Açık' : 'Kapalı'}</strong>
+                <span>{t('Katlamalı')}</span>
+                <strong>{folding ? t('Açık') : t('Kapalı')}</strong>
               </div>
               <div>
-                <span>Eşli</span>
-                <strong>{teams ? 'Açık' : 'Kapalı'}</strong>
+                <span>{t('Eşli')}</span>
+                <strong>{teams ? t('Açık') : t('Kapalı')}</strong>
               </div>
             </>
           )}
           <div>
-            <span>Puan</span>
-            <strong>Yalnızca sanal</strong>
+            <span>{t('Puan')}</span>
+            <strong>{t('Yalnızca sanal')}</strong>
           </div>
         </aside>
       </div>
@@ -3106,7 +3193,7 @@ function ReferenceCreateGame({
       )}
       <footer>
         <button className="button secondary" onClick={onCancel}>
-          Vazgeç
+          {t('Vazgeç')}
         </button>
         <button
           className="button primary"
@@ -3114,36 +3201,39 @@ function ReferenceCreateGame({
           title={reason || undefined}
           onClick={onSubmit}
         >
-          Masayı kur
+          {t('Masayı kur')}
         </button>
       </footer>
       {rulesOpen && (
-        <Modal title="Masa kuralları" className="rg-modal" onClose={() => setRulesOpen(false)}>
+        <Modal title={t('Masa kuralları')} className="rg-modal" onClose={() => setRulesOpen(false)}>
           <div className="rg-modal-body rg-rules">
             {(kind === 'batak'
               ? [
-                  ['Oyuncu', String(count)],
+                  [t('Oyuncu'), String(count)],
                   [
-                    'İhale',
+                    t('İhale'),
                     variant === 'koz-maca'
-                      ? 'Her oyuncu 1–13 tahmin verir'
+                      ? t('Her oyuncu 1–13 tahmin verir')
                       : variant === 'esli' || variant === 'gommeli'
-                        ? 'En az 8'
-                        : 'En az 5',
+                        ? t('En az 8')
+                        : t('En az 5'),
                   ],
-                  ['Renge uyma', 'Zorunlu · Mümkünse yükselt'],
-                  ['Gömmeli', 'Koz seçimi sonrası 4 kart gömülür'],
-                  ['Puan', 'Sunucunun mevcut Batak puan profili'],
+                  [t('Renge uyma'), t('Zorunlu · Mümkünse yükselt')],
+                  [t('Gömmeli'), t('Koz seçimi sonrası 4 kart gömülür')],
+                  [t('Puan'), t('Sunucunun mevcut Batak puan profili')],
                 ]
               : [
-                  ['Oyuncu', '4 · Eşler karşılıklı'],
-                  ['Dağıtım', 'Başlayan 22, diğerleri 21 taş'],
-                  ['Açılış', folding ? 'Son açıştan en az 1 fazla · İlk 101' : 'En az 101'],
-                  ['Çift', 'En az 5 çift'],
-                  ['Açma türü', 'Seri ve çift aynı oyuncuda karıştırılmaz'],
-                  ['Okey', 'Göstergenin bir üstü'],
-                  ['Bitirme', 'Son taş atılır'],
-                  ['Puan', 'Kazanan −101 · Açmayan 202 · Okey bitişi iki kat'],
+                  [t('Oyuncu'), t('4 · Eşler karşılıklı')],
+                  [t('Dağıtım'), t('Başlayan 22, diğerleri 21 taş')],
+                  [
+                    t('Açılış'),
+                    folding ? t('Son açıştan en az 1 fazla · İlk 101') : t('En az 101'),
+                  ],
+                  [t('Çift'), t('En az 5 çift')],
+                  [t('Açma türü'), t('Seri ve çift aynı oyuncuda karıştırılmaz')],
+                  ['Okey', t('Göstergenin bir üstü')],
+                  [t('Bitirme'), t('Son taş atılır')],
+                  [t('Puan'), t('Kazanan −101 · Açmayan 202 · Okey bitişi iki kat')],
                 ]
             ).map(([label, value]) => (
               <div key={label}>
@@ -3206,26 +3296,26 @@ function GameRecovery({
   const returning = recovery.pendingReturn,
     eventTitle =
       event?.type === 'turn-timeout'
-        ? 'Hamle süresi doldu'
+        ? t('Hamle süresi doldu')
         : event?.type === 'control-returned'
-          ? 'Kontrol sana döndü'
+          ? t('Kontrol sana döndü')
           : event?.type === 'return-requested'
-            ? 'Masaya dönüş istendi'
-            : 'Bot devraldı',
+            ? t('Masaya dönüş istendi')
+            : t('Bot devraldı'),
     title =
       !current && event
         ? eventTitle
         : returning
-          ? 'Masaya dönüş bekleniyor'
+          ? t('Masaya dönüş bekleniyor')
           : recovery.takeover
-            ? 'Bot koltuğunu devraldı'
+            ? t('Bot koltuğunu devraldı')
             : connected
-              ? 'Koltuğuna geri dön'
-              : 'Bağlantın kesildi';
+              ? t('Koltuğuna geri dön')
+              : t('Bağlantın kesildi');
   const reason = fixture
-    ? 'Yerel örnekte gerçek oyun işlemi kapalı'
+    ? t('Yerel örnekte gerçek oyun işlemi kapalı')
     : !connected
-      ? 'Önce oda bağlantısı kurulmalı'
+      ? t('Önce oda bağlantısı kurulmalı')
       : '';
   const reclaim = async () => {
     if (reason || activity.busy || lock.current) return;
@@ -3244,15 +3334,19 @@ function GameRecovery({
   const eventText =
     event?.type === 'turn-timeout'
       ? event.action === 'fold'
-        ? `Sunucu eli bıraktı${event.toCall !== undefined ? `; karşılanacak bahis ${event.toCall} fişti` : ''}.`
+        ? event.toCall !== undefined
+          ? t('Sunucu eli bıraktı; karşılanacak bahis {amount} fişti.', { amount: event.toCall })
+          : t('Sunucu eli bıraktı.')
         : event.action === 'check'
-          ? 'Karşılanacak bahis yoktu; sunucu kontrol etti.'
-          : `Sunucu süre sonunda ${event.action ?? 'izinli hamleyi'} uyguladı.`
+          ? t('Karşılanacak bahis yoktu; sunucu kontrol etti.')
+          : t('Sunucu süre sonunda {action} uyguladı.', {
+              action: event.action ?? t('izinli hamleyi'),
+            })
       : event?.type === 'control-returned'
-        ? 'Sunucu koltuğunun kontrolünü güvenli sırada sana döndürdü.'
+        ? t('Sunucu koltuğunun kontrolünü güvenli sırada sana döndürdü.')
         : event?.type === 'return-requested'
-          ? 'Dönüş isteğin sunucuda kaydedildi.'
-          : 'Sunucu bağlantı kesintisinden sonra bot kontrolünü başlattı.';
+          ? t('Dönüş isteğin sunucuda kaydedildi.')
+          : t('Sunucu bağlantı kesintisinden sonra bot kontrolünü başlattı.');
   const body = (
     <>
       <div className="rh-recovery-callout">
@@ -3263,25 +3357,28 @@ function GameRecovery({
             {!current && event
               ? eventText
               : returning
-                ? 'Bot mevcut hamleyi tamamlar; kontrol güvenli sırada sana döner.'
+                ? t('Bot mevcut hamleyi tamamlar; kontrol güvenli sırada sana döner.')
                 : recovery.takeover
-                  ? 'Oyun botla devam ediyor. Koltuğuna dönebilirsin.'
+                  ? t('Oyun botla devam ediyor. Koltuğuna dönebilirsin.')
                   : seconds !== null
-                    ? `${seconds} saniye sonra bot devralabilir. Koltuğuna daha sonra da dönebilirsin.`
-                    : 'Masadaki yerin korunuyor.'}
+                    ? t(
+                        '{seconds} saniye sonra bot devralabilir. Koltuğuna daha sonra da dönebilirsin.',
+                        { seconds },
+                      )
+                    : t('Masadaki yerin korunuyor.')}
           </p>
         </div>
         {!recovery.takeover && seconds !== null && <b>{seconds}s</b>}
       </div>
       <div className="rh-recovery-steps">
-        <span>Bağlantı kesildi</span>
-        <span>Bot devralır</span>
-        <span>Güvenli sırada geri dön</span>
+        <span>{t('Bağlantı kesildi')}</span>
+        <span>{t('Bot devralır')}</span>
+        <span>{t('Güvenli sırada geri dön')}</span>
       </div>
       {event && (
         <div className="rh-recovery-record">
           <small>
-            El {event.hand} · {new Date(event.at).toLocaleString('tr-TR')}
+            {t('El {hand}', { hand: event.hand })} · {new Date(event.at).toLocaleString(locale)}
           </small>
           <p>{eventText}</p>
         </div>
@@ -3302,22 +3399,22 @@ function GameRecovery({
           {current && !recovery.takeover && seconds !== null
             ? ` · ${seconds}s`
             : event
-              ? ` · El ${event.hand}`
+              ? ` · ${t('El {hand}', { hand: event.hand })}`
               : ''}
         </span>
-        <button onClick={() => setOpen(true)}>Ayrıntılar</button>
+        <button onClick={() => setOpen(true)}>{t('Ayrıntılar')}</button>
         {current && !returning && (
           <button
             disabled={!!reason || pending || activity.busy}
             title={reason || undefined}
             onClick={() => void reclaim()}
           >
-            Masaya geri dön
+            {t('Masaya geri dön')}
           </button>
         )}
         {!current && event && (
           <button
-            aria-label="Kayıt bildirimini kapat"
+            aria-label={t('Kayıt bildirimini kapat')}
             onClick={() => setDismissed((values) => [...values, event.id])}
           >
             <X size={14} />
@@ -3329,11 +3426,11 @@ function GameRecovery({
           <div className="rg-modal-body">{body}</div>
           <footer className="rg-modal-footer">
             <button className="button secondary" onClick={() => setOpen(false)}>
-              Masayı göster
+              {t('Masayı göster')}
             </button>
             {!current ? null : !connected ? (
               <button className="button primary" onClick={() => void activity.refresh()}>
-                Yeniden bağlan
+                {t('Yeniden bağlan')}
               </button>
             ) : (
               <button
@@ -3342,7 +3439,7 @@ function GameRecovery({
                 title={reason || undefined}
                 onClick={() => void reclaim()}
               >
-                {returning ? 'Güvenli sıra bekleniyor' : 'Masaya geri dön'}
+                {returning ? t('Güvenli sıra bekleniyor') : t('Masaya geri dön')}
               </button>
             )}
           </footer>
@@ -3421,10 +3518,12 @@ function ReferenceGameHistory({
       (item) => item.userId === community.user?.id,
     );
     if (player && ['holdem', 'blackjack'].includes(table.kind) && typeof player.net === 'number')
-      return `${player.net > 0 ? '+' : ''}${player.net} fiş`;
+      return t('{net} fiş', { net: `${player.net > 0 ? '+' : ''}${player.net}` });
     if (table.kind === 'holdem') {
       const paid = object(result.payouts)[community.user?.id ?? ''];
-      return paid !== undefined ? `${Number(paid)} fiş ödendi` : 'Ödeme yok';
+      return paid !== undefined
+        ? t('{amount} fiş ödendi', { amount: Number(paid) })
+        : t('Ödeme yok');
     }
     if (table.kind === 'blackjack') {
       const own = array<Record<string, unknown>>(result.results).filter(
@@ -3436,12 +3535,12 @@ function ReferenceGameHistory({
               (item) =>
                 (
                   ({
-                    win: 'Kazandı',
-                    lose: 'Kaybetti',
-                    push: 'Berabere',
+                    win: t('Kazandı'),
+                    lose: t('Kaybetti'),
+                    push: t('Berabere'),
                     blackjack: 'Blackjack',
                   }) as Record<string, string>
-                )[String(item.outcome)] ?? 'Sonuç',
+                )[String(item.outcome)] ?? t('Sonuç'),
             )
             .join(' · ')
         : '—';
@@ -3449,8 +3548,8 @@ function ReferenceGameHistory({
     const own = entry.seats?.find((seat) => seat.userId === community.user?.id);
     const scores = array<number>(result.scores);
     return own && scores[own.position] !== undefined
-      ? `${scores[own.position]} puan`
-      : 'Koltuk puanları';
+      ? t('{score} puan', { score: scores[own.position] })
+      : t('Koltuk puanları');
   };
   useEffect(() => setDetail(null), [activity.room?.roomId, community.user?.id]);
   useEffect(() => {
@@ -3464,25 +3563,25 @@ function ReferenceGameHistory({
     <div className="rg-page rh-history">
       <header className="rg-heading">
         <div>
-          <h1>Masa geçmişi</h1>
-          <p>Tamamlanan eller ve sunucuda kaydedilen sonuçlar.</p>
+          <h1>{t('Masa geçmişi')}</h1>
+          <p>{t('Tamamlanan eller ve sunucuda kaydedilen sonuçlar.')}</p>
         </div>
         <div>
           <button onClick={() => navigate('/games')}>
             <ArrowRight size={16} />
-            Oyun alanı
+            {t('Oyun alanı')}
           </button>
-          <IconButton label="Geçmişi yenile" onClick={() => void activity.refresh()}>
+          <IconButton label={t('Geçmişi yenile')} onClick={() => void activity.refresh()}>
             <RefreshCw size={17} />
           </IconButton>
         </div>
       </header>
       <div className="rh-stats">
         {[
-          ['Oynanan el', String(hands)],
-          ['Kazanılan el', String(wins)],
-          ['Kazanma oranı', hands ? `${Math.round((wins / hands) * 100)}%` : '—'],
-          ['Geçmiş kaydı', String(rows.length)],
+          [t('Oynanan el'), String(hands)],
+          [t('Kazanılan el'), String(wins)],
+          [t('Kazanma oranı'), hands ? `${Math.round((wins / hands) * 100)}%` : '—'],
+          [t('Geçmiş kaydı'), String(rows.length)],
         ].map(([label, value]) => (
           <article key={label}>
             <small>{label}</small>
@@ -3492,15 +3591,15 @@ function ReferenceGameHistory({
       </div>
       <section className="rh-history-panel">
         <header>
-          <h3>Tamamlanan eller</h3>
+          <h3>{t('Tamamlanan eller')}</h3>
           <label>
-            Oyun
+            {t('Oyun')}
             <select
-              aria-label="Geçmiş oyun filtresi"
+              aria-label={t('Geçmiş oyun filtresi')}
               value={filter}
               onChange={(event) => setFilter(event.target.value as typeof filter)}
             >
-              <option value="all">Tüm oyunlar</option>
+              <option value="all">{t('Tüm oyunlar')}</option>
               {Object.entries(names).map(([kind, name]) => (
                 <option value={kind} key={kind}>
                   {name}
@@ -3512,37 +3611,37 @@ function ReferenceGameHistory({
         {activity.status === 'loading' ? (
           <div className="rh-empty">
             <RefreshCw size={28} />
-            <h3>Geçmiş getiriliyor…</h3>
+            <h3>{t('Geçmiş getiriliyor…')}</h3>
           </div>
         ) : activity.error ? (
           <div className="rh-empty rh-error">
-            <h3>Geçmiş alınamadı</h3>
+            <h3>{t('Geçmiş alınamadı')}</h3>
             <p>{activity.error}</p>
             <button className="button secondary" onClick={() => void activity.refresh()}>
-              Yeniden dene
+              {t('Yeniden dene')}
             </button>
           </div>
         ) : !access ? (
           <div className="rh-empty">
             <History size={30} />
-            <h3>{game ? 'Önce masaya katıl.' : 'Açık masa yok.'}</h3>
+            <h3>{game ? t('Önce masaya katıl.') : t('Açık masa yok.')}</h3>
             <p>
               {game
-                ? 'Geçmiş için koltuk veya izleyici erişimi gerekir.'
-                : 'Arşivli masa erişimi bu bağlantıda henüz uygulanmadı.'}
+                ? t('Geçmiş için koltuk veya izleyici erişimi gerekir.')
+                : t('Arşivli masa erişimi bu bağlantıda henüz uygulanmadı.')}
             </p>
             <button className="button secondary" onClick={() => navigate('/games')}>
-              Oyun alanına dön
+              {t('Oyun alanına dön')}
             </button>
           </div>
         ) : rows.length ? (
           <table className="rh-history-table">
             <thead>
               <tr>
-                <th>Masa</th>
-                <th>El</th>
-                <th>Tarih</th>
-                <th>Sonucun</th>
+                <th>{t('Masa')}</th>
+                <th>{t('El')}</th>
+                <th>{t('Tarih')}</th>
+                <th>{t('Sonucun')}</th>
                 <th />
               </tr>
             </thead>
@@ -3554,11 +3653,11 @@ function ReferenceGameHistory({
                     <small>{names[table.kind]}</small>
                   </td>
                   <td>{hand.hand}</td>
-                  <td>{new Date(hand.endedAt).toLocaleString('tr-TR')}</td>
+                  <td>{new Date(hand.endedAt).toLocaleString(locale)}</td>
                   <td>{ownResult(table, hand.result, hand)}</td>
                   <td>
                     <button onClick={() => setDetail({ table, hand })}>
-                      Ayrıntılar
+                      {t('Ayrıntılar')}
                       <ArrowRight size={14} />
                     </button>
                   </td>
@@ -3569,27 +3668,32 @@ function ReferenceGameHistory({
         ) : (
           <div className="rh-empty">
             <History size={30} />
-            <h3>Henüz tamamlanan el yok.</h3>
+            <h3>{t('Henüz tamamlanan el yok.')}</h3>
             <button className="button secondary" onClick={() => navigate('/games')}>
-              Masalara dön
+              {t('Masalara dön')}
             </button>
           </div>
         )}
       </section>
-      <p className="rh-history-note">Puan ve sanal fiş farklıdır; toplam kazanç birleştirilmez.</p>
+      <p className="rh-history-note">
+        {t('Puan ve sanal fiş farklıdır; toplam kazanç birleştirilmez.')}
+      </p>
       {detail && (
         <Modal
-          title={`${names[detail.table.kind]} · El ${detail.hand.hand}`}
+          title={t('{game} · El {hand}', {
+            game: names[detail.table.kind],
+            hand: detail.hand.hand,
+          })}
           className="rg-modal rh-detail"
           onClose={() => setDetail(null)}
         >
           <div className="rg-modal-body">
-            <p>{new Date(detail.hand.endedAt).toLocaleString('tr-TR')}</p>
+            <p>{new Date(detail.hand.endedAt).toLocaleString(locale)}</p>
             <HistoryDetails kind={detail.table.kind} entry={detail.hand} />
           </div>
           <footer className="rg-modal-footer">
             <button className="button secondary" onClick={() => setDetail(null)}>
-              Geçmişe dön
+              {t('Geçmişe dön')}
             </button>
           </footer>
         </Modal>
@@ -3625,7 +3729,7 @@ function HistoryDetails({
 }) {
   const result = entry.result,
     historical = entry.seats ?? [],
-    name = (id: string) => historical.find((seat) => seat.userId === id)?.name ?? 'Katılımcı';
+    name = (id: string) => historical.find((seat) => seat.userId === id)?.name ?? t('Katılımcı');
   const players = array<Record<string, unknown>>(result.players),
     scores = array<number>(result.scores),
     contract = object(result.contract);
@@ -3644,14 +3748,14 @@ function HistoryDetails({
                   <span>{name(String(player.userId))}</span>
                   <strong>
                     {Number(player.net) > 0 ? '+' : ''}
-                    {Number(player.net)} fiş
+                    {t('{amount} fiş', { amount: Number(player.net) })}
                   </strong>
                 </div>
               ))
             : Object.entries(object(result.payouts)).map(([id, amount]) => (
                 <div key={id}>
                   <span>{name(id)}</span>
-                  <strong>{Number(amount)} fiş ödendi</strong>
+                  <strong>{t('{amount} fiş ödendi', { amount: Number(amount) })}</strong>
                 </div>
               ))}
         </div>
@@ -3670,11 +3774,11 @@ function HistoryDetails({
         ))}
         <p>
           {result.settlementReason === 'uncontested'
-            ? 'Diğer oyuncular eli bıraktı.'
-            : 'Showdown sonucu'}
+            ? t('Diğer oyuncular eli bıraktı.')
+            : t('Showdown sonucu')}
         </p>
-        {!result.revealedCards && <p>Bu eski kayıtta açılmış kartlar bulunmuyor.</p>}
-        <p>Katlanan oyuncuların gizli kartları paylaşılmaz.</p>
+        {!result.revealedCards && <p>{t('Bu eski kayıtta açılmış kartlar bulunmuyor.')}</p>}
+        <p>{t('Katlanan oyuncuların gizli kartları paylaşılmaz.')}</p>
       </>
     );
   if (kind === 'blackjack')
@@ -3682,7 +3786,7 @@ function HistoryDetails({
       <>
         {array<Card>(result.dealer).length > 0 && (
           <div className="rh-dealer-history">
-            <small>Krupiye · {Number(result.dealerTotal)}</small>
+            <small>{t('Krupiye · {total}', { total: Number(result.dealerTotal) })}</small>
             <div className="rh-board-cards">
               {array<Card>(result.dealer).map((card) => (
                 <PlayingCard key={card.id} card={card} />
@@ -3697,7 +3801,7 @@ function HistoryDetails({
                 {name(String(player.userId))}{' '}
                 <span>
                   {Number(player.net) > 0 ? '+' : ''}
-                  {Number(player.net)} fiş
+                  {t('{amount} fiş', { amount: Number(player.net) })}
                 </span>
               </h3>
               {array<Record<string, unknown>>(player.hands).map((hand) => (
@@ -3709,15 +3813,18 @@ function HistoryDetails({
                   </div>
                   <div>
                     <strong>
-                      El {Number(hand.hand) + 1} · {Number(hand.total)}
+                      {t('El {hand} · {total}', {
+                        hand: Number(hand.hand) + 1,
+                        total: Number(hand.total),
+                      })}
                     </strong>
                     <small>
-                      Bahis {Number(hand.bet)} ·{' '}
+                      {t('Bahis {amount} ·', { amount: Number(hand.bet) })}{' '}
                       {(
                         {
-                          win: 'Kazandı',
-                          lose: 'Kaybetti',
-                          push: 'Berabere',
+                          win: t('Kazandı'),
+                          lose: t('Kaybetti'),
+                          push: t('Berabere'),
                           blackjack: 'Blackjack',
                         } as Record<string, string>
                       )[String(hand.outcome)] ?? String(hand.outcome)}
@@ -3734,15 +3841,21 @@ function HistoryDetails({
               {array<Record<string, unknown>>(result.results).map((item, index) => (
                 <div key={index}>
                   <span>
-                    {name(String(item.userId))} · El {Number(item.hand) + 1}
+                    {t('{name} · El {hand}', {
+                      name: name(String(item.userId)),
+                      hand: Number(item.hand) + 1,
+                    })}
                   </span>
                   <strong>
-                    {String(item.outcome)} · {Number(item.returned)} fiş geri aldı
+                    {t('{outcome} · {amount} fiş geri aldı', {
+                      outcome: String(item.outcome),
+                      amount: Number(item.returned),
+                    })}
                   </strong>
                 </div>
               ))}
             </div>
-            <p>Bu eski kayıtta kartlar ve başlangıç bahsi bulunmuyor.</p>
+            <p>{t('Bu eski kayıtta kartlar ve başlangıç bahsi bulunmuyor.')}</p>
           </>
         )}
       </>
@@ -3752,17 +3865,17 @@ function HistoryDetails({
       {kind === 'batak' && Object.keys(contract).length > 0 && (
         <div className="rh-history-rules">
           <span>
-            İhale {Number(contract.bid)} ·{' '}
+            {t('İhale {bid} ·', { bid: Number(contract.bid) })}{' '}
             {historical.find((seat) => seat.position === Number(contract.bidder))?.name ??
-              'Katılımcı'}
+              t('Katılımcı')}
           </span>
-          <span>Koz {suits[String(contract.trump)] ?? '—'}</span>
+          <span>{t('Koz {trump}', { trump: suits[String(contract.trump)] ?? '—' })}</span>
           <span>{String(result.variant ?? 'Batak')}</span>
         </div>
       )}
       {kind === '101' && result.lastDiscard && (
         <div className="rh-last-discard">
-          <span>Son atılan taş</span>
+          <span>{t('Son atılan taş')}</span>
           <OkeyTileView tile={result.lastDiscard as Tile} small />
         </div>
       )}
@@ -3772,15 +3885,15 @@ function HistoryDetails({
           return (
             <div key={position}>
               <span>
-                {seat?.name ?? `Koltuk sırası ${position + 1}`}
+                {seat?.name ?? t('Koltuk sırası {number}', { number: position + 1 })}
                 {kind === 'batak' && array<number>(result.tricks)[position] !== undefined
-                  ? ` · ${array<number>(result.tricks)[position]} el`
+                  ? ` · ${t('{count} el', { count: array<number>(result.tricks)[position] ?? 0 })}`
                   : ''}
                 {kind === '101' && typeof result.winner === 'number' && result.winner === position
-                  ? ' · Bitirdi'
+                  ? t(' · Bitirdi')
                   : ''}
               </span>
-              <strong>{score} puan</strong>
+              <strong>{t('{score} puan', { score })}</strong>
             </div>
           );
         })}
@@ -3789,25 +3902,29 @@ function HistoryDetails({
         <div className="rh-history-teams">
           {array<number[]>(result.teams).map((team, index) => (
             <article key={index}>
-              <small>Takım {index + 1}</small>
+              <small>{t('Takım {number}', { number: index + 1 })}</small>
               <strong>
                 {team
                   .map(
                     (position) =>
-                      historical.find((seat) => seat.position === position)?.name ?? 'Katılımcı',
+                      historical.find((seat) => seat.position === position)?.name ?? t('Katılımcı'),
                   )
                   .join(' + ')}
               </strong>
-              <span>{team.reduce((sum, position) => sum + (scores[position] ?? 0), 0)} puan</span>
+              <span>
+                {t('{score} puan', {
+                  score: team.reduce((sum, position) => sum + (scores[position] ?? 0), 0),
+                })}
+              </span>
             </article>
           ))}
         </div>
       )}
-      {!entry.seats && <p>Bu eski kayıtta oyuncu eşlemesi bulunmuyor.</p>}
+      {!entry.seats && <p>{t('Bu eski kayıtta oyuncu eşlemesi bulunmuyor.')}</p>}
       <p>
         {kind === '101'
-          ? 'İlk açılış puanı ve son işlenen taş bu kayıtta bulunmuyor.'
-          : 'El sonuçları sunucuda kaydedilen puanları gösterir.'}
+          ? t('İlk açılış puanı ve son işlenen taş bu kayıtta bulunmuyor.')
+          : t('El sonuçları sunucuda kaydedilen puanları gösterir.')}
       </p>
     </>
   );

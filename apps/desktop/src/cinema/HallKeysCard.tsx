@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { hallCommands, keyLabel, useHallKeys } from './hall-keys';
 import { paletteShortcut } from './hall-model';
+import { t } from '../i18n';
 
 /** The hall's keys at a glance (`?`); they are changed in Settings → Klavye. */
 export function HallKeysCard({ onClose }: { onClose(): void }) {
@@ -17,11 +18,16 @@ export function HallKeysCard({ onClose }: { onClose(): void }) {
         className="hall-keys-card"
         role="dialog"
         aria-modal="true"
-        aria-label="Sinema kısayolları"
+        aria-label={t('Sinema kısayolları')}
       >
         <header>
-          <h2>Kısayollar</h2>
-          <button ref={close} className="hall-icon-button" aria-label="Kapat" onClick={onClose}>
+          <h2>{t('Kısayollar')}</h2>
+          <button
+            ref={close}
+            className="hall-icon-button"
+            aria-label={t('Kapat')}
+            onClick={onClose}
+          >
             <X size={16} />
           </button>
         </header>
@@ -35,25 +41,25 @@ export function HallKeysCard({ onClose }: { onClose(): void }) {
             </div>
           ))}
           <div>
-            <dt>Kanal numarası</dt>
+            <dt>{t('Kanal numarası')}</dt>
             <dd>
               <kbd>0–9</kbd>
             </dd>
           </div>
           <div>
-            <dt>Bir şey aç</dt>
+            <dt>{t('Bir şey aç')}</dt>
             <dd>
               <kbd>{paletteShortcut}</kbd>
             </dd>
           </div>
           <div>
-            <dt>Geri dön / kapat</dt>
+            <dt>{t('Geri dön / kapat')}</dt>
             <dd>
               <kbd>Esc</kbd>
             </dd>
           </div>
         </dl>
-        <p>Tuşları Ayarlar → Klavye'den değiştirebilirsin.</p>
+        <p>{t("Tuşları Ayarlar → Klavye'den değiştirebilirsin.")}</p>
       </section>
     </div>
   );

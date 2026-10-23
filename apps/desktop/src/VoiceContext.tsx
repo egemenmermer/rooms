@@ -3,6 +3,7 @@ import { IconButton } from '@rooms/design';
 import { useRealtime, setParticipantVolume } from './realtime';
 import { ReferenceIcon } from './ReferenceIcon';
 import { VoiceAvatar } from './VoiceAvatar';
+import { t } from './i18n';
 
 /** The room inspector reads the persistent transport; volumes are local playback only. */
 export function VoiceContext({
@@ -24,15 +25,15 @@ export function VoiceContext({
   return (
     <aside className="voice-context-panel">
       <header>
-        <span>{media.roomName || 'SES ODASI'}</span>
-        <IconButton label="Oda panelini kapat" onClick={onClose}>
+        <span>{media.roomName || t('SES ODASI')}</span>
+        <IconButton label={t('Oda panelini kapat')} onClick={onClose}>
           <ReferenceIcon name="close" size={18} />
         </IconButton>
       </header>
       <div className="voice-context-body">
         <div className="voice-context-title">
-          <strong>Odadakiler {media.participants.length}</strong>
-          <IconButton label="Arkadaş davet et" onClick={invite}>
+          <strong>{t('Odadakiler {count}', { count: media.participants.length })}</strong>
+          <IconButton label={t('Arkadaş davet et')} onClick={invite}>
             <ReferenceIcon name="plus" size={18} />
           </IconButton>
         </div>
@@ -49,14 +50,11 @@ export function VoiceContext({
               {connected && <i />}
             </span>
             <span>
-              <strong>
-                {p.name}
-                {p.local ? ' (sen)' : ''}
-              </strong>
+              <strong>{p.local ? t('{name} (sen)', { name: p.name }) : p.name}</strong>
               {p.muted ? (
-                <small>Mikrofon kapalı</small>
+                <small>{t('Mikrofon kapalı')}</small>
               ) : connected && p.speaking ? (
-                <small>Konuşuyor</small>
+                <small>{t('Konuşuyor')}</small>
               ) : null}
             </span>
             <ReferenceIcon name={p.muted ? 'mic-off' : 'mic'} size={14} />
@@ -64,14 +62,14 @@ export function VoiceContext({
         ))}
         {participant && (
           <section className="voice-context-volume">
-            <h3>Kişi sesi</h3>
+            <h3>{t('Kişi sesi')}</h3>
             <div>
               <VoiceAvatar id={participant.id} name={participant.name} />
               <span>{participant.name}</span>
-              <span>%{Math.round(participant.volume * 100)}</span>
+              <span>{t('%{percent}', { percent: Math.round(participant.volume * 100) })}</span>
             </div>
             <input
-              aria-label={`${participant.name} kişisel ses seviyesi`}
+              aria-label={t('{name} kişisel ses seviyesi', { name: participant.name })}
               type="range"
               min="0"
               max="1"
@@ -80,15 +78,15 @@ export function VoiceContext({
               disabled={!connected}
               onChange={(e) => setParticipantVolume(participant.id, Number(e.target.value))}
             />
-            <p>Yalnızca senin duyduğun ses değişir.</p>
+            <p>{t('Yalnızca senin duyduğun ses değişir.')}</p>
           </section>
         )}
         <section className="voice-context-activity">
           <ReferenceIcon name="film" size={20} />
-          <h3>Bu akşam ne yapıyoruz?</h3>
-          <p>Film, YouTube ya da bir oyun. Sesli sohbet kaldığı yerden sürer.</p>
+          <h3>{t('Bu akşam ne yapıyoruz?')}</h3>
+          <p>{t('Film, YouTube ya da bir oyun. Sesli sohbet kaldığı yerden sürer.')}</p>
           <button className="button secondary" onClick={openLauncher}>
-            Etkinliklere göz at
+            {t('Etkinliklere göz at')}
           </button>
         </section>
       </div>

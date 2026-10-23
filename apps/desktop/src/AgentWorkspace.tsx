@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { t } from './i18n';
 import type { AgentTask, AgentWorkspaceBridge } from '@rooms/agent-contracts';
 import type { OpsTerminal } from '../../../packages/shared-contracts/src/hostops';
 import './host-operations.css';
@@ -31,7 +32,7 @@ export default function AgentWorkspace({
         if (alive.current) setSession(items[0] ?? null);
       })
       .catch(() => {
-        if (alive.current) setError('Bu sunucuda izole çalışma terminali henüz kullanılamıyor.');
+        if (alive.current) setError(t('Bu sunucuda izole çalışma terminali henüz kullanılamıyor.'));
       });
     return () => {
       alive.current = false;
@@ -85,7 +86,7 @@ export default function AgentWorkspace({
       const keys = term.onData((data) => {
         if (writable())
           void api.send({ type: 'input', data, sequence: sequence.current++ }).catch(() => {
-            if (!disposed) setError('Terminal girdisi gönderilemedi. Yeniden bağlan.');
+            if (!disposed) setError(t('Terminal girdisi gönderilemedi. Yeniden bağlan.'));
           });
       });
       const unsubscribe = api.onTerminal((event) => {
@@ -116,7 +117,7 @@ export default function AgentWorkspace({
           term.focus();
         }
       } catch {
-        if (!disposed) setError('Çalışma terminali bağlantısı kurulamadı.');
+        if (!disposed) setError(t('Çalışma terminali bağlantısı kurulamadı.'));
       }
     })();
     return () => {
@@ -137,23 +138,27 @@ export default function AgentWorkspace({
         setError(
           e instanceof Error
             ? e.message.replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/, '')
-            : 'Çalışma terminali işlemi tamamlanamadı.',
+            : t('Çalışma terminali işlemi tamamlanamadı.'),
         );
     } finally {
       if (alive.current) setBusy(false);
     }
   };
   return (
-    <section className="ops-terminal" aria-label="İzole görev terminali">
+    <section className="ops-terminal" aria-label={t('İzole görev terminali')}>
       <p>
-        Bu terminal yalnızca görevin çalışma dosyalarına erişir. Kontrolü aldığında AI durur; insan
-        kabuğu ayrı bir süreçte açılır. Paneli kapatmak kabuğu sonlandırmaz.
+        {t(
+          'Bu terminal yalnızca görevin çalışma dosyalarına erişir. Kontrolü aldığında AI durur; insan kabuğu ayrı bir süreçte açılır. Paneli kapatmak kabuğu sonlandırmaz.',
+        )}
       </p>
       {task.execution && (
         <p>
-          {task.execution.hostId} · {task.execution.modelProvider} · Sınırlar:{' '}
-          {task.execution.limits.cpu} CPU / {task.execution.limits.memoryMiB} MB /{' '}
-          {task.execution.limits.minutes} dk
+          {task.execution.hostId} · {task.execution.modelProvider} ·{' '}
+          {t('Sınırlar: {cpu} CPU / {memory} MB / {minutes} dk', {
+            cpu: task.execution.limits.cpu,
+            memory: task.execution.limits.memoryMiB,
+            minutes: task.execution.limits.minutes,
+          })}
         </p>
       )}
       <div className="ops-actions">
@@ -167,12 +172,12 @@ export default function AgentWorkspace({
               })
             }
           >
-            AI’yi durdur ve kontrolü al
+            {t('AI’yi durdur ve kontrolü al')}
           </button>
         ) : (
           <>
             <button disabled={busy} onClick={() => setRevision((n) => n + 1)}>
-              Yeniden bağlan
+              {t('Yeniden bağlan')}
             </button>
             <button
               disabled={busy}
@@ -183,12 +188,12 @@ export default function AgentWorkspace({
                 })
               }
             >
-              Kabuğu sonlandır
+              {t('Kabuğu sonlandır')}
             </button>
             <span>
               {session.writable
-                ? 'Kontrol sende'
-                : 'Salt okunur · kontrol diğer pencerende olabilir'}
+                ? t('Kontrol sende')
+                : t('Salt okunur · kontrol diğer pencerende olabilir')}
             </span>
           </>
         )}
@@ -201,7 +206,7 @@ export default function AgentWorkspace({
               })
             }
           >
-            AI devam onayına dön
+            {t('AI devam onayına dön')}
           </button>
         )}
       </div>

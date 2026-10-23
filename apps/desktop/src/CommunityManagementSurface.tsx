@@ -27,7 +27,7 @@ import type {
   SocialUser,
 } from '@rooms/social';
 import { useCommunity } from './community';
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 import { VoiceAvatar } from './VoiceAvatar';
 
 export interface CommunityManagementBridge {
@@ -140,7 +140,7 @@ function ManagementScope({
           setDialog({ kind: fixture.dialog, userId: target.user.id });
           setRoleIds([...target.roles]);
         }
-      } else setError('Yerel örnek için topluluk yönetimi görünümü sağlanmadı.');
+      } else setError(t('Yerel örnek için topluluk yönetimi görünümü sağlanmadı.'));
       setLoading(false);
       setRefreshing(false);
       return;
@@ -151,7 +151,7 @@ function ManagementScope({
       return;
     }
     if (!bridgeRef.current?.communityManagement) {
-      setError('Topluluk yönetimi için masaüstü bağlantısı gerekli.');
+      setError(t('Topluluk yönetimi için masaüstü bağlantısı gerekli.'));
       setLoading(false);
       setRefreshing(false);
       return;
@@ -169,7 +169,7 @@ function ManagementScope({
         queryFn: () =>
           new Promise<SocialCommunityManagement>((resolve, reject) => {
             const timer = setTimeout(
-              () => reject(new Error('Üyeler getirilemedi. Yeniden dene.')),
+              () => reject(new Error(t('Üyeler getirilemedi. Yeniden dene.'))),
               15000,
             );
             bridgeRef
@@ -241,13 +241,13 @@ function ManagementScope({
   const target = snapshot?.members.find((member) => member.user.id === dialog?.userId);
   const allowed = snapshot?.access === 'allowed',
     busy = loading || refreshing || working;
-  const fixtureReason = 'Yerel görsel örnekte gerçek hesap işlemleri kapalı';
+  const fixtureReason = t('Yerel görsel örnekte gerçek hesap işlemleri kapalı');
   const mutationReason = fixtureMode
     ? fixtureReason
     : !connected
-      ? 'Topluluk bağlantısı bekleniyor'
+      ? t('Topluluk bağlantısı bekleniyor')
       : !allowed
-        ? 'Yönetim yetkisi gerekli'
+        ? t('Yönetim yetkisi gerekli')
         : '';
   const canAssign = !!target?.canAssignRoles && !!snapshot?.capabilities.assignRoles;
   const canRemove =
@@ -258,9 +258,11 @@ function ManagementScope({
     target.user.id !== userId &&
     !!bridgeRef.current?.banCommunityMember;
   const roleNames = (member: SocialManagedMember) =>
-    member.roles.map((id) => snapshot?.roles.find((role) => role.id === id)?.name ?? 'Tanımlı rol');
+    member.roles.map(
+      (id) => snapshot?.roles.find((role) => role.id === id)?.name ?? t('Tanımlı rol'),
+    );
   const space = community.spaces.find((item) => item.id === spaceId),
-    name = space?.name ?? 'Topluluk';
+    name = space?.name ?? t('Topluluk');
   const ownerId = space?.ownerId;
   const changeRoles = (member: SocialManagedMember) => {
     setMenu(null);
@@ -284,7 +286,7 @@ function ManagementScope({
     if (kind === 'role' ? !canAssign || !changed : kind === 'ban' ? !canBan : !canRemove) return;
     const current = bridgeRef.current;
     if (!current) {
-      setError('Masaüstü bağlantısı gerekli.');
+      setError(t('Masaüstü bağlantısı gerekli.'));
       return;
     }
     // Existing roles unavailable for assignment remain intact unless a permitted own edit removes them.
@@ -296,7 +298,7 @@ function ManagementScope({
           !snapshot?.roles.some((role) => role.id === id && role.assignable),
       )
     ) {
-      setError('Seçilen rollerden biri atanamıyor. Görünümü yenile.');
+      setError(t('Seçilen rollerden biri atanamıyor. Görünümü yenile.'));
       return;
     }
     const epoch = generation.current;
@@ -323,14 +325,15 @@ function ManagementScope({
   }
   async function changeCommunityRole(change: SocialCommunityRoleChange) {
     if (mutationReason || busy || lock.current || !currentScope() || change.spaceId !== spaceId)
-      throw new Error(mutationReason || 'İşlem sürüyor. Biraz bekleyip yeniden dene.');
+      throw new Error(mutationReason || t('İşlem sürüyor. Biraz bekleyip yeniden dene.'));
     const current = bridgeRef.current;
-    if (!current?.changeCommunityRole) throw new Error('Rol düzenleme için uygulamayı güncelle.');
+    if (!current?.changeCommunityRole)
+      throw new Error(t('Rol düzenleme için uygulamayı güncelle.'));
     lock.current = true;
     setWorking(true);
     try {
       const result = await current.changeCommunityRole(change);
-      if (!currentScope()) throw new Error('Topluluk bağlantısı değişti. Rolleri yeniden aç.');
+      if (!currentScope()) throw new Error(t('Topluluk bağlantısı değişti. Rolleri yeniden aç.'));
       // A successful mutation is followed by an authoritative native read. Fence older reads,
       // including our own gateway echo, without discarding the editor's unsaved other tab.
       accept(result.management, ++generation.current);
@@ -351,29 +354,29 @@ function ManagementScope({
     member.statusText ||
     (
       {
-        online: 'Çevrimiçi',
-        idle: 'Uzakta',
-        dnd: 'Rahatsız etmeyin',
-        invisible: 'Çevrimdışı',
-        unknown: 'Durum bilinmiyor',
+        online: t('Çevrimiçi'),
+        idle: t('Uzakta'),
+        dnd: t('Rahatsız etmeyin'),
+        invisible: t('Çevrimdışı'),
+        unknown: t('Durum bilinmiyor'),
       } as const
     )[member.status];
   const members =
     snapshot?.members.filter((member) =>
       `${member.user.displayName} ${member.user.username}`
-        .toLocaleLowerCase('tr')
-        .includes(query.toLocaleLowerCase('tr')),
+        .toLocaleLowerCase(locale)
+        .includes(query.toLocaleLowerCase(locale)),
     ) ?? [];
   const footer = (
     <div className="rcm-state-actions">
       {onBack && (
         <button className="button primary" onClick={onBack}>
-          Sohbete dön
+          {t('Sohbete dön')}
         </button>
       )}
       <button className="button secondary" disabled={busy} onClick={() => void reload()}>
         <RefreshCw size={15} />
-        Yenile
+        {t('Yenile')}
       </button>
     </div>
   );
@@ -382,9 +385,13 @@ function ManagementScope({
       <section className="rcm-state">
         <LockKeyhole size={62} />
         <h1>
-          {!userId ? 'Topluluğa bağlan' : !spaceId ? 'Bir topluluk seç' : 'Bağlantı bekleniyor'}
+          {!userId
+            ? t('Topluluğa bağlan')
+            : !spaceId
+              ? t('Bir topluluk seç')
+              : t('Bağlantı bekleniyor')}
         </h1>
-        <p>Üye yönetimi için etkin topluluk bağlantısı gerekli.</p>
+        <p>{t('Üye yönetimi için etkin topluluk bağlantısı gerekli.')}</p>
         {footer}
       </section>
     );
@@ -392,15 +399,15 @@ function ManagementScope({
     return (
       <section className="rcm-state" aria-busy="true">
         <Users size={46} />
-        <h1>Üyeler ve roller getiriliyor</h1>
+        <h1>{t('Üyeler ve roller getiriliyor')}</h1>
       </section>
     );
   if (!snapshot)
     return (
       <section className="rcm-state">
         <ShieldCheck size={58} />
-        <h1>Yönetim görünümü alınamadı</h1>
-        <p role="alert">{error || 'Masaüstü bağlantısını yenile.'}</p>
+        <h1>{t('Yönetim görünümü alınamadı')}</h1>
+        <p role="alert">{error || t('Masaüstü bağlantısını yenile.')}</p>
         {footer}
       </section>
     );
@@ -411,10 +418,13 @@ function ManagementScope({
           <Users size={72} />
           <LockKeyhole size={24} />
         </div>
-        <h1>{snapshot.access === 'missing' ? 'Topluluğa erişilemiyor' : 'Yönetim yetkin yok'}</h1>
+        <h1>
+          {snapshot.access === 'missing' ? t('Topluluğa erişilemiyor') : t('Yönetim yetkin yok')}
+        </h1>
         <p>
-          Üyeler, roller ve davetler yalnızca yetkili kişilere açıktır. Bu alana erişmek için
-          topluluk sahibine başvur.
+          {t(
+            'Üyeler, roller ve davetler yalnızca yetkili kişilere açıktır. Bu alana erişmek için topluluk sahibine başvur.',
+          )}
         </p>
         {footer}
       </section>
@@ -423,9 +433,9 @@ function ManagementScope({
     <section className="rcm-page">
       <header className="rcm-heading">
         <div>
-          <span>TOPLULUK YÖNETİMİ</span>
+          <span>{t('TOPLULUK YÖNETİMİ')}</span>
           <h1>{name}</h1>
-          <p>Üyeler ve roller.</p>
+          <p>{t('Üyeler ve roller.')}</p>
         </div>
         <div>
           <button
@@ -435,17 +445,17 @@ function ManagementScope({
               fixtureMode
                 ? fixtureReason
                 : !onCreateInvite
-                  ? 'Hesap daveti oluşturma akışı bu görünümde bağlı değil'
+                  ? t('Hesap daveti oluşturma akışı bu görünümde bağlı değil')
                   : undefined
             }
             onClick={onCreateInvite}
           >
             <Plus size={17} />
-            Davet oluştur
+            {t('Davet oluştur')}
           </button>
           <button
             className="rcm-refresh"
-            aria-label="Üyeleri yenile"
+            aria-label={t('Üyeleri yenile')}
             disabled={busy}
             onClick={() => void reload()}
           >
@@ -454,9 +464,9 @@ function ManagementScope({
         </div>
       </header>
       {fixtureMode && (
-        <p className="rcm-demo">DEMO · Yerel yönetim görünümü · Hesap işlemleri kapalı</p>
+        <p className="rcm-demo">{t('DEMO · Yerel yönetim görünümü · Hesap işlemleri kapalı')}</p>
       )}
-      <div className="rcm-tabs" role="tablist" aria-label="Topluluk yönetimi">
+      <div className="rcm-tabs" role="tablist" aria-label={t('Topluluk yönetimi')}>
         <button
           role="tab"
           aria-selected={tab === 'members'}
@@ -465,7 +475,7 @@ function ManagementScope({
             setMenu(null);
           }}
         >
-          Üyeler · {snapshot.members.length}
+          {t('Üyeler · {count}', { count: snapshot.members.length })}
         </button>
         <button
           role="tab"
@@ -475,7 +485,7 @@ function ManagementScope({
             setMenu(null);
           }}
         >
-          Roller · {snapshot.roles.length}
+          {t('Roller · {count}', { count: snapshot.roles.length })}
         </button>
         <button
           role="tab"
@@ -485,7 +495,7 @@ function ManagementScope({
             setMenu(null);
           }}
         >
-          Davetler
+          {t('Davetler')}
         </button>
       </div>
       {tab === 'roles' ? (
@@ -505,7 +515,7 @@ function ManagementScope({
             fixtureMode
               ? fixtureReason
               : !connected
-                ? 'Topluluk bağlantısı bekleniyor. Bağlantı gelince yeniden dene.'
+                ? t('Topluluk bağlantısı bekleniyor. Bağlantı gelince yeniden dene.')
                 : undefined
           }
           onCreateInvite={onCreateInvite}
@@ -516,24 +526,26 @@ function ManagementScope({
             <label className="rcm-search">
               <Search size={16} />
               <input
-                aria-label="Üye ara"
-                placeholder="Üye ara"
+                aria-label={t('Üye ara')}
+                placeholder={t('Üye ara')}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
               />
             </label>
             <small>
-              {snapshot.members.length} üye ·{' '}
-              {snapshot.members.filter((member) => member.status === 'online').length} çevrimiçi
+              {t('{members} üye · {online} çevrimiçi', {
+                members: snapshot.members.length,
+                online: snapshot.members.filter((member) => member.status === 'online').length,
+              })}
             </small>
           </div>
           <div className="rcm-table-wrap">
             <table className="rcm-members">
               <thead>
                 <tr>
-                  <th>ÜYE</th>
-                  <th>ROL</th>
-                  <th>DURUM</th>
+                  <th>{t('ÜYE')}</th>
+                  <th>{t('ROL')}</th>
+                  <th>{t('DURUM')}</th>
                   <th />
                 </tr>
               </thead>
@@ -557,14 +569,14 @@ function ManagementScope({
                           <MemberAvatar user={member.user} status={member.status} />
                           <div>
                             <strong>{member.user.displayName}</strong>
-                            {member.user.id === userId && <small>sen</small>}
+                            {member.user.id === userId && <small>{t('sen')}</small>}
                           </div>
                         </div>
                       </td>
                       <td>
                         <div className="rcm-role-badges">
                           {isOwner ? (
-                            <span className="owner">Topluluk sahibi</span>
+                            <span className="owner">{t('Topluluk sahibi')}</span>
                           ) : member.roles.length ? (
                             member.roles.map((id) => {
                               const role = snapshot.roles.find((item) => item.id === id);
@@ -582,26 +594,26 @@ function ManagementScope({
                                       alignSelf: 'center',
                                     }}
                                   />
-                                  {role?.name ?? 'Tanımlı rol'}
+                                  {role?.name ?? t('Tanımlı rol')}
                                 </span>
                               );
                             })
                           ) : (
-                            <span>Üye</span>
+                            <span>{t('Üye')}</span>
                           )}
                         </div>
                       </td>
                       <td>{statusName(member)}</td>
                       <td className="rcm-member-action">
                         {isOwner ? (
-                          <small>Sahip</small>
+                          <small>{t('Sahip')}</small>
                         ) : (
                           <>
                             <button
                               disabled={(!assign && !remove) || busy}
                               title={
                                 !assign && !remove
-                                  ? 'Yetki veya rol hiyerarşisi bu üyeyi yönetmeye izin vermiyor'
+                                  ? t('Yetki veya rol hiyerarşisi bu üyeyi yönetmeye izin vermiyor')
                                   : undefined
                               }
                               aria-expanded={menu === member.user.id}
@@ -612,24 +624,26 @@ function ManagementScope({
                               }
                             >
                               <MoreHorizontal size={17} />
-                              {assign ? 'Rolü düzenle' : 'Yönet'}
+                              {assign ? t('Rolü düzenle') : t('Yönet')}
                             </button>
                             {menu === member.user.id && (
                               <div className="rcm-menu">
                                 <button
                                   disabled={!assign || busy}
                                   title={
-                                    !assign ? 'Bu üyenin rolünü değiştirme yetkin yok' : undefined
+                                    !assign
+                                      ? t('Bu üyenin rolünü değiştirme yetkin yok')
+                                      : undefined
                                   }
                                   onClick={() => changeRoles(member)}
                                 >
                                   <ShieldCheck size={14} />
-                                  Rolü düzenle
+                                  {t('Rolü düzenle')}
                                 </button>
                                 <button
                                   className="danger"
                                   disabled={!remove || busy}
-                                  title={!remove ? 'Bu üyeyi çıkarma yetkin yok' : undefined}
+                                  title={!remove ? t('Bu üyeyi çıkarma yetkin yok') : undefined}
                                   onClick={() => {
                                     setMenu(null);
                                     setError('');
@@ -637,7 +651,7 @@ function ManagementScope({
                                   }}
                                 >
                                   <LogOut size={14} />
-                                  Topluluktan çıkar
+                                  {t('Topluluktan çıkar')}
                                 </button>
                                 {ban && (
                                   <button
@@ -650,7 +664,7 @@ function ManagementScope({
                                     }}
                                   >
                                     <Ban size={14} />
-                                    Yasakla
+                                    {t('Yasakla')}
                                   </button>
                                 )}
                               </div>
@@ -666,22 +680,24 @@ function ManagementScope({
           </div>
           {!members.length && (
             <p className="rcm-no-members">
-              {query ? 'Aramana uyan üye yok.' : 'Üye görünümü boş.'}
+              {query ? t('Aramana uyan üye yok.') : t('Üye görünümü boş.')}
             </p>
           )}
           <section className="rcm-role-summary">
             <header>
-              <h2>Roller</h2>
+              <h2>{t('Roller')}</h2>
               <button onClick={() => setTab('roles')}>
-                Rolleri düzenle <ArrowRight size={17} />
+                {t('Rolleri düzenle')} <ArrowRight size={17} />
               </button>
               <button
                 disabled={!onChannelPermissions}
-                title={!onChannelPermissions ? 'Önce izinlerini yöneteceğin kanalı seç' : undefined}
+                title={
+                  !onChannelPermissions ? t('Önce izinlerini yöneteceğin kanalı seç') : undefined
+                }
                 onClick={onChannelPermissions}
               >
                 <ArrowRight size={17} />
-                Kanal izinlerini aç
+                {t('Kanal izinlerini aç')}
               </button>
             </header>
             <div>
@@ -689,13 +705,16 @@ function ManagementScope({
                 <article key={role.id}>
                   <strong>{role.name}</strong>
                   <p>
-                    {snapshot.members.filter((member) => member.roles.includes(role.id)).length} üye
-                    · {role.assignable ? 'Atanabilir' : 'Atama kapalı'}
+                    {t('{count} üye · {state}', {
+                      count: snapshot.members.filter((member) => member.roles.includes(role.id))
+                        .length,
+                      state: role.assignable ? t('Atanabilir') : t('Atama kapalı'),
+                    })}
                   </p>
                 </article>
               ))}
             </div>
-            {!snapshot.roles.length && <p>Tanımlı rol yok.</p>}
+            {!snapshot.roles.length && <p>{t('Tanımlı rol yok.')}</p>}
           </section>
         </>
       )}
@@ -708,10 +727,12 @@ function ManagementScope({
         <Modal
           title={
             dialog.kind === 'role'
-              ? `${target.user.displayName} adlı üyenin rolünü değiştir`
+              ? t('{displayName} adlı üyenin rolünü değiştir', {
+                  displayName: target.user.displayName,
+                })
               : dialog.kind === 'ban'
-                ? `${target.user.displayName} adlı üyeyi yasakla?`
-                : `${target.user.displayName} adlı üyeyi çıkar?`
+                ? t('{displayName} adlı üyeyi yasakla?', { displayName: target.user.displayName })
+                : t('{displayName} adlı üyeyi çıkar?', { displayName: target.user.displayName })
           }
           className="rcm-modal"
           onClose={() => {
@@ -727,14 +748,16 @@ function ManagementScope({
               <div>
                 <strong>{target.user.displayName}</strong>
                 {dialog.kind === 'role' && (
-                  <small>Mevcut rol: {roleNames(target).join(', ') || 'Üye'}</small>
+                  <small>
+                    {t('Mevcut rol: {roles}', { roles: roleNames(target).join(', ') || t('Üye') })}
+                  </small>
                 )}
               </div>
             </div>
             {dialog.kind === 'role' ? (
               <>
                 <fieldset disabled={working || !canAssign}>
-                  <legend>Roller</legend>
+                  <legend>{t('Roller')}</legend>
                   {snapshot.roles.map((role) => {
                     const original = target.roles.includes(role.id),
                       editable = role.assignable || (original && target.user.id === userId);
@@ -743,7 +766,7 @@ function ManagementScope({
                         key={role.id}
                         title={
                           !editable
-                            ? 'Bu rolü atama veya kaldırma izni bu görünümde yok'
+                            ? t('Bu rolü atama veya kaldırma izni bu görünümde yok')
                             : undefined
                         }
                       >
@@ -764,7 +787,7 @@ function ManagementScope({
                       </label>
                     );
                   })}
-                  {!snapshot.roles.length && <p>Henüz rol oluşturulmamış.</p>}
+                  {!snapshot.roles.length && <p>{t('Henüz rol oluşturulmamış.')}</p>}
                   {!snapshot.roles.length && snapshot.capabilities.manageRoles && (
                     <button
                       type="button"
@@ -774,22 +797,29 @@ function ManagementScope({
                         setTab('roles');
                       }}
                     >
-                      Rolleri aç
+                      {t('Rolleri aç')}
                     </button>
                   )}
                 </fieldset>
                 <p className="rcm-note">
-                  Seçtiğin roller bu üyeye rolün izinlerini verir. Yetkileri Roller sekmesinden
-                  düzenleyebilirsin.
+                  {t(
+                    'Seçtiğin roller bu üyeye rolün izinlerini verir. Yetkileri Roller sekmesinden düzenleyebilirsin.',
+                  )}
                 </p>
                 <p className="rcm-note">
-                  Kanal bazında verilmiş ek izinleri Kanal izinleri bölümünden yönetebilirsin.
+                  {t(
+                    'Kanal bazında verilmiş ek izinleri Kanal izinleri bölümünden yönetebilirsin.',
+                  )}
                 </p>
               </>
             ) : (
               <p className="rcm-removal">
-                {target.user.displayName}, {name} topluluğundaki kanal ve odalara erişemeyecek.
-                {dialog.kind === 'ban' && ' Yasak kaldırılana kadar davetle de geri dönemez.'}
+                {t('{user}, {name} topluluğundaki kanal ve odalara erişemeyecek.', {
+                  user: target.user.displayName,
+                  name,
+                })}
+                {dialog.kind === 'ban' &&
+                  ` ${t('Yasak kaldırılana kadar davetle de geri dönemez.')}`}
               </p>
             )}
             {mutationReason && <p className="rcm-note">{mutationReason}</p>}
@@ -808,7 +838,7 @@ function ManagementScope({
                 setError('');
               }}
             >
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className={`button ${dialog.kind === 'role' ? 'primary' : 'danger'}`}
@@ -832,12 +862,12 @@ function ManagementScope({
                 <LogOut size={16} />
               )}{' '}
               {working
-                ? 'Bekleniyor…'
+                ? t('Bekleniyor…')
                 : dialog.kind === 'role'
-                  ? 'Rolü değiştir'
+                  ? t('Rolü değiştir')
                   : dialog.kind === 'ban'
-                    ? 'Yasakla'
-                    : 'Topluluktan çıkar'}
+                    ? t('Yasakla')
+                    : t('Topluluktan çıkar')}
             </button>
           </footer>
         </Modal>

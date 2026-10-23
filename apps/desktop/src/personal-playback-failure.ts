@@ -1,3 +1,5 @@
+import { t } from './i18n';
+
 /** Classify only observed transport/media evidence; an opaque failure is not an expired account. */
 export type PersonalPlaybackFailure =
   'expired' | 'unauthorized' | 'unsupported' | 'network' | 'stalled' | 'unknown';
@@ -13,25 +15,29 @@ export const playbackFailureCopy: Record<
   { title: string; message: string }
 > = {
   expired: {
-    title: 'Oynatma bağlantısının süresi doldu',
-    message: 'Kaynağı listesinden yeniden aç.',
+    title: t('Oynatma bağlantısının süresi doldu'),
+    message: t('Kaynağı listesinden yeniden aç.'),
   },
   unauthorized: {
-    title: 'Kaynak erişimi reddedildi',
-    message: 'Kişisel bağlantının yetkilendirmesini kontrol et.',
+    title: t('Kaynak erişimi reddedildi'),
+    message: t('Kişisel bağlantının yetkilendirmesini kontrol et.'),
   },
   unsupported: {
-    title: 'Bu medya biçimi oynatılamıyor',
-    message: 'Kaynak desteklenen bir ses ve video biçimi sunmuyor.',
+    title: t('Bu medya biçimi oynatılamıyor'),
+    message: t('Kaynak desteklenen bir ses ve video biçimi sunmuyor.'),
   },
-  network: { title: 'Kaynağa ulaşılamıyor', message: 'Bağlantını kontrol edip yeniden dene.' },
+  network: {
+    title: t('Kaynağa ulaşılamıyor'),
+    message: t('Bağlantını kontrol edip yeniden dene.'),
+  },
   stalled: {
-    title: 'Yayın ilerlemiyor',
-    message: 'Yeni görüntü gelmedi. Yayını yeniden açmayı dene.',
+    title: t('Yayın ilerlemiyor'),
+    message: t('Yeni görüntü gelmedi. Yayını yeniden açmayı dene.'),
   },
   unknown: {
-    title: 'Kaynak oynatılamadı',
-    message:
+    title: t('Kaynak oynatılamadı'),
+    message: t(
       'Tayfa bu yayını açamadı; hata nedeni belirlenemedi. Oynatma seçeneklerinden başka bir oynatıcıyla kontrol edebilirsin.',
+    ),
   },
 };

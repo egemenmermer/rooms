@@ -1,10 +1,11 @@
 import { useRef } from 'react';
+import { t } from './i18n';
 
 export type StartTab = 'register' | 'signin' | 'selfhost';
 export const START_TABS: { id: StartTab; label: string }[] = [
-  { id: 'register', label: 'Kayıt ol' },
-  { id: 'signin', label: 'Giriş yap' },
-  { id: 'selfhost', label: 'Kendi sunucunu kur' },
+  { id: 'register', label: t('Kayıt ol') },
+  { id: 'signin', label: t('Giriş yap') },
+  { id: 'selfhost', label: t('Kendi sunucunu kur') },
 ];
 export const START_PANEL_ID = 'ref-start-panel';
 export const startTabId = (tab: StartTab) => `ref-start-tab-${tab}`;
@@ -24,7 +25,7 @@ export function StartTabs({
     onSelect(START_TABS[next]!.id);
   };
   return (
-    <div className="ref-start-tabs" role="tablist" aria-label="Başlangıç">
+    <div className="ref-start-tabs" role="tablist" aria-label={t('Başlangıç')}>
       {START_TABS.map((tab, index) => (
         <button
           key={tab.id}

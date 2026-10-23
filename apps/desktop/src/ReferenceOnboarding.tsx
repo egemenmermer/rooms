@@ -20,13 +20,13 @@ import { START_PANEL_ID, StartTabs, startTabId } from './StartTabs';
 import { VoiceAvatar } from './VoiceAvatar';
 import { useCommunity } from './community';
 import { useRooms } from './store';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import './reference-onboarding.css';
 
 export type ReferenceOnboardingMode =
   'welcome' | 'signin' | 'register' | 'selfhost' | 'recovery' | 'invite' | 'profile' | 'devices';
 
-export const SESSION_EXPIRED_MESSAGE = 'Oturumunun süresi doldu. Çıkış yapıp yeniden giriş yap.';
+export const SESSION_EXPIRED_MESSAGE = t('Oturumunun süresi doldu. Çıkış yapıp yeniden giriş yap.');
 
 /**
  * Tab the start screen opens on: an invitation always means signing up; someone who has used a
@@ -75,18 +75,20 @@ export function PasswordRecoveryPane({
     setBusy(false);
     if (!serverUrl.trim()) {
       setLoading(false);
-      setError('Giriş ekranından sunucu adresini seç.');
+      setError(t('Giriş ekranından sunucu adresini seç.'));
       return;
     }
     try {
       if (!social?.passwordRecoveryCapabilities)
-        throw new Error('Kurtarma isteği yalnızca masaüstü uygulamasında kullanılabilir.');
+        throw new Error(t('Kurtarma isteği yalnızca masaüstü uygulamasında kullanılabilir.'));
       const result = await social.passwordRecoveryCapabilities(serverUrl);
       if (epoch === generation.current) setCapabilities(result);
     } catch {
       if (epoch === generation.current)
         setError(
-          'Sunucunun kurtarma ayarları alınamadı. Bağlantını ve giriş ekranındaki sunucu adresini kontrol et.',
+          t(
+            'Sunucunun kurtarma ayarları alınamadı. Bağlantını ve giriş ekranındaki sunucu adresini kontrol et.',
+          ),
         );
     } finally {
       if (epoch === generation.current) setLoading(false);
@@ -103,15 +105,15 @@ export function PasswordRecoveryPane({
     if (accepted || error) notice.current?.focus();
   }, [accepted, error]);
   const reason = loading
-    ? 'Sunucu ayarları alınıyor…'
+    ? t('Sunucu ayarları alınıyor…')
     : !social?.requestPasswordRecovery
-      ? 'Kurtarma isteği yalnızca masaüstü uygulamasında kullanılabilir.'
+      ? t('Kurtarma isteği yalnızca masaüstü uygulamasında kullanılabilir.')
       : !capabilities
-        ? 'Sunucunun kurtarma ayarları doğrulanamadı.'
+        ? t('Sunucunun kurtarma ayarları doğrulanamadı.')
         : !capabilities.emailEnabled
-          ? 'Sunucuda kurtarma e-postası yapılandırılmamış.'
+          ? t('Sunucuda kurtarma e-postası yapılandırılmamış.')
           : capabilities.captcha.required
-            ? 'Sunucu hCaptcha doğrulaması istiyor. Kurtarmayı Stoat web uygulamasından başlat.'
+            ? t('Sunucu hCaptcha doğrulaması istiyor. Kurtarmayı Stoat web uygulamasından başlat.')
             : null;
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -127,28 +129,29 @@ export function PasswordRecoveryPane({
       }
     } catch {
       if (epoch === generation.current)
-        setError('Kurtarma isteği tamamlanamadı. Biraz bekleyip yeniden dene.');
+        setError(t('Kurtarma isteği tamamlanamadı. Biraz bekleyip yeniden dene.'));
     } finally {
       if (epoch === generation.current) setBusy(false);
     }
   };
   return (
     <div className="ref-auth-recovery" aria-busy={loading || busy}>
-      <h2>Şifre kurtarma</h2>
+      <h2>{t('Şifre kurtarma')}</h2>
       {accepted ? (
         <div className="ref-auth-notice recovery-accepted" role="status" tabIndex={-1} ref={notice}>
           <Mail size={18} />
           <span>
-            İstek kabul edildi. Hesap uygunsa sunucunun e-posta kurtarma bağlantısıyla devam
-            edebilirsin.
+            {t(
+              'İstek kabul edildi. Hesap uygunsa sunucunun e-posta kurtarma bağlantısıyla devam edebilirsin.',
+            )}
           </span>
         </div>
       ) : (
         <>
-          <p className="ref-auth-help">Kayıtlı e-posta adresi</p>
+          <p className="ref-auth-help">{t('Kayıtlı e-posta adresi')}</p>
           <form onSubmit={(event) => void submit(event)}>
             <label className="field-label">
-              E-posta adresi
+              {t('E-posta adresi')}
               <input
                 required
                 type="email"
@@ -172,7 +175,7 @@ export function PasswordRecoveryPane({
               disabled={!!reason || busy || !email.trim()}
               title={reason ?? undefined}
             >
-              {busy ? 'İstek gönderiliyor…' : 'Kurtarma isteği gönder'}
+              {busy ? t('İstek gönderiliyor…') : t('Kurtarma isteği gönder')}
               <ArrowRight size={16} />
             </button>
           </form>
@@ -183,19 +186,19 @@ export function PasswordRecoveryPane({
           )}
           {!loading && !capabilities && (
             <button className="button secondary full" onClick={() => void load()}>
-              Yeniden bağlan
+              {t('Yeniden bağlan')}
             </button>
           )}
         </>
       )}
       {onReset && (
         <button className="button secondary full" disabled={busy} onClick={onReset}>
-          Kurtarma bağlantım var
+          {t('Kurtarma bağlantım var')}
         </button>
       )}
       <button className="ref-auth-back" onClick={onBack}>
         <ArrowLeft size={14} />
-        Giriş ekranına dön
+        {t('Giriş ekranına dön')}
       </button>
     </div>
   );
@@ -301,7 +304,9 @@ export function ReferenceOnboarding({
     setInvite(null);
     if (!parsed) {
       setError(
-        'Bu bir Tayfa davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.',
+        t(
+          'Bu bir Tayfa davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.',
+        ),
       );
       return;
     }
@@ -309,7 +314,7 @@ export function ReferenceOnboarding({
     setBusy(true);
     try {
       if (!window.rooms)
-        throw new Error('Davetler yalnızca masaüstü uygulamasında doğrulanabilir.');
+        throw new Error(t('Davetler yalnızca masaüstü uygulamasında doğrulanabilir.'));
       const result = await window.rooms.social.inspectInvite(parsed.serverUrl, parsed.code);
       if (epoch !== request.current) return;
       setServer(parsed.serverUrl);
@@ -346,7 +351,8 @@ export function ReferenceOnboarding({
     setBusy(true);
     setError('');
     try {
-      if (!window.rooms) throw new Error('Profil yalnızca masaüstü uygulamasında kaydedilebilir.');
+      if (!window.rooms)
+        throw new Error(t('Profil yalnızca masaüstü uygulamasında kaydedilebilir.'));
       const user = await window.rooms.social.updateProfile({
         displayName: name.trim(),
         ...(status.trim() ? { statusText: status.trim() } : {}),
@@ -363,7 +369,7 @@ export function ReferenceOnboarding({
   const expired = Number.isFinite(expires) && expires <= Date.now();
   const sameServer = sameInviteServer(c.serverUrl || '', server || '');
   const configure = (tab: 'profile' | 'audio') => onOpenSettings?.(tab);
-  const settingsReason = onOpenSettings ? undefined : 'Ayarlar bu görünümde henüz bağlanmadı.';
+  const settingsReason = onOpenSettings ? undefined : t('Ayarlar bu görünümde henüz bağlanmadı.');
   return (
     <ReferenceAuthFrame mode={mode}>
       {mode === 'signin' || mode === 'register' || mode === 'selfhost' ? (
@@ -387,7 +393,7 @@ export function ReferenceOnboarding({
           {(mode === 'profile' || mode === 'devices') && (
             <div
               className="ref-auth-steps"
-              aria-label={`Kurulum: ${mode === 'profile' ? '1' : '2'}. adım`}
+              aria-label={t('Kurulum: {step}. adım', { step: mode === 'profile' ? 1 : 2 })}
             >
               <i className="active" />
               <i className={mode === 'devices' ? 'active' : ''} />
@@ -413,11 +419,11 @@ export function ReferenceOnboarding({
             ))}
           {mode === 'invite' && (
             <>
-              <h2>{expired ? 'Davetin süresi doldu' : 'Topluluk daveti'}</h2>
+              <h2>{expired ? t('Davetin süresi doldu') : t('Topluluk daveti')}</h2>
               <p>
                 {invite
-                  ? 'Topluluk davetini incele.'
-                  : 'Arkadaşından gelen davet bağlantısını yapıştır.'}
+                  ? t('Topluluk davetini incele.')
+                  : t('Arkadaşından gelen davet bağlantısını yapıştır.')}
               </p>
               <form
                 onSubmit={(e) => {
@@ -427,7 +433,7 @@ export function ReferenceOnboarding({
               >
                 <fieldset disabled={busy}>
                   <label className="field-label">
-                    Davet bağlantısı
+                    {t('Davet bağlantısı')}
                     <input
                       required
                       autoComplete="off"
@@ -444,7 +450,7 @@ export function ReferenceOnboarding({
                     />
                   </label>
                   <button className="button secondary full" disabled={busy || !link.trim()}>
-                    {busy ? 'Davet açılıyor…' : 'Daveti aç'}
+                    {busy ? t('Davet açılıyor…') : t('Daveti aç')}
                     <ChevronRight size={16} />
                   </button>
                 </fieldset>
@@ -454,10 +460,10 @@ export function ReferenceOnboarding({
                   <span className="ref-auth-community-icon">
                     <Users size={25} />
                   </span>
-                  <h3>{invite.space?.name || invite.channel?.name || 'Topluluk'}</h3>
+                  <h3>{invite.space?.name || invite.channel?.name || t('Topluluk')}</h3>
                   {invite.channel?.name && <p>#{invite.channel.name}</p>}
                   {expired ? (
-                    <div className="ref-auth-notice">Arkadaşından yeni bir davet iste.</div>
+                    <div className="ref-auth-notice">{t('Arkadaşından yeni bir davet iste.')}</div>
                   ) : c.user ? (
                     <>
                       <button
@@ -465,14 +471,15 @@ export function ReferenceOnboarding({
                         disabled={busy || !sameServer}
                         onClick={() => void join()}
                       >
-                        Daveti kabul et
+                        {t('Daveti kabul et')}
                         <ArrowRight size={16} />
                       </button>
                       {!sameServer && (
                         <>
                           <p className="ref-auth-help">
-                            Bu davet başka bir sunucuda. Çıkış yapınca davetle kayıt olabilir ya da
-                            o sunucudaki hesabınla giriş yapabilirsin.
+                            {t(
+                              'Bu davet başka bir sunucuda. Çıkış yapınca davetle kayıt olabilir ya da o sunucudaki hesabınla giriş yapabilirsin.',
+                            )}
                           </p>
                           {/* Signed out, App sends /setup/invite with these params to Kayıt ol. */}
                           <button
@@ -486,7 +493,7 @@ export function ReferenceOnboarding({
                                 .finally(() => setBusy(false));
                             }}
                           >
-                            Çıkış yap ve davetle devam et
+                            {t('Çıkış yap ve davetle devam et')}
                             <ArrowRight size={16} />
                           </button>
                         </>
@@ -494,7 +501,7 @@ export function ReferenceOnboarding({
                     </>
                   ) : (
                     <button className="button primary full" onClick={() => onNavigate('register')}>
-                      Kayıt ol ve katıl
+                      {t('Kayıt ol ve katıl')}
                       <ArrowRight size={16} />
                     </button>
                   )}
@@ -506,13 +513,13 @@ export function ReferenceOnboarding({
                 onClick={() => onComplete?.()}
               >
                 <ArrowLeft size={14} />
-                Geri dön
+                {t('Geri dön')}
               </button>
             </>
           )}
           {mode === 'profile' && (
             <>
-              <h2>Profil</h2>
+              <h2>{t('Profil')}</h2>
               {c.user ? (
                 <form onSubmit={(e) => void saveProfile(e)}>
                   <fieldset disabled={busy}>
@@ -525,11 +532,11 @@ export function ReferenceOnboarding({
                         title={settingsReason}
                         onClick={() => configure('profile')}
                       >
-                        Avatar seç
+                        {t('Avatar seç')}
                       </button>
                     </div>
                     <label className="field-label">
-                      Görünen ad
+                      {t('Görünen ad')}
                       <input
                         required
                         maxLength={32}
@@ -539,7 +546,7 @@ export function ReferenceOnboarding({
                       />
                     </label>
                     <label className="field-label">
-                      Durum
+                      {t('Durum')}
                       <input
                         maxLength={128}
                         value={status}
@@ -547,10 +554,10 @@ export function ReferenceOnboarding({
                       />
                     </label>
                     <p className="ref-auth-help">
-                      Bunları daha sonra profilinden değiştirebilirsin.
+                      {t('Bunları daha sonra profilinden değiştirebilirsin.')}
                     </p>
                     <button className="button primary full" disabled={busy || !name.trim()}>
-                      {busy ? 'Kaydediliyor…' : 'Devam et'}
+                      {busy ? t('Kaydediliyor…') : t('Devam et')}
                       <ArrowRight size={16} />
                     </button>
                     <button
@@ -558,17 +565,17 @@ export function ReferenceOnboarding({
                       className="ref-auth-back"
                       onClick={() => onNavigate('devices')}
                     >
-                      Şimdilik atla
+                      {t('Şimdilik atla')}
                     </button>
                   </fieldset>
                 </form>
               ) : (
                 <>
                   <div className="ref-auth-notice">
-                    Profilini hazırlamak için önce hesabına giriş yap.
+                    {t('Profilini hazırlamak için önce hesabına giriş yap.')}
                   </div>
                   <button className="button primary full" onClick={() => onNavigate('signin')}>
-                    Giriş yap
+                    {t('Giriş yap')}
                   </button>
                 </>
               )}
@@ -576,23 +583,25 @@ export function ReferenceOnboarding({
           )}
           {mode === 'devices' && (
             <>
-              <h2>Cihazlar</h2>
-              <p>İzinleri yalnızca ilgili özelliği kullandığında isteyeceğiz.</p>
+              <h2>{t('Cihazlar')}</h2>
+              <p>{t('İzinleri yalnızca ilgili özelliği kullandığında isteyeceğiz.')}</p>
               {permissions?.microphone === 'denied' && (
                 <div className="ref-auth-notice warning">
-                  Mikrofon izni kapalı. Ses ve video ayarlarından sistem izinlerini açabilirsin.
+                  {t(
+                    'Mikrofon izni kapalı. Ses ve video ayarlarından sistem izinlerini açabilirsin.',
+                  )}
                 </div>
               )}
               <div className="ref-auth-permission">
                 <Mic size={22} />
                 <div>
-                  <strong>Mikrofon</strong>
+                  <strong>{t('Mikrofon')}</strong>
                   <p>
                     {permissions?.microphone === 'granted'
-                      ? 'İzin verildi'
+                      ? t('İzin verildi')
                       : permissions?.microphone === 'denied'
-                        ? 'İzin kapalı'
-                        : 'Sesli konuşmak için'}
+                        ? t('İzin kapalı')
+                        : t('Sesli konuşmak için')}
                   </p>
                 </div>
                 <button
@@ -601,28 +610,28 @@ export function ReferenceOnboarding({
                   title={settingsReason}
                   onClick={() => configure('audio')}
                 >
-                  Ayarlar
+                  {t('Ayarlar')}
                 </button>
               </div>
               <div className="ref-auth-permission">
                 <Video size={22} />
                 <div>
-                  <strong>Kamera</strong>
-                  <p>İlk görüntülü görüşmede seçebilirsin.</p>
+                  <strong>{t('Kamera')}</strong>
+                  <p>{t('İlk görüntülü görüşmede seçebilirsin.')}</p>
                 </div>
-                <span>İsteğe bağlı</span>
+                <span>{t('İsteğe bağlı')}</span>
               </div>
               <div className="ref-auth-permission">
                 <Monitor size={22} />
                 <div>
-                  <strong>Ekran paylaşımı</strong>
-                  <p>Paylaşımı başlatırken izin istenir.</p>
+                  <strong>{t('Ekran paylaşımı')}</strong>
+                  <p>{t('Paylaşımı başlatırken izin istenir.')}</p>
                 </div>
-                <span>Sonra</span>
+                <span>{t('Sonra')}</span>
               </div>
               <div className="ref-auth-device-card">
-                <span>Giriş cihazı</span>
-                <strong>Ses ve video ayarlarından seç</strong>
+                <span>{t('Giriş cihazı')}</span>
+                <strong>{t('Ses ve video ayarlarından seç')}</strong>
                 <button
                   className="button secondary full"
                   disabled={!onOpenSettings}
@@ -630,21 +639,21 @@ export function ReferenceOnboarding({
                   onClick={() => configure('audio')}
                 >
                   <Mic size={15} />
-                  Mikrofonu dene
+                  {t('Mikrofonu dene')}
                 </button>
               </div>
               <button
                 className="button primary full"
                 disabled={!onComplete}
                 title={
-                  onComplete ? undefined : 'Topluluk bağlantısı bu görünümde henüz bağlanmadı.'
+                  onComplete ? undefined : t('Topluluk bağlantısı bu görünümde henüz bağlanmadı.')
                 }
                 onClick={onComplete}
               >
-                Topluluğuma gir
+                {t('Topluluğuma gir')}
                 <ArrowRight size={16} />
               </button>
-              <p className="ref-auth-footer">Sistem izinleri macOS tarafından gösterilir.</p>
+              <p className="ref-auth-footer">{t('Sistem izinleri macOS tarafından gösterilir.')}</p>
             </>
           )}
           {error && (

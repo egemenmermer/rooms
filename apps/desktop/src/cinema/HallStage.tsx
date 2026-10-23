@@ -59,6 +59,7 @@ import { useHall } from './use-hall';
 import { useHallMenu } from './HallMenu';
 import { keyLabel, useHallKeys, type HallCommand } from './hall-keys';
 import { setWindowOnTop, useWindowOnTop } from '../window-on-top';
+import { locale, t } from '../i18n';
 
 type YouTubeItem = QueueItem & { media: { kind: 'youtube'; videoId: string; title: string } };
 
@@ -154,11 +155,11 @@ export function HallStage({
   const k = (command: HallCommand) => keyLabel(keys[command]);
   const menu = useHallMenu();
   const toggleOnTop = () =>
-    void setWindowOnTop(!onTop).catch(() => hall.notify('Pencere üstte tutulamadı.'));
+    void setWindowOnTop(!onTop).catch(() => hall.notify(t('Pencere üstte tutulamadı.')));
   const togglePip = () =>
     void controls.current
       ?.togglePictureInPicture()
-      .catch(() => hall.notify('Pencere içinde pencere açılamadı.'));
+      .catch(() => hall.notify(t('Pencere içinde pencere açılamadı.')));
   const pipAvailable =
     typeof document !== 'undefined' && document.pictureInPictureEnabled && !!hallItem;
 
@@ -230,9 +231,9 @@ export function HallStage({
       onContextMenu={(event) => {
         if (mode !== 'stage' || !current) return;
         event.preventDefault();
-        menu.show(event.clientX, event.clientY, 'Ekran', [
+        menu.show(event.clientX, event.clientY, t('Ekran'), [
           {
-            label: onTop ? 'Üstte tutmayı kapat' : 'Her zaman üstte',
+            label: onTop ? t('Üstte tutmayı kapat') : t('Her zaman üstte'),
             icon: onTop ? <PinOff size={15} /> : <Pin size={15} />,
             disabled: !window.rooms,
             onSelect: toggleOnTop,
@@ -240,14 +241,16 @@ export function HallStage({
           ...(pipAvailable
             ? [
                 {
-                  label: player?.pictureInPicture ? 'Pencereye geri al' : 'Pencere içinde pencere',
+                  label: player?.pictureInPicture
+                    ? t('Pencereye geri al')
+                    : t('Pencere içinde pencere'),
                   icon: <PictureInPicture2 size={15} />,
                   onSelect: togglePip,
                 },
               ]
             : []),
           {
-            label: fullscreen ? 'Tam ekrandan çık' : 'Tam ekran',
+            label: fullscreen ? t('Tam ekrandan çık') : t('Tam ekran'),
             icon: fullscreen ? <Minimize size={15} /> : <Maximize size={15} />,
             onSelect: onToggleFullscreen,
           },
@@ -299,18 +302,20 @@ export function HallStage({
               {live && (
                 <span className="hall-live-pill">
                   <i />
-                  CANLI
+                  {t('CANLI')}
                 </span>
               )}
               {info && <QualityBadges badges={info.badges} max={3} />}
               {facts.length > 0 && (
-                <span className="hall-stream-facts" aria-label="Yayın bilgisi">
+                <span className="hall-stream-facts" aria-label={t('Yayın bilgisi')}>
                   {facts.map((fact) => (
                     <span key={fact}>{fact}</span>
                   ))}
                   {live && player?.latencySec != null && (
-                    <span title="Salonun canlı yayını, kaynağın canlı ucunun bu kadar gerisinde">
-                      canlıdan {player.latencySec} sn geride
+                    <span
+                      title={t('Salonun canlı yayını, kaynağın canlı ucunun bu kadar gerisinde')}
+                    >
+                      {t('canlıdan {seconds} sn geride', { seconds: player.latencySec })}
                     </span>
                   )}
                 </span>
@@ -341,21 +346,21 @@ export function HallStage({
           {switching && !error && (
             <div className="hall-switching" role="status">
               <span className="hall-spinner" />
-              {live ? 'Kanal değişiyor…' : 'Açılıyor…'}
+              {live ? t('Kanal değişiyor…') : t('Açılıyor…')}
             </div>
           )}
           {error && (
             <div className="hall-error-card" role="alert">
-              <strong>Bu yayın şu an açılamadı</strong>
+              <strong>{t('Bu yayın şu an açılamadı')}</strong>
               <p>{cinemaErrorCopy[error]}</p>
               <div>
                 <button className="button primary small" onClick={() => controls.current?.retry()}>
                   <RotateCcw size={15} />
-                  Yeniden dene
+                  {t('Yeniden dene')}
                 </button>
                 {live && canDirect && (
                   <button className="button secondary small" onClick={() => onZap(1)}>
-                    Sonraki kanal
+                    {t('Sonraki kanal')}
                   </button>
                 )}
               </div>
@@ -363,7 +368,7 @@ export function HallStage({
           )}
           {player?.behindLive && live && player.phase !== 'paused' && (
             <button className="hall-golive" onClick={() => controls.current?.goLive()}>
-              Canlıya dön
+              {t('Canlıya dön')}
             </button>
           )}
         </>
@@ -377,23 +382,30 @@ export function HallStage({
           <button className="hall-next-episode" onClick={() => playNext()}>
             <span>
               <small>
-                S{following.season} B{following.episode}
+                {t('S{season} B{episode}', {
+                  season: following.season,
+                  episode: following.episode,
+                })}
               </small>
-              Sonraki bölüm
+              {t('Sonraki bölüm')}
             </span>
             <SkipForward size={18} />
           </button>
         ) : (
           <span className="hall-next-episode quiet" role="status">
             <span>
-              <small>Sırada</small>S{following.season} B{following.episode}
+              <small>{t('Sırada')}</small>
+              {t('S{season} B{episode}', {
+                season: following.season,
+                episode: following.episode,
+              })}
             </span>
           </span>
         ))}
 
       {menu.menu}
       {mode === 'mini' && current && (
-        <button className="hall-mini-expand" aria-label="Sahneyi büyüt" onClick={onExpand}>
+        <button className="hall-mini-expand" aria-label={t('Sahneyi büyüt')} onClick={onExpand}>
           <span>
             {live && <i className="hall-live-dot" />}
             {current.media.title}
@@ -415,7 +427,7 @@ export function HallStage({
                 value={Math.min(durationSec, positionSec)}
                 disabled={!canDirect}
                 title={canDirect ? undefined : directReason}
-                aria-label="Konum"
+                aria-label={t('Konum')}
                 aria-valuetext={`${clock(positionSec)} / ${clock(durationSec)}`}
                 style={
                   {
@@ -439,20 +451,24 @@ export function HallStage({
             {live ? (
               <>
                 <ControlButton
-                  label={paused ? 'Yayına devam et' : 'Bende duraklat'}
+                  label={paused ? t('Yayına devam et') : t('Bende duraklat')}
                   onClick={() => controls.current?.toggleLocalPause()}
                 >
                   {paused ? <Play size={18} /> : <Pause size={18} />}
                 </ControlButton>
                 <ControlButton
-                  label={canDirect ? `Önceki kanal (${k('channelUp')})` : directReason}
+                  label={
+                    canDirect ? t('Önceki kanal ({key})', { key: k('channelUp') }) : directReason
+                  }
                   disabled={!canDirect}
                   onClick={() => onZap(-1)}
                 >
                   <ChevronUp size={18} />
                 </ControlButton>
                 <ControlButton
-                  label={canDirect ? `Sonraki kanal (${k('channelDown')})` : directReason}
+                  label={
+                    canDirect ? t('Sonraki kanal ({key})', { key: k('channelDown') }) : directReason
+                  }
                   disabled={!canDirect}
                   onClick={() => onZap(1)}
                 >
@@ -465,8 +481,8 @@ export function HallStage({
                   label={
                     canDirect
                       ? timeline?.playing
-                        ? 'Herkes için duraklat'
-                        : 'Herkes için oynat'
+                        ? t('Herkes için duraklat')
+                        : t('Herkes için oynat')
                       : directReason
                   }
                   disabled={!canDirect}
@@ -476,7 +492,7 @@ export function HallStage({
                   {timeline?.playing ? <Pause size={18} /> : <Play size={18} />}
                 </ControlButton>
                 <ControlButton
-                  label={canDirect ? 'Sıradakine geç' : directReason}
+                  label={canDirect ? t('Sıradakine geç') : directReason}
                   disabled={!canDirect || !hall.upcoming.length}
                   onClick={() =>
                     current &&
@@ -489,7 +505,11 @@ export function HallStage({
             )}
             <div className="hall-volume">
               <ControlButton
-                label={audio.muted ? `Sesi aç (${k('mute')})` : `Sesi kapat (${k('mute')})`}
+                label={
+                  audio.muted
+                    ? t('Sesi aç ({key})', { key: k('mute') })
+                    : t('Sesi kapat ({key})', { key: k('mute') })
+                }
                 onClick={() => setVolume({ ...audio, muted: !audio.muted })}
               >
                 <VolumeIcon size={18} />
@@ -499,7 +519,7 @@ export function HallStage({
                 min={0}
                 max={100}
                 value={audio.muted ? 0 : audio.volume}
-                aria-label="Ses düzeyi (yalnızca sende)"
+                aria-label={t('Ses düzeyi (yalnızca sende)')}
                 style={{ '--fill': `${audio.muted ? 0 : audio.volume}%` } as CSSProperties}
                 onChange={(event) =>
                   setVolume({ volume: Number(event.target.value), muted: false })
@@ -510,10 +530,10 @@ export function HallStage({
               {live ? (
                 <span className="hall-live-label">
                   <i className="hall-live-dot" />
-                  Canlı · herkes aynı anda izliyor
+                  {t('Canlı · herkes aynı anda izliyor')}
                 </span>
               ) : (
-                <span>{viewers > 1 ? viewerLabel(viewers) : 'Herkes aynı sahnede'}</span>
+                <span>{viewers > 1 ? viewerLabel(viewers) : t('Herkes aynı sahnede')}</span>
               )}
             </span>
             {hallItem && player && player.audioTracks.length > 1 && (
@@ -540,7 +560,9 @@ export function HallStage({
                     ?.chooseSubtitleFile()
                     .catch(() =>
                       hall.notify(
-                        'Altyazı dosyası okunamadı. En fazla 2 MB boyutunda bir SRT, VTT ya da ASS dosyası seç.',
+                        t(
+                          'Altyazı dosyası okunamadı. En fazla 2 MB boyutunda bir SRT, VTT ya da ASS dosyası seç.',
+                        ),
                       ),
                     )
                 }
@@ -550,8 +572,8 @@ export function HallStage({
               <ControlButton
                 label={
                   player?.pictureInPicture
-                    ? 'Pencereye geri al'
-                    : `Pencere içinde pencere (${k('pictureInPicture')})`
+                    ? t('Pencereye geri al')
+                    : t('Pencere içinde pencere ({key})', { key: k('pictureInPicture') })
                 }
                 onClick={togglePip}
               >
@@ -560,7 +582,7 @@ export function HallStage({
             )}
             {window.rooms && (
               <ControlButton
-                label={onTop ? 'Üstte tutmayı kapat' : 'Pencereyi her zaman üstte tut'}
+                label={onTop ? t('Üstte tutmayı kapat') : t('Pencereyi her zaman üstte tut')}
                 pressed={onTop}
                 onClick={toggleOnTop}
               >
@@ -568,7 +590,11 @@ export function HallStage({
               </ControlButton>
             )}
             <ControlButton
-              label={panelOpen ? `Paneli gizle (${k('panel')})` : `Paneli göster (${k('panel')})`}
+              label={
+                panelOpen
+                  ? t('Paneli gizle ({key})', { key: k('panel') })
+                  : t('Paneli göster ({key})', { key: k('panel') })
+              }
               onClick={onTogglePanel}
             >
               {panelOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
@@ -576,8 +602,8 @@ export function HallStage({
             <ControlButton
               label={
                 fullscreen
-                  ? `Tam ekrandan çık (${k('fullscreen')})`
-                  : `Tam ekran (${k('fullscreen')})`
+                  ? t('Tam ekrandan çık ({key})', { key: k('fullscreen') })
+                  : t('Tam ekran ({key})', { key: k('fullscreen') })
               }
               onClick={onToggleFullscreen}
             >
@@ -603,7 +629,7 @@ function AudioMenu({
   onPick(track: number): void;
 }) {
   const [open, setOpen] = useState(false);
-  const current = tracks.find((t) => t.index === selected);
+  const current = tracks.find((track) => track.index === selected);
   return (
     <span
       className="hall-audio-menu"
@@ -613,17 +639,17 @@ function AudioMenu({
     >
       <button
         className="hall-control hall-audio-trigger"
-        aria-label={`Ses dili: ${current?.label ?? 'seçilmedi'}`}
+        aria-label={t('Ses dili: {language}', { language: current?.label ?? t('seçilmedi') })}
         aria-expanded={open}
-        title={disabledReason ?? 'Ses dili (herkes için)'}
+        title={disabledReason ?? t('Ses dili (herkes için)')}
         onClick={() => setOpen((value) => !value)}
       >
         <Languages size={17} />
-        <span>{current?.label.split(' · ')[0] ?? 'Ses'}</span>
+        <span>{current?.label.split(' · ')[0] ?? t('Ses')}</span>
       </button>
       {open && (
         <span className="hall-audio-list" role="menu">
-          <small>{disabledReason ?? 'Herkes için değişir'}</small>
+          <small>{disabledReason ?? t('Herkes için değişir')}</small>
           {tracks.map((track) => (
             <button
               key={track.index}
@@ -647,14 +673,16 @@ function AudioMenu({
 
 const onlineNote: Record<PlayerSnapshot['onlineSubtitles'], string | null> = {
   idle: null,
-  loading: 'Çevrimiçi altyazı aranıyor…',
+  loading: t('Çevrimiçi altyazı aranıyor…'),
   ready: null,
-  unavailable: 'Çevrimiçi altyazı için topluluk sahibinin SubDL anahtarı gerekiyor.',
-  error: 'Çevrimiçi altyazı şu an alınamadı. Biraz sonra yeniden dene.',
+  unavailable: t('Çevrimiçi altyazı için topluluk sahibinin SubDL anahtarı gerekiyor.'),
+  error: t('Çevrimiçi altyazı şu an alınamadı. Biraz sonra yeniden dene.'),
 };
 
 const seconds = (value: number) =>
-  `${value > 0 ? '+' : ''}${value.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} sn`;
+  t('{value} sn', {
+    value: `${value > 0 ? '+' : ''}${value.toLocaleString(locale, { maximumFractionDigits: 1 })}`,
+  });
 
 /** This viewer's subtitles; nobody else's screen changes. */
 function SubtitleMenu({
@@ -670,12 +698,13 @@ function SubtitleMenu({
 }) {
   const [open, setOpen] = useState(false);
   const tracks = player.subtitleTracks;
-  const current = tracks.find((t) => t.key === player.subtitle);
-  const group = (origin: SubtitleOption['origin']) => tracks.filter((t) => t.origin === origin);
+  const current = tracks.find((track) => track.key === player.subtitle);
+  const group = (origin: SubtitleOption['origin']) =>
+    tracks.filter((track) => track.origin === origin);
   const note =
     onlineNote[player.onlineSubtitles] ??
     (player.onlineSubtitles === 'ready' && !group('online').length
-      ? 'Çevrimiçi altyazı bulunamadı.'
+      ? t('Çevrimiçi altyazı bulunamadı.')
       : null);
   const option = (track: { key: string | null; label: string }) => (
     <button
@@ -700,22 +729,22 @@ function SubtitleMenu({
     >
       <button
         className="hall-control hall-audio-trigger"
-        aria-label={`Altyazı: ${current?.label ?? 'kapalı'}`}
+        aria-label={t('Altyazı: {name}', { name: current?.label ?? t('kapalı') })}
         aria-expanded={open}
-        title="Altyazı (yalnızca sende)"
+        title={t('Altyazı (yalnızca sende)')}
         data-active={current ? 'true' : undefined}
         onClick={() => setOpen((value) => !value)}
       >
         <Captions size={17} />
-        <span>{current ? current.label.split(' · ')[0] : 'Kapalı'}</span>
+        <span>{current ? current.label.split(' · ')[0] : t('Kapalı')}</span>
       </button>
       {open && (
         <span className="hall-audio-list hall-subtitle-list" role="menu">
-          <small>Yalnızca sende değişir</small>
-          {option({ key: null, label: 'Kapalı' })}
-          {group('embedded').length > 0 && <small>Filmin altyazıları</small>}
+          <small>{t('Yalnızca sende değişir')}</small>
+          {option({ key: null, label: t('Kapalı') })}
+          {group('embedded').length > 0 && <small>{t('Filmin altyazıları')}</small>}
           {group('embedded').map(option)}
-          {group('online').length > 0 && <small>SubDL'den</small>}
+          {group('online').length > 0 && <small>{t("SubDL'den")}</small>}
           {group('online').map(option)}
           {group('file').map(option)}
           {note && <small className="hall-subtitle-note">{note}</small>}
@@ -726,12 +755,12 @@ function SubtitleMenu({
             }}
           >
             <FileUp size={14} />
-            Dosyadan yükle…
+            {t('Dosyadan yükle…')}
           </button>
-          <span className="hall-subtitle-timing" role="group" aria-label="Altyazı zamanlaması">
-            <span>Zamanlama</span>
+          <span className="hall-subtitle-timing" role="group" aria-label={t('Altyazı zamanlaması')}>
+            <span>{t('Zamanlama')}</span>
             <button
-              aria-label="Altyazıyı yarım saniye erkene al"
+              aria-label={t('Altyazıyı yarım saniye erkene al')}
               disabled={!current}
               onClick={() => onOffset(player.subtitleOffset - 0.5)}
             >
@@ -739,14 +768,14 @@ function SubtitleMenu({
             </button>
             <output aria-live="polite">{seconds(player.subtitleOffset)}</output>
             <button
-              aria-label="Altyazıyı yarım saniye geciktir"
+              aria-label={t('Altyazıyı yarım saniye geciktir')}
               disabled={!current}
               onClick={() => onOffset(player.subtitleOffset + 0.5)}
             >
               <Plus size={13} />
             </button>
             {player.subtitleOffset !== 0 && (
-              <button aria-label="Zamanlamayı sıfırla" onClick={() => onOffset(0)}>
+              <button aria-label={t('Zamanlamayı sıfırla')} onClick={() => onOffset(0)}>
                 <RotateCcw size={13} />
               </button>
             )}

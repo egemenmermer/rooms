@@ -32,6 +32,7 @@ import {
   useDmCall,
 } from './dm-call';
 import { VoiceAvatar } from './VoiceAvatar';
+import { t } from './i18n';
 import './reference-dm-call.css';
 function CallVideo({ trackId }: { trackId: string }) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -98,7 +99,9 @@ export default function DmCallRuntime() {
   useEffect(() => {
     if (connected && media.status === 'error')
       void endDmCall().then(() =>
-        useDmCall.setState({ error: 'Medya bağlantısı kesildi. Yeni bir arama başlatabilirsin.' }),
+        useDmCall.setState({
+          error: t('Medya bağlantısı kesildi. Yeni bir arama başlatabilirsin.'),
+        }),
       );
   }, [connected, media.status]);
   if (!community.user) return null;
@@ -106,16 +109,16 @@ export default function DmCallRuntime() {
     return error ? (
       <aside className="dm-call-notice" role="status">
         <span>{error}</span>
-        <button aria-label="Bildirimi kapat" onClick={dismissDmCallError}>
+        <button aria-label={t('Bildirimi kapat')} onClick={dismissDmCallError}>
           <X size={18} />
         </button>
       </aside>
     ) : location.pathname === '/dm-call' ? (
       <section className="dm-call-empty">
         <Phone size={38} />
-        <h2>Etkin özel görüşme yok.</h2>
+        <h2>{t('Etkin özel görüşme yok.')}</h2>
         <button className="button secondary" onClick={() => navigate('/chat')}>
-          Mesajlara dön
+          {t('Mesajlara dön')}
         </button>
       </section>
     ) : null;
@@ -127,13 +130,13 @@ export default function DmCallRuntime() {
     ringing = call.state === 'ringing';
   const status = ringing
     ? incoming
-      ? 'Gelen özel arama'
-      : 'Yanıt bekleniyor…'
+      ? t('Gelen özel arama')
+      : t('Yanıt bekleniyor…')
     : media.status === 'reconnecting'
-      ? 'Yeniden bağlanıyor…'
+      ? t('Yeniden bağlanıyor…')
       : connected && media.status === 'connected'
-        ? 'Bağlı'
-        : 'Bağlanıyor…';
+        ? t('Bağlı')
+        : t('Bağlanıyor…');
   const run = (operation: () => Promise<unknown>) => {
     void operation().catch((error) => useDmCall.setState({ error: dmCallFailure(error) }));
   };
@@ -160,10 +163,10 @@ export default function DmCallRuntime() {
       {!ringing && !connected && !busy && (
         <button
           className="button primary"
-          title={occupied ? 'Katılınca bulunduğun ses odasından çıkarsın.' : undefined}
+          title={occupied ? t('Katılınca bulunduğun ses odasından çıkarsın.') : undefined}
           onClick={() => run(() => joinAcceptedDmCall(false))}
         >
-          Görüşmeye katıl
+          {t('Görüşmeye katıl')}
         </button>
       )}
       {ringing && incoming ? (
@@ -171,21 +174,21 @@ export default function DmCallRuntime() {
           <button
             className="button primary"
             disabled={busy}
-            title={occupied ? 'Kabul edince bulunduğun ses odasından çıkarsın.' : undefined}
+            title={occupied ? t('Kabul edince bulunduğun ses odasından çıkarsın.') : undefined}
             onClick={() => run(() => accept(false))}
           >
             <Phone size={18} />
-            Sesli kabul et
+            {t('Sesli kabul et')}
           </button>
           {call.mode === 'video' && (
             <button
               className="button secondary"
               disabled={busy}
-              title={occupied ? 'Kabul edince bulunduğun ses odasından çıkarsın.' : undefined}
+              title={occupied ? t('Kabul edince bulunduğun ses odasından çıkarsın.') : undefined}
               onClick={() => run(() => accept(true))}
             >
               <Video size={18} />
-              Kamerayla kabul et
+              {t('Kamerayla kabul et')}
             </button>
           )}
           <button
@@ -193,20 +196,20 @@ export default function DmCallRuntime() {
             disabled={busy}
             onClick={() => run(() => finish('reject'))}
           >
-            Reddet
+            {t('Reddet')}
           </button>
         </>
       ) : (
         <>
           <button
-            aria-label={media.muted ? 'Mikrofonu aç' : 'Mikrofonu kapat'}
+            aria-label={media.muted ? t('Mikrofonu aç') : t('Mikrofonu kapat')}
             disabled={!connected || busy}
             onClick={() => run(toggleMic)}
           >
             {media.muted ? <MicOff /> : <Mic />}
           </button>
           <button
-            aria-label={media.deafened ? 'Sesi aç' : 'Sesi kapat'}
+            aria-label={media.deafened ? t('Sesi aç') : t('Sesi kapat')}
             disabled={!connected || busy}
             aria-pressed={media.deafened}
             onClick={() => run(toggleDeafen)}
@@ -214,7 +217,7 @@ export default function DmCallRuntime() {
             <Headphones />
           </button>
           <button
-            aria-label={media.camera ? 'Kamerayı kapat' : 'Kamerayı aç'}
+            aria-label={media.camera ? t('Kamerayı kapat') : t('Kamerayı aç')}
             disabled={!connected || busy}
             onClick={() => run(toggleCamera)}
           >
@@ -226,7 +229,7 @@ export default function DmCallRuntime() {
             onClick={() => run(() => finish())}
           >
             <PhoneOff size={18} />
-            {ringing ? 'Aramayı iptal et' : 'Görüşmeyi bitir'}
+            {ringing ? t('Aramayı iptal et') : t('Görüşmeyi bitir')}
           </button>
         </>
       )}
@@ -234,24 +237,24 @@ export default function DmCallRuntime() {
   );
   if (!full)
     return (
-      <aside className="dm-call-compact" aria-label="Özel görüşme">
+      <aside className="dm-call-compact" aria-label={t('Özel görüşme')}>
         <VoiceAvatar id={peerId} name={peerName} />
         <div>
           <strong>{peerName}</strong>
           <small>{status}</small>
         </div>
         <button onClick={() => navigate('/dm-call')}>
-          {ringing ? 'Aramayı aç' : 'Görüşmeye dön'}
+          {ringing ? t('Aramayı aç') : t('Görüşmeye dön')}
         </button>
         {ringing && incoming ? (
           <>{controls}</>
         ) : (
-          <button aria-label="Görüşmeyi bitir" onClick={() => run(() => finish())}>
+          <button aria-label={t('Görüşmeyi bitir')} onClick={() => run(() => finish())}>
             <PhoneOff size={19} />
           </button>
         )}
         {occupied && ringing && incoming && (
-          <small>Kabul edince bulunduğun ses odasından çıkarsın.</small>
+          <small>{t('Kabul edince bulunduğun ses odasından çıkarsın.')}</small>
         )}
         {error && <small role="alert">{error}</small>}
       </aside>
@@ -271,17 +274,17 @@ export default function DmCallRuntime() {
       <header>
         <Phone size={22} />
         <strong>{peerName}</strong>
-        <span>Özel {video ? 'görüntülü' : 'sesli'} görüşme</span>
+        <span>{video ? t('Özel görüntülü görüşme') : t('Özel sesli görüşme')}</span>
       </header>
       <div className="dm-call-body">
         <div className="dm-call-heading">
           <div>
-            <h6>ÖZEL GÖRÜŞME</h6>
-            <h1>{peerName} ile görüşme</h1>
+            <h6>{t('ÖZEL GÖRÜŞME')}</h6>
+            <h1>{t('{name} ile görüşme', { name: peerName })}</h1>
           </div>
           <button className="button secondary" onClick={() => run(messages)}>
             <MessageSquare size={18} />
-            Mesajlara dön
+            {t('Mesajlara dön')}
           </button>
         </div>
         <div className="dm-call-status">
@@ -292,7 +295,7 @@ export default function DmCallRuntime() {
               {String(elapsed % 60).padStart(2, '0')}
             </time>
           )}
-          <small>Yalnızca sen ve {peerName}</small>
+          <small>{t('Yalnızca sen ve {name}', { name: peerName })}</small>
         </div>
         <div className={`dm-call-people ${video ? 'video' : ''}`}>
           <article className={peer?.speaking ? 'speaking' : ''}>
@@ -307,11 +310,11 @@ export default function DmCallRuntime() {
                     ? status
                     : peer
                       ? peer.speaking
-                        ? 'Konuşuyor'
+                        ? t('Konuşuyor')
                         : peer.muted
-                          ? 'Mikrofon kapalı'
-                          : 'Mikrofon açık'
-                      : 'Bağlanması bekleniyor…'}
+                          ? t('Mikrofon kapalı')
+                          : t('Mikrofon açık')
+                      : t('Bağlanması bekleniyor…')}
                 </p>
               </div>
             )}
@@ -323,17 +326,19 @@ export default function DmCallRuntime() {
             ) : (
               <div className="dm-call-person">
                 <VoiceAvatar id={community.user!.id} name={community.user!.displayName} />
-                <span>{community.user!.displayName} (sen)</span>
-                <small>{media.muted ? 'Mikrofon kapalı' : 'Mikrofon açık'}</small>
+                <span>{t('{name} (sen)', { name: community.user!.displayName })}</span>
+                <small>{media.muted ? t('Mikrofon kapalı') : t('Mikrofon açık')}</small>
               </div>
             )}
             {localTrack && (
-              <strong className="dm-call-name">{community.user!.displayName} (sen)</strong>
+              <strong className="dm-call-name">
+                {t('{name} (sen)', { name: community.user!.displayName })}
+              </strong>
             )}
           </article>
         </div>
         {occupied && ringing && incoming && (
-          <p className="dm-call-note">Kabul edince bulunduğun ses odasından çıkarsın.</p>
+          <p className="dm-call-note">{t('Kabul edince bulunduğun ses odasından çıkarsın.')}</p>
         )}
         {error && (
           <p className="dm-call-error" role="alert">
@@ -342,7 +347,7 @@ export default function DmCallRuntime() {
         )}
         {media.audioBlocked && connected && (
           <button className="button secondary" onClick={() => run(startRoomAudio)}>
-            Görüşme sesini aç
+            {t('Görüşme sesini aç')}
           </button>
         )}
         <footer>{controls}</footer>

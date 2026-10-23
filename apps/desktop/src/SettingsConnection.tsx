@@ -4,7 +4,7 @@ import { useCommunity } from './community';
 import { useRealtime, leaveVoice, toggleMic, toggleDeafen } from './realtime';
 import { VoiceAvatar } from './VoiceAvatar';
 import { ReferenceIcon } from './ReferenceIcon';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 
 export function SettingsConnection({ notify }: { notify(message: string): void }) {
   const c = useCommunity(),
@@ -19,12 +19,12 @@ export function SettingsConnection({ notify }: { notify(message: string): void }
             <ReferenceIcon name="wifi" size={17} />
             <strong>
               {r.status === 'connected'
-                ? 'Ses bağlı'
+                ? t('Ses bağlı')
                 : r.status === 'reconnecting'
-                  ? 'Yeniden bağlanıyor'
-                  : 'Bağlantı kesildi'}
+                  ? t('Yeniden bağlanıyor')
+                  : t('Bağlantı kesildi')}
             </strong>
-            <IconButton label="Sesten ayrıl" onClick={() => run(leaveVoice())}>
+            <IconButton label={t('Sesten ayrıl')} onClick={() => run(leaveVoice())}>
               <ReferenceIcon name="logout" size={18} />
             </IconButton>
           </div>
@@ -44,7 +44,7 @@ export function SettingsConnection({ notify }: { notify(message: string): void }
               onClick={() => navigate('/voice?view=share&choose=1')}
             >
               <ReferenceIcon name="monitor" size={14} />
-              Ekran
+              {t('Ekran')}
             </button>
           </div>
         </div>
@@ -54,17 +54,17 @@ export function SettingsConnection({ notify }: { notify(message: string): void }
           <VoiceAvatar id={c.user.id} name={c.user.displayName} />
           <div>
             <strong>{c.user.displayName}</strong>
-            <small>{c.status === 'connected' ? 'Çevrimiçi' : 'Bağlantı kesildi'}</small>
+            <small>{c.status === 'connected' ? t('Çevrimiçi') : t('Bağlantı kesildi')}</small>
           </div>
           <IconButton
-            label={r.muted ? 'Mikrofonu aç' : 'Mikrofonu kapat'}
+            label={r.muted ? t('Mikrofonu aç') : t('Mikrofonu kapat')}
             disabled={r.status !== 'connected'}
             onClick={() => run(toggleMic())}
           >
             <ReferenceIcon name={r.muted ? 'mic-off' : 'mic'} size={17} />
           </IconButton>
           <IconButton
-            label={r.deafened ? 'Sesi aç' : 'Sağırlaştır'}
+            label={r.deafened ? t('Sesi aç') : t('Sağırlaştır')}
             disabled={r.status !== 'connected'}
             onClick={() => run(toggleDeafen())}
           >

@@ -2,6 +2,7 @@ import './cinema-reminders.css';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Play, X } from 'lucide-react';
+import { t } from '../i18n';
 import { hhmm } from './hall-model';
 import { requestHallOpen, takeDue, type Reminder } from './reminders';
 
@@ -20,7 +21,7 @@ export function CinemaReminders() {
       for (const reminder of due) {
         try {
           if (typeof Notification !== 'undefined' && Notification.permission === 'granted')
-            new Notification(`${reminder.title} başladı`, {
+            new Notification(t('{title} başladı', { title: reminder.title }), {
               body: `${reminder.channel} · ${hhmm(reminder.start)}`,
               silent: false,
             });
@@ -44,7 +45,10 @@ export function CinemaReminders() {
           <span>
             <strong>{reminder.title}</strong>
             <small>
-              {reminder.channel} · {hhmm(reminder.start)}’da başladı
+              {t('{channel} · {time}’da başladı', {
+                channel: reminder.channel,
+                time: hhmm(reminder.start),
+              })}
             </small>
           </span>
           <button
@@ -56,29 +60,32 @@ export function CinemaReminders() {
             }}
           >
             <Play size={14} />
-            Salonda aç
+            {t('Salonda aç')}
           </button>
           {window.rooms?.social && (
             <button
               className="button secondary small"
-              title="Salon sohbetine senin adınla yazar"
+              title={t('Salon sohbetine senin adınla yazar')}
               onClick={() => {
                 dismiss(reminder);
                 void window
                   .rooms!.social.send(
                     reminder.hallId,
-                    `${reminder.title} başladı (${reminder.channel}). Salonda birlikte izleyelim mi?`,
+                    t('{title} başladı ({channel}). Salonda birlikte izleyelim mi?', {
+                      title: reminder.title,
+                      channel: reminder.channel,
+                    }),
                     [],
                   )
                   .catch(() => {});
               }}
             >
-              Salona duyur
+              {t('Salona duyur')}
             </button>
           )}
           <button
             className="cinema-reminder-close"
-            aria-label="Kapat"
+            aria-label={t('Kapat')}
             onClick={() => dismiss(reminder)}
           >
             <X size={14} />

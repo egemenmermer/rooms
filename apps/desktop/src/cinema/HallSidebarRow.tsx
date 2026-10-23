@@ -1,5 +1,6 @@
 import { Clapperboard } from 'lucide-react';
 import { useActivityRoom } from '../activity';
+import { t } from '../i18n';
 import { VoiceAvatar } from '../VoiceAvatar';
 import { useCommunityCinema } from './cinema-status';
 import { useGuides, useNow } from './guide-cache';
@@ -18,8 +19,8 @@ export function HallSidebarRow({ selected, onOpen }: { selected: boolean; onOpen
   ) : (
     <button className={`minimal-nav hall-nav ${selected ? 'selected' : ''}`} onClick={onOpen}>
       <Clapperboard size={15} />
-      <span>Sinema</span>
-      <small className="hall-nav-hint">Kur</small>
+      <span>{t('Sinema')}</span>
+      <small className="hall-nav-hint">{t('Kur')}</small>
     </button>
   );
 }
@@ -48,14 +49,21 @@ function PlayingRow({
     <button
       className={`minimal-nav hall-nav ${selected ? 'selected' : ''} ${playing ? 'playing' : ''}`}
       onClick={onOpen}
-      aria-label={playing ? `Sinema: ${detail}. ${viewers.length} kişi izliyor.` : 'Sinema salonu'}
+      aria-label={
+        playing
+          ? t('Sinema: {detail}. {count} kişi izliyor.', {
+              detail: detail ?? '',
+              count: viewers.length,
+            })
+          : t('Sinema salonu')
+      }
     >
       <span className="hall-nav-icon">
         <Clapperboard size={15} />
         {playing && live && <i className="hall-live-dot" />}
       </span>
       <span className="hall-nav-text">
-        <span>Sinema</span>
+        <span>{t('Sinema')}</span>
         {detail && <small>{detail}</small>}
       </span>
       {viewers.length > 0 && (

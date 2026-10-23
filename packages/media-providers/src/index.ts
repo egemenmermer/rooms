@@ -1,3 +1,4 @@
+import { t } from '@rooms/i18n';
 import { SpeakingMeter } from './speaking-meter';
 import { captureMissesInput, inputDeviceLabel } from './input-device';
 import type { NoiseSuppressionMode, NoiseProcessingState } from './noise-suppression';
@@ -357,8 +358,9 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
         this.stopSoundboard();
         this.patch({
           muted: true,
-          error:
+          error: t(
             'Gürültü filtresi durdu. Mikrofon kapatıldı. Filtre modunu değiştirip mikrofonu yeniden aç.',
+          ),
           noiseProcessing: { status: 'failed', mode: this.noiseMode },
         });
         void track
@@ -409,14 +411,14 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
   private async playClip(buffer: AudioBuffer, volume: number, serial: number) {
     if (serial !== this.soundboardSerial) return;
     if (!Number.isFinite(volume) || volume < 0 || volume > 1 || buffer.duration > 8)
-      throw new Error('En fazla 8 saniyelik bir ses seç.');
+      throw new Error(t('En fazla 8 saniyelik bir ses seç.'));
     const room = this.requireRoom();
-    if (this.state.muted || this.state.deafened) throw new Error('Önce mikrofonu aç.');
+    if (this.state.muted || this.state.deafened) throw new Error(t('Önce mikrofonu aç.'));
     const track = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track;
-    if (!(track instanceof LocalAudioTrack)) throw new Error('Mikrofon kullanılamıyor.');
+    if (!(track instanceof LocalAudioTrack)) throw new Error(t('Mikrofon kullanılamıyor.'));
     await this.microphoneTask(() => this.ensureMixer(track));
     if (this.room !== room || !room.localParticipant.isMicrophoneEnabled || this.state.deafened)
-      throw new Error('Mikrofon kapalı.');
+      throw new Error(t('Mikrofon kapalı.'));
     await this.mixer!.play(
       buffer,
       volume,
@@ -469,12 +471,16 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     this.patch({
       error:
         name === 'NotAllowedError' || name === 'PermissionDeniedError'
-          ? 'Mikrofon veya kamera izni kapalı. Sistem Ayarları → Gizlilik ve Güvenlik bölümünden Tayfa iznini aç.'
+          ? t(
+              'Mikrofon veya kamera izni kapalı. Sistem Ayarları → Gizlilik ve Güvenlik bölümünden Tayfa iznini aç.',
+            )
           : name === 'NotFoundError' || name === 'OverconstrainedError'
-            ? 'Seçili cihaz bulunamadı. Ses ayarlarından sistem varsayılanını seç.'
+            ? t('Seçili cihaz bulunamadı. Ses ayarlarından sistem varsayılanını seç.')
             : name === 'NotReadableError'
-              ? 'Cihaz açılamadı. Başka bir uygulamanın cihazı kullanıp kullanmadığını kontrol et.'
-              : 'Ses işlemi tamamlanamadı. Cihaz ayarlarını ve oda bağlantısını kontrol et.',
+              ? t(
+                  'Cihaz açılamadı. Başka bir uygulamanın cihazı kullanıp kullanmadığını kontrol et.',
+                )
+              : t('Ses işlemi tamamlanamadı. Cihaz ayarlarını ve oda bağlantısını kontrol et.'),
     });
   }
   private sync() {

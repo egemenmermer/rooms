@@ -18,7 +18,7 @@ import {
 import { Modal } from '@rooms/design';
 import type { ActivityCommand, BoardElement } from '@rooms/activity-protocol';
 import type { useActivityRoom } from './activity';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import { onCursor, publishCursor, useRealtime } from './realtime';
 
 type Edit = { kind: 'add' | 'remove'; element: BoardElement };
@@ -182,7 +182,7 @@ export default function Whiteboard({
   }
   const remove = (element: BoardElement) => {
     if (element.authorId !== userId) {
-      setMessage('Yalnızca kendi çizimini veya notunu silebilirsin.');
+      setMessage(t('Yalnızca kendi çizimini veya notunu silebilirsin.'));
       return;
     }
     void run(async () => {
@@ -207,7 +207,9 @@ export default function Whiteboard({
             JSON.stringify(current.points) !== JSON.stringify(edit.element.points))
         ) {
           throw new Error(
-            'Bu öğe başka bir oturumda değiştirildi. Güncel öğeyi silmek için silgi aracını kullan.',
+            t(
+              'Bu öğe başka bir oturumda değiştirildi. Güncel öğeyi silmek için silgi aracını kullan.',
+            ),
           );
         }
         if (current) await activity.send({ type: 'whiteboard.remove', elementId: current.id });
@@ -250,7 +252,7 @@ export default function Whiteboard({
         throw new Error('A native desktop application is required.');
       const saved = await window.rooms.activity.exportBoard(roomId, 'png');
       if (alive.current) {
-        setMessage(saved ? 'Tahta PNG olarak kaydedildi.' : 'Kaydetme iptal edildi.');
+        setMessage(saved ? t('Tahta PNG olarak kaydedildi.') : t('Kaydetme iptal edildi.'));
         if (saved) setExportOpen(false);
       }
     });
@@ -277,7 +279,7 @@ export default function Whiteboard({
       document.fullscreenElement
         ? document.exitFullscreen()
         : frame.current!.requestFullscreen({ navigationUI: 'hide' })
-    ).catch(() => setMessage('Tam ekran açılamadı.'));
+    ).catch(() => setMessage(t('Tam ekran açılamadı.')));
 
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
@@ -333,28 +335,28 @@ export default function Whiteboard({
   }, [tool]);
 
   const nameOf = (id: string) =>
-    realtime.participants.find((person) => person.id === id)?.name ?? 'Katılımcı';
+    realtime.participants.find((person) => person.id === id)?.name ?? t('Katılımcı');
   const others = Object.entries(cursors);
   const selectedItem = selected ? board.find((item) => item.id === selected) : undefined;
   const tools = [
-    ['pen', 'Kalem (P)', Pencil],
-    ['rectangle', 'Dikdörtgen (R)', Square],
-    ['ellipse', 'Daire (O)', Circle],
-    ['text', 'Metin: tahtaya tıkla ve yaz (T)', Type],
-    ['erase', 'Silgi: kendi öğene tıkla (E)', Eraser],
-    ['select', 'Seç (V)', MousePointer2],
+    ['pen', t('Kalem (P)'), Pencil],
+    ['rectangle', t('Dikdörtgen (R)'), Square],
+    ['ellipse', t('Daire (O)'), Circle],
+    ['text', t('Metin: tahtaya tıkla ve yaz (T)'), Type],
+    ['erase', t('Silgi: kendi öğene tıkla (E)'), Eraser],
+    ['select', t('Seç (V)'), MousePointer2],
   ] as const;
   return (
     <div ref={frame} className={`wb ${fullscreen ? 'is-fullscreen' : ''}`}>
       <div className="wb-top">
         <div className="wb-title">
-          <strong>Whiteboard</strong>
+          <strong>{t('Whiteboard')}</strong>
           <span>
-            {roomName ?? 'Oda'}
-            {others.length ? ` · ${others.length + 1} kişi burada` : ''}
+            {roomName ?? t('Oda')}
+            {others.length ? ` · ${t('{count} kişi burada', { count: others.length + 1 })}` : ''}
           </span>
         </div>
-        <div className="wb-toolbar" role="toolbar" aria-label="Çizim araçları">
+        <div className="wb-toolbar" role="toolbar" aria-label={t('Çizim araçları')}>
           {tools.map(([value, label, Icon]) => (
             <button
               disabled={busy}
@@ -373,7 +375,7 @@ export default function Whiteboard({
               className="wb-color"
               disabled={busy}
               key={c}
-              aria-label={`Çizim rengi ${c}`}
+              aria-label={t('Çizim rengi {color}', { color: c })}
               aria-pressed={color === c}
               style={{ ['--swatch' as string]: c }}
               onClick={() => setColor(c)}
@@ -384,11 +386,11 @@ export default function Whiteboard({
           <span className="wb-divider" />
           <button
             disabled={busy || !history.length}
-            aria-label="Geri al (⌘Z)"
+            aria-label={t('Geri al (⌘Z)')}
             title={
               history.length
-                ? 'Bu oturumdaki son kendi işlemini geri al (⌘Z)'
-                : 'Bu oturumda geri alınacak kendi işlemin yok'
+                ? t('Bu oturumdaki son kendi işlemini geri al (⌘Z)')
+                : t('Bu oturumda geri alınacak kendi işlemin yok')
             }
             onClick={undo}
           >
@@ -396,19 +398,19 @@ export default function Whiteboard({
           </button>
           <button
             disabled={busy || !board.length || !window.rooms?.activity?.exportBoard}
-            aria-label="PNG olarak dışa aktar"
+            aria-label={t('PNG olarak dışa aktar')}
             title={
               !board.length
-                ? 'Önce tahtaya bir çizim veya not ekle'
-                : 'Tahtanın güncel görüntüsünü PNG olarak kaydet'
+                ? t('Önce tahtaya bir çizim veya not ekle')
+                : t('Tahtanın güncel görüntüsünü PNG olarak kaydet')
             }
             onClick={() => setExportOpen(true)}
           >
             <Download size={17} />
           </button>
           <button
-            aria-label={fullscreen ? 'Tam ekrandan çık (F)' : 'Tam ekran (F)'}
-            title={fullscreen ? 'Tam ekrandan çık (F)' : 'Tam ekran (F)'}
+            aria-label={fullscreen ? t('Tam ekrandan çık (F)') : t('Tam ekran (F)')}
+            title={fullscreen ? t('Tam ekrandan çık (F)') : t('Tam ekran (F)')}
             onClick={toggleFullscreen}
           >
             {fullscreen ? <Minimize size={17} /> : <Maximize size={17} />}
@@ -418,7 +420,7 @@ export default function Whiteboard({
           {onPolls && (
             <button className="button ghost small" onClick={onPolls}>
               <Vote size={15} />
-              Anketler
+              {t('Anketler')}
             </button>
           )}
         </div>
@@ -430,7 +432,7 @@ export default function Whiteboard({
             tabIndex={0}
             viewBox={`0 0 ${W} ${H}`}
             role="img"
-            aria-label="Ortak çizim tahtası"
+            aria-label={t('Ortak çizim tahtası')}
             onPointerDown={(e) => {
               if (busy || e.button !== 0) return;
               if (tool === 'text') {
@@ -580,22 +582,22 @@ export default function Whiteboard({
         {!board.length && !draft && (
           <div className="board-empty">
             <Pencil size={26} />
-            <span>İlk çizgi senden.</span>
-            <small>Kalemle çiz, şekil ekle ya da metin aracıyla tahtaya tıklayıp yaz.</small>
+            <span>{t('İlk çizgi senden.')}</span>
+            <small>{t('Kalemle çiz, şekil ekle ya da metin aracıyla tahtaya tıklayıp yaz.')}</small>
           </div>
         )}
       </div>
       <div className="wb-foot">
         <span>
           {working || activity.busy
-            ? 'Gönderiliyor…'
+            ? t('Gönderiliyor…')
             : readOnly
               ? fixture
-                ? 'Yerel örnek · Düzenleme kapalı'
-                : 'Bağlantı bekleniyor; düzenleme kapalı'
+                ? t('Yerel örnek · Düzenleme kapalı')
+                : t('Bağlantı bekleniyor; düzenleme kapalı')
               : live
-                ? `${board.length} öğe · imleçler canlı`
-                : `${board.length} öğe · imleçler sesli odadayken görünür`}
+                ? t('{count} öğe · imleçler canlı', { count: board.length })
+                : t('{count} öğe · imleçler sesli odadayken görünür', { count: board.length })}
         </span>
         {selectedItem && (
           <span className="wb-selection">
@@ -604,16 +606,16 @@ export default function Whiteboard({
               disabled={busy || selectedItem.authorId !== userId}
               title={
                 selectedItem.authorId !== userId
-                  ? 'Yalnızca kendi öğeni silebilirsin'
-                  : 'Seçili öğeyi sil'
+                  ? t('Yalnızca kendi öğeni silebilirsin')
+                  : t('Seçili öğeyi sil')
               }
               onClick={() => remove(selectedItem)}
             >
               <Trash2 size={14} />
-              Seçili öğeyi sil
+              {t('Seçili öğeyi sil')}
             </button>
             <button className="text-button" onClick={() => setSelected(null)}>
-              Seçimi kaldır
+              {t('Seçimi kaldır')}
             </button>
           </span>
         )}
@@ -630,13 +632,16 @@ export default function Whiteboard({
             disabled={busy || item.authorId !== userId}
             onClick={() => remove(item)}
           >
-            {item.kind === 'text' ? item.text : `Çizim ${i + 1}`} öğesini sil
+            {t('{name} öğesini sil', {
+              name:
+                item.kind === 'text' ? (item.text ?? '') : t('Çizim {number}', { number: i + 1 }),
+            })}
           </button>
         ))}
       </div>
       {exportOpen && (
         <Modal
-          title="Tahtayı PNG olarak indir"
+          title={t('Tahtayı PNG olarak indir')}
           className="rt-modal rt-board-export"
           onClose={() => setExportOpen(false)}
         >
@@ -644,16 +649,18 @@ export default function Whiteboard({
             <div className="rt-export-preview">
               <Image size={30} />
               <h3>whiteboard.png</h3>
-              <p>2000 × 1240 px · Tahta içeriği</p>
+              <p>{t('2000 × 1240 px · Tahta içeriği')}</p>
             </div>
             <p>
-              Araç çubuğu ve imleçler dışa aktarılmaz; çizimler ve notlar tek görselde saklanır.
+              {t(
+                'Araç çubuğu ve imleçler dışa aktarılmaz; çizimler ve notlar tek görselde saklanır.',
+              )}
             </p>
             {message && <p role="status">{message}</p>}
           </div>
           <footer>
             <button className="button secondary" onClick={() => setExportOpen(false)}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button primary"
@@ -661,7 +668,7 @@ export default function Whiteboard({
               onClick={exportBoard}
             >
               <Download size={15} />
-              PNG indir
+              {t('PNG indir')}
             </button>
           </footer>
         </Modal>

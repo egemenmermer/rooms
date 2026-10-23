@@ -11,6 +11,7 @@ import {
   Tv,
   X,
 } from 'lucide-react';
+import { t } from './i18n';
 import './reference-mini-playback.css';
 
 export interface MiniPlaybackChromeProps {
@@ -54,7 +55,7 @@ export function MiniPlaybackChrome({
     <div
       className={`mini-playback-chrome ${compact ? 'compact' : ''}`}
       role="region"
-      aria-label={live ? 'Canlı yayın küçük oynatıcı' : 'Küçük oynatıcı'}
+      aria-label={live ? t('Canlı yayın küçük oynatıcı') : t('Küçük oynatıcı')}
     >
       {!compact && (
         <header className="mini-playback-header">
@@ -62,17 +63,17 @@ export function MiniPlaybackChrome({
             {personal ? <LockKeyhole size={15} /> : live ? <Tv size={15} /> : <Film size={15} />}
             <strong>{title}</strong>
           </button>
-          <button aria-label="Oynatıcıya dön" onClick={onReturn}>
+          <button aria-label={t('Oynatıcıya dön')} onClick={onReturn}>
             <Maximize size={17} />
           </button>
-          <button aria-label="Küçük oynatıcıyı gizle" onClick={onHide}>
+          <button aria-label={t('Küçük oynatıcıyı gizle')} onClick={onHide}>
             <X size={18} />
           </button>
         </header>
       )}
       <footer className="mini-playback-footer">
         <button
-          aria-label={playing ? 'Videoyu duraklat' : 'Videoyu oynat'}
+          aria-label={playing ? t('Videoyu duraklat') : t('Videoyu oynat')}
           disabled={!canControl}
           title={!canControl ? controlReason : undefined}
           onClick={onToggle}
@@ -80,9 +81,9 @@ export function MiniPlaybackChrome({
           {playing ? <Pause size={18} /> : <Play size={18} />}
         </button>
         <button
-          aria-label={muted ? 'Mikrofonu aç' : 'Mikrofonu kapat'}
+          aria-label={muted ? t('Mikrofonu aç') : t('Mikrofonu kapat')}
           disabled={!connected}
-          title={!connected ? 'Önce ses odasına bağlan.' : undefined}
+          title={!connected ? t('Önce ses odasına bağlan.') : undefined}
           onClick={onMute}
         >
           {muted ? <MicOff size={18} /> : <Mic size={18} />}
@@ -91,16 +92,20 @@ export function MiniPlaybackChrome({
         {personal ? (
           <span className="mini-playback-badge private">
             <LockKeyhole size={12} />
-            Yalnızca sen
+            {t('Yalnızca sen')}
           </span>
         ) : (
           <span className={`mini-playback-badge ${connected ? 'connected' : ''}`}>
             <Headphones size={12} />
-            {connected ? 'Ses açık' : voiceStatus === 'reconnecting' ? 'Bağlanıyor' : 'Ses kapalı'}
+            {connected
+              ? t('Ses açık')
+              : voiceStatus === 'reconnecting'
+                ? t('Bağlanıyor')
+                : t('Ses kapalı')}
           </span>
         )}
         {compact && (
-          <button aria-label="Küçük oynatıcıyı gizle" onClick={onHide}>
+          <button aria-label={t('Küçük oynatıcıyı gizle')} onClick={onHide}>
             <X size={18} />
           </button>
         )}
@@ -108,7 +113,7 @@ export function MiniPlaybackChrome({
       {!compact && (
         <button
           className="mini-playback-compact"
-          aria-label="Kompakt oynatıcıya geç"
+          aria-label={t('Kompakt oynatıcıya geç')}
           onClick={onCompact}
         >
           <Minimize size={13} />
@@ -117,7 +122,7 @@ export function MiniPlaybackChrome({
       {compact && (
         <button
           className="mini-playback-expand"
-          aria-label="Küçük oynatıcıyı büyüt"
+          aria-label={t('Küçük oynatıcıyı büyüt')}
           onClick={onCompact}
         />
       )}

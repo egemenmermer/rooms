@@ -54,7 +54,7 @@ export function parseWatchPage(html: string): WatchPageFacts {
 const normalize = (value: string) =>
   value
     .normalize('NFKC')
-    .toLocaleLowerCase('tr')
+    .toLocaleLowerCase('tr') // i18n-ignore: Turkish case folding of page titles
     .replace(/^\(\d+\)\s*/, '')
     .replace(/\s+/g, ' ')
     .trim();

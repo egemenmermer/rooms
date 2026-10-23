@@ -3,20 +3,20 @@ import { useSearchParams } from 'react-router-dom';
 import { Modal, Toggle } from '@rooms/design';
 import { ReferenceIcon } from './ReferenceIcon';
 import { useRealtime } from './realtime';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import './reference-about.css';
 
 type UpdateStatus = Awaited<ReturnType<NonNullable<Window['rooms']>['updates']['status']>>;
 type ApplicationInfo = Awaited<ReturnType<NonNullable<Window['rooms']>['applicationInfo']>>;
 const stateNames: Record<UpdateStatus['state'], string> = {
-  unavailable: 'Dağıtım bekleniyor',
-  idle: 'Kontrol edilebilir',
-  checking: 'Kontrol ediliyor',
-  available: 'Güncelleme var',
-  downloading: 'İndiriliyor',
-  verifying: 'İmza doğrulanıyor',
-  ready: 'Yeniden başlatmaya hazır',
-  error: 'Güncelleme başarısız',
+  unavailable: t('Dağıtım bekleniyor'),
+  idle: t('Kontrol edilebilir'),
+  checking: t('Kontrol ediliyor'),
+  available: t('Güncelleme var'),
+  downloading: t('İndiriliyor'),
+  verifying: t('İmza doğrulanıyor'),
+  ready: t('Yeniden başlatmaya hazır'),
+  error: t('Güncelleme başarısız'),
 };
 
 /** Update actions remain native, opt-in and signature-gated; fixtures never invoke them. */
@@ -103,13 +103,13 @@ export function About({ notify }: { notify(message: string): void }) {
   const configured = native && !!status?.configured,
     enabled = configured && !!status?.enabled;
   const reason = fixture
-    ? 'Yerel örnek durum; güncelleme işlemleri kapalı.'
+    ? t('Yerel örnek durum; güncelleme işlemleri kapalı.')
     : !native
-      ? 'Masaüstü uygulamasında kullanılabilir.'
+      ? t('Masaüstü uygulamasında kullanılabilir.')
       : !configured
-        ? 'İmzalı dağıtım ve HTTPS güncelleme adresi yapılandırılmalı.'
+        ? t('İmzalı dağıtım ve HTTPS güncelleme adresi yapılandırılmalı.')
         : !status?.enabled
-          ? 'Önce imzalı güncellemeleri etkinleştir.'
+          ? t('Önce imzalı güncellemeleri etkinleştir.')
           : '';
   const run = async (action: () => Promise<unknown>, download = false) => {
     if (!native) return;
@@ -133,7 +133,9 @@ export function About({ notify }: { notify(message: string): void }) {
     setError('');
     if (!native) {
       setContent(
-        fixture ? 'DEMO · Yerel örnek durum.' : 'Bu içerik masaüstü uygulamasında okunabilir.',
+        fixture
+          ? t('DEMO · Yerel örnek durum.')
+          : t('Bu içerik masaüstü uygulamasında okunabilir.'),
       );
       return;
     }
@@ -159,17 +161,17 @@ export function About({ notify }: { notify(message: string): void }) {
   return (
     <div className="reference-about">
       <div className="ref-settings-heading">
-        <span>UYGULAMA</span>
-        <h1>Güncelleme ve hakkında</h1>
-        {fixture && <p>Tayfa’yı güncel tut ve destek bilgilerini yönet.</p>}
+        <span>{t('UYGULAMA')}</span>
+        <h1>{t('Güncelleme ve hakkında')}</h1>
+        {fixture && <p>{t('Tayfa’yı güncel tut ve destek bilgilerini yönet.')}</p>}
       </div>
       <div className="about-hero">
         <img src="./reference-brand/app-icons/app-icon-128.png" alt="" />
         <div>
           <h1>Tayfa</h1>
-          {fixture && <p>Arkadaşlarınla aynı yerde.</p>}
+          {fixture && <p>{t('Arkadaşlarınla aynı yerde.')}</p>}
           <small>
-            Sürüm {info?.version ?? '—'} · {platform}
+            {t('Sürüm {version}', { version: info?.version ?? '—' })} · {platform}
             {info?.arch ? ` · ${info.arch === 'arm64' ? 'Apple Silicon' : info.arch}` : ''}
           </small>
         </div>
@@ -179,8 +181,12 @@ export function About({ notify }: { notify(message: string): void }) {
       </div>
       <section className="about-update">
         <div className="about-section-title">
-          <h2>{status?.version ? `Tayfa ${status.version}` : 'Uygulama güncellemeleri'}</h2>
-          {status?.version && <small>Yeni sürüm</small>}
+          <h2>
+            {status?.version
+              ? t('Tayfa {version}', { version: status.version })
+              : t('Uygulama güncellemeleri')}
+          </h2>
+          {status?.version && <small>{t('Yeni sürüm')}</small>}
         </div>
         {!!status?.releaseNotes?.length && (
           <ul className="about-changelog">
@@ -194,11 +200,11 @@ export function About({ notify }: { notify(message: string): void }) {
             <progress
               max={100}
               value={status.progress}
-              aria-label="Güncelleme indirme ilerlemesi"
+              aria-label={t('Güncelleme indirme ilerlemesi')}
             />
             <div className="about-progress-label">
-              <span>Güncelleme indiriliyor</span>
-              <strong>%{Math.round(status.progress)}</strong>
+              <span>{t('Güncelleme indiriliyor')}</span>
+              <strong>{t('%{progress}', { progress: Math.round(status.progress) })}</strong>
             </div>
             <button
               className="button secondary"
@@ -210,21 +216,21 @@ export function About({ notify }: { notify(message: string): void }) {
                   .catch((e) => setError(uiError(e)));
               }}
             >
-              İndirmeyi iptal et
+              {t('İndirmeyi iptal et')}
             </button>
           </>
         ) : status?.state === 'ready' ? (
           <>
             <div className="about-callout warning">
               <ReferenceIcon name="refresh-cw" size={19} />
-              <span>Güncelleme hazır. Yeniden başlatma açık görüşmeleri sonlandırır.</span>
+              <span>{t('Güncelleme hazır. Yeniden başlatma açık görüşmeleri sonlandırır.')}</span>
             </div>
             <div className="button-row">
               <button
                 className="button secondary"
-                onClick={() => notify('Güncelleme hazır; istediğinde yeniden başlatabilirsin.')}
+                onClick={() => notify(t('Güncelleme hazır; istediğinde yeniden başlatabilirsin.'))}
               >
-                Şimdi değil
+                {t('Şimdi değil')}
               </button>
               <button
                 className="button primary"
@@ -233,7 +239,7 @@ export function About({ notify }: { notify(message: string): void }) {
                 onClick={() => setModal('restart')}
               >
                 <ReferenceIcon name="refresh-cw" size={18} />
-                Yeniden başlat ve güncelle
+                {t('Yeniden başlat ve güncelle')}
               </button>
             </div>
           </>
@@ -242,7 +248,7 @@ export function About({ notify }: { notify(message: string): void }) {
             {status?.state === 'error' && (
               <div className="about-callout error">
                 <ReferenceIcon name="alert-circle" size={19} />
-                <span>Güncelleme tamamlanamadı. Mevcut sürümle devam edebilirsin.</span>
+                <span>{t('Güncelleme tamamlanamadı. Mevcut sürümle devam edebilirsin.')}</span>
               </div>
             )}
             {!fixture && reason && <p className="about-reason">{reason}</p>}
@@ -255,7 +261,7 @@ export function About({ notify }: { notify(message: string): void }) {
                   onClick={() => void run(() => window.rooms!.updates.download(), true)}
                 >
                   <ReferenceIcon name="download" size={18} />
-                  Güncellemeyi indir
+                  {t('Güncellemeyi indir')}
                 </button>
               )}
               <button
@@ -265,7 +271,9 @@ export function About({ notify }: { notify(message: string): void }) {
                 onClick={() => void run(() => window.rooms!.updates.check())}
               >
                 <ReferenceIcon name="refresh-cw" size={18} />
-                {status?.state === 'checking' ? 'Kontrol ediliyor…' : 'Güncellemeleri kontrol et'}
+                {status?.state === 'checking'
+                  ? t('Kontrol ediliyor…')
+                  : t('Güncellemeleri kontrol et')}
               </button>
             </div>
           </>
@@ -273,11 +281,11 @@ export function About({ notify }: { notify(message: string): void }) {
         {!status?.enabled && (
           <div className="about-setting">
             <div>
-              <strong>İmzalı güncellemeler</strong>
-              <p>İndirme ve yeniden başlatma isteğinle başlar.</p>
+              <strong>{t('İmzalı güncellemeler')}</strong>
+              <p>{t('İndirme ve yeniden başlatma isteğinle başlar.')}</p>
             </div>
             <Toggle
-              label="İmzalı güncellemeleri etkinleştir"
+              label={t('İmzalı güncellemeleri etkinleştir')}
               disabled={!configured || working}
               value={status?.enabled ?? false}
               onChange={(value) => void run(() => window.rooms!.updates.setOptIn(value))}
@@ -286,14 +294,14 @@ export function About({ notify }: { notify(message: string): void }) {
         )}
       </section>
       <section className="about-support">
-        <h2>Destek ve gizlilik</h2>
+        <h2>{t('Destek ve gizlilik')}</h2>
         <div className="about-setting">
           <div>
-            <strong>Çökme raporlarını paylaş</strong>
-            <p>Rapor gönderimi henüz yapılandırılmadı.</p>
+            <strong>{t('Çökme raporlarını paylaş')}</strong>
+            <p>{t('Rapor gönderimi henüz yapılandırılmadı.')}</p>
           </div>
           <Toggle
-            label="Çökme raporları: gönderim yapılandırılmadı"
+            label={t('Çökme raporları: gönderim yapılandırılmadı')}
             value={false}
             disabled
             onChange={() => {}}
@@ -301,22 +309,24 @@ export function About({ notify }: { notify(message: string): void }) {
         </div>
         <div className="about-setting">
           <div>
-            <strong>Destek kaydı</strong>
-            <p>Mesaj içerikleri, hesap anahtarları ve kişisel dosya yolları dahil edilmez.</p>
+            <strong>{t('Destek kaydı')}</strong>
+            <p>
+              {t('Mesaj içerikleri, hesap anahtarları ve kişisel dosya yolları dahil edilmez.')}
+            </p>
           </div>
           <button className="button secondary" onClick={() => void preview('logs')}>
             <ReferenceIcon name="file" size={18} />
-            Önizle ve indir
+            {t('Önizle ve indir')}
           </button>
         </div>
         <div className="about-setting">
           <div>
-            <strong>Açık kaynak lisansları</strong>
-            <p>Yazı tipi, ikon ve kullanılan bileşenler.</p>
+            <strong>{t('Açık kaynak lisansları')}</strong>
+            <p>{t('Yazı tipi, ikon ve kullanılan bileşenler.')}</p>
           </div>
           <button className="button subtle" onClick={() => void preview('licenses')}>
             <ReferenceIcon name="arrow-right" size={18} />
-            Lisansları aç
+            {t('Lisansları aç')}
           </button>
         </div>
       </section>
@@ -327,16 +337,16 @@ export function About({ notify }: { notify(message: string): void }) {
       )}
       <footer>
         <img src="./reference-brand/brand/logo-symbol-lilac.svg" alt="" />
-        Tayfa{fixture && ' · Özel arkadaş toplulukları için'}
+        Tayfa{fixture && ` · ${t('Özel arkadaş toplulukları için')}`}
       </footer>
       {modal && (
         <Modal
           title={
             modal === 'logs'
-              ? 'Destek kaydını paylaşmadan önce'
+              ? t('Destek kaydını paylaşmadan önce')
               : modal === 'licenses'
-                ? 'Açık kaynak ve lisanslar'
-                : 'Yeniden başlat ve güncelle'
+                ? t('Açık kaynak ve lisanslar')
+                : t('Yeniden başlat ve güncelle')
           }
           className={`about-modal about-modal-${modal}`}
           onClose={() => {
@@ -346,24 +356,26 @@ export function About({ notify }: { notify(message: string): void }) {
           <div className="about-modal-body">
             {modal === 'restart' ? (
               <p>
-                {status?.version ? `Tayfa ${status.version} hazır. ` : ''}
+                {status?.version
+                  ? `${t('Tayfa {version} hazır.', { version: status.version })} `
+                  : ''}
                 {voice.channelId
-                  ? 'Ses bağlantın ve açık görüşmeler kapanacak.'
-                  : 'Uygulama kapanıp yeniden açılacak.'}{' '}
-                İmzalı güncellemeyi şimdi kurmak istiyor musun?
+                  ? t('Ses bağlantın ve açık görüşmeler kapanacak.')
+                  : t('Uygulama kapanıp yeniden açılacak.')}{' '}
+                {t('İmzalı güncellemeyi şimdi kurmak istiyor musun?')}
               </p>
             ) : (
               <>
                 <p>
                   {modal === 'logs'
-                    ? 'Dosyayı indirip inceleyebilir, sonra kendin paylaşabilirsin.'
-                    : 'Bu derlemede kullanılan yazılım ve varlık lisansları.'}
+                    ? t('Dosyayı indirip inceleyebilir, sonra kendin paylaşabilirsin.')
+                    : t('Bu derlemede kullanılan yazılım ve varlık lisansları.')}
                 </p>
-                <pre aria-busy={contentBusy}>{contentBusy ? 'Yükleniyor…' : content}</pre>
+                <pre aria-busy={contentBusy}>{contentBusy ? t('Yükleniyor…') : content}</pre>
                 {modal === 'logs' && (
                   <div className="about-callout">
                     <ReferenceIcon name="lock" size={18} />
-                    Dosya cihazına kaydedilir; otomatik gönderilmez.
+                    {t('Dosya cihazına kaydedilir; otomatik gönderilmez.')}
                   </div>
                 )}
               </>
@@ -376,7 +388,7 @@ export function About({ notify }: { notify(message: string): void }) {
           </div>
           <div className="about-modal-footer">
             <button className="button secondary" disabled={busy} onClick={closeModal}>
-              Kapat
+              {t('Kapat')}
             </button>
             {modal === 'logs' && (
               <button
@@ -386,8 +398,8 @@ export function About({ notify }: { notify(message: string): void }) {
                   try {
                     notify(
                       (await window.rooms!.exportDiagnostics())
-                        ? 'Destek kaydı kaydedildi.'
-                        : 'Kaydetme iptal edildi.',
+                        ? t('Destek kaydı kaydedildi.')
+                        : t('Kaydetme iptal edildi.'),
                     );
                   } catch (e) {
                     setError(uiError(e));
@@ -395,7 +407,7 @@ export function About({ notify }: { notify(message: string): void }) {
                 }}
               >
                 <ReferenceIcon name="download" size={18} />
-                Kayıt dosyasını indir
+                {t('Kayıt dosyasını indir')}
               </button>
             )}
             {modal === 'restart' && (
@@ -404,7 +416,7 @@ export function About({ notify }: { notify(message: string): void }) {
                 disabled={!enabled || busy || !installable}
                 onClick={() => void run(() => window.rooms!.updates.install())}
               >
-                Yeniden başlat ve güncelle
+                {t('Yeniden başlat ve güncelle')}
               </button>
             )}
           </div>

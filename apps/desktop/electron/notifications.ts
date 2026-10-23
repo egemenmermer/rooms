@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { SOCIAL_ID_PATTERN } from '@rooms/social';
 import type { ChannelNotificationScope, ChannelNotificationInput } from '@rooms/contracts';
 import { showWindow } from './window-state';
+import { t } from '@rooms/i18n';
 /** Opt-in, content-free notifications; never disclose messages or account/provider details. */
 export function setupNotifications(
   getWindow: () => BrowserWindow | null,
@@ -149,7 +150,9 @@ export function setupNotifications(
       lastShown = Date.now();
       const notification = new Notification({
         title: 'Tayfa',
-        body: mentioned ? 'Topluluğunda biri seni etiketledi.' : 'Topluluğunda yeni bir mesaj var.',
+        body: mentioned
+          ? t('Topluluğunda biri seni etiketledi.')
+          : t('Topluluğunda yeni bir mesaj var.'),
         silent: !sound,
       });
       notification.on('click', () => {

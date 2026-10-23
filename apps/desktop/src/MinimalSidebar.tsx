@@ -41,7 +41,7 @@ import { QuietMenu } from './QuietMenu';
 import { ChannelTools } from './ChannelTools';
 import { UserProfileDialog } from './SocialSurfaces';
 import type { SocialUser } from '@rooms/social';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import { UpdateNotice } from './UpdateNotice';
 import { HallBackground } from './cinema/HallBackground';
 import { HallSidebarRow } from './cinema/HallSidebarRow';
@@ -69,12 +69,20 @@ function RoomActivityRow({
   const joined = room.participants.some((p) => p.userId === me);
   const count = room.participants.length;
   // An old-cinema session has no page here; the click opens the launcher that explains it.
-  const action = retiredActivity(primary.activity) ? 'Eski Sinema' : joined ? 'Aç' : 'Katıl';
+  const action = retiredActivity(primary.activity)
+    ? t('Eski Sinema')
+    : joined
+      ? t('Aç')
+      : t('Katıl');
   return (
     <button
       className="minimal-activity"
-      title={`${primary.title} · ${count} kişi`}
-      aria-label={`${primary.title} sürüyor, ${count} kişi. ${action}`}
+      title={t('{title} · {count} kişi', { title: primary.title, count })}
+      aria-label={t('{title} sürüyor, {count} kişi. {action}', {
+        title: primary.title,
+        count,
+        action,
+      })}
       onClick={() => onOpen(primary.activity)}
     >
       {['cinema', 'youtube', 'screen'].includes(primary.activity) ? (
@@ -135,7 +143,7 @@ export function MinimalSidebar({
   };
   return (
     <ChannelTools>
-      <aside id="rooms-navigation" className="minimal-sidebar" aria-label="Odalar ve gezinme">
+      <aside id="rooms-navigation" className="minimal-sidebar" aria-label={t('Odalar ve gezinme')}>
         <header>
           <QuietMenu label={space?.name ?? 'Tayfa'}>
             {c.spaces.map((s) => (
@@ -151,19 +159,21 @@ export function MinimalSidebar({
               </button>
             ))}
             <hr />
-            <button onClick={createSpace}>Topluluk oluştur</button>
-            <button onClick={invite}>Davet oluştur</button>
+            <button onClick={createSpace}>{t('Topluluk oluştur')}</button>
+            <button onClick={invite}>{t('Davet oluştur')}</button>
             <button disabled={!space} onClick={() => navigate('/settings?tab=server-profile')}>
-              Sunucu ayarları
+              {t('Sunucu ayarları')}
             </button>
-            <button onClick={() => navigate('/friends')}>Arkadaşlar</button>
-            <button onClick={() => navigate('/notifications')}>Bildirimler</button>
-            <button onClick={() => navigate('/files')}>Dosyalar</button>
-            <button onClick={() => navigate('/media')}>Medyam</button>
-            <button onClick={() => navigate('/agent?tab=schedules')}>Planlanan görevler</button>
-            <button onClick={help}>Klavye kısayolları</button>
+            <button onClick={() => navigate('/friends')}>{t('Arkadaşlar')}</button>
+            <button onClick={() => navigate('/notifications')}>{t('Bildirimler')}</button>
+            <button onClick={() => navigate('/files')}>{t('Dosyalar')}</button>
+            <button onClick={() => navigate('/media')}>{t('Medyam')}</button>
+            <button onClick={() => navigate('/agent?tab=schedules')}>
+              {t('Planlanan görevler')}
+            </button>
+            <button onClick={help}>{t('Klavye kısayolları')}</button>
           </QuietMenu>
-          <IconButton label="Ara" onClick={search}>
+          <IconButton label={t('Ara')} onClick={search}>
             <Search size={17} />
           </IconButton>
         </header>
@@ -172,7 +182,7 @@ export function MinimalSidebar({
             className={`minimal-nav ${location.pathname === '/messages' ? 'selected' : ''}`}
             onClick={() => navigate('/messages')}
           >
-            Mesajlar
+            {t('Mesajlar')}
             {Object.keys(c.unread).some(
               (id) => c.dms.some((dm) => dm.id === id) && c.unread[id],
             ) && <i className="nav-dot" />}
@@ -182,12 +192,12 @@ export function MinimalSidebar({
             onOpen={() => navigate('/cinema')}
           />
           <div className="minimal-section" data-channel-type="text" tabIndex={0}>
-            Sohbetler
+            {t('Sohbetler')}
             <button
               data-create-type="text"
-              aria-label="Sohbet kanalı oluştur"
+              aria-label={t('Sohbet kanalı oluştur')}
               disabled={!c.activeSpaceId}
-              title={!c.activeSpaceId ? 'Önce topluluk seç.' : undefined}
+              title={!c.activeSpaceId ? t('Önce topluluk seç.') : undefined}
             >
               <Plus size={14} />
             </button>
@@ -210,12 +220,12 @@ export function MinimalSidebar({
               </button>
             ))}
           <div className="minimal-section" data-channel-type="voice" tabIndex={0}>
-            Odalar
+            {t('Odalar')}
             <button
               data-create-type="voice"
-              aria-label="Ses odası oluştur"
+              aria-label={t('Ses odası oluştur')}
               disabled={!c.activeSpaceId}
-              title={!c.activeSpaceId ? 'Önce topluluk seç.' : undefined}
+              title={!c.activeSpaceId ? t('Önce topluluk seç.') : undefined}
             >
               <Plus size={14} />
             </button>
@@ -246,7 +256,11 @@ export function MinimalSidebar({
                   if (!target || target.from === ch.id) return;
                   event.preventDefault();
                   void moveVoiceMember(target, ch.id)
-                    .then(() => notify(`${target.name}, ${ch.name} odasına taşındı.`))
+                    .then(() =>
+                      notify(
+                        t('{name}, {room} odasına taşındı.', { name: target.name, room: ch.name }),
+                      ),
+                    )
                     .catch((e) => notify(uiError(e)));
                 }}
               >
@@ -316,17 +330,17 @@ export function MinimalSidebar({
                       <VoiceAvatar id={p.id} name={p.name} />
                       <span>{p.name}</span>
                       {'screen' in p && p.screen === true && (
-                        <MonitorUp size={13} aria-label="Ekran paylaşıyor" />
+                        <MonitorUp size={13} aria-label={t('Ekran paylaşıyor')} />
                       )}
                       {silenced && (
-                        <VolumeX size={12} aria-label="Sesini kapattın, yalnızca sende" />
+                        <VolumeX size={12} aria-label={t('Sesini kapattın, yalnızca sende')} />
                       )}
                       {/* Deafened people are also muted: show both, like Discord. */}
                       {(p.muted || ('deafened' in p && p.deafened)) && (
-                        <MicOff size={12} aria-label="Mikrofon kapalı" />
+                        <MicOff size={12} aria-label={t('Mikrofon kapalı')} />
                       )}
                       {'deafened' in p && p.deafened && (
-                        <HeadphoneOff size={12} aria-label="Sağırlaştırdı" />
+                        <HeadphoneOff size={12} aria-label={t('Sağırlaştırdı')} />
                       )}
                     </button>
                   );
@@ -339,14 +353,14 @@ export function MinimalSidebar({
                     directory.loading ||
                     !directory.rooms.some((room) => room.channelId === ch.id)) && (
                     <small className="occupancy-unavailable">
-                      {directory.loading ? 'Üyeler yükleniyor…' : 'Üyeler alınamadı'}
+                      {directory.loading ? t('Üyeler yükleniyor…') : t('Üyeler alınamadı')}
                     </small>
                   )}
               </div>
             );
           })}
           {!c.channels.length && (
-            <p className="muted">{c.loadingMessages ? 'Odalar yükleniyor…' : 'Oda yok.'}</p>
+            <p className="muted">{c.loadingMessages ? t('Odalar yükleniyor…') : t('Oda yok.')}</p>
           )}
         </div>
         <div className="minimal-self">
@@ -355,16 +369,16 @@ export function MinimalSidebar({
               <span>
                 <strong>
                   {r.busy || r.status === 'connecting'
-                    ? 'Bağlanıyor…'
+                    ? t('Bağlanıyor…')
                     : r.status === 'connected'
-                      ? 'Ses bağlı'
+                      ? t('Ses bağlı')
                       : r.status === 'reconnecting'
-                        ? 'Yeniden bağlanıyor…'
-                        : 'Ses bağlı değil'}
+                        ? t('Yeniden bağlanıyor…')
+                        : t('Ses bağlı değil')}
                 </strong>
                 <small>{r.roomName}</small>
               </span>
-              <QuietMenu label="Ses işlemleri" compact>
+              <QuietMenu label={t('Ses işlemleri')} compact>
                 <button
                   disabled={r.status !== 'connected'}
                   onClick={() => {
@@ -378,19 +392,21 @@ export function MinimalSidebar({
                     );
                   }}
                 >
-                  {r.camera ? 'Kamerayı kapat' : 'Kamerayı aç'}
+                  {r.camera ? t('Kamerayı kapat') : t('Kamerayı aç')}
                 </button>
                 <button
                   disabled={r.status !== 'connected'}
                   onClick={() => window.dispatchEvent(new Event('rooms:choose-capture'))}
                 >
-                  Ekran paylaş
+                  {t('Ekran paylaş')}
                 </button>
-                {r.sharing && <button onClick={() => run(stopScreen())}>Paylaşımı durdur</button>}
+                {r.sharing && (
+                  <button onClick={() => run(stopScreen())}>{t('Paylaşımı durdur')}</button>
+                )}
                 <button onClick={() => window.dispatchEvent(new Event('rooms:open-soundboard'))}>
                   Soundboard
                 </button>
-                <button onClick={() => navigate('/settings?tab=audio')}>Ses ayarları</button>
+                <button onClick={() => navigate('/settings?tab=audio')}>{t('Ses ayarları')}</button>
               </QuietMenu>
             </div>
           )}
@@ -398,14 +414,14 @@ export function MinimalSidebar({
             <div className="sidebar-media-actions">
               <button
                 disabled={r.status !== 'connected' || r.busy}
-                aria-label={r.camera ? 'Kamerayı kapat' : 'Kamerayı aç'}
+                aria-label={r.camera ? t('Kamerayı kapat') : t('Kamerayı aç')}
                 onClick={() => run(toggleCamera().then(() => navigate('/voice')))}
               >
                 <Video size={17} />
               </button>
               <button
                 disabled={r.status !== 'connected' || r.busy}
-                aria-label={r.sharing ? 'Paylaşımı durdur' : 'Ekran paylaş'}
+                aria-label={r.sharing ? t('Paylaşımı durdur') : t('Ekran paylaş')}
                 onClick={() =>
                   r.sharing
                     ? run(stopScreen())
@@ -415,7 +431,7 @@ export function MinimalSidebar({
                 <MonitorUp size={17} />
               </button>
               <button
-                aria-label="Etkinlikler"
+                aria-label={t('Etkinlikler')}
                 onClick={() => window.dispatchEvent(new Event('rooms:open-activity-launcher'))}
               >
                 <Gamepad2 size={17} />
@@ -432,38 +448,38 @@ export function MinimalSidebar({
             <div className="minimal-voice-error">
               <span>{r.error}</span>
               {r.channelId && (
-                <button onClick={() => run(joinVoice(r.channelId!, r.roomName ?? 'Oda'))}>
-                  Yeniden dene
+                <button onClick={() => run(joinVoice(r.channelId!, r.roomName ?? t('Oda')))}>
+                  {t('Yeniden dene')}
                 </button>
               )}
             </div>
           )}
           {r.audioBlocked && (
             <button className="text-button" onClick={() => run(startRoomAudio())}>
-              Oda sesini aç
+              {t('Oda sesini aç')}
             </button>
           )}
           <div className="minimal-self-row">
             <button className="minimal-profile" onClick={() => navigate('/settings?tab=profile')}>
               {c.user && <VoiceAvatar id={c.user.id} name={c.user.displayName} />}
-              <span>{c.user?.displayName ?? 'Profil'}</span>
+              <span>{c.user?.displayName ?? t('Profil')}</span>
             </button>
             <UpdateNotice />
-            <IconButton label="Ayarlar" onClick={() => navigate('/settings')}>
+            <IconButton label={t('Ayarlar')} onClick={() => navigate('/settings')}>
               <Settings size={17} />
             </IconButton>
           </div>
           {(r.channelId || r.busy) && (
             <div className="minimal-voice-controls">
               <IconButton
-                label={r.muted ? 'Mikrofonu aç' : 'Mikrofonu kapat'}
+                label={r.muted ? t('Mikrofonu aç') : t('Mikrofonu kapat')}
                 disabled={r.status !== 'connected' || r.busy}
                 onClick={() => run(toggleMic())}
               >
                 {r.muted ? <MicOff size={17} /> : <Mic size={17} />}
               </IconButton>
               <IconButton
-                label={r.deafened ? 'Sesi aç' : 'Sağırlaştır'}
+                label={r.deafened ? t('Sesi aç') : t('Sağırlaştır')}
                 aria-pressed={r.deafened}
                 className={r.deafened ? 'muted-control' : ''}
                 disabled={r.status !== 'connected' || r.busy}
@@ -471,7 +487,7 @@ export function MinimalSidebar({
               >
                 {r.deafened ? <HeadphoneOff size={17} /> : <Headphones size={17} />}
               </IconButton>
-              <IconButton label="Sesten ayrıl" onClick={() => run(leaveVoice())}>
+              <IconButton label={t('Sesten ayrıl')} onClick={() => run(leaveVoice())}>
                 <PhoneOff size={17} />
               </IconButton>
             </div>

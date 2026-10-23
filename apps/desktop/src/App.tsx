@@ -9,7 +9,7 @@ import { ParticipantAudioMenu } from './ParticipantAudioMenu';
 import { MusicDJ, MusicDJEntry, openMusicDJ } from './MusicDJ';
 import { applyAppearancePreferences } from './appearance-preferences';
 import { usePersonalPlayback } from './personal-playback';
-import { tr, uiError } from './i18n';
+import { t, tr, uiError } from './i18n';
 import { VoiceSidebar } from './VoiceSidebar';
 import {
   DirectMessageSurface,
@@ -363,14 +363,14 @@ export default function App() {
     new URLSearchParams(location.search).get('player') === '1' && personalSession
       ? personalSession.media.live
         ? personalSession.media.name
-        : 'Kişisel oynatıcı'
+        : t('Kişisel oynatıcı')
       : new URLSearchParams(location.search).get('view') === 'channels' ||
           localFixture.startsWith('S35/')
-        ? 'Canlı kanallar'
+        ? t('Canlı kanallar')
         : new URLSearchParams(location.search).get('view') === 'library' ||
             localFixture.startsWith('S38/')
-          ? 'Kütüphane'
-          : 'Kişisel medyam';
+          ? t('Kütüphane')
+          : t('Kişisel medyam');
   const notificationView = visiblePath === '/notifications';
   const dmView =
     ['/chat', '/dm'].includes(visiblePath) &&
@@ -474,20 +474,20 @@ export default function App() {
   ]);
   useEffect(() => applyAppearancePreferences(p), [p]);
   const titles: Record<string, string> = {
-    '/home': 'Ana sayfa',
-    '/friends': 'Arkadaşlar',
-    '/messages': 'Mesajlar',
-    '/media': 'Medyam',
+    '/home': t('Ana sayfa'),
+    '/friends': t('Arkadaşlar'),
+    '/messages': t('Mesajlar'),
+    '/media': t('Medyam'),
     '/spaces': tr('Your spaces'),
     '/chat': channel.startsWith('dm-') ? channel.slice(3) : `# ${channel}`,
     '/voice': tr('The lounge'),
-    '/cinema': 'Sinema',
+    '/cinema': t('Sinema'),
     '/settings': tr('Settings'),
-    '/notifications': 'Bildirimler',
+    '/notifications': t('Bildirimler'),
     '/polls': tr('Quick polls'),
     '/agent': 'Agent',
-    '/together': 'Birlikte',
-    '/games': 'Kıraathane',
+    '/together': t('Birlikte'),
+    '/games': t('Kıraathane'),
     '/youtube': 'DJ',
   };
   const setupName = visiblePath.startsWith('/setup/') ? visiblePath.slice(7) : null;
@@ -549,8 +549,13 @@ export default function App() {
           />
         )}
         {settingsPage && (
-          <Modal title="Ayarlar" hideHeading onClose={closeSettings} className="settings-modal">
-            <Suspense fallback={<div className="loading-view">Yükleniyor…</div>}>
+          <Modal
+            title={t('Ayarlar')}
+            hideHeading
+            onClose={closeSettings}
+            className="settings-modal"
+          >
+            <Suspense fallback={<div className="loading-view">{t('Yükleniyor…')}</div>}>
               <Settings
                 notify={notify}
                 onClose={closeSettings}
@@ -593,14 +598,14 @@ export default function App() {
               className="demo-indicator"
               title={`Development-only visual fixture: ${localFixture}`}
             >
-              DEMO · Yerel örnek
+              {t('DEMO · Yerel örnek')}
             </span>
           </span>
         ) : (
           community.user && (
             <span className="window-private">
               <ReferenceIcon name="lock" size={10} />
-              Özel topluluk
+              {t('Özel topluluk')}
             </span>
           )
         )}
@@ -608,7 +613,7 @@ export default function App() {
       <div className={`app-layout ${settingsPage ? 'settings-background' : ''}`}>
         <button
           className="compact-nav-toggle"
-          aria-label={channelNavOpen ? 'Kanal listesini kapat' : 'Kanal listesini aç'}
+          aria-label={channelNavOpen ? t('Kanal listesini kapat') : t('Kanal listesini aç')}
           aria-controls="rooms-navigation"
           aria-expanded={channelNavOpen}
           onClick={() => setChannelNavOpen((value) => !value)}
@@ -618,7 +623,7 @@ export default function App() {
         {channelNavOpen && (
           <button
             className="compact-nav-scrim"
-            aria-label="Kanal listesini kapat"
+            aria-label={t('Kanal listesini kapat')}
             onClick={() => setChannelNavOpen(false)}
           />
         )}
@@ -646,7 +651,7 @@ export default function App() {
             <div className="toolbar-actions">
               {!['/chat', '/home', '/messages'].includes(visiblePath) && (
                 <IconButton
-                  label="Sohbete dön"
+                  label={t('Sohbete dön')}
                   className="toolbar-icon"
                   onClick={() => {
                     if (voiceView && realtime.channelId)
@@ -661,7 +666,7 @@ export default function App() {
                 </IconButton>
               )}
               <IconButton
-                label={community.user ? 'DJ' : 'DJ için önce giriş yap.'}
+                label={community.user ? 'DJ' : t('DJ için önce giriş yap.')}
                 className="toolbar-icon"
                 disabled={!community.user}
                 onClick={openMusicDJ}
@@ -669,14 +674,14 @@ export default function App() {
                 <Music2 size={19} />
               </IconButton>
               <IconButton
-                label="Etkinlikler"
+                label={t('Etkinlikler')}
                 className="toolbar-icon"
                 onClick={() => open('launcher')}
               >
                 <Rocket size={19} />
               </IconButton>
               <IconButton
-                label={dmView ? 'Kişi bilgisi' : 'Üyeler'}
+                label={dmView ? t('Kişi bilgisi') : t('Üyeler')}
                 className="toolbar-icon"
                 disabled={!community.user}
                 onClick={() => (dmView ? open('profile') : toggleContext())}
@@ -684,16 +689,16 @@ export default function App() {
                 <Users size={19} />
               </IconButton>
               <IconButton
-                label="Mesajlarda ara"
+                label={t('Mesajlarda ara')}
                 className="toolbar-icon"
                 onClick={() => open('social-search')}
               >
                 <Search size={19} />
               </IconButton>
-              <QuietMenu label="Oda işlemleri" compact>
-                <button onClick={() => navigate('/files')}>Dosyalar</button>
-                <button onClick={() => open('invite')}>Davet oluştur</button>
-                <button onClick={() => open('command')}>Ara</button>
+              <QuietMenu label={t('Oda işlemleri')} compact>
+                <button onClick={() => navigate('/files')}>{t('Dosyalar')}</button>
+                <button onClick={() => open('invite')}>{t('Davet oluştur')}</button>
+                <button onClick={() => open('command')}>{t('Ara')}</button>
               </QuietMenu>
             </div>
           </header>
@@ -868,7 +873,7 @@ export default function App() {
             {contextDrawerOpen && (
               <button
                 className="context-panel-scrim"
-                aria-label="Üye panelini kapat"
+                aria-label={t('Üye panelini kapat')}
                 onClick={closeContext}
               />
             )}
@@ -888,8 +893,8 @@ export default function App() {
       <ParticipantAudioMenu />
 
       {settingsPage && (
-        <section className="settings-modal settings-reference-surface" aria-label="Ayarlar">
-          <Suspense fallback={<div className="loading-view">Yükleniyor…</div>}>
+        <section className="settings-modal settings-reference-surface" aria-label={t('Ayarlar')}>
+          <Suspense fallback={<div className="loading-view">{t('Yükleniyor…')}</div>}>
             <Settings
               notify={notify}
               onClose={closeSettings}
@@ -949,13 +954,13 @@ export default function App() {
       )}
       {overlay === 'launcher' && <ActivityLauncher onClose={close} />}
       {overlay === 'command' && (
-        <Modal title={'Ara'} onClose={close} className="command-modal">
+        <Modal title={t('Ara')} onClose={close} className="command-modal">
           <div className="command-input">
             <Search size={19} />
             <input
               autoFocus
               aria-label={tr('Search commands')}
-              placeholder={'Oda veya komut ara\u2026'}
+              placeholder={t('Oda veya komut ara…')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -963,10 +968,10 @@ export default function App() {
           </div>
           <div className="command-list">
             {[
-              { label: 'Ana sayfa', detail: '', path: '/home', icon: HomeIcon },
+              { label: t('Ana sayfa'), detail: '', path: '/home', icon: HomeIcon },
               {
-                label: 'Sinema',
-                detail: 'Topluluğun sinema salonu',
+                label: t('Sinema'),
+                detail: t('Topluluğun sinema salonu'),
                 path: '/cinema',
                 icon: Film,
               },
@@ -984,25 +989,25 @@ export default function App() {
               },
               {
                 label: tr('Quick polls'),
-                detail: tr('Ortak odada birlikte karar ver'),
+                detail: t('Ortak odada birlikte karar ver'),
                 path: '/polls',
                 icon: LayoutGrid,
               },
               {
                 label: 'Agent',
-                detail: tr('G\u00F6revler, sonu\u00E7lar ve oda haf\u0131zas\u0131'),
+                detail: t('Görevler, sonuçlar ve oda hafızası'),
                 path: '/agent',
                 icon: Bot,
               },
               {
-                label: tr('Oyun masas\u0131'),
-                detail: 'Sanal puan',
+                label: t('Oyun masası'),
+                detail: t('Sanal puan'),
                 path: '/games',
                 icon: Gamepad2,
               },
               {
-                label: 'Ortak tahta ve anketler',
-                detail: tr('Birlikte \u00E7iz, birlikte karar ver'),
+                label: t('Ortak tahta ve anketler'),
+                detail: t('Birlikte çiz, birlikte karar ver'),
                 path: '/together',
                 icon: Sparkles,
               },
@@ -1032,7 +1037,7 @@ export default function App() {
       )}
 
       {overlay === 'help' && (
-        <Modal title={'Klavye k\u0131sayollar\u0131'} onClose={close}>
+        <Modal title={t('Klavye kısayolları')} onClose={close}>
           {[
             [tr('Command palette'), '⌘ / Ctrl K'],
             [tr('Tonight \u2192 Cinema'), '⌘ / Ctrl 1–5'],

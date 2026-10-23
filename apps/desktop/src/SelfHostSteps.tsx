@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Copy, ExternalLink } from 'lucide-react';
+import { t } from './i18n';
 import { SELF_HOST_GUIDE_URL, SELF_HOST_STEPS } from './self-host-content';
 
 /**
@@ -28,28 +29,26 @@ export function SelfHostSteps({ onSignIn }: { onSignIn(): void }) {
     void navigator.clipboard
       .writeText(value)
       .then(() => setCopied(value))
-      .catch(() => setCopyError('Kopyalanamadı. Komutu seçip elle kopyala.'));
+      .catch(() => setCopyError(t('Kopyalanamadı. Komutu seçip elle kopyala.')));
   };
   return (
     <section className="ref-auth-form ref-selfhost" aria-labelledby="reference-selfhost-title">
-      <h2 id="reference-selfhost-title">Kendi sunucunu kur</h2>
-      <p>Yaklaşık 15 dakika sürer; sunucu ve veriler senin olur.</p>
+      <h2 id="reference-selfhost-title">{t('Kendi sunucunu kur')}</h2>
+      <p>{t('Yaklaşık 15 dakika sürer; sunucu ve veriler senin olur.')}</p>
       <div className="ref-start-progress">
         {SELF_HOST_STEPS.map((item, position) => (
           <button
             key={item.title}
             type="button"
             className={position <= index ? 'done' : ''}
-            aria-label={`${position + 1}. adım: ${item.title}`}
+            aria-label={t('{step}. adım: {title}', { step: position + 1, title: item.title })}
             aria-current={position === index ? 'step' : undefined}
             onClick={() => go(position)}
           />
         ))}
       </div>
       <div className="ref-start-step">
-        <small>
-          Adım {index + 1} / {total}
-        </small>
+        <small>{t('Adım {step} / {total}', { step: index + 1, total })}</small>
         <h3>{step.title}</h3>
         <p>{step.body}</p>
         {!!step.chips?.length && (
@@ -64,7 +63,7 @@ export function SelfHostSteps({ onSignIn }: { onSignIn(): void }) {
             <code aria-label={command.label}>{command.value}</code>
             <button
               type="button"
-              aria-label={`${command.label}: kopyala`}
+              aria-label={t('{label}: kopyala', { label: command.label })}
               onClick={() => copy(command.value)}
             >
               {copied === command.value ? <Check size={14} /> : <Copy size={14} />}
@@ -80,7 +79,7 @@ export function SelfHostSteps({ onSignIn }: { onSignIn(): void }) {
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`${link.label}: siteye git`}
+                aria-label={t('{label}: siteye git', { label: link.label })}
               >
                 {link.label}
                 <ExternalLink size={13} aria-hidden="true" />
@@ -101,7 +100,7 @@ export function SelfHostSteps({ onSignIn }: { onSignIn(): void }) {
           }}
         >
           <ArrowLeft size={15} />
-          Geri
+          {t('Geri')}
         </button>
         <button
           ref={next}
@@ -109,7 +108,7 @@ export function SelfHostSteps({ onSignIn }: { onSignIn(): void }) {
           className="button primary"
           onClick={() => (last ? onSignIn() : go(index + 1))}
         >
-          {last ? 'Giriş yap sekmesine geç' : 'İleri'}
+          {last ? t('Giriş yap sekmesine geç') : t('İleri')}
           <ArrowRight size={15} />
         </button>
       </div>
@@ -119,15 +118,20 @@ export function SelfHostSteps({ onSignIn }: { onSignIn(): void }) {
         </div>
       )}
       <p className="ref-start-live" role="status">
-        {`Adım ${index + 1} / ${total}: ${step.title}`}
-        {copied ? ' · Kopyalandı.' : ''}
+        {copied
+          ? t('Adım {step} / {total}: {title} · Kopyalandı.', {
+              step: index + 1,
+              total,
+              title: step.title,
+            })
+          : t('Adım {step} / {total}: {title}', { step: index + 1, total, title: step.title })}
       </p>
       <p className="ref-auth-footer">
         <a href={SELF_HOST_GUIDE_URL} target="_blank" rel="noopener noreferrer">
-          Ayrıntılı kurulum rehberi
+          {t('Ayrıntılı kurulum rehberi')}
         </a>
         {' · '}
-        Alan adı gerektirmeyen yerel mod hazırlanıyor.
+        {t('Alan adı gerektirmeyen yerel mod hazırlanıyor.')}
       </p>
     </section>
   );

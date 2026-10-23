@@ -1,6 +1,6 @@
 import { useCommunity } from './community';
 import { useDmCall } from './dm-call';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import { create } from 'zustand';
 import { useSyncExternalStore } from 'react';
 import { type NoiseSuppressionMode, type MediaSnapshot, type MusicEqualizer } from '@rooms/media';
@@ -59,9 +59,11 @@ updateListenerScope();
 // A moderator moved this person: join the target through the normal grant check.
 mediaProvider().onMove?.((channelId) => {
   if (useVoiceContext.getState().channelId === channelId) return;
-  const name = useCommunity.getState().channels.find((c) => c.id === channelId)?.name ?? 'Oda';
+  const name = useCommunity.getState().channels.find((c) => c.id === channelId)?.name ?? t('Oda');
   window.dispatchEvent(
-    new CustomEvent('rooms:toast', { detail: `Bir yönetici seni ${name} odasına taşıdı.` }),
+    new CustomEvent('rooms:toast', {
+      detail: t('Bir yönetici seni {name} odasına taşıdı.', { name }),
+    }),
   );
   void joinVoice(channelId, name).catch(() => {});
 });
@@ -84,7 +86,7 @@ function disconnectActive() {
 export function joinVoice(channelId: string, roomName: string): Promise<void> {
   const dm = useDmCall.getState();
   if (dm.busy || dm.call?.state === 'ringing' || dm.call?.state === 'accepted')
-    return Promise.reject(new Error('Önce özel görüşmeyi bitir.'));
+    return Promise.reject(new Error(t('Önce özel görüşmeyi bitir.')));
   const context = useVoiceContext.getState(),
     snapshot = mediaProvider().snapshot();
   if (context.busy && pendingTarget === channelId && pendingPromise) return pendingPromise;
@@ -121,7 +123,7 @@ export function joinVoice(channelId: string, roomName: string): Promise<void> {
       }
       const dm = useDmCall.getState();
       if (dm.busy || dm.call?.state === 'ringing' || dm.call?.state === 'accepted')
-        throw new Error('Önce özel görüşmeyi bitir.');
+        throw new Error(t('Önce özel görüşmeyi bitir.'));
       activeChannel = channelId;
       await mediaProvider().connectRoom(grant.roomName, grant.token, grant.serverUrl);
       if (mediaProvider().snapshot().deafened) announceDeafen(channelId, true);
@@ -249,12 +251,12 @@ export const setParticipantVolume = (id: string, volume: number) =>
   mediaProvider().setParticipantVolume(id, volume);
 export function watchScreen(id: string | null) {
   const provider = mediaProvider();
-  if (!provider.watchScreen) throw Error('Yayın izleme kontrolü kullanılamıyor.');
+  if (!provider.watchScreen) throw Error(t('Yayın izleme kontrolü kullanılamıyor.'));
   provider.watchScreen(id);
 }
 export function setScreenVolume(id: string, volume: number) {
   const provider = mediaProvider();
-  if (!provider.setScreenVolume) throw Error('Yayın sesi kontrolü kullanılamıyor.');
+  if (!provider.setScreenVolume) throw Error(t('Yayın sesi kontrolü kullanılamıyor.'));
   provider.setScreenVolume(id, volume);
 }
 export const startRoomAudio = () => run(() => mediaProvider().startAudio());
@@ -263,7 +265,7 @@ export const musicEqualizer = (): MusicEqualizer | null =>
   mediaProvider().musicEqualizer?.() ?? null;
 export function setMusicEqualizer(value: MusicEqualizer) {
   const provider = mediaProvider();
-  if (!provider.setMusicEqualizer) throw Error('Ekolayzır bu sürümde kullanılamıyor.');
+  if (!provider.setMusicEqualizer) throw Error(t('Ekolayzır bu sürümde kullanılamıyor.'));
   provider.setMusicEqualizer(value);
 }
 /** Lossy pointer positions shared with everyone in the voice room; silently skipped offline. */

@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Toggle } from '@rooms/design';
 import { useCommunity } from './community';
 import type { DesktopBridge } from '@rooms/contracts';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 
 /** Device-local preferences, fenced against late receipts from a previous account. */
 export function ChannelNotifications({ bridge }: { bridge?: DesktopBridge['notifications'] }) {
@@ -53,34 +53,34 @@ export function ChannelNotifications({ bridge }: { bridge?: DesktopBridge['notif
   }, [community.serverUrl, community.user?.id, channelId, api]);
   return (
     <section className="ref-settings-section">
-      <h2>Bu oda</h2>
+      <h2>{t('Bu oda')}</h2>
       <div className="settings-row">
         <div>
           <select
-            aria-label="Bildirim kanalı"
+            aria-label={t('Bildirim kanalı')}
             value={channelId}
             disabled={busy || !channels.length}
             onChange={(event) => setSelected(event.target.value)}
           >
-            {!channels.length && <option value="">Kanal yok</option>}
+            {!channels.length && <option value="">{t('Kanal yok')}</option>}
             {channels.map((channel) => (
               <option key={channel.id} value={channel.id}>
-                {channel.name || 'Özel mesaj'}
+                {channel.name || t('Özel mesaj')}
               </option>
             ))}
           </select>
           <p>
             {!scope
-              ? 'Önce giriş yap.'
+              ? t('Önce giriş yap.')
               : fixture && !bridge
-                ? 'Geliştirme görünümünde hesap tercihleri değiştirilemez.'
+                ? t('Geliştirme görünümünde hesap tercihleri değiştirilemez.')
                 : !api
-                  ? 'Masaüstü uygulamasını gerektirir.'
-                  : 'Bu cihazdaki masaüstü bildirimlerini durdurur.'}
+                  ? t('Masaüstü uygulamasını gerektirir.')
+                  : t('Bu cihazdaki masaüstü bildirimlerini durdurur.')}
           </p>
         </div>
         <Toggle
-          label="Bu kanalı sessize al"
+          label={t('Bu kanalı sessize al')}
           value={muted ?? false}
           disabled={busy || muted === null || !scope || !channelId || !api}
           onChange={async (value) => {

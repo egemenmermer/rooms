@@ -7,6 +7,7 @@ import {
   inviteShareLink,
   type SocialInvite,
 } from '@rooms/social';
+import { locale, t } from './i18n';
 import './onboarding.css';
 
 /** The https link friends open; servers without the Tayfa broker fall back to the app link. */
@@ -35,7 +36,7 @@ export function InviteLinkCard({
   return (
     <div className="invite-link-card">
       <label className="field-label">
-        Davet bağlantısı
+        {t('Davet bağlantısı')}
         <input
           readOnly
           autoFocus={autoFocus}
@@ -53,26 +54,30 @@ export function InviteLinkCard({
             .then(() => setCopied(true))
             .catch(() => {
               setCopied(false);
-              setError('Panoya erişilemiyor. Bağlantıyı seçip kopyala.');
+              setError(t('Panoya erişilemiyor. Bağlantıyı seçip kopyala.'));
             });
         }}
       >
         {copied ? <Check size={16} /> : <Copy size={16} />}
-        {copied ? 'Kopyalandı' : 'Bağlantıyı kopyala'}
+        {copied ? t('Kopyalandı') : t('Bağlantıyı kopyala')}
       </button>
       <p className="invite-link-meta">
-        {days} gün · {maxUses} kişi
+        {t('{count} gün', { count: days })} · {t('{count} kişi', { count: maxUses })}
         {expires && !Number.isNaN(expires.getTime()) && (
-          <> · Son geçerlilik: {expires.toLocaleString('tr-TR')}</>
+          <>
+            {' · '}
+            {t('Son geçerlilik: {date}', { date: expires.toLocaleString(locale) })}
+          </>
         )}
       </p>
       <p className="invite-link-meta">
-        Bağlantıyı yalnızca katılmasını istediğin kişilerle paylaş. Bu pencere kapanınca bağlantı
-        yeniden gösterilmez; gerekirse yenisini oluştur.
+        {t(
+          'Bağlantıyı yalnızca katılmasını istediğin kişilerle paylaş. Bu pencere kapanınca bağlantı yeniden gösterilmez; gerekirse yenisini oluştur.',
+        )}
       </p>
       {copied && (
         <p className="invite-link-live" role="status">
-          Davet bağlantısı kopyalandı.
+          {t('Davet bağlantısı kopyalandı.')}
         </p>
       )}
       {error && (

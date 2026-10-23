@@ -66,6 +66,9 @@ export interface DesktopBridge {
       value: boolean,
     ): Promise<DesktopWindowPreferences>;
   };
+  /** Interface language held by the main process; fixed until the window reloads. */
+  locale?: { preference: 'system' | 'tr' | 'en'; resolved: 'tr' | 'en' };
+  setLocale?(preference: 'system' | 'tr' | 'en'): Promise<void>;
   pendingInvite(): Promise<{ serverUrl: string; code: string } | null>;
   onInvite(listener: (invite: { serverUrl: string; code: string }) => void): () => void;
   platform: 'darwin' | 'win32' | 'linux';

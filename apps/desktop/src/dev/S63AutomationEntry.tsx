@@ -1,5 +1,6 @@
 import { AgentAutomationSurface, type AgentAutomationProps } from '../AgentAutomation';
 import type { AgentAuthoritySnapshot } from '@rooms/agent-contracts';
+import { sample, people, places } from './sample';
 export const S63_VARIANTS = ['default', 'confirm', 'enabled', 'readonly'] as const;
 /** Development data only. No native bridge or service callback is supplied. */
 export function getS63Fixture(variant: string): AgentAutomationProps {
@@ -20,7 +21,12 @@ export function getS63Fixture(variant: string): AgentAutomationProps {
     ],
     scopes: [
       { kind: 'github', read: true, write: true, resources: ['film-night-notes'] },
-      { kind: 'drive', read: true, write: true, resources: ['Film-gecesi-plani'] },
+      {
+        kind: 'drive',
+        read: true,
+        write: true,
+        resources: [sample('Film-gecesi-plani', 'Movie-night-plan')],
+      },
     ],
     discord: { state: 'not-configured', mentionOnly: true, mappings: [] },
     permissionsMutable: false,
@@ -29,10 +35,10 @@ export function getS63Fixture(variant: string): AgentAutomationProps {
   return {
     userId,
     roomId,
-    roomName: 'Bizim Oda',
-    channelName: 'genel',
-    actorName: 'Deniz',
-    names: { [userId]: 'Deniz', 'demo-ece': 'Ece' },
+    roomName: places.community,
+    channelName: places.general,
+    actorName: people.deniz,
+    names: { [userId]: people.deniz, 'demo-ece': people.ece },
     status: {
       configured: true,
       connected: true,

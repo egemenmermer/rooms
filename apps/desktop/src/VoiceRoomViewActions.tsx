@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Maximize, Minimize, ExternalLink } from 'lucide-react';
 import { IconButton } from '@rooms/design';
 import { useRealtime } from './realtime';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 export function VoiceRoomViewActions({ notify }: { notify(message: string): void }) {
   const location = useLocation();
   const r = useRealtime(),
@@ -13,13 +13,13 @@ export function VoiceRoomViewActions({ notify }: { notify(message: string): void
     document.addEventListener('fullscreenchange', changed);
     return () => document.removeEventListener('fullscreenchange', changed);
   }, []);
-  const hasVideo = r.tracks.some((t) => t.kind === 'video' && !t.muted),
+  const hasVideo = r.tracks.some((track) => track.kind === 'video' && !track.muted),
     pip = Boolean(document.pictureInPictureEnabled) && hasVideo;
   const separate = async () => {
     const video =
       document.querySelector<HTMLVideoElement>('.room-screen-focus video') ??
       document.querySelector<HTMLVideoElement>('.discord-voice-page video');
-    if (!video || video.readyState < 2) throw new Error('Video henüz hazır değil.');
+    if (!video || video.readyState < 2) throw new Error(t('Video henüz hazır değil.'));
     if (document.pictureInPictureElement) await document.exitPictureInPicture();
     else await video.requestPictureInPicture();
   };
@@ -28,15 +28,15 @@ export function VoiceRoomViewActions({ notify }: { notify(message: string): void
   return (
     <div className="room-view-actions">
       <IconButton
-        label="Videoyu ayrı pencerede aç"
+        label={t('Videoyu ayrı pencerede aç')}
         disabled={!pip}
-        title={!pip ? 'Bir kamera veya ekran paylaşımı videosu gerekli.' : undefined}
+        title={!pip ? t('Bir kamera veya ekran paylaşımı videosu gerekli.') : undefined}
         onClick={() => run(separate())}
       >
         <ExternalLink size={19} />
       </IconButton>
       <IconButton
-        label={fullscreen ? 'Tam ekrandan çık' : 'Tam ekran'}
+        label={fullscreen ? t('Tam ekrandan çık') : t('Tam ekran')}
         disabled={!document.fullscreenEnabled}
         onClick={() =>
           run(

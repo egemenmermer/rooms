@@ -12,6 +12,9 @@ permissions:
 concurrency:
   group: public-package-${{ github.ref }}
   cancel-in-progress: true
+env:
+  # Native checks read the Turkish interface; runners are set up in English.
+  ROOMS_LOCALE: tr
 jobs:
   package-resources:
     if: github.event_name != 'workflow_dispatch' || !inputs.windows_installer

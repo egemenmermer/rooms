@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { SocialUser } from '@rooms/social';
 import { useCommunity } from './community';
+import { locale, t } from './i18n';
 import { queryClient } from './query-client';
 import {
   deserializeMentions,
@@ -52,8 +53,8 @@ export function useMentionInput(value: string, setValue: (value: string) => void
       (p) =>
         query !== null &&
         `${p.displayName} ${p.username}`
-          .toLocaleLowerCase('tr')
-          .includes(query.toLocaleLowerCase('tr')),
+          .toLocaleLowerCase(locale)
+          .includes(query.toLocaleLowerCase(locale)),
     )
     .slice(0, 8);
   useEffect(() => {
@@ -113,14 +114,19 @@ export function useMentionInput(value: string, setValue: (value: string) => void
       document.getElementById(`${pickerId}-${index}`)?.scrollIntoView?.({ block: 'nearest' });
   }, [index, open, pickerId]);
   const menu = open ? (
-    <div className="mention-picker" role="listbox" id={pickerId} aria-label="Etiketlenecek kişiler">
+    <div
+      className="mention-picker"
+      role="listbox"
+      id={pickerId}
+      aria-label={t('Etiketlenecek kişiler')}
+    >
       {members.isLoading ? (
-        <span role="status">Kişiler yükleniyor…</span>
+        <span role="status">{t('Kişiler yükleniyor…')}</span>
       ) : members.error ? (
-        <span role="status">Üye listesi alınamadı. Görünen kişilerden seçebilirsin.</span>
+        <span role="status">{t('Üye listesi alınamadı. Görünen kişilerden seçebilirsin.')}</span>
       ) : null}
       {!people.length && !members.isLoading ? (
-        <span>Eşleşen kişi yok.</span>
+        <span>{t('Eşleşen kişi yok.')}</span>
       ) : (
         people.map((p, i) => (
           <button

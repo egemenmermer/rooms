@@ -41,7 +41,8 @@ const profileId = `qa-${randomUUID()}`;
 assert(/^[a-zA-Z0-9-]{1,40}$/.test(profileId));
 const expectedProfile = resolve(process.env.APPDATA, 'ROOMS', profileId);
 const executable = join(installDir, 'ROOMS.exe');
-const env = { ...process.env, ROOMS_PROFILE: profileId };
+// The checks read Turkish text; CI runners are set up in English.
+const env = { ROOMS_LOCALE: 'tr', ...process.env, ROOMS_PROFILE: profileId };
 delete env.ELECTRON_RUN_AS_NODE;
 delete env.ROOMS_DEV_URL;
 const launch = async () => {

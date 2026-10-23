@@ -1,3 +1,5 @@
+import { t } from './i18n';
+
 /** Canonical bounded PCM WAV; avoids uploading opaque codecs to the access service. */
 export function encodeSoundboard(buffer: AudioBuffer): string {
   if (
@@ -7,7 +9,7 @@ export function encodeSoundboard(buffer: AudioBuffer): string {
     buffer.numberOfChannels < 1 ||
     buffer.numberOfChannels > 2
   )
-    throw Error('En fazla 8 saniyelik mono veya stereo ses seç.');
+    throw Error(t('En fazla 8 saniyelik mono veya stereo ses seç.'));
   const channels = buffer.numberOfChannels,
     size = buffer.length * channels * 2,
     bytes = new Uint8Array(44 + size),
@@ -45,7 +47,7 @@ export function encodeSoundboard(buffer: AudioBuffer): string {
 }
 export function soundboardBytes(base64: string): ArrayBuffer {
   const value = atob(base64);
-  if (value.length > 2_000_000) throw Error('Ses dosyası çok büyük.');
+  if (value.length > 2_000_000) throw Error(t('Ses dosyası çok büyük.'));
   const bytes = new Uint8Array(value.length);
   for (let i = 0; i < value.length; i++) bytes[i] = value.charCodeAt(i);
   return bytes.buffer;

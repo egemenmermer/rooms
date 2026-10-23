@@ -1,4 +1,4 @@
-import { tr } from './i18n';
+import { t, tr } from './i18n';
 import { useEffect } from 'react';
 import { useRooms } from './store';
 import { useRealtime } from './realtime';
@@ -12,7 +12,11 @@ import {
 /** The room hint names the shortcut this listener chose, not the default. */
 export function PushToTalkNotice() {
   const shortcut = useRooms((s) => s.preferences.pushToTalkKey);
-  return <span>Bas konuş açık · {formatPushToTalkKey(pushToTalkKey(shortcut))}</span>;
+  return (
+    <span>
+      {t('Bas konuş açık · {key}', { key: formatPushToTalkKey(pushToTalkKey(shortcut)) })}
+    </span>
+  );
 }
 /** A held key owns only the microphone it enabled. Key release and focus loss always remute it. */
 export function PushToTalk({ notify }: { notify(message: string): void }) {

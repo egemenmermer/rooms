@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MusicLyrics as Lyrics } from '../../../packages/shared-contracts/src/music-lyrics';
+import { t } from './i18n';
 export function MusicLyrics({
   channelId,
   trackId,
@@ -54,30 +55,30 @@ export function MusicLyrics({
         disabled={!window.rooms?.music.lyrics}
         title={
           !window.rooms?.music.lyrics
-            ? 'Şarkı sözleri için güncel masaüstü uygulaması gerekiyor.'
+            ? t('Şarkı sözleri için güncel masaüstü uygulaması gerekiyor.')
             : undefined
         }
         onClick={() => setOpen(!open)}
       >
-        Şarkı sözleri
+        {t('Şarkı sözleri')}
       </button>
-      {!open && <small>Açınca şarkı adı ve süresi LRCLIB ile paylaşılır.</small>}
+      {!open && <small>{t('Açınca şarkı adı ve süresi LRCLIB ile paylaşılır.')}</small>}
       {open &&
         (failed ? (
           <p role="alert">
-            Şarkı sözleri alınamadı.{' '}
-            <button onClick={() => setAttempt(attempt + 1)}>Yeniden dene</button>
+            {t('Şarkı sözleri alınamadı.')}{' '}
+            <button onClick={() => setAttempt(attempt + 1)}>{t('Yeniden dene')}</button>
           </p>
         ) : !result ? (
-          <p role="status">Şarkı sözleri yükleniyor…</p>
+          <p role="status">{t('Şarkı sözleri yükleniyor…')}</p>
         ) : result.status === 'unavailable' ? (
-          <p>Bu kayıt için zamanlı şarkı sözü bulunamadı.</p>
+          <p>{t('Bu kayıt için zamanlı şarkı sözü bulunamadı.')}</p>
         ) : result.status === 'instrumental' ? (
-          <p>Bu kayıt enstrümantal olarak işaretlenmiş.</p>
+          <p>{t('Bu kayıt enstrümantal olarak işaretlenmiş.')}</p>
         ) : (
           <>
-            <small>LRCLIB · Şarkıyla birlikte ilerler</small>
-            <div className="dj-lyrics-lines" aria-label="Şarkı sözleri">
+            <small>{t('LRCLIB · Şarkıyla birlikte ilerler')}</small>
+            <div className="dj-lyrics-lines" aria-label={t('Şarkı sözleri')}>
               {result.lines.map((line, i) => (
                 <p
                   key={i}

@@ -2,6 +2,7 @@ import { useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
 import { Heart, Star, X } from 'lucide-react';
 import type { RmdbRating } from '../../../../packages/community-cinema/src/types';
 import { starsLabel, starsText } from './rmdb-model';
+import { t } from '../i18n';
 
 const FIVE = [0, 1, 2, 3, 4];
 
@@ -28,7 +29,7 @@ export function Stars({ rating, size = 14 }: { rating: number; size?: number }) 
     <span
       className="rmdb-stars"
       role="img"
-      aria-label={steps ? starsLabel(steps) : 'Puan yok'}
+      aria-label={steps ? starsLabel(steps) : t('Puan yok')}
       style={{ '--star': `${size}px` } as CSSProperties}
     >
       {FIVE.map((index) => (
@@ -92,7 +93,7 @@ export function StarPicker({
       <div
         className="rmdb-picker"
         role="radiogroup"
-        aria-label="Puanın"
+        aria-label={t('Puanın')}
         aria-disabled={disabled || undefined}
         style={{ '--star': '26px' } as CSSProperties}
         onKeyDown={disabled ? undefined : onKeyDown}
@@ -126,14 +127,14 @@ export function StarPicker({
         ))}
       </div>
       <span className="rmdb-picker-value" aria-hidden="true">
-        {shown ? `${starsText(shown)} / 5` : 'Puan ver'}
+        {shown ? `${starsText(shown)} / 5` : t('Puan ver')}
       </span>
       {value !== null && !disabled && (
         <button
           type="button"
           className="hall-icon-button rmdb-clear"
-          aria-label="Puanı temizle"
-          title="Puanı temizle (Delete)"
+          aria-label={t('Puanı temizle')}
+          title={t('Puanı temizle (Delete)')}
           onClick={() => pick(null, false)}
         >
           <X size={14} />
@@ -158,8 +159,8 @@ export function HeartButton({
       type="button"
       className={`rmdb-heart ${liked ? 'liked' : ''}`}
       aria-pressed={liked}
-      aria-label="Beğen"
-      title={liked ? 'Beğendin · geri almak için tıkla' : 'Beğen'}
+      aria-label={t('Beğen')}
+      title={liked ? t('Beğendin · geri almak için tıkla') : t('Beğen')}
       disabled={disabled}
       onClick={onToggle}
     >

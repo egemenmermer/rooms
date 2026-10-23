@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { SocialUser } from '@rooms/social';
 import { useCommunity } from './community';
 import { useFriendList } from './FriendsPage';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 /** Public relationship action; a closed or changed account never receives a delayed result. */
 export function FriendRequestButton({ user }: { user: SocialUser }) {
   const c = useCommunity(),
@@ -27,20 +27,20 @@ export function FriendRequestButton({ user }: { user: SocialUser }) {
   const handle = `${user.username}${user.discriminator ? '#' + user.discriminator : ''}`;
   const label =
     relation === 'friend'
-      ? 'Arkadaşsınız'
+      ? t('Arkadaşsınız')
       : relation === 'outgoing'
-        ? 'İstek gönderildi'
+        ? t('İstek gönderildi')
         : relation === 'incoming'
-          ? 'İsteği kabul et'
+          ? t('İsteği kabul et')
           : relation === 'blocked'
-            ? 'Engeli kaldır'
-            : 'Arkadaş ekle';
+            ? t('Engeli kaldır')
+            : t('Arkadaş ekle');
   const unavailable = fixture
-    ? 'Yerel görsel örnek arkadaşlık isteği göndermez.'
+    ? t('Yerel görsel örnek arkadaşlık isteği göndermez.')
     : !window.rooms?.social
-      ? 'Masaüstü uygulaması gerekli.'
+      ? t('Masaüstü uygulaması gerekli.')
       : !user.discriminator && relation !== 'blocked'
-        ? 'Kullanıcı etiketi alınamadı.'
+        ? t('Kullanıcı etiketi alınamadı.')
         : undefined;
   const send = async () => {
     if (busy || unavailable || !window.rooms) return;
@@ -78,7 +78,7 @@ export function FriendRequestButton({ user }: { user: SocialUser }) {
         title={unavailable}
         onClick={() => void send()}
       >
-        {busy ? 'Gönderiliyor…' : label}
+        {busy ? t('Gönderiliyor…') : label}
       </button>
       {error && <p role="alert">{error}</p>}
     </div>

@@ -40,7 +40,7 @@ import type {
 import { useCommunity } from './community';
 import type { SocialMessage } from '@rooms/social';
 import { useRealtime } from './realtime';
-import { tr, uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 import './reference-agent.css';
 import AgentAutomation from './AgentAutomation';
 import { ArtifactPreview } from './ArtifactPreview';
@@ -55,17 +55,17 @@ const DevelopmentSchedulesEntry = import.meta.env.DEV
   ? lazy(() => import('./dev/S62SchedulesEntry'))
   : null;
 const taskNames: Record<AgentTask['state'], string> = {
-  scheduled: tr('Zamanland\u0131'),
-  queued: tr('S\u0131rada'),
-  running: tr('\u00C7al\u0131\u015F\u0131yor'),
-  'awaiting-approval': 'Onay bekliyor',
-  completed: tr('Tamamland\u0131'),
-  failed: tr('Ba\u015Far\u0131s\u0131z'),
-  cancelled: tr('\u0130ptal edildi'),
-  interrupted: 'Kesildi',
+  scheduled: t('Zamanland\u0131'),
+  queued: t('S\u0131rada'),
+  running: t('\u00C7al\u0131\u015F\u0131yor'),
+  'awaiting-approval': t('Onay bekliyor'),
+  completed: t('Tamamland\u0131'),
+  failed: t('Ba\u015Far\u0131s\u0131z'),
+  cancelled: t('\u0130ptal edildi'),
+  interrupted: t('Kesildi'),
 };
 const date = (value: string) =>
-  new Date(value).toLocaleString('tr-TR', {
+  new Date(value).toLocaleString(locale, {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
@@ -130,10 +130,10 @@ function LegacyAgentSettings({
   };
   return (
     <div className={`agent-settings reference-agent-settings view-${view}`}>
-      <span className="reference-agent-kicker">KİŞİSEL</span>
-      <h2>{view === 'automation' ? 'Otomasyon modu' : 'Model bağlantılarım'}</h2>
+      <span className="reference-agent-kicker">{t('KİŞİSEL')}</span>
+      <h2>{view === 'automation' ? t('Otomasyon modu') : t('Model bağlantılarım')}</h2>
       <p className="reference-agent-description">
-        Görevlerin, başlatırken seçtiğin kişisel bağlantıyla çalışır.
+        {t('Görevlerin, başlatırken seçtiğin kişisel bağlantıyla çalışır.')}
       </p>
       <div className="service-status">
         <span className={`service-orb ${status?.connected ? 'online' : ''}`}>
@@ -142,15 +142,15 @@ function LegacyAgentSettings({
         <div>
           <strong>
             {status?.connected
-              ? tr('Ayr\u0131 sunucuya ba\u011Fl\u0131')
-              : tr('Agent sunucusu ba\u011Fl\u0131 de\u011Fil')}
+              ? t('Ayr\u0131 sunucuya ba\u011Fl\u0131')
+              : t('Agent sunucusu ba\u011Fl\u0131 de\u011Fil')}
           </strong>
           <p>
             {(status?.reason ? uiError(status.reason) : undefined) ??
-              tr('G\u00F6revler yaln\u0131zca ayr\u0131 sunucuda \u00E7al\u0131\u015F\u0131r.')}
+              t('G\u00F6revler yaln\u0131zca ayr\u0131 sunucuda \u00E7al\u0131\u015F\u0131r.')}
           </p>
         </div>
-        <IconButton label="Durumu yenile" onClick={() => void refresh()}>
+        <IconButton label={t('Durumu yenile')} onClick={() => void refresh()}>
           <RefreshCw size={16} />
         </IconButton>
       </div>
@@ -162,12 +162,12 @@ function LegacyAgentSettings({
             await window.rooms?.agent.configure({ url: url.trim(), token });
             setUrl('');
             setToken('');
-            notify(tr('Agent sunucusu kaydedildi. Ba\u011Flant\u0131 do\u011Frulan\u0131yor.'));
+            notify(t('Agent sunucusu kaydedildi. Ba\u011Flant\u0131 do\u011Frulan\u0131yor.'));
           });
         }}
       >
         <label className="field-label">
-          {tr('AGENT SUNUCUSU')}
+          {t('AGENT SUNUCUSU')}
           <input
             type="url"
             required
@@ -178,14 +178,14 @@ function LegacyAgentSettings({
           />
         </label>
         <label className="field-label">
-          {tr('K\u0130\u015E\u0130SEL AGENT ER\u0130\u015E\u0130M ANAHTARI')}
+          {t('K\u0130\u015E\u0130SEL AGENT ER\u0130\u015E\u0130M ANAHTARI')}
           <input
             type="password"
             required
             value={token}
             onChange={(e) => setToken(e.target.value)}
             autoComplete="new-password"
-            placeholder={tr('Sunucudan ald\u0131\u011F\u0131n eri\u015Fim anahtar\u0131')}
+            placeholder={t('Sunucudan ald\u0131\u011F\u0131n eri\u015Fim anahtar\u0131')}
           />
         </label>
         <button
@@ -193,22 +193,22 @@ function LegacyAgentSettings({
           disabled={busy || !window.rooms || !url.trim() || !token}
         >
           <Link2 size={15} />
-          {tr('Sunucuya ba\u011Flan')}
+          {t('Sunucuya ba\u011Flan')}
         </button>
       </form>
       <div className="section-heading">
         <div>
-          <h3>{'Model ba\u011Flant\u0131s\u0131'}</h3>
+          <h3>{t('Model bağlantısı')}</h3>
           <span>{''}</span>
         </div>
         <button
           className="text-button"
           disabled={!status?.connected || busy}
-          title={!status?.connected ? tr('\u00D6nce agent sunucusuna ba\u011Flan') : ''}
+          title={!status?.connected ? t('\u00D6nce agent sunucusuna ba\u011Flan') : ''}
           onClick={() => setShow(true)}
         >
           <Plus size={15} />
-          {tr('Ba\u011Flant\u0131 ekle')}
+          {t('Ba\u011Flant\u0131 ekle')}
         </button>
       </div>
       <div className="model-list">
@@ -230,25 +230,23 @@ function LegacyAgentSettings({
               <p>
                 {(m.reason ? uiError(m.reason) : undefined) ??
                   (m.status === 'connected'
-                    ? tr(
+                    ? t(
                         'Ba\u011Flant\u0131 kaydedildi. Model eri\u015Fimi g\u00F6rev s\u0131ras\u0131nda do\u011Frulan\u0131r.',
                       )
                     : m.status === 'login-required'
-                      ? tr(
-                          'Ayr\u0131 sunucuda resm\u00EE oturum a\u00E7\u0131lmas\u0131 gerekiyor.',
-                        )
-                      : tr('\u015Eu anda kullan\u0131lam\u0131yor.'))}
+                      ? t('Ayr\u0131 sunucuda resm\u00EE oturum a\u00E7\u0131lmas\u0131 gerekiyor.')
+                      : t('\u015Eu anda kullan\u0131lam\u0131yor.'))}
               </p>
             </div>
             <span className={`small-tag ${m.status === 'connected' ? 'real-tag' : ''}`}>
               {m.status === 'connected'
                 ? 'HAZIR'
                 : m.status === 'login-required'
-                  ? tr('G\u0130R\u0130\u015E GEREKL\u0130')
+                  ? t('G\u0130R\u0130\u015E GEREKL\u0130')
                   : 'KULLANILAMIYOR'}
             </span>
             <IconButton
-              label={`${m.label} bağlantısını kaldır`}
+              label={t('{label} bağlantısını kaldır', { label: m.label })}
               disabled={busy}
               onClick={() => void run(() => window.rooms!.agent.disconnectModel(m.id))}
             >
@@ -259,9 +257,9 @@ function LegacyAgentSettings({
         {!models.length && (
           <div className="inline-empty">
             <KeyRound size={25} />
-            <p>{tr('Hen\u00FCz ki\u015Fisel model ba\u011Flant\u0131n yok.')}</p>
+            <p>{t('Hen\u00FCz ki\u015Fisel model ba\u011Flant\u0131n yok.')}</p>
             <span>
-              {tr(
+              {t(
                 'OpenRouter anahtar\u0131nla veya sunucudaki Codex / Claude oturumunla ba\u011Flan.',
               )}
             </span>
@@ -274,7 +272,7 @@ function LegacyAgentSettings({
         </div>
       )}
       {show && (
-        <Modal title="Model bağlantısı ekle" onClose={closeModel}>
+        <Modal title={t('Model bağlantısı ekle')} onClose={closeModel}>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -314,23 +312,23 @@ function LegacyAgentSettings({
               ))}
             </div>
             <label className="field-label">
-              {tr('BA\u011ELANTI ADI')}
+              {t('BA\u011ELANTI ADI')}
               <input
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                placeholder={tr('Ki\u015Fisel modelim')}
+                placeholder={t('Ki\u015Fisel modelim')}
                 maxLength={80}
               />
             </label>
             <label className="field-label">
-              {tr('MODEL')}
+              {t('MODEL')}
               <input
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
                 placeholder={
                   provider === 'openrouter'
-                    ? tr('sa\u011Flay\u0131c\u0131/model')
-                    : tr('Sunucudaki resm\u00EE model ad\u0131')
+                    ? t('sa\u011Flay\u0131c\u0131/model')
+                    : t('Sunucudaki resm\u00EE model ad\u0131')
                 }
                 required
                 maxLength={120}
@@ -338,23 +336,23 @@ function LegacyAgentSettings({
             </label>
             {provider === 'openrouter' ? (
               <label className="field-label">
-                {tr('K\u0130\u015E\u0130SEL API ANAHTARI')}
+                {t('K\u0130\u015E\u0130SEL API ANAHTARI')}
                 <input
                   type="password"
                   autoComplete="new-password"
                   required
                   value={key}
                   onChange={(e) => setKey(e.target.value)}
-                  placeholder={tr('Anahtar\u0131n\u0131 yap\u0131\u015Ft\u0131r')}
+                  placeholder={t('Anahtar\u0131n\u0131 yap\u0131\u015Ft\u0131r')}
                 />
               </label>
             ) : (
               <div className="settings-note">
                 <KeyRound size={19} />
                 <p>
-                  {provider === 'codex' ? 'Codex' : 'Claude'}
-                  {tr(
-                    'ba\u011Flant\u0131s\u0131 ayr\u0131 sunucudaki resm\u00EE CLI oturumunu kullan\u0131r. Tayfa, ChatGPT veya Claude parolan\u0131 istemez.',
+                  {t(
+                    '{provider} bağlantısı ayrı sunucudaki resmî CLI oturumunu kullanır. Tayfa, ChatGPT veya Claude parolanı istemez.',
+                    { provider: provider === 'codex' ? 'Codex' : 'Claude' },
                   )}
                 </p>
               </div>
@@ -364,7 +362,7 @@ function LegacyAgentSettings({
               disabled={busy || !model.trim() || (provider === 'openrouter' && !key)}
             >
               {busy ? <LoaderCircle size={16} className="spin" /> : <Plus size={16} />}
-              {tr('Ba\u011Flant\u0131y\u0131 ekle')}
+              {t('Ba\u011Flant\u0131y\u0131 ekle')}
             </button>
           </form>
         </Modal>
@@ -379,7 +377,7 @@ export default function AgentWorkspace({ notify }: { notify(message: string): vo
     /^S(59|60|61)$/.test(new URLSearchParams(window.location.search).get('fixture') || '')
   )
     return (
-      <Suspense fallback={<div role="status">Bağlantılar hazırlanıyor…</div>}>
+      <Suspense fallback={<div role="status">{t('Bağlantılar hazırlanıyor…')}</div>}>
         <DevelopmentConnectionsEntry />
       </Suspense>
     );
@@ -388,7 +386,7 @@ export default function AgentWorkspace({ notify }: { notify(message: string): vo
     new URLSearchParams(window.location.search).get('fixture') === 'S62'
   )
     return (
-      <Suspense fallback={<div role="status">Görev görünümü hazırlanıyor…</div>}>
+      <Suspense fallback={<div role="status">{t('Görev görünümü hazırlanıyor…')}</div>}>
         <DevelopmentSchedulesEntry />
       </Suspense>
     );
@@ -397,7 +395,7 @@ export default function AgentWorkspace({ notify }: { notify(message: string): vo
     /^S5[678]$/.test(new URLSearchParams(window.location.search).get('fixture') || '')
   )
     return (
-      <Suspense fallback={<div role="status">Görev görünümü hazırlanıyor…</div>}>
+      <Suspense fallback={<div role="status">{t('Görev görünümü hazırlanıyor…')}</div>}>
         <DevelopmentTaskEntry notify={notify} />
       </Suspense>
     );
@@ -415,13 +413,13 @@ export function AgentReferenceSettingsContent({ view }: { view: AgentReferenceSe
     : undefined;
   if (DevelopmentConnectionsEntry && /^S(59|60|61)$/.test(fixture || ''))
     return (
-      <Suspense fallback={<div role="status">Bağlantılar hazırlanıyor…</div>}>
+      <Suspense fallback={<div role="status">{t('Bağlantılar hazırlanıyor…')}</div>}>
         <DevelopmentConnectionsEntry />
       </Suspense>
     );
   if (DevelopmentSchedulesEntry && fixture === 'S62')
     return (
-      <Suspense fallback={<div role="status">Görev görünümü hazırlanıyor…</div>}>
+      <Suspense fallback={<div role="status">{t('Görev görünümü hazırlanıyor…')}</div>}>
         <DevelopmentSchedulesEntry />
       </Suspense>
     );
@@ -507,13 +505,13 @@ function AgentWorkspaceScope({
         window.rooms.agent.memory(roomId),
       ]);
       if (scope.current !== roomId || request !== refreshSequence.current) return;
-      setTasks(jobs.filter((t) => t.roomId === roomId));
+      setTasks(jobs.filter((job) => job.roomId === roomId));
       setModels(connections.filter((m) => m.ownerId === next.userId));
       setMemories(notes.filter((n) => n.roomId === roomId));
       setModelId((id) =>
         connections.some((m) => m.id === id && m.ownerId === next.userId) ? id : '',
       );
-      setSelected((id) => (jobs.some((t) => t.id === id && t.roomId === roomId) ? id : null));
+      setSelected((id) => (jobs.some((job) => job.id === id && job.roomId === roomId) ? id : null));
     } catch (e) {
       if (scope.current === roomId && request === refreshSequence.current) {
         setError(reason(e));
@@ -591,11 +589,11 @@ function AgentWorkspaceScope({
       setModelId(choice);
   }, [location.search, models, community.user?.id]);
   const active = tasks.find(
-    (t) => t.roomId === roomId && t.id === selected && (tab !== 'schedules' || !!t.runAt),
+    (job) => job.roomId === roomId && job.id === selected && (tab !== 'schedules' || !!job.runAt),
   );
   const ready = !!roomId && !!status?.connected && status.userId === community.user?.id;
-  const roomTasks = tasks.filter((t) => t.roomId === roomId);
-  const visibleTasks = tab === 'schedules' ? roomTasks.filter((t) => !!t.runAt) : roomTasks;
+  const roomTasks = tasks.filter((job) => job.roomId === roomId);
+  const visibleTasks = tab === 'schedules' ? roomTasks.filter((job) => !!job.runAt) : roomTasks;
   const connectedModels = models.filter((m) => m.status === 'connected');
   if (settingsSurface) {
     if (tab === 'models') return <AgentModelsContainer />;
@@ -609,15 +607,17 @@ function AgentWorkspaceScope({
           roomId={roomId || ''}
           roomName={
             community.spaces.find((space) => space.id === community.activeSpaceId)?.name ||
-            'Topluluk'
+            t('Topluluk')
           }
-          channelName={community.channels.find((channel) => channel.id === roomId)?.name || 'Oda'}
+          channelName={
+            community.channels.find((channel) => channel.id === roomId)?.name || t('Oda')
+          }
           ready={ready}
           loading={loading}
           unavailableReason={
             error ||
             status?.reason ||
-            (!roomId ? 'Önce bir oda seç.' : 'Agent sunucusu bağlı değil.')
+            (!roomId ? t('Önce bir oda seç.') : t('Agent sunucusu bağlı değil.'))
           }
           bridge={window.rooms?.agent}
           onRefresh={refresh}
@@ -633,7 +633,7 @@ function AgentWorkspaceScope({
               ? async (id) => {
                   const permissions = await window.rooms!.social.channelPermissions(roomId!);
                   if (permissions.access !== 'allowed' || !permissions.effective?.view)
-                    throw new Error('Kaynak erişimi kaldırıldı.');
+                    throw new Error(t('Kaynak erişimi kaldırıldı.'));
                   const messages = await window.rooms!.social.messages(roomId!);
                   return (
                     messages.find((message) => message.id === id && message.channelId === roomId) ||
@@ -654,15 +654,17 @@ function AgentWorkspaceScope({
           roomId={roomId || ''}
           roomName={
             community.spaces.find((space) => space.id === community.activeSpaceId)?.name ||
-            'Topluluk'
+            t('Topluluk')
           }
-          channelName={community.channels.find((channel) => channel.id === roomId)?.name || 'Oda'}
+          channelName={
+            community.channels.find((channel) => channel.id === roomId)?.name || t('Oda')
+          }
           ready={ready}
           loading={loading}
           unavailableReason={
             error ||
             status?.reason ||
-            (!roomId ? 'Önce bir oda seç.' : 'Agent sunucusu bağlı değil.')
+            (!roomId ? t('Önce bir oda seç.') : t('Agent sunucusu bağlı değil.'))
           }
           canManage={status?.canManage === true}
           bridge={window.rooms?.agent}
@@ -679,13 +681,16 @@ function AgentWorkspaceScope({
         userId={community.user?.id || ''}
         roomId={roomId || ''}
         roomName={
-          community.spaces.find((space) => space.id === community.activeSpaceId)?.name || 'Topluluk'
+          community.spaces.find((space) => space.id === community.activeSpaceId)?.name ||
+          t('Topluluk')
         }
-        channelName={community.channels.find((channel) => channel.id === roomId)?.name || 'Oda'}
+        channelName={community.channels.find((channel) => channel.id === roomId)?.name || t('Oda')}
         ready={ready}
         loading={loading}
         unavailableReason={
-          error || status?.reason || (!roomId ? 'Önce bir oda seç.' : 'Agent sunucusu bağlı değil.')
+          error ||
+          status?.reason ||
+          (!roomId ? t('Önce bir oda seç.') : t('Agent sunucusu bağlı değil.'))
         }
         bridge={window.rooms?.agent}
         onRefresh={refresh}
@@ -701,7 +706,7 @@ function AgentWorkspaceScope({
             ? async (id) => {
                 const permissions = await window.rooms!.social.channelPermissions(roomId!);
                 if (permissions.access !== 'allowed' || !permissions.effective?.view)
-                  throw new Error('Kaynak erişimi kaldırıldı.');
+                  throw new Error(t('Kaynak erişimi kaldırıldı.'));
                 const messages = await window.rooms!.social.messages(roomId!);
                 return (
                   messages.find((message) => message.id === id && message.channelId === roomId) ||
@@ -722,13 +727,16 @@ function AgentWorkspaceScope({
         userId={community.user?.id || ''}
         roomId={roomId || ''}
         roomName={
-          community.spaces.find((space) => space.id === community.activeSpaceId)?.name || 'Topluluk'
+          community.spaces.find((space) => space.id === community.activeSpaceId)?.name ||
+          t('Topluluk')
         }
-        channelName={community.channels.find((channel) => channel.id === roomId)?.name || 'Oda'}
+        channelName={community.channels.find((channel) => channel.id === roomId)?.name || t('Oda')}
         ready={ready}
         loading={loading}
         unavailableReason={
-          error || status?.reason || (!roomId ? 'Önce bir oda seç.' : 'Agent sunucusu bağlı değil.')
+          error ||
+          status?.reason ||
+          (!roomId ? t('Önce bir oda seç.') : t('Agent sunucusu bağlı değil.'))
         }
         canManage={status?.canManage === true}
         bridge={window.rooms?.agent}
@@ -741,7 +749,7 @@ function AgentWorkspaceScope({
         task={active}
         models={models}
         userId={status!.userId!}
-        roomName={`${community.channels.find((channel) => channel.id === roomId)?.name || 'Oda'} · ${community.spaces.find((space) => space.id === community.activeSpaceId)?.name || 'Topluluk'}`}
+        roomName={`${community.channels.find((channel) => channel.id === roomId)?.name || t('Oda')} · ${community.spaces.find((space) => space.id === community.activeSpaceId)?.name || t('Topluluk')}`}
         bridge={window.rooms.agent}
         connected={ready}
         canManage={status?.canManage === true}
@@ -759,35 +767,36 @@ function AgentWorkspaceScope({
       <div className="page-intro">
         <div>
           <span className="reference-agent-kicker">
-            {tab === 'models' ? 'KİŞİSEL' : 'ODA ASİSTANI'}
+            {tab === 'models' ? t('KİŞİSEL') : t('ODA ASİSTANI')}
           </span>
           <h2>
             {tab === 'models'
-              ? 'Model bağlantılarım'
+              ? t('Model bağlantılarım')
               : tab === 'automation'
-                ? 'Otomasyon modu'
-                : 'Oda asistanı'}
+                ? t('Otomasyon modu')
+                : t('Oda asistanı')}
           </h2>
           <p className="reference-agent-description">
             {status?.executionHost === 'shared-rootless'
-              ? 'Görevler sunucudaki izole çalışma alanında çalışır.'
-              : 'Görevler ayrı Agent sunucusunda çalışır.'}
+              ? t('Görevler sunucudaki izole çalışma alanında çalışır.')
+              : t('Görevler ayrı Agent sunucusunda çalışır.')}
           </p>
         </div>
         <button className="button secondary small" onClick={() => navigate('/settings?tab=agent')}>
           <Bot size={16} />
-          Agent ayarları
+
+          {t('Agent ayarları')}
         </button>
       </div>
-      <nav className="reference-agent-tabs" aria-label="Asistan bölümleri">
+      <nav className="reference-agent-tabs" aria-label={t('Asistan bölümleri')}>
         {(
           [
-            ['tasks', 'Görevler'],
-            ['memory', 'Oda hafızası'],
-            ['schedules', 'Tek seferlik görevler'],
-            ['models', 'Model bağlantılarım'],
-            ['connections', 'Bağlı uygulamalar'],
-            ['automation', 'Otomasyon modu'],
+            ['tasks', t('Görevler')],
+            ['memory', t('Oda hafızası')],
+            ['schedules', t('Tek seferlik görevler')],
+            ['models', t('Model bağlantılarım')],
+            ['connections', t('Bağlı uygulamalar')],
+            ['automation', t('Otomasyon modu')],
           ] as const
         ).map(([value, label]) => (
           <button
@@ -809,18 +818,18 @@ function AgentWorkspaceScope({
                 icon={<Bot size={34} />}
                 title={
                   loading
-                    ? 'Bağlantı kontrol ediliyor'
+                    ? t('Bağlantı kontrol ediliyor')
                     : !roomId
-                      ? 'Önce bir oda seç'
-                      : 'Agent sunucusu bağlı değil'
+                      ? t('Önce bir oda seç')
+                      : t('Agent sunucusu bağlı değil')
                 }
               >
                 {!roomId
-                  ? tr(
+                  ? t(
                       'Agent g\u00F6revleri bir topluluk odas\u0131na aittir. Giri\u015F yap ve sohbet ya da ses odas\u0131 se\u00E7.',
                     )
                   : ((status?.reason ? uiError(status.reason) : undefined) ??
-                    tr(
+                    t(
                       'Ayr\u0131 agent sunucusuna ba\u011Fland\u0131ktan sonra burada ger\u00E7ek g\u00F6revler olu\u015Fturabilirsin.',
                     ))}
                 <button
@@ -830,8 +839,8 @@ function AgentWorkspaceScope({
                   }
                 >
                   {!roomId
-                    ? tr('Toplulu\u011Fa ba\u011Flan')
-                    : tr('Agent ba\u011Flant\u0131s\u0131n\u0131 kur')}
+                    ? t('Toplulu\u011Fa ba\u011Flan')
+                    : t('Agent ba\u011Flant\u0131s\u0131n\u0131 kur')}
                   <ArrowRight size={16} />
                 </button>
               </EmptyState>
@@ -850,26 +859,26 @@ function AgentWorkspaceScope({
                         Date.parse(runAt) <= Date.now() ||
                         Date.parse(runAt) > Date.now() + 365 * 86400000)
                     ) {
-                      setError('Gelecek bir yıl içinde geçerli tarih ve saat seç.');
+                      setError(t('Gelecek bir yıl içinde geçerli tarih ve saat seç.'));
                       return;
                     }
                     void run(async () => {
-                      const t = await window.rooms!.agent.submit({
+                      const created = await window.rooms!.agent.submit({
                         roomId,
                         prompt: prompt.trim(),
                         modelConnectionId: modelId,
                         ...(scheduled ? { runAt: new Date(runAt).toISOString() } : {}),
                       });
-                      setSelected(t.id);
+                      setSelected(created.id);
                       setPrompt('');
                       setRunAt('');
                       setScheduled(false);
-                      navigate(`/agent?tab=tasks&task=${encodeURIComponent(t.id)}`);
+                      navigate(`/agent?tab=tasks&task=${encodeURIComponent(created.id)}`);
                     });
                   }}
                 >
                   <label htmlFor="agent-prompt" className="eyebrow">
-                    {'G\u00D6REV'}
+                    {t('GÖREV')}
                   </label>
                   <textarea
                     id="agent-prompt"
@@ -877,17 +886,17 @@ function AgentWorkspaceScope({
                     onChange={(e) => setPrompt(e.target.value)}
                     maxLength={16000}
                     rows={3}
-                    placeholder={'G\u00F6rev yaz\u2026'}
+                    placeholder={t('Görev yaz…')}
                     required
                   />
                   <div className="agent-composer-controls">
                     <select
-                      aria-label={tr('G\u00F6rev modeli')}
+                      aria-label={t('G\u00F6rev modeli')}
                       required
                       value={modelId}
                       onChange={(e) => setModelId(e.target.value)}
                     >
-                      <option value="">{tr('Model se\u00E7')}</option>
+                      <option value="">{t('Model se\u00E7')}</option>
                       {connectedModels.map((m) => (
                         <option key={m.id} value={m.id}>
                           {m.label} · {m.model}
@@ -900,19 +909,19 @@ function AgentWorkspaceScope({
                       onClick={() => setScheduled((v) => !v)}
                     >
                       <Clock3 size={15} />
-                      {scheduled ? tr('Zamanlanm\u0131\u015F') : 'Daha sonra'}
+                      {scheduled ? t('Zamanlanm\u0131\u015F') : t('Daha sonra')}
                     </button>
                     <button
                       className="button primary small"
                       disabled={busy || !prompt.trim() || !modelId || (scheduled && !runAt)}
                     >
                       {busy ? <LoaderCircle size={15} className="spin" /> : <Send size={15} />}
-                      {tr('G\u00F6revi g\u00F6nder')}
+                      {t('G\u00F6revi g\u00F6nder')}
                     </button>
                   </div>
                   {scheduled && (
                     <label className="schedule-row">
-                      {tr('Bir kez \u00E7al\u0131\u015Ft\u0131r')}
+                      {t('Bir kez \u00E7al\u0131\u015Ft\u0131r')}
                       <input
                         type="datetime-local"
                         required
@@ -928,13 +937,13 @@ function AgentWorkspaceScope({
                   )}
                   {!connectedModels.length && (
                     <p className="inline-help">
-                      {tr('Haz\u0131r model yok.')}
+                      {t('Haz\u0131r model yok.')}
                       <button
                         type="button"
                         className="text-button"
                         onClick={() => navigate('/settings?tab=agent')}
                       >
-                        {tr('Kendi modelini ba\u011Fla')}
+                        {t('Kendi modelini ba\u011Fla')}
                       </button>
                     </p>
                   )}
@@ -945,16 +954,16 @@ function AgentWorkspaceScope({
                       className={tab === 'tasks' ? 'selected' : ''}
                       onClick={() => changeTab('tasks')}
                     >
-                      {tr('G\u00F6revler')}
+                      {t('G\u00F6revler')}
                       <span>{tasks.length}</span>
                     </button>
                     <button className="" onClick={() => changeTab('memory')}>
-                      {tr('Oda haf\u0131zas\u0131')}
+                      {t('Oda haf\u0131zas\u0131')}
                       <span>{memories.length}</span>
                     </button>
                   </div>
                   <IconButton
-                    label={tr('G\u00F6revleri yenile')}
+                    label={t('G\u00F6revleri yenile')}
                     disabled={busy}
                     onClick={() => void refresh()}
                   >
@@ -988,7 +997,7 @@ function AgentWorkspaceScope({
                           <div>
                             <strong>{task.prompt}</strong>
                             <small>
-                              {task.kind === 'reminder' ? tr('Hatırlatma') + ' · ' : ''}
+                              {task.kind === 'reminder' ? t('Hatırlatma') + ' · ' : ''}
                               {taskNames[task.state]} · {date(task.runAt ?? task.createdAt)}
                             </small>
                           </div>
@@ -1004,36 +1013,36 @@ function AgentWorkspaceScope({
                           </span>
                           <span>{date(active.createdAt)}</span>
                         </div>
-                        <span className="reference-agent-kicker">ODA GÖREVİ</span>
+                        <span className="reference-agent-kicker">{t('ODA GÖREVİ')}</span>
                         <h3>{active.prompt}</h3>
                         <dl className="reference-agent-metadata">
                           <div>
-                            <dt>Başlatan</dt>
-                            <dd>{active.ownerId === status?.userId ? 'Sen' : active.ownerId}</dd>
+                            <dt>{t('Başlatan')}</dt>
+                            <dd>{active.ownerId === status?.userId ? t('Sen') : active.ownerId}</dd>
                           </div>
                           <div>
-                            <dt>Kişisel bağlantı</dt>
+                            <dt>{t('Kişisel bağlantı')}</dt>
                             <dd>
                               {models.find((m) => m.id === active.modelConnectionId)?.label ??
                                 (active.kind === 'reminder'
-                                  ? 'Model gerektirmez'
-                                  : 'Başlatanın kişisel bağlantısı')}
+                                  ? t('Model gerektirmez')
+                                  : t('Başlatanın kişisel bağlantısı'))}
                             </dd>
                           </div>
                           <div>
-                            <dt>Oda</dt>
+                            <dt>{t('Oda')}</dt>
                             <dd>{active.roomId}</dd>
                           </div>
                         </dl>
                         {active.state === 'cancelled' && (
                           <p className="reference-agent-callout">
-                            Görev durduruldu. Tamamlanmış dış işlemler geri alınmaz.
+                            {t('Görev durduruldu. Tamamlanmış dış işlemler geri alınmaz.')}
                           </p>
                         )}
                         {active.kind === 'reminder' && (
                           <p className="inline-help">
                             <Clock3 size={14} />
-                            {tr(
+                            {t(
                               'Kaynak sohbete tek seferlik hatırlatma. Model bağlantısı gerektirmez.',
                             )}
                           </p>
@@ -1050,7 +1059,7 @@ function AgentWorkspaceScope({
                         )}
                         {active.result && (
                           <div className="task-result">
-                            <span className="eyebrow">{tr('SONU\u00C7')}</span>
+                            <span className="eyebrow">{t('SONU\u00C7')}</span>
                             <p>{active.result}</p>
                           </div>
                         )}
@@ -1066,20 +1075,21 @@ function AgentWorkspaceScope({
                                 document.getElementById('agent-prompt')?.focus();
                               }}
                             >
-                              Yeni görev için isteği kullan
+                              {t('Yeni görev için isteği kullan')}
                             </button>
                             <p className="inline-help">
-                              Model bağlantını seçip yeni görevi açıkça gönder. Önce dış işlem
-                              sonucunu kontrol et.
+                              {t(
+                                'Model bağlantını seçip yeni görevi açıkça gönder. Önce dış işlem sonucunu kontrol et.',
+                              )}
                             </p>
                           </>
                         )}
                         {active.state === 'completed' && !active.artifacts.length && (
-                          <p className="inline-help">Bu görev dosya oluşturmadı.</p>
+                          <p className="inline-help">{t('Bu görev dosya oluşturmadı.')}</p>
                         )}
                         {active.artifacts.length > 0 && (
                           <p className="inline-help">
-                            Kaynak mesaj listesi bu hizmette sunulmuyor.
+                            {t('Kaynak mesaj listesi bu hizmette sunulmuyor.')}
                           </p>
                         )}
                         {active.artifacts.map((a) => (
@@ -1094,17 +1104,17 @@ function AgentWorkspaceScope({
                               disabled={!window.rooms?.agent.previewArtifact}
                               onClick={() => setPreviewArtifactId(a.id)}
                             >
-                              Önizle
+                              {t('Önizle')}
                             </button>
                             <IconButton
-                              label={`${a.name} dosyasını indir`}
+                              label={t('{name} dosyasını indir', { name: a.name })}
                               disabled={busy}
                               onClick={() =>
                                 void run(async () =>
                                   notify(
                                     (await window.rooms!.agent.downloadArtifact(active.id, a.id))
-                                      ? 'Dosya kaydedildi.'
-                                      : 'Kaydetme iptal edildi.',
+                                      ? t('Dosya kaydedildi.')
+                                      : t('Kaydetme iptal edildi.'),
                                   ),
                                 )
                               }
@@ -1124,22 +1134,22 @@ function AgentWorkspaceScope({
                           )}
                         {active.state === 'interrupted' && active.uncertainOperation && (
                           <div className="approval-preview">
-                            <span className="eyebrow">{tr('İŞLEM SONUCU BELİRSİZ')}</span>
+                            <span className="eyebrow">{t('İŞLEM SONUCU BELİRSİZ')}</span>
                             <h4>{active.uncertainOperation.description}</h4>
                             <small>{active.uncertainOperation.tool}</small>
                             <pre>{active.uncertainOperation.preview}</pre>
                             <p>
-                              {tr(
+                              {t(
                                 'İşlem dış hizmette uygulanmış olabilir. Devam etmeden önce ilgili hizmetten sonucu kontrol et.',
                               )}
                             </p>
                             <label className="field-label">
-                              {tr('DOĞRULADIĞIN SONUÇ')}
+                              {t('DOĞRULADIĞIN SONUÇ')}
                               <textarea
                                 value={verifiedResult}
                                 onChange={(e) => setVerifiedResult(e.target.value)}
                                 maxLength={12000}
-                                placeholder={tr('Dış hizmette gördüğün sonucu buraya yaz…')}
+                                placeholder={t('Dış hizmette gördüğün sonucu buraya yaz…')}
                               />
                             </label>
                             <button
@@ -1155,7 +1165,7 @@ function AgentWorkspaceScope({
                                 )
                               }
                             >
-                              {tr('Doğrulanmış sonuçla devam et')}
+                              {t('Doğrulanmış sonuçla devam et')}
                             </button>
                             <label className="recovery-confirm">
                               <input
@@ -1163,7 +1173,7 @@ function AgentWorkspaceScope({
                                 checked={notApplied}
                                 onChange={(e) => setNotApplied(e.target.checked)}
                               />
-                              {tr('Dış hizmeti kontrol ettim; bu işlem uygulanmadı.')}
+                              {t('Dış hizmeti kontrol ettim; bu işlem uygulanmadı.')}
                             </label>
                             <button
                               className="button secondary small"
@@ -1177,14 +1187,14 @@ function AgentWorkspaceScope({
                                 )
                               }
                             >
-                              {tr('Uygulanmadığını onayla ve devam et')}
+                              {t('Uygulanmadığını onayla ve devam et')}
                             </button>
                           </div>
                         )}
                         <div className="button-row">
                           {active.state === 'awaiting-approval' && active.pendingApproval && (
                             <div className="approval-preview">
-                              <span className="eyebrow">{tr('ONAYIN BEKLEN\u0130YOR')}</span>
+                              <span className="eyebrow">{t('ONAYIN BEKLEN\u0130YOR')}</span>
                               <h4>{active.pendingApproval.description}</h4>
                               <small>{active.pendingApproval.tool}</small>
                               <pre>
@@ -1193,7 +1203,7 @@ function AgentWorkspaceScope({
                                   : JSON.stringify(active.pendingApproval.preview, null, 2)}
                               </pre>
                               <p>
-                                {tr(
+                                {t(
                                   'Devam etti\u011Finde yukar\u0131daki somut i\u015Flem, mevcut sunucu izinleriyle \u00E7al\u0131\u015Ft\u0131r\u0131l\u0131r.',
                                 )}
                               </p>
@@ -1203,11 +1213,11 @@ function AgentWorkspaceScope({
                             <button
                               className="button primary small"
                               disabled={busy}
-                              title="Onay yetkisini Agent sunucusu doğrular."
+                              title={t('Onay yetkisini Agent sunucusu doğrular.')}
                               onClick={() => void run(() => window.rooms!.agent.approve(active.id))}
                             >
                               <Check size={15} />
-                              {tr('G\u00F6reve devam et')}
+                              {t('G\u00F6reve devam et')}
                             </button>
                           )}
                           {[
@@ -1224,8 +1234,8 @@ function AgentWorkspaceScope({
                             >
                               <Square size={13} />
                               {active.kind === 'reminder'
-                                ? tr('Hatırlatmayı iptal et')
-                                : tr('G\u00F6revi iptal et')}
+                                ? t('Hatırlatmayı iptal et')
+                                : t('G\u00F6revi iptal et')}
                             </button>
                           )}
                         </div>
@@ -1235,7 +1245,7 @@ function AgentWorkspaceScope({
                 ) : (
                   <div className="inline-empty">
                     <Sparkles size={28} />
-                    <h3>{'Henüz görev yok'}</h3>
+                    <h3>{t('Henüz görev yok')}</h3>
                   </div>
                 )}
               </div>
@@ -1249,7 +1259,7 @@ function AgentWorkspaceScope({
         </>
       )}
       {confirmCancel && (
-        <Modal title="Görevi iptal et?" onClose={closeCancel}>
+        <Modal title={t('Görevi iptal et?')} onClose={closeCancel}>
           <p>{confirmCancel.prompt}</p>
           {confirmCancel.runAt && (
             <p>
@@ -1257,11 +1267,13 @@ function AgentWorkspaceScope({
             </p>
           )}
           <p className="reference-agent-description">
-            İptal, tamamlanmış dış işlemleri geri almaz. Geçmiş sonuçları ve oda mesajlarını silmez.
+            {t(
+              'İptal, tamamlanmış dış işlemleri geri almaz. Geçmiş sonuçları ve oda mesajlarını silmez.',
+            )}
           </p>
           <div className="button-row">
             <button className="button secondary" onClick={closeCancel} disabled={busy}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button secondary"
@@ -1273,7 +1285,7 @@ function AgentWorkspaceScope({
                 })
               }
             >
-              Görevi iptal et
+              {t('Görevi iptal et')}
             </button>
           </div>
           {error && <p role="alert">{error}</p>}
@@ -1355,7 +1367,7 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
   const view = query.get('view') || (props.fixture ? props.fixtureView : undefined);
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const format = (at: string, options: Intl.DateTimeFormatOptions) =>
-    new Date(at).toLocaleString('tr-TR', options);
+    new Date(at).toLocaleString(locale, options);
   const ready = props.ready && !invalidated,
     models = props.models.filter(
       (model) => model.ownerId === props.userId && model.status === 'connected',
@@ -1383,10 +1395,10 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
     ['scheduled', 'queued', 'running', 'awaiting-approval', 'interrupted'].includes(task.state);
   const editable = ready && !busy && !props.fixture && !!props.bridge;
   const disabledReason = props.fixture
-    ? 'Yerel demo önizlemesi hesap işlemi yapamaz.'
+    ? t('Yerel demo önizlemesi hesap işlemi yapamaz.')
     : invalidated
-      ? 'Oda erişimi yeniden doğrulanmalı.'
-      : props.unavailableReason || 'Agent bağlantısı gerekli.';
+      ? t('Oda erişimi yeniden doğrulanmalı.')
+      : props.unavailableReason || t('Agent bağlantısı gerekli.');
   const route = (view: string = 'list', task?: string) =>
     navigate(
       `${props.settingsMode ? '/settings?tab=schedules' : '/agent?tab=schedules'}${view ? `&view=${view}` : ''}${task ? `&scheduleTask=${encodeURIComponent(task)}` : ''}`,
@@ -1395,22 +1407,22 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
     if (!editable) return;
     const local = new Date(`${day}T${time}`);
     if (!day || !time || !Number.isFinite(local.getTime()) || local.getTime() <= Date.now()) {
-      setError('Gelecekte bir tarih ve saat seç.');
+      setError(t('Gelecekte bir tarih ve saat seç.'));
       return;
     }
     if (local.getTime() > Date.now() + 365 * 86400000) {
-      setError('Gelecek bir yıl içinde bir tarih ve saat seç.');
+      setError(t('Gelecek bir yıl içinde bir tarih ve saat seç.'));
       return;
     }
     // Reject normalized invalid calendar dates and DST gaps instead of silently changing the chosen time.
     const localDay = `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, '0')}-${String(local.getDate()).padStart(2, '0')}`;
     const localTime = `${String(local.getHours()).padStart(2, '0')}:${String(local.getMinutes()).padStart(2, '0')}`;
     if (localDay !== day || localTime !== time) {
-      setError('Bu tarih ve saat seçili saat diliminde geçerli değil.');
+      setError(t('Bu tarih ve saat seçili saat diliminde geçerli değil.'));
       return;
     }
     if (!prompt.trim() || !models.some((model) => model.id === modelId)) {
-      setError('Görev ve kendi hazır model bağlantını seç.');
+      setError(t('Görev ve kendi hazır model bağlantını seç.'));
       return;
     }
     const current = ++generation.current;
@@ -1425,7 +1437,7 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
       });
       if (!live.current || current !== generation.current) return;
       if (result.roomId !== props.roomId || result.ownerId !== props.userId || !result.runAt)
-        throw new Error('Planlanan görev makbuzu bu oda ve hesaba ait değil.');
+        throw new Error(t('Planlanan görev makbuzu bu oda ve hesaba ait değil.'));
       setReceipt(result);
       setReceiptKind('created');
       setPrompt('');
@@ -1446,7 +1458,7 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
       const result = await props.bridge!.cancel(task.id);
       if (!live.current || current !== generation.current) return;
       if (result.id !== task.id || result.roomId !== props.roomId)
-        throw new Error('İptal makbuzu bu göreve ait değil.');
+        throw new Error(t('İptal makbuzu bu göreve ait değil.'));
       setReceipt(result);
       setReceiptKind(result.state === 'cancelled' ? 'cancelled' : null);
       route(result.state === 'cancelled' ? 'cancelled' : undefined, result.id);
@@ -1460,14 +1472,14 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
   const notice =
     props.fixtureNotice ||
     (view === 'created' && receiptKind === 'created' && receipt
-      ? `Görev planlandı. ${date(receipt.runAt!)} · ${zone} · Bir kez.`
+      ? t('Görev planlandı. {value} · {zone} · Bir kez.', { value: date(receipt.runAt!), zone })
       : '');
   const connection = (task: AgentTask) =>
     task.kind === 'reminder'
-      ? 'Hatırlatma · Model gerektirmez'
+      ? t('Hatırlatma · Model gerektirmez')
       : props.models.find((model) => model.id === task.modelConnectionId)?.label ||
-        'Başlatanın kişisel bağlantısı';
-  const owner = (task: AgentTask) => (task.ownerId === props.userId ? 'Sen' : task.ownerId);
+        t('Başlatanın kişisel bağlantısı');
+  const owner = (task: AgentTask) => (task.ownerId === props.userId ? t('Sen') : task.ownerId);
   const openTask = (task: AgentTask) =>
     navigate(
       `/agent?task=${encodeURIComponent(task.id)}${task.state === 'completed' ? '&view=result' : ''}`,
@@ -1483,7 +1495,7 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
           <span className="reference-agent-kicker">
             {props.roomName} / #{props.channelName}
           </span>
-          <h2>Tek seferlik görevler</h2>
+          <h2>{t('Tek seferlik görevler')}</h2>
         </div>
         <button
           className="button primary"
@@ -1492,10 +1504,11 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
           onClick={() => route('create')}
         >
           <Plus size={18} />
-          Görev planla
+
+          {t('Görev planla')}
         </button>
       </header>
-      {props.fixture && <span className="s62-demo-label">Yerel demo önizlemesi</span>}
+      {props.fixture && <span className="s62-demo-label">{t('Yerel demo önizlemesi')}</span>}
       {notice && ready && (
         <div className="s62-notice" role="status">
           <Check size={18} />
@@ -1505,9 +1518,9 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
       <div className="reference-agent-plan-summary">
         {(
           [
-            ['scheduled', 'Planlanan'],
-            ['completed', 'Tamamlanan'],
-            ['cancelled', 'İptal edilen'],
+            ['scheduled', t('Planlanan')],
+            ['completed', t('Tamamlanan')],
+            ['cancelled', t('İptal edilen')],
           ] as const
         ).map(([state, label]) => (
           <div key={state}>
@@ -1517,16 +1530,16 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
         ))}
       </div>
       <div className="s62-section-bar">
-        <strong>Görevler</strong>
+        <strong>{t('Görevler')}</strong>
         <span>{zone}</span>
       </div>
       {!ready ? (
         <div className="s62-empty" role="status">
           <Clock3 size={32} />
-          <h3>{props.loading ? 'Bağlantı kontrol ediliyor' : 'Görevler kullanılamıyor'}</h3>
+          <h3>{props.loading ? t('Bağlantı kontrol ediliyor') : t('Görevler kullanılamıyor')}</h3>
           <p>{disabledReason}</p>
           <button className="button secondary" onClick={() => navigate('/agent?tab=models')}>
-            Model bağlantıları
+            {t('Model bağlantıları')}
           </button>
         </div>
       ) : featured && !showEmpty ? (
@@ -1545,7 +1558,7 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
                     <div className="s62-calendar">
                       <strong>{format(card.runAt!, { day: 'numeric' })}</strong>
                       <span>
-                        {format(card.runAt!, { month: 'short' }).toLocaleUpperCase('tr-TR')}
+                        {format(card.runAt!, { month: 'short' }).toLocaleUpperCase(locale)}
                       </span>
                     </div>
                     <div className="s62-task-copy">
@@ -1553,7 +1566,7 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
                       <p>
                         <Clock3 size={13} />
                         <b>{format(card.runAt!, { hour: '2-digit', minute: '2-digit' })}</b> ·{' '}
-                        {zone} · Bir kez
+                        {t('{zone} · Bir kez', { zone })}
                       </p>
                       <p>
                         <UserRound size={13} />
@@ -1561,7 +1574,7 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
                       </p>
                     </div>
                     <span className={`s62-state ${card.state}`}>
-                      {card.kind === 'reminder' ? 'Hatırlatma · ' : ''}
+                      {card.kind === 'reminder' ? t('Hatırlatma') + ' · ' : ''}
                       {taskNames[card.state]}
                     </span>
                   </div>
@@ -1575,10 +1588,10 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
                         disabled={busy}
                         onClick={() => route('cancel', card.id)}
                       >
-                        İptal et
+                        {t('İptal et')}
                       </button>
                     ) : card.state === 'cancelled' ? (
-                      <span className="s62-muted">İptal edildi</span>
+                      <span className="s62-muted">{t('İptal edildi')}</span>
                     ) : (
                       <button
                         className="text-button"
@@ -1587,7 +1600,7 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
                         onClick={() => openTask(card)}
                       >
                         <ArrowRight size={16} />
-                        {card.state === 'completed' ? 'Sonucu aç' : 'Görevi aç'}
+                        {card.state === 'completed' ? t('Sonucu aç') : t('Görevi aç')}
                       </button>
                     )}
                   </footer>
@@ -1596,7 +1609,7 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
                   <div className="s62-notice warning" role="alert">
                     {uiError(card.error)}
                     <button className="text-button" onClick={() => navigate('/agent?tab=models')}>
-                      Bağlantıları yönet
+                      {t('Bağlantıları yönet')}
                     </button>
                   </div>
                 )}
@@ -1606,18 +1619,19 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
       ) : (
         <div className="s62-empty">
           <Clock3 size={34} />
-          <h3>Planlanan görev yok</h3>
+          <h3>{t('Planlanan görev yok')}</h3>
           <button className="button primary" onClick={() => route('create')}>
             <Plus size={17} />
-            İlk görevi planla
+
+            {t('İlk görevi planla')}
           </button>
         </div>
       )}
       {ready && history.length > 0 && (
         <section className="s62-history">
           <header>
-            <h3>Geçmiş</h3>
-            <span>Son {history.length} görev</span>
+            <h3>{t('Geçmiş')}</h3>
+            <span>{t('Son {count} görev', { count: history.length })}</span>
           </header>
           {history.map((task) => (
             <div className="s62-history-row" key={task.id}>
@@ -1635,7 +1649,7 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
                 title={props.fixture ? disabledReason : undefined}
                 onClick={() => openTask(task)}
               >
-                Aç
+                {t('Aç')}
               </button>
             </div>
           ))}
@@ -1649,7 +1663,7 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
       {ready && view === 'create' && (
         <Modal
           className="s62-modal"
-          title="Tek seferlik görev planla"
+          title={t('Tek seferlik görev planla')}
           onClose={() => {
             if (!busy) route();
           }}
@@ -1666,9 +1680,9 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
               </div>
             )}
             <label className="field-label">
-              Asistan ne yapsın?
+              {t('Asistan ne yapsın?')}
               <textarea
-                aria-label="Asistan ne yapsın?"
+                aria-label={t('Asistan ne yapsın?')}
                 required
                 maxLength={12000}
                 value={prompt}
@@ -1677,9 +1691,9 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
             </label>
             <div className="s62-date-fields">
               <label className="field-label">
-                Tarih
+                {t('Tarih')}
                 <input
-                  aria-label="Tarih"
+                  aria-label={t('Tarih')}
                   type="date"
                   required
                   value={day}
@@ -1687,9 +1701,9 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
                 />
               </label>
               <label className="field-label">
-                Saat
+                {t('Saat')}
                 <input
-                  aria-label="Saat"
+                  aria-label={t('Saat')}
                   type="time"
                   required
                   value={time}
@@ -1698,18 +1712,18 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
               </label>
             </div>
             <label className="field-label">
-              Saat dilimi
-              <input readOnly value={zone} aria-label="Saat dilimi" />
+              {t('Saat dilimi')}
+              <input readOnly value={zone} aria-label={t('Saat dilimi')} />
             </label>
             <label className="field-label">
-              Kişisel model bağlantısı
+              {t('Kişisel model bağlantısı')}
               <select
-                aria-label="Kişisel model bağlantısı"
+                aria-label={t('Kişisel model bağlantısı')}
                 required
                 value={modelId}
                 onChange={(event) => setModelId(event.target.value)}
               >
-                <option value="">Bağlantı seç</option>
+                <option value="">{t('Bağlantı seç')}</option>
                 {models.map((model) => (
                   <option value={model.id} key={model.id}>
                     {model.label} · {model.model}
@@ -1717,10 +1731,11 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
                 ))}
               </select>
             </label>
-            {!models.length && <p>Hazır kişisel model bağlantısı yok.</p>}
+            {!models.length && <p>{t('Hazır kişisel model bağlantısı yok.')}</p>}
             <div className="reference-agent-callout">
               <Clock3 size={16} />
-              Bir kez çalışır. Dış işlemler sunucunun onay politikasına tabidir.
+
+              {t('Bir kez çalışır. Dış işlemler sunucunun onay politikasına tabidir.')}
             </div>
             <div className="button-row">
               <button
@@ -1729,7 +1744,7 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
                 disabled={busy}
                 onClick={() => route()}
               >
-                Vazgeç
+                {t('Vazgeç')}
               </button>
               <button
                 className="button primary"
@@ -1737,7 +1752,8 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
                 title={!editable ? disabledReason : undefined}
               >
                 <Clock3 size={16} />
-                Görevi planla
+
+                {t('Görevi planla')}
               </button>
             </div>
           </form>
@@ -1746,7 +1762,7 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
       {ready && view === 'cancel' && featured && canCancel(featured) && (
         <Modal
           className="s62-modal s62-cancel-modal"
-          title="Planlanan görevi iptal et?"
+          title={t('Planlanan görevi iptal et?')}
           onClose={() => {
             if (!busy) route();
           }}
@@ -1760,15 +1776,17 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
             </div>
           )}
           <div className="s62-timezone">
-            <span>Saat dilimi</span>
+            <span>{t('Saat dilimi')}</span>
             <strong>{zone}</strong>
           </div>
           <p className="reference-agent-description">
-            Tamamlanmış dış işlemler geri alınmaz. Geçmiş sonuçları ve oda mesajları silinmez.
+            {t(
+              'Tamamlanmış dış işlemler geri alınmaz. Geçmiş sonuçları ve oda mesajları silinmez.',
+            )}
           </p>
           <div className="button-row">
             <button className="button secondary" disabled={busy} onClick={() => route()}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button danger"
@@ -1776,7 +1794,7 @@ export function AgentSchedulesSurface(props: AgentSchedulesProps) {
               title={!editable ? disabledReason : undefined}
               onClick={() => void cancel(featured)}
             >
-              Görevi iptal et
+              {t('Görevi iptal et')}
             </button>
           </div>
         </Modal>
@@ -1815,7 +1833,7 @@ function useAgentPrivateScope(scopeKey: string) {
 }
 const providerName = (provider: AgentProvider) =>
   provider === 'codex' ? 'Codex' : provider === 'claude' ? 'Claude Code' : 'OpenRouter';
-const referenceFixtureReason = 'Yerel demo önizlemesi hesap işlemi yapamaz.';
+const referenceFixtureReason = t('Yerel demo önizlemesi hesap işlemi yapamaz.');
 export interface AgentModelsProps {
   executionHost?: AgentStatus['executionHost'];
   models: ModelConnection[];
@@ -1854,7 +1872,7 @@ export function AgentModelsSurface(props: AgentModelsProps) {
   const editable = ready && !props.fixture && !!props.bridge && !busy,
     disabledReason = props.fixture
       ? referenceFixtureReason
-      : props.unavailableReason || 'Önce kişisel Agent sunucusuna bağlan.';
+      : props.unavailableReason || t('Önce kişisel Agent sunucusuna bağlan.');
   useEffect(() => {
     setApiKey('');
     setLabel('');
@@ -1906,11 +1924,11 @@ export function AgentModelsSurface(props: AgentModelsProps) {
       });
       if (!scope.current(ticket)) return;
       if (result.ownerId !== props.userId || result.provider !== provider)
-        throw new Error('Bağlantı makbuzu bu hesaba ait değil.');
+        throw new Error(t('Bağlantı makbuzu bu hesaba ait değil.'));
       setReceipt(
         result.status === 'connected'
-          ? 'Bağlantı kaydedildi. Model erişimi görev sırasında doğrulanır.'
-          : 'Bağlantı kaydedildi. Resmî sunucu oturumu gerekli.',
+          ? t('Bağlantı kaydedildi. Model erişimi görev sırasında doğrulanır.')
+          : t('Bağlantı kaydedildi. Resmî sunucu oturumu gerekli.'),
       );
       setLabel('');
       setModel('');
@@ -1920,20 +1938,20 @@ export function AgentModelsSurface(props: AgentModelsProps) {
   const unavailable = models.find((item) => item.status !== 'connected'),
     fixtureChoice = props.fixture && props.fixtureView === 'choose';
   const banner = scope.invalidated
-    ? 'Erişim yeniden doğrulanmalı.'
+    ? t('Erişim yeniden doğrulanmalı.')
     : (unavailable?.reason ? uiError(unavailable.reason) : undefined) ||
-      (fixtureChoice ? 'Bu görev için kendi bağlantını seç.' : undefined);
+      (fixtureChoice ? t('Bu görev için kendi bağlantını seç.') : undefined);
   return (
     <section className="reference-personal-models" data-fixture={props.fixture || undefined}>
       <header className="s59-heading">
-        <span className="reference-agent-kicker">Kişisel</span>
-        <h2>Model bağlantılarım</h2>
-        <p>Görevler, başlatırken seçtiğin kişisel bağlantıyla çalışır.</p>
+        <span className="reference-agent-kicker">{t('Kişisel')}</span>
+        <h2>{t('Model bağlantılarım')}</h2>
+        <p>{t('Görevler, başlatırken seçtiğin kişisel bağlantıyla çalışır.')}</p>
       </header>
-      {props.fixture && <span className="s59-demo-label">Yerel demo önizlemesi</span>}
+      {props.fixture && <span className="s59-demo-label">{t('Yerel demo önizlemesi')}</span>}
       {!ready && (
         <div className="reference-agent-callout warning" role="status">
-          {props.loading ? 'Bağlantı kontrol ediliyor' : disabledReason}
+          {props.loading ? t('Bağlantı kontrol ediliyor') : disabledReason}
         </div>
       )}
       {banner && ready && (
@@ -1970,20 +1988,20 @@ export function AgentModelsSurface(props: AgentModelsProps) {
                   className={`s59-badge ${primary?.status === 'connected' ? 'ready' : primary ? 'warning' : ''}`}
                 >
                   {primary?.status === 'connected'
-                    ? 'Kaydedildi'
+                    ? t('Kaydedildi')
                     : primary?.status === 'login-required'
-                      ? 'Giriş gerekli'
+                      ? t('Giriş gerekli')
                       : primary
-                        ? 'Kullanılamıyor'
-                        : 'Bağlı değil'}
+                        ? t('Kullanılamıyor')
+                        : t('Bağlı değil')}
                 </span>
               </header>
               <p>
                 {provider === 'openrouter'
-                  ? 'Kendi API anahtarın. Diğer üyelerle paylaşılmaz.'
+                  ? t('Kendi API anahtarın. Diğer üyelerle paylaşılmaz.')
                   : providerUnavailable
                     ? uiError('SHARED_HOST_API_MODEL_REQUIRED')
-                    : 'Ayrı sunucudaki kişisel resmî CLI oturumu kullanılır.'}
+                    : t('Ayrı sunucudaki kişisel resmî CLI oturumu kullanılır.')}
               </p>
               {provider === 'openrouter' ? (
                 <form
@@ -1995,15 +2013,15 @@ export function AgentModelsSurface(props: AgentModelsProps) {
                 >
                   <div className="s59-input-row">
                     <label className="field-label">
-                      API anahtarı
+                      {t('API anahtarı')}
                       <input
                         type="password"
                         autoComplete="new-password"
                         value={apiKey}
                         disabled={!editable}
                         onChange={(event) => setApiKey(event.target.value)}
-                        aria-label="OpenRouter API anahtarı"
-                        placeholder={primary ? 'Yeni anahtar ekle' : 'API anahtarını gir'}
+                        aria-label={t('OpenRouter API anahtarı')}
+                        placeholder={primary ? t('Yeni anahtar ekle') : t('API anahtarını gir')}
                         maxLength={2048}
                       />
                     </label>
@@ -2014,32 +2032,33 @@ export function AgentModelsSurface(props: AgentModelsProps) {
                         !editable
                           ? disabledReason
                           : !model.trim()
-                            ? 'Model adı gerekli.'
+                            ? t('Model adı gerekli.')
                             : undefined
                       }
                     >
-                      {busy ? <LoaderCircle size={16} /> : <Plus size={16} />}Bağlantı ekle
+                      {busy ? <LoaderCircle size={16} /> : <Plus size={16} />}
+                      {t('Bağlantı ekle')}
                     </button>
                   </div>
                   <div className="s59-profile-fields">
                     <label className="field-label">
-                      Bağlantı adı
+                      {t('Bağlantı adı')}
                       <input
                         value={label}
                         disabled={!editable}
                         onChange={(event) => setLabel(event.target.value)}
-                        placeholder="Bağlantı adı"
+                        placeholder={t('Bağlantı adı')}
                         maxLength={80}
                       />
                     </label>
                     <label className="field-label">
-                      Model
+                      {t('Model')}
                       <input
                         aria-label="OpenRouter model"
                         value={model}
                         disabled={!editable}
                         onChange={(event) => setModel(event.target.value)}
-                        placeholder="sağlayıcı/model"
+                        placeholder={t('sağlayıcı/model')}
                         maxLength={160}
                         required
                       />
@@ -2050,7 +2069,7 @@ export function AgentModelsSurface(props: AgentModelsProps) {
                 <div className="s59-integration-footer">
                   <span>
                     <UserRound size={15} />
-                    {primary ? 'Kişisel bağlantın' : 'Henüz bağlantı eklenmedi'}
+                    {primary ? t('Kişisel bağlantın') : t('Henüz bağlantı eklenmedi')}
                   </span>
                   <button
                     className="button secondary"
@@ -2070,7 +2089,7 @@ export function AgentModelsSurface(props: AgentModelsProps) {
                     }}
                   >
                     <ExternalLink size={16} />
-                    {primary ? 'Girişi yönet' : 'Resmî oturum bağlantısı'}
+                    {primary ? t('Girişi yönet') : t('Resmî oturum bağlantısı')}
                   </button>
                 </div>
               )}
@@ -2083,12 +2102,12 @@ export function AgentModelsSurface(props: AgentModelsProps) {
                       {item.reason
                         ? uiError(item.reason)
                         : item.status === 'connected'
-                          ? 'Model erişimi görev sırasında doğrulanır.'
-                          : 'Resmî oturum gerekli.'}
+                          ? t('Model erişimi görev sırasında doğrulanır.')
+                          : t('Resmî oturum gerekli.')}
                     </small>
                   </div>
                   <IconButton
-                    label={`${item.label} bağlantısını kaldır`}
+                    label={t('{label} bağlantısını kaldır', { label: item.label })}
                     disabled={!editable}
                     onClick={() => setRemove(item)}
                   >
@@ -2106,19 +2125,20 @@ export function AgentModelsSurface(props: AgentModelsProps) {
         );
       })}
       <section className="s59-task-choice">
-        <h3>Yeni görevde kullan</h3>
+        <h3>{t('Yeni görevde kullan')}</h3>
         <div>
           <label htmlFor="s59-model-choice">
-            Kişisel bağlantın<small>Her görev için açıkça seçilir.</small>
+            {t('Kişisel bağlantın')}
+            <small>{t('Her görev için açıkça seçilir.')}</small>
           </label>
           <select
             id="s59-model-choice"
-            aria-label="Kişisel bağlantın"
+            aria-label={t('Kişisel bağlantın')}
             value={selected}
             disabled={!ready || !connected.length}
             onChange={(event) => setSelected(event.target.value)}
           >
-            <option value="">Bağlantı seç</option>
+            <option value="">{t('Bağlantı seç')}</option>
             {connected.map((item) => (
               <option key={item.id} value={item.id}>
                 {providerName(item.provider)} · {item.label}
@@ -2133,23 +2153,25 @@ export function AgentModelsSurface(props: AgentModelsProps) {
             props.fixture
               ? referenceFixtureReason
               : !selected
-                ? 'Kendi hazır bağlantını seç.'
+                ? t('Kendi hazır bağlantını seç.')
                 : undefined
           }
           onClick={() => navigate(`/agent?tab=tasks&model=${encodeURIComponent(selected)}`)}
         >
           <ArrowRight size={17} />
-          Bu bağlantıyla yeni görev
+
+          {t('Bu bağlantıyla yeni görev')}
         </button>
       </section>
       <footer className="s59-footer">
         <ShieldCheck size={14} />
-        Bağlantı hatalarında hesap değiştirilmez. Tekrar başlatma açık bir eylemdir.
+
+        {t('Bağlantı hatalarında hesap değiştirilmez. Tekrar başlatma açık bir eylemdir.')}
       </footer>
       {login && ready && (
         <Modal
           className="s59-modal"
-          title="Resmî sunucu oturumu"
+          title={t('Resmî sunucu oturumu')}
           onClose={() => {
             if (!busy) {
               setLogin(null);
@@ -2159,11 +2181,17 @@ export function AgentModelsSurface(props: AgentModelsProps) {
           }}
         >
           <span className={`s59-provider-symbol ${login}`}>{login === 'codex' ? 'C' : 'CC'}</span>
-          <p>{providerName(login)} girişini ayrı Agent sunucusunda tamamla.</p>
+          <p>
+            {t('{provider} girişini ayrı Agent sunucusunda tamamla.', {
+              provider: providerName(login),
+            })}
+          </p>
           <div className="reference-agent-callout">
             <LockKeyhole size={18} />
-            Tayfa parola veya abonelik erişim bilgisi istemez. Giriş başlatma bağlantısı bu hizmette
-            sunulmuyor.
+
+            {t(
+              'Tayfa parola veya abonelik erişim bilgisi istemez. Giriş başlatma bağlantısı bu hizmette sunulmuyor.',
+            )}
           </div>
           <form
             onSubmit={(event) => {
@@ -2172,7 +2200,7 @@ export function AgentModelsSurface(props: AgentModelsProps) {
             }}
           >
             <label className="field-label">
-              Bağlantı adı
+              {t('Bağlantı adı')}
               <input
                 value={label}
                 disabled={!editable}
@@ -2181,9 +2209,9 @@ export function AgentModelsSurface(props: AgentModelsProps) {
               />
             </label>
             <label className="field-label">
-              Resmî model adı
+              {t('Resmî model adı')}
               <input
-                aria-label="Resmî model adı"
+                aria-label={t('Resmî model adı')}
                 required
                 value={model}
                 disabled={!editable}
@@ -2198,7 +2226,7 @@ export function AgentModelsSurface(props: AgentModelsProps) {
                 disabled={busy}
                 onClick={() => setLogin(null)}
               >
-                İptal
+                {t('İptal')}
               </button>
               <button
                 className="button secondary"
@@ -2208,14 +2236,15 @@ export function AgentModelsSurface(props: AgentModelsProps) {
                 onClick={() => void perform(async () => {})}
               >
                 <RefreshCw size={16} />
-                Durumu yenile
+
+                {t('Durumu yenile')}
               </button>
               <button
                 className="button primary"
                 disabled={!editable || !model.trim()}
                 title={!editable ? disabledReason : undefined}
               >
-                Bağlantı kaydet
+                {t('Bağlantı kaydet')}
               </button>
             </div>
           </form>
@@ -2225,7 +2254,7 @@ export function AgentModelsSurface(props: AgentModelsProps) {
       {remove && ready && (
         <Modal
           className="s59-modal"
-          title="Model bağlantısını kaldır?"
+          title={t('Model bağlantısını kaldır?')}
           onClose={() => {
             if (!busy) setRemove(null);
           }}
@@ -2233,10 +2262,10 @@ export function AgentModelsSurface(props: AgentModelsProps) {
           <p>
             {remove.label} · {remove.model}
           </p>
-          <p>Bu bağlantıyla çalışan veya planlanan görevler sunucuda iptal edilir.</p>
+          <p>{t('Bu bağlantıyla çalışan veya planlanan görevler sunucuda iptal edilir.')}</p>
           <div className="button-row">
             <button className="button secondary" disabled={busy} onClick={() => setRemove(null)}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button danger"
@@ -2250,7 +2279,7 @@ export function AgentModelsSurface(props: AgentModelsProps) {
                 });
               }}
             >
-              Bağlantıyı kaldır
+              {t('Bağlantıyı kaldır')}
             </button>
           </div>
           {error && <p role="alert">{error}</p>}
@@ -2280,7 +2309,7 @@ function AgentModelsContainer() {
     const ticket = scope.ticket();
     setLoading(true);
     try {
-      if (!window.rooms?.agent) throw new Error('Masaüstü Agent bağlantısı gerekli.');
+      if (!window.rooms?.agent) throw new Error(t('Masaüstü Agent bağlantısı gerekli.'));
       const status = await window.rooms.agent.status();
       if (!scope.current(ticket)) return;
       if (!status.connected || status.userId !== community.user?.id) {
@@ -2328,10 +2357,10 @@ function AgentModelsContainer() {
           onClick={() => void refresh()}
           disabled={loading}
         >
-          Durumu yenile
+          {t('Durumu yenile')}
         </button>
         <details>
-          <summary>Agent sunucusu</summary>
+          <summary>{t('Agent sunucusu')}</summary>
           <LegacyAgentSettings view="all" notify={() => {}} />
         </details>
       </div>
@@ -2363,36 +2392,36 @@ export function AgentConnectionsSurface(props: AgentConnectionsProps) {
       ? props.authority
       : null;
   const modal = view === 'scope' ? 'github' : view === 'drive_scope' ? 'drive' : null;
-  const unavailable = 'Hesap yetkilendirme ve kapsam değiştirme API’si bu hizmette sunulmuyor.';
+  const unavailable = t('Hesap yetkilendirme ve kapsam değiştirme API’si bu hizmette sunulmuyor.');
   const accessText = (read: boolean, write: boolean) =>
     read && write
       ? authority?.yolo
-        ? 'Okuma + yazma'
-        : 'Okuma + onaylı yazma'
+        ? t('Okuma + yazma')
+        : t('Okuma + onaylı yazma')
       : read
-        ? 'Yalnızca okuma'
+        ? t('Yalnızca okuma')
         : write
-          ? 'Yazma'
-          : 'Erişim yok';
+          ? t('Yazma')
+          : t('Erişim yok');
   return (
     <section className="reference-app-connections" data-fixture={props.fixture || undefined}>
       <header className="s59-heading">
-        <span className="reference-agent-kicker">Kişisel</span>
-        <h2>Uygulama bağlantıları</h2>
-        <p>Bu oda için sunucunun verdiği içerik ve işlem kapsamı.</p>
+        <span className="reference-agent-kicker">{t('Kişisel')}</span>
+        <h2>{t('Uygulama bağlantıları')}</h2>
+        <p>{t('Bu oda için sunucunun verdiği içerik ve işlem kapsamı.')}</p>
       </header>
-      {props.fixture && <span className="s59-demo-label">Yerel demo önizlemesi</span>}
+      {props.fixture && <span className="s59-demo-label">{t('Yerel demo önizlemesi')}</span>}
       {(props.error || scope.invalidated || (props.fixture && view === 'revoked')) && (
         <div className="reference-agent-callout warning" role="alert">
           <LockKeyhole size={18} />
           {scope.invalidated
-            ? 'Erişim yeniden doğrulanmalı.'
-            : props.error || 'Erişim kaldırıldı. İçerik önizlemesi kapalı.'}
+            ? t('Erişim yeniden doğrulanmalı.')
+            : props.error || t('Erişim kaldırıldı. İçerik önizlemesi kapalı.')}
         </div>
       )}
       {!authority && !props.error && !scope.invalidated && (
         <div className="reference-agent-callout" role="status">
-          {props.loading ? 'Kapsam yükleniyor' : 'Bu oda için doğrulanmış Agent kapsamı yok.'}
+          {props.loading ? t('Kapsam yükleniyor') : t('Bu oda için doğrulanmış Agent kapsamı yok.')}
         </div>
       )}
       {(['github', 'drive'] as const).map((kind) => {
@@ -2412,10 +2441,14 @@ export function AgentConnectionsSurface(props: AgentConnectionsProps) {
                 <span
                   className={`s59-badge ${revoked ? 'warning' : visible.length ? 'ready' : ''}`}
                 >
-                  {revoked ? 'Erişim değişti' : visible.length ? 'Kapsam tanımlı' : 'Kapsam yok'}
+                  {revoked
+                    ? t('Erişim değişti')
+                    : visible.length
+                      ? t('Kapsam tanımlı')
+                      : t('Kapsam yok')}
                 </span>
               </header>
-              <p>Hesap oturum bilgisi bu API’de sunulmuyor.</p>
+              <p>{t('Hesap oturum bilgisi bu API’de sunulmuyor.')}</p>
               {visible.length > 0 && (
                 <div className="s60-scopes">
                   {visible.flatMap((grant, i) =>
@@ -2433,7 +2466,7 @@ export function AgentConnectionsSurface(props: AgentConnectionsProps) {
                         ))
                       : [
                           <div className="s60-scope-row" key={`none:${i}`}>
-                            <span>Kaynak listesi sunulmuyor</span>
+                            <span>{t('Kaynak listesi sunulmuyor')}</span>
                             <span className="s59-badge purple">
                               {accessText(grant.read, grant.write)}
                             </span>
@@ -2445,13 +2478,19 @@ export function AgentConnectionsSurface(props: AgentConnectionsProps) {
               {revoked && (
                 <div className="reference-agent-callout">
                   <LockKeyhole size={17} />
-                  Kaldırılan içeriğin önizlemesi gösterilmez.
+
+                  {t('Kaldırılan içeriğin önizlemesi gösterilmez.')}
                 </div>
               )}
               <div className="s59-integration-footer">
                 <span>
-                  {visible.reduce((count, grant) => count + grant.resources.length, 0)}{' '}
-                  {kind === 'github' ? 'depo' : 'dosya'} · Sunucu kapsamı
+                  {kind === 'github'
+                    ? t('{count} depo · Sunucu kapsamı', {
+                        count: visible.reduce((count, grant) => count + grant.resources.length, 0),
+                      })
+                    : t('{count} dosya · Sunucu kapsamı', {
+                        count: visible.reduce((count, grant) => count + grant.resources.length, 0),
+                      })}
                 </span>
                 <div>
                   <button
@@ -2460,10 +2499,11 @@ export function AgentConnectionsSurface(props: AgentConnectionsProps) {
                     onClick={() => setView(kind === 'github' ? 'scope' : 'drive_scope')}
                   >
                     <ShieldCheck size={16} />
-                    Kapsamı incele
+
+                    {t('Kapsamı incele')}
                   </button>
                   <button className="button secondary small" disabled title={unavailable}>
-                    {kind === 'github' ? 'GitHub ile bağlan' : 'Google Drive ile bağlan'}
+                    {kind === 'github' ? t('GitHub ile bağlan') : t('Google Drive ile bağlan')}
                   </button>
                 </div>
               </div>
@@ -2473,40 +2513,42 @@ export function AgentConnectionsSurface(props: AgentConnectionsProps) {
       })}
       <section className="s60-room-scope">
         <header>
-          <h3>Bu odada geçerli kapsam</h3>
+          <h3>{t('Bu odada geçerli kapsam')}</h3>
           <button
             className="text-button"
             onClick={() => navigate('/settings?tab=assistant-permissions')}
           >
             <ArrowRight size={17} />
-            Asistan yetkileri
+
+            {t('Asistan yetkileri')}
           </button>
         </header>
         <dl>
           <div>
-            <dt>İçerik erişimi</dt>
-            <dd>{authority ? 'Sunucunun izin verdiği kaynaklar' : 'Doğrulanmadı'}</dd>
+            <dt>{t('İçerik erişimi')}</dt>
+            <dd>{authority ? t('Sunucunun izin verdiği kaynaklar') : t('Doğrulanmadı')}</dd>
           </div>
           <div>
-            <dt>Dış değişiklikler</dt>
+            <dt>{t('Dış değişiklikler')}</dt>
             <dd>
               {!authority
-                ? 'Doğrulanmadı'
+                ? t('Doğrulanmadı')
                 : authority.yolo
-                  ? 'YOLO · Mevcut kapsam'
-                  : 'Normal mod · İşlem başına onay'}
+                  ? t('YOLO · Mevcut kapsam')
+                  : t('Normal mod · İşlem başına onay')}
             </dd>
           </div>
         </dl>
         <div className="s60-chips">
           <span>{props.roomName}</span>
           <span>#{props.channelName}</span>
-          <span>Kişisel erişim</span>
+          <span>{t('Kişisel erişim')}</span>
         </div>
       </section>
       <footer className="s59-footer">
         <LockKeyhole size={14} />
-        Hesap anahtarı veya özel kaynak adresi bu görünümde bulunmaz.
+
+        {t('Hesap anahtarı veya özel kaynak adresi bu görünümde bulunmaz.')}
       </footer>
       <button
         className="text-button"
@@ -2515,25 +2557,30 @@ export function AgentConnectionsSurface(props: AgentConnectionsProps) {
         onClick={() => void props.onRefresh()}
       >
         <RefreshCw size={16} />
-        Kapsamı yenile
+
+        {t('Kapsamı yenile')}
       </button>
       {modal && authority && (
         <Modal
           className="s60-modal"
-          title={modal === 'github' ? 'GitHub kapsamı' : 'Drive dosya kapsamı'}
+          title={modal === 'github' ? t('GitHub kapsamı') : t('Drive dosya kapsamı')}
           onClose={() => setView(undefined)}
         >
-          <p>Sunucu tarafından verilen kapsam. Değişiklik için yönetici yapılandırması gerekli.</p>
+          <p>
+            {t(
+              'Sunucu tarafından verilen kapsam. Değişiklik için yönetici yapılandırması gerekli.',
+            )}
+          </p>
           <div className="s60-scopes">
             <div className="s60-scope-row">
-              <span>Oda</span>
+              <span>{t('Oda')}</span>
               <strong>
                 {props.roomName} / #{props.channelName}
               </strong>
             </div>
             <div className="s60-scope-row">
-              <span>Hesap</span>
-              <strong>Kişisel Agent erişimi</strong>
+              <span>{t('Hesap')}</span>
+              <strong>{t('Kişisel Agent erişimi')}</strong>
             </div>
           </div>
           {authority.scopes
@@ -2555,10 +2602,10 @@ export function AgentConnectionsSurface(props: AgentConnectionsProps) {
           </div>
           <div className="button-row">
             <button className="button secondary" onClick={() => setView(undefined)}>
-              Kapat
+              {t('Kapat')}
             </button>
             <button className="button primary" disabled title={unavailable}>
-              Seçimi kaydet
+              {t('Seçimi kaydet')}
             </button>
           </div>
         </Modal>
@@ -2578,12 +2625,12 @@ export function AgentConnectionsContainer() {
     setLoading(true);
     setAuthority(null);
     try {
-      if (!roomId || !community.user?.id) throw new Error('Önce bir oda seç.');
-      if (!window.rooms?.agent) throw new Error('Agent bağlantısı gerekli.');
+      if (!roomId || !community.user?.id) throw new Error(t('Önce bir oda seç.'));
+      if (!window.rooms?.agent) throw new Error(t('Agent bağlantısı gerekli.'));
       const value = await window.rooms.agent.authority(roomId);
       if (!scope.current(ticket)) return;
       if (value.roomId !== roomId || value.userId !== community.user.id)
-        throw new Error('Kapsam bu oda ve hesaba ait değil.');
+        throw new Error(t('Kapsam bu oda ve hesaba ait değil.'));
       setAuthority(value);
       setError('');
     } catch (failure) {
@@ -2606,11 +2653,12 @@ export function AgentConnectionsContainer() {
       userId={community.user?.id || ''}
       roomId={roomId || ''}
       roomName={
-        community.spaces.find((space) => space.id === community.activeSpaceId)?.name || 'Topluluk'
+        community.spaces.find((space) => space.id === community.activeSpaceId)?.name ||
+        t('Topluluk')
       }
-      channelName={community.channels.find((channel) => channel.id === roomId)?.name || 'Oda'}
+      channelName={community.channels.find((channel) => channel.id === roomId)?.name || t('Oda')}
       loading={loading}
-      error={scope.invalidated ? 'Erişim yeniden doğrulanmalı.' : error}
+      error={scope.invalidated ? t('Erişim yeniden doğrulanmalı.') : error}
       onRefresh={refresh}
     />
   );
@@ -2653,13 +2701,13 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
     editable = ready && !props.fixture && !!props.bridge && !busy;
   const disabledReason = props.fixture
     ? referenceFixtureReason
-    : props.unavailableReason || 'Agent sunucusu bağlı değil.';
+    : props.unavailableReason || t('Agent sunucusu bağlı değil.');
   const target =
       notes.find((note) => note.id === selected) || (props.fixture ? notes[0] : undefined),
     source = target?.sourceMessageId ? sources[target.sourceMessageId] : null;
   const readable = (note: AgentMemory) => !note.sourceMessageId || !!sources[note.sourceMessageId];
   const title = (note: AgentMemory) =>
-    note.sourceMessageId ? 'Mesajdan kaydedildi' : 'Kaydedilen not';
+    note.sourceMessageId ? t('Mesajdan kaydedildi') : t('Kaydedilen not');
   const candidates = ready
     ? (props.sourceCandidates || []).filter((message) => message.channelId === props.roomId)
     : [];
@@ -2766,14 +2814,14 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
     void perform(async (ticket) => {
       let content = text.trim();
       if (sourceId) {
-        if (!props.loadSource) throw new Error('Kaynak doğrulama bağlantısı yok.');
+        if (!props.loadSource) throw new Error(t('Kaynak doğrulama bağlantısı yok.'));
         const message = await props.loadSource(sourceId);
         if (!scope.current(ticket)) return;
         if (!message || message.channelId !== props.roomId || message.id !== sourceId)
-          throw new Error('Kaynak mesaj doğrulanamadı.');
+          throw new Error(t('Kaynak mesaj doğrulanamadı.'));
         content = message.content;
       }
-      if (!content) throw new Error('Kaydedilecek bilgi gerekli.');
+      if (!content) throw new Error(t('Kaydedilecek bilgi gerekli.'));
       const result = await props.bridge!.saveMemory({
         roomId: props.roomId,
         text: content,
@@ -2785,11 +2833,11 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
         result.authorId !== props.userId ||
         result.sourceMessageId !== (sourceId || undefined)
       )
-        throw new Error('Kayıt makbuzu bu oda ve hesaba ait değil.');
+        throw new Error(t('Kayıt makbuzu bu oda ve hesaba ait değil.'));
       setView(undefined);
       setText('');
       setSourceId('');
-      setNotice('Bilgi kaydedildi.');
+      setNotice(t('Bilgi kaydedildi.'));
     });
   const remove = () => {
     if (!target) return;
@@ -2799,7 +2847,7 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
       if (scope.current(ticket)) {
         setView(undefined);
         setSelected(null);
-        setNotice('Hafıza kaydı silindi.');
+        setNotice(t('Hafıza kaydı silindi.'));
       }
     });
   };
@@ -2814,7 +2862,7 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
           <span className="reference-agent-kicker">
             {props.roomName} / #{props.channelName}
           </span>
-          <h2>Oda hafızası</h2>
+          <h2>{t('Oda hafızası')}</h2>
         </div>
         <div>
           <button
@@ -2828,7 +2876,8 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
             }}
           >
             <Plus size={18} />
-            Mesajdan kaydet
+
+            {t('Mesajdan kaydet')}
           </button>
           <button
             className="text-button"
@@ -2839,15 +2888,17 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
               setText('');
             }}
           >
-            Not ekle
+            {t('Not ekle')}
           </button>
         </div>
       </header>
-      {props.fixture && <span className="s59-demo-label">Yerel demo önizlemesi</span>}
+      {props.fixture && <span className="s59-demo-label">{t('Yerel demo önizlemesi')}</span>}
       <div className="reference-agent-callout s61-privacy">
         <Bookmark size={19} />
-        Yalnızca açıkça kaydedilen bilgiler kullanılır. Sohbetler ve asistan konuşmaları
-        kendiliğinden hafızaya alınmaz.
+
+        {t(
+          'Yalnızca açıkça kaydedilen bilgiler kullanılır. Sohbetler ve asistan konuşmaları kendiliğinden hafızaya alınmaz.',
+        )}
       </div>
       {notice && ready && (
         <div className="reference-agent-callout" role="status">
@@ -2857,17 +2908,17 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
       {!ready ? (
         <div className="s61-empty" role="status">
           <LockKeyhole size={30} />
-          <h3>{props.loading ? 'Hafıza yükleniyor' : 'Hafıza kullanılamıyor'}</h3>
-          <p>{scope.invalidated ? 'Oda erişimi yeniden doğrulanmalı.' : disabledReason}</p>
+          <h3>{props.loading ? t('Hafıza yükleniyor') : t('Hafıza kullanılamıyor')}</h3>
+          <p>{scope.invalidated ? t('Oda erişimi yeniden doğrulanmalı.') : disabledReason}</p>
           <button className="button secondary" onClick={() => navigate('/settings?tab=agent')}>
-            Agent bağlantısı
+            {t('Agent bağlantısı')}
           </button>
         </div>
       ) : (
         <>
           <div className="s61-section-title">
-            <h3>Kayıtlı bilgiler</h3>
-            <span>{notes.length} kayıt</span>
+            <h3>{t('Kayıtlı bilgiler')}</h3>
+            <span>{t('{count} kayıt', { count: notes.length })}</span>
           </div>
           {notes.length ? (
             <div className="s61-memory-list">
@@ -2880,17 +2931,17 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
                     <strong>{title(note)}</strong>
                     <p>
                       {note.sourceMessageId && !props.loadSource && !props.fixture
-                        ? 'Kaynak doğrulama bağlantısı yok. Önizleme kapalı.'
+                        ? t('Kaynak doğrulama bağlantısı yok. Önizleme kapalı.')
                         : note.sourceMessageId && sources[note.sourceMessageId] === undefined
-                          ? 'Kaynak doğrulanıyor…'
+                          ? t('Kaynak doğrulanıyor…')
                           : readable(note)
                             ? note.text
-                            : 'Kaynak doğrulanamadı. İçerik önizlemesi kapalı.'}
+                            : t('Kaynak doğrulanamadı. İçerik önizlemesi kapalı.')}
                     </p>
                     <div className="s61-memory-meta">
-                      <span className="s59-badge purple">Açıkça kaydedildi</span>
+                      <span className="s59-badge purple">{t('Açıkça kaydedildi')}</span>
                       <small>
-                        {note.authorId === props.userId ? 'Sen' : note.authorId} ·{' '}
+                        {note.authorId === props.userId ? t('Sen') : note.authorId} ·{' '}
                         {date(note.createdAt)}
                       </small>
                     </div>
@@ -2902,15 +2953,15 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
                         disabled={busy || sources[note.sourceMessageId] === null}
                         title={
                           sources[note.sourceMessageId] === null
-                            ? 'Kaynak doğrulanamadı.'
+                            ? t('Kaynak doğrulanamadı.')
                             : undefined
                         }
                         onClick={() => void preview(note)}
                       >
-                        Kaynak mesaj
+                        {t('Kaynak mesaj')}
                       </button>
                     ) : (
-                      <span>Kaynak mesaj yok</span>
+                      <span>{t('Kaynak mesaj yok')}</span>
                     )}
                     <button
                       className="text-button"
@@ -2922,7 +2973,8 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
                       }}
                     >
                       <Trash2 size={16} />
-                      Sil
+
+                      {t('Sil')}
                     </button>
                   </div>
                 </article>
@@ -2931,9 +2983,9 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
           ) : (
             <div className="s61-empty">
               <Bookmark size={42} />
-              <h3>Henüz kayıtlı bilgi yok</h3>
+              <h3>{t('Henüz kayıtlı bilgi yok')}</h3>
               <button className="button primary" onClick={() => navigate('/chat')}>
-                Sohbete dön
+                {t('Sohbete dön')}
               </button>
             </div>
           )}
@@ -2941,24 +2993,25 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
       )}
       <footer className="s59-footer">
         <LockKeyhole size={14} />
-        Hafıza bu odayla sınırlıdır. Kişisel medya bağlantıları dahil edilmez.
+
+        {t('Hafıza bu odayla sınırlıdır. Kişisel medya bağlantıları dahil edilmez.')}
       </footer>
       {ready && (view === 'save' || view === 'note') && (
-        <Modal className="s61-modal" title="Oda hafızasına kaydet?" onClose={close}>
+        <Modal className="s61-modal" title={t('Oda hafızasına kaydet?')} onClose={close}>
           <p>
-            {props.roomName} / #{props.channelName} · Yalnızca bu oda.
+            {t('{room} · Yalnızca bu oda.', { room: `${props.roomName} / #${props.channelName}` })}
           </p>
           {view === 'save' ? (
             <>
               <label className="field-label">
-                Kaynak mesaj
+                {t('Kaynak mesaj')}
                 <select
-                  aria-label="Kaynak mesaj seç"
+                  aria-label={t('Kaynak mesaj seç')}
                   disabled={!editable}
                   value={sourceId}
                   onChange={(event) => setSourceId(event.target.value)}
                 >
-                  <option value="">Mesaj seç</option>
+                  <option value="">{t('Mesaj seç')}</option>
                   {candidates.map((message) => (
                     <option value={message.id} key={message.id}>
                       {message.author.displayName || message.author.username} ·{' '}
@@ -2973,14 +3026,14 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
                 </blockquote>
               )}
               {!candidates.length && (
-                <p>Bu odadan yüklü mesaj yok. Sohbeti açıp mesaj menüsünden kaydet.</p>
+                <p>{t('Bu odadan yüklü mesaj yok. Sohbeti açıp mesaj menüsünden kaydet.')}</p>
               )}
             </>
           ) : (
             <label className="field-label">
-              Kaydedilecek bilgi
+              {t('Kaydedilecek bilgi')}
               <textarea
-                aria-label="Kaydedilecek bilgi"
+                aria-label={t('Kaydedilecek bilgi')}
                 maxLength={6000}
                 value={text}
                 disabled={!editable}
@@ -2989,12 +3042,12 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
             </label>
           )}
           <p className="reference-agent-description">
-            Kaydı daha sonra silebilirsin. Otomatik saklama süresi bu hizmette sunulmuyor.
+            {t('Kaydı daha sonra silebilirsin. Otomatik saklama süresi bu hizmette sunulmuyor.')}
           </p>
           {error && <p role="alert">{error}</p>}
           <div className="button-row">
             <button className="button secondary" disabled={busy} onClick={close}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button primary"
@@ -3003,13 +3056,14 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
               onClick={save}
             >
               <Bookmark size={16} />
-              Hafızaya kaydet
+
+              {t('Hafızaya kaydet')}
             </button>
           </div>
         </Modal>
       )}
       {ready && view === 'source' && target && (
-        <Modal className="s61-modal" title="Kaynak mesaj" onClose={close}>
+        <Modal className="s61-modal" title={t('Kaynak mesaj')} onClose={close}>
           {source ? (
             <>
               <div className="s61-source-author">
@@ -3022,19 +3076,21 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
                 </div>
               </div>
               <blockquote>{source.content}</blockquote>
-              <p className="reference-agent-description">Açıkça kaydedildi · Yalnızca bu oda.</p>
+              <p className="reference-agent-description">
+                {t('Açıkça kaydedildi · Yalnızca bu oda.')}
+              </p>
             </>
           ) : (
             <p role="status">
               {target.sourceMessageId && sources[target.sourceMessageId] === undefined
-                ? 'Kaynak doğrulanıyor…'
-                : 'Kaynak doğrulanamadı. Önizleme kapalı.'}
+                ? t('Kaynak doğrulanıyor…')
+                : t('Kaynak doğrulanamadı. Önizleme kapalı.')}
             </p>
           )}
           {error && <p role="alert">{error}</p>}
           <div className="button-row">
             <button className="button secondary" onClick={close}>
-              Hafızaya dön
+              {t('Hafızaya dön')}
             </button>
             <button
               className="button primary"
@@ -3043,13 +3099,14 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
                 props.fixture
                   ? referenceFixtureReason
                   : !source
-                    ? 'Kaynak doğrulanmadı.'
+                    ? t('Kaynak doğrulanmadı.')
                     : undefined
               }
               onClick={() => navigate(`/chat?message=${encodeURIComponent(source!.id)}`)}
             >
               <ArrowRight size={17} />
-              Mesaja git
+
+              {t('Mesaja git')}
             </button>
           </div>
         </Modal>
@@ -3057,16 +3114,18 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
       {ready && view === 'delete' && target && (
         <Modal
           className="s61-modal s61-delete-modal"
-          title="Bu kaydı hafızadan sil?"
+          title={t('Bu kaydı hafızadan sil?')}
           onClose={close}
         >
-          <p>{title(target)} sonraki asistan görevlerinde kullanılmayacak.</p>
+          <p>
+            {t('{title} sonraki asistan görevlerinde kullanılmayacak.', { title: title(target) })}
+          </p>
           {readable(target) && <blockquote>{target.text}</blockquote>}
-          <p className="reference-agent-description">Kaynak sohbet mesajı yerinde kalır.</p>
+          <p className="reference-agent-description">{t('Kaynak sohbet mesajı yerinde kalır.')}</p>
           {error && <p role="alert">{error}</p>}
           <div className="button-row">
             <button className="button secondary" disabled={busy} onClick={close}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button danger"
@@ -3075,7 +3134,8 @@ export function AgentMemorySurface(props: AgentMemoryProps) {
               onClick={remove}
             >
               <Trash2 size={16} />
-              Hafızadan sil
+
+              {t('Hafızadan sil')}
             </button>
           </div>
         </Modal>

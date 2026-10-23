@@ -1,6 +1,7 @@
 import './kiraathane.css';
 import { ArrowRight, History, Info, LoaderCircle, Users } from 'lucide-react';
 import type { GamePublicState } from '../../../packages/activity-protocol/src';
+import { locale, t } from './i18n';
 
 type Kind = GamePublicState['kind'];
 export const gameNames: Record<Kind, string> = {
@@ -10,14 +11,18 @@ export const gameNames: Record<Kind, string> = {
   '101': '101 Okey',
 };
 export const gameCatalog: { kind: Kind; players: string; detail: string }[] = [
-  { kind: 'holdem', players: '2–9 oyuncu', detail: 'Blind, flop ve showdown. Sanal fişle.' },
+  { kind: 'holdem', players: t('2–9 oyuncu'), detail: t('Blind, flop ve showdown. Sanal fişle.') },
   {
     kind: 'blackjack',
-    players: '1–7 oyuncu',
-    detail: 'Krupiyeye karşı 21. Herkes kendi elini oynar.',
+    players: t('1–7 oyuncu'),
+    detail: t('Krupiyeye karşı 21. Herkes kendi elini oynar.'),
   },
-  { kind: 'batak', players: '3–4 oyuncu', detail: 'İhaleli, eşli, koz maça ya da gömmeli.' },
-  { kind: '101', players: '4 oyuncu', detail: 'Tekli ya da eşli. Botlar boş yerleri doldurur.' },
+  { kind: 'batak', players: t('3–4 oyuncu'), detail: t('İhaleli, eşli, koz maça ya da gömmeli.') },
+  {
+    kind: '101',
+    players: t('4 oyuncu'),
+    detail: t('Tekli ya da eşli. Botlar boş yerleri doldurur.'),
+  },
 ];
 
 export function tableCapacity(game: GamePublicState): number {
@@ -110,42 +115,42 @@ export function Kiraathane({
 }) {
   const status =
     game?.status === 'waiting'
-      ? 'Oyuncu bekliyor'
+      ? t('Oyuncu bekliyor')
       : game?.status === 'finished'
-        ? 'El bitti, yenisi başlayabilir'
-        : 'Oynanıyor';
-  const reason = !ready ? 'Masa bağlantısı bekleniyor.' : blocked;
+        ? t('El bitti, yenisi başlayabilir')
+        : t('Oynanıyor');
+  const reason = !ready ? t('Masa bağlantısı bekleniyor.') : blocked;
   return (
-    <section className="kh" aria-label="Kıraathane">
+    <section className="kh" aria-label={t('Kıraathane')}>
       <header className="kh-head">
         <div>
-          <h1>Kıraathane</h1>
-          <p>Arkadaşlarınla sanal fişle oyna. Odada aynı anda bir masa açık olur.</p>
+          <h1>{t('Kıraathane')}</h1>
+          <p>{t('Arkadaşlarınla sanal fişle oyna. Odada aynı anda bir masa açık olur.')}</p>
         </div>
         <button className="button secondary" onClick={onHistory}>
           <History size={16} />
-          Geçmiş
+          {t('Geçmiş')}
         </button>
       </header>
       {error && (
         <div className="kh-note error" role="alert">
           {error}
           <button className="button secondary small" onClick={onRetry} disabled={busy}>
-            Yeniden dene
+            {t('Yeniden dene')}
           </button>
         </div>
       )}
       {!ready && !error && (
         <div className="kh-note" role="status">
           <LoaderCircle size={15} className="spin" />
-          Masalar yükleniyor…
+          {t('Masalar yükleniyor…')}
         </div>
       )}
       {game && (
         <article className="kh-open">
           <GameArt kind={game.kind} />
           <div className="kh-open-text">
-            <small>Açık masa</small>
+            <small>{t('Açık masa')}</small>
             <strong>
               {typeof game.view.tableName === 'string' && game.view.tableName
                 ? game.view.tableName
@@ -157,11 +162,14 @@ export function Kiraathane({
           </div>
           <div
             className="kh-seats"
-            aria-label={`${game.seats.length} / ${tableCapacity(game)} oyuncu`}
+            aria-label={t('{seated} / {capacity} oyuncu', {
+              seated: game.seats.length,
+              capacity: tableCapacity(game),
+            })}
           >
             {game.seats.slice(0, 6).map((seat) => (
               <span key={seat.seat} title={seat.name} className={seat.bot ? 'bot' : ''}>
-                {seat.bot ? 'B' : seat.name.trim().slice(0, 1).toLocaleUpperCase('tr')}
+                {seat.bot ? 'B' : seat.name.trim().slice(0, 1).toLocaleUpperCase(locale)}
               </span>
             ))}
             <em>
@@ -170,7 +178,7 @@ export function Kiraathane({
             </em>
           </div>
           <button className="button primary" onClick={onOpen}>
-            Masaya geç
+            {t('Masaya geç')}
             <ArrowRight size={16} />
           </button>
         </article>
@@ -178,8 +186,10 @@ export function Kiraathane({
       {otherActivity && !game && (
         <div className="kh-note">
           <Info size={15} />
-          Odada {otherActivity} açık. Masa açınca o etkinlik herkes için kapanır; bunu etkinliğin
-          hostu yapabilir.
+          {t(
+            'Odada {activity} açık. Masa açınca o etkinlik herkes için kapanır; bunu etkinliğin hostu yapabilir.',
+            { activity: otherActivity },
+          )}
         </div>
       )}
       <div className="kh-grid">
@@ -195,7 +205,9 @@ export function Kiraathane({
                 <p>{item.detail}</p>
                 <div className="kh-tags">
                   <span>{item.players}</span>
-                  <span>{item.kind === '101' || item.kind === 'batak' ? 'Puan' : 'Sanal fiş'}</span>
+                  <span>
+                    {item.kind === '101' || item.kind === 'batak' ? t('Puan') : t('Sanal fiş')}
+                  </span>
                 </div>
               </div>
               <button
@@ -204,7 +216,7 @@ export function Kiraathane({
                 title={!open && reason ? reason : undefined}
                 onClick={() => (open ? onOpen() : onCreate(item.kind))}
               >
-                {open ? 'Masaya geç' : game ? 'Bu oyuna geç' : 'Masa aç'}
+                {open ? t('Masaya geç') : game ? t('Bu oyuna geç') : t('Masa aç')}
               </button>
             </article>
           );

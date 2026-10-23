@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Maximize, Minimize, Monitor, ExternalLink, X, Volume2 } from 'lucide-react';
 import type { MediaTrack, MediaParticipant } from '@rooms/media';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import './screen-share-gallery.css';
 import { RemoteControlActions, RemoteViewerInput } from './RemoteControl';
 export function ScreenShareGallery({
@@ -27,15 +27,17 @@ export function ScreenShareGallery({
     [fullscreen, setFullscreen] = useState(false),
     stage = useRef<HTMLDivElement>(null);
   useEffect(() => setSelected(initialTrackId ?? null), [initialTrackId]);
-  const active = tracks.find((t) => t.id === selected) ?? tracks[0];
+  const active = tracks.find((track) => track.id === selected) ?? tracks[0];
   const participant = people.find((p) => p.id === active?.participantId);
   const watched = active && !active.local ? active.participantId : null;
   useEffect(() => {
     onWatch?.(watched);
     return () => onWatch?.(null);
   }, [watched, onWatch]);
-  const name = (track: MediaTrack) =>
-    `${people.find((p) => p.id === track.participantId)?.name ?? 'Katılımcı'}${track.local ? ' (sen)' : ''}`;
+  const name = (track: MediaTrack) => {
+    const person = people.find((p) => p.id === track.participantId)?.name ?? t('Katılımcı');
+    return track.local ? t('{name} (sen)', { name: person }) : person;
+  };
   useEffect(() => {
     const node = stage.current;
     const changed = () => setFullscreen(document.fullscreenElement === node);
@@ -50,7 +52,7 @@ export function ScreenShareGallery({
   const separate = () => {
     const video = stage.current?.querySelector('video');
     if (!video || video.readyState < 2) {
-      notify('Video henüz hazır değil.');
+      notify(t('Video henüz hazır değil.'));
       return;
     }
     void (
@@ -72,16 +74,16 @@ export function ScreenShareGallery({
         {active &&
           (active.subscribed === false ? (
             <p className="room-screen-waiting" role="status">
-              Yayın açılıyor…
+              {t('Yayın açılıyor…')}
             </p>
           ) : (
-            renderTrack(active.id, `${name(active)} ekranı`)
+            renderTrack(active.id, t('{name} ekranı', { name: name(active) }))
           ))}
         <RemoteViewerInput track={active} videoRoot={stage} />
         <div className="room-screen-overlay">
           <span>
             <Monitor size={15} />
-            {active ? name(active) : 'Paylaşım sona erdi'}
+            {active ? name(active) : t('Paylaşım sona erdi')}
           </span>
           <div>
             {onVolume && active && !active.local && (
@@ -92,28 +94,30 @@ export function ScreenShareGallery({
                   min="0"
                   max="1"
                   step="0.01"
-                  aria-label={`${name(active)} yayın sesi`}
+                  aria-label={t('{name} yayın sesi', { name: name(active) })}
                   value={participant?.screenVolume ?? 1}
                   onChange={(event) => onVolume(active.participantId, Number(event.target.value))}
                 />
               </label>
             )}
             <button
-              aria-label="Paylaşımı ayrı pencerede izle"
+              aria-label={t('Paylaşımı ayrı pencerede izle')}
               disabled={!active || !document.pictureInPictureEnabled}
               onClick={separate}
             >
               <ExternalLink size={18} />
             </button>
             <button
-              aria-label={fullscreen ? 'Paylaşımı tam ekrandan çıkar' : 'Paylaşımı tam ekran izle'}
+              aria-label={
+                fullscreen ? t('Paylaşımı tam ekrandan çıkar') : t('Paylaşımı tam ekran izle')
+              }
               disabled={!active || !document.fullscreenEnabled}
               onClick={maximize}
             >
               {fullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
             </button>
             {onClose && (
-              <button aria-label="İzlemeyi kapat" onClick={onClose}>
+              <button aria-label={t('İzlemeyi kapat')} onClick={onClose}>
                 <X size={18} />
               </button>
             )}
@@ -122,18 +126,18 @@ export function ScreenShareGallery({
       </div>
       <RemoteControlActions track={active} />
       {tracks.length > 1 && (
-        <div className="room-screen-thumbnails" aria-label="Paylaşılan ekranlar">
+        <div className="room-screen-thumbnails" aria-label={t('Paylaşılan ekranlar')}>
           {tracks.map((track) => (
             <button
               key={track.id}
               aria-pressed={active?.id === track.id}
-              aria-label={`${name(track)} ekranını büyüt`}
+              aria-label={t('{name} ekranını büyüt', { name: name(track) })}
               onClick={() => setSelected(track.id)}
             >
               {track.subscribed === false ? (
                 <Monitor size={22} aria-hidden="true" />
               ) : (
-                renderTrack(track.id, `${name(track)} küçük önizleme`)
+                renderTrack(track.id, t('{name} küçük önizleme', { name: name(track) }))
               )}
               <span>
                 <Monitor size={13} />

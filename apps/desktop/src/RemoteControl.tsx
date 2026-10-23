@@ -9,13 +9,14 @@ import {
 import { useCommunity } from './community';
 import { useRealtime, useVoiceContext } from './realtime';
 import { mediaProvider } from './runtime-sources';
+import { t } from './i18n';
 const initial = { value: null as RemoteState | null, error: '', reason: '', busy: false };
 const fixture = () => import.meta.env.DEV && new URLSearchParams(location.search).has('fixture');
 export const useRemoteControl = create<typeof initial>(() => initial);
 const errorText = (e: unknown) =>
   e instanceof Error
     ? e.message.replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/, '')
-    : 'Kontrol işlemi tamamlanamadı.';
+    : t('Kontrol işlemi tamamlanamadı.');
 
 /** Route independent: leaving a room, reconnecting or losing the source revokes control. */
 export function RemoteControlRuntime() {
@@ -23,8 +24,8 @@ export function RemoteControlRuntime() {
     media = useRealtime();
   const user = useCommunity((s) => s.user?.id),
     server = useCommunity((s) => s.serverUrl);
-  const track = media.tracks.find((t) => t.local && t.source === 'screen_share');
-  const hasScreen = media.tracks.some((t) => t.source === 'screen_share');
+  const track = media.tracks.find((item) => item.local && item.source === 'screen_share');
+  const hasScreen = media.tracks.some((item) => item.source === 'screen_share');
   useEffect(() => {
     if (fixture()) return;
     const api = window.rooms?.remoteControl;
@@ -139,31 +140,35 @@ export function RemoteControlActions({ track }: { track?: MediaTrack }) {
     <div className="remote-control-actions">
       {lease && (
         <>
-          {value?.latencyMs != null && <span>Gidiş dönüş: {Math.round(value.latencyMs)} ms</span>}
+          {value?.latencyMs != null && (
+            <span>{t('Gidiş dönüş: {ms} ms', { ms: Math.round(value.latencyMs) })}</span>
+          )}
           <span role="status">
             {lease.source.publisherId === user
-              ? `${lease.controllerId} kontrol ediyor · kendi fare/klavyenle anında geri al`
-              : 'Kontrol sende · başka pencereye geçince bırakılır'}
+              ? t('{name} kontrol ediyor · kendi fare/klavyenle anında geri al', {
+                  name: lease.controllerId,
+                })
+              : t('Kontrol sende · başka pencereye geçince bırakılır')}
           </span>
           <button onClick={() => void action(() => api.revoke())} disabled={busy}>
-            Kontrolü bırak
+            {t('Kontrolü bırak')}
           </button>
         </>
       )}
       {pending && !lease && (
         <>
-          <span>{pending.controllerId} kontrol istiyor</span>
+          <span>{t('{name} kontrol istiyor', { name: pending.controllerId })}</span>
           <button
             disabled={busy}
             onClick={() => void action(() => api.decide(room, pending.id, false))}
           >
-            Reddet
+            {t('Reddet')}
           </button>
           <button
             disabled={busy}
             onClick={() => void action(() => api.decide(room, pending.id, true))}
           >
-            Kontrol ver…
+            {t('Kontrol ver…')}
           </button>
         </>
       )}
@@ -172,7 +177,7 @@ export function RemoteControlActions({ track }: { track?: MediaTrack }) {
           disabled={busy || ownRequest}
           onClick={() => void action(() => api.request(room, source.publisherId, source.epoch))}
         >
-          {ownRequest ? 'Kontrol onayı bekleniyor' : 'Kontrol iste'}
+          {ownRequest ? t('Kontrol onayı bekleniyor') : t('Kontrol iste')}
         </button>
       )}
       {track.local && reason && <span>{reason}</span>}
@@ -266,7 +271,7 @@ export function RemoteViewerInput({
       ref={root}
       tabIndex={0}
       role="application"
-      aria-label="Onaylanmış ekran kontrolü"
+      aria-label={t('Onaylanmış ekran kontrolü')}
       data-ready={ready}
       onBlur={() => send({ type: 'release' })}
       onContextMenu={(e) => e.preventDefault()}

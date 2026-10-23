@@ -4,7 +4,7 @@ import { setWindowOnTop, useWindowOnTop } from './window-on-top';
 import { mediaProvider } from './runtime-sources';
 import { NoiseComparison } from './NoiseComparison';
 import { createNoiseSuppressionNode } from '@rooms/media';
-import { tr, uiError } from './i18n';
+import { locale, t, tr, uiError } from './i18n';
 import type { DesktopBridge } from '@rooms/contracts';
 import { ChannelNotifications } from './ChannelNotifications';
 import { DesktopWindowSettings } from './DesktopWindowSettings';
@@ -12,6 +12,7 @@ import { DesktopUpdates } from './Updates';
 import { ChannelPermissionsSurface } from './ChannelPermissionsSurface';
 import { CommunityManagementEntry } from './CommunityManagementEntry';
 import { About } from './About';
+import { LanguageSetting } from './LanguageSetting';
 import { ServerProfile } from './ServerProfile';
 import { CinemaSettings } from './cinema/CinemaSettings';
 import { SettingsConnection } from './SettingsConnection';
@@ -74,30 +75,30 @@ import { ConnectionPane } from './ConnectionPane';
 import { useCommunity } from './community';
 import { useRealtime, setNoiseSuppression } from './realtime';
 const tabs = [
-  { id: 'profile', label: 'Hesap ve profil', icon: User },
-  { id: 'audio', label: 'Ses ve video', icon: Mic },
-  { id: 'appearance', label: 'Görünüm', icon: Sun },
-  { id: 'desktop', label: 'Bildirimler', icon: Bell },
-  { id: 'agent', label: 'Model bağlantılarım', icon: KeyRound },
-  { id: 'connections', label: 'Uygulama bağlantıları', icon: Link },
-  { id: 'room-memory', label: 'Oda hafızası', icon: Bookmark },
-  { id: 'schedules', label: 'Tek seferlik görevler', icon: Clock3 },
-  { id: 'services', label: 'Tayfa bağlantıları', icon: Globe },
-  { id: 'server-profile', label: 'Sunucu profili', icon: Store },
-  { id: 'cinema', label: 'Sinema', icon: Clapperboard },
-  { id: 'hostops', label: 'Sunucu makinesi', icon: Monitor },
-  { id: 'shortcuts', label: 'Klavye', icon: Keyboard },
-  { id: 'diagnostics', label: 'Tanılama', icon: SlidersHorizontal },
-  { id: 'community-management', label: 'Üyeler ve roller', icon: Users },
-  { id: 'channel-permissions', label: 'Kanal izinleri', icon: ShieldCheck },
-  { id: 'assistant-permissions', label: 'Asistan yetkileri', icon: Bot },
-  { id: 'automation', label: 'Otomasyon modu', icon: Sparkles },
-  { id: 'about', label: 'Güncelleme ve hakkında', icon: Info },
+  { id: 'profile', label: t('Hesap ve profil'), icon: User },
+  { id: 'audio', label: t('Ses ve video'), icon: Mic },
+  { id: 'appearance', label: t('Görünüm'), icon: Sun },
+  { id: 'desktop', label: t('Bildirimler'), icon: Bell },
+  { id: 'agent', label: t('Model bağlantılarım'), icon: KeyRound },
+  { id: 'connections', label: t('Uygulama bağlantıları'), icon: Link },
+  { id: 'room-memory', label: t('Oda hafızası'), icon: Bookmark },
+  { id: 'schedules', label: t('Tek seferlik görevler'), icon: Clock3 },
+  { id: 'services', label: t('Tayfa bağlantıları'), icon: Globe },
+  { id: 'server-profile', label: t('Sunucu profili'), icon: Store },
+  { id: 'cinema', label: t('Sinema'), icon: Clapperboard },
+  { id: 'hostops', label: t('Sunucu makinesi'), icon: Monitor },
+  { id: 'shortcuts', label: t('Klavye'), icon: Keyboard },
+  { id: 'diagnostics', label: t('Tanılama'), icon: SlidersHorizontal },
+  { id: 'community-management', label: t('Üyeler ve roller'), icon: Users },
+  { id: 'channel-permissions', label: t('Kanal izinleri'), icon: ShieldCheck },
+  { id: 'assistant-permissions', label: t('Asistan yetkileri'), icon: Bot },
+  { id: 'automation', label: t('Otomasyon modu'), icon: Sparkles },
+  { id: 'about', label: t('Güncelleme ve hakkında'), icon: Info },
 ];
 function Heading({ title }: { title: string }) {
   return (
     <div className="ref-settings-heading">
-      <span>KULLANICI AYARLARI</span>
+      <span>{t('KULLANICI AYARLARI')}</span>
       <h1>{title}</h1>
     </div>
   );
@@ -137,17 +138,17 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
   if (!c.user)
     return (
       <>
-        <Heading title="Hesap ve profil" />
+        <Heading title={t('Hesap ve profil')} />
         <ConnectionPane />
       </>
     );
   return (
     <>
-      <Heading title="Hesap ve profil" />
+      <Heading title={t('Hesap ve profil')} />
       {saved && (
         <div className="ref-settings-callout success" role="status">
           <Check size={17} />
-          Profil değişikliklerin sunucuda kaydedildi.
+          {t('Profil değişikliklerin sunucuda kaydedildi.')}
         </div>
       )}
       <div className="ref-profile-columns">
@@ -174,7 +175,7 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
         >
           <div className="ref-settings-grid">
             <label className="field-label">
-              Görünen ad
+              {t('Görünen ad')}
               <input
                 required
                 maxLength={32}
@@ -186,21 +187,21 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
               />
             </label>
             <label className="field-label">
-              Kullanıcı adı
+              {t('Kullanıcı adı')}
               <input readOnly value={c.user.username} />
             </label>
           </div>
           <label className="field-label">
-            E-posta
+            {t('E-posta')}
             <input
               readOnly
               disabled
               value=""
-              placeholder="Hesap bağlantısı e-postayı paylaşmıyor"
+              placeholder={t('Hesap bağlantısı e-postayı paylaşmıyor')}
             />
           </label>
           <label className="field-label">
-            Durum mesajı
+            {t('Durum mesajı')}
             <input
               maxLength={128}
               value={status}
@@ -208,28 +209,28 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
                 setStatus(e.target.value);
                 setSaved(false);
               }}
-              placeholder="Yeni durum mesajı"
+              placeholder={t('Yeni durum mesajı')}
             />
           </label>
           <label className="field-label">
-            Hakkında
+            {t('Hakkında')}
             <textarea
               maxLength={2000}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="Yeni profil açıklaması"
+              placeholder={t('Yeni profil açıklaması')}
             />
           </label>
           <Row
-            title="Görünürlük"
+            title={t('Görünürlük')}
             description={
               presence === 'invisible'
-                ? 'Diğer üyelere çevrimdışı görünüyorsun.'
-                : 'Durumunu sunucuna bildir.'
+                ? t('Diğer üyelere çevrimdışı görünüyorsun.')
+                : t('Durumunu sunucuna bildir.')
             }
           >
             <select
-              aria-label="Görünürlük"
+              aria-label={t('Görünürlük')}
               value={presence}
               disabled={busy || !window.rooms}
               onChange={async (e) => {
@@ -247,31 +248,31 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
               }}
             >
               <option value="" disabled>
-                Durum seç
+                {t('Durum seç')}
               </option>
-              <option value="online">Çevrimiçi</option>
-              <option value="idle">Uzakta</option>
-              <option value="dnd">Rahatsız etmeyin</option>
-              <option value="invisible">Görünmez</option>
+              <option value="online">{t('Çevrimiçi')}</option>
+              <option value="idle">{t('Uzakta')}</option>
+              <option value="dnd">{t('Rahatsız etmeyin')}</option>
+              <option value="invisible">{t('Görünmez')}</option>
             </select>
           </Row>
           {presence === 'invisible' && (
             <div className="ref-settings-callout">
               <Eye size={16} />
-              Görünmezlik yalnızca sana gösterilir.
+              {t('Görünmezlik yalnızca sana gösterilir.')}
             </div>
           )}
           <div className="button-row">
             <button className="button primary" disabled={busy || !name.trim() || !window.rooms}>
-              {busy ? 'Kaydediliyor…' : 'Değişiklikleri kaydet'}
+              {busy ? t('Kaydediliyor…') : t('Değişiklikleri kaydet')}
             </button>
             <button type="button" className="button secondary" disabled={busy} onClick={reset}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
           </div>
         </form>
         <aside>
-          <span className="ref-preview-label">PROFİL ÖNİZLEMESİ</span>
+          <span className="ref-preview-label">{t('PROFİL ÖNİZLEMESİ')}</span>
           <div className="ref-profile-preview">
             <div className="ref-profile-banner" />
             <div className="ref-profile-body">
@@ -287,7 +288,7 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
                       const user = await window.rooms!.social.chooseAvatar();
                       if (user) {
                         useCommunity.setState({ user });
-                        notify('Avatar sunucuda güncellendi.');
+                        notify(t('Avatar sunucuda güncellendi.'));
                       }
                     } catch (e) {
                       setError(uiError(e));
@@ -296,7 +297,7 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
                     }
                   }}
                 >
-                  Avatarı değiştir
+                  {t('Avatarı değiştir')}
                 </button>
               </div>
               <h2>{name || c.user.displayName}</h2>
@@ -306,39 +307,41 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
               <div className="ref-settings-inline">
                 <User size={14} />
                 {presence === 'invisible'
-                  ? 'Görünmez · yalnızca sen görürsün'
+                  ? t('Görünmez · yalnızca sen görürsün')
                   : presence === 'online'
-                    ? 'Çevrimiçi'
+                    ? t('Çevrimiçi')
                     : presence === 'idle'
-                      ? 'Uzakta'
+                      ? t('Uzakta')
                       : presence === 'dnd'
-                        ? 'Rahatsız etmeyin'
-                        : 'Görünürlük durumu alınamadı'}
+                        ? t('Rahatsız etmeyin')
+                        : t('Görünürlük durumu alınamadı')}
               </div>
             </div>
           </div>
         </aside>
       </div>
       <section className="ref-settings-section">
-        <h2>Gizlilik</h2>
+        <h2>{t('Gizlilik')}</h2>
         <Unsupported
-          title="Topluluk üyelerinden özel mesaj al"
-          reason="Topluluk bağlantısı bu tercihi desteklemiyor."
+          title={t('Topluluk üyelerinden özel mesaj al')}
+          reason={t('Topluluk bağlantısı bu tercihi desteklemiyor.')}
         />
         <Unsupported
-          title="Etkinliğimi arkadaşlarıma göster"
-          reason="Etkinlik görünürlüğü bağlantısı henüz uygulanmadı."
+          title={t('Etkinliğimi arkadaşlarıma göster')}
+          reason={t('Etkinlik görünürlüğü bağlantısı henüz uygulanmadı.')}
         />
         <Unsupported
-          title="Arkadaşlık isteklerine izin ver"
-          reason="Topluluk bağlantısı bu tercihi desteklemiyor."
+          title={t('Arkadaşlık isteklerine izin ver')}
+          reason={t('Topluluk bağlantısı bu tercihi desteklemiyor.')}
         />
       </section>
       <div className="ref-settings-bottom">
-        <span>Bu cihaz · {window.rooms?.platform ?? 'Tarayıcı'}</span>
+        <span>
+          {t('Bu cihaz · {platform}', { platform: window.rooms?.platform ?? t('Tarayıcı') })}
+        </span>
         <button className="text-button" onClick={() => setLogout(true)}>
           <LogOut size={16} />
-          Oturumu kapat
+          {t('Oturumu kapat')}
         </button>
       </div>
       {error && (
@@ -348,16 +351,16 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
       )}
       {logout && (
         <Modal
-          title="Tayfa’dan çıkış yap?"
+          title={t('Tayfa’dan çıkış yap?')}
           className="ref-settings-confirm"
           onClose={() => {
             if (!busy) setLogout(false);
           }}
         >
           <p>
-            Bu cihazdaki oturumun kapanacak.
+            {t('Bu cihazdaki oturumun kapanacak.')}
             {realtime.status === 'connected'
-              ? ` ${realtime.roomName} ses görüşmesinden ayrılacaksın.`
+              ? ` ${t('{roomName} ses görüşmesinden ayrılacaksın.', { roomName: realtime.roomName ?? '' })}`
               : ''}
           </p>
           <div className="ref-settings-inline">
@@ -366,7 +369,7 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
           </div>
           <div className="button-row">
             <button className="button secondary" disabled={busy} onClick={() => setLogout(false)}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button danger"
@@ -385,7 +388,7 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
               }}
             >
               <LogOut size={16} />
-              Çıkış yap
+              {t('Çıkış yap')}
             </button>
           </div>
         </Modal>
@@ -424,7 +427,9 @@ export default function Settings({
   const community = useCommunity();
   const realtime = useRealtime();
   const [params, setParams] = useSearchParams();
-  const tab = tabs.some((t) => t.id === params.get('tab')) ? params.get('tab')! : 'appearance';
+  const tab = tabs.some((entry) => entry.id === params.get('tab'))
+    ? params.get('tab')!
+    : 'appearance';
   const savedPreferences = useRooms((state) => state.preferences);
   const [p, setDraftPreferences] = useState(() => ({ ...savedPreferences }));
   const setPreference = <K extends keyof typeof p>(key: K, value: (typeof p)[K]) =>
@@ -463,9 +468,9 @@ export default function Settings({
         useCommunity.getState().user?.id !== accountId ||
         useCommunity.getState().serverUrl !== serverUrl
       )
-        throw new Error('Oturum değişti. Ayarları yeniden aç.');
+        throw new Error(t('Oturum değişti. Ayarları yeniden aç.'));
       useRooms.getState().setPreferences(p);
-      notify('Ayarlar kaydedildi.');
+      notify(t('Ayarlar kaydedildi.'));
       return true;
     } catch (failure) {
       try {
@@ -582,7 +587,7 @@ export default function Settings({
   const cameraVideo = useRef<HTMLVideoElement | null>(null);
   const stopCamera = useCallback(() => {
     cameraEpoch.current++;
-    cameraRef.current?.getTracks().forEach((t) => t.stop());
+    cameraRef.current?.getTracks().forEach((track) => track.stop());
     cameraRef.current = null;
     setCameraStream(null);
   }, []);
@@ -599,7 +604,7 @@ export default function Settings({
         video: cameraId ? { deviceId: { exact: cameraId } } : true,
       });
       if (!mounted.current || epoch !== cameraEpoch.current) {
-        stream.getTracks().forEach((t) => t.stop());
+        stream.getTracks().forEach((track) => track.stop());
         return;
       }
       cameraRef.current = stream;
@@ -607,13 +612,13 @@ export default function Settings({
       void refreshDevices();
       stream.getVideoTracks()[0]?.addEventListener('ended', () => {
         stopCamera();
-        setError('Kamera bağlantısı kesildi. Cihaz listesini yenile.');
+        setError(t('Kamera bağlantısı kesildi. Cihaz listesini yenile.'));
       });
     } catch (e) {
       setError(
         e instanceof DOMException && e.name === 'NotAllowedError'
-          ? 'Kamera izni kapalı. Sistem gizlilik ayarlarından Tayfa’ya kamera izni ver.'
-          : 'Kamera kullanılamıyor. Cihaz listesini yenile ve başka bir kamera seç.',
+          ? t('Kamera izni kapalı. Sistem gizlilik ayarlarından Tayfa’ya kamera izni ver.')
+          : t('Kamera kullanılamıyor. Cihaz listesini yenile ve başka bir kamera seç.'),
       );
     }
   };
@@ -687,7 +692,7 @@ export default function Settings({
     denoiserRef.current?.disconnect();
     denoiserRef.current?.destroy();
     denoiserRef.current = null;
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (audioRef.current) void audioRef.current.close();
     audioRef.current = null;
@@ -742,7 +747,7 @@ export default function Settings({
         video: false,
       });
       if (!mounted.current || epoch !== micEpoch.current) {
-        stream.getTracks().forEach((t) => t.stop());
+        stream.getTracks().forEach((track) => track.stop());
         return;
       }
       streamRef.current = stream;
@@ -756,7 +761,7 @@ export default function Settings({
           error: () => {
             if (epoch !== micEpoch.current) return;
             stopMic();
-            setError('Gürültü filtresi durdu. Mikrofon denemesini yeniden başlat.');
+            setError(t('Gürültü filtresi durdu. Mikrofon denemesini yeniden başlat.'));
           },
         });
         if (!mounted.current || epoch !== micEpoch.current) {
@@ -820,7 +825,7 @@ export default function Settings({
       oscillator.start();
       oscillator.stop(context.currentTime + 0.6);
       oscillator.onended = () => void context.close();
-      notify('Ses \u00E7al\u0131n\u0131yor.');
+      notify(t('Ses çalınıyor.'));
     } catch {
       void context.close();
       setError(tr('The selected output could not be used. Choose System default and retry.'));
@@ -863,7 +868,7 @@ export default function Settings({
   return (
     <div className={`settings-page reference-settings page-enter ref-tab-${tab}`}>
       <div className="settings-dismiss">
-        <IconButton label="Ayarları kapat" onClick={onClose}>
+        <IconButton label={t('Ayarları kapat')} onClick={onClose}>
           <X size={22} />
         </IconButton>
         <kbd>ESC</kbd>
@@ -891,28 +896,28 @@ export default function Settings({
           <div className="ref-nav-title" ref={extraSettingsRef}>
             <button
               aria-expanded={extraSettings}
-              aria-label="Diğer ayarlar"
+              aria-label={t('Diğer ayarlar')}
               onClick={() => setExtraSettings((value) => !value)}
             >
-              Ayarlar
+              {t('Ayarlar')}
               <ChevronDown size={17} />
             </button>
             {extraSettings && (
               <div className="ref-settings-extra" role="menu">
                 {tabs
-                  .filter((t) => ['shortcuts', 'diagnostics'].includes(t.id))
-                  .map((t) => (
+                  .filter((item) => ['shortcuts', 'diagnostics'].includes(item.id))
+                  .map((item) => (
                     <button
                       role="menuitem"
-                      key={t.id}
+                      key={item.id}
                       onClick={() => {
-                        setParams({ tab: t.id });
+                        setParams({ tab: item.id });
                         setExtraSettings(false);
                         setError('');
                       }}
                     >
-                      <t.icon size={17} />
-                      {t.label}
+                      <item.icon size={17} />
+                      {item.label}
                     </button>
                   ))}
               </div>
@@ -921,7 +926,7 @@ export default function Settings({
           <div className="ref-settings-nav-scroll">
             {[
               {
-                label: 'KULLANICI AYARLARI',
+                label: t('KULLANICI AYARLARI'),
                 ids: [
                   'profile',
                   'audio',
@@ -938,7 +943,7 @@ export default function Settings({
                 label:
                   community.spaces
                     .find((space) => space.id === community.activeSpaceId)
-                    ?.name.toLocaleUpperCase('tr-TR') || 'TOPLULUK',
+                    ?.name.toLocaleUpperCase(locale) || t('TOPLULUK'),
                 ids: [
                   'server-profile',
                   'cinema',
@@ -958,26 +963,26 @@ export default function Settings({
               <div className="ref-settings-nav-group" key={group.label}>
                 <span className="ref-nav-group">{group.label}</span>
                 {group.ids.map((id) => {
-                  const t = tabs.find((item) => item.id === id)!;
+                  const entry = tabs.find((item) => item.id === id)!;
                   return (
                     <button
-                      key={t.id}
-                      className={tab === t.id ? 'selected' : ''}
-                      aria-current={tab === t.id ? 'page' : undefined}
+                      key={entry.id}
+                      className={tab === entry.id ? 'selected' : ''}
+                      aria-current={tab === entry.id ? 'page' : undefined}
                       onClick={() => {
-                        setParams({ tab: t.id });
+                        setParams({ tab: entry.id });
                         setError('');
                       }}
                     >
-                      <t.icon size={17} />
-                      {t.label}
+                      <entry.icon size={17} />
+                      {entry.label}
                     </button>
                   );
                 })}
                 {group.label === 'Tayfa' && (
                   <button onClick={onClose}>
                     <ArrowLeft size={17} />
-                    Sohbete dön
+                    {t('Sohbete dön')}
                   </button>
                 )}
               </div>
@@ -989,7 +994,7 @@ export default function Settings({
           <button
             className="settings-navigation-scrim"
             tabIndex={-1}
-            aria-label="Ayar menüsünü kapat"
+            aria-label={t('Ayar menüsünü kapat')}
             onClick={closeNavigation}
           />
         )}
@@ -998,7 +1003,7 @@ export default function Settings({
             <button
               ref={navigationButton}
               className="settings-navigation-toggle"
-              aria-label="Ayar kategorileri"
+              aria-label={t('Ayar kategorileri')}
               aria-expanded={navigationOpen}
               aria-controls="settings-categories"
               onClick={() => setNavigationOpen(true)}
@@ -1006,7 +1011,7 @@ export default function Settings({
               <Menu size={20} />
             </button>
             <Settings2 size={22} />
-            <strong>{tabs.find((t) => t.id === tab)?.label}</strong>
+            <strong>{tabs.find((entry) => entry.id === tab)?.label}</strong>
             {[
               'server-profile',
               'cinema',
@@ -1018,19 +1023,20 @@ export default function Settings({
             ].includes(tab) && (
               <span className="ref-settings-community-name">
                 {community.spaces.find((space) => space.id === community.activeSpaceId)?.name ||
-                  'Topluluk'}
+                  t('Topluluk')}
               </span>
             )}
           </header>
           <div className="settings-content">
             {tab === 'appearance' && (
               <>
-                <Heading title="Görünüm ve erişilebilirlik" />
+                <Heading title={t('Görünüm ve erişilebilirlik')} />
+                <LanguageSetting />
                 <div className="ref-settings-grid">
                   <section>
-                    <h2>Yoğunluk</h2>
+                    <h2>{t('Yoğunluk')}</h2>
                     <p className="ref-settings-description">
-                      Mesajlar ve kanallar arasındaki boşluğu seç.
+                      {t('Mesajlar ve kanallar arasındaki boşluğu seç.')}
                     </p>
                     <div className="ref-density-options">
                       {[false, true].map((compact) => (
@@ -1045,20 +1051,22 @@ export default function Settings({
                               <i key={i} />
                             ))}
                           </span>
-                          {compact ? 'Kompakt' : 'Rahat'}
+                          {compact ? t('Kompakt') : t('Rahat')}
                         </button>
                       ))}
                     </div>
                   </section>
                   <section>
-                    <h2>Metin boyutu</h2>
-                    <p className="ref-settings-description">Sohbet mesajlarının metin boyutu.</p>
+                    <h2>{t('Metin boyutu')}</h2>
+                    <p className="ref-settings-description">
+                      {t('Sohbet mesajlarının metin boyutu.')}
+                    </p>
                     <div className="ref-font-size-control">
                       <span>14</span>
                       <input
                         type="range"
-                        aria-label="Sohbet metni boyutu"
-                        aria-valuetext={`${p.chatFontSize} piksel`}
+                        aria-label={t('Sohbet metni boyutu')}
+                        aria-valuetext={t('{size} piksel', { size: p.chatFontSize })}
                         min={14}
                         max={18}
                         step={1}
@@ -1076,69 +1084,73 @@ export default function Settings({
                 </div>
                 <div className="ref-settings-grid ref-appearance-surfaces">
                   <section>
-                    <h2>Hareket ve yüzeyler</h2>
+                    <h2>{t('Hareket ve yüzeyler')}</h2>
                     <Row
-                      title="Hareketi azalt"
-                      description="Animasyonlar ve geçiş hareketleri azaltılır."
+                      title={t('Hareketi azalt')}
+                      description={t('Animasyonlar ve geçiş hareketleri azaltılır.')}
                     >
                       <Toggle
-                        label="Hareketi azalt"
+                        label={t('Hareketi azalt')}
                         value={p.reduceMotion}
                         onChange={(v) => setPreference('reduceMotion', v)}
                       />
                     </Row>
                     <Row
-                      title="Şeffaflığı azalt"
-                      description="Cam paneller ve açılır yüzeyler opak görünür."
+                      title={t('Şeffaflığı azalt')}
+                      description={t('Cam paneller ve açılır yüzeyler opak görünür.')}
                     >
                       <Toggle
-                        label="Şeffaflığı azalt"
+                        label={t('Şeffaflığı azalt')}
                         value={p.reduceTransparency}
                         onChange={(v) => setPreference('reduceTransparency', v)}
                       />
                     </Row>
                     <Row
-                      title="Sistem tercihlerimi kullan"
-                      description="Sistemin desteklediği hareket ve şeffaflık azaltma tercihlerini izler."
+                      title={t('Sistem tercihlerimi kullan')}
+                      description={t(
+                        'Sistemin desteklediği hareket ve şeffaflık azaltma tercihlerini izler.',
+                      )}
                     >
                       <Toggle
-                        label="Sistem tercihlerimi kullan"
+                        label={t('Sistem tercihlerimi kullan')}
                         value={p.followSystemAccessibility}
                         onChange={(value) => setPreference('followSystemAccessibility', value)}
                       />
                     </Row>
                   </section>
                   <aside className="ref-chat-preview">
-                    <span className="ref-preview-label">METİN ÖNİZLEMESİ</span>
+                    <span className="ref-preview-label">{t('METİN ÖNİZLEMESİ')}</span>
                     <div className="ref-settings-inline">
                       <Avatar name={community.user?.displayName || 'Tayfa'} />
                       <div>
                         <strong>{community.user?.displayName || 'Tayfa'}</strong>
-                        <p>Metin ve durum işaretleri.</p>
+                        <p>{t('Metin ve durum işaretleri.')}</p>
                       </div>
                     </div>
                   </aside>
                 </div>
                 <section className="ref-settings-section">
-                  <h2>Klavye ve odak</h2>
+                  <h2>{t('Klavye ve odak')}</h2>
                   <p className="ref-settings-description">
-                    Tab ile ilerle, Shift + Tab ile geri dön. Escape açık paneli kapatır.
+                    {t('Tab ile ilerle, Shift + Tab ile geri dön. Escape açık paneli kapatır.')}
                   </p>
                   <div className="ref-settings-inline">
                     <button
                       className="button primary ref-focus-sample"
                       onClick={(e) => e.currentTarget.focus()}
                     >
-                      Odaklı düğme
+                      {t('Odaklı düğme')}
                     </button>
                     <kbd>Tab</kbd>
-                    <span className="ref-settings-note">Odak çevre çizgisiyle gösterilir.</span>
+                    <span className="ref-settings-note">
+                      {t('Odak çevre çizgisiyle gösterilir.')}
+                    </span>
                   </div>
                 </section>
-                <Row title="Vurgu" description="">
+                <Row title={t('Vurgu')} description="">
                   <div className="accent-options">
                     <button
-                      aria-label="İnci vurgusu"
+                      aria-label={t('İnci vurgusu')}
                       aria-pressed={p.accent === 'pearl'}
                       className={`accent pearl ${p.accent === 'pearl' ? 'chosen' : ''}`}
                       onClick={() => setPreference('accent', 'pearl')}
@@ -1146,7 +1158,7 @@ export default function Settings({
                       {p.accent === 'pearl' && <Check size={13} />}
                     </button>
                     <button
-                      aria-label="Adaçayı vurgusu"
+                      aria-label={t('Adaçayı vurgusu')}
                       aria-pressed={p.accent === 'sage'}
                       className={`accent sage ${p.accent === 'sage' ? 'chosen' : ''}`}
                       onClick={() => setPreference('accent', 'sage')}
@@ -1155,27 +1167,29 @@ export default function Settings({
                     </button>
                   </div>
                 </Row>
-                <Row title="Arkadaşlar paneli" description="">
+                <Row title={t('Arkadaşlar paneli')} description="">
                   <Toggle
-                    label="Arkadaşlar panelini göster"
+                    label={t('Arkadaşlar panelini göster')}
                     value={p.showFriends}
                     onChange={(v) => setPreference('showFriends', v)}
                   />
                 </Row>
                 <div className="ref-settings-bottom">
                   <Eye size={14} />
-                  Koyu tema
+                  {t('Koyu tema')}
                 </div>
               </>
             )}
             {tab === 'audio' && (
               <>
-                <Heading title="Ses ve video" />
+                <Heading title={t('Ses ve video')} />
                 {devicesLoaded &&
                   !devices.some((d) => d.kind === 'audioinput' || d.kind === 'videoinput') &&
                   !error && (
                     <div className="ref-settings-callout warning" role="status">
-                      Mikrofon veya kamera bulunamadı. Cihaz bağladıktan sonra listeyi yenile.
+                      {t(
+                        'Mikrofon veya kamera bulunamadı. Cihaz bağladıktan sonra listeyi yenile.',
+                      )}
                     </div>
                   )}
                 {error && (
@@ -1185,45 +1199,45 @@ export default function Settings({
                 )}
                 <div className="ref-settings-grid">
                   <section>
-                    <h2>Ses girişi</h2>
+                    <h2>{t('Ses girişi')}</h2>
                     <label className="field-label">
-                      Mikrofon
+                      {t('Mikrofon')}
                       <select
-                        aria-label="Mikrofon"
+                        aria-label={t('Mikrofon')}
                         value={p.inputId}
                         onChange={(e) => {
                           stopMic();
                           setPreference('inputId', e.target.value);
                         }}
                       >
-                        <option value="">Sistem varsayılanı</option>
+                        <option value="">{t('Sistem varsayılanı')}</option>
                         {p.inputId && !devices.some((d) => d.deviceId === p.inputId) && (
-                          <option value={p.inputId}>Seçili mikrofon kullanılamıyor</option>
+                          <option value={p.inputId}>{t('Seçili mikrofon kullanılamıyor')}</option>
                         )}
                         {devices
                           .filter((d) => d.kind === 'audioinput' && d.deviceId !== 'default')
                           .map((d, i) => (
                             <option key={d.deviceId} value={d.deviceId}>
-                              {d.label || `Mikrofon ${i + 1}`}
+                              {d.label || t('Mikrofon {number}', { number: i + 1 })}
                             </option>
                           ))}
                       </select>
                     </label>
                     {realtime.status === 'connected' && realtime.inputDevice && (
                       <p className="ref-settings-note" role="status">
-                        Odada duyulan mikrofon: {realtime.inputDevice}
+                        {t('Odada duyulan mikrofon: {device}', { device: realtime.inputDevice })}
                       </p>
                     )}
                     <Row
-                      title="Giriş seviyesi"
-                      description="Mikrofon denemesinde ölçülen yerel seviye."
+                      title={t('Giriş seviyesi')}
+                      description={t('Mikrofon denemesinde ölçülen yerel seviye.')}
                     >
                       <span>{Math.round(level)}%</span>
                     </Row>
                     <div
                       className="ref-level-meter"
                       role="meter"
-                      aria-label="Mikrofon giriş seviyesi"
+                      aria-label={t('Mikrofon giriş seviyesi')}
                       aria-valuenow={Math.round(level)}
                       aria-valuemin={0}
                       aria-valuemax={100}
@@ -1235,46 +1249,48 @@ export default function Settings({
                     <div className="ref-settings-inline spread">
                       <button className="button secondary" onClick={() => void startMic()}>
                         {testing ? <Square size={16} /> : <Mic size={16} />}{' '}
-                        {testing ? 'Denemeyi bitir' : 'Mikrofonu dene'}
+                        {testing ? t('Denemeyi bitir') : t('Mikrofonu dene')}
                       </button>
                       <span className="ref-settings-note">{micState}</span>
                     </div>
                   </section>
                   <section>
-                    <h2>Ses çıkışı</h2>
+                    <h2>{t('Ses çıkışı')}</h2>
                     <Row
-                      title="Oda giriş ve çıkış sesleri"
-                      description="Yalnızca bulunduğun odadaki hareketler."
+                      title={t('Oda giriş ve çıkış sesleri')}
+                      description={t('Yalnızca bulunduğun odadaki hareketler.')}
                     >
                       <Toggle
-                        label="Oda giriş ve çıkış sesleri"
+                        label={t('Oda giriş ve çıkış sesleri')}
                         value={p.roomEventSounds}
                         onChange={(value) => setPreference('roomEventSounds', value)}
                       />
                     </Row>
                     <Row
-                      title="Kişisel giriş sesleri"
+                      title={t('Kişisel giriş sesleri')}
                       description={
                         p.roomEventSounds
-                          ? 'Kapalıyken herkes için klasik ses çalar.'
-                          : 'Önce oda giriş ve çıkış seslerini aç.'
+                          ? t('Kapalıyken herkes için klasik ses çalar.')
+                          : t('Önce oda giriş ve çıkış seslerini aç.')
                       }
                     >
                       <Toggle
-                        label="Kişisel giriş sesleri"
+                        label={t('Kişisel giriş sesleri')}
                         disabled={!p.roomEventSounds}
                         value={p.personalSounds}
                         onChange={(value) => setPreference('personalSounds', value)}
                       />
                     </Row>
                     <Row
-                      title="Efekt ses düzeyi"
-                      description="Giriş ve çıkış seslerinin bu cihazdaki düzeyi. Konuşmaları etkilemez."
+                      title={t('Efekt ses düzeyi')}
+                      description={t(
+                        'Giriş ve çıkış seslerinin bu cihazdaki düzeyi. Konuşmaları etkilemez.',
+                      )}
                     >
                       <label className="personal-sound-level">
                         <input
                           type="range"
-                          aria-label="Efekt ses düzeyi"
+                          aria-label={t('Efekt ses düzeyi')}
                           aria-valuetext={`${Math.round(p.soundEffectsLevel * 100)}%`}
                           min={0}
                           max={1}
@@ -1288,49 +1304,55 @@ export default function Settings({
                       </label>
                     </Row>
                     <label className="field-label">
-                      Hoparlör veya kulaklık
+                      {t('Hoparlör veya kulaklık')}
                       <select
-                        aria-label="Hoparlör veya kulaklık"
+                        aria-label={t('Hoparlör veya kulaklık')}
                         value={p.outputId}
                         onChange={(e) => setPreference('outputId', e.target.value)}
                       >
-                        <option value="">Sistem varsayılanı</option>
+                        <option value="">{t('Sistem varsayılanı')}</option>
                         {p.outputId && !devices.some((d) => d.deviceId === p.outputId) && (
-                          <option value={p.outputId}>Seçili hoparlör kullanılamıyor</option>
+                          <option value={p.outputId}>{t('Seçili hoparlör kullanılamıyor')}</option>
                         )}
                         {devices
                           .filter((d) => d.kind === 'audiooutput' && d.deviceId !== 'default')
                           .map((d, i) => (
                             <option key={d.deviceId} value={d.deviceId}>
-                              {d.label || `Hoparlör ${i + 1}`}
+                              {d.label || t('Hoparlör {number}', { number: i + 1 })}
                             </option>
                           ))}
                       </select>
                     </label>
-                    <Row title="Çıkış seviyesi" description="Sistem ses ayarlarından yönetilir.">
+                    <Row
+                      title={t('Çıkış seviyesi')}
+                      description={t('Sistem ses ayarlarından yönetilir.')}
+                    >
                       <Volume2 size={16} />
                     </Row>
                     <button className="button secondary" onClick={() => void speakerTest()}>
                       <Volume2 size={16} />
-                      Test sesini çal
+                      {t('Test sesini çal')}
                     </button>
-                    <p className="ref-settings-note">Test sesi yalnızca bu cihazda çalar.</p>
+                    <p className="ref-settings-note">{t('Test sesi yalnızca bu cihazda çalar.')}</p>
                   </section>
                 </div>
                 <PersonalSoundSettings outputId={p.outputId} level={p.soundEffectsLevel} />
                 <div className="ref-settings-grid ref-audio-lower">
                   <section>
-                    <h2>Konuşma davranışı</h2>
-                    <Row title="Bas konuş" description="Uygulama odaktayken tuşları basılı tut.">
+                    <h2>{t('Konuşma davranışı')}</h2>
+                    <Row
+                      title={t('Bas konuş')}
+                      description={t('Uygulama odaktayken tuşları basılı tut.')}
+                    >
                       <Toggle
-                        label="Bas konuş"
+                        label={t('Bas konuş')}
                         value={p.pushToTalk}
                         onChange={(v) => setPreference('pushToTalk', v)}
                       />
                     </Row>
                     <Row
-                      title="Bas konuş tuşu"
-                      description="Basılı tuttuğun sürece mikrofonun açık kalır."
+                      title={t('Bas konuş tuşu')}
+                      description={t('Basılı tuttuğun sürece mikrofonun açık kalır.')}
                     >
                       <PushToTalkKeyField
                         value={p.pushToTalkKey}
@@ -1338,16 +1360,16 @@ export default function Settings({
                       />
                     </Row>
                     <Unsupported
-                      title="Girişte mikrofonumu sessize al"
-                      reason="Ses odalarına katılırken mikrofon her zaman kapalı başlar."
+                      title={t('Girişte mikrofonumu sessize al')}
+                      reason={t('Ses odalarına katılırken mikrofon her zaman kapalı başlar.')}
                       value
                     />
                     <Row
-                      title="Gürültü azaltma"
-                      description="Mikrofonundan gönderilen sesi bu cihazda temizler."
+                      title={t('Gürültü azaltma')}
+                      description={t('Mikrofonundan gönderilen sesi bu cihazda temizler.')}
                     >
                       <Toggle
-                        label="Gürültü azaltma"
+                        label={t('Gürültü azaltma')}
                         value={p.noiseSuppression}
                         onChange={(value) => {
                           stopMic();
@@ -1356,11 +1378,13 @@ export default function Settings({
                       />
                     </Row>
                     <Row
-                      title="Filtre modu"
-                      description="Güçlü mod, konuşma algılama ile ani arka plan seslerini de bastırır."
+                      title={t('Filtre modu')}
+                      description={t(
+                        'Güçlü mod, konuşma algılama ile ani arka plan seslerini de bastırır.',
+                      )}
                     >
                       <select
-                        aria-label="Gürültü filtresi modu"
+                        aria-label={t('Gürültü filtresi modu')}
                         disabled={!p.noiseSuppression}
                         value={p.noiseSuppressionMode}
                         onChange={(event) => {
@@ -1371,47 +1395,51 @@ export default function Settings({
                           );
                         }}
                       >
-                        <option value="strong">Güçlü</option>
-                        <option value="standard">Standart</option>
+                        <option value="strong">{t('Güçlü')}</option>
+                        <option value="standard">{t('Standart')}</option>
                       </select>
                     </Row>
                     <p className="ref-settings-note" role="status">
                       {realtime.noiseProcessing?.status === 'failed'
-                        ? 'Filtre hatası · mikrofon kapatıldı'
+                        ? t('Filtre hatası · mikrofon kapatıldı')
                         : realtime.noiseProcessing?.status === 'starting'
-                          ? 'Filtre hazırlanıyor…'
+                          ? t('Filtre hazırlanıyor…')
                           : realtime.noiseProcessing?.status === 'active' && !realtime.muted
-                            ? `${realtime.noiseProcessing.mode === 'strong' ? 'Güçlü' : 'Standart'} filtre etkin${realtime.noiseProcessing.mode === 'strong' && realtime.noiseProcessing.stats?.speechGateOpen === false ? ' · konuşma bekleniyor' : ''}`
-                            : 'Mikrofon yayını kapalı'}
+                            ? realtime.noiseProcessing.mode !== 'strong'
+                              ? t('Standart filtre etkin')
+                              : realtime.noiseProcessing.stats?.speechGateOpen === false
+                                ? t('Güçlü filtre etkin · konuşma bekleniyor')
+                                : t('Güçlü filtre etkin')
+                            : t('Mikrofon yayını kapalı')}
                     </p>
                   </section>
                   <section>
-                    <h2>Kamera</h2>
+                    <h2>{t('Kamera')}</h2>
                     <label className="field-label">
-                      Kamera
+                      {t('Kamera')}
                       <select
-                        aria-label="Kamera"
+                        aria-label={t('Kamera')}
                         value={cameraId}
                         onChange={(e) => {
                           stopCamera();
                           setCameraId(e.target.value);
                         }}
                       >
-                        <option value="">Sistem varsayılanı</option>
+                        <option value="">{t('Sistem varsayılanı')}</option>
                         {devices
                           .filter((d) => d.kind === 'videoinput')
                           .map((d, i) => (
                             <option key={d.deviceId} value={d.deviceId}>
-                              {d.label || `Kamera ${i + 1}`}
+                              {d.label || t('Kamera {number}', { number: i + 1 })}
                             </option>
                           ))}
                       </select>
                     </label>
                     <button className="button secondary" onClick={() => void toggleCamera()}>
                       <Video size={16} />
-                      {cameraStream ? 'Önizlemeyi kapat' : 'Kamerayı dene'}
+                      {cameraStream ? t('Önizlemeyi kapat') : t('Kamerayı dene')}
                     </button>
-                    <p className="ref-settings-note">Kamera denemesi odaya yayınlanmaz.</p>
+                    <p className="ref-settings-note">{t('Kamera denemesi odaya yayınlanmaz.')}</p>
                     <div className="ref-camera-preview">
                       {cameraStream ? (
                         <video
@@ -1419,12 +1447,12 @@ export default function Settings({
                           autoPlay
                           muted
                           playsInline
-                          aria-label="Yerel kamera önizlemesi"
+                          aria-label={t('Yerel kamera önizlemesi')}
                         />
                       ) : (
                         <>
                           <VideoOff size={33} />
-                          <span>Kamera kapalı</span>
+                          <span>{t('Kamera kapalı')}</span>
                         </>
                       )}
                     </div>
@@ -1436,18 +1464,18 @@ export default function Settings({
                   microphoneLive={!realtime.muted}
                 />
                 <Unsupported
-                  title="Ekran paylaşımında sistem sesi"
-                  reason="Bu sistem ve paylaşım yöntemi için destek doğrulanmadı."
+                  title={t('Ekran paylaşımında sistem sesi')}
+                  reason={t('Bu sistem ve paylaşım yöntemi için destek doğrulanmadı.')}
                 />
                 <div className="ref-settings-bottom">
                   <button className="text-button" onClick={() => void refreshDevices()}>
                     <RefreshCw size={14} />
-                    Cihaz listesini yenile
+                    {t('Cihaz listesini yenile')}
                   </button>
                   <span>
                     {realtime.status === 'connected'
-                      ? `${realtime.roomName} · Ses bağlı`
-                      : 'Ses odasına bağlı değil'}
+                      ? t('{roomName} · Ses bağlı', { roomName: realtime.roomName ?? '' })
+                      : t('Ses odasına bağlı değil')}
                   </span>
                 </div>
               </>
@@ -1460,7 +1488,7 @@ export default function Settings({
             {tab === 'schedules' && <AgentReferenceSettingsContent view="schedules" />}
             {tab === 'services' && (
               <>
-                <h3>{'Ba\u011Flant\u0131lar'}</h3>
+                <h3>{t('Bağlantılar')}</h3>
                 <ConnectionPane />
                 <PersonalProviders notify={notify} />
                 {[
@@ -1469,7 +1497,10 @@ export default function Settings({
                     description: tr('Voice, video & screen sharing'),
                     note:
                       realtime.status === 'connected'
-                        ? `${realtime.roomName} odasına bağlı. Mikrofonu, kamerayı ve paylaşımı odandan yönet.`
+                        ? t(
+                            '{roomName} odasına bağlı. Mikrofonu, kamerayı ve paylaşımı odandan yönet.',
+                            { roomName: realtime.roomName ?? '' },
+                          )
                         : tr(
                             'Sign in, open a voice channel, and join with your mic off. Screen capture starts only after you select a source.',
                           ),
@@ -1505,17 +1536,17 @@ export default function Settings({
 
             {tab === 'shortcuts' && (
               <>
-                <h3>{'Klavye'}</h3>
+                <h3>{t('Klavye')}</h3>
                 {[
                   [tr('Find a room or command'), '⌘ / Ctrl K'],
                   [tr('Home / Spaces / Chat / Voice / Cinema'), '⌘ / Ctrl 1–5'],
                   [tr('Open settings'), '⌘ / Ctrl ,'],
-                  [tr('Mikrofonu aç / kapat'), '⌘ / Ctrl Shift M'],
+                  [t('Mikrofonu aç / kapat'), '⌘ / Ctrl Shift M'],
                   [tr('Push to talk (when enabled)'), 'Ctrl Shift Space'],
                   [tr('Play / pause local media'), 'Space'],
                   [tr('Seek local media 5 seconds'), '← / →'],
                   [tr('Close topmost dialog'), 'Esc'],
-                  [tr('Mesaj gönder'), 'Enter'],
+                  [t('Mesaj gönder'), 'Enter'],
                   [tr('New line'), 'Shift Enter'],
                 ].map(([a, b]) => (
                   <div className="shortcut-row" key={a}>
@@ -1528,25 +1559,25 @@ export default function Settings({
             )}
             {tab === 'desktop' && (
               <>
-                <Heading title="Bildirimler ve masaüstü" />
+                <Heading title={t('Bildirimler ve masaüstü')} />
                 {notificationFixture?.variant === 'system_permission' && (
                   <div className="ref-settings-callout warning" role="status">
-                    Geliştirme örneği · sistem bildirimleri kullanılamıyor.
+                    {t('Geliştirme örneği · sistem bildirimleri kullanılamıyor.')}
                   </div>
                 )}
                 <div className="ref-notification-columns">
                   <section>
-                    <h2>Bildirimler</h2>
+                    <h2>{t('Bildirimler')}</h2>
                     <Row
-                      title="Masaüstü bildirimleri"
+                      title={t('Masaüstü bildirimleri')}
                       description={
                         notifications?.supported
-                          ? 'Tayfa arka plandayken yeni mesajı haber verir.'
-                          : 'Sistem bildirimleri bu ortamda kullanılamıyor.'
+                          ? t('Tayfa arka plandayken yeni mesajı haber verir.')
+                          : t('Sistem bildirimleri bu ortamda kullanılamıyor.')
                       }
                     >
                       <Toggle
-                        label="Masaüstü bildirimleri"
+                        label={t('Masaüstü bildirimleri')}
                         value={notifications?.enabled ?? false}
                         disabled={!notifications?.supported || notificationBusy}
                         onChange={async (value) => {
@@ -1561,9 +1592,12 @@ export default function Settings({
                         }}
                       />
                     </Row>
-                    <Row title="Bildirim sesleri" description="Sistem bildirim sesini kullanır.">
+                    <Row
+                      title={t('Bildirim sesleri')}
+                      description={t('Sistem bildirim sesini kullanır.')}
+                    >
                       <Toggle
-                        label="Bildirim sesleri"
+                        label={t('Bildirim sesleri')}
                         value={notifications?.sound ?? false}
                         disabled={
                           !notifications?.supported || !notifications.enabled || notificationBusy
@@ -1581,15 +1615,15 @@ export default function Settings({
                       />
                     </Row>
                     <Unsupported
-                      title="Mesaj önizlemesini göster"
-                      reason="Mesaj içerikleri masaüstü bildirimlerine eklenmez."
+                      title={t('Mesaj önizlemesini göster')}
+                      reason={t('Mesaj içerikleri masaüstü bildirimlerine eklenmez.')}
                     />
                     <Row
-                      title="Görüşmedeyken bildirimleri duraklat"
-                      description="Ses bağlantısı sürerken masaüstü bildirimlerini göstermez."
+                      title={t('Görüşmedeyken bildirimleri duraklat')}
+                      description={t('Ses bağlantısı sürerken masaüstü bildirimlerini göstermez.')}
                     >
                       <Toggle
-                        label="Görüşmedeyken bildirimleri duraklat"
+                        label={t('Görüşmedeyken bildirimleri duraklat')}
                         value={notifications?.pauseDuringVoice ?? false}
                         disabled={!notifications?.supported || notificationBusy}
                         onChange={async (value) => {
@@ -1607,52 +1641,56 @@ export default function Settings({
                     <ChannelNotifications bridge={notificationFixture?.notifications} />
                   </section>
                   <aside>
-                    <span className="ref-preview-label">BİLDİRİM BİÇİMİ</span>
+                    <span className="ref-preview-label">{t('BİLDİRİM BİÇİMİ')}</span>
                     <div className="ref-notification-preview">
                       <Bell size={22} />
                       <div>
                         <strong>Tayfa</strong>
-                        <p>Mesaj içeriği gizli.</p>
+                        <p>{t('Mesaj içeriği gizli.')}</p>
                       </div>
                     </div>
                     <div className="ref-settings-divider" />
-                    <span className="ref-preview-label">MASAÜSTÜ</span>
+                    <span className="ref-preview-label">{t('MASAÜSTÜ')}</span>
                     <div className="ref-desktop-summary">
                       <strong>Tayfa</strong>
                       <p>
                         {realtime.status === 'connected'
-                          ? `${realtime.roomName} · Ses bağlı`
-                          : 'Ses odasına bağlı değil'}
+                          ? t('{roomName} · Ses bağlı', { roomName: realtime.roomName ?? '' })
+                          : t('Ses odasına bağlı değil')}
                       </p>
                       <button
                         className="text-button"
                         aria-expanded={trayPreview}
                         onClick={() => setTrayPreview((value) => !value)}
                       >
-                        Menü seçenekleri
+                        {t('Menü seçenekleri')}
                       </button>
                       {trayPreview && (
                         <Modal
-                          title="Menü çubuğu"
+                          title={t('Menü çubuğu')}
                           className="ref-settings-confirm"
                           onClose={() => setTrayPreview(false)}
                         >
-                          <p>Sistem menüsündeki komutlar.</p>
+                          <p>{t('Sistem menüsündeki komutlar.')}</p>
                           <div className="ref-tray-preview">
                             <strong>Tayfa</strong>
                             <ul>
-                              <li>Tayfa’yı aç</li>
-                              <li>Çıkış</li>
+                              <li>{t('Tayfa’yı aç')}</li>
+                              <li>{t('Çıkış')}</li>
                             </ul>
-                            <small>Çıkış, ses bağlantısını da sonlandırır.</small>
+                            <small>{t('Çıkış, ses bağlantısını da sonlandırır.')}</small>
                           </div>
-                          <p>Mikrofon ve ses odası komutları sistem menüsünde henüz sunulmuyor.</p>
+                          <p>
+                            {t(
+                              'Mikrofon ve ses odası komutları sistem menüsünde henüz sunulmuyor.',
+                            )}
+                          </p>
                           <div className="button-row">
                             <button
                               className="button secondary"
                               onClick={() => setTrayPreview(false)}
                             >
-                              Tercihlere dön
+                              {t('Tercihlere dön')}
                             </button>
                           </div>
                         </Modal>
@@ -1661,17 +1699,17 @@ export default function Settings({
                   </aside>
                 </div>
                 <section className="ref-settings-section">
-                  <h2>Masaüstü davranışı</h2>
+                  <h2>{t('Masaüstü davranışı')}</h2>
                   <Row
-                    title="Oturum açınca başlat"
+                    title={t('Oturum açınca başlat')}
                     description={
                       window.rooms
-                        ? 'Paketlenmiş macOS uygulamasında kullanılabilir.'
-                        : 'Bu tercih masaüstü uygulamasını gerektirir.'
+                        ? t('Paketlenmiş macOS uygulamasında kullanılabilir.')
+                        : t('Bu tercih masaüstü uygulamasını gerektirir.')
                     }
                   >
                     <Toggle
-                      label="Oturum açınca başlat"
+                      label={t('Oturum açınca başlat')}
                       value={autoStart}
                       disabled={!window.rooms}
                       onChange={async (v) => {
@@ -1679,7 +1717,7 @@ export default function Settings({
                           const applied = await window.rooms!.setLoginItem(v);
                           setAutoStart(applied);
                           if (v && !applied)
-                            notify('Geliştirme uygulamasında başlangıç kaydı kullanılamıyor.');
+                            notify(t('Geliştirme uygulamasında başlangıç kaydı kullanılamıyor.'));
                         } catch (e) {
                           setError(uiError(e));
                         }
@@ -1688,11 +1726,11 @@ export default function Settings({
                   </Row>
                   <DesktopWindowSettings bridge={notificationFixture?.desktopWindow} />
                   <Row
-                    title="Pencereyi üstte tut"
-                    description={window.rooms ? '' : 'Masaüstü uygulamasını gerektirir.'}
+                    title={t('Pencereyi üstte tut')}
+                    description={window.rooms ? '' : t('Masaüstü uygulamasını gerektirir.')}
                   >
                     <Toggle
-                      label="Pencereyi üstte tut"
+                      label={t('Pencereyi üstte tut')}
                       value={onTop}
                       disabled={!window.rooms}
                       onChange={async (v) => {
@@ -1704,7 +1742,7 @@ export default function Settings({
                       }}
                     />
                   </Row>
-                  <Row title="Tam ekran" description="">
+                  <Row title={t('Tam ekran')} description="">
                     <button
                       className="button secondary"
                       onClick={async () => {
@@ -1717,7 +1755,7 @@ export default function Settings({
                         }
                       }}
                     >
-                      Tam ekranı değiştir
+                      {t('Tam ekranı değiştir')}
                     </button>
                   </Row>
                 </section>
@@ -1740,7 +1778,7 @@ export default function Settings({
             {tab === 'assistant-permissions' && <AssistantManagement />}
             {tab === 'diagnostics' && (
               <>
-                <h3>{'Tan\u0131lama'}</h3>
+                <h3>{t('Tanılama')}</h3>
                 <div className="diagnostic-list">
                   {[
                     [tr('Application'), tr('Tayfa 0.1.14 / Desktop')],
@@ -1750,11 +1788,11 @@ export default function Settings({
                     ['WebRTC / SFU', realtime.status],
                     [
                       tr('Activity service'),
-                      tr('Durum, seçili odanın etkinlik ekranında gösterilir'),
+                      t('Durum, seçili odanın etkinlik ekranında gösterilir'),
                     ],
                     [
                       tr('Provider connections'),
-                      tr('Kişisel kaynaklar için Bağlantılar ekranını aç'),
+                      t('Kişisel kaynaklar için Bağlantılar ekranını aç'),
                     ],
                     [tr('Microphone permission'), micState],
                     [
@@ -1764,14 +1802,14 @@ export default function Settings({
                         : tr('Unavailable \u2014 no active transport'),
                     ],
                     [
-                      'Video / codec',
+                      t('Video / codec'),
                       realtime.diagnostics.video
-                        ? `${realtime.diagnostics.video.width} × ${realtime.diagnostics.video.height} / ${realtime.diagnostics.video.framesPerSecond ?? '—'} fps / ${realtime.diagnostics.video.codec ?? '—'} / ${realtime.diagnostics.video.direction === 'sent' ? 'gönderilen' : 'alınan'}`
+                        ? `${realtime.diagnostics.video.width} × ${realtime.diagnostics.video.height} / ${realtime.diagnostics.video.framesPerSecond ?? '—'} fps / ${realtime.diagnostics.video.codec ?? '—'} / ${realtime.diagnostics.video.direction === 'sent' ? t('gönderilen') : t('alınan')}`
                         : '—',
                     ],
                     [
                       tr('Data mode'),
-                      community.user ? tr('Gerçek topluluk hesabı') : tr('Giriş yapılmadı'),
+                      community.user ? t('Gerçek topluluk hesabı') : t('Giriş yapılmadı'),
                     ],
                   ].map(([a, b]) => (
                     <div key={a}>
@@ -1794,8 +1832,12 @@ export default function Settings({
             )}
           </div>
           {dirty && (
-            <div className="settings-save-bar" role="region" aria-label="Kaydedilmemiş ayarlar">
-              <span>Kaydedilmemiş değişiklikler</span>
+            <div
+              className="settings-save-bar"
+              role="region"
+              aria-label={t('Kaydedilmemiş ayarlar')}
+            >
+              <span>{t('Kaydedilmemiş değişiklikler')}</span>
               <button
                 className="button secondary"
                 disabled={saving}
@@ -1804,25 +1846,25 @@ export default function Settings({
                   setError('');
                 }}
               >
-                Vazgeç
+                {t('Vazgeç')}
               </button>
               <button
                 className="button primary"
                 disabled={saving}
                 onClick={() => void savePreferences()}
               >
-                {saving ? 'Kaydediliyor…' : 'Kaydet'}
+                {saving ? t('Kaydediliyor…') : t('Kaydet')}
               </button>
             </div>
           )}
         </main>
       </div>
       {confirmDiscard && (
-        <Modal title="Değişiklikler kaydedilmedi" onClose={() => setConfirmDiscard(false)}>
-          <p>Ayarları kaydetmeden çıkmak istiyor musun?</p>
+        <Modal title={t('Değişiklikler kaydedilmedi')} onClose={() => setConfirmDiscard(false)}>
+          <p>{t('Ayarları kaydetmeden çıkmak istiyor musun?')}</p>
           <div className="button-row">
             <button className="button secondary" onClick={() => setConfirmDiscard(false)}>
-              Düzenlemeye dön
+              {t('Düzenlemeye dön')}
             </button>
             <button
               className="button danger"
@@ -1832,7 +1874,7 @@ export default function Settings({
                 onClose();
               }}
             >
-              Kaydetmeden çık
+              {t('Kaydetmeden çık')}
             </button>
             <button
               className="button primary"
@@ -1843,7 +1885,7 @@ export default function Settings({
                 })
               }
             >
-              Kaydet
+              {t('Kaydet')}
             </button>
           </div>
         </Modal>

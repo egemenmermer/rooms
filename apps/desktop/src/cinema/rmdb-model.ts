@@ -14,6 +14,7 @@ import type {
   RmdbWorkDetails,
   RmdbWorkSummary,
 } from '../../../../packages/community-cinema/src/types';
+import { locale, t } from '../i18n';
 
 export type RmdbKindFilter = 'all' | 'movie' | 'series';
 export type RmdbSort = 'watched' | 'rating' | 'title' | 'year' | 'added';
@@ -24,18 +25,18 @@ export type RmdbView =
 export const RMDB_GRID: RmdbGridView = { mode: 'grid', kind: 'all', sort: 'watched', text: '' };
 
 export const rmdbSorts: { id: RmdbSort; label: string }[] = [
-  { id: 'watched', label: 'Son izlenen' },
-  { id: 'rating', label: 'Puan' },
-  { id: 'title', label: 'Ad' },
-  { id: 'year', label: 'Yıl' },
-  { id: 'added', label: 'Eklenme' },
+  { id: 'watched', label: t('Son izlenen') },
+  { id: 'rating', label: t('Puan') },
+  { id: 'title', label: t('Ad') },
+  { id: 'year', label: t('Yıl') },
+  { id: 'added', label: t('Eklenme') },
 ];
 
-const oneDecimal = new Intl.NumberFormat('tr-TR', {
+const oneDecimal = new Intl.NumberFormat(locale, {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
-const upToOneDecimal = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 1 });
+const upToOneDecimal = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
 
 export const isRating = (value: unknown): value is RmdbRating =>
   typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 10;
@@ -45,7 +46,9 @@ export const starsText = (rating: RmdbRating) => upToOneDecimal.format(rating / 
 
 /** What a screen reader hears: `yarım yıldız`, `3,5 yıldız`. */
 export const starsLabel = (rating: RmdbRating) =>
-  rating === 1 ? 'yarım yıldız' : `${starsText(rating)} yıldız`;
+  rating === 1
+    ? t('yarım yıldız')
+    : t('{rating} yıldız', { rating: starsText(rating), count: rating / 2 });
 
 /** Reads `3,5`, `3.5`, `4`, `½` or `3½` back into a rating; null when it is not a half step. */
 export function parseStars(text: string): RmdbRating | null {
@@ -177,11 +180,11 @@ export const unfinished = (work: Pick<RmdbWorkSummary, 'progress'>) =>
 
 /** `S1 B4`. */
 export const episodeShort = (episode: { season: number; episode: number }) =>
-  `S${episode.season} B${episode.episode}`;
+  t('S{season} B{episode}', { season: episode.season, episode: episode.episode });
 
 /** `1. Sezon 3. Bölüm`. */
 export const episodeLong = (episode: { season: number; episode: number }) =>
-  `${episode.season}. Sezon ${episode.episode}. Bölüm`;
+  t('{season}. Sezon {episode}. Bölüm', { season: episode.season, episode: episode.episode });
 
 /** `S2 B3 · 36 dk kaldı` style line for a "Devam et" card. */
 export function progressLine(progress: RmdbProgress) {
@@ -191,7 +194,7 @@ export function progressLine(progress: RmdbProgress) {
       : null;
   return [
     progress.episode ? episodeShort(progress.episode) : null,
-    left !== null ? `${left} dk kaldı` : clock(progress.positionSec),
+    left !== null ? t('{minutes} dk kaldı', { minutes: left }) : clock(progress.positionSec),
   ]
     .filter(Boolean)
     .join(' · ');
@@ -219,17 +222,21 @@ export function resumeAction(
     const at = progress.positionSec > 0 ? progress.positionSec : target.positionSec;
     return {
       kind: 'continue',
-      label: ['Devam et', mark, clock(at)].filter(Boolean).join(' · '),
+      label: [t('Devam et'), mark, clock(at)].filter(Boolean).join(' · '),
       positionSec: target.positionSec,
     };
   }
   if (progress?.finished)
     return details.kind === 'movie'
-      ? { kind: 'restart', label: 'Baştan izle', positionSec: 0 }
-      : { kind: 'next', label: mark ? `Sonraki bölüm · ${mark}` : 'Sonraki bölüm', positionSec: 0 };
+      ? { kind: 'restart', label: t('Baştan izle'), positionSec: 0 }
+      : {
+          kind: 'next',
+          label: mark ? t('Sonraki bölüm · {mark}', { mark }) : t('Sonraki bölüm'),
+          positionSec: 0,
+        };
   return {
     kind: 'play',
-    label: mark ? `Oynat · ${mark}` : 'Salonda oynat',
+    label: mark ? t('Oynat · {mark}', { mark }) : t('Salonda oynat'),
     positionSec: target.positionSec,
   };
 }
@@ -240,12 +247,14 @@ export function noResumeNote(
   connected: boolean,
 ) {
   if (!connected)
-    return 'Sunucuya bağlı bir IPTV hesabı yok; salonda açılamaz. Kayıt, puanlar ve yorumlar burada kalıyor.';
+    return t(
+      'Sunucuya bağlı bir IPTV hesabı yok; salonda açılamaz. Kayıt, puanlar ve yorumlar burada kalıyor.',
+    );
   if (details.kind === 'series' && details.progress?.finished)
-    return 'Salon son bölüme kadar izledi; katalogda sıradaki bölüm yok.';
+    return t('Salon son bölüme kadar izledi; katalogda sıradaki bölüm yok.');
   return details.kind === 'movie'
-    ? 'Bu film şu an katalogda yok. Kayıt, puanlar ve yorumlar burada kalıyor.'
-    : 'Bu dizi şu an katalogda yok. Kayıt, puanlar ve yorumlar burada kalıyor.';
+    ? t('Bu film şu an katalogda yok. Kayıt, puanlar ve yorumlar burada kalıyor.')
+    : t('Bu dizi şu an katalogda yok. Kayıt, puanlar ve yorumlar burada kalıyor.');
 }
 
 /** The rows of the RMDB home page. */
@@ -279,7 +288,11 @@ export function rmdbCounts(works: readonly RmdbWorkSummary[]) {
 
 /** `13 film · 5 dizi · 21 yorum`. */
 export function countsLine(counts: ReturnType<typeof rmdbCounts>) {
-  return `${counts.films} film · ${counts.series} dizi · ${counts.reviews} yorum`;
+  return [
+    t('{count} film', { count: counts.films }),
+    t('{count} dizi', { count: counts.series }),
+    t('{count} yorum', { count: counts.reviews }),
+  ].join(' · ');
 }
 
 /** Kind and title filter; every word of `text` must appear in the title (Turkish-folded). */
@@ -363,15 +376,18 @@ export function rewatches(diary: readonly RmdbDiaryEntry[]) {
 export const diaryPosition = (entry: RmdbDiaryEntry): number | null =>
   entry.finished ? null : entry.positionSec;
 
-const listFormat = new Intl.ListFormat('tr', { style: 'long', type: 'conjunction' });
+const listFormat = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' });
 
 /** `Ece, Can ve Deniz`; longer lists end with `ve 2 kişi daha`. */
 export function peopleText(names: readonly string[]) {
   if (names.length <= 3) return listFormat.format(names);
-  return `${names.slice(0, 2).join(', ')} ve ${names.length - 2} kişi daha`;
+  return t('{names} ve {count} kişi daha', {
+    names: names.slice(0, 2).join(', '),
+    count: names.length - 2,
+  });
 }
 
-const fullDate = new Intl.DateTimeFormat('tr-TR', {
+const fullDate = new Intl.DateTimeFormat(locale, {
   day: 'numeric',
   month: 'long',
   year: 'numeric',

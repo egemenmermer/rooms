@@ -16,9 +16,17 @@ import { useRealtime } from './realtime';
 import { useCommunity } from './community';
 import { useActivityRoom } from './activity';
 import { activityRoute, openActivity } from './activity-route';
+import { locale, t } from './i18n';
 import './app-directory.css';
 
-type Section = 'Uygulamalar' | 'Birlikte izle' | 'Kart oyunları' | 'Masa oyunları' | 'Araçlar';
+type Section = 'apps' | 'watch' | 'cards' | 'tables' | 'tools';
+const sectionLabels: Record<Section, string> = {
+  apps: t('Uygulamalar'),
+  watch: t('Birlikte izle'),
+  cards: t('Kart oyunları'),
+  tables: t('Masa oyunları'),
+  tools: t('Araçlar'),
+};
 interface DirectoryItem {
   id: string;
   name: string;
@@ -36,8 +44,8 @@ const games = gameCatalog.map((game): DirectoryItem => ({
   id: game.kind,
   name: gameNames[game.kind],
   detail: `${game.detail} ${game.players}.`,
-  section: game.kind === '101' ? 'Masa oyunları' : 'Kart oyunları',
-  keywords: `oyun masa kart kıraathane ${game.kind}`,
+  section: game.kind === '101' ? 'tables' : 'cards',
+  keywords: t('oyun masa kart kıraathane {kind}', { kind: game.kind }),
   icon: 'game',
   tint: '#1f4a3b',
   run: (open) => open(`/games?create=${encodeURIComponent(game.kind)}`),
@@ -46,29 +54,29 @@ export const directoryItems: DirectoryItem[] = [
   {
     id: 'dj',
     name: 'DJ Recep',
-    detail: 'Odaya müzik aç: YouTube, Spotify listeleri ve sıra.',
-    section: 'Uygulamalar',
-    keywords: 'müzik şarkı spotify youtube bot',
+    detail: t('Odaya müzik aç: YouTube, Spotify listeleri ve sıra.'),
+    section: 'apps',
+    keywords: t('müzik şarkı spotify youtube bot'),
     icon: Music2,
     tint: '#d9467f',
     run: () => openMusicDJ(),
   },
   {
     id: 'agent',
-    name: 'Asistan',
-    detail: 'Soru sor, özet çıkar, görev ver.',
-    section: 'Uygulamalar',
-    keywords: 'claude yapay zeka ai bot',
+    name: t('Asistan'),
+    detail: t('Soru sor, özet çıkar, görev ver.'),
+    section: 'apps',
+    keywords: t('claude yapay zeka ai bot'),
     icon: Bot,
     tint: '#6b5bd6',
     run: (open) => open('/agent'),
   },
   {
     id: 'screen',
-    name: 'Ekran paylaş',
-    detail: 'Pencere, oyun ya da tarayıcı; Instagram ve diğer siteler.',
-    section: 'Birlikte izle',
-    keywords: 'yayın pencere stremio iptv instagram reels',
+    name: t('Ekran paylaş'),
+    detail: t('Pencere, oyun ya da tarayıcı; Instagram ve diğer siteler.'),
+    section: 'watch',
+    keywords: t('yayın pencere stremio iptv instagram reels'),
     icon: MonitorUp,
     tint: '#2f7fb8',
     voice: true,
@@ -77,34 +85,28 @@ export const directoryItems: DirectoryItem[] = [
   ...games,
   {
     id: 'board',
-    name: 'Beyaz tahta',
-    detail: 'Birlikte çiz, yaz; imleçler canlı görünür.',
-    section: 'Araçlar',
-    keywords: 'whiteboard çizim tahta',
+    name: t('Beyaz tahta'),
+    detail: t('Birlikte çiz, yaz; imleçler canlı görünür.'),
+    section: 'tools',
+    keywords: t('whiteboard çizim tahta'),
     icon: PenTool,
     tint: '#2f8f6b',
     run: (open) => open('/together?tab=board'),
   },
   {
     id: 'poll',
-    name: 'Anket',
-    detail: 'Odaya soru sor, oyları canlı gör.',
-    section: 'Araçlar',
-    keywords: 'oylama anket soru',
+    name: t('Anket'),
+    detail: t('Odaya soru sor, oyları canlı gör.'),
+    section: 'tools',
+    keywords: t('oylama anket soru'),
     icon: BarChart3,
     tint: '#b98a2c',
     run: (open) => open('/together?tab=polls'),
   },
 ];
 const featured = ['holdem', '101', 'board', 'poll'];
-const sections: Section[] = [
-  'Uygulamalar',
-  'Birlikte izle',
-  'Kart oyunları',
-  'Masa oyunları',
-  'Araçlar',
-];
-const fold = (value: string) => value.toLocaleLowerCase('tr').normalize('NFD');
+const sections: Section[] = ['apps', 'watch', 'cards', 'tables', 'tools'];
+const fold = (value: string) => value.toLocaleLowerCase(locale).normalize('NFD');
 
 function Tile({ item, large = false }: { item: DirectoryItem; large?: boolean }) {
   return (
@@ -143,7 +145,7 @@ export function AppDirectory({
   const primary = activity.room?.primary;
   const [query, setQuery] = useState('');
   const items = useMemo(
-    () => directoryItems.filter((item) => apps || item.section !== 'Uygulamalar'),
+    () => directoryItems.filter((item) => apps || item.section !== 'apps'),
     [apps],
   );
   const highlights = useMemo(
@@ -157,7 +159,9 @@ export function AppDirectory({
     const words = fold(query.trim()).split(/\s+/).filter(Boolean);
     if (!words.length) return null;
     return items.filter((item) => {
-      const text = fold(`${item.name} ${item.detail} ${item.section} ${item.keywords}`);
+      const text = fold(
+        `${item.name} ${item.detail} ${sectionLabels[item.section]} ${item.keywords}`,
+      );
       return words.every((word) => text.includes(word));
     });
   }, [items, query]);
@@ -174,26 +178,26 @@ export function AppDirectory({
         key={item.id}
         className="appdir-row"
         disabled={blocked}
-        title={blocked ? 'Önce bir ses odasına katıl.' : undefined}
+        title={blocked ? t('Önce bir ses odasına katıl.') : undefined}
         onClick={() => launch(item)}
       >
         <Tile item={item} />
         <span>
           <strong>{item.name}</strong>
-          <small>{blocked ? 'Önce bir ses odasına katıl.' : item.detail}</small>
+          <small>{blocked ? t('Önce bir ses odasına katıl.') : item.detail}</small>
         </span>
       </button>
     );
   };
   return (
-    <div className="appdir" role="dialog" aria-label="Uygulamalar ve etkinlikler">
+    <div className="appdir" role="dialog" aria-label={t('Uygulamalar ve etkinlikler')}>
       {header}
       <label className="appdir-search">
         <Search size={17} aria-hidden="true" />
         <input
           autoFocus
-          aria-label="Uygulama ve etkinlik ara"
-          placeholder="Uygulama ve etkinlik ara"
+          aria-label={t('Uygulama ve etkinlik ara')}
+          placeholder={t('Uygulama ve etkinlik ara')}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
@@ -216,17 +220,17 @@ export function AppDirectory({
           >
             <i aria-hidden="true" />
             <span>
-              <small>Şu an odada</small>
+              <small>{t('Şu an odada')}</small>
               <strong>
                 {(gameNames as Record<string, string>)[primary.title] ?? primary.title}
               </strong>
             </span>
             {activityRoute(primary.activity) ? (
               <em>
-                Katıl <ArrowRight size={14} />
+                {t('Katıl')} <ArrowRight size={14} />
               </em>
             ) : (
-              <em>Eski Sinema · ayrıntılar</em>
+              <em>{t('Eski Sinema · ayrıntılar')}</em>
             )}
           </button>
         )}
@@ -234,11 +238,13 @@ export function AppDirectory({
           matches.length ? (
             <div className="appdir-list">{matches.map(row)}</div>
           ) : (
-            <p className="appdir-empty">“{query.trim()}” için bir şey bulunamadı.</p>
+            <p className="appdir-empty">
+              {t('“{query}” için bir şey bulunamadı.', { query: query.trim() })}
+            </p>
           )
         ) : (
           <>
-            <h3>Öne çıkanlar</h3>
+            <h3>{t('Öne çıkanlar')}</h3>
             <div className="appdir-featured">
               {highlights.map((item) => (
                 <button key={item.id} className="appdir-card" onClick={() => launch(item)}>
@@ -254,7 +260,7 @@ export function AppDirectory({
               const list = items.filter((item) => item.section === section);
               return list.length ? (
                 <section key={section}>
-                  <h3>{section}</h3>
+                  <h3>{sectionLabels[section]}</h3>
                   <div className="appdir-list">{list.map(row)}</div>
                 </section>
               ) : null;

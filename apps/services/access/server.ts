@@ -768,7 +768,7 @@ export async function createAccessServer(config: AccessConfig) {
         state = { kind: 'invalid' };
       }
     }
-    const rendered = renderInvitePage(state);
+    const rendered = renderInvitePage(state, request.headers['accept-language']);
     return reply.code(rendered.status).headers(INVITE_PAGE_HEADERS).send(rendered.html);
   };
   for (const url of ['/davet/:token', '/davet/:token/'])

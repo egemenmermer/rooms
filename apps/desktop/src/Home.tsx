@@ -8,7 +8,7 @@ import { useActivityRoom } from './activity';
 import { ConnectionPane } from './ConnectionPane';
 import { ReferenceIcon } from './ReferenceIcon';
 import { VoiceAvatar } from './VoiceAvatar';
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 import './reference-home.css';
 
 export function Home({
@@ -46,7 +46,7 @@ export function Home({
     import.meta.env.DEV && new URLSearchParams(location.search).has('fixture')
       ? new Date('2026-10-10T18:00:00Z')
       : new Date();
-  const date = currentDate.toLocaleDateString('tr-TR', {
+  const date = currentDate.toLocaleDateString(locale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -63,7 +63,7 @@ export function Home({
             <div key={id} className="reference-room-skeleton" />
           ))}
         </div>
-        <p role="status">Aktif odalar yükleniyor…</p>
+        <p role="status">{t('Aktif odalar yükleniyor…')}</p>
       </div>
     );
   if (!c.spaces.length)
@@ -73,16 +73,16 @@ export function Home({
           <span>
             <ReferenceIcon name="home" size={38} />
           </span>
-          <h2>Topluluk yok</h2>
+          <h2>{t('Topluluk yok')}</h2>
           <button className="button primary" onClick={() => navigate('/setup/invite')}>
-            Davet bağlantısı aç
+            {t('Davet bağlantısı aç')}
           </button>
         </div>
       </div>
     );
   return (
     <div className="minimal-home">
-      <h1>Odalar</h1>
+      <h1>{t('Odalar')}</h1>
       {c.channels.map((ch) => (
         <button
           key={ch.id}
@@ -97,7 +97,7 @@ export function Home({
           {ch.name}
         </button>
       ))}
-      {!c.channels.length && <p>Soldan bir topluluk seç.</p>}
+      {!c.channels.length && <p>{t('Soldan bir topluluk seç.')}</p>}
     </div>
   );
 }

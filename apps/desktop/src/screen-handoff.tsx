@@ -4,7 +4,7 @@ import { ReferenceIcon } from './ReferenceIcon';
 import { mediaBridge } from './runtime-sources';
 import { useCommunity } from './community';
 import { stopScreen, useRealtime, useVoiceContext } from './realtime';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import type { ScreenPresenterState } from '@rooms/contracts';
 import { RemoteControlRuntime } from './RemoteControl';
 
@@ -99,7 +99,9 @@ export function ScreenHandoffRuntime() {
     void stopScreen()
       .then(() => useScreenHandoffStore.getState().setError(null))
       .catch((error) => {
-        useScreenHandoffStore.getState().setError(`Paylaşım durdurulamadı: ${uiError(error)}`);
+        useScreenHandoffStore
+          .getState()
+          .setError(t('Paylaşım durdurulamadı: {error}', { error: uiError(error) }));
       });
   }, [channelId, identity, realtime.sharing, value?.reservation]);
 
@@ -113,7 +115,7 @@ async function runHandoffAction(
   operation: (channelId: string, state: ScreenPresenterState) => Promise<void>,
 ) {
   const store = useScreenHandoffStore.getState();
-  if (!store.channelId || !store.value) throw new Error('Sunum durumu henüz yüklenmedi.');
+  if (!store.channelId || !store.value) throw new Error(t('Sunum durumu henüz yüklenmedi.'));
   if (store.busy) return;
   store.setBusy(true);
   store.setError(null);
@@ -132,7 +134,7 @@ async function runHandoffAction(
 
 export function requestScreenHandoff() {
   return runHandoffAction(async (channelId, state) => {
-    if (!state.presenter) throw new Error('Etkin bir ekran paylaşımı bulunmuyor.');
+    if (!state.presenter) throw new Error(t('Etkin bir ekran paylaşımı bulunmuyor.'));
     await mediaBridge().requestScreen(channelId, state.presenter.leaseId, crypto.randomUUID());
   });
 }
@@ -143,14 +145,14 @@ export function cancelScreenHandoff() {
     const request = state.requests.find((item) => item.userId === identity);
     const reservation = state.reservation?.userId === identity ? state.reservation : null;
     const target = reservation ?? request;
-    if (!target) throw new Error('İptal edilecek sunum talebin yok.');
+    if (!target) throw new Error(t('İptal edilecek sunum talebin yok.'));
     await mediaBridge().cancelScreenRequest(channelId, target.leaseId, target.requestId);
   });
 }
 
 export function decideScreenHandoff(requestId: string, approve: boolean) {
   return runHandoffAction(async (channelId, state) => {
-    if (!state.presenter) throw new Error('Etkin sunum sahibi artık bağlı değil.');
+    if (!state.presenter) throw new Error(t('Etkin sunum sahibi artık bağlı değil.'));
     await mediaBridge().decideScreenRequest(channelId, state.presenter.leaseId, requestId, approve);
   });
 }
@@ -175,7 +177,7 @@ export function ScreenHandoffControls({
   const otherReservation =
     state?.reservation && state.reservation.userId !== identity ? state.reservation : null;
   const presenterName =
-    participants.find((person) => person.id === state?.presenter?.userId)?.name ?? 'Katılımcı';
+    participants.find((person) => person.id === state?.presenter?.userId)?.name ?? t('Katılımcı');
   const announce = (operation: Promise<unknown>, success?: string) =>
     void operation
       .then(() => success && notify(success))
@@ -184,7 +186,7 @@ export function ScreenHandoffControls({
   if (!state && loading)
     return (
       <div className="reference-handoff-status" role="status">
-        Sunum durumu yükleniyor…
+        {t('Sunum durumu yükleniyor…')}
       </div>
     );
   if (!state && !error) return null;
@@ -199,17 +201,18 @@ export function ScreenHandoffControls({
     );
   if (!showPanel) return null;
   return (
-    <section className="reference-handoff-panel" aria-label="Ekran paylaşımı devri">
+    <section className="reference-handoff-panel" aria-label={t('Ekran paylaşımı devri')}>
       {incoming.map((request) => {
         const name =
-          participants.find((person) => person.id === request.userId)?.name ?? 'Katılımcı';
+          participants.find((person) => person.id === request.userId)?.name ?? t('Katılımcı');
         return (
           <div className="reference-handoff-request" key={request.requestId}>
             <div className="reference-handoff-copy">
-              <strong>{name} paylaşmak istiyor</strong>
+              <strong>{t('{name} paylaşmak istiyor', { name })}</strong>
               <span>
-                Onay, yalnızca ekran yayınını devretmeye izin verir. Yeni kaynak kendi cihazında
-                seçilir.
+                {t(
+                  'Onay, yalnızca ekran yayınını devretmeye izin verir. Yeni kaynak kendi cihazında seçilir.',
+                )}
               </span>
             </div>
             <div className="reference-handoff-actions">
@@ -218,7 +221,7 @@ export function ScreenHandoffControls({
                 disabled={busy}
                 onClick={() => announce(decideScreenHandoff(request.requestId, false))}
               >
-                Reddet
+                {t('Reddet')}
               </button>
               <button
                 className="button primary small"
@@ -226,11 +229,11 @@ export function ScreenHandoffControls({
                 onClick={() =>
                   announce(
                     decideScreenHandoff(request.requestId, true),
-                    'Devir onaylandı. Mevcut yayın durduruluyor.',
+                    t('Devir onaylandı. Mevcut yayın durduruluyor.'),
                   )
                 }
               >
-                Onayla ve devret
+                {t('Onayla ve devret')}
               </button>
             </div>
           </div>
@@ -239,13 +242,13 @@ export function ScreenHandoffControls({
       {mine && (
         <div className="reference-handoff-notice" role="status">
           <ReferenceIcon name="clock" size={15} />
-          <span>{presenterName} yanıtını bekliyorsun.</span>
+          <span>{t('{name} yanıtını bekliyorsun.', { name: presenterName })}</span>
           <button
             className="button ghost small"
             disabled={busy}
             onClick={() => announce(cancelScreenHandoff())}
           >
-            İptal et
+            {t('İptal et')}
           </button>
         </div>
       )}
@@ -254,13 +257,13 @@ export function ScreenHandoffControls({
           <ReferenceIcon name={ownReservation.released ? 'monitor' : 'clock'} size={15} />
           <span>
             {ownReservation.released
-              ? 'Sunum sırası sende. Kaynağı bu cihazda seç.'
-              : 'Mevcut yayın durduruluyor…'}
+              ? t('Sunum sırası sende. Kaynağı bu cihazda seç.')
+              : t('Mevcut yayın durduruluyor…')}
           </span>
           {ownReservation.released && (
             <button className="button primary small" onClick={choose}>
               <ReferenceIcon name="monitor" size={15} />
-              Kaynak seç
+              {t('Kaynak seç')}
             </button>
           )}
           <button
@@ -268,7 +271,7 @@ export function ScreenHandoffControls({
             disabled={busy}
             onClick={() => announce(cancelScreenHandoff())}
           >
-            İptal et
+            {t('İptal et')}
           </button>
         </div>
       )}
@@ -276,9 +279,11 @@ export function ScreenHandoffControls({
         <div className="reference-handoff-notice" role="status">
           <ReferenceIcon name="clock" size={15} />
           <span>
-            {participants.find((person) => person.id === otherReservation.userId)?.name ??
-              'Katılımcı'}{' '}
-            sunum sırasını bekliyor.
+            {t('{name} sunum sırasını bekliyor.', {
+              name:
+                participants.find((person) => person.id === otherReservation.userId)?.name ??
+                t('Katılımcı'),
+            })}
           </span>
         </div>
       )}
@@ -289,13 +294,13 @@ export function ScreenHandoffControls({
         !ownReservation &&
         !otherReservation && (
           <div className="reference-handoff-notice">
-            <span>{presenterName} paylaşıyor.</span>
+            <span>{t('{name} paylaşıyor.', { name: presenterName })}</span>
             <button
               className="button secondary small"
               disabled={busy || loading}
-              onClick={() => announce(requestScreenHandoff(), 'Sunum talebi gönderildi.')}
+              onClick={() => announce(requestScreenHandoff(), t('Sunum talebi gönderildi.'))}
             >
-              Sunum iste
+              {t('Sunum iste')}
             </button>
           </div>
         )}
@@ -313,7 +318,7 @@ export function ScreenHandoffControls({
                   .catch((failure) => useScreenHandoffStore.getState().setError(uiError(failure)));
             }}
           >
-            Yenile
+            {t('Yenile')}
           </button>
         </div>
       )}

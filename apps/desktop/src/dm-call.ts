@@ -4,7 +4,7 @@ import { useCommunity } from './community';
 import { mediaProvider } from './runtime-sources';
 import { leaveVoice, useVoiceContext } from './realtime';
 import { useRooms } from './store';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 
 interface DmCallState {
   call: DmCallSession | null;
@@ -22,8 +22,8 @@ export const useDmCall = create<DmCallState>(() => ({
 }));
 const fixture = () => import.meta.env.DEV && new URLSearchParams(location.search).has('fixture');
 const bridge = () => {
-  if (fixture()) throw new Error('Örnek görünümde gerçek arama başlatılamaz.');
-  if (!window.rooms?.dmCalls) throw new Error('Özel arama için masaüstü uygulamasını aç.');
+  if (fixture()) throw new Error(t('Örnek görünümde gerçek arama başlatılamaz.'));
+  if (!window.rooms?.dmCalls) throw new Error(t('Özel arama için masaüstü uygulamasını aç.'));
   return window.rooms.dmCalls;
 };
 let identity = '',
@@ -39,18 +39,18 @@ const account = () => {
 };
 const active = (call: DmCallSession | null) => !!call && call.state !== 'ended';
 export function dmCallUnavailable() {
-  if (fixture()) return 'Örnek görünümde gerçek arama başlatılamaz.';
-  if (!useCommunity.getState().user) return 'Önce giriş yap.';
+  if (fixture()) return t('Örnek görünümde gerçek arama başlatılamaz.');
+  if (!useCommunity.getState().user) return t('Önce giriş yap.');
   if (useDmCall.getState().signalingError) return useDmCall.getState().signalingError;
-  if (useDmCall.getState().busy || connecting) return 'Arama işlemi sürüyor.';
-  if (active(useDmCall.getState().call)) return 'Önce mevcut özel görüşmeyi bitir.';
-  if (useVoiceContext.getState().busy) return 'Ses bağlantısı değişiyor. Biraz bekle.';
+  if (useDmCall.getState().busy || connecting) return t('Arama işlemi sürüyor.');
+  if (active(useDmCall.getState().call)) return t('Önce mevcut özel görüşmeyi bitir.');
+  if (useVoiceContext.getState().busy) return t('Ses bağlantısı değişiyor. Biraz bekle.');
   return null;
 }
 export const dmCallFailure = (error: unknown) => {
   const message = uiError(error);
   return /token|jwt|https?:|wss?:/i.test(message)
-    ? 'Arama bağlantısı kurulamadı. Yeniden dene.'
+    ? t('Arama bağlantısı kurulamadı. Yeniden dene.')
     : message;
 };
 const failure = dmCallFailure;
@@ -82,7 +82,7 @@ export async function acceptDmCall(camera = false) {
   if (!call || call.state !== 'ringing' || call.calleeId !== useCommunity.getState().user?.id)
     return;
   if (useDmCall.getState().busy || connecting) return;
-  if (useVoiceContext.getState().busy) throw new Error('Ses bağlantısı değişiyor. Biraz bekle.');
+  if (useVoiceContext.getState().busy) throw new Error(t('Ses bağlantısı değişiyor. Biraz bekle.'));
   const generation = epoch;
   identity = account();
   useDmCall.setState({ busy: true, error: null });
@@ -102,7 +102,7 @@ export async function acceptDmCall(camera = false) {
 export async function joinAcceptedDmCall(camera = false) {
   const call = useDmCall.getState().call;
   if (!call || call.state !== 'accepted' || connecting || useDmCall.getState().busy) return;
-  if (useVoiceContext.getState().busy) throw new Error('Ses bağlantısı değişiyor. Biraz bekle.');
+  if (useVoiceContext.getState().busy) throw new Error(t('Ses bağlantısı değişiyor. Biraz bekle.'));
   consent = { callId: call.id, camera };
   identity = account();
   await connectAccepted();
@@ -155,7 +155,7 @@ async function connectAccepted() {
     } catch {
       if (valid())
         useDmCall.setState({
-          error: 'Mikrofon açılamadı. Görüşme bağlı; mikrofon iznini kontrol et.',
+          error: t('Mikrofon açılamadı. Görüşme bağlı; mikrofon iznini kontrol et.'),
         });
     }
     if (!valid()) return;
@@ -163,7 +163,8 @@ async function connectAccepted() {
       try {
         await mediaProvider().publishCamera(true);
       } catch {
-        if (valid()) useDmCall.setState({ error: 'Kamera açılamadı. Sesli görüşme devam ediyor.' });
+        if (valid())
+          useDmCall.setState({ error: t('Kamera açılamadı. Sesli görüşme devam ediyor.') });
       }
   })();
   connecting = work;
@@ -224,14 +225,14 @@ export async function refreshDmCall() {
       if (previous && (!call || previous.id === call.id)) {
         const message =
           call?.reason === 'rejected'
-            ? 'Arama reddedildi.'
+            ? t('Arama reddedildi.')
             : call?.reason === 'missed'
-              ? 'Arama yanıtlanmadı.'
+              ? t('Arama yanıtlanmadı.')
               : call?.reason === 'access-lost'
-                ? 'Özel görüşme erişimi sona erdi.'
+                ? t('Özel görüşme erişimi sona erdi.')
                 : call?.reason === 'disconnected'
-                  ? 'Karşı tarafın arama bağlantısı kesildi.'
-                  : 'Görüşme sona erdi.';
+                  ? t('Karşı tarafın arama bağlantısı kesildi.')
+                  : t('Görüşme sona erdi.');
         await endDmCall();
         useDmCall.setState({ error: message });
       }

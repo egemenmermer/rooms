@@ -11,8 +11,12 @@ import type {
 } from '@rooms/social';
 import { useCommunity, type CommunityMessage, type CommunityState } from '../community';
 import { useRooms } from '../store';
+import { people, places, sample } from './sample';
 
-export const REFERENCE_FIXTURE_LABEL = 'DEMO · Yerel örnek veriler';
+export const REFERENCE_FIXTURE_LABEL = sample(
+  'DEMO · Yerel örnek veriler',
+  'DEMO · Local sample data',
+);
 
 export interface ReferenceFixtureMetadata {
   screenId: string;
@@ -58,11 +62,36 @@ const channelIds = {
 } as const;
 
 const users: Record<keyof typeof userIds, SocialUser> = {
-  deniz: { id: userIds.deniz, username: 'deniz', displayName: 'Deniz', avatar: null },
-  ece: { id: userIds.ece, username: 'ece', displayName: 'Ece', avatar: null },
-  can: { id: userIds.can, username: 'can', displayName: 'Can', avatar: null },
-  zeynep: { id: userIds.zeynep, username: 'zeynep', displayName: 'Zeynep', avatar: null },
-  mert: { id: userIds.mert, username: 'mert', displayName: 'Mert', avatar: null },
+  deniz: {
+    id: userIds.deniz,
+    username: people.deniz.toLowerCase(),
+    displayName: people.deniz,
+    avatar: null,
+  },
+  ece: {
+    id: userIds.ece,
+    username: people.ece.toLowerCase(),
+    displayName: people.ece,
+    avatar: null,
+  },
+  can: {
+    id: userIds.can,
+    username: people.can.toLowerCase(),
+    displayName: people.can,
+    avatar: null,
+  },
+  zeynep: {
+    id: userIds.zeynep,
+    username: people.zeynep.toLowerCase(),
+    displayName: people.zeynep,
+    avatar: null,
+  },
+  mert: {
+    id: userIds.mert,
+    username: people.mert.toLowerCase(),
+    displayName: people.mert,
+    avatar: null,
+  },
 };
 
 const avatarPaths: Record<string, string> = {
@@ -190,11 +219,12 @@ export function getReferencePresenceStatus(userId: string): 'online' | 'invisibl
 
 /** Profile copy present in the approved sample; returns null when the source has no status text. */
 export function getReferencePresenceText(userId: string): string | null {
-  if (userId === userIds.deniz) return 'Buradayım.';
-  if (userId === userIds.ece) return 'Cinema · Gecenin Kıyısında';
-  if (userId === userIds.can) return 'Birazdan katılıyorum';
-  if (userId === userIds.zeynep) return 'Müzik dinliyor';
-  if (userId === userIds.mert) return 'En son dün';
+  if (userId === userIds.deniz) return sample('Buradayım.', "I'm here.");
+  if (userId === userIds.ece)
+    return sample('Cinema · Gecenin Kıyısında', 'Cinema · Edge of Tonight');
+  if (userId === userIds.can) return sample('Birazdan katılıyorum', 'Joining in a bit');
+  if (userId === userIds.zeynep) return sample('Müzik dinliyor', 'Listening to music');
+  if (userId === userIds.mert) return sample('En son dün', 'Last seen yesterday');
   return null;
 }
 
@@ -205,18 +235,24 @@ export function getReferenceAvatar(id: string): string | null {
 
 const space: SocialSpace = {
   id: spaceId,
-  name: 'Bizim Oda',
+  name: places.community,
   ownerId: 'demo-deniz',
   icon: null,
 };
 
 const channels: SocialChannel[] = [
-  { id: channelIds.general, spaceId, name: 'genel', type: 0, topic: 'Her şey burada başlar.' },
-  { id: channelIds.film, spaceId, name: 'film-gecesi', type: 0, topic: null },
-  { id: channelIds.games, spaceId, name: 'oyun-masası', type: 0, topic: null },
-  { id: channelIds.shares, spaceId, name: 'paylasimlar', type: 0, topic: null },
-  { id: channelIds.lounge, spaceId, name: 'Salon', type: 2, topic: null },
-  { id: channelIds.quiet, spaceId, name: 'Sessiz köşe', type: 2, topic: null },
+  {
+    id: channelIds.general,
+    spaceId,
+    name: places.general,
+    type: 0,
+    topic: sample('Her şey burada başlar.', 'Where everything starts.'),
+  },
+  { id: channelIds.film, spaceId, name: places.movieNight, type: 0, topic: null },
+  { id: channelIds.games, spaceId, name: places.gameTable, type: 0, topic: null },
+  { id: channelIds.shares, spaceId, name: places.shares, type: 0, topic: null },
+  { id: channelIds.lounge, spaceId, name: places.lounge, type: 2, topic: null },
+  { id: channelIds.quiet, spaceId, name: places.quietCorner, type: 2, topic: null },
 ];
 
 const timestamp = (minute: number) => new Date(Date.UTC(2026, 9, 10, 18, minute)).toISOString();
@@ -239,7 +275,7 @@ const makeMessage = (
 
 const referencePdf: SocialAttachment = {
   id: 'demo-weekend-list-pdf',
-  name: 'hafta-sonu-listesi.pdf',
+  name: sample('hafta-sonu-listesi.pdf', 'weekend-list.pdf'),
   // The S10 reference displays 248 KB; the linked local sample PDF remains its original 13,499-byte file.
   size: 248 * 1024,
   mime: 'application/pdf',
@@ -252,7 +288,10 @@ function makeDefaultMessages(): CommunityMessage[] {
       'demo-message-ece-2042',
       users.ece,
       42,
-      'Herkes burada mı? Bu akşam filmi biraz erken açalım mı?',
+      sample(
+        'Herkes burada mı? Bu akşam filmi biraz erken açalım mı?',
+        'Is everyone here? Should we start the movie a bit early tonight?',
+      ),
       {
         reactions: {
           '2764': [userIds.deniz, userIds.can, userIds.zeynep],
@@ -264,13 +303,16 @@ function makeDefaultMessages(): CommunityMessage[] {
       'demo-message-can-2043',
       users.can,
       43,
-      'Ben hazırım. Çayı da aldım, başlayabiliriz.',
+      sample(
+        'Ben hazırım. Çayı da aldım, başlayabiliriz.',
+        "I'm ready. Got my tea too, we can start.",
+      ),
     ),
     makeMessage(
       'demo-message-deniz-2044',
       users.deniz,
       44,
-      'Süper. @Zeynep sen de geliyor musun?',
+      sample('Süper. @Zeynep sen de geliyor musun?', 'Great. @Zoe are you coming too?'),
       {
         mentions: [userIds.zeynep],
       },
@@ -279,7 +321,10 @@ function makeDefaultMessages(): CommunityMessage[] {
       'demo-message-zeynep-2045',
       users.zeynep,
       45,
-      'Geldim! Önce izleme listesine bir şey daha ekleyeyim.',
+      sample(
+        'Geldim! Önce izleme listesine bir şey daha ekleyeyim.',
+        "I'm here! Let me add one more thing to the watchlist first.",
+      ),
       {
         attachments: [referencePdf],
       },
@@ -288,7 +333,10 @@ function makeDefaultMessages(): CommunityMessage[] {
       'demo-message-ece-2047',
       users.ece,
       47,
-      'İlk filmi seçtim. Herkes kendi kaynağını hazırlayınca başlatırız.',
+      sample(
+        'İlk filmi seçtim. Herkes kendi kaynağını hazırlayınca başlatırız.',
+        "I picked the first movie. We'll start once everyone has their own source ready.",
+      ),
     ),
   ];
 }
@@ -328,7 +376,12 @@ export async function installReferenceFixture(id: string, value: string): Promis
       : [];
   if (screenId === 'S10' && selectedVariant === 'failed') {
     initialMessages.push({
-      ...makeMessage('demo-message-deniz-2048', users.deniz, 48, 'Tamam, ben de hazırım.'),
+      ...makeMessage(
+        'demo-message-deniz-2048',
+        users.deniz,
+        48,
+        sample('Tamam, ben de hazırım.', "Okay, I'm ready too."),
+      ),
       delivery: 'failed',
     });
   }
@@ -407,7 +460,7 @@ export async function installReferenceFixture(id: string, value: string): Promis
                     'demo-message-deniz-2048',
                     users.deniz,
                     48,
-                    'Tamam, ben de hazırım.',
+                    sample('Tamam, ben de hazırım.', "Okay, I'm ready too."),
                   ),
                   delivery: 'failed' as const,
                 },
@@ -579,9 +632,18 @@ export function getReferenceAbout() {
       progress: variant === 'downloading' ? 62 : 0,
       reason: null,
       releaseNotes: [
-        'Ses odasına dönüşte bağlantı durumu daha açık gösteriliyor.',
-        'Ortak kuyrukta klavyeyle sıralama kolaylaştırıldı.',
-        'Asistan görevlerinde bağlantı hatası açıklamaları iyileştirildi.',
+        sample(
+          'Ses odasına dönüşte bağlantı durumu daha açık gösteriliyor.',
+          'The connection status is clearer when you return to a voice room.',
+        ),
+        sample(
+          'Ortak kuyrukta klavyeyle sıralama kolaylaştırıldı.',
+          'Reordering the shared queue with the keyboard is easier.',
+        ),
+        sample(
+          'Asistan görevlerinde bağlantı hatası açıklamaları iyileştirildi.',
+          'Connection error messages in assistant tasks are clearer.',
+        ),
       ],
     },
     modal:

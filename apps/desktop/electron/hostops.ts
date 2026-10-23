@@ -12,23 +12,27 @@ import {
   terminalEventSchema,
   terminalInputSchema,
 } from '../../../packages/shared-contracts/src/hostops';
+import { t } from '@rooms/i18n';
 interface NativeIdentity {
   instanceUrl: string;
   getToken(): string | null;
 }
-const messages: Record<string, string> = {
-  INVALID_REQUEST: 'Alanları kontrol et. Girilen değerlerden biri geçerli değil.',
-  HOST_PERMISSION_REQUIRED: 'Bu sunucu işlemi için yetkin yok.',
-  OWNER_REQUIRED: 'Bu işlemi yalnızca topluluk sahibi yapabilir.',
-  HOSTOPS_UNAVAILABLE: 'Sunucu yönetimine ulaşılamıyor. Yeniden dene.',
-  TERMINAL_NOT_CONFIGURED: 'Bu sunucuda terminal henüz kurulmadı.',
-  TERMINAL_PROFILE_UNAVAILABLE: 'Terminal kullanıcı profili henüz yapılandırılmadı.',
-  TERMINAL_PROFILE_IN_USE: 'Bu Linux profili başka bir operatöre ait. Ayrı bir profil gerekiyor.',
-  TERMINAL_LIMIT: 'En fazla üç terminal açabilirsin. Önce bir oturumu sonlandır.',
-  TERMINAL_ACCESS_DENIED: 'Bu terminale erişimin yok.',
-  TERMINAL_WRITER_BUSY: 'Terminali başka bir operatör kullanıyor.',
-  TERMINAL_OWNER_REQUIRED: 'Bu işlemi terminalin sahibi yapabilir.',
-};
+// A function, not a constant: the language is configured after the app is ready.
+const messages = (): Record<string, string> => ({
+  INVALID_REQUEST: t('Alanları kontrol et. Girilen değerlerden biri geçerli değil.'),
+  HOST_PERMISSION_REQUIRED: t('Bu sunucu işlemi için yetkin yok.'),
+  OWNER_REQUIRED: t('Bu işlemi yalnızca topluluk sahibi yapabilir.'),
+  HOSTOPS_UNAVAILABLE: t('Sunucu yönetimine ulaşılamıyor. Yeniden dene.'),
+  TERMINAL_NOT_CONFIGURED: t('Bu sunucuda terminal henüz kurulmadı.'),
+  TERMINAL_PROFILE_UNAVAILABLE: t('Terminal kullanıcı profili henüz yapılandırılmadı.'),
+  TERMINAL_PROFILE_IN_USE: t(
+    'Bu Linux profili başka bir operatöre ait. Ayrı bir profil gerekiyor.',
+  ),
+  TERMINAL_LIMIT: t('En fazla üç terminal açabilirsin. Önce bir oturumu sonlandır.'),
+  TERMINAL_ACCESS_DENIED: t('Bu terminale erişimin yok.'),
+  TERMINAL_WRITER_BUSY: t('Terminali başka bir operatör kullanıyor.'),
+  TERMINAL_OWNER_REQUIRED: t('Bu işlemi terminalin sahibi yapabilir.'),
+});
 export function setupHostOps(
   getClient: () => NativeIdentity,
   getWindow: () => BrowserWindow | null,
@@ -49,13 +53,13 @@ export function setupHostOps(
   async function request(path: string, method = 'GET', body?: unknown) {
     const client = getClient(),
       token = client.getToken();
-    if (!token) throw Error('Önce hesabına giriş yap.');
+    if (!token) throw Error(t('Önce hesabına giriş yap.'));
     const endpoint = new URL('/rooms-ops/v1/' + path, new URL(client.instanceUrl).origin);
     if (
       endpoint.protocol !== 'https:' &&
       !['localhost', '127.0.0.1', '[::1]'].includes(endpoint.hostname)
     )
-      throw Error('Sunucu yönetimi için güvenli bağlantı gerekiyor.');
+      throw Error(t('Sunucu yönetimi için güvenli bağlantı gerekiyor.'));
     const response = await fetch(endpoint, {
       method,
       headers: { Authorization: token, 'Content-Type': 'application/json' },
@@ -63,9 +67,9 @@ export function setupHostOps(
       redirect: 'error',
       signal: AbortSignal.timeout(15000),
     });
-    if (getClient() !== client || client.getToken() !== token) throw Error('Oturum değişti.');
+    if (getClient() !== client || client.getToken() !== token) throw Error(t('Oturum değişti.'));
     if (Number(response.headers.get('Content-Length') ?? 0) > 4000000)
-      throw Error('Sunucu yanıtı çok büyük.');
+      throw Error(t('Sunucu yanıtı çok büyük.'));
     const chunks: Uint8Array[] = [];
     let size = 0;
     if (response.body) {
@@ -75,14 +79,14 @@ export function setupHostOps(
           const { done, value } = await reader.read();
           if (done) break;
           size += value.length;
-          if (size > 4000000) throw Error('Sunucu yanıtı çok büyük.');
+          if (size > 4000000) throw Error(t('Sunucu yanıtı çok büyük.'));
           chunks.push(value);
         }
       } finally {
         await reader.cancel();
       }
     }
-    if (getClient() !== client || client.getToken() !== token) throw Error('Oturum değişti.');
+    if (getClient() !== client || client.getToken() !== token) throw Error(t('Oturum değişti.'));
     const text = Buffer.concat(chunks).toString('utf8');
     const value = (() => {
       try {
@@ -93,12 +97,12 @@ export function setupHostOps(
     })();
     if (!response.ok)
       throw Error(
-        messages[value?.error] ??
+        messages()[value?.error] ??
           (response.status === 404
-            ? 'Sunucu yönetimi bu toplulukta henüz yapılandırılmadı.'
-            : 'Sunucu işlemi tamamlanamadı. Yetkini ve bağlantını kontrol et.'),
+            ? t('Sunucu yönetimi bu toplulukta henüz yapılandırılmadı.')
+            : t('Sunucu işlemi tamamlanamadı. Yetkini ve bağlantını kontrol et.')),
       );
-    if (value === null) throw Error('Sunucu yönetimi bu toplulukta henüz yapılandırılmadı.');
+    if (value === null) throw Error(t('Sunucu yönetimi bu toplulukta henüz yapılandırılmadı.'));
     return value;
   }
   const handle = (name: string, fn: (...args: unknown[]) => unknown) =>
@@ -109,7 +113,7 @@ export function setupHostOps(
         return await fn(...args);
       } catch (error) {
         if (error instanceof z.ZodError)
-          throw Error('İşlem doğrulanamadı. Alanları ve sunucu sürümünü kontrol et.');
+          throw Error(t('İşlem doğrulanamadı. Alanları ve sunucu sürümünü kontrol et.'));
         throw error;
       }
     });
@@ -183,7 +187,7 @@ export function setupHostOps(
     const scope = epoch,
       client = getClient(),
       token = client.getToken();
-    if (!token) throw Error('Önce hesabına giriş yap.');
+    if (!token) throw Error(t('Önce hesabına giriş yap.'));
     const endpoint = new URL(
       '/rooms-ops/v1/' + host(id) + '/terminals/' + z.string().uuid().parse(sessionId) + '/stream',
       new URL(client.instanceUrl).origin,
@@ -193,7 +197,7 @@ export function setupHostOps(
       endpoint.protocol === 'ws:' &&
       !['localhost', '127.0.0.1', '[::1]'].includes(endpoint.hostname)
     )
-      throw Error('Terminal için güvenli bağlantı gerekiyor.');
+      throw Error(t('Terminal için güvenli bağlantı gerekiyor.'));
     const ws = new WebSocket(endpoint, {
       headers: { Authorization: token },
       followRedirects: false,
@@ -220,7 +224,7 @@ export function setupHostOps(
       try {
         send(terminalEventSchema.parse(JSON.parse(String(data))));
       } catch {
-        send({ type: 'error', message: 'Terminal yanıtı doğrulanamadı.' });
+        send({ type: 'error', message: t('Terminal yanıtı doğrulanamadı.') });
         ws.close();
       }
     });
@@ -228,11 +232,11 @@ export function setupHostOps(
       if (current())
         send({
           type: 'error',
-          message: 'Terminal bağlantısı kapandı. Yetkin varsa yeniden bağlanabilirsin.',
+          message: t('Terminal bağlantısı kapandı. Yetkin varsa yeniden bağlanabilirsin.'),
         });
     });
     ws.on('error', () =>
-      send({ type: 'error', message: 'Terminal bağlantısı kurulamadı. Oturumun korunuyor.' }),
+      send({ type: 'error', message: t('Terminal bağlantısı kurulamadı. Oturumun korunuyor.') }),
     );
     watch = setInterval(() => {
       if (!current()) detach();
@@ -242,18 +246,18 @@ export function setupHostOps(
       ws.once('open', () => {
         if (!current()) {
           ws.close();
-          reject(Error('Oturum değişti.'));
+          reject(Error(t('Oturum değişti.')));
         } else resolve();
       });
-      ws.once('error', () => reject(Error('Terminal bağlantısı kurulamadı.')));
-      ws.once('close', () => reject(Error('Terminal bağlantısı kapandı.')));
+      ws.once('error', () => reject(Error(t('Terminal bağlantısı kurulamadı.'))));
+      ws.once('close', () => reject(Error(t('Terminal bağlantısı kapandı.'))));
     });
   });
   handle('send', (value) => {
     const event = terminalInputSchema.parse(value);
     if (!activeScope() || !socket || socket.readyState !== WebSocket.OPEN)
-      throw Error('Terminal bağlı değil.');
-    if (socket.bufferedAmount > 65536) throw Error('Terminal bağlantısı yoğun. Biraz bekle.');
+      throw Error(t('Terminal bağlı değil.'));
+    if (socket.bufferedAmount > 65536) throw Error(t('Terminal bağlantısı yoğun. Biraz bekle.'));
     socket.send(JSON.stringify(event));
   });
   handle('detach', detach);

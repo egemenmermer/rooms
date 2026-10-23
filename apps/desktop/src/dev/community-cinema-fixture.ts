@@ -33,6 +33,7 @@ import { installCinemaFixture } from '../cinema/cinema-bridge';
 import { installMediaFixture } from './media-fixture';
 import { installDevelopmentRuntime, mediaBridge, mediaProvider } from '../runtime-sources';
 import { useCommunity } from '../community';
+import { people as crew, sample } from './sample';
 
 /**
  * S80 · DEV-only community cinema. Every channel, film, programme and RMDB rating, review and
@@ -103,81 +104,115 @@ export function fixtureArt(artId: string): string | null {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
+const titles = {
+  blueHour: sample('Mavi Saat', 'Blue Hour'),
+  edgeOfDusk: sample('Gecenin Kıyısında', 'At the Edge of Dusk'),
+  nationOne: sample('TRT 1', 'Nation One'),
+};
+const homeFlag = sample('🇹🇷', '🇺🇸');
 type Channel = { name: string; category: string; badges: string[]; hue: number; shows: string[] };
 const liveCategories: { id: string; label: string; flag: string | null }[] = [
-  { id: 'ulusal', label: 'Ulusal', flag: '🇹🇷' },
-  { id: 'haber', label: 'Haber', flag: '🇹🇷' },
-  { id: 'spor', label: 'Spor', flag: '🇹🇷' },
-  { id: 'belgesel', label: 'Belgesel', flag: '🇹🇷' },
-  { id: 'cocuk', label: 'Çocuk', flag: '🇹🇷' },
-  { id: 'muzik', label: 'Müzik', flag: '🇹🇷' },
+  { id: 'ulusal', label: sample('Ulusal', 'National'), flag: homeFlag },
+  { id: 'haber', label: sample('Haber', 'News'), flag: homeFlag },
+  { id: 'spor', label: sample('Spor', 'Sports'), flag: homeFlag },
+  { id: 'belgesel', label: sample('Belgesel', 'Documentary'), flag: homeFlag },
+  { id: 'cocuk', label: sample('Çocuk', 'Kids'), flag: homeFlag },
+  { id: 'muzik', label: sample('Müzik', 'Music'), flag: homeFlag },
   { id: 'uk', label: 'Entertainment', flag: '🇬🇧' },
 ];
 const showsBy: Record<string, string[]> = {
-  ulusal: [
-    'Ana Haber',
-    'Yalı Günleri',
-    'Gece Vardiyası',
-    'Sabah Kahvesi',
-    'Kayıp Şehir',
-    'Mahalle',
-    'Yarışma Gecesi',
-    'Sinema Kuşağı',
-  ],
-  haber: [
-    'Gün Ortası',
-    'Ekonomi Masası',
-    'Ana Haber',
-    'Dünya Gündemi',
-    'Gece Bülteni',
-    'Tartışma Saati',
-  ],
-  spor: [
-    'Maç Önü',
-    'Süper Lig: Canlı',
-    'Maç Sonu',
-    'Basketbol Gecesi',
-    'Spor Bülteni',
-    'Tenis: Yarı Final',
-  ],
-  belgesel: [
-    'Anadolu’nun Kuşları',
-    'Derin Mavi',
-    'Kayıp Uygarlıklar',
-    'Vahşi Doğa',
-    'Şehirlerin Hikâyesi',
-  ],
-  cocuk: ['Minik Kâşifler', 'Uzay Kedisi', 'Masal Saati', 'Renkli Orman', 'Robot Arkadaşım'],
-  muzik: ['Pop Listesi', 'Akustik Saat', 'Klip Kuşağı', 'Gece Seansı', 'Nostalji'],
+  ulusal: sample(
+    [
+      'Ana Haber',
+      'Yalı Günleri',
+      'Gece Vardiyası',
+      'Sabah Kahvesi',
+      'Kayıp Şehir',
+      'Mahalle',
+      'Yarışma Gecesi',
+      'Sinema Kuşağı',
+    ],
+    [
+      'Prime News',
+      'Harbor Days',
+      'Night Shift',
+      'Morning Coffee',
+      'The Lost City',
+      'The Block',
+      'Game Night Live',
+      'Movie Slot',
+    ],
+  ),
+  haber: sample(
+    [
+      'Gün Ortası',
+      'Ekonomi Masası',
+      'Ana Haber',
+      'Dünya Gündemi',
+      'Gece Bülteni',
+      'Tartışma Saati',
+    ],
+    ['Midday Report', 'Money Desk', 'Prime News', 'World Today', 'Late Bulletin', 'Debate Hour'],
+  ),
+  spor: sample(
+    [
+      'Maç Önü',
+      'Süper Lig: Canlı',
+      'Maç Sonu',
+      'Basketbol Gecesi',
+      'Spor Bülteni',
+      'Tenis: Yarı Final',
+    ],
+    [
+      'Pre-Match',
+      'League Live',
+      'Post-Match',
+      'Basketball Night',
+      'Sports Bulletin',
+      'Tennis: Semi-Final',
+    ],
+  ),
+  belgesel: sample(
+    ['Anadolu’nun Kuşları', 'Derin Mavi', 'Kayıp Uygarlıklar', 'Vahşi Doğa', 'Şehirlerin Hikâyesi'],
+    ['Birds of the Highlands', 'Deep Blue', 'Lost Civilisations', 'Wild Nature', 'City Stories'],
+  ),
+  cocuk: sample(
+    ['Minik Kâşifler', 'Uzay Kedisi', 'Masal Saati', 'Renkli Orman', 'Robot Arkadaşım'],
+    ['Little Explorers', 'Space Cat', 'Story Time', 'Rainbow Forest', 'My Robot Friend'],
+  ),
+  muzik: sample(
+    ['Pop Listesi', 'Akustik Saat', 'Klip Kuşağı', 'Gece Seansı', 'Nostalji'],
+    ['Pop Chart', 'Acoustic Hour', 'Video Block', 'Late Session', 'Throwback'],
+  ),
   uk: ['Morning Live', 'Quiz Night', 'The Evening Show', 'Garden Diaries', 'Late News'],
 };
 const channelList: Channel[] = [
-  ['TRT 1', 'ulusal', ['HD'], 352],
-  ['Show TV', 'ulusal', ['FHD'], 28],
-  ['Kanal D', 'ulusal', ['HD'], 210],
-  ['ATV', 'ulusal', ['HD'], 6],
-  ['Star TV', 'ulusal', ['HD'], 48],
-  ['NOW', 'ulusal', ['FHD'], 190],
-  ['TV8', 'ulusal', ['HD'], 300],
-  ['TRT 2', 'ulusal', ['HD'], 160],
-  ['TRT Haber', 'haber', ['HD'], 220],
-  ['CNN Türk', 'haber', ['HD'], 0],
-  ['NTV', 'haber', ['HD'], 200],
-  ['Habertürk', 'haber', ['FHD'], 14],
-  ['Halk TV', 'haber', [], 340],
-  ['beIN Sports 1', 'spor', ['FHD'], 280],
-  ['beIN Sports 2', 'spor', ['HD'], 284],
-  ['TRT Spor', 'spor', ['HD'], 130],
-  ['S Sport', 'spor', ['4K', 'H265'], 0],
-  ['TRT Belgesel', 'belgesel', ['HD'], 96],
-  ['Doğa Belgesel', 'belgesel', ['FHD'], 120],
-  ['Tarih TV', 'belgesel', [], 36],
-  ['TRT Çocuk', 'cocuk', [], 52],
-  ['Minika Go', 'cocuk', [], 320],
-  ['Kral Pop', 'muzik', ['HD'], 330],
-  ['Power Türk', 'muzik', ['FHD'], 270],
-  ['BBC One', 'uk', ['HD'], 0],
-  ['Sky News', 'uk', ['HD'], 350],
+  [titles.nationOne, 'ulusal', ['HD'], 352],
+  [sample('Show TV', 'Spotlight TV'), 'ulusal', ['FHD'], 28],
+  [sample('Kanal D', 'Channel Delta'), 'ulusal', ['HD'], 210],
+  [sample('ATV', 'Atlas TV'), 'ulusal', ['HD'], 6],
+  [sample('Star TV', 'Starlight TV'), 'ulusal', ['HD'], 48],
+  [sample('NOW', 'Now Network'), 'ulusal', ['FHD'], 190],
+  [sample('TV8', 'Eight TV'), 'ulusal', ['HD'], 300],
+  [sample('TRT 2', 'Nation Two'), 'ulusal', ['HD'], 160],
+  [sample('TRT Haber', 'City News'), 'haber', ['HD'], 220],
+  [sample('CNN Türk', 'World News 24'), 'haber', ['HD'], 0],
+  [sample('NTV', 'Metro News'), 'haber', ['HD'], 200],
+  [sample('Habertürk', 'Daily Headlines'), 'haber', ['FHD'], 14],
+  [sample('Halk TV', 'People TV'), 'haber', [], 340],
+  [sample('beIN Sports 1', 'Sports One'), 'spor', ['FHD'], 280],
+  [sample('beIN Sports 2', 'Sports Two'), 'spor', ['HD'], 284],
+  [sample('TRT Spor', 'Arena Sport'), 'spor', ['HD'], 130],
+  [sample('S Sport', 'Stadium Sport'), 'spor', ['4K', 'H265'], 0],
+  [sample('TRT Belgesel', 'Nature Channel'), 'belgesel', ['HD'], 96],
+  [sample('Doğa Belgesel', 'Wild Planet'), 'belgesel', ['FHD'], 120],
+  [sample('Tarih TV', 'Heritage TV'), 'belgesel', [], 36],
+  [sample('TRT Çocuk', 'Kids Club'), 'cocuk', [], 52],
+  [sample('Minika Go', 'Mini Go'), 'cocuk', [], 320],
+  [sample('Kral Pop', 'King Pop'), 'muzik', ['HD'], 330],
+  [sample('Power Türk', 'Power Hits'), 'muzik', ['FHD'], 270],
+  [sample('BBC One', 'Channel Six'), 'uk', ['HD'], 0],
+  [sample('Sky News', 'Skyline News'), 'uk', ['HD'], 350],
 ].map(([name, category, badges, hue]) => ({
   name: name as string,
   category: category as string,
@@ -187,44 +222,44 @@ const channelList: Channel[] = [
 }));
 
 const films = [
-  ['Son Vapur', 'yerli', 2024, 7.8, 32],
-  ['Bozkırda Bir Yaz', 'yerli', 2023, 7.2, 40],
-  ['Mavi Saat', 'dram', 2025, 8.1, 220],
-  ['Uzak Kıyı', 'dram', 2022, 6.9, 196],
-  ['Kırmızı Balon', 'komedi', 2024, 6.4, 2],
-  ['Deniz Feneri', 'dram', 2021, 7.6, 205],
-  ['Sessiz Sokak', 'gerilim', 2025, 7.0, 250],
-  ['Gölgeler Arasında', 'gerilim', 2023, 6.8, 270],
-  ['Eski Defter', 'yerli', 2020, 7.4, 30],
-  ['Rüzgârın Kızı', 'macera', 2024, 7.1, 150],
-  ['Sonbahar Mektupları', 'dram', 2019, 7.9, 24],
-  ['Yıldız Tozu', 'macera', 2025, 7.3, 260],
-  ['Pazar Yolculuğu', 'komedi', 2023, 6.6, 46],
-  ['Şehir Uyurken', 'gerilim', 2024, 7.5, 230],
-  ['Gecenin Kıyısında', 'dram', 2025, 8.0, 280],
-  ['Ada Masalı', 'yerli', 2022, 6.7, 180],
+  [sample('Son Vapur', 'The Last Ferry'), 'yerli', 2024, 7.8, 32],
+  [sample('Bozkırda Bir Yaz', 'A Summer on the Prairie'), 'yerli', 2023, 7.2, 40],
+  [titles.blueHour, 'dram', 2025, 8.1, 220],
+  [sample('Uzak Kıyı', 'Distant Shore'), 'dram', 2022, 6.9, 196],
+  [sample('Kırmızı Balon', 'The Crimson Kite'), 'komedi', 2024, 6.4, 2],
+  [sample('Deniz Feneri', 'Lamplight Point'), 'dram', 2021, 7.6, 205],
+  [sample('Sessiz Sokak', 'Quiet Street'), 'gerilim', 2025, 7.0, 250],
+  [sample('Gölgeler Arasında', 'Among the Shadows'), 'gerilim', 2023, 6.8, 270],
+  [sample('Eski Defter', 'The Old Ledger'), 'yerli', 2020, 7.4, 30],
+  [sample('Rüzgârın Kızı', 'Daughter of the Wind'), 'macera', 2024, 7.1, 150],
+  [sample('Sonbahar Mektupları', 'Autumn Letters'), 'dram', 2019, 7.9, 24],
+  [sample('Yıldız Tozu', 'Starlight Drift'), 'macera', 2025, 7.3, 260],
+  [sample('Pazar Yolculuğu', 'Sunday Drive'), 'komedi', 2023, 6.6, 46],
+  [sample('Şehir Uyurken', 'City After Midnight'), 'gerilim', 2024, 7.5, 230],
+  [titles.edgeOfDusk, 'dram', 2025, 8.0, 280],
+  [sample('Ada Masalı', 'Island Tale'), 'yerli', 2022, 6.7, 180],
 ] as const;
 const filmCategories = [
-  { id: 'yerli', label: 'Yerli Filmler' },
-  { id: 'dram', label: 'Dram' },
-  { id: 'gerilim', label: 'Gerilim' },
-  { id: 'komedi', label: 'Komedi' },
-  { id: 'macera', label: 'Macera' },
+  { id: 'yerli', label: sample('Yerli Filmler', 'Local Films') },
+  { id: 'dram', label: sample('Dram', 'Drama') },
+  { id: 'gerilim', label: sample('Gerilim', 'Thriller') },
+  { id: 'komedi', label: sample('Komedi', 'Comedy') },
+  { id: 'macera', label: sample('Macera', 'Adventure') },
 ];
 const shows = [
-  ['Mahalle', 'yerli-dizi', 2024, 8.2, 26, 3],
-  ['Köprüaltı', 'yerli-dizi', 2023, 7.7, 200, 2],
-  ['Kayıp Şehir', 'gizem', 2025, 8.4, 240, 2],
-  ['Yalı Günleri', 'yerli-dizi', 2022, 7.1, 190, 3],
-  ['Gece Vardiyası', 'gizem', 2024, 7.9, 260, 1],
-  ['İkinci Bahar', 'komedi-dizi', 2021, 7.3, 36, 2],
-  ['Ayna', 'gizem', 2025, 8.0, 300, 1],
-  ['Dört Mevsim', 'komedi-dizi', 2023, 6.9, 110, 2],
+  [sample('Mahalle', 'The Block'), 'yerli-dizi', 2024, 8.2, 26, 3],
+  [sample('Köprüaltı', 'Under the Bridge'), 'yerli-dizi', 2023, 7.7, 200, 2],
+  [sample('Kayıp Şehir', 'The Lost City'), 'gizem', 2025, 8.4, 240, 2],
+  [sample('Yalı Günleri', 'Harbor Days'), 'yerli-dizi', 2022, 7.1, 190, 3],
+  [sample('Gece Vardiyası', 'Night Shift'), 'gizem', 2024, 7.9, 260, 1],
+  [sample('İkinci Bahar', 'Second Spring'), 'komedi-dizi', 2021, 7.3, 36, 2],
+  [sample('Ayna', 'The Mirror Room'), 'gizem', 2025, 8.0, 300, 1],
+  [sample('Dört Mevsim', 'Four Seasons'), 'komedi-dizi', 2023, 6.9, 110, 2],
 ] as const;
 const showCategories = [
-  { id: 'yerli-dizi', label: 'Yerli Diziler' },
-  { id: 'gizem', label: 'Gizem ve Gerilim' },
-  { id: 'komedi-dizi', label: 'Komedi' },
+  { id: 'yerli-dizi', label: sample('Yerli Diziler', 'Local Series') },
+  { id: 'gizem', label: sample('Gizem ve Gerilim', 'Mystery & Thriller') },
+  { id: 'komedi-dizi', label: sample('Komedi', 'Comedy') },
 ];
 
 const day = 86_400_000;
@@ -258,11 +293,17 @@ function buildCatalog(now: number) {
         start,
         stop: start + minutes * 60_000,
         title,
-        subTitle: k % 3 === 0 ? `${(k % 40) + 1}. Bölüm` : null,
+        subTitle: k % 3 === 0 ? sample(`${(k % 40) + 1}. Bölüm`, `Episode ${(k % 40) + 1}`) : null,
         description:
           k % 2 === 0
-            ? `${title}, ${channel.name} ekranlarında. Bu akşamın konukları ve sürprizleriyle canlı yayında.`
-            : `${channel.name} yayın akışında ${title.toLocaleLowerCase('tr')} saati.`,
+            ? sample(
+                `${title}, ${channel.name} ekranlarında. Bu akşamın konukları ve sürprizleriyle canlı yayında.`,
+                `${title} on ${channel.name}. Live tonight with guests and surprises.`,
+              )
+            : sample(
+                `${channel.name} yayın akışında ${title.toLocaleLowerCase('tr')} saati.`,
+                `${title} time on the ${channel.name} schedule.`,
+              ),
         category: liveCategories.find((c) => c.id === channel.category)?.label ?? null,
       });
       start += minutes * 60_000;
@@ -288,10 +329,13 @@ function buildCatalog(now: number) {
     items.push(item);
     details.set(ref, {
       item,
-      plot: `${title}, birbirini yıllardır görmeyen eski dostların tek bir gecede yeniden karşılaşmasını anlatıyor. Sessiz, sıcak ve sonunda insanı gülümseten bir hikâye.`,
+      plot: sample(
+        `${title}, birbirini yıllardır görmeyen eski dostların tek bir gecede yeniden karşılaşmasını anlatıyor. Sessiz, sıcak ve sonunda insanı gülümseten bir hikâye.`,
+        `${title} follows old friends who have not seen each other in years as they meet again in a single night. A quiet, warm story that leaves you smiling.`,
+      ),
       genre: filmCategories.find((c) => c.id === category)?.label ?? null,
-      cast: 'Elif Aras, Mert Kaya, Selin Tan',
-      director: 'Deniz Yalçın',
+      cast: sample('Elif Aras, Mert Kaya, Selin Tan', 'Emily Hart, Daniel Reed, Sophie Lane'),
+      director: sample('Deniz Yalçın', 'Alex Morgan'),
       durationSec: (95 + (index % 5) * 9) * 60,
       backdrop: art('backdrop', title, hue),
       seasons: [],
@@ -319,27 +363,39 @@ function buildCatalog(now: number) {
         ref: `e-${5001 + index}${s + 1}${String(e + 1).padStart(2, '0')}`,
         season: s + 1,
         episode: e + 1,
-        title: [
-          'Başlangıç',
-          'Eski Ev',
-          'Kapı',
-          'Gece Treni',
-          'Yağmur',
-          'Mektup',
-          'Son Gün',
-          'Dönüş',
-        ][e % 8]!,
-        plot: 'Mahalleye yeni taşınan bir aile, bodrumda eski bir sandık bulur. Sandıktan çıkan defter herkesin hayatını değiştirecektir.',
+        title: sample(
+          ['Başlangıç', 'Eski Ev', 'Kapı', 'Gece Treni', 'Yağmur', 'Mektup', 'Son Gün', 'Dönüş'],
+          [
+            'Beginning',
+            'Old House',
+            'The Door',
+            'Night Train',
+            'Rain',
+            'The Letter',
+            'Final Day',
+            'Return',
+          ],
+        )[e % 8]!,
+        plot: sample(
+          'Mahalleye yeni taşınan bir aile, bodrumda eski bir sandık bulur. Sandıktan çıkan defter herkesin hayatını değiştirecektir.',
+          'A family that has just moved into the neighborhood finds an old chest in the basement. The notebook inside will change everyone’s life.',
+        ),
         durationSec: (42 + ((e * 3) % 12)) * 60,
         art: art('still', `${title} ${s + 1}.${e + 1}`, (hue + e * 9) % 360),
       })),
     }));
     details.set(ref, {
       item,
-      plot: `${title}, aynı apartmanda yaşayan dört komşunun bir yaz boyunca birbirine karışan hayatlarını anlatıyor.`,
+      plot: sample(
+        `${title}, aynı apartmanda yaşayan dört komşunun bir yaz boyunca birbirine karışan hayatlarını anlatıyor.`,
+        `${title} follows four neighbors in the same building as their lives tangle together over one summer.`,
+      ),
       genre: showCategories.find((c) => c.id === category)?.label ?? null,
-      cast: 'Ayşe Demir, Can Öztürk, Zeynep Arslan',
-      director: 'Ece Kılıç',
+      cast: sample(
+        'Ayşe Demir, Can Öztürk, Zeynep Arslan',
+        'Grace Miller, Ryan Cole, Chloe Parker',
+      ),
+      director: sample('Ece Kılıç', 'Erin Clarke'),
       durationSec: null,
       backdrop: art('backdrop', title, hue),
       seasons,
@@ -398,11 +454,11 @@ type DemoWork = {
 };
 
 const demoPeople = {
-  deniz: { userId: 'demo-deniz', name: 'Deniz' },
-  ece: { userId: 'demo-ece', name: 'Ece' },
-  can: { userId: 'demo-can', name: 'Can' },
-  zeynep: { userId: 'demo-zeynep', name: 'Zeynep' },
-  mert: { userId: 'demo-mert', name: 'Mert' },
+  deniz: { userId: 'demo-deniz', name: crew.deniz },
+  ece: { userId: 'demo-ece', name: crew.ece },
+  can: { userId: 'demo-can', name: crew.can },
+  zeynep: { userId: 'demo-zeynep', name: crew.zeynep },
+  mert: { userId: 'demo-mert', name: crew.mert },
 } satisfies Record<string, RmdbPerson>;
 
 /**
@@ -563,20 +619,42 @@ function demoRmdb(now: number, catalog: ReturnType<typeof buildCatalog>): DemoWo
         review(
           deniz,
           8,
-          'İkinci izleyişte daha da güzeldi. İskele sahnesi hâlâ aklımda.',
+          sample(
+            'İkinci izleyişte daha da güzeldi. İskele sahnesi hâlâ aklımda.',
+            'Even better the second time. The pier scene is still stuck in my head.',
+          ),
           now - 2 * day + 3 * hour,
           { liked: true },
         ),
         review(
           ece,
           9,
-          'Son sahnede salonda kimse konuşmadı. Müzikleri de ayrıca çok iyi.',
+          sample(
+            'Son sahnede salonda kimse konuşmadı. Müzikleri de ayrıca çok iyi.',
+            'Nobody in the room said a word during the last scene. The score is great too.',
+          ),
           now - 18 * day,
           { liked: true },
         ),
-        review(can, 8, 'Görüntüler harika; ortası biraz uzamış ama değdi.', now - 18 * day - hour),
+        review(
+          can,
+          8,
+          sample(
+            'Görüntüler harika; ortası biraz uzamış ama değdi.',
+            'Gorgeous visuals; the middle drags a bit but it was worth it.',
+          ),
+          now - 18 * day - hour,
+        ),
         review(zeynep, 10, '', now - 17 * day, { liked: true }),
-        review(mert, 7, 'Herkes kadar sevmedim ama güzel bir akşamdı.', now - 2 * day + 4 * hour),
+        review(
+          mert,
+          7,
+          sample(
+            'Herkes kadar sevmedim ama güzel bir akşamdı.',
+            'I did not love it as much as everyone else, but it was a good evening.',
+          ),
+          now - 2 * day + 4 * hour,
+        ),
       ],
       diary: [
         hallWatch(now - 2 * day, [deniz, mert]),
@@ -592,7 +670,10 @@ function demoRmdb(now: number, catalog: ReturnType<typeof buildCatalog>): DemoWo
         review(
           zeynep,
           9,
-          'Yarısındayız ama şimdiden favorim. Kimse sonunu söylemesin!',
+          sample(
+            'Yarısındayız ama şimdiden favorim. Kimse sonunu söylemesin!',
+            'Halfway through and already my favorite. Nobody spoil the ending!',
+          ),
           now - day + 2 * hour,
         ),
         review(ece, 8, '', now - day + 2 * hour),
@@ -604,7 +685,16 @@ function demoRmdb(now: number, catalog: ReturnType<typeof buildCatalog>): DemoWo
       touchedAt: mahalle.progress.updatedAt,
       ...mahalle,
       reviews: [
-        review(mert, 9, 'Apartman toplantısı bölümü efsane.', now - 5 * day, { liked: true }),
+        review(
+          mert,
+          9,
+          sample(
+            'Apartman toplantısı bölümü efsane.',
+            'The residents’ meeting episode is legendary.',
+          ),
+          now - 5 * day,
+          { liked: true },
+        ),
         review(ece, 8, '', now - 6 * day),
       ],
     },
@@ -612,7 +702,17 @@ function demoRmdb(now: number, catalog: ReturnType<typeof buildCatalog>): DemoWo
       ...base('m-3001', 'w-demo-son-vapur', now - 6 * day),
       touchedAt: now - 6 * day + hour,
       progress: film('m-3001', now - 6 * day, 'end'),
-      reviews: [review(mert, 7, 'Biraz yavaş ama görüntüler çok güzel.', now - 6 * day + hour)],
+      reviews: [
+        review(
+          mert,
+          7,
+          sample(
+            'Biraz yavaş ama görüntüler çok güzel.',
+            'A bit slow, but the visuals are beautiful.',
+          ),
+          now - 6 * day + hour,
+        ),
+      ],
       diary: [hallWatch(now - 6 * day - 2 * hour, [deniz, ece, mert])],
     },
     {
@@ -630,9 +730,18 @@ function demoRmdb(now: number, catalog: ReturnType<typeof buildCatalog>): DemoWo
       touchedAt: kayip.progress.updatedAt,
       ...kayip,
       reviews: [
-        review(zeynep, 10, 'Sezon finali! Sesimiz bütün apartmana gitti.', now - 5 * day, {
-          liked: true,
-        }),
+        review(
+          zeynep,
+          10,
+          sample(
+            'Sezon finali! Sesimiz bütün apartmana gitti.',
+            'Season finale! We were so loud the whole building heard us.',
+          ),
+          now - 5 * day,
+          {
+            liked: true,
+          },
+        ),
         review(deniz, 9, '', now - 5 * day + hour),
       ],
     },
@@ -644,14 +753,20 @@ function demoRmdb(now: number, catalog: ReturnType<typeof buildCatalog>): DemoWo
         review(
           can,
           8,
-          'Katil baştan beri karşı komşuymuş; son sahnedeki ayna her şeyi açıklıyor.',
+          sample(
+            'Katil baştan beri karşı komşuymuş; son sahnedeki ayna her şeyi açıklıyor.',
+            'The killer was the neighbor across the street all along; the mirror in the last scene explains everything.',
+          ),
           now - 9 * day + hour,
           { spoiler: true },
         ),
         review(
           ece,
           6,
-          'Gerilimi iyi kurulmuş ama sonu biraz aceleye gelmiş.',
+          sample(
+            'Gerilimi iyi kurulmuş ama sonu biraz aceleye gelmiş.',
+            'Nicely built tension, but the ending feels a bit rushed.',
+          ),
           now - 9 * day + 2 * hour,
         ),
       ],
@@ -665,7 +780,17 @@ function demoRmdb(now: number, catalog: ReturnType<typeof buildCatalog>): DemoWo
       ...base('s-5002', 'w-demo-koprualti', now - 13 * day),
       touchedAt: kopru.progress.updatedAt,
       ...kopru,
-      reviews: [review(can, 6, 'Fena değil, ikinci bölümde açıldı.', now - 12 * day)],
+      reviews: [
+        review(
+          can,
+          6,
+          sample(
+            'Fena değil, ikinci bölümde açıldı.',
+            'Not bad, it picked up in the second episode.',
+          ),
+          now - 12 * day,
+        ),
+      ],
     },
     {
       ...base('s-5007', 'w-demo-ayna', now - 8 * day),
@@ -676,7 +801,13 @@ function demoRmdb(now: number, catalog: ReturnType<typeof buildCatalog>): DemoWo
       touchedAt: vardiya.progress.updatedAt,
       ...vardiya,
       reviews: [
-        review(ece, 8, 'Final tam yerindeydi.', now - 38 * day, { liked: true }),
+        review(
+          ece,
+          8,
+          sample('Final tam yerindeydi.', 'The finale landed perfectly.'),
+          now - 38 * day,
+          { liked: true },
+        ),
         review(zeynep, 7, '', now - 38 * day),
       ],
     },
@@ -684,14 +815,17 @@ function demoRmdb(now: number, catalog: ReturnType<typeof buildCatalog>): DemoWo
       id: 'w-demo-kuzey-treni',
       ref: null,
       kind: 'movie',
-      title: 'Kuzey Treni',
+      title: sample('Kuzey Treni', 'Northbound Train'),
       year: 2019,
-      genre: 'Dram',
-      art: art('poster', 'Kuzey Treni', 200),
-      backdrop: art('backdrop', 'Kuzey Treni', 200),
-      plot: 'Kışın son treniyle kuzeye giden iki kardeş, yolda eski bir aile sırrıyla yüzleşir.',
-      director: 'Selin Aydın',
-      cast: 'Ozan Er, Melis Kaya',
+      genre: sample('Dram', 'Drama'),
+      art: art('poster', sample('Kuzey Treni', 'Northbound Train'), 200),
+      backdrop: art('backdrop', sample('Kuzey Treni', 'Northbound Train'), 200),
+      plot: sample(
+        'Kışın son treniyle kuzeye giden iki kardeş, yolda eski bir aile sırrıyla yüzleşir.',
+        'Two siblings riding the last train of winter north come face to face with an old family secret.',
+      ),
+      director: sample('Selin Aydın', 'Hannah Doyle'),
+      cast: sample('Ozan Er, Melis Kaya', 'Owen Ellis, Mia Kerr'),
       durationSec: 6300,
       addedAt: now - 70 * day,
       touchedAt: now - 69 * day,
@@ -706,7 +840,10 @@ function demoRmdb(now: number, catalog: ReturnType<typeof buildCatalog>): DemoWo
         review(
           ece,
           9,
-          'Katalogdan kalktı ama kaydı burada duruyor; iyi ki izlemişiz.',
+          sample(
+            'Katalogdan kalktı ama kaydı burada duruyor; iyi ki izlemişiz.',
+            'It left the catalogue but its record stays here; glad we watched it.',
+          ),
           now - 69 * day,
         ),
         review(can, 8, '', now - 69 * day),
@@ -833,7 +970,10 @@ export function createCommunityCinemaFixtureBridge(
     if (!target) return null;
     return {
       ref: target.ref,
-      title: `${entry.item.title} · ${target.season}. Sezon ${target.episode}. Bölüm`,
+      title: sample(
+        `${entry.item.title} · ${target.season}. Sezon ${target.episode}. Bölüm`,
+        `${entry.item.title} · Season ${target.season}, Episode ${target.episode}`,
+      ),
       positionSec: stop && !next ? at(progress!.positionSec) : 0,
       art: target.art ?? entry.item.art,
       episode: { season: target.season, episode: target.episode, title: target.title || null },
@@ -899,7 +1039,7 @@ export function createCommunityCinemaFixtureBridge(
       if (query.sort === 'rating')
         list = [...list].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
       if (query.sort === 'name')
-        list = [...list].sort((a, b) => a.title.localeCompare(b.title, 'tr'));
+        list = [...list].sort((a, b) => a.title.localeCompare(b.title, sample('tr', 'en')));
       const offset = query.offset ?? 0,
         limit = query.limit ?? 60;
       return delay({ items: list.slice(offset, offset + limit), total: list.length });
@@ -956,14 +1096,17 @@ export function createCommunityCinemaFixtureBridge(
           subtitles: [
             {
               id: 'demo-tr',
-              label: 'Türkçe · DEMO harici altyazı',
+              label: sample('Türkçe · DEMO harici altyazı', 'Turkish · DEMO external subtitle'),
               language: 'tur' as const,
               hearingImpaired: false,
-              src: fixtureVtt('SubDL örneği'),
+              src: fixtureVtt(sample('SubDL örneği', 'SubDL sample')),
             },
             {
               id: 'demo-en',
-              label: 'İngilizce · DEMO external subtitle',
+              label: sample(
+                'İngilizce · DEMO external subtitle',
+                'English · DEMO external subtitle',
+              ),
               language: 'eng' as const,
               hearingImpaired: false,
               src: fixtureVtt('SubDL sample'),
@@ -1230,8 +1373,10 @@ export function createCommunityCinemaFixtureBridge(
     chooseSubtitleFile: async () =>
       delay(
         {
-          name: 'demo-yerel.srt',
-          content: decodeURIComponent(fixtureVtt('yerel dosya').split(',')[1]!),
+          name: sample('demo-yerel.srt', 'demo-local.srt'),
+          content: decodeURIComponent(
+            fixtureVtt(sample('yerel dosya', 'local file')).split(',')[1]!,
+          ),
         },
         200,
       ),
@@ -1256,9 +1401,9 @@ export function createCommunityCinemaFixtureBridge(
           audioTracks: current.media.live
             ? []
             : [
-                { index: 0, label: 'Almanca' },
-                { index: 1, label: 'Türkçe · Dublaj' },
-                { index: 2, label: 'İngilizce' },
+                { index: 0, label: sample('Almanca', 'German') },
+                { index: 1, label: sample('Türkçe · Dublaj', 'English · Dubbed') },
+                { index: 2, label: sample('İngilizce', 'Spanish') },
               ],
           audioTrack: current.media.live ? null : (audioChoice ?? 1),
           // DEMO picture facts for the info pills.
@@ -1270,14 +1415,14 @@ export function createCommunityCinemaFixtureBridge(
             : [
                 {
                   index: 0,
-                  label: 'Türkçe',
+                  label: sample('Türkçe', 'Turkish'),
                   language: 'tur',
                   forced: false,
-                  src: fixtureVtt('Türkçe'),
+                  src: fixtureVtt(sample('Türkçe', 'Turkish')),
                 },
                 {
                   index: 1,
-                  label: 'İngilizce',
+                  label: sample('İngilizce', 'English'),
                   language: 'eng',
                   forced: false,
                   src: fixtureVtt('English'),
@@ -1293,12 +1438,12 @@ export function createCommunityCinemaFixtureBridge(
 let room: RoomSnapshot | null = null;
 let audioChoice: number | null = null;
 
-const people = [
-  { userId: 'demo-deniz', displayName: 'Deniz' },
-  { userId: 'demo-ece', displayName: 'Ece' },
-  { userId: 'demo-can', displayName: 'Can' },
-  { userId: 'demo-zeynep', displayName: 'Zeynep' },
-  { userId: 'demo-mert', displayName: 'Mert' },
+const hallPeople = [
+  { userId: 'demo-deniz', displayName: crew.deniz },
+  { userId: 'demo-ece', displayName: crew.ece },
+  { userId: 'demo-can', displayName: crew.can },
+  { userId: 'demo-zeynep', displayName: crew.zeynep },
+  { userId: 'demo-mert', displayName: crew.mert },
 ];
 
 export function communityCinemaFixtureRoom(
@@ -1306,7 +1451,7 @@ export function communityCinemaFixtureRoom(
   now = Date.now(),
 ): RoomSnapshot {
   const playing = ['default', 'vod', 'error', 'remote'].includes(variant);
-  const participants = (playing ? people.slice(1, 5) : []).map((p) => ({
+  const participants = (playing ? hallPeople.slice(1, 5) : []).map((p) => ({
     ...p,
     canControl: true,
     canCreate: true,
@@ -1320,7 +1465,7 @@ export function communityCinemaFixtureRoom(
           {
             id: 'demo-hall-1',
             addedBy: 'demo-ece',
-            media: { kind: 'community-media', ref: 'm-3003', title: 'Mavi Saat', live: false },
+            media: { kind: 'community-media', ref: 'm-3003', title: titles.blueHour, live: false },
           },
           {
             id: 'demo-hall-2',
@@ -1328,7 +1473,7 @@ export function communityCinemaFixtureRoom(
             media: {
               kind: 'community-media',
               ref: 'm-3015',
-              title: 'Gecenin Kıyısında',
+              title: titles.edgeOfDusk,
               live: false,
             },
           },
@@ -1337,12 +1482,12 @@ export function communityCinemaFixtureRoom(
           {
             id: 'demo-hall-1',
             addedBy: 'demo-ece',
-            media: { kind: 'community-media', ref: 'l-1001', title: 'TRT 1', live: true },
+            media: { kind: 'community-media', ref: 'l-1001', title: titles.nationOne, live: true },
           },
           {
             id: 'demo-hall-2',
             addedBy: 'demo-can',
-            media: { kind: 'community-media', ref: 'm-3003', title: 'Mavi Saat', live: false },
+            media: { kind: 'community-media', ref: 'm-3003', title: titles.blueHour, live: false },
           },
           {
             id: 'demo-hall-3',
@@ -1357,7 +1502,7 @@ export function communityCinemaFixtureRoom(
     primary: playing
       ? {
           activity: 'hall',
-          title: 'Sinema salonu',
+          title: sample('Sinema salonu', 'Cinema hall'),
           hostUserId: 'demo-ece',
           startedAt: now - 3_600_000,
           state: 'live',
@@ -1422,7 +1567,7 @@ export function createCommunityCinemaFixtureActivity(
           if (!self)
             state.participants.push({
               userId: me,
-              displayName: 'Deniz',
+              displayName: crew.deniz,
               canControl: true,
               canCreate: true,
               joinedAt: Date.now(),
@@ -1545,7 +1690,10 @@ function fixtureVtt(language: string) {
   const cues = Array.from({ length: 1800 }, (_, i) => ({
     start: i * 6,
     end: i * 6 + 4,
-    text: `DEMO altyazı (${language})\nÖrnek satır ${i + 1}`,
+    text: sample(
+      `DEMO altyazı (${language})\nÖrnek satır ${i + 1}`,
+      `DEMO subtitle (${language})\nSample line ${i + 1}`,
+    ),
   }));
   return `data:text/vtt;charset=utf-8,${encodeURIComponent(formatVtt(cues))}`;
 }

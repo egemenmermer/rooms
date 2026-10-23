@@ -1,4 +1,5 @@
 import { usePersonalPlayback } from '../personal-playback';
+import { sample } from './sample';
 
 const variants = [
   'default',
@@ -23,7 +24,10 @@ export function installPersonalPlaybackFixture(value: string): PersonalPlaybackF
       media: {
         // The renderer fixture never resolves or requests this capability.
         url: 'rooms-provider://00000000-0000-4000-8000-000000000029/stream',
-        name: normalized === 'live' ? 'Şehrin kıyısında' : 'Gecenin Kıyısında',
+        name:
+          normalized === 'live'
+            ? sample('Şehrin kıyısında', 'On the city shore')
+            : sample('Gecenin Kıyısında', 'On the Night Shore'),
         live: normalized === 'live',
         startAt: normalized === 'personal' ? 2068 : undefined,
       },
@@ -47,7 +51,7 @@ export function installInsetPlaybackFixture(screen: string, variant: string) {
     session: {
       media: {
         url: 'rooms-provider://00000000-0000-4000-8000-000000000036/stream',
-        name: `${live ? 'Kıyı TV' : 'Gecenin Kıyısında'} · DEV fixture · local demo`,
+        name: `${live ? sample('Kıyı TV', 'Shore TV') : sample('Gecenin Kıyısında', 'On the Night Shore')} · DEV fixture · local demo`,
         live,
         startAt: live ? undefined : 2068,
         ...(live ? { channelId: 'dev-fixture-kiyi' } : {}),

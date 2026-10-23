@@ -8,6 +8,7 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { t } from './i18n';
 import { createPortal } from 'react-dom';
 import { ChannelEditor } from './CommunitySettings';
 import { useCommunity } from './community';
@@ -155,8 +156,8 @@ export function ChannelTools({ children }: { children: ReactNode }) {
       if (sameAccount() && useCommunity.getState().activeSpaceId === spaceId)
         setRefreshWarning(
           deletedId
-            ? 'Kanal silindi. Liste yenilenemedi.'
-            : 'Kanal kaydedildi. Liste yenilenemedi.',
+            ? t('Kanal silindi. Liste yenilenemedi.')
+            : t('Kanal kaydedildi. Liste yenilenemedi.'),
         );
       return;
     }
@@ -200,7 +201,7 @@ export function ChannelTools({ children }: { children: ReactNode }) {
               void c.openSpace(c.activeSpaceId!);
             }}
           >
-            Yenile
+            {t('Yenile')}
           </button>
         </div>
       )}
@@ -210,14 +211,14 @@ export function ChannelTools({ children }: { children: ReactNode }) {
             className="channel-context-menu"
             ref={menuRef}
             role="menu"
-            aria-label="Kanal işlemleri"
+            aria-label={t('Kanal işlemleri')}
             style={{ left: menu.x, top: menu.y }}
           >
             <button role="menuitem" onClick={() => choose('create', 'text')}>
-              Metin kanalı oluştur
+              {t('Metin kanalı oluştur')}
             </button>
             <button role="menuitem" onClick={() => choose('create', 'voice')}>
-              Ses odası oluştur
+              {t('Ses odası oluştur')}
             </button>
             {menu.channel && (
               <>
@@ -231,7 +232,7 @@ export function ChannelTools({ children }: { children: ReactNode }) {
                       navigate(`/settings?tab=desktop&channel=${encodeURIComponent(id)}`);
                     }}
                   >
-                    Bildirimler
+                    {t('Bildirimler')}
                   </button>
                 )}
                 <button
@@ -242,13 +243,13 @@ export function ChannelTools({ children }: { children: ReactNode }) {
                     navigate(`/settings?tab=channel-permissions&channel=${encodeURIComponent(id)}`);
                   }}
                 >
-                  İzinler
+                  {t('İzinler')}
                 </button>
                 <button role="menuitem" onClick={() => choose('rename')}>
-                  Adını değiştir
+                  {t('Adını değiştir')}
                 </button>
                 <button className="destructive" role="menuitem" onClick={() => choose('delete')}>
-                  Kanalı sil
+                  {t('Kanalı sil')}
                 </button>
               </>
             )}

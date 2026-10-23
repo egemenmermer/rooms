@@ -32,7 +32,7 @@ import type {
 } from '@rooms/social';
 import { VoiceAvatar } from './VoiceAvatar';
 import { inviteLinkFor } from './InviteLinkCard';
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 
 /** These components receive authorized projections and operations from the native adapter owner. */
 export interface CommunityOperationBoundary {
@@ -41,7 +41,7 @@ export interface CommunityOperationBoundary {
 const fixtureActive = (boundary: CommunityOperationBoundary) =>
   !!boundary.fixture ||
   (import.meta.env.DEV && new URLSearchParams(location.search).has('fixture'));
-const fixtureReason = 'Yerel görsel örnekte gerçek hesap işlemi kapalı.';
+const fixtureReason = t('Yerel görsel örnekte gerçek hesap işlemi kapalı.');
 function useOperation(scope: string, boundary: CommunityOperationBoundary) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
@@ -133,9 +133,9 @@ export function CommunityEditor(props: CommunityEditorProps) {
   const reason = op.blocked
     ? fixtureReason
     : !onSave
-      ? 'Topluluk oluşturma ve ad düzenleme bağlantısı henüz uygulanmadı.'
+      ? t('Topluluk oluşturma ve ad düzenleme bağlantısı henüz uygulanmadı.')
       : mode === 'edit' && !props.canEdit
-        ? 'Topluluk düzenleme yetkisi gerekli.'
+        ? t('Topluluk düzenleme yetkisi gerekli.')
         : '';
   const submit = () => {
     if (!reason && validName(name, 32) && onSave)
@@ -152,14 +152,14 @@ export function CommunityEditor(props: CommunityEditorProps) {
     <Modal
       title={
         referenceCreated
-          ? 'Odan hazır. · Yerel referans'
+          ? t('Odan hazır. · Yerel referans')
           : created
-            ? 'Odan hazır.'
+            ? t('Odan hazır.')
             : mode === 'edit'
               ? space?.name
-                ? `${space.name}’yı düzenle`
-                : 'Topluluğu düzenle'
-              : 'Kendi odanı kur.'
+                ? t('{name}’yı düzenle', { name: space.name })
+                : t('Topluluğu düzenle')
+              : t('Kendi odanı kur.')
       }
       className={`rcs-modal rcs-community-editor ${referenceCreated ? 'rcs-local-reference' : ''}`}
       onClose={() => {
@@ -177,17 +177,19 @@ export function CommunityEditor(props: CommunityEditorProps) {
             <Notice kind="success">
               <Check size={18} />
               <span>
-                {referenceCreated.name} · Yerel oluşturuldu görünümü. Gerçek topluluk oluşturulmadı.
+                {t('{name} · Yerel oluşturuldu görünümü. Gerçek topluluk oluşturulmadı.', {
+                  name: referenceCreated.name,
+                })}
               </span>
             </Notice>
           )}
           {created && (
             <Notice kind="success">
               <Check size={18} />
-              {created.name} oluşturuldu.
+              {t('{name} oluşturuldu.', { name: created.name })}
             </Notice>
           )}
-          <p className="rcs-description">Arkadaşlarınla buluşacağın özel topluluğun.</p>
+          <p className="rcs-description">{t('Arkadaşlarınla buluşacağın özel topluluğun.')}</p>
           <div className="rcs-icon-picker">
             <span>
               <Home size={33} />
@@ -196,14 +198,14 @@ export function CommunityEditor(props: CommunityEditorProps) {
               type="button"
               className="button secondary"
               disabled
-              title="Topluluk ikonu için güvenli yerel yükleme arayüzü henüz uygulanmadı."
+              title={t('Topluluk ikonu için güvenli yerel yükleme arayüzü henüz uygulanmadı.')}
             >
               <Image size={17} />
-              İkon değiştir
+              {t('İkon değiştir')}
             </button>
           </div>
           <label className="rcs-field">
-            Topluluk adı
+            {t('Topluluk adı')}
             <input
               autoFocus
               required
@@ -214,11 +216,11 @@ export function CommunityEditor(props: CommunityEditorProps) {
             />
           </label>
           <label className="rcs-field">
-            Kısa açıklama
+            {t('Kısa açıklama')}
             <input
               value={description ?? ''}
               disabled
-              placeholder="Açıklama düzenleme henüz uygulanmadı"
+              placeholder={t('Açıklama düzenleme henüz uygulanmadı')}
             />
           </label>
           <div
@@ -228,17 +230,17 @@ export function CommunityEditor(props: CommunityEditorProps) {
             <div>
               <strong>
                 {inviteOnly === true || referenceCreated
-                  ? 'Yalnızca davetle'
-                  : 'Topluluk görünürlüğü'}
+                  ? t('Yalnızca davetle')
+                  : t('Topluluk görünürlüğü')}
               </strong>
               <small>
                 {referenceCreated
-                  ? 'Yerel referans politikası; sunucu ayarı uygulanmadı.'
+                  ? t('Yerel referans politikası; sunucu ayarı uygulanmadı.')
                   : inviteOnly === true
-                    ? 'Davet gerekliliği bağlantıdan alındı.'
+                    ? t('Davet gerekliliği bağlantıdan alındı.')
                     : inviteOnly === false
-                      ? 'Davet dışı erişim açık.'
-                      : 'Görünürlük politikası bu bağlantıda henüz alınamıyor.'}
+                      ? t('Davet dışı erişim açık.')
+                      : t('Görünürlük politikası bu bağlantıda henüz alınamıyor.')}
               </small>
             </div>
             {(inviteOnly === true || referenceCreated) && <Check size={20} />}
@@ -248,7 +250,7 @@ export function CommunityEditor(props: CommunityEditorProps) {
         </div>
         <footer className="rcs-modal-footer">
           <button type="button" className="button secondary" disabled={op.busy} onClick={onClose}>
-            {created ? 'Bitti' : 'Vazgeç'}
+            {created ? t('Bitti') : t('Vazgeç')}
           </button>
           {!created && (
             <button
@@ -257,10 +259,10 @@ export function CommunityEditor(props: CommunityEditorProps) {
               title={reason}
             >
               {op.busy
-                ? 'Kaydediliyor…'
+                ? t('Kaydediliyor…')
                 : mode === 'edit'
-                  ? 'Değişiklikleri kaydet'
-                  : 'Topluluğu oluştur'}
+                  ? t('Değişiklikleri kaydet')
+                  : t('Topluluğu oluştur')}
             </button>
           )}
         </footer>
@@ -304,7 +306,7 @@ export function ChannelEditor(props: ChannelEditorProps) {
       ? {
           name: props.referenceDraftName ?? '',
           description: props.referenceDraftDescription ?? '',
-          category: props.referenceDraftCategory ?? 'SOHBET',
+          category: props.referenceDraftCategory ?? t('SOHBET'),
         }
       : undefined;
   const [referencePrivateEnabled, setReferencePrivateEnabled] = useState(true),
@@ -344,9 +346,9 @@ export function ChannelEditor(props: ChannelEditorProps) {
   const reason = op.blocked
     ? fixtureReason
     : !props.canManage
-      ? 'Kanal yönetimi için yetkili olman gerekiyor.'
+      ? t('Kanal yönetimi için yetkili olman gerekiyor.')
       : !hasOperation
-        ? 'Kanal işlemi bağlantısı hazır değil.'
+        ? t('Kanal işlemi bağlantısı hazır değil.')
         : '';
   const submit = () => {
     if (reason || op.busy || (mode !== 'delete' && !validName(name))) return;
@@ -366,7 +368,11 @@ export function ChannelEditor(props: ChannelEditorProps) {
   return (
     <Modal
       title={
-        mode === 'delete' ? 'Kanalı sil?' : mode === 'rename' ? 'Kanalı düzenle' : 'Kanal oluştur'
+        mode === 'delete'
+          ? t('Kanalı sil?')
+          : mode === 'rename'
+            ? t('Kanalı düzenle')
+            : t('Kanal oluştur')
       }
       className={`rcs-modal rcs-channel-editor ${mode === 'delete' ? 'rcs-delete' : ''} ${referencePrivate ? 'rcs-local-reference' : ''}`}
       onClose={() => {
@@ -384,12 +390,14 @@ export function ChannelEditor(props: ChannelEditorProps) {
             <>
               <Notice kind="error">
                 <TriangleAlert size={18} />
-                {channel?.type === 2 ? '' : '#'}
-                {channel?.name} ve mesajları silinecek.
+                {t('{name} ve mesajları silinecek.', {
+                  name: `${channel?.type === 2 ? '' : '#'}${channel?.name ?? ''}`,
+                })}
               </Notice>
               <p className="rcs-description">
-                Bu işlem geri alınamaz. Bu kanalın ses bağlantısı varsa kapanır; diğer kanalların
-                bağlantıları bağımsızdır.
+                {t(
+                  'Bu işlem geri alınamaz. Bu kanalın ses bağlantısı varsa kapanır; diğer kanalların bağlantıları bağımsızdır.',
+                )}
               </p>
             </>
           ) : (
@@ -406,16 +414,18 @@ export function ChannelEditor(props: ChannelEditorProps) {
                   >
                     {value === 'text' ? <Hash size={25} /> : <Volume2 size={25} />}
                     <div>
-                      <strong>{value === 'text' ? 'Metin kanalı' : 'Ses odası'}</strong>
+                      <strong>{value === 'text' ? t('Metin kanalı') : t('Ses odası')}</strong>
                       <small>
-                        {value === 'text' ? 'Yazışmak ve paylaşmak' : 'Konuşmak ve birlikte yapmak'}
+                        {value === 'text'
+                          ? t('Yazışmak ve paylaşmak')
+                          : t('Konuşmak ve birlikte yapmak')}
                       </small>
                     </div>
                   </button>
                 ))}
               </div>
               <label className="rcs-field">
-                Ad
+                {t('Ad')}
                 <input
                   autoFocus={!props.fixture}
                   required
@@ -428,7 +438,7 @@ export function ChannelEditor(props: ChannelEditorProps) {
               {fixtureActive(props) && (
                 <>
                   <label className="rcs-field">
-                    Açıklama
+                    {t('Açıklama')}
                     <input
                       disabled
                       value={
@@ -437,40 +447,40 @@ export function ChannelEditor(props: ChannelEditorProps) {
                         referenceDraft?.description ??
                         ''
                       }
-                      placeholder="Kanal açıklaması düzenleme henüz uygulanmadı"
-                      title="Açıklama kaydı henüz uygulanmadı."
+                      placeholder={t('Kanal açıklaması düzenleme henüz uygulanmadı')}
+                      title={t('Açıklama kaydı henüz uygulanmadı.')}
                     />
                   </label>
                   <label className="rcs-field">
-                    Kategori
-                    <select disabled value="unknown" title="Kategori kaydı henüz uygulanmadı.">
+                    {t('Kategori')}
+                    <select disabled value="unknown" title={t('Kategori kaydı henüz uygulanmadı.')}>
                       <option value="unknown">
                         {referencePrivate?.category ??
                           referenceDraft?.category ??
-                          'Kategori verisi alınmıyor'}
+                          t('Kategori verisi alınmıyor')}
                       </option>
                     </select>
                   </label>
                   <div className="rcs-setting">
                     <div>
-                      <strong>Özel kanal</strong>
+                      <strong>{t('Özel kanal')}</strong>
                       <small>
                         {referencePrivate
-                          ? 'Yalnızca seçtiğin üyeler ve roller · Yerel referans'
-                          : 'Özel kanal politikası ve erişim düzenleme henüz uygulanmadı.'}
+                          ? t('Yalnızca seçtiğin üyeler ve roller · Yerel referans')
+                          : t('Özel kanal politikası ve erişim düzenleme henüz uygulanmadı.')}
                       </small>
                     </div>
                     <button
                       type="button"
                       role="switch"
-                      aria-label="Özel kanal"
+                      aria-label={t('Özel kanal')}
                       aria-checked={referencePrivate ? referencePrivateEnabled : 'mixed'}
                       className={`rcs-switch ${referencePrivate ? (referencePrivateEnabled ? 'on' : '') : 'unknown'}`}
                       disabled={!referencePrivate}
                       title={
                         referencePrivate
-                          ? 'Yalnızca yerel görünümü değiştirir; erişim kaydedilmez.'
-                          : 'Özel kanal durumu bu bağlantıda alınmıyor'
+                          ? t('Yalnızca yerel görünümü değiştirir; erişim kaydedilmez.')
+                          : t('Özel kanal durumu bu bağlantıda alınmıyor')
                       }
                       onClick={() => {
                         setReferencePrivateEnabled((value) => !value);
@@ -496,11 +506,11 @@ export function ChannelEditor(props: ChannelEditorProps) {
                     onClick={() => setReferencePickerOpen((value) => !value)}
                   >
                     <Plus size={17} />
-                    Üye veya rol seç
+                    {t('Üye veya rol seç')}
                   </button>
                   {referencePickerOpen && (
                     <fieldset>
-                      <legend>Yerel referans seçimi · Kaydedilmez</legend>
+                      <legend>{t('Yerel referans seçimi · Kaydedilmez')}</legend>
                       {referencePrivate.choices.map((choice) => (
                         <label key={choice.id}>
                           <input
@@ -515,7 +525,7 @@ export function ChannelEditor(props: ChannelEditorProps) {
                             }
                           />
                           {choice.name}
-                          <small>{choice.kind === 'role' ? 'Rol' : 'Üye'}</small>
+                          <small>{choice.kind === 'role' ? t('Rol') : t('Üye')}</small>
                         </label>
                       ))}
                     </fieldset>
@@ -527,7 +537,9 @@ export function ChannelEditor(props: ChannelEditorProps) {
           {reason && (
             <p className="rcs-hint">
               {referencePrivate
-                ? 'Yerel referans · Özel kanal ve üye/rol erişimi kaydı henüz uygulanmadı. Gerçek hesap işlemi kapalı.'
+                ? t(
+                    'Yerel referans · Özel kanal ve üye/rol erişimi kaydı henüz uygulanmadı. Gerçek hesap işlemi kapalı.',
+                  )
                 : reason}
             </p>
           )}
@@ -535,7 +547,7 @@ export function ChannelEditor(props: ChannelEditorProps) {
         </div>
         <footer className="rcs-modal-footer">
           <button type="button" className="button secondary" disabled={op.busy} onClick={onClose}>
-            Vazgeç
+            {t('Vazgeç')}
           </button>
           <button
             className={`button ${mode === 'delete' ? 'danger' : 'primary'}`}
@@ -543,12 +555,12 @@ export function ChannelEditor(props: ChannelEditorProps) {
             title={reason}
           >
             {op.busy
-              ? 'Kaydediliyor…'
+              ? t('Kaydediliyor…')
               : mode === 'delete'
-                ? 'Kanalı sil'
+                ? t('Kanalı sil')
                 : mode === 'rename'
-                  ? 'Kaydet'
-                  : 'Oluştur'}
+                  ? t('Kaydet')
+                  : t('Oluştur')}
           </button>
         </footer>
       </form>
@@ -612,13 +624,14 @@ export function CommunityManagement(props: CommunityManagementProps) {
   const unavailable = op.blocked
     ? fixtureReason
     : props.access !== 'allowed'
-      ? 'Yönetim yetkisi henüz doğrulanmadı.'
+      ? t('Yönetim yetkisi henüz doğrulanmadı.')
       : '';
   const memberName = (member: SocialMember) => member.user.displayName || member.user.username;
   const visible = members.filter((member) =>
-    memberName(member).toLocaleLowerCase('tr').includes(query.toLocaleLowerCase('tr')),
+    memberName(member).toLocaleLowerCase(locale).includes(query.toLocaleLowerCase(locale)),
   );
-  const roleName = (id: string) => roles.find((role) => role.id === id)?.name ?? 'Rol adı alınmadı';
+  const roleName = (id: string) =>
+    roles.find((role) => role.id === id)?.name ?? t('Rol adı alınmadı');
   const refreshAfter = async () => {
     if (props.onRefresh) await props.onRefresh();
   };
@@ -633,11 +646,11 @@ export function CommunityManagement(props: CommunityManagementProps) {
       <div className="rcs-page">
         <Notice>
           {props.loading
-            ? 'Yönetim bilgisi yükleniyor…'
-            : 'Topluluk yönetim yetkisi bu bağlantıda henüz alınamıyor.'}
+            ? t('Yönetim bilgisi yükleniyor…')
+            : t('Topluluk yönetim yetkisi bu bağlantıda henüz alınamıyor.')}
         </Notice>
         <button className="button secondary" onClick={props.onReturn}>
-          Sohbete dön
+          {t('Sohbete dön')}
         </button>
       </div>
     );
@@ -645,9 +658,9 @@ export function CommunityManagement(props: CommunityManagementProps) {
     <div className="rcs-page">
       <header className="rcs-heading">
         <div>
-          <span>TOPLULUK YÖNETİMİ</span>
+          <span>{t('TOPLULUK YÖNETİMİ')}</span>
           <h1>{space.name}</h1>
-          <p>Üyeleri, rolleri ve davetleri tek yerden yönet.</p>
+          <p>{t('Üyeleri, rolleri ve davetleri tek yerden yönet.')}</p>
         </div>
         <button
           className="button primary"
@@ -661,7 +674,7 @@ export function CommunityManagement(props: CommunityManagementProps) {
           }}
         >
           <Plus size={17} />
-          Davet oluştur
+          {t('Davet oluştur')}
         </button>
       </header>
       <div className="rcs-tabs">
@@ -670,17 +683,17 @@ export function CommunityManagement(props: CommunityManagementProps) {
           className={tab === 'members' ? 'selected' : ''}
           onClick={() => setTab('members')}
         >
-          Üyeler · {members.length}
+          {t('Üyeler · {count}', { count: members.length })}
         </button>
         <button
           aria-pressed={tab === 'invites'}
           className={tab === 'invites' ? 'selected' : ''}
           onClick={() => setTab('invites')}
         >
-          Davetler
+          {t('Davetler')}
         </button>
       </div>
-      {props.loading && <p role="status">Yükleniyor…</p>}
+      {props.loading && <p role="status">{t('Yükleniyor…')}</p>}
       <ErrorNotice error={props.error ?? ''} />
       <ErrorNotice error={op.error} />
       {tab === 'members' ? (
@@ -689,25 +702,28 @@ export function CommunityManagement(props: CommunityManagementProps) {
             <label>
               <Search size={17} />
               <input
-                aria-label="Üye ara"
+                aria-label={t('Üye ara')}
                 value={query}
-                placeholder="Üye ara"
+                placeholder={t('Üye ara')}
                 onChange={(event) => setQuery(event.target.value)}
               />
             </label>
             <span>
-              {members.length} üye ·{' '}
-              {members.filter((member) => ['online', 'idle', 'dnd'].includes(member.status)).length}{' '}
-              çevrimiçi
+              {t('{members} üye · {online} çevrimiçi', {
+                members: members.length,
+                online: members.filter((member) =>
+                  ['online', 'idle', 'dnd'].includes(member.status),
+                ).length,
+              })}
             </span>
           </div>
           <div className="rcs-table-scroll">
             <table className="rcs-members-table">
               <thead>
                 <tr>
-                  <th>ÜYE</th>
-                  <th>ROL</th>
-                  <th>DURUM</th>
+                  <th>{t('ÜYE')}</th>
+                  <th>{t('ROL')}</th>
+                  <th>{t('DURUM')}</th>
                   <th />
                 </tr>
               </thead>
@@ -719,13 +735,13 @@ export function CommunityManagement(props: CommunityManagementProps) {
                         <VoiceAvatar id={member.user.id} name={memberName(member)} />
                         <div>
                           <strong>{memberName(member)}</strong>
-                          {member.user.id === selfId && <small>sen</small>}
+                          {member.user.id === selfId && <small>{t('sen')}</small>}
                         </div>
                       </div>
                     </td>
                     <td>
                       {member.user.id === space.ownerId ? (
-                        <span className="rcs-badge purple">Topluluk sahibi</span>
+                        <span className="rcs-badge purple">{t('Topluluk sahibi')}</span>
                       ) : member.roles.length ? (
                         member.roles.map((id) => (
                           <span className="rcs-badge" key={id}>
@@ -733,22 +749,22 @@ export function CommunityManagement(props: CommunityManagementProps) {
                           </span>
                         ))
                       ) : (
-                        <span className="rcs-muted">Rol atanmamış</span>
+                        <span className="rcs-muted">{t('Rol atanmamış')}</span>
                       )}
                     </td>
                     <td>
                       {member.statusText ||
                         {
-                          online: 'Çevrimiçi',
-                          idle: 'Uzakta',
-                          dnd: 'Rahatsız etmeyin',
-                          invisible: 'Çevrimdışı',
-                          unknown: 'Durum bilinmiyor',
+                          online: t('Çevrimiçi'),
+                          idle: t('Uzakta'),
+                          dnd: t('Rahatsız etmeyin'),
+                          invisible: t('Çevrimdışı'),
+                          unknown: t('Durum bilinmiyor'),
                         }[member.status]}
                     </td>
                     <td>
                       {member.user.id === space.ownerId ? (
-                        <small>Sahip</small>
+                        <small>{t('Sahip')}</small>
                       ) : (
                         <button
                           className="rcs-text-button"
@@ -761,7 +777,7 @@ export function CommunityManagement(props: CommunityManagementProps) {
                           }}
                         >
                           <MoreHorizontal size={17} />
-                          Yönet
+                          {t('Yönet')}
                         </button>
                       )}
                     </td>
@@ -771,21 +787,23 @@ export function CommunityManagement(props: CommunityManagementProps) {
             </table>
           </div>
           {!props.loading && !visible.length && (
-            <p className="rcs-muted">{query ? 'Eşleşen üye yok.' : 'Üye listesi boş.'}</p>
+            <p className="rcs-muted">{query ? t('Eşleşen üye yok.') : t('Üye listesi boş.')}</p>
           )}
           <section className="rcs-role-summary">
             <div>
-              <h2>Rol özeti</h2>
+              <h2>{t('Rol özeti')}</h2>
               <button
                 className="rcs-text-button"
                 disabled={!props.onOpenPermissions}
                 title={
-                  !props.onOpenPermissions ? 'Kanal izinleri görünümü henüz bağlanmadı.' : undefined
+                  !props.onOpenPermissions
+                    ? t('Kanal izinleri görünümü henüz bağlanmadı.')
+                    : undefined
                 }
                 onClick={props.onOpenPermissions}
               >
                 <ArrowRight size={17} />
-                Kanal izinlerini aç
+                {t('Kanal izinlerini aç')}
               </button>
             </div>
             {roles.length ? (
@@ -793,23 +811,25 @@ export function CommunityManagement(props: CommunityManagementProps) {
                 {roles.map((role) => (
                   <article key={role.id}>
                     <strong>{role.name}</strong>
-                    <p>{role.description ?? 'Rolün yetki ayrıntısı bu bağlantıda alınmıyor.'}</p>
+                    <p>{role.description ?? t('Rolün yetki ayrıntısı bu bağlantıda alınmıyor.')}</p>
                   </article>
                 ))}
               </div>
             ) : (
-              <p className="rcs-muted">Rol tanımları ve yetki ayrıntıları henüz alınamıyor.</p>
+              <p className="rcs-muted">
+                {t('Rol tanımları ve yetki ayrıntıları henüz alınamıyor.')}
+              </p>
             )}
           </section>
         </>
       ) : (
         <>
           <div className="rcs-section-title">
-            <h2>Aktif davetler</h2>
-            {invites && <small>{invites.length} bağlantı</small>}
+            <h2>{t('Aktif davetler')}</h2>
+            {invites && <small>{t('{count} bağlantı', { count: invites.length })}</small>}
           </div>
           {invites === undefined ? (
-            <Notice>Davet listesi için yerel yönetim arayüzü henüz uygulanmadı.</Notice>
+            <Notice>{t('Davet listesi için yerel yönetim arayüzü henüz uygulanmadı.')}</Notice>
           ) : invites.length ? (
             invites.map((invite) => (
               <div className="rcs-invite-row" key={invite.code}>
@@ -819,15 +839,27 @@ export function CommunityManagement(props: CommunityManagementProps) {
                 <div>
                   <strong>{invite.code}</strong>
                   <small>
-                    {invite.creatorName ? `${invite.creatorName} oluşturdu · ` : ''}
-                    {invite.expiresAt
-                      ? `${new Date(invite.expiresAt).toLocaleString('tr-TR')} sona erme`
-                      : 'Sona erme bilgisi alınmadı'}
+                    {(() => {
+                      const expiry = invite.expiresAt
+                        ? t('{date} sona erme', {
+                            date: new Date(invite.expiresAt).toLocaleString(locale),
+                          })
+                        : t('Sona erme bilgisi alınmadı');
+                      return invite.creatorName
+                        ? t('{creatorName} oluşturdu · {expiry}', {
+                            creatorName: invite.creatorName,
+                            expiry,
+                          })
+                        : expiry;
+                    })()}
                   </small>
                 </div>
                 {invite.uses !== undefined && (
                   <span className="rcs-badge">
-                    {invite.uses} / {invite.maxUses ?? '—'} kullanım
+                    {t('{uses} / {max} kullanım', {
+                      uses: invite.uses,
+                      max: invite.maxUses ?? '—',
+                    })}
                   </span>
                 )}
                 <button
@@ -840,19 +872,21 @@ export function CommunityManagement(props: CommunityManagementProps) {
                   }}
                 >
                   <Trash2 size={15} />
-                  {invite.revoked ? 'İptal edildi' : 'İptal et'}
+                  {invite.revoked ? t('İptal edildi') : t('İptal et')}
                 </button>
               </div>
             ))
           ) : (
-            <p className="rcs-muted">Davet yok.</p>
+            <p className="rcs-muted">{t('Davet yok.')}</p>
           )}
         </>
       )}
       {inviteOpen && dialogSpace === space.id && (
         <Modal
           title={
-            createdInvite ? 'Davet bağlantısı hazır' : `${space.name} topluluğuna davet oluştur`
+            createdInvite
+              ? t('Davet bağlantısı hazır')
+              : t('{name} topluluğuna davet oluştur', { name: space.name })
           }
           className="rcs-modal rcs-invite-modal"
           onClose={() => {
@@ -867,7 +901,7 @@ export function CommunityManagement(props: CommunityManagementProps) {
                   <strong>{space.name}</strong>
                 </div>
                 <div className="rcs-invite-code">
-                  <input aria-label="Davet bağlantısı" readOnly value={inviteLink} />
+                  <input aria-label={t('Davet bağlantısı')} readOnly value={inviteLink} />
                   <button
                     className="rcs-text-button"
                     onClick={() => {
@@ -877,67 +911,67 @@ export function CommunityManagement(props: CommunityManagementProps) {
                         .then(() => setCopied(true))
                         .catch(() => {
                           setCopied(false);
-                          setCopyError('Panoya erişilemiyor. Bağlantıyı seçip kopyala.');
+                          setCopyError(t('Panoya erişilemiyor. Bağlantıyı seçip kopyala.'));
                         });
                     }}
                   >
                     <Copy size={16} />
-                    {copied ? 'Kopyalandı' : 'Kopyala'}
+                    {copied ? t('Kopyalandı') : t('Kopyala')}
                   </button>
                 </div>
                 <div className="rcs-two-columns">
                   <div>
-                    <small>Sona erme</small>
+                    <small>{t('Sona erme')}</small>
                     <strong>
                       {createdInvite.expiresAt
-                        ? new Date(createdInvite.expiresAt).toLocaleString('tr-TR')
-                        : 'Sunucu yanıtında bulunmuyor'}
+                        ? new Date(createdInvite.expiresAt).toLocaleString(locale)
+                        : t('Sunucu yanıtında bulunmuyor')}
                     </strong>
                   </div>
                   <div>
-                    <small>Kullanım</small>
+                    <small>{t('Kullanım')}</small>
                     <strong>
                       {createdInvite.uses !== undefined
                         ? `${createdInvite.uses} / ${createdInvite.maxUses ?? '—'}`
-                        : 'Sunucu yanıtında bulunmuyor'}
+                        : t('Sunucu yanıtında bulunmuyor')}
                     </strong>
                   </div>
                 </div>
                 <p className="rcs-hint">
-                  Davet bağlantısını yalnızca katılmasını istediğin kişilerle paylaş.
+                  {t('Davet bağlantısını yalnızca katılmasını istediğin kişilerle paylaş.')}
                 </p>
               </>
             ) : (
               <>
                 <p className="rcs-description">
-                  Davet bu topluluğun seçili kanalı için oluşturulur.
+                  {t('Davet bu topluluğun seçili kanalı için oluşturulur.')}
                 </p>
                 <div className="rcs-two-columns">
                   <label className="rcs-field">
-                    Geçerlilik süresi
+                    {t('Geçerlilik süresi')}
                     <select disabled>
-                      <option>Sunucu tarafından belirlenir</option>
+                      <option>{t('Sunucu tarafından belirlenir')}</option>
                     </select>
                   </label>
                   <label className="rcs-field">
-                    Kullanım sınırı
+                    {t('Kullanım sınırı')}
                     <select disabled>
-                      <option>Sunucu tarafından belirlenir</option>
+                      <option>{t('Sunucu tarafından belirlenir')}</option>
                     </select>
                   </label>
                 </div>
                 <div className="rcs-setting">
                   <div>
-                    <strong>Katılınca verilecek rol</strong>
-                    <small>Rol atama ve davet seçenekleri bu bağlantıda alınmıyor.</small>
+                    <strong>{t('Katılınca verilecek rol')}</strong>
+                    <small>{t('Rol atama ve davet seçenekleri bu bağlantıda alınmıyor.')}</small>
                   </div>
                 </div>
                 {(!props.onCreateInvite || !props.inviteChannelId || unavailable) && (
                   <p className="rcs-hint">
                     {unavailable ||
                       (!props.inviteChannelId
-                        ? 'Davet için bir kanal seç.'
-                        : 'Davet oluşturma bağlantısı hazır değil.')}
+                        ? t('Davet için bir kanal seç.')
+                        : t('Davet oluşturma bağlantısı hazır değil.'))}
                   </p>
                 )}
               </>
@@ -954,11 +988,11 @@ export function CommunityManagement(props: CommunityManagementProps) {
                 if (createdInvite) setTab('invites');
               }}
             >
-              {createdInvite ? 'Davetleri yönet' : 'Vazgeç'}
+              {createdInvite ? t('Davetleri yönet') : t('Vazgeç')}
             </button>
             {createdInvite ? (
               <button className="button primary" onClick={() => setInviteOpen(false)}>
-                Bitti
+                {t('Bitti')}
               </button>
             ) : (
               <button
@@ -971,7 +1005,7 @@ export function CommunityManagement(props: CommunityManagementProps) {
                   void op.run(() => props.onCreateInvite!(props.inviteChannelId!), setCreatedInvite)
                 }
               >
-                {op.busy ? 'Oluşturuluyor…' : 'Davet oluştur'}
+                {op.busy ? t('Oluşturuluyor…') : t('Davet oluştur')}
               </button>
             )}
           </footer>
@@ -981,8 +1015,8 @@ export function CommunityManagement(props: CommunityManagementProps) {
         <Modal
           title={
             remove
-              ? `${memberName(memberTarget)} adlı üyeyi çıkar?`
-              : `${memberName(memberTarget)} kişisinin rolünü değiştir`
+              ? t('{name} adlı üyeyi çıkar?', { name: memberName(memberTarget) })
+              : t('{name} kişisinin rolünü değiştir', { name: memberName(memberTarget) })
           }
           className="rcs-modal rcs-member-modal"
           onClose={() => {
@@ -996,12 +1030,12 @@ export function CommunityManagement(props: CommunityManagementProps) {
             </div>
             {remove ? (
               <p className="rcs-description">
-                Bu üyenin topluluktaki kanal ve odalara erişimi kaldırılacak.
+                {t('Bu üyenin topluluktaki kanal ve odalara erişimi kaldırılacak.')}
               </p>
             ) : (
               <>
                 <label className="rcs-field">
-                  Yeni roller
+                  {t('Yeni roller')}
                   <select
                     multiple
                     value={roleIds}
@@ -1018,8 +1052,9 @@ export function CommunityManagement(props: CommunityManagementProps) {
                   </select>
                 </label>
                 <Notice>
-                  Rol değişikliğinin erişim etkisi sunucu tarafından belirlenir. Etkin izin
-                  önizlemesi bu bağlantıda henüz alınmıyor.
+                  {t(
+                    'Rol değişikliğinin erişim etkisi sunucu tarafından belirlenir. Etkin izin önizlemesi bu bağlantıda henüz alınmıyor.',
+                  )}
                 </Notice>
                 <button
                   className="rcs-text-button destructive"
@@ -1029,7 +1064,7 @@ export function CommunityManagement(props: CommunityManagementProps) {
                   }}
                 >
                   <Trash2 size={16} />
-                  Topluluktan çıkar
+                  {t('Topluluktan çıkar')}
                 </button>
               </>
             )}
@@ -1037,8 +1072,8 @@ export function CommunityManagement(props: CommunityManagementProps) {
               <p className="rcs-hint">
                 {unavailable ||
                   (remove
-                    ? 'Üye çıkarma için yerel yönetim arayüzü henüz uygulanmadı.'
-                    : 'Rol atama için yerel yönetim arayüzü henüz uygulanmadı.')}
+                    ? t('Üye çıkarma için yerel yönetim arayüzü henüz uygulanmadı.')
+                    : t('Rol atama için yerel yönetim arayüzü henüz uygulanmadı.'))}
               </p>
             )}
             <ErrorNotice error={op.error} />
@@ -1049,7 +1084,7 @@ export function CommunityManagement(props: CommunityManagementProps) {
               disabled={op.busy}
               onClick={() => setMemberTarget(null)}
             >
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className={`button ${remove ? 'danger' : 'primary'}`}
@@ -1070,42 +1105,40 @@ export function CommunityManagement(props: CommunityManagementProps) {
                 )
               }
             >
-              {op.busy ? 'Kaydediliyor…' : remove ? 'Topluluktan çıkar' : 'Rolü değiştir'}
+              {op.busy ? t('Kaydediliyor…') : remove ? t('Topluluktan çıkar') : t('Rolü değiştir')}
             </button>
           </footer>
         </Modal>
       )}
       {revoke && dialogSpace === space.id && (
         <Modal
-          title="Daveti iptal et?"
+          title={t('Daveti iptal et?')}
           className="rcs-modal rcs-delete"
           onClose={() => {
             if (!op.busy) setRevoke(null);
           }}
         >
           <div className="rcs-modal-body">
-            <p>
-              <strong>{revoke.code}</strong> bağlantısıyla artık yeni biri katılamayacak.
-            </p>
+            <p>{t('{code} bağlantısıyla artık yeni biri katılamayacak.', { code: revoke.code })}</p>
             {revoke.uses !== undefined && (
               <div className="rcs-setting">
-                <span>Şu ana kadar kullanım</span>
+                <span>{t('Şu ana kadar kullanım')}</span>
                 <strong>
                   {revoke.uses} / {revoke.maxUses ?? '—'}
                 </strong>
               </div>
             )}
-            <p className="rcs-hint">Daha önce katılan üyeler toplulukta kalır.</p>
+            <p className="rcs-hint">{t('Daha önce katılan üyeler toplulukta kalır.')}</p>
             {(!props.onRevokeInvite || unavailable) && (
               <p className="rcs-hint">
-                {unavailable || 'Davet iptali için yerel yönetim arayüzü henüz uygulanmadı.'}
+                {unavailable || t('Davet iptali için yerel yönetim arayüzü henüz uygulanmadı.')}
               </p>
             )}
             <ErrorNotice error={op.error} />
           </div>
           <footer className="rcs-modal-footer">
             <button className="button secondary" disabled={op.busy} onClick={() => setRevoke(null)}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button danger"
@@ -1120,7 +1153,7 @@ export function CommunityManagement(props: CommunityManagementProps) {
                 )
               }
             >
-              Daveti iptal et
+              {t('Daveti iptal et')}
             </button>
           </footer>
         </Modal>
@@ -1160,11 +1193,11 @@ export interface ChannelPermissionsProps extends CommunityOperationBoundary {
   voiceRoomName?: string;
 }
 const permissionNames: Record<ChannelPermissionKey, string> = {
-  view: 'Kanalı gör',
-  send: 'Mesaj gönder',
-  files: 'Dosya paylaş',
-  manageMessages: 'Mesajları yönet',
-  manageChannel: 'Kanalı düzenle',
+  view: t('Kanalı gör'),
+  send: t('Mesaj gönder'),
+  files: t('Dosya paylaş'),
+  manageMessages: t('Mesajları yönet'),
+  manageChannel: t('Kanalı düzenle'),
 };
 export function ChannelPermissions(props: ChannelPermissionsProps) {
   const [draft, setDraft] = useState(props.snapshot),
@@ -1192,29 +1225,29 @@ export function ChannelPermissions(props: ChannelPermissionsProps) {
     return (
       <div className="rcs-page">
         <Notice>
-          Kanal yönetimi erişimi henüz doğrulanmadı. Özel kanal bilgileri gösterilmez.
+          {t('Kanal yönetimi erişimi henüz doğrulanmadı. Özel kanal bilgileri gösterilmez.')}
         </Notice>
         <button className="button secondary" onClick={props.onReturn}>
-          Genel kanala dön
+          {t('Genel kanala dön')}
         </button>
       </div>
     );
   if (draft && draft.channelId !== props.channel.id)
     return (
       <div className="rcs-page">
-        <Notice>Kanal izinleri yükleniyor…</Notice>
+        <Notice>{t('Kanal izinleri yükleniyor…')}</Notice>
       </div>
     );
   const unavailable = op.blocked
     ? fixtureReason
     : draft?.subjects.find((subject) => subject.id === selected)?.editable === false
-      ? 'Bu rolün izinlerini düzenleme yetkisi yok.'
+      ? t('Bu rolün izinlerini düzenleme yetkisi yok.')
       : !draft || draft.channelId !== props.channel.id
-        ? 'Kanal izinleri için yerel okuma arayüzü henüz uygulanmadı.'
+        ? t('Kanal izinleri için yerel okuma arayüzü henüz uygulanmadı.')
         : !props.canEdit
-          ? 'Kanal izinlerini düzenleme yetkisi gerekli.'
+          ? t('Kanal izinlerini düzenleme yetkisi gerekli.')
           : !props.onSave
-            ? 'Kanal izinleri için yerel kayıt arayüzü henüz uygulanmadı.'
+            ? t('Kanal izinleri için yerel kayıt arayüzü henüz uygulanmadı.')
             : '';
   const subject = draft?.subjects.find((item) => item.id === selected);
   const dirty = !saved && JSON.stringify(draft) !== JSON.stringify(props.snapshot);
@@ -1235,9 +1268,9 @@ export function ChannelPermissions(props: ChannelPermissionsProps) {
     <div className="rcs-page">
       <header className="rcs-heading">
         <div>
-          <span>{props.spaceName ?? 'TOPLULUK'}</span>
-          <h1>Kanal izinleri</h1>
-          <p>Görünürlüğü ve bu kanalda yapılabilecek işlemleri belirle.</p>
+          <span>{props.spaceName ?? t('TOPLULUK')}</span>
+          <h1>{t('Kanal izinleri')}</h1>
+          <p>{t('Görünürlüğü ve bu kanalda yapılabilecek işlemleri belirle.')}</p>
         </div>
         <button
           className="button primary"
@@ -1255,13 +1288,13 @@ export function ChannelPermissions(props: ChannelPermissionsProps) {
               );
           }}
         >
-          {op.busy ? 'Kaydediliyor…' : 'Değişiklikleri kaydet'}
+          {op.busy ? t('Kaydediliyor…') : t('Değişiklikleri kaydet')}
         </button>
       </header>
       {saved && (
         <Notice kind="success">
           <Check size={18} />
-          İzinler sunucu tarafından kaydedildi.
+          {t('İzinler sunucu tarafından kaydedildi.')}
         </Notice>
       )}
       <div className="rcs-channel-strip">
@@ -1274,30 +1307,32 @@ export function ChannelPermissions(props: ChannelPermissionsProps) {
         )}
         <strong>{props.channel.name}</strong>
         {draft?.private !== undefined && (
-          <span className="rcs-badge purple">{draft.private ? 'Özel kanal' : 'Açık kanal'}</span>
+          <span className="rcs-badge purple">
+            {draft.private ? t('Özel kanal') : t('Açık kanal')}
+          </span>
         )}
         <button
           className="rcs-text-button"
           disabled={!props.onEditChannel}
-          title={!props.onEditChannel ? 'Kanal düzenleme görünümü henüz bağlanmadı.' : undefined}
+          title={!props.onEditChannel ? t('Kanal düzenleme görünümü henüz bağlanmadı.') : undefined}
           onClick={props.onEditChannel}
         >
           <Pencil size={16} />
-          Kanalı düzenle
+          {t('Kanalı düzenle')}
         </button>
       </div>
       <div className="rcs-setting">
         <div>
-          <strong>Özel kanal</strong>
+          <strong>{t('Özel kanal')}</strong>
           <small>
             {draft?.private === undefined
-              ? 'Özel kanal durumu henüz alınmıyor.'
-              : 'Kanal kapsamındaki erişim ayarı.'}
+              ? t('Özel kanal durumu henüz alınmıyor.')
+              : t('Kanal kapsamındaki erişim ayarı.')}
           </small>
         </div>
         <button
           role="switch"
-          aria-label="Özel kanal"
+          aria-label={t('Özel kanal')}
           aria-checked={draft?.private ?? 'mixed'}
           className={`rcs-switch ${draft?.private ? 'on' : ''} ${draft?.private === undefined ? 'unknown' : ''}`}
           disabled={!!unavailable || op.busy || draft?.private === undefined}
@@ -1312,7 +1347,7 @@ export function ChannelPermissions(props: ChannelPermissionsProps) {
       <ErrorNotice error={op.error} />
       <div className="rcs-permission-grid">
         <aside>
-          <h6>ROLLER</h6>
+          <h6>{t('ROLLER')}</h6>
           {draft?.subjects
             .filter((item) => item.kind === 'role' || item.kind === 'default')
             .map((item) => (
@@ -1326,9 +1361,9 @@ export function ChannelPermissions(props: ChannelPermissionsProps) {
               </button>
             ))}
           {!draft?.subjects.some((item) => item.kind === 'role' || item.kind === 'default') && (
-            <p>Rol izinleri alınmadı.</p>
+            <p>{t('Rol izinleri alınmadı.')}</p>
           )}
-          <h6>KİŞİLER</h6>
+          <h6>{t('KİŞİLER')}</h6>
           {draft?.subjects
             .filter((item) => item.kind === 'member')
             .map((item) => (
@@ -1344,20 +1379,20 @@ export function ChannelPermissions(props: ChannelPermissionsProps) {
             disabled={!props.onAddMember || !!unavailable}
             title={
               unavailable ||
-              (!props.onAddMember ? 'Kişiye özel izin ekleme henüz uygulanmadı.' : undefined)
+              (!props.onAddMember ? t('Kişiye özel izin ekleme henüz uygulanmadı.') : undefined)
             }
             onClick={props.onAddMember}
           >
             <Plus size={16} />
-            Kişi ekle
+            {t('Kişi ekle')}
           </button>
         </aside>
         <section>
           <div className="rcs-section-title">
-            <h2>{subject?.name ?? 'İzinler'}</h2>
+            <h2>{subject?.name ?? t('İzinler')}</h2>
             {subject && (
               <span className="rcs-badge">
-                {subject.kind === 'member' ? 'Kişiye özel' : 'Rol izinleri'}
+                {subject.kind === 'member' ? t('Kişiye özel') : t('Rol izinleri')}
               </span>
             )}
           </div>
@@ -1376,12 +1411,12 @@ export function ChannelPermissions(props: ChannelPermissionsProps) {
                     title={
                       unavailable ||
                       (subject?.values[key] === undefined
-                        ? 'Bu izin değeri henüz alınmadı.'
+                        ? t('Bu izin değeri henüz alınmadı.')
                         : undefined)
                     }
                     onClick={() => change(key, value)}
                   >
-                    {{ deny: 'Ret', inherit: 'Miras', allow: 'İzin' }[value]}
+                    {{ deny: t('Ret'), inherit: t('Miras'), allow: t('İzin') }[value]}
                   </button>
                 ))}
               </div>
@@ -1390,7 +1425,7 @@ export function ChannelPermissions(props: ChannelPermissionsProps) {
         </section>
       </div>
       <p className="rcs-hint">
-        Etki: yalnızca bu kanalın erişimi ve işlemleri. Etkin izin hesabını sunucu belirler.
+        {t('Etki: yalnızca bu kanalın erişimi ve işlemleri. Etkin izin hesabını sunucu belirler.')}
       </p>
     </div>
   );
@@ -1418,33 +1453,37 @@ export function ChannelAccessState({
       </div>
       <h1>
         {kind === 'community-denied'
-          ? 'Yönetim yetkin yok'
+          ? t('Yönetim yetkin yok')
           : kind === 'removed'
-            ? 'Bu kanala erişimin kaldırıldı'
-            : 'Bu alanı yönetemiyorsun'}
+            ? t('Bu kanala erişimin kaldırıldı')
+            : t('Bu alanı yönetemiyorsun')}
       </h1>
       <p>
         {kind === 'community-denied'
-          ? 'Bu alanı açmak için topluluk yönetim yetkisi gerekiyor.'
+          ? t('Bu alanı açmak için topluluk yönetim yetkisi gerekiyor.')
           : kind === 'removed'
-            ? 'Kanal içeriği artık gösterilmiyor. Erişim için topluluk sahibine başvur.'
-            : 'Kanal izinlerini düzenlemek için yetkili olman gerekiyor. Özel içerikler gösterilmez.'}
+            ? t('Kanal içeriği artık gösterilmiyor. Erişim için topluluk sahibine başvur.')
+            : t(
+                'Kanal izinlerini düzenlemek için yetkili olman gerekiyor. Özel içerikler gösterilmez.',
+              )}
       </p>
       <div>
         <button className="button primary" onClick={onReturn}>
           <ArrowLeft size={17} />
-          {kind === 'community-denied' ? 'Sohbete dön' : 'Genel kanala dön'}
+          {kind === 'community-denied' ? t('Sohbete dön') : t('Genel kanala dön')}
         </button>
         {onCommunityInfo && (
           <button className="button secondary" onClick={onCommunityInfo}>
-            Topluluk bilgisi
+            {t('Topluluk bilgisi')}
           </button>
         )}
       </div>
       {voiceConnected && (
         <Notice>
           <Volume2 size={17} />
-          {voiceRoomName ? `${voiceRoomName} odasındaki` : 'Mevcut'} ses bağlantın sürüyor.
+          {voiceRoomName
+            ? t('{voiceRoomName} odasındaki ses bağlantın sürüyor.', { voiceRoomName })
+            : t('Mevcut ses bağlantın sürüyor.')}
         </Notice>
       )}
     </div>
@@ -1479,18 +1518,18 @@ export function NotificationSurface(props: NotificationSurfaceProps) {
   const reason = op.blocked
     ? fixtureReason
     : !props.onMarkAllRead
-      ? 'Toplu bildirim okuma işlemi bu bağlantıda henüz uygulanmadı.'
+      ? t('Toplu bildirim okuma işlemi bu bağlantıda henüz uygulanmadı.')
       : (props.unavailableReason ?? '');
   return (
     <div className="rcs-notifications">
       <header className="rcs-heading">
         <div>
-          <h1>Bildirimler</h1>
+          <h1>{t('Bildirimler')}</h1>
         </div>
         <button
           className="rcs-text-button"
           disabled={props.fixture ? !unread.length : op.busy || !!reason || !unread.length}
-          title={props.fixture ? 'Yalnızca bu yerel görünümde güncellenir.' : reason}
+          title={props.fixture ? t('Yalnızca bu yerel görünümde güncellenir.') : reason}
           onClick={() => {
             if (props.fixture) {
               setRead((current) => new Set([...current, ...unread.map((item) => item.id)]));
@@ -1503,7 +1542,7 @@ export function NotificationSurface(props: NotificationSurfaceProps) {
           }}
         >
           <Check size={17} />
-          Tümünü okundu yap
+          {t('Tümünü okundu yap')}
         </button>
       </header>
       <div className="rcs-notification-tabs">
@@ -1515,14 +1554,14 @@ export function NotificationSurface(props: NotificationSurfaceProps) {
             onClick={() => setTab(value)}
           >
             {value === 'all'
-              ? `Tümü · ${unread.length}`
+              ? t('Tümü · {length}', { length: unread.length })
               : value === 'mention'
-                ? 'Etiketlemeler'
-                : 'Davetler'}
+                ? t('Etiketlemeler')
+                : t('Davetler')}
           </button>
         ))}
       </div>
-      {props.loading && <p role="status">Bildirimler yükleniyor…</p>}
+      {props.loading && <p role="status">{t('Bildirimler yükleniyor…')}</p>}
       {props.unavailableReason && <Notice>{props.unavailableReason}</Notice>}
       <ErrorNotice error={op.error} />
       {!props.loading && !items.length && (
@@ -1530,7 +1569,9 @@ export function NotificationSurface(props: NotificationSurfaceProps) {
           <span>
             <Bell size={39} />
           </span>
-          <h2>{props.unavailableReason ? 'Bildirim akışı kullanılamıyor' : 'Bildirim yok'}</h2>
+          <h2>
+            {props.unavailableReason ? t('Bildirim akışı kullanılamıyor') : t('Bildirim yok')}
+          </h2>
         </div>
       )}
       {items.map((item) => (
@@ -1558,19 +1599,19 @@ export function NotificationSurface(props: NotificationSurfaceProps) {
                 {item.detail}
                 {item.detail && (item.timestamp || item.timestampLabel) ? ' · ' : ''}
                 {item.timestampLabel ??
-                  (item.timestamp ? new Date(item.timestamp).toLocaleString('tr-TR') : '')}
+                  (item.timestamp ? new Date(item.timestamp).toLocaleString(locale) : '')}
               </small>
             )}
             <button
               className={`button ${props.fixture && item.kind === 'activity' ? 'primary' : 'secondary'}`}
               disabled={!item.onOpen}
-              title={!item.onOpen ? 'Bildirim hedefi bu bağlantıda henüz açılmıyor.' : undefined}
+              title={!item.onOpen ? t('Bildirim hedefi bu bağlantıda henüz açılmıyor.') : undefined}
               onClick={item.onOpen}
             >
-              {item.actionLabel ?? 'Aç'}
+              {item.actionLabel ?? t('Aç')}
             </button>
           </div>
-          {item.unread && !read.has(item.id) && <i aria-label="Okunmadı" />}
+          {item.unread && !read.has(item.id) && <i aria-label={t('Okunmadı')} />}
         </article>
       ))}
     </div>

@@ -7,5 +7,6 @@ export default defineConfig({
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx', 'packages/**/src/**/*.test.ts'],
     exclude: ['.local/**', 'node_modules/**'],
     maxWorkers: 2,
+    setupFiles: ['tests/setup-locale.ts'],
   },
 });

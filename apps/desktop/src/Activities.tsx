@@ -7,7 +7,7 @@ import { ReferenceIcon } from './ReferenceIcon';
 import { useCommunity } from './community';
 import { useRealtime, stopScreen } from './realtime';
 import { useActivityRoom } from './activity';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import { gameNames } from './Kiraathane';
 import { endsActivity } from '../../../packages/activity-protocol/src/index';
 import { AppDirectory } from './AppDirectory';
@@ -34,14 +34,18 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
   // Nothing running: the searchable catalogue; the DJ keeps its own button.
   if (!primary && !forbidden)
     return (
-      <Modal title="Etkinlikler" hideHeading onClose={onClose} className="appdir-modal">
+      <Modal title={t('Etkinlikler')} hideHeading onClose={onClose} className="appdir-modal">
         <AppDirectory apps={false} onClose={onClose} />
       </Modal>
     );
   return (
     <Modal
       title={
-        primary ? 'Devam eden etkinlik' : forbidden ? 'Etkinlik başlatılamıyor' : 'Etkinlikler'
+        primary
+          ? t('Devam eden etkinlik')
+          : forbidden
+            ? t('Etkinlik başlatılamıyor')
+            : t('Etkinlikler')
       }
       onClose={onClose}
       className={`launcher-modal reference-launcher-modal ${primary ? 'has-active-activity' : ''} ${forbidden ? 'is-forbidden' : ''}`}
@@ -67,22 +71,22 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
               </strong>
               <small>
                 {!route
-                  ? 'Eski Sinema · bu sürümde açılmıyor'
+                  ? t('Eski Sinema · bu sürümde açılmıyor')
                   : primary.activity === 'hall'
-                    ? 'Sinema salonu'
+                    ? t('Sinema salonu')
                     : primary.activity === 'screen'
-                      ? 'Ekran paylaşımı'
-                      : 'Oyun masası'}
+                      ? t('Ekran paylaşımı')
+                      : t('Oyun masası')}
               </small>
             </div>
-            <span className="reference-live-pill">Etkin</span>
+            <span className="reference-live-pill">{t('Etkin')}</span>
           </div>
           {!route && (
             <p className="modal-description">
-              Bu oturum eski Sinema’dan kalma ve bu sürümde açılmıyor.{' '}
+              {t('Bu oturum eski Sinema’dan kalma ve bu sürümde açılmıyor.')}{' '}
               {canEnd
-                ? 'Bitirirsen odada yeni bir etkinlik başlatabilirsin.'
-                : 'Oturumun hostu bitirince odada yeni bir etkinlik başlatabilirsin.'}
+                ? t('Bitirirsen odada yeni bir etkinlik başlatabilirsin.')
+                : t('Oturumun hostu bitirince odada yeni bir etkinlik başlatabilirsin.')}
             </p>
           )}
           <div className="button-row">
@@ -98,16 +102,16 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
                   })().catch((e) => setError(uiError(e)));
                 }}
               >
-                {activity.busy ? 'Bitiriliyor…' : 'Etkinliği bitir'}
+                {activity.busy ? t('Bitiriliyor…') : t('Etkinliği bitir')}
               </button>
             )}
             {route ? (
               <button className="button primary" onClick={() => open(route)}>
-                {self ? 'Aç' : 'Katıl'}
+                {self ? t('Aç') : t('Katıl')}
               </button>
             ) : (
               <button className="button secondary" onClick={onClose}>
-                Kapat
+                {t('Kapat')}
               </button>
             )}
           </div>
@@ -117,19 +121,20 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
           <div className="reference-media-notice" role="alert">
             <ReferenceIcon name="lock" size={18} />
             <span>
-              Bu odada etkinlik başlatma yetkin yok. Biri etkinlik açınca buradan katılabilir veya
-              bir oda yöneticisinden yardım isteyebilirsin.
+              {t(
+                'Bu odada etkinlik başlatma yetkin yok. Biri etkinlik açınca buradan katılabilir veya bir oda yöneticisinden yardım isteyebilirsin.',
+              )}
             </span>
           </div>
           <p className="modal-description">
-            Sesli sohbetin ve erişebildiğin kanallar çalışmaya devam eder.
+            {t('Sesli sohbetin ve erişebildiğin kanallar çalışmaya devam eder.')}
           </p>
         </>
       ) : null}
       {forbidden && (
         <button className="button secondary" onClick={() => open('/games')}>
           <ReferenceIcon name="cards" size={16} />
-          Kıraathane
+          {t('Kıraathane')}
         </button>
       )}
       {error && (
@@ -140,7 +145,7 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
       {!primary && (
         <div className="button-row reference-launcher-footer">
           <button className="button secondary" onClick={onClose}>
-            Kapat
+            {t('Kapat')}
           </button>
         </div>
       )}

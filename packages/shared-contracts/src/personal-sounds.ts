@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { t } from '@rooms/i18n';
 
 /**
  * Personal entrance/leave sounds ("Giriş sesi").
@@ -68,16 +69,36 @@ export const PERSONAL_SOUND_POLICY = {
   classicGain: 0.55,
 } as const;
 
+/** Preset names are the server's Turkish source text; clients show `personalSoundPresetName`. */
 export const PERSONAL_SOUND_PRESETS = [
   { id: 'p.fanfar', name: 'Fanfar' },
-  { id: 'p.kapi', name: 'Kapı zili' },
+  { id: 'p.kapi', name: 'Kapı zili' }, // i18n-ignore: server preset name, translated for display
   { id: 'p.arcade', name: 'Arcade' },
   { id: 'p.portal', name: 'Portal' },
   { id: 'p.damla', name: 'Damla' },
   { id: 'p.kristal', name: 'Kristal' },
-  { id: 'p.kapanis', name: 'Kapanış' },
-  { id: 'p.hoscakal', name: 'Hoşça kal' },
+  { id: 'p.kapanis', name: 'Kapanış' }, // i18n-ignore: server preset name, translated for display
+  { id: 'p.hoscakal', name: 'Hoşça kal' }, // i18n-ignore: server preset name, translated for display
 ] as const;
+/** The name shown for a preset; unknown ids keep the name the server sent. */
+export function personalSoundPresetName(id: string, name: string): string {
+  switch (id) {
+    case 'p.fanfar':
+      return t('Fanfar');
+    case 'p.kapi':
+      return t('Kapı zili');
+    case 'p.damla':
+      return t('Damla');
+    case 'p.kristal':
+      return t('Kristal');
+    case 'p.kapanis':
+      return t('Kapanış');
+    case 'p.hoscakal':
+      return t('Hoşça kal');
+    default:
+      return name;
+  }
+}
 export type PersonalSoundPresetId = (typeof PERSONAL_SOUND_PRESETS)[number]['id'];
 
 const userId = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);

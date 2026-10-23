@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { inviteLocale, renderInvitePage } from '../apps/services/access/invite-page';
 // `<id>-token` signs in as `<id>`; `owner` owns `space`, `member` already belongs to it and
 // `stranger` does not. Registration outcomes are steered per test through `stoat.register`;
 // `defaultPermissions` is the community's @everyone permission set.
@@ -378,5 +379,49 @@ describe('invitation links in the access service', () => {
     } finally {
       await server.close();
     }
+  });
+});
+
+describe('invite landing page language', () => {
+  const valid = {
+    kind: 'valid',
+    communityName: 'Friends <b>',
+    expiresAt: '2026-10-20T12:00:00Z',
+    appLink: 'rooms://invite?server=https%3A%2F%2Ffriends.example&code=abc',
+    downloadUrl: 'https://friends.example/download',
+  } as const;
+
+  it('follows the first preferred language and defaults to Turkish', () => {
+    expect(inviteLocale(undefined)).toBe('tr');
+    expect(inviteLocale('')).toBe('tr');
+    expect(inviteLocale('tr-TR,tr;q=0.9,en;q=0.8')).toBe('tr');
+    expect(inviteLocale('en-US,en;q=0.9,tr;q=0.8')).toBe('en');
+    expect(inviteLocale('de-DE')).toBe('en');
+    expect(inviteLocale('en;q=0.5, tr;q=0.9')).toBe('tr');
+    expect(inviteLocale('*')).toBe('tr');
+  });
+
+  it('renders Turkish without a language preference and English for other languages', () => {
+    const turkish = renderInvitePage(valid);
+    expect(turkish.html).toContain('<html lang="tr">');
+    expect(turkish.html).toContain('Friends &lt;b&gt; topluluğuna davet edildin');
+    expect(renderInvitePage(valid, 'tr').html).toBe(turkish.html);
+
+    const english = renderInvitePage(valid, 'en-US,en;q=0.9');
+    expect(english.status).toBe(200);
+    expect(english.html).toContain('<html lang="en">');
+    expect(english.html).toContain('You’ve been invited to join Friends &lt;b&gt;');
+    expect(english.html).toContain('Valid until: October 20, 2026');
+    expect(english.html).toContain('Download the app');
+    expect(english.html).toContain('<b>Sign up</b>');
+    expect(english.html).toContain(
+      'href="rooms://invite?server=https%3A%2F%2Ffriends.example&amp;code=abc"',
+    );
+    expect(english.html).not.toMatch(/[çğıöşüÇĞİÖŞÜ]/);
+
+    const invalid = renderInvitePage({ kind: 'invalid' }, 'en');
+    expect(invalid.status).toBe(404);
+    expect(invalid.html).toContain('This invite link is no longer valid');
+    expect(invalid.html).not.toMatch(/[çğıöşüÇĞİÖŞÜ]/);
   });
 });

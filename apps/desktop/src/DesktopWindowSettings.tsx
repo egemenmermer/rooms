@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Toggle } from '@rooms/design';
 import type { DesktopWindowPreferences, DesktopBridge } from '@rooms/contracts';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 
 export function DesktopWindowSettings({ bridge }: { bridge?: DesktopBridge['desktopWindow'] }) {
   const [preferences, setPreferences] = useState<DesktopWindowPreferences | null>(null),
@@ -40,26 +40,26 @@ export function DesktopWindowSettings({ bridge }: { bridge?: DesktopBridge['desk
   }
   const unavailable =
     fixture && !bridge
-      ? 'Geliştirme görünümünde değiştirilemez.'
+      ? t('Geliştirme görünümünde değiştirilemez.')
       : !api
-        ? 'Masaüstü uygulamasını gerektirir.'
+        ? t('Masaüstü uygulamasını gerektirir.')
         : !preferences
-          ? 'Pencere tercihleri alınamadı.'
+          ? t('Pencere tercihleri alınamadı.')
           : '';
   return (
     <>
       <div className="settings-row">
         <div>
-          <h4>Pencereyi kapatınca menü çubuğunda açık tut</h4>
+          <h4>{t('Pencereyi kapatınca menü çubuğunda açık tut')}</h4>
           <p>
             {unavailable ||
               (!preferences?.trayAvailable
-                ? 'Sistem tepsisi kullanılamıyor.'
-                : 'Pencere gizlenir; ses bağlantısı devam eder. Menüden yeniden açabilirsin.')}
+                ? t('Sistem tepsisi kullanılamıyor.')
+                : t('Pencere gizlenir; ses bağlantısı devam eder. Menüden yeniden açabilirsin.'))}
           </p>
         </div>
         <Toggle
-          label="Pencereyi kapatınca menü çubuğunda açık tut"
+          label={t('Pencereyi kapatınca menü çubuğunda açık tut')}
           value={preferences?.keepOpenOnClose ?? false}
           disabled={busy || !preferences?.trayAvailable || !api}
           onChange={(value) => void change('keepOpenOnClose', value)}
@@ -67,11 +67,13 @@ export function DesktopWindowSettings({ bridge }: { bridge?: DesktopBridge['desk
       </div>
       <div className="settings-row">
         <div>
-          <h4>Kapatırken ses bağlantısını hatırlat</h4>
-          <p>{unavailable || 'Pencereyi kapatıp ses bağlantısından ayrılmadan önce onay ister.'}</p>
+          <h4>{t('Kapatırken ses bağlantısını hatırlat')}</h4>
+          <p>
+            {unavailable || t('Pencereyi kapatıp ses bağlantısından ayrılmadan önce onay ister.')}
+          </p>
         </div>
         <Toggle
-          label="Kapatırken ses bağlantısını hatırlat"
+          label={t('Kapatırken ses bağlantısını hatırlat')}
           value={preferences?.warnOnVoiceClose ?? true}
           disabled={busy || !preferences || !api}
           onChange={(value) => void change('warnOnVoiceClose', value)}

@@ -1,4 +1,76 @@
+import {
+  configureI18n,
+  intlLocale,
+  isLocalePreference,
+  lookup,
+  parseLocale,
+  resolveLocale,
+  t,
+  type Locale,
+  type LocalePreference,
+} from '@rooms/i18n';
 import { activityMessages } from './messages.tr';
+import { en } from './locales/en';
+
+export { getLocale, intlLocale, t, type Locale, type LocalePreference } from '@rooms/i18n';
+
+declare global {
+  // Set by tests (tests/setup-locale.ts) to pin the interface language.
+  var __roomsLocale: Locale | undefined;
+}
+const LOCALE_KEY = 'rooms.locale';
+function storedPreference(): LocalePreference {
+  try {
+    const value = globalThis.localStorage?.getItem(LOCALE_KEY);
+    return isLocalePreference(value) ? value : 'system';
+  } catch {
+    return 'system';
+  }
+}
+/**
+ * The language is fixed for the life of the page: the desktop bridge carries the main process's
+ * choice; the browser build (dev fixtures) reads `?lang=`, then its own stored choice.
+ */
+function startupLocale(): { preference: LocalePreference; locale: Locale } {
+  const pinned = parseLocale(globalThis.__roomsLocale);
+  if (pinned) return { preference: pinned, locale: pinned };
+  const bridged = globalThis.window?.rooms?.locale;
+  if (bridged) return { preference: bridged.preference, locale: bridged.resolved };
+  let query: Locale | null = null;
+  try {
+    query = parseLocale(new URLSearchParams(globalThis.location?.search ?? '').get('lang'));
+  } catch {
+    /* No location outside the browser. */
+  }
+  if (query) return { preference: query, locale: query };
+  const preference = storedPreference();
+  const languages = globalThis.navigator?.languages ?? [globalThis.navigator?.language ?? ''];
+  return { preference, locale: resolveLocale(preference, languages) };
+}
+const startup = startupLocale();
+const warned = new Set<string>();
+configureI18n({
+  locale: startup.locale,
+  catalog: en,
+  onMissing: import.meta.env?.DEV
+    ? (source) => {
+        if (warned.has(source)) return;
+        warned.add(source);
+        console.warn(`[i18n] Missing English for: ${source}`);
+      }
+    : undefined,
+});
+if (typeof document !== 'undefined') document.documentElement.lang = startup.locale;
+export const localePreference = startup.preference;
+
+/** Save a language choice and reload so every surface renders in it. */
+export async function changeLocale(preference: LocalePreference): Promise<void> {
+  const bridge = globalThis.window?.rooms;
+  if (bridge?.setLocale) await bridge.setLocale(preference);
+  else localStorage.setItem(LOCALE_KEY, preference);
+  location.reload();
+}
+
 /** Stable source-message keys. Add locale dictionaries without changing view logic. */
 const trMessages: Record<string, string> = {
   'Make a night of it.': 'Bu akşam birlikte.',
@@ -713,13 +785,23 @@ const trMessages: Record<string, string> = {
     'Görünüm açılamadı. Ayarların hâlâ kayıtlı.',
   'Reload Tayfa': "Tayfa'yı yeniden yükle",
 };
-export const locale = 'tr-TR';
+/** Intl tag of the interface language; fixed for the life of the page. */
+export const locale = intlLocale();
+/**
+ * Legacy lookup keyed by English (or Turkish) source text. English returns the key itself unless
+ * the catalog has the key, which is how Turkish keys in messages.tr.ts get their English.
+ */
 export function tr(key: string): string {
+  if (startup.locale === 'en') {
+    const message = lookup(key);
+    return typeof message === 'string' ? message : key;
+  }
   return trMessages[key] ?? activityMessages[key] ?? key;
 }
 
-export const dmFriendRequired = 'Özel mesaj için önce arkadaş olmanız gerekiyor.';
-const errorMessages: Record<string, string> = {
+export const dmFriendRequired = t('Özel mesaj için önce arkadaş olmanız gerekiyor.');
+/** Server error codes and messages mapped to Turkish source text; uiError translates them. */
+export const errorMessages: Record<string, string> = {
   SHARED_HOST_API_MODEL_REQUIRED:
     'Bu sunucuda yalnızca OpenRouter API bağlantısı kullanılabiliyor. Codex ve Claude CLI bağlantıları etkin değil.',
   INVALID_COMMAND:
@@ -855,7 +937,7 @@ export function uiError(error: unknown): string {
     '',
   );
   for (const [code, description] of Object.entries(errorMessages))
-    if (message.includes(code)) return description;
-  if (/^[A-Z_]{1,64}$/.test(message)) return 'İşlem tamamlanamadı. Yeniden dene.';
-  return tr(message || 'İşlem tamamlanamadı. Bağlantını kontrol edip yeniden dene.');
+    if (message.includes(code)) return t(description);
+  if (/^[A-Z_]{1,64}$/.test(message)) return t('İşlem tamamlanamadı. Yeniden dene.');
+  return message ? tr(message) : t('İşlem tamamlanamadı. Bağlantını kontrol edip yeniden dene.');
 }

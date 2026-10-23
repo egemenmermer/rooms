@@ -1,7 +1,7 @@
 import { queryClient } from './query-client';
 import { ConversationCache, reconcileMessages } from './conversation-cache';
 import { useChannelAccess, setChannelAccess } from './channel-access';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import { create } from 'zustand';
 import type { ConnectionStatus, SocialSession } from '@rooms/contracts';
 import type {
@@ -88,7 +88,7 @@ const blank = {
 };
 const bridge = () => {
   if (!window.rooms?.social)
-    throw new Error('Özel sunucuna bağlanmak için masaüstü uygulamasını aç.');
+    throw new Error(t('Özel sunucuna bağlanmak için masaüstü uygulamasını aç.'));
   return window.rooms.social;
 };
 const safeError = uiError;
@@ -371,12 +371,12 @@ export const useCommunity = create<CommunityState>((set, get) => ({
     const user = get().user;
     const session = captureSession();
     if (channelId && useChannelAccess.getState().checks[channelId])
-      throw new Error('Kanal erişimi yeniden doğrulanmalı.');
+      throw new Error(t('Kanal erişimi yeniden doğrulanmalı.'));
     if (!channelId || !user || (!text.trim() && !attachments.length)) return;
     const epoch = selectionEpoch;
     const current = () =>
       epoch === selectionEpoch && session.valid() && get().activeChannelId === channelId;
-    if (!current()) throw new Error('Oturum değişti. Mesajı yeniden gönder.');
+    if (!current()) throw new Error(t('Oturum değişti. Mesajı yeniden gönder.'));
     const optimistic: CommunityMessage = {
       id: `pending-${crypto.randomUUID()}`,
       channelId,
@@ -510,19 +510,19 @@ export const useCommunity = create<CommunityState>((set, get) => ({
   createInvite: async (channelId) => {
     const session = captureSession();
     const invite = await bridge().createInvite(channelId);
-    if (!session.valid()) throw new Error('Oturum değişti. Davet sonucu gösterilmedi.');
+    if (!session.valid()) throw new Error(t('Oturum değişti. Davet sonucu gösterilmedi.'));
     return invite;
   },
   listInvites: async (spaceId) => {
     const session = captureSession();
     const invites = await bridge().listInvites(spaceId);
-    if (!session.valid()) throw new Error('Oturum değişti. Davet listesi gösterilmedi.');
+    if (!session.valid()) throw new Error(t('Oturum değişti. Davet listesi gösterilmedi.'));
     return invites;
   },
   revokeInvite: async (spaceId, inviteId) => {
     const session = captureSession();
     await bridge().revokeInvite(spaceId, inviteId);
-    if (!session.valid()) throw new Error('Oturum değişti. Davet iptali doğrulanamadı.');
+    if (!session.valid()) throw new Error(t('Oturum değişti. Davet iptali doğrulanamadı.'));
   },
   acceptInvite: async (code) => {
     const session = captureSession();
@@ -691,7 +691,7 @@ function onEvent(event: GatewayEvent) {
     useCommunity.setState({
       ...blank,
       status: 'error',
-      error: 'Oturumunun süresi doldu. Çıkış yapıp yeniden giriş yap.',
+      error: t('Oturumunun süresi doldu. Çıkış yapıp yeniden giriş yap.'),
     });
   } else if (event.type === 'MESSAGE_CREATE' || event.type === 'MESSAGE_UPDATE') {
     const message = event.data as SocialMessage;
@@ -790,7 +790,7 @@ export function initializeCommunity(): Promise<void> {
     } catch {
       if (request === sessionEpoch)
         useCommunity.setState({
-          error: 'Kayıtlı sunucuya ulaşılamıyor. Ayarlar bölümünden yeniden bağlan.',
+          error: t('Kayıtlı sunucuya ulaşılamıyor. Ayarlar bölümünden yeniden bağlan.'),
         });
     }
   })();

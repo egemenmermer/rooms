@@ -6,6 +6,7 @@ import {
 import { inheritedRolePermissions } from '../CommunityRoles';
 import type { CommunityManagementFixture } from '../CommunityManagementSurface';
 import { getReferenceAvatar } from './reference-fixtures';
+import { sample, people } from './sample';
 
 export const COMMUNITY_MANAGEMENT_FIXTURE_VARIANTS = [
   'default',
@@ -35,11 +36,13 @@ export interface CommunityManagementFixtureMetadata {
   avatarPaths: Record<string, string | null>;
 }
 
-const memberNames = ['Deniz', 'Ece', 'Can', 'Zeynep', 'Mert'] as const;
+const memberKeys = ['deniz', 'ece', 'can', 'zeynep', 'mert'] as const;
 const moderatorRole = 'demo-role-moderator';
 const memberRole = 'demo-role-member';
-const brokerReason =
-  'Tayfa davet aracısında yetkili davet listeleme ve iptal etme yöntemi henüz uygulanmadı.';
+const brokerReason = sample(
+  'Tayfa davet aracısında yetkili davet listeleme ve iptal etme yöntemi henüz uygulanmadı.',
+  'The Tayfa invitation broker does not implement authorized invitation listing and revocation yet.',
+);
 const unsupported: Partial<Record<CommunityManagementFixtureVariant, string>> = {
   invites:
     'The safe invitations tab shows the actual unsupported broker capability; the original active invitation rows are not fabricated.',
@@ -71,15 +74,18 @@ export function getCommunityManagementFixtureMetadata(
     variant,
     integration_status: 'LOCAL_FIXTURE',
     demo: true,
-    label: 'DEMO · Yerel topluluk yönetimi örneği',
+    label: sample(
+      'DEMO · Yerel topluluk yönetimi örneği',
+      'DEMO · Local community management sample',
+    ),
     renderable: !['invite', 'invite_created', 'revoke'].includes(variant),
     unsupportedReason: unsupported[variant] ?? null,
     originalPath: `<ROOMS_REFERENCE_ROOT>/04_screens/S68_community_management${variant === 'default' ? '' : `__${variant}`}.png`,
     spaceId: 'demo-bizim-oda',
     ownerId: 'demo-deniz',
     avatarPaths: Object.fromEntries(
-      memberNames.map((name) => {
-        const id = `demo-${name.toLowerCase()}`;
+      memberKeys.map((key) => {
+        const id = `demo-${key}`;
         return [id, getReferenceAvatar(id)];
       }),
     ),
@@ -89,14 +95,15 @@ export function getCommunityManagementFixtureMetadata(
 function snapshot(permissionDenied: boolean): SocialCommunityManagement {
   const members: SocialManagedMember[] = permissionDenied
     ? []
-    : memberNames.map((name) => {
+    : memberKeys.map((key) => {
+        const name = people[key];
         const username = name.toLowerCase();
-        const owner = name === 'Deniz';
+        const owner = key === 'deniz';
         return {
-          user: { id: `demo-${username}`, username, displayName: name, avatar: null },
-          status: name === 'Mert' ? 'invisible' : 'online',
-          statusText: name === 'Ece' ? 'Cinema’da' : null,
-          roles: owner ? [] : [name === 'Ece' ? moderatorRole : memberRole],
+          user: { id: `demo-${key}`, username, displayName: name, avatar: null },
+          status: key === 'mert' ? 'invisible' : 'online',
+          statusText: key === 'ece' ? sample('Cinema’da', 'In Cinema') : null,
+          roles: owner ? [] : [key === 'ece' ? moderatorRole : memberRole],
           canAssignRoles: !owner,
           canRemove: !owner,
         };
@@ -118,7 +125,7 @@ function snapshot(permissionDenied: boolean): SocialCommunityManagement {
       : [
           {
             id: moderatorRole,
-            name: 'Moderatör',
+            name: sample('Moderatör', 'Moderator'),
             rank: 10,
             assignable: true,
             editable: true,
@@ -128,7 +135,7 @@ function snapshot(permissionDenied: boolean): SocialCommunityManagement {
           },
           {
             id: memberRole,
-            name: 'Kanka',
+            name: sample('Kanka', 'Buddy'),
             rank: 20,
             assignable: true,
             editable: true,

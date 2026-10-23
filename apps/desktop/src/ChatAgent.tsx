@@ -1,4 +1,4 @@
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Bot, LoaderCircle, Send } from 'lucide-react';
 import { Modal } from '@rooms/design';
@@ -61,7 +61,7 @@ function ScopedRequest({
       .then(async (status) => {
         if (!current()) return;
         if (!status.connected || status.userId !== identity)
-          throw new Error('Kişisel asistan bağlantısı kullanılamıyor.');
+          throw new Error(t('Kişisel asistan bağlantısı kullanılamıyor.'));
         const items = await window.rooms!.agent.connections();
         if (current())
           setModels(
@@ -96,7 +96,7 @@ function ScopedRequest({
         parsed <= Date.now() ||
         parsed > Date.now() + 365 * 86400000
       ) {
-        setError('Bir yıl içinde, gelecekte bir tarih ve saat seç.');
+        setError(t('Bir yıl içinde, gelecekte bir tarih ve saat seç.'));
         return;
       }
       date = new Date(parsed).toISOString();
@@ -111,7 +111,7 @@ function ScopedRequest({
         ...(date ? { runAt: date } : {}),
       });
       if (current()) {
-        notify('Görev oluşturuldu.');
+        notify(t('Görev oluşturuldu.'));
         onClose();
         navigate(`/agent?task=${encodeURIComponent(task.id)}`);
       }
@@ -124,7 +124,7 @@ function ScopedRequest({
   };
   return (
     <Modal
-      title="Asistan isteği"
+      title={t('Asistan isteği')}
       onClose={() => {
         if (!busy) onClose();
       }}
@@ -136,7 +136,8 @@ function ScopedRequest({
       {loading ? (
         <div className="inline-empty" role="status">
           <LoaderCircle size={22} className="spin" />
-          Model bağlantıları yükleniyor…
+
+          {t('Model bağlantıları yükleniyor…')}
         </div>
       ) : models.length ? (
         <form
@@ -146,7 +147,7 @@ function ScopedRequest({
           }}
         >
           <label className="field-label">
-            Kişisel model
+            {t('Kişisel model')}
             <select
               required
               value={model}
@@ -154,7 +155,7 @@ function ScopedRequest({
               onChange={(event) => setModel(event.target.value)}
             >
               <option value="" disabled>
-                Model seç
+                {t('Model seç')}
               </option>
               {models.map((item) => (
                 <option key={item.id} value={item.id}>
@@ -164,7 +165,7 @@ function ScopedRequest({
             </select>
           </label>
           <label className="field-label">
-            Bir kez çalıştır · boşsa hemen
+            {t('Bir kez çalıştır · boşsa hemen')}
             <input
               type="datetime-local"
               disabled={busy}
@@ -173,15 +174,16 @@ function ScopedRequest({
             />
           </label>
           <button className="button primary full" disabled={busy || !model}>
-            {busy ? <LoaderCircle size={16} className="spin" /> : <Send size={16} />}Görevi başlat
+            {busy ? <LoaderCircle size={16} className="spin" /> : <Send size={16} />}
+            {t('Görevi başlat')}
           </button>
         </form>
       ) : (
         <div className="inline-empty">
           <p>
             {fixture
-              ? 'Yerel örnekte asistan işlemleri kapalı.'
-              : 'Kullanılabilir kişisel model bağlantısı yok.'}
+              ? t('Yerel örnekte asistan işlemleri kapalı.')
+              : t('Kullanılabilir kişisel model bağlantısı yok.')}
           </p>
           <button
             className="button secondary"
@@ -190,7 +192,7 @@ function ScopedRequest({
               navigate('/settings?tab=agent');
             }}
           >
-            Modelini bağla
+            {t('Modelini bağla')}
             <ArrowRight size={15} />
           </button>
         </div>

@@ -32,6 +32,7 @@ import {
 import { useRmdbList } from './rmdb-store';
 import { useHall } from './use-hall';
 import { HallRow, PosterCard, VodSkeleton } from './VodTab';
+import { t } from '../i18n';
 
 const ROW_LIMIT = 20;
 
@@ -66,7 +67,7 @@ export function RmdbTab({
     return (
       <RmdbDetails
         workId={view.workId}
-        backLabel={view.back ? 'Tümü' : 'Tayfa'}
+        backLabel={view.back ? t('Tümü') : 'Tayfa'}
         onBack={() => onView(view.back ?? { mode: 'home' })}
       />
     );
@@ -105,7 +106,7 @@ function RmdbHome({
         <div className="rmdb-empty" role="alert">
           <p>{rmdb.error}</p>
           <button className="button secondary" onClick={rmdb.reload}>
-            Yeniden dene
+            {t('Yeniden dene')}
           </button>
         </div>
       </div>
@@ -120,24 +121,26 @@ function RmdbHome({
           <span className="hall-message-icon">
             <NotebookPen size={28} />
           </span>
-          <h3>Tayfa henüz boş</h3>
+          <h3>{t('Tayfa henüz boş')}</h3>
           <p>
-            Salonda izlediğiniz filmler ve diziler burada birikir; yarım kalanlar kaldığı yerde
-            durur. Herkes kendi puanını ve yorumunu yazar.
+            {t(
+              'Salonda izlediğiniz filmler ve diziler burada birikir; yarım kalanlar kaldığı yerde durur. Herkes kendi puanını ve yorumunu yazar.',
+            )}
           </p>
           <p>
-            Elle eklemek için Filmler ya da Diziler'de bir başlığı aç ve “Tayfa'ya ekle”yi seç.
-            Birlikte izlemek istediklerinizi “İzlenecekler'e ekle” ile ortak listeye koy.
+            {t(
+              "Elle eklemek için Filmler ya da Diziler'de bir başlığı aç ve “Tayfa'ya ekle”yi seç. Birlikte izlemek istediklerinizi “İzlenecekler'e ekle” ile ortak listeye koy.",
+            )}
           </p>
           {hall.status.connected && (
             <div className="hall-detail-actions">
               <button className="button secondary" onClick={() => onBrowse('movies')}>
                 <Film size={16} />
-                Filmler
+                {t('Filmler')}
               </button>
               <button className="button secondary" onClick={() => onBrowse('series')}>
                 <Tv size={16} />
-                Diziler
+                {t('Diziler')}
               </button>
             </div>
           )}
@@ -149,37 +152,39 @@ function RmdbHome({
     <div className="hall-vod rmdb">
       <RmdbHeader works={works} onAll={() => onAll()} />
       {rows.continuing.length > 0 && (
-        <HallRow title="Devam et" count={rows.continuing.length}>
+        <HallRow title={t('Devam et')} count={rows.continuing.length}>
           {rows.continuing.slice(0, ROW_LIMIT).map((work) => (
             <WorkCard key={work.id} work={work} detail="progress" onOpen={() => onOpen(work.id)} />
           ))}
         </HallRow>
       )}
       {rows.watchlist.length ? (
-        <HallRow title="İzlenecekler" count={rows.watchlist.length}>
+        <HallRow title={t('İzlenecekler')} count={rows.watchlist.length}>
           {rows.watchlist.slice(0, ROW_LIMIT).map((work) => (
             <WorkCard key={work.id} work={work} onOpen={() => onOpen(work.id)} />
           ))}
         </HallRow>
       ) : (
-        <section className="hall-row" aria-label="İzlenecekler">
+        <section className="hall-row" aria-label={t('İzlenecekler')}>
           <header>
-            <h3>İzlenecekler</h3>
+            <h3>{t('İzlenecekler')}</h3>
           </header>
           <p className="rmdb-row-note">
-            Ortak liste boş. Bir başlığın sayfasında “İzlenecekler'e ekle” ile herkes ekleyebilir.
+            {t(
+              "Ortak liste boş. Bir başlığın sayfasında “İzlenecekler'e ekle” ile herkes ekleyebilir.",
+            )}
           </p>
         </section>
       )}
       {rows.recent.length > 0 && (
-        <HallRow title="Son izlenenler" onAll={() => onAll('watched')}>
+        <HallRow title={t('Son izlenenler')} onAll={() => onAll('watched')}>
           {rows.recent.slice(0, ROW_LIMIT).map((work) => (
             <WorkCard key={work.id} work={work} onOpen={() => onOpen(work.id)} />
           ))}
         </HallRow>
       )}
       {rows.favourites.length > 0 && (
-        <HallRow title="Topluluğun favorileri" onAll={() => onAll('rating')}>
+        <HallRow title={t('Topluluğun favorileri')} onAll={() => onAll('rating')}>
           {rows.favourites.slice(0, ROW_LIMIT).map((work) => (
             <WorkCard key={work.id} work={work} detail="votes" onOpen={() => onOpen(work.id)} />
           ))}
@@ -195,14 +200,14 @@ function RmdbHeader({ works, onAll }: { works: RmdbWorkSummary[]; onAll?(): void
       <div>
         <h2>Tayfa</h2>
         <p>
-          Topluluğun film defteri
+          {t('Topluluğun film defteri')}
           {works.length > 0 && <span> · {countsLine(rmdbCounts(works))}</span>}
         </p>
       </div>
       {onAll && (
         <button className="button secondary" onClick={onAll}>
           <LayoutGrid size={16} />
-          Tümü
+          {t('Tümü')}
         </button>
       )}
     </header>
@@ -227,17 +232,19 @@ export function WorkCard({
     detail === 'progress' && work.progress
       ? [progressLine(work.progress)]
       : detail === 'votes'
-        ? [rating, `${work.ratingCount} puan`]
-        : [work.year, work.kind === 'series' ? 'Dizi' : null, rating];
+        ? [rating, t('{count} puan', { count: work.ratingCount })]
+        : [work.year, work.kind === 'series' ? t('Dizi') : null, rating];
   const meta = parts.filter(Boolean).join(' · ');
   const label = [
     work.title,
-    work.kind === 'movie' ? 'film' : 'dizi',
+    work.kind === 'movie' ? t('film') : t('dizi'),
     work.year,
-    rating ? `topluluk puanı ${rating.replace('★ ', '')}` : null,
-    open && work.progress ? `yarım kaldı, ${progressLine(work.progress)}` : null,
-    work.onWatchlist ? "İzlenecekler'de" : null,
-    work.mine.liked ? 'beğendin' : null,
+    rating ? t('topluluk puanı {rating}', { rating: rating.replace('★ ', '') }) : null,
+    open && work.progress
+      ? t('yarım kaldı, {progress}', { progress: progressLine(work.progress) })
+      : null,
+    work.onWatchlist ? t("İzlenecekler'de") : null,
+    work.mine.liked ? t('beğendin') : null,
   ]
     .filter(Boolean)
     .join(', ');
@@ -253,12 +260,12 @@ export function WorkCard({
       {(work.onWatchlist || work.mine.liked) && (
         <span className="rmdb-badges" aria-hidden="true">
           {work.onWatchlist && (
-            <span className="rmdb-badge" title="İzlenecekler'de">
+            <span className="rmdb-badge" title={t("İzlenecekler'de")}>
               <Bookmark size={13} fill="currentColor" />
             </span>
           )}
           {work.mine.liked && (
-            <span className="rmdb-badge liked" title="Beğendin">
+            <span className="rmdb-badge liked" title={t('Beğendin')}>
               <Heart size={13} fill="currentColor" />
             </span>
           )}
@@ -275,9 +282,9 @@ export function WorkCard({
 }
 
 const kinds: { id: RmdbKindFilter; label: string }[] = [
-  { id: 'all', label: 'Tümü' },
-  { id: 'movie', label: 'Film' },
-  { id: 'series', label: 'Dizi' },
+  { id: 'all', label: t('Tümü') },
+  { id: 'movie', label: t('Film') },
+  { id: 'series', label: t('Dizi') },
 ];
 
 function RmdbGrid({
@@ -302,8 +309,10 @@ function RmdbGrid({
           <ArrowLeft size={15} />
           Tayfa
         </button>
-        <h2>Tümü {rmdb.works && <small>{list.length}</small>}</h2>
-        <div className="rmdb-segment" role="radiogroup" aria-label="Tür">
+        <h2>
+          {t('Tümü')} {rmdb.works && <small>{list.length}</small>}
+        </h2>
+        <div className="rmdb-segment" role="radiogroup" aria-label={t('Tür')}>
           {kinds.map((kind) => (
             <button
               key={kind.id}
@@ -320,13 +329,13 @@ function RmdbGrid({
           <Search size={14} />
           <input
             value={view.text}
-            placeholder="Ada göre süz"
-            aria-label="Ada göre süz"
+            placeholder={t('Ada göre süz')}
+            aria-label={t('Ada göre süz')}
             onChange={(event) => set({ text: event.target.value })}
           />
         </label>
         <label className="hall-sort">
-          Sırala
+          {t('Sırala')}
           <select
             value={view.sort}
             onChange={(event) => set({ sort: event.target.value as RmdbSort })}
@@ -342,7 +351,7 @@ function RmdbGrid({
       {rmdb.error && <p className="hall-empty-note">{rmdb.error}</p>}
       {rmdb.works && !list.length && (
         <p className="hall-empty-note">
-          {rmdb.works.length ? 'Bu süzgece uyan kayıt yok.' : 'Tayfa henüz boş.'}
+          {rmdb.works.length ? t('Bu süzgece uyan kayıt yok.') : t('Tayfa henüz boş.')}
         </p>
       )}
       <div className="hall-poster-grid">
