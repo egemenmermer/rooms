@@ -51,8 +51,7 @@ export function describeAction(
 export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) {
   const view = game.view as OkeyTableView;
   const order = useMemo(() => [...game.seats].sort((a, b) => a.seat - b.seat), [game.seats]);
-  const nameOf = (seat: number) =>
-    order[seat]?.name ?? t('Koltuk {number}', { number: seat + 1 });
+  const nameOf = (seat: number) => order[seat]?.name ?? t('Koltuk {number}', { number: seat + 1 });
   const okey = view.okey ?? { color: 'red', value: 1 },
     me = typeof view.viewerSeat === 'number' ? view.viewerSeat : null,
     base = me ?? 0,
@@ -119,8 +118,7 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
     () => (me !== null && stage === 'discard' && myTurn ? finishingTile(hand) : null),
     [hand, me, stage, myTurn],
   );
-  const finishId =
-    selected && canFinishWith(hand, selected) ? selected : (finisher?.id ?? null);
+  const finishId = selected && canFinishWith(hand, selected) ? selected : (finisher?.id ?? null);
   const draw = (from: 'stock' | 'discard') => void action('draw', { payload: { from } });
   const discard = (tileId: string) =>
     void action('discard', { payload: { tileId } }).then((ok) => ok && setSelected(null));
@@ -158,9 +156,7 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
   return (
     <div className="ok-table">
       <div className="rx-badges">
-        <span>
-          {view.options?.scoring === 'winner' ? t('Kazanan +1') : t('Geri sayım')}
-        </span>
+        <span>{view.options?.scoring === 'winner' ? t('Kazanan +1') : t('Geri sayım')}</span>
         <span>{t('El {hand}', { hand: game.history.length + (ended ? 0 : 1) })}</span>
       </div>
       <section className="ok-felt" aria-label={t('Okey masası')}>
@@ -173,11 +169,7 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
             <article
               key={`seat-${seat}`}
               className={`ok-seat ${place} ${playing ? 'turn' : ''}`}
-              aria-label={
-                playing
-                  ? t('{name} · Sırada', { name: nameOf(seat) })
-                  : nameOf(seat)
-              }
+              aria-label={playing ? t('{name} · Sırada', { name: nameOf(seat) }) : nameOf(seat)}
             >
               <Avatar name={nameOf(seat)} />
               <div>
@@ -210,9 +202,7 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
               className={`ok-pile ${CORNERS[offset]} ${own ? dropClass('discard') : ''}`}
               {...(own ? dragProps('discard') : {})}
             >
-              <small>
-                {own ? t('Attığın taşlar') : t('{name} attı', { name: nameOf(seat) })}
-              </small>
+              <small>{own ? t('Attığın taşlar') : t('{name} attı', { name: nameOf(seat) })}</small>
               {top ? (
                 <span className={`ok-pile-top ${top.id === lastDiscard ? 'last' : ''}`}>
                   {pile.length > 1 && <TileBack />}
@@ -247,7 +237,9 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
               <small>{t('Gösterge')}</small>
             </div>
           )}
-          {dragId && can('finish') && <em className="ok-middle-hint">{t('Bitirmek için bırak')}</em>}
+          {dragId && can('finish') && (
+            <em className="ok-middle-hint">{t('Bitirmek için bırak')}</em>
+          )}
         </div>
       </section>
 

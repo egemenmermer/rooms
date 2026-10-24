@@ -1071,7 +1071,8 @@ export const games: Catalog = {
   'Okey atarak bitirme': 'Going out with the okey',
   'İki kat': 'Double',
   'Çifte gitme': 'Going out with pairs',
-  'İlk turda gösterene diğerlerinden 1 düşer': 'Showing it on your first turn takes 1 off everyone else',
+  'İlk turda gösterene diğerlerinden 1 düşer':
+    'Showing it on your first turn takes 1 off everyone else',
   'Okey masası': 'Okey table',
   'Puan türünü seç.': 'Choose how points are scored.',
   'Geri sayım': 'Countdown',

@@ -9,8 +9,7 @@ export function okeyEndReason(
   nameOf: (seat: number) => string,
 ) {
   const finish = view.finish;
-  if (view.outcome === 'stock-exhausted' || !finish)
-    return t('Ortada taş kalmadı · Kazanan yok');
+  if (view.outcome === 'stock-exhausted' || !finish) return t('Ortada taş kalmadı · Kazanan yok');
   const name = nameOf(finish.seat);
   if (finish.pairs && finish.okeyDiscard)
     return t('{name} çifte gidip okey atarak bitirdi', { name });
@@ -40,13 +39,14 @@ export function OkeyRoundSummary({
       <header>
         <h3>{okeyEndReason(view, nameOf)}</h3>
         {view.indicatorShown && (
-          <p>
-            {t('{name} göstergeyi gösterdi', { name: nameOf(view.indicatorShown.seat) })}
-          </p>
+          <p>{t('{name} göstergeyi gösterdi', { name: nameOf(view.indicatorShown.seat) })}</p>
         )}
       </header>
       {finish && (
-        <div className="ok-open-rack" aria-label={t('{name} ıstakası', { name: nameOf(finish.seat) })}>
+        <div
+          className="ok-open-rack"
+          aria-label={t('{name} ıstakası', { name: nameOf(finish.seat) })}
+        >
           {finish.melds.map((meld, index) => (
             <span className="ok-meld" key={index}>
               {meld.map((tile) => (

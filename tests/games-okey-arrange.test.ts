@@ -135,7 +135,13 @@ describe('rack layout', () => {
 
   it('keeps positions, drops tiles that left and puts new ones in the first empty cell', () => {
     const layout = row([null, 'a', null, 'b', 'gone']);
-    expect(reconcileLayout(layout, ['a', 'b', 'c']).slice(0, 5)).toEqual(['c', 'a', null, 'b', null]);
+    expect(reconcileLayout(layout, ['a', 'b', 'c']).slice(0, 5)).toEqual([
+      'c',
+      'a',
+      null,
+      'b',
+      null,
+    ]);
   });
 
   it('moves a tile to an empty cell', () => {

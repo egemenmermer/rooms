@@ -44,7 +44,9 @@ describe('classic Okey table', () => {
     const okey = screen.getByRole('button', { name: 'Okey · Kırmızı 6' });
     expect(okey.textContent).toContain('6');
     expect(okey.querySelector('.ok-okey-mark')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Sahte okey · Kırmızı 6' }).textContent).toContain('★');
+    expect(screen.getByRole('button', { name: 'Sahte okey · Kırmızı 6' }).textContent).toContain(
+      '★',
+    );
     expect(screen.getByRole('button', { name: 'Kırmızı 5' })).toBeTruthy();
     expect(screen.getByText('31')).toBeTruthy();
     // Only draw controls; no discard or finish while drawing.
@@ -58,7 +60,9 @@ describe('classic Okey table', () => {
     expect(action).toHaveBeenLastCalledWith('draw', { payload: { from: 'discard' } });
     // Other piles are not takeable.
     const osmanPile = screen.getByText('Osman attı').parentElement!;
-    expect((within(osmanPile).getByRole('button', { name: 'Mavi 11' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      (within(osmanPile).getByRole('button', { name: 'Mavi 11' }) as HTMLButtonElement).disabled,
+    ).toBe(true);
     expect(enabled('Önceki taşı al')).toHaveLength(1);
   });
 
@@ -67,10 +71,16 @@ describe('classic Okey table', () => {
     expect(rackTiles()).toHaveLength(15);
     expect(screen.getByText('Bitirebilirsin: Sarı 13')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Kapalı taş çek' })).toBeNull();
-    expect((screen.getByRole('button', { name: /Kapalı taş çek ·/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      (screen.getByRole('button', { name: /Kapalı taş çek ·/ }) as HTMLButtonElement).disabled,
+    ).toBe(true);
     const throwButton = screen.getByRole('button', { name: 'Seçili taşı at' }) as HTMLButtonElement;
     expect(throwButton.disabled).toBe(true);
-    fireEvent.click(within(screen.getByRole('group', { name: 'Istaka' })).getByRole('button', { name: 'Kırmızı 1' }));
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Istaka' })).getByRole('button', {
+        name: 'Kırmızı 1',
+      }),
+    );
     expect(throwButton.disabled).toBe(false);
     fireEvent.click(throwButton);
     expect(action).toHaveBeenLastCalledWith('discard', { payload: { tileId: 'red-1-0' } });
@@ -85,7 +95,9 @@ describe('classic Okey table', () => {
     const osmanPile = screen.getByText('Osman attı').parentElement!;
     expect(osmanPile.querySelector('.ok-pile-top.last')).toBeTruthy();
     // Clock on the seat whose turn it is.
-    expect(within(screen.getByRole('article', { name: 'Ayşe · Sırada' })).getByText('27')).toBeTruthy();
+    expect(
+      within(screen.getByRole('article', { name: 'Ayşe · Sırada' })).getByText('27'),
+    ).toBeTruthy();
     for (const name of ['Kapalı taş çek', 'Önceki taşı al'])
       expect((screen.getByRole('button', { name }) as HTMLButtonElement).disabled).toBe(true);
     expect(container.querySelectorAll('.ok-pile .rx-tile:not(:disabled)')).toHaveLength(0);
@@ -109,7 +121,9 @@ describe('classic Okey table', () => {
     show('spectator');
     expect(screen.queryByRole('group', { name: 'Istaka' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Seri diz' })).toBeNull();
-    expect(screen.getAllByRole('button').every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
+    expect(
+      screen.getAllByRole('button').every((button) => (button as HTMLButtonElement).disabled),
+    ).toBe(true);
     expect(screen.getByText('Osman Mavi 11 attı')).toBeTruthy();
   });
 
@@ -138,7 +152,9 @@ describe('classic Okey table', () => {
   it('dropping a tile on your corner discards it', () => {
     const { action } = show('discard');
     const rack = screen.getByRole('group', { name: 'Istaka' });
-    fireEvent.dragStart(within(rack).getByRole('button', { name: 'Mavi 4' }).closest('[data-cell]')!);
+    fireEvent.dragStart(
+      within(rack).getByRole('button', { name: 'Mavi 4' }).closest('[data-cell]')!,
+    );
     const corner = document.querySelector('[data-drop="discard"]')!;
     fireEvent.dragOver(corner);
     fireEvent.drop(corner);
@@ -156,7 +172,8 @@ describe('classic Okey table in English', () => {
   });
 
   it('shows the table text in English', async () => {
-    const { OkeyClassicTable: Table } = await import('../apps/desktop/src/games/okey/OkeyClassicTable');
+    const { OkeyClassicTable: Table } =
+      await import('../apps/desktop/src/games/okey/OkeyClassicTable');
     const { okeyFixture: fixture } = await import('../apps/desktop/src/games/okey/fixture');
     const { props } = ui(fixture('draw'));
     render(<Table {...props} />);

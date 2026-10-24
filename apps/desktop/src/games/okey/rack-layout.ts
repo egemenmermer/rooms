@@ -101,8 +101,7 @@ export function loadLayout(key: string): RackLayout | null {
   try {
     const raw = sessionStorage.getItem(key);
     const value: unknown = raw ? JSON.parse(raw) : null;
-    return Array.isArray(value) &&
-      value.every((item) => item === null || typeof item === 'string')
+    return Array.isArray(value) && value.every((item) => item === null || typeof item === 'string')
       ? (value as RackLayout)
       : null;
   } catch {

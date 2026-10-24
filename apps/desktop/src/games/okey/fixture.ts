@@ -55,8 +55,17 @@ const finishingHand: ClassicTile[] = [
 const seats = [
   { seat: 0, userId: 'ece', name: 'Ece', bot: false, chips: 0, connected: true },
   { seat: 1, userId: 'osman', name: 'Osman', bot: false, chips: 0, connected: true },
+  // i18n-ignore (player name)
   { seat: 2, userId: 'bot-ayse', name: 'Ayşe', bot: true, chips: 0, connected: true },
-  { seat: 3, userId: 'can', name: 'Can Abdurrahmanoğlu Uzunisim', bot: false, chips: 0, connected: true },
+  {
+    seat: 3,
+    userId: 'can',
+    // i18n-ignore (player name)
+    name: 'Can Abdurrahmanoğlu Uzunisim',
+    bot: false,
+    chips: 0,
+    connected: true,
+  },
 ];
 
 function baseView(): OkeyClassicView {
@@ -80,10 +89,25 @@ function baseView(): OkeyClassicView {
     viewerSeat: 0,
     hand: drawHand,
     seats: [
-      { seat: 0, tileCount: 14, discards: [tile('black', 13), tile('yellow', 1)], showedIndicator: false },
-      { seat: 1, tileCount: 14, discards: [tile('blue', 2), tile('blue', 11)], showedIndicator: false },
+      {
+        seat: 0,
+        tileCount: 14,
+        discards: [tile('black', 13), tile('yellow', 1)],
+        showedIndicator: false,
+      },
+      {
+        seat: 1,
+        tileCount: 14,
+        discards: [tile('blue', 2), tile('blue', 11)],
+        showedIndicator: false,
+      },
       { seat: 2, tileCount: 14, discards: [tile('red', 12)], showedIndicator: false },
-      { seat: 3, tileCount: 14, discards: [tile('black', 2), tile('yellow', 8)], showedIndicator: false },
+      {
+        seat: 3,
+        tileCount: 14,
+        discards: [tile('black', 2), tile('yellow', 8)],
+        showedIndicator: false,
+      },
     ],
     canShowIndicator: false,
     indicatorShown: null,

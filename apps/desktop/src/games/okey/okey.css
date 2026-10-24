@@ -106,7 +106,10 @@
   flex: 0 0 auto;
   border: 1px solid var(--ok-tile-back-edge);
   border-radius: var(--radius-4);
-  background: linear-gradient(var(--ok-tile-back), color-mix(in srgb, var(--ok-tile-back) 80%, black));
+  background: linear-gradient(
+    var(--ok-tile-back),
+    color-mix(in srgb, var(--ok-tile-back) 80%, black)
+  );
   box-shadow: 0 2px 0 var(--ok-tile-back-edge);
 }
 .ok-back.small {
