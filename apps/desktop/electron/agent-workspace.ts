@@ -6,6 +6,7 @@ import {
   terminalEventSchema,
   terminalInputSchema,
 } from '../../../packages/shared-contracts/src/hostops';
+import { t } from '@rooms/i18n';
 
 export function setupAgentWorkspace(input: {
   bind(name: string, action: (...args: any[]) => unknown): void;
@@ -53,7 +54,7 @@ export function setupAgentWorkspace(input: {
       active!.socket.readyState !== WebSocket.OPEN ||
       active!.socket.bufferedAmount > 65536
     )
-      throw Error('Çalışma terminali bağlı değil.');
+      throw Error(t('Çalışma terminali bağlı değil.'));
     active!.socket.send(JSON.stringify(terminalInputSchema.parse(value)));
   });
   input.bind('workspace-attach', async (id, session) => {
@@ -66,7 +67,7 @@ export function setupAgentWorkspace(input: {
       .array(terminalInfoSchema)
       .parse(await input.request(route(taskId), 'GET', undefined, 16384));
     if (!sessions.some((s) => s.id === sessionId && s.taskId === taskId && s.kind === 'workspace'))
-      throw Error('Çalışma terminali erişimi doğrulanamadı.');
+      throw Error(t('Çalışma terminali erişimi doğrulanamadı.'));
     if (
       !scope.connection ||
       !scope.userId ||
@@ -74,10 +75,10 @@ export function setupAgentWorkspace(input: {
       input.context().connection !== scope.connection ||
       input.context().userId !== scope.userId
     )
-      throw Error('Hesap değişti. Yeniden bağlan.');
+      throw Error(t('Hesap değişti. Yeniden bağlan.'));
     const url = new URL(scope.connection.url + route(taskId) + `/${sessionId}/stream`);
     if (url.protocol !== 'https:' || url.search || url.hash || url.username || url.password)
-      throw Error('Güvenli Agent bağlantısı gerekli.');
+      throw Error(t('Güvenli Agent bağlantısı gerekli.'));
     url.protocol = 'wss:';
     const socket = new WebSocket(url, {
       headers: { Authorization: `Bearer ${scope.connection.token}` },
@@ -111,21 +112,21 @@ export function setupAgentWorkspace(input: {
       }
     });
     socket.on('error', () =>
-      send({ type: 'error', message: 'Çalışma terminaline bağlanılamadı. Yeniden dene.' }),
+      send({ type: 'error', message: t('Çalışma terminaline bağlanılamadı. Yeniden dene.') }),
     );
     socket.on('close', () => {
-      send({ type: 'error', message: 'Çalışma terminali bağlantısı kesildi.' });
+      send({ type: 'error', message: t('Çalışma terminali bağlantısı kesildi.') });
       if (active === selected) active = null;
     });
     await new Promise<void>((resolve, reject) => {
       socket.once('open', () => {
         if (generation !== epoch || active !== selected || !current()) {
           socket.close();
-          reject(Error('Hesap veya terminal değişti.'));
+          reject(Error(t('Hesap veya terminal değişti.')));
         } else resolve();
       });
-      socket.once('error', () => reject(Error('Çalışma terminaline bağlanılamadı.')));
-      socket.once('close', () => reject(Error('Çalışma terminali bağlantısı kapandı.')));
+      socket.once('error', () => reject(Error(t('Çalışma terminaline bağlanılamadı.'))));
+      socket.once('close', () => reject(Error(t('Çalışma terminali bağlantısı kapandı.'))));
     });
   });
   const timer = setInterval(() => {

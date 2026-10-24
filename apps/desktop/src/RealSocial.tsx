@@ -14,7 +14,8 @@ import './discord-room.css';
 import { ReferenceIcon } from './ReferenceIcon';
 import { mediaBridge } from './runtime-sources';
 import { SoundboardButton } from './Soundboard';
-import { tr, uiError } from './i18n';
+import { locale, t, tr, uiError } from './i18n';
+import { places } from './dev/sample';
 import { directMessageFailed } from './FriendRequiredDialog';
 import { VoiceAvatar } from './VoiceAvatar';
 import { ScreenHandoffControls, cancelScreenHandoff, decideScreenHandoff } from './screen-handoff';
@@ -115,10 +116,20 @@ export function viewerSummary(
   named = false,
 ) {
   const viewers = broadcaster ? people.filter((p) => p.watching === broadcaster) : [];
-  if (!viewers.length) return 'Henüz izleyen yok';
-  if (!named) return `${viewers.length} kişi izliyor`;
-  return `İzleyenler: ${viewers.map((p) => (p.local ? 'Sen' : p.name)).join(', ')}`;
+  if (!viewers.length) return t('Henüz izleyen yok');
+  if (!named) return t('{count} kişi izliyor', { count: viewers.length });
+  return t('İzleyenler: {names}', {
+    names: viewers.map((p) => (p.local ? t('Sen') : p.name)).join(', '),
+  });
 }
+/** Turkish writes the clock as 20.45; other languages keep their own separator. */
+const clockText = (timestamp: string) => {
+  const time = new Date(timestamp).toLocaleTimeString(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  return locale === 'tr-TR' ? time.replace(':', '.') : time;
+};
 const report = (operation: Promise<unknown>, notify: (message: string) => void) => {
   void operation.catch((e) => notify(uiError(e)));
 };
@@ -185,16 +196,20 @@ export function CommunityChat({
     const channelId = c.activeChannelId;
     const room = 5 - attachments.length;
     if (room <= 0) {
-      notify('Bir mesaja en fazla 5 dosya ekleyebilirsin.');
+      notify(t('Bir mesaja en fazla 5 dosya ekleyebilirsin.'));
       return;
     }
     if (files.length > room)
-      notify(`Yalnızca ilk ${room} dosya eklendi; bir mesajda en fazla 5 dosya olur.`);
+      notify(
+        t('Yalnızca ilk {count} dosya eklendi; bir mesajda en fazla 5 dosya olur.', {
+          count: room,
+        }),
+      );
     setUploading(true);
     try {
       for (const file of files.slice(0, room)) {
         if (file.size > 25 * 1024 * 1024) {
-          notify(`${file.name} 25 MB sınırını aşıyor.`);
+          notify(t('{name} 25 MB sınırını aşıyor.', { name: file.name }));
           continue;
         }
         const item = await window.rooms.social.dropAttachment(
@@ -219,7 +234,7 @@ export function CommunityChat({
     setUploading(true);
     try {
       const item = await window.rooms.social.pasteAttachment(channelId);
-      if (!item) notify('Panoda eklenebilecek bir görsel veya dosya yok.');
+      if (!item) notify(t('Panoda eklenebilecek bir görsel veya dosya yok.'));
       else if (useCommunity.getState().activeChannelId === channelId)
         setAttachments((items) => [...items, item].slice(0, 5));
       else await window.rooms.social.discardAttachment(item.id);
@@ -297,7 +312,7 @@ export function CommunityChat({
     const content = mentionInput.serialize().trim();
     if (!editing || !content || actionBusy) return;
     if (content.length > 4000) {
-      notify('Mesaj çok uzun. Biraz kısaltıp yeniden dene.');
+      notify(t('Mesaj çok uzun. Biraz kısaltıp yeniden dene.'));
       return;
     }
     setActionBusy(true);
@@ -369,7 +384,7 @@ export function CommunityChat({
           text: message.content,
           sourceMessageId: message.id,
         })
-        .then(() => notify(tr('Mesaj oda haf\u0131zas\u0131na kaydedildi.'))),
+        .then(() => notify(t('Mesaj oda hafızasına kaydedildi.'))),
       notify,
     );
   };
@@ -445,7 +460,7 @@ export function CommunityChat({
     if (!draft.trim() && !attachments.length) return;
     const content = mentionInput.serialize().trim();
     if (content.length > 4000) {
-      notify('Mesaj çok uzun. Biraz kısaltıp yeniden dene.');
+      notify(t('Mesaj çok uzun. Biraz kısaltıp yeniden dene.'));
       return;
     }
     report(
@@ -529,23 +544,23 @@ export function CommunityChat({
     (m) =>
       !query ||
       `${m.content} ${m.author.displayName} ${m.attachments?.map((a) => a.name).join(' ') ?? ''}`
-        .toLocaleLowerCase('tr')
-        .includes(query.toLocaleLowerCase('tr')),
+        .toLocaleLowerCase(locale)
+        .includes(query.toLocaleLowerCase(locale)),
   );
   // `id` is the codepoint key used for display; `emoji` is what the picker sends upstream.
   const reactionOptions = [
-    { id: '2764', emoji: '\u2764\ufe0f', label: 'Kalp', icon: Heart },
-    { id: '2714', emoji: '\u2714\ufe0f', label: 'Onay', icon: Check },
-    { id: '2b50', emoji: '\u2b50', label: 'Yıldız', icon: Star },
-    { id: '1f642', emoji: '\u{1f642}', label: 'Gülümseme', icon: Smile },
-    { id: '1f3ae', emoji: '\u{1f3ae}', label: 'Oyun', icon: Gamepad2 },
-    { id: '1f3ac', emoji: '\u{1f3ac}', label: 'Film', icon: Film },
+    { id: '2764', emoji: '\u2764\ufe0f', label: t('Kalp'), icon: Heart },
+    { id: '2714', emoji: '\u2714\ufe0f', label: t('Onay'), icon: Check },
+    { id: '2b50', emoji: '\u2b50', label: t('Yıldız'), icon: Star },
+    { id: '1f642', emoji: '\u{1f642}', label: t('Gülümseme'), icon: Smile },
+    { id: '1f3ae', emoji: '\u{1f3ae}', label: t('Oyun'), icon: Gamepad2 },
+    { id: '1f3ac', emoji: '\u{1f3ac}', label: t('Film'), icon: Film },
   ];
   // Named reactions that other clients or older keys may use but the picker does not offer.
   const otherReactions: Record<string, { label: string; icon: typeof Heart }> = {
-    heart: { label: 'Kalp', icon: Heart },
-    check: { label: 'Onay', icon: Check },
-    '1f44d': { label: 'Beğeni', icon: ThumbsUp },
+    heart: { label: t('Kalp'), icon: Heart },
+    check: { label: t('Onay'), icon: Check },
+    '1f44d': { label: t('Beğeni'), icon: ThumbsUp },
   };
   const reactionOption = (key: string) => {
     const id = reactionCodepoints(key);
@@ -579,7 +594,7 @@ export function CommunityChat({
           : null;
         return id ? (
           <mark key={i}>
-            @{person?.displayName ?? mentionInput.name(id) ?? `kişi-${id.slice(-6)}`}
+            @{person?.displayName ?? mentionInput.name(id) ?? t('kişi-{id}', { id: id.slice(-6) })}
           </mark>
         ) : part.startsWith('@') ? (
           <mark key={i}>{part}</mark>
@@ -604,7 +619,7 @@ export function CommunityChat({
         e.preventDefault();
         setDropping(false);
         if (editing) {
-          notify('Düzenlemeyi bitirince dosya ekleyebilirsin.');
+          notify(t('Düzenlemeyi bitirince dosya ekleyebilirsin.'));
           return;
         }
         void addFiles([...e.dataTransfer.files]);
@@ -612,7 +627,7 @@ export function CommunityChat({
     >
       <header className="chat-heading">
         <Hash size={24} />
-        <h2>{channel?.name ?? 'Sohbet'}</h2>
+        <h2>{channel?.name ?? t('Sohbet')}</h2>
         {channel?.topic && (
           <>
             <span className="chat-topic-divider" />
@@ -620,21 +635,24 @@ export function CommunityChat({
           </>
         )}
         <div className="chat-header-tools">
-          <IconButton label="Bildirim ayarları" onClick={() => navigate('/settings?tab=desktop')}>
+          <IconButton
+            label={t('Bildirim ayarları')}
+            onClick={() => navigate('/settings?tab=desktop')}
+          >
             <Bell size={19} />
           </IconButton>
-          <IconButton label="Sabitlenmiş mesajlar — sunucu bağlantısı desteklemiyor" disabled>
+          <IconButton label={t('Sabitlenmiş mesajlar — sunucu bağlantısı desteklemiyor')} disabled>
             <Pin size={19} />
           </IconButton>
           <IconButton
-            label={showFriends ? 'Üyeler panelini kapat' : 'Üyeler panelini aç'}
+            label={showFriends ? t('Üyeler panelini kapat') : t('Üyeler panelini aç')}
             aria-pressed={showFriends}
             onClick={onToggleMembers ?? (() => setPreference('showFriends', !showFriends))}
           >
             <Users size={19} />
           </IconButton>
           <IconButton
-            label="Yüklenen mesajlarda ara"
+            label={t('Yüklenen mesajlarda ara')}
             aria-expanded={searchOpen}
             onClick={
               onSearch ??
@@ -653,14 +671,14 @@ export function CommunityChat({
           <Search size={16} />
           <input
             autoFocus
-            aria-label="Yüklenen mesajlarda ara"
-            placeholder="Yüklenen mesajlarda ara"
+            aria-label={t('Yüklenen mesajlarda ara')}
+            placeholder={t('Yüklenen mesajlarda ara')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <span>{visibleMessages.length} sonuç</span>
+          <span>{t('{count} sonuç', { count: visibleMessages.length })}</span>
           <IconButton
-            label="Aramayı kapat"
+            label={t('Aramayı kapat')}
             onClick={() => {
               setSearchOpen(false);
               setQuery('');
@@ -677,7 +695,7 @@ export function CommunityChat({
             <strong>{primary.title}</strong>
             <small>
               {retiredActivity(primary.activity)
-                ? 'Eski Sinema oturumu · bu sürümde açılmıyor'
+                ? t('Eski Sinema oturumu · bu sürümde açılmıyor')
                 : activity.room?.participants
                     .filter((p) => p.userId !== c.user?.id)
                     .map((p) => p.displayName)
@@ -689,7 +707,7 @@ export function CommunityChat({
             onClick={() => openActivity(primary.activity, navigate)}
           >
             <ArrowRight size={17} />
-            {retiredActivity(primary.activity) ? 'Ayrıntılar' : 'Etkinliğe dön'}
+            {retiredActivity(primary.activity) ? t('Ayrıntılar') : t('Etkinliğe dön')}
           </button>
         </div>
       )}
@@ -697,7 +715,7 @@ export function CommunityChat({
         ref={log}
         className="chat-transcript"
         role="log"
-        aria-label="Kanal mesajları"
+        aria-label={t('Kanal mesajları')}
         onLoadCapture={() => {
           if (nearBottom.current && log.current) log.current.scrollTop = log.current.scrollHeight;
         }}
@@ -724,13 +742,14 @@ export function CommunityChat({
             }}
           >
             <RefreshCw size={12} />
-            {c.loadingMessages ? 'Yükleniyor…' : 'Önceki mesajlar'}
+            {c.loadingMessages ? t('Yükleniyor…') : t('Önceki mesajlar')}
           </button>
         )}
         {!c.hasOlder && c.messages.length >= MESSAGE_WINDOW && (
           <p className="load-older-limit">
-            Bu görünümde en fazla {MESSAGE_WINDOW.toLocaleString('tr-TR')} mesaj tutulur; daha
-            eskiler burada açılamıyor.
+            {t('Bu görünümde en fazla {limit} mesaj tutulur; daha eskiler burada açılamıyor.', {
+              limit: MESSAGE_WINDOW.toLocaleString(locale),
+            })}
           </p>
         )}
         {!c.messages.length && !c.loadingMessages && (
@@ -738,21 +757,23 @@ export function CommunityChat({
             <span>
               <MessageCircle size={40} />
             </span>
-            <h2>{channel ? `#${channel.name} kanalına hoş geldin.` : 'Kanal seç'}</h2>
+            <h2>
+              {channel ? t('#{name} kanalına hoş geldin.', { name: channel.name }) : t('Kanal seç')}
+            </h2>
             {channel && (
               <button
                 className="button primary"
                 onClick={() => {
-                  report(c.send('Selam!'), notify);
+                  report(c.send(t('Selam!')), notify);
                 }}
               >
-                Selam gönder
+                {t('Selam gönder')}
               </button>
             )}
           </div>
         )}
         {c.loadingMessages && c.messages.length === 0 && (
-          <div className="chat-loading" role="status" aria-label="Mesajlar yükleniyor">
+          <div className="chat-loading" role="status" aria-label={t('Mesajlar yükleniyor')}>
             {Array.from({ length: 5 }, (_, i) => (
               <div className="chat-skeleton-message" key={i}>
                 <i />
@@ -765,19 +786,19 @@ export function CommunityChat({
           </div>
         )}
         {query && !visibleMessages.length && (
-          <p className="chat-search-empty">Yüklenen mesajlarda sonuç yok.</p>
+          <p className="chat-search-empty">{t('Yüklenen mesajlarda sonuç yok.')}</p>
         )}
         {visibleMessages.map((m, index) => {
           const previous = visibleMessages[index - 1];
-          const day = new Date(m.timestamp).toLocaleDateString('tr-TR', {
+          const day = new Date(m.timestamp).toLocaleDateString(locale, {
             day: 'numeric',
             month: 'long',
             year: 'numeric',
           });
           const newDay =
             !previous ||
-            new Date(previous.timestamp).toLocaleDateString('tr-TR') !==
-              new Date(m.timestamp).toLocaleDateString('tr-TR');
+            new Date(previous.timestamp).toLocaleDateString(locale) !==
+              new Date(m.timestamp).toLocaleDateString(locale);
           const unread = previous?.id === unreadAnchor.current;
           const own = m.author.id === c.user?.id;
           return (
@@ -789,7 +810,7 @@ export function CommunityChat({
               )}
               {unread && (
                 <div className="chat-unread-divider">
-                  <span>YENİ MESAJLAR</span>
+                  <span>{t('YENİ MESAJLAR')}</span>
                 </div>
               )}
               <article
@@ -809,18 +830,14 @@ export function CommunityChat({
                   <div className="message-byline">
                     <button
                       className="message-author"
-                      title={own ? 'Sen' : 'Üye seçenekleri'}
+                      title={own ? t('Sen') : t('Üye seçenekleri')}
                       disabled={own}
                       onClick={() => setSelectedAuthor(m.author)}
                     >
                       <strong>{m.author.displayName || m.author.username}</strong>
                     </button>
-                    <time dateTime={m.timestamp}>
-                      {new Date(m.timestamp)
-                        .toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
-                        .replace(':', '.')}
-                    </time>
-                    {m.editedTimestamp && <span>düzenlendi</span>}
+                    <time dateTime={m.timestamp}>{clockText(m.timestamp)}</time>
+                    {m.editedTimestamp && <span>{t('düzenlendi')}</span>}
                   </div>
                   {isGifMessage(m.content) ? (
                     <img className="chat-gif" src={m.content.trim()} alt="GIF" loading="lazy" />
@@ -850,7 +867,10 @@ export function CommunityChat({
                           <button
                             key={emoji}
                             className={`message-reaction ${people.includes(c.user?.id ?? '') ? 'selected' : ''}`}
-                            aria-label={`${option?.label ?? reactionEmoji(emoji)} reaksiyonu · ${people.length}`}
+                            aria-label={t('{name} reaksiyonu · {count}', {
+                              name: option?.label ?? reactionEmoji(emoji),
+                              count: people.length,
+                            })}
                             aria-pressed={people.includes(c.user?.id ?? '')}
                             onClick={() => void react(m, emoji)}
                           >
@@ -864,26 +884,28 @@ export function CommunityChat({
                         );
                       })}
                   </div>
-                  {m.delivery === 'pending' && <span className="message-state">Gönderiliyor…</span>}
+                  {m.delivery === 'pending' && (
+                    <span className="message-state">{t('Gönderiliyor…')}</span>
+                  )}
                   {m.delivery === 'failed' && (
                     <span className="message-state failed">
                       <AlertCircle size={13} />
-                      Mesaj gönderilemedi{' '}
+                      {t('Mesaj gönderilemedi')}{' '}
                       <button onClick={() => report(c.retryMessage(m.id), notify)}>
-                        Yeniden dene
+                        {t('Yeniden dene')}
                       </button>
                     </span>
                   )}
                 </div>
                 {m.delivery !== 'pending' && m.delivery !== 'failed' && (
                   <div className="message-actions">
-                    <IconButton label="Reaksiyon ekle" onClick={() => setReactionTarget(m)}>
+                    <IconButton label={t('Reaksiyon ekle')} onClick={() => setReactionTarget(m)}>
                       <Smile size={16} />
                     </IconButton>
-                    <IconButton label="Alıntıyla yanıtla" onClick={() => setReply(m)}>
+                    <IconButton label={t('Alıntıyla yanıtla')} onClick={() => setReply(m)}>
                       <MessageCircle size={16} />
                     </IconButton>
-                    <IconButton label="Mesaj seçenekleri" onClick={() => setOptions(m)}>
+                    <IconButton label={t('Mesaj seçenekleri')} onClick={() => setOptions(m)}>
                       <MoreHorizontal size={16} />
                     </IconButton>
                   </div>
@@ -902,7 +924,7 @@ export function CommunityChat({
             setUnseen(false);
           }}
         >
-          Yeni mesajlar ↓
+          {t('Yeni mesajlar ↓')}
         </button>
       )}
       {c.activeChannelId && (
@@ -910,10 +932,10 @@ export function CommunityChat({
           {editing && (
             <div className="composer-editing" role="status">
               <Edit3 size={14} />
-              <span>Mesajı düzenliyorsun · Enter kaydeder · Esc vazgeçer</span>
+              <span>{t('Mesajı düzenliyorsun · Enter kaydeder · Esc vazgeçer')}</span>
               {actionError && <span className="composer-editing-error">{actionError}</span>}
               <button type="button" disabled={actionBusy} onClick={closeEdit}>
-                Vazgeç
+                {t('Vazgeç')}
               </button>
             </div>
           )}
@@ -924,7 +946,7 @@ export function CommunityChat({
                   <Paperclip size={13} />
                   {file.name}
                   <IconButton
-                    label="Eki kaldır"
+                    label={t('Eki kaldır')}
                     onClick={() =>
                       void window.rooms?.social
                         .discardAttachment(file.id)
@@ -950,10 +972,10 @@ export function CommunityChat({
             <IconButton
               label={
                 editing
-                  ? 'Düzenlerken dosya eklenemez'
+                  ? t('Düzenlerken dosya eklenemez')
                   : uploading
-                    ? 'Dosya yükleniyor'
-                    : 'Dosya ekle'
+                    ? t('Dosya yükleniyor')
+                    : t('Dosya ekle')
               }
               disabled={!c.activeChannelId || uploading || attachments.length >= 5 || !!editing}
               onClick={() => void attach()}
@@ -968,7 +990,7 @@ export function CommunityChat({
               aria-activedescendant={mentionInput.activeOptionId}
               aria-expanded={mentionInput.open}
               onSelect={mentionInput.onSelect}
-              aria-label={editing ? 'Mesajı düzenle' : 'Kanala mesaj yaz'}
+              aria-label={editing ? t('Mesajı düzenle') : t('Kanala mesaj yaz')}
               rows={1}
               value={draft}
               maxLength={4000}
@@ -976,8 +998,10 @@ export function CommunityChat({
               placeholder={
                 composerPlaceholder ??
                 (channel
-                  ? `${channel.type === 0 ? '#' : ''}${channel.name} kanalına mesaj yaz`
-                  : 'Kanal seç')
+                  ? t('{name} kanalına mesaj yaz', {
+                      name: `${channel.type === 0 ? '#' : ''}${channel.name}`,
+                    })
+                  : t('Kanal seç'))
               }
               onChange={(e) => mentionInput.change(e.target.value, e.target.selectionStart)}
               onPaste={(e) => {
@@ -1039,7 +1063,7 @@ export function CommunityChat({
               </div>
             )}
             <IconButton
-              label="GIF gönder"
+              label={t('GIF gönder')}
               data-composer-picker
               aria-expanded={picker === 'gif'}
               disabled={!c.activeChannelId || !!editing}
@@ -1048,7 +1072,7 @@ export function CommunityChat({
               <span className="composer-gif-label">GIF</span>
             </IconButton>
             <IconButton
-              label="Emoji ekle"
+              label={t('Emoji ekle')}
               data-composer-picker
               aria-expanded={picker === 'emoji'}
               disabled={!c.activeChannelId}
@@ -1057,7 +1081,7 @@ export function CommunityChat({
               <Smile size={20} />
             </IconButton>
             <IconButton
-              label="Uygulamalar ve etkinlikler"
+              label={t('Uygulamalar ve etkinlikler')}
               data-composer-picker
               aria-expanded={picker === 'apps'}
               onClick={() => setPicker((value) => (value === 'apps' ? null : 'apps'))}
@@ -1065,7 +1089,7 @@ export function CommunityChat({
               <LayoutGrid size={20} />
             </IconButton>
             <IconButton
-              label="Asistanı etiketle"
+              label={t('Asistanı etiketle')}
               onClick={() => {
                 setDraft((value) => (value.startsWith('@agent') ? value : `@agent ${value}`));
                 document
@@ -1078,7 +1102,7 @@ export function CommunityChat({
             <button
               type="submit"
               className="send-button"
-              aria-label={editing ? 'Değişiklikleri kaydet' : 'Mesajı gönder'}
+              aria-label={editing ? t('Değişiklikleri kaydet') : t('Mesajı gönder')}
               disabled={
                 editing
                   ? actionBusy || !draft.trim()
@@ -1096,7 +1120,10 @@ export function CommunityChat({
                   <i />
                   <i />
                 </span>
-                {typingUsers.map((u) => u.displayName || u.username).join(', ')} yazıyor…
+                {t('{names} yazıyor…', {
+                  names: typingUsers.map((u) => u.displayName || u.username).join(', '),
+                  count: typingUsers.length,
+                })}
               </span>
             )}
           </div>
@@ -1106,7 +1133,7 @@ export function CommunityChat({
         <MessageReminder
           message={reminder}
           roomId={reminder.channelId}
-          channelName={channel?.name ?? 'Sohbet'}
+          channelName={channel?.name ?? t('Sohbet')}
           onClose={closeReminder}
           notify={notify}
         />
@@ -1246,7 +1273,7 @@ export function CommunityChat({
       )}
       {options && (
         <Modal
-          title="Mesaj seçenekleri"
+          title={t('Mesaj seçenekleri')}
           className="chat-message-modal chat-options-modal"
           onClose={closeOptions}
         >
@@ -1258,13 +1285,13 @@ export function CommunityChat({
               }}
             >
               <MessageCircle size={20} />
-              Alıntıyla yanıtla
+              {t('Alıntıyla yanıtla')}
             </button>
             <button
               disabled={options.author.id !== c.user?.id}
               title={
                 options.author.id !== c.user?.id
-                  ? 'Yalnızca kendi mesajını düzenleyebilirsin'
+                  ? t('Yalnızca kendi mesajını düzenleyebilirsin')
                   : undefined
               }
               onClick={() => {
@@ -1273,7 +1300,7 @@ export function CommunityChat({
               }}
             >
               <Edit3 size={20} />
-              Düzenle
+              {t('Düzenle')}
             </button>
             <button
               onClick={() => {
@@ -1282,21 +1309,21 @@ export function CommunityChat({
               }}
             >
               <Smile size={20} />
-              Reaksiyon ekle
+              {t('Reaksiyon ekle')}
             </button>
-            <button disabled title="Mesaj bağlantısı sözleşmesi bu sunucu bağlantısında yok">
+            <button disabled title={t('Mesaj bağlantısı sözleşmesi bu sunucu bağlantısında yok')}>
               <Copy size={20} />
-              Mesaj bağlantısını kopyala
+              {t('Mesaj bağlantısını kopyala')}
             </button>
-            <button disabled title="Mesaj sabitleme bu sunucu bağlantısında desteklenmiyor">
+            <button disabled title={t('Mesaj sabitleme bu sunucu bağlantısında desteklenmiyor')}>
               <Pin size={20} />
-              Mesajı sabitle
+              {t('Mesajı sabitle')}
             </button>
             <button
               disabled={options.author.id !== c.user?.id && !moderates}
               title={
                 options.author.id !== c.user?.id && !moderates
-                  ? 'Başkasının mesajını silmek için bu kanalda mesajları yönetme iznin olmalı'
+                  ? t('Başkasının mesajını silmek için bu kanalda mesajları yönetme iznin olmalı')
                   : undefined
               }
               onClick={() => {
@@ -1306,7 +1333,7 @@ export function CommunityChat({
               }}
             >
               <Trash2 size={20} />
-              Mesajı sil
+              {t('Mesajı sil')}
             </button>
             <div className="chat-extra-actions">
               <button
@@ -1316,7 +1343,7 @@ export function CommunityChat({
                 }}
               >
                 <Bot size={16} />
-                Asistana gönder
+                {t('Asistana gönder')}
               </button>
               <button
                 onClick={() => {
@@ -1325,7 +1352,7 @@ export function CommunityChat({
                 }}
               >
                 <Clock3 size={16} />
-                Hatırlat
+                {t('Hatırlat')}
               </button>
               <button
                 onClick={() => {
@@ -1334,20 +1361,20 @@ export function CommunityChat({
                 }}
               >
                 <BookmarkPlus size={16} />
-                Oda hafızasına kaydet
+                {t('Oda hafızasına kaydet')}
               </button>
             </div>
           </div>
           <footer className="chat-modal-footer">
             <button className="button subtle" onClick={closeOptions}>
-              Kapat
+              {t('Kapat')}
             </button>
           </footer>
         </Modal>
       )}
       {reactionTarget && (
         <Modal
-          title="Bir reaksiyon bırak"
+          title={t('Bir reaksiyon bırak')}
           className="chat-message-modal chat-reactions-modal"
           onClose={closeReactions}
         >
@@ -1355,7 +1382,7 @@ export function CommunityChat({
             {reactionOptions.map((option) => (
               <button
                 key={option.id}
-                aria-label={`${option.label} reaksiyonunu ekle`}
+                aria-label={t('{name} reaksiyonunu ekle', { name: option.label })}
                 onClick={() => {
                   void react(reactionTarget, option.emoji);
                   closeReactions();
@@ -1367,14 +1394,16 @@ export function CommunityChat({
           </div>
           <footer className="chat-modal-footer">
             <button className="button subtle" onClick={closeReactions}>
-              Kapat
+              {t('Kapat')}
             </button>
           </footer>
         </Modal>
       )}
       {reply && (
         <Modal
-          title={`${reply.author.displayName || reply.author.username} kişisine yanıtla`}
+          title={t('{name} kişisine yanıtla', {
+            name: reply.author.displayName || reply.author.username,
+          })}
           className="chat-message-modal chat-reply-modal"
           onClose={closeReply}
         >
@@ -1384,12 +1413,12 @@ export function CommunityChat({
             </blockquote>
             <textarea
               className="edit-textarea"
-              aria-label="Alıntılı yanıt"
+              aria-label={t('Alıntılı yanıt')}
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
               maxLength={3500}
             />
-            <small>Yanıt alıntı metni olarak gönderilir.</small>
+            <small>{t('Yanıt alıntı metni olarak gönderilir.')}</small>
             {actionError && (
               <div className="error-pane" role="alert">
                 {actionError}
@@ -1403,19 +1432,19 @@ export function CommunityChat({
               onClick={() => void sendReply()}
             >
               <Send size={18} />
-              Yanıt gönder
+              {t('Yanıt gönder')}
             </button>
           </footer>
         </Modal>
       )}
       {deleting && (
         <Modal
-          title="Mesajı sil?"
+          title={t('Mesajı sil?')}
           className="chat-message-modal chat-delete-modal"
           onClose={closeDelete}
         >
           <div className="chat-modal-body">
-            <p>Bu mesaj kanaldaki herkes için silinecek. Bu işlem geri alınamaz.</p>
+            <p>{t('Bu mesaj kanaldaki herkes için silinecek. Bu işlem geri alınamaz.')}</p>
             {(() => {
               const target = c.messages.find((m) => m.id === deleting);
               if (!target) return null;
@@ -1438,7 +1467,7 @@ export function CommunityChat({
           </div>
           <footer className="chat-modal-footer">
             <button className="button secondary" disabled={actionBusy} onClick={closeDelete}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button danger"
@@ -1453,7 +1482,7 @@ export function CommunityChat({
                   .finally(() => setActionBusy(false));
               }}
             >
-              Mesajı sil
+              {t('Mesajı sil')}
             </button>
           </footer>
         </Modal>
@@ -1471,7 +1500,7 @@ export function CommunitySpaces({ notify }: { notify(message: string): void }) {
   return (
     <div className="spaces-page page-enter">
       <div className="page-intro">
-        <h2>Topluluklar</h2>
+        <h2>{t('Topluluklar')}</h2>
         <button className="button secondary" onClick={() => setShow(true)}>
           <Link size={16} />
           {tr('Join with an invite')}
@@ -1504,23 +1533,27 @@ export function CommunitySpaces({ notify }: { notify(message: string): void }) {
           ))}
         </div>
       ) : (
-        <EmptyState icon={<Users size={32} />} title={'Topluluk yok'}>
+        <EmptyState icon={<Users size={32} />} title={t('Topluluk yok')}>
           {''}
         </EmptyState>
       )}
       {show && (
-        <Modal title={'Davetle kat\u0131l'} onClose={close}>
+        <Modal title={t('Davetle katıl')} onClose={close}>
           <form
             onSubmit={(e) => {
               e.preventDefault();
               const link = parseInviteLink(code, { fallbackServer: c.serverUrl });
               if (!link)
                 return notify(
-                  'Bu bir Tayfa davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.',
+                  t(
+                    'Bu bir Tayfa davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.',
+                  ),
                 );
               if (!sameInviteServer(link.serverUrl, c.serverUrl))
                 return notify(
-                  'Bu davet başka bir sunucuda. Katılmak için çıkış yapıp bağlantıyı yeniden aç.',
+                  t(
+                    'Bu davet başka bir sunucuda. Katılmak için çıkış yapıp bağlantıyı yeniden aç.',
+                  ),
                 );
               setBusy(true);
               void c
@@ -1534,7 +1567,7 @@ export function CommunitySpaces({ notify }: { notify(message: string): void }) {
             }}
           >
             <label className="field-label">
-              Davet bağlantısı
+              {t('Davet bağlantısı')}
               <input
                 required
                 autoComplete="off"
@@ -1579,11 +1612,13 @@ export function CommunityVoice({
   const shareFixtureVariant =
     fixtureParams?.get('fixture')?.toUpperCase() === 'S22' ? fixtureParams.get('variant') : null;
   const fixtureRoom = emptyFixture
-    ? c.channels.find((channel) => channel.type === 2 && channel.name === 'Salon')
+    ? c.channels.find((channel) => channel.type === 2 && channel.name === places.lounge)
     : undefined;
   const selectedRoom = c.channels.find((ch) => ch.id === c.activeChannelId && ch.type === 2);
   const roomName =
-    r.roomName ?? selectedRoom?.name ?? (emptyFixture ? (fixtureRoom?.name ?? 'Ses odası') : null);
+    r.roomName ??
+    selectedRoom?.name ??
+    (emptyFixture ? (fixtureRoom?.name ?? t('Ses odası')) : null);
   const [member, setMember] = useState<string | null>(null),
     [inviting, setInviting] = useState(false),
     [layout, setLayout] = useState<'gallery' | 'focus'>(() => (focusFixture ? 'focus' : 'gallery')),
@@ -1591,9 +1626,11 @@ export function CommunityVoice({
   const close = useCallback(() => setMember(null), []),
     closeInvite = useCallback(() => setInviting(false), []);
   const person = r.participants.find((p) => p.id === member);
-  const cameras = r.tracks.filter((t) => t.source === 'camera' && t.kind === 'video' && !t.muted);
+  const cameras = r.tracks.filter(
+    (track) => track.source === 'camera' && track.kind === 'video' && !track.muted,
+  );
   const screens = r.tracks.filter(
-    (t) => t.source === 'screen_share' && t.kind === 'video' && !t.muted,
+    (track) => track.source === 'screen_share' && track.kind === 'video' && !track.muted,
   );
   const hadScreen = useRef(shareFixtureVariant === 'source_closed');
   useEffect(() => {
@@ -1616,7 +1653,7 @@ export function CommunityVoice({
     : r.participants;
   const chooseSource = () => window.dispatchEvent(new Event('rooms:choose-capture'));
   const tile = (p: (typeof r.participants)[number]) => {
-    const camera = cameras.find((t) => t.participantId === p.id),
+    const camera = cameras.find((track) => track.participantId === p.id),
       silenced = silencedHere(p),
       speaking = connected && p.speaking && !p.muted && !silenced;
     return (
@@ -1625,18 +1662,30 @@ export function CommunityVoice({
         data-voice-participant-id={p.id}
         className={`reference-participant ${video ? 'video-tile' : ''} ${speaking ? 'speaking' : ''} ${camera ? 'with-camera' : ''} ${layout === 'focus' && focused?.id === p.id ? 'focused' : ''}`}
         onClick={() => (video && layout === 'focus' ? setFocus(p.id) : setMember(p.id))}
-        aria-label={`${p.name}${speaking ? ', konuşuyor' : ''}${p.muted ? ', mikrofon kapalı' : ''}${p.deafened ? ', sağırlaştırdı' : ''}${silenced ? ', sesini kapattın' : ''}`}
+        aria-label={[
+          p.name,
+          speaking && t('konuşuyor'),
+          p.muted && t('mikrofon kapalı'),
+          p.deafened && t('sağırlaştırdı'),
+          silenced && t('sesini kapattın'),
+        ]
+          .filter(Boolean)
+          .join(', ')}
       >
         {camera ? (
-          <MediaStage id={camera.id} label={`${p.name} kamerası`} className="voice-camera" />
+          <MediaStage
+            id={camera.id}
+            label={t('{name} kamerası', { name: p.name })}
+            className="voice-camera"
+          />
         ) : (
           <span className="reference-participant-avatar">
             <VoiceAvatar id={p.id} name={p.name} large />
           </span>
         )}
         <span className="reference-participant-status">
-          {p.screen && <MonitorUp size={15} aria-label="Ekran paylaşıyor" />}
-          {silenced && <VolumeX size={15} aria-label="Sesini kapattın, yalnızca sende" />}
+          {p.screen && <MonitorUp size={15} aria-label={t('Ekran paylaşıyor')} />}
+          {silenced && <VolumeX size={15} aria-label={t('Sesini kapattın, yalnızca sende')} />}
           {p.deafened && <ReferenceIcon name="headphones-off" size={15} />}
           {video ? (
             <ReferenceIcon name={camera ? 'video' : 'video-off'} size={15} />
@@ -1665,35 +1714,36 @@ export function CommunityVoice({
             ))}
           <span title={p.name}>
             {p.name}
-            {p.local ? ' (sen)' : ''}
+            {p.local ? ` ${t('(sen)')}` : ''}
           </span>
-          {video && !camera && <small>kamera kapalı</small>}
+          {video && !camera && <small>{t('kamera kapalı')}</small>}
         </span>
       </button>
     );
   };
   const shareTile = (track: (typeof screens)[number]) => {
-    const presenter = r.participants.find((p) => p.id === track.participantId)?.name ?? 'Katılımcı';
+    const presenter =
+      r.participants.find((p) => p.id === track.participantId)?.name ?? t('Katılımcı');
     return (
       <button
         className="room-share-preview"
         key={track.id}
-        aria-label={`${presenter} ekranını izle`}
+        aria-label={t('{name} ekranını izle', { name: presenter })}
         onClick={() => navigate(`/voice?view=share&screen=${encodeURIComponent(track.id)}`)}
       >
         {track.local ? (
-          <MediaStage id={track.id} label="Ekran paylaşımı önizlemesi" />
+          <MediaStage id={track.id} label={t('Ekran paylaşımı önizlemesi')} />
         ) : (
           // Remote streams are not downloaded until this listener chooses to watch.
           <span className="room-share-invite">
             <MonitorUp size={30} />
-            <strong>Yayını izle</strong>
+            <strong>{t('Yayını izle')}</strong>
           </span>
         )}
         <span>
           <MonitorUp size={14} />
           {presenter}
-          {track.local ? ' (sen)' : ''}
+          {track.local ? ` ${t('(sen)')}` : ''}
           <small>{viewerSummary(r.participants, track.participantId)}</small>
         </span>
       </button>
@@ -1706,35 +1756,38 @@ export function CommunityVoice({
       <header className="reference-voice-heading">
         <div>
           <span className="reference-voice-eyebrow">
-            {share ? 'EKRAN PAYLAŞIMI' : video ? 'GÖRÜNTÜLÜ ODA' : 'SES ODASI'}
+            {share ? t('EKRAN PAYLAŞIMI') : video ? t('GÖRÜNTÜLÜ ODA') : t('SES ODASI')}
           </span>
-          <h2 title={roomName ?? undefined}>{roomName ?? 'Ses odaları'}</h2>
+          <h2 title={roomName ?? undefined}>{roomName ?? t('Ses odaları')}</h2>
           <p>
             {emptyFixture
-              ? 'Şimdilik sessiz. İlk sen gel.'
+              ? t('Şimdilik sessiz. İlk sen gel.')
               : r.busy
-                ? 'Bağlanıyor…'
+                ? t('Bağlanıyor…')
                 : connected
                   ? video
-                    ? `${shownParticipants.length} kamera kutusu · ${r.participants.length} kişi sesli sohbette`
-                    : `${r.participants.length} kişi odada`
+                    ? t('{boxes} kamera kutusu · {count} kişi sesli sohbette', {
+                        boxes: shownParticipants.length,
+                        count: r.participants.length,
+                      })
+                    : t('{count} kişi odada', { count: r.participants.length })
                   : r.status === 'reconnecting'
-                    ? 'Yeniden bağlanıyor…'
+                    ? t('Yeniden bağlanıyor…')
                     : r.channelId
-                      ? 'Bağlantı kesildi'
-                      : 'Bir ses odası seç.'}
+                      ? t('Bağlantı kesildi')
+                      : t('Bir ses odası seç.')}
           </p>
         </div>
         <div className="reference-voice-header-actions">
           {video && (
-            <div className="segmented" aria-label="Kamera düzeni">
+            <div className="segmented" aria-label={t('Kamera düzeni')}>
               <button
                 aria-pressed={layout === 'gallery'}
                 className={layout === 'gallery' ? 'selected' : ''}
                 onClick={() => setLayout('gallery')}
               >
                 <ReferenceIcon name="grid" size={15} />
-                Galeri
+                {t('Galeri')}
               </button>
               <button
                 aria-pressed={layout === 'focus'}
@@ -1742,7 +1795,7 @@ export function CommunityVoice({
                 onClick={() => setLayout('focus')}
               >
                 <ReferenceIcon name="maximize" size={15} />
-                Odak
+                {t('Odak')}
               </button>
             </div>
           )}
@@ -1753,13 +1806,13 @@ export function CommunityVoice({
               onClick={() => report(stopScreen().then(chooseSource), notify)}
             >
               <ReferenceIcon name="monitor" size={16} />
-              Kaynağı değiştir
+              {t('Kaynağı değiştir')}
             </button>
           )}
           {!share && !video && (
             <button className="button secondary" onClick={() => setInviting(true)}>
               <ReferenceIcon name="plus" size={16} />
-              Arkadaş davet et
+              {t('Arkadaş davet et')}
             </button>
           )}
         </div>
@@ -1769,30 +1822,32 @@ export function CommunityVoice({
           <ReferenceIcon name="alert-triangle" size={18} />
           <span>
             {r.busy
-              ? 'Odaya bağlanılıyor.'
+              ? t('Odaya bağlanılıyor.')
               : r.status === 'reconnecting'
-                ? 'Ses bağlantısı yeniden kuruluyor.'
-                : 'Ses bağlantısı kesildi.'}
+                ? t('Ses bağlantısı yeniden kuruluyor.')
+                : t('Ses bağlantısı kesildi.')}
           </span>
           <button
             className="button secondary small"
             disabled={r.busy}
-            onClick={() => report(joinVoice(r.channelId!, r.roomName ?? 'Ses'), notify)}
+            onClick={() => report(joinVoice(r.channelId!, r.roomName ?? t('Ses')), notify)}
           >
-            Yeniden bağlan
+            {t('Yeniden bağlan')}
           </button>
         </div>
       )}
       {share && shareFixtureVariant === 'handover' && (
         <div className="reference-share-handover-banner" role="status">
           <ReferenceIcon name="alert-triangle" size={17} />
-          <span>Deniz’in paylaşımı durdu. Ece’nin seçimi bekleniyor.</span>
+          <span>{t('Deniz’in paylaşımı durdu. Ece’nin seçimi bekleniyor.')}</span>
         </div>
       )}
       {share && shareFixtureVariant === 'source_closed' && (
         <div className="reference-media-notice" role="status">
           <ReferenceIcon name="alert-triangle" size={18} />
-          <span>Kaynak kapanması oturum devriyle çözülemez; yeni bir ekran kaynağı gerekiyor.</span>
+          <span>
+            {t('Kaynak kapanması oturum devriyle çözülemez; yeni bir ekran kaynağı gerekiyor.')}
+          </span>
         </div>
       )}
       {!r.channelId || emptyFixture ? (
@@ -1800,10 +1855,11 @@ export function CommunityVoice({
           <div className="reference-voice-empty-stage">
             <div>
               <ReferenceIcon name="headphones" size={42} />
-              <h3>Oda sana hazır</h3>
+              <h3>{t('Oda sana hazır')}</h3>
               <p>
-                Katıldığında arkadaşların seni burada görebilir. Mikrofonunu açmak tamamen sana
-                bağlı.
+                {t(
+                  'Katıldığında arkadaşların seni burada görebilir. Mikrofonunu açmak tamamen sana bağlı.',
+                )}
               </p>
               <button
                 className="button primary"
@@ -1813,14 +1869,14 @@ export function CommunityVoice({
                 }
               >
                 <ReferenceIcon name="headphones" size={17} />
-                Salona katıl
+                {t('Salona katıl')}
               </button>
             </div>
           </div>
         ) : (
           <div className="reference-voice-empty">
             <ReferenceIcon name="headphones" size={38} />
-            <h3>Ses odaları</h3>
+            <h3>{t('Ses odaları')}</h3>
             {channels.length ? (
               <div className="voice-join-list">
                 {(selectedRoom ? [selectedRoom] : channels).map((ch) => (
@@ -1832,12 +1888,12 @@ export function CommunityVoice({
                   >
                     <ReferenceIcon name="volume" size={18} />
                     {ch.name}
-                    <span>Katıl</span>
+                    <span>{t('Katıl')}</span>
                   </button>
                 ))}
               </div>
             ) : (
-              <p>Ses odası yok.</p>
+              <p>{t('Ses odası yok.')}</p>
             )}
           </div>
         )
@@ -1847,8 +1903,10 @@ export function CommunityVoice({
             <>
               <div className="reference-share-banner">
                 <ReferenceIcon name="monitor" size={17} />
-                <span>{r.sharing ? 'Ekran paylaşımın açık' : 'Ekran paylaşımını izliyorsun'}</span>
-                {!r.sharing && <span className="reference-watching-pill">İzliyorsun</span>}
+                <span>
+                  {r.sharing ? t('Ekran paylaşımın açık') : t('Ekran paylaşımını izliyorsun')}
+                </span>
+                {!r.sharing && <span className="reference-watching-pill">{t('İzliyorsun')}</span>}
                 <small className="reference-share-viewers">
                   {viewerSummary(
                     r.participants,
@@ -1866,7 +1924,7 @@ export function CommunityVoice({
                       navigate('/voice');
                     }}
                   >
-                    İzlemeyi bırak
+                    {t('İzlemeyi bırak')}
                   </button>
                 )}
                 {r.sharing && (
@@ -1874,7 +1932,7 @@ export function CommunityVoice({
                     className="button danger small"
                     onClick={() => report(stopScreen(), notify)}
                   >
-                    Paylaşımı durdur
+                    {t('Paylaşımı durdur')}
                   </button>
                 )}
               </div>
@@ -1897,29 +1955,34 @@ export function CommunityVoice({
               <ReferenceIcon name="monitor" size={40} />
               {shareFixtureVariant === 'handover' ? (
                 <>
-                  <h3>Yeni paylaşım bekleniyor</h3>
+                  <h3>{t('Yeni paylaşım bekleniyor')}</h3>
                   <p>
-                    Sunma hakkı Ece’ye geçti. Ece kendi cihazından bir kaynak seçip paylaşımı
-                    başlatmalı.
+                    {t(
+                      'Sunma hakkı Ece’ye geçti. Ece kendi cihazından bir kaynak seçip paylaşımı başlatmalı.',
+                    )}
                   </p>
                   <button className="button primary" onClick={() => navigate('/voice')}>
                     <ReferenceIcon name="headphones" size={17} />
-                    Salona dön
+                    {t('Salona dön')}
                   </button>
                 </>
               ) : (
                 <>
                   <h3>
-                    {hadScreen.current ? 'Paylaşılan pencere kapandı' : 'Ekran paylaşımı yok'}
+                    {hadScreen.current ? t('Paylaşılan pencere kapandı') : t('Ekran paylaşımı yok')}
                   </h3>
                   <p>
                     {shareFixtureVariant === 'source_closed'
-                      ? 'Paylaşılan ekran artık kullanılamıyor. Oturumu Ece düzenliyor; oynatmak için yeni bir kaynak gerekiyor.'
-                      : 'Yeni paylaşım için bu cihazdan bir kaynak seç.'}
+                      ? t(
+                          'Paylaşılan ekran artık kullanılamıyor. Oturumu Ece düzenliyor; oynatmak için yeni bir kaynak gerekiyor.',
+                        )
+                      : t('Yeni paylaşım için bu cihazdan bir kaynak seç.')}
                   </p>
                   <button className="button primary" disabled={!connected} onClick={chooseSource}>
                     <ReferenceIcon name="monitor" size={17} />
-                    {shareFixtureVariant === 'source_closed' ? 'Yeni kaynak paylaş' : 'Kaynak seç'}
+                    {shareFixtureVariant === 'source_closed'
+                      ? t('Yeni kaynak paylaş')
+                      : t('Kaynak seç')}
                   </button>
                 </>
               )}
@@ -1962,11 +2025,11 @@ export function CommunityVoice({
                 <div>
                   <button className="button secondary" onClick={() => setInviting(true)}>
                     <ReferenceIcon name="user-plus" size={18} />
-                    Arkadaş davet et
+                    {t('Arkadaş davet et')}
                   </button>
                   <button className="button secondary" onClick={openLauncher}>
                     <ReferenceIcon name="plus" size={18} />
-                    Etkinlik seç
+                    {t('Etkinlik seç')}
                   </button>
                 </div>
               </div>
@@ -1980,12 +2043,12 @@ export function CommunityVoice({
                   <span>
                     <ReferenceIcon name="plus" size={24} />
                   </span>
-                  <strong>Arkadaş davet et</strong>
+                  <strong>{t('Arkadaş davet et')}</strong>
                 </button>
               )
             )}
             {!r.participants.length && (
-              <p className="muted">{r.busy ? 'Bağlanıyor…' : 'Katılımcı yok.'}</p>
+              <p className="muted">{r.busy ? t('Bağlanıyor…') : t('Katılımcı yok.')}</p>
             )}
           </div>
         </div>
@@ -1993,7 +2056,7 @@ export function CommunityVoice({
       {!share && screens.length > 0 && (
         <button className="room-watch-share" onClick={() => navigate('/voice?view=share')}>
           <MonitorUp size={16} />
-          Ekran paylaşımını izle
+          {t('Ekran paylaşımını izle')}
         </button>
       )}
 
@@ -2007,15 +2070,17 @@ export function CommunityVoice({
         <div className="reference-voice-meta">
           <span>
             <ReferenceIcon name="headphones" size={13} />
-            {connected ? `${r.roomName} odasına bağlısın` : 'Bağlantı bekleniyor'}
+            {connected
+              ? t('{name} odasına bağlısın', { name: r.roomName ?? '' })
+              : t('Bağlantı bekleniyor')}
           </span>
           <button onClick={() => navigate('/settings?tab=audio')}>
             <ReferenceIcon name="settings" size={13} />
-            Ses ayarları
+            {t('Ses ayarları')}
           </button>
           <button onClick={openLauncher}>
             <ReferenceIcon name="plus" size={13} />
-            Etkinlikler
+            {t('Etkinlikler')}
           </button>
         </div>
       )}
@@ -2027,7 +2092,7 @@ export function CommunityVoice({
             className="button secondary small"
             onClick={() => navigate('/settings?tab=audio')}
           >
-            Cihaz ayarları
+            {t('Cihaz ayarları')}
           </button>
         </div>
       )}
@@ -2038,19 +2103,19 @@ export function CommunityVoice({
             <VoiceAvatar id={person.id} name={person.name} large />
             <span>
               {person.muted
-                ? 'Mikrofon kapalı'
+                ? t('Mikrofon kapalı')
                 : connected && person.speaking
-                  ? 'Konuşuyor'
-                  : 'Dinliyor'}
+                  ? t('Konuşuyor')
+                  : t('Dinliyor')}
             </span>
           </div>
           {!person.local && (
             <>
               <label className="field-label">
-                KİŞİSEL SES · {Math.round(person.volume * 100)}%
+                {t('KİŞİSEL SES · {percent}%', { percent: Math.round(person.volume * 100) })}
                 <input
                   type="range"
-                  aria-label="Katılımcı sesi"
+                  aria-label={t('Katılımcı sesi')}
                   min={0}
                   max={1}
                   step={0.01}
@@ -2080,7 +2145,7 @@ export function CommunityVoice({
                   }
                 >
                   <MessageCircle size={16} />
-                  Mesaj gönder
+                  {t('Mesaj gönder')}
                 </button>
               )}
             </>
@@ -2093,7 +2158,7 @@ export function CommunityVoice({
                 navigate('/settings?tab=audio');
               }}
             >
-              Ses ayarları
+              {t('Ses ayarları')}
             </button>
           )}
         </Modal>
@@ -2101,7 +2166,7 @@ export function CommunityVoice({
       {inviting && <CommunityInvite onClose={closeInvite} notify={notify} />}
       {shareFixtureVariant === 'request' && (
         <Modal
-          title="Ece ekranını paylaşmak istiyor"
+          title={t('Ece ekranını paylaşmak istiyor')}
           onClose={() => navigate('/voice?view=share')}
           className="reference-share-intent-modal"
         >
@@ -2109,18 +2174,19 @@ export function CommunityVoice({
             <VoiceAvatar id="demo-ece" name="Ece" large />
             <div>
               <strong>Ece</strong>
-              <p>“Şu pencereyi gösterebilir miyim?”</p>
+              <p>{t('“Şu pencereyi gösterebilir miyim?”')}</p>
             </div>
           </div>
           <div className="reference-share-intent-callout">
             <ReferenceIcon name="monitor" size={17} />
             <span>
-              Kabul edersen mevcut paylaşımın durur. Ece kendi ekranını seçip başlatana kadar oda
-              yeni kaynak bekler.
+              {t(
+                'Kabul edersen mevcut paylaşımın durur. Ece kendi ekranını seçip başlatana kadar oda yeni kaynak bekler.',
+              )}
             </span>
           </div>
           <p className="reference-share-intent-note">
-            Salon’daki sesli sohbet devam eder. Talebi reddetmek Ece’yi odadan çıkarmaz.
+            {t('Salon’daki sesli sohbet devam eder. Talebi reddetmek Ece’yi odadan çıkarmaz.')}
           </p>
           <div className="button-row">
             <button
@@ -2129,7 +2195,7 @@ export function CommunityVoice({
                 report(decideScreenHandoff('20000000-0000-4000-8000-000000000022', false), notify)
               }
             >
-              Şimdilik reddet
+              {t('Şimdilik reddet')}
             </button>
             <button
               className="button primary"
@@ -2138,41 +2204,44 @@ export function CommunityVoice({
               }
             >
               <ReferenceIcon name="arrow-right" size={16} />
-              Paylaşımı devret
+              {t('Paylaşımı devret')}
             </button>
           </div>
         </Modal>
       )}
       {shareFixtureVariant === 'request_sent' && (
         <Modal
-          title="Paylaşım talebin Ece’ye iletildi"
+          title={t('Paylaşım talebin Ece’ye iletildi')}
           onClose={() => navigate('/voice?view=share')}
           className="reference-share-intent-modal"
         >
           <div className="reference-share-intent-person">
             <VoiceAvatar id="demo-ece" name="Ece" large />
             <div>
-              <strong>Ece ekranını paylaşıyor</strong>
-              <p>Onay verdiğinde kendi kaynağını seçebilirsin.</p>
+              <strong>{t('Ece ekranını paylaşıyor')}</strong>
+              <p>{t('Onay verdiğinde kendi kaynağını seçebilirsin.')}</p>
             </div>
           </div>
           <div className="reference-share-intent-callout">
             <ReferenceIcon name="monitor" size={17} />
             <span>
-              Ece’nin paylaşımı onay verilene kadar devam eder. Kaynak ve ekran kaydı otomatik
-              olarak senin bilgisayarına taşınmaz.
+              {t(
+                'Ece’nin paylaşımı onay verilene kadar devam eder. Kaynak ve ekran kaydı otomatik olarak senin bilgisayarına taşınmaz.',
+              )}
             </span>
           </div>
-          <p className="reference-share-intent-note">Bu sırada odadaki sesli sohbet devam eder.</p>
+          <p className="reference-share-intent-note">
+            {t('Bu sırada odadaki sesli sohbet devam eder.')}
+          </p>
           <div className="button-row">
             <button
               className="button secondary"
               onClick={() => report(cancelScreenHandoff(), notify)}
             >
-              Talebi iptal et
+              {t('Talebi iptal et')}
             </button>
             <button className="button primary" onClick={() => navigate('/voice?view=share')}>
-              Paylaşımı izlemeye dön
+              {t('Paylaşımı izlemeye dön')}
             </button>
           </div>
         </Modal>
@@ -2286,12 +2355,12 @@ export function RealVoiceDock({
               <strong>{r.roomName}</strong>
               <small>
                 {r.busy
-                  ? 'Bağlanıyor…'
+                  ? t('Bağlanıyor…')
                   : connected
-                    ? `${r.participants.length} kişi odada`
+                    ? t('{count} kişi odada', { count: r.participants.length })
                     : r.status === 'reconnecting'
-                      ? 'Yeniden bağlanıyor…'
-                      : 'Bağlantı kesildi'}
+                      ? t('Yeniden bağlanıyor…')
+                      : t('Bağlantı kesildi')}
               </small>
             </div>
           </button>
@@ -2300,24 +2369,24 @@ export function RealVoiceDock({
             <IconButton
               // While reconnecting the microphone can still be muted (not unmuted).
               disabled={!connected && !(r.status === 'reconnecting' && !r.muted)}
-              label={r.muted ? 'Mikrofonu aç' : 'Mikrofonu kapat'}
+              label={r.muted ? t('Mikrofonu aç') : t('Mikrofonu kapat')}
               className={r.muted ? 'muted-control' : ''}
               onClick={() => report(toggleMic(), notify)}
             >
               <ReferenceIcon name={r.muted ? 'mic-off' : 'mic'} size={19} />
             </IconButton>
-            <QuietMenu label="Mikrofon ayarları" compact arrow>
+            <QuietMenu label={t('Mikrofon ayarları')} compact arrow>
               <button onClick={() => navigate('/settings?tab=audio')}>
-                Ses giriş ve çıkış cihazları
+                {t('Ses giriş ve çıkış cihazları')}
               </button>
               <button disabled={!connected} onClick={() => report(toggleDeafen(), notify)}>
-                {r.deafened ? 'Sağırlaştırmayı kapat' : 'Sağırlaştır'}
+                {r.deafened ? t('Sağırlaştırmayı kapat') : t('Sağırlaştır')}
               </button>
             </QuietMenu>
             {!videoMode && !familiarRoom && (
               <IconButton
                 disabled={!connected}
-                label={r.deafened ? 'Oda sesini aç' : 'Oda sesini kapat'}
+                label={r.deafened ? t('Oda sesini aç') : t('Oda sesini kapat')}
                 className={r.deafened ? 'muted-control' : ''}
                 onClick={() => report(toggleDeafen(), notify)}
               >
@@ -2326,7 +2395,7 @@ export function RealVoiceDock({
             )}
             <IconButton
               disabled={!connected}
-              label={r.camera ? 'Kamerayı kapat' : 'Kamerayı aç'}
+              label={r.camera ? t('Kamerayı kapat') : t('Kamerayı aç')}
               className={r.camera ? 'camera-on' : 'camera-off'}
               onClick={() =>
                 report(
@@ -2339,9 +2408,9 @@ export function RealVoiceDock({
             >
               <ReferenceIcon name={r.camera ? 'video' : 'video-off'} size={19} />
             </IconButton>
-            <QuietMenu label="Kamera ayarları" compact arrow>
+            <QuietMenu label={t('Kamera ayarları')} compact arrow>
               <button onClick={() => navigate('/settings?tab=audio')}>
-                Kamera ve video ayarları
+                {t('Kamera ve video ayarları')}
               </button>
             </QuietMenu>
           </div>
@@ -2349,22 +2418,26 @@ export function RealVoiceDock({
             {r.sharing ? (
               <button className="stop-sharing" onClick={() => report(stopScreen(), notify)}>
                 <ReferenceIcon name="x" size={15} />
-                Paylaşımı durdur
+                {t('Paylaşımı durdur')}
               </button>
             ) : (
-              <IconButton label="Ekran paylaş" disabled={!connected} onClick={() => void choose()}>
+              <IconButton
+                label={t('Ekran paylaş')}
+                disabled={!connected}
+                onClick={() => void choose()}
+              >
                 <ReferenceIcon name="monitor" size={19} />
               </IconButton>
             )}
             <div className="dock-divider" />
             <button
               className="button primary reference-start-activity"
-              aria-label="Etkinlik başlat"
-              title="Etkinlik başlat"
+              aria-label={t('Etkinlik başlat')}
+              title={t('Etkinlik başlat')}
               onClick={openLauncher}
             >
               <ReferenceIcon name="plus" size={18} />
-              <span>{familiarRoom ? 'Etkinlikler' : 'Etkinlik başlat'}</span>
+              <span>{familiarRoom ? t('Etkinlikler') : t('Etkinlik başlat')}</span>
             </button>
             <IconButton
               label="Soundboard"
@@ -2373,7 +2446,7 @@ export function RealVoiceDock({
               <AudioLines size={19} />
             </IconButton>
             <div className="reference-dock-more">
-              <IconButton label="Daha fazla ses kontrolü" onClick={() => setMore(!more)}>
+              <IconButton label={t('Daha fazla ses kontrolü')} onClick={() => setMore(!more)}>
                 <ReferenceIcon name="more" size={18} />
               </IconButton>
               {more && (
@@ -2386,7 +2459,7 @@ export function RealVoiceDock({
                     }}
                   >
                     <ReferenceIcon name={r.deafened ? 'headphones-off' : 'headphones'} size={16} />
-                    {r.deafened ? 'Oda sesini aç' : 'Oda sesini kapat'}
+                    {r.deafened ? t('Oda sesini aç') : t('Oda sesini kapat')}
                   </button>
                   <button
                     onClick={() => {
@@ -2395,14 +2468,14 @@ export function RealVoiceDock({
                     }}
                   >
                     <ReferenceIcon name="settings" size={16} />
-                    Cihaz ayarları
+                    {t('Cihaz ayarları')}
                   </button>
                 </div>
               )}
             </div>
           </div>
           <IconButton
-            label="Odadan ayrıl"
+            label={t('Odadan ayrıl')}
             className="leave-control"
             onClick={() => report(leaveVoice(), notify)}
           >
@@ -2413,7 +2486,7 @@ export function RealVoiceDock({
               className="button small secondary"
               onClick={() => report(startRoomAudio(), notify)}
             >
-              Sesi aç
+              {t('Sesi aç')}
             </button>
           )}
         </div>
@@ -2421,17 +2494,17 @@ export function RealVoiceDock({
       {r.error && (
         <div className="voice-error-notice" role="alert">
           <span>{r.error}</span>
-          <button onClick={() => navigate('/voice')}>Odayı aç</button>
+          <button onClick={() => navigate('/voice')}>{t('Odayı aç')}</button>
         </div>
       )}
       {picker && (
         <Modal
-          title="Ne paylaşmak istersin?"
+          title={t('Ne paylaşmak istersin?')}
           onClose={close}
           className="capture-modal reference-capture-modal"
         >
-          <p className="modal-description">Paylaşacağın pencereyi veya ekranı seç.</p>
-          <div className="segmented reference-source-tabs" aria-label="Kaynak türü">
+          <p className="modal-description">{t('Paylaşacağın pencereyi veya ekranı seç.')}</p>
+          <div className="segmented reference-source-tabs" aria-label={t('Kaynak türü')}>
             {(['window', 'screen'] as const).map((kind) => (
               <button
                 key={kind}
@@ -2443,13 +2516,13 @@ export function RealVoiceDock({
                 }}
               >
                 <ReferenceIcon name={kind === 'screen' ? 'monitor' : 'square'} size={16} />
-                {kind === 'window' ? 'Pencere' : 'Tüm ekran'}
+                {kind === 'window' ? t('Pencere') : t('Tüm ekran')}
               </button>
             ))}
           </div>
           {busy ? (
             <div className="reference-capture-loading" role="status">
-              Ekranlar ve pencereler aranıyor…
+              {t('Ekranlar ve pencereler aranıyor…')}
             </div>
           ) : (
             <div className="capture-grid reference-capture-grid">
@@ -2461,7 +2534,7 @@ export function RealVoiceDock({
                   onClick={() => setSelected(s.id)}
                 >
                   {s.thumbnail ? (
-                    <img src={s.thumbnail} alt={`${s.name} önizlemesi`} />
+                    <img src={s.thumbnail} alt={t('{name} önizlemesi', { name: s.name })} />
                   ) : (
                     <div className="reference-source-no-preview">
                       <ReferenceIcon name="monitor" size={30} />
@@ -2473,8 +2546,8 @@ export function RealVoiceDock({
                   </span>
                   <small>
                     {sourceType === 'window'
-                      ? 'Yalnızca bu pencere'
-                      : 'Tüm ekran · bildirimler görünebilir'}
+                      ? t('Yalnızca bu pencere')
+                      : t('Tüm ekran · bildirimler görünebilir')}
                   </small>
                 </button>
               ))}
@@ -2483,8 +2556,10 @@ export function RealVoiceDock({
           {!visibleSources.length && !busy && !error && (
             <p className="modal-description">
               {captureStatus?.screen === 'denied'
-                ? 'macOS ekran kaydı izni kapalı. Sistem Ayarları → Gizlilik ve Güvenlik → Ekran ve Sistem Sesi Kaydı bölümünden Tayfa’ya izin ver.'
-                : 'Bu türde paylaşılabilir kaynak bulunamadı.'}
+                ? t(
+                    'macOS ekran kaydı izni kapalı. Sistem Ayarları → Gizlilik ve Güvenlik → Ekran ve Sistem Sesi Kaydı bölümünden Tayfa’ya izin ver.',
+                  )
+                : t('Bu türde paylaşılabilir kaynak bulunamadı.')}
             </p>
           )}
           {error && (
@@ -2496,16 +2571,18 @@ export function RealVoiceDock({
                 disabled={busy}
                 onClick={() => void choose()}
               >
-                Yeniden dene
+                {t('Yeniden dene')}
               </button>
             </div>
           )}
           <div className="reference-capture-privacy">
             <ReferenceIcon name="lock" size={17} />
-            <span>Yalnızca seçtiğin kaynak paylaşılır. Paylaşım, onay verdiğinde başlar.</span>
+            <span>
+              {t('Yalnızca seçtiğin kaynak paylaşılır. Paylaşım, onay verdiğinde başlar.')}
+            </span>
           </div>
           <label className="field-label">
-            Paylaşım kalitesi
+            {t('Paylaşım kalitesi')}
             <select
               value={shareQuality}
               onChange={(e) =>
@@ -2523,7 +2600,7 @@ export function RealVoiceDock({
             <button
               className={`toggle ${shareAudio ? 'on' : ''}`}
               role="switch"
-              aria-label="Sistem sesini paylaş"
+              aria-label={t('Sistem sesini paylaş')}
               aria-checked={shareAudio}
               disabled={!captureStatus?.systemAudio}
               onClick={() => setShareAudio(!shareAudio)}
@@ -2531,17 +2608,17 @@ export function RealVoiceDock({
               <span />
             </button>
             <div>
-              <strong>Sistem sesini paylaş</strong>
+              <strong>{t('Sistem sesini paylaş')}</strong>
               <small>
                 {captureStatus?.systemAudio
-                  ? 'Bilgisayar sesi de odaya gönderilir.'
-                  : 'Sistem sesi için desteklenen işletim sistemi gerekli.'}
+                  ? t('Bilgisayar sesi de odaya gönderilir.')
+                  : t('Sistem sesi için desteklenen işletim sistemi gerekli.')}
               </small>
             </div>
           </div>
           <div className="button-row">
             <button className="button secondary" disabled={busy} onClick={close}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button primary"
@@ -2569,7 +2646,7 @@ export function RealVoiceDock({
               }}
             >
               <ReferenceIcon name="monitor" size={16} />
-              {busy ? 'Başlatılıyor…' : 'Seçili kaynağı paylaş'}
+              {busy ? t('Başlatılıyor…') : t('Seçili kaynağı paylaş')}
             </button>
           </div>
         </Modal>
@@ -2592,9 +2669,9 @@ export function CommunityInvite({
     c.channels.find((ch) => ch.id === c.activeChannelId && ch.type === 0)?.id ??
     c.channels.find((ch) => ch.type === 0)?.id;
   return (
-    <Modal title={'Davet olu\u015Ftur'} onClose={onClose}>
+    <Modal title={t('Davet oluştur')} onClose={onClose}>
       <p className="modal-description">
-        Arkadaşların bu bağlantıyla kendi hesaplarını açıp topluluğa katılır.
+        {t('Arkadaşların bu bağlantıyla kendi hesaplarını açıp topluluğa katılır.')}
       </p>
       {created ? (
         <InviteLinkCard serverUrl={c.serverUrl} invite={created} autoFocus />

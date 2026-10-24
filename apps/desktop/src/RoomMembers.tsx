@@ -6,7 +6,8 @@ import { useCommunity } from './community';
 import { useRealtime } from './realtime';
 import { VoiceAvatar } from './VoiceAvatar';
 import { ReferenceIcon } from './ReferenceIcon';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
+import { sample } from './dev/sample';
 import { directMessageFailed } from './FriendRequiredDialog';
 
 export function RoomMembers({
@@ -39,7 +40,12 @@ export function RoomMembers({
             roles: [],
           }));
           if (c.user)
-            next.unshift({ user: c.user, status: 'online', statusText: 'Buradayım', roles: [] });
+            next.unshift({
+              user: c.user,
+              status: 'online',
+              statusText: sample('Buradayım', "I'm here"),
+              roles: [],
+            });
         } else if (c.activeSpaceId && window.rooms) {
           next = await window.rooms.social.members(c.activeSpaceId);
         }
@@ -96,34 +102,34 @@ export function RoomMembers({
                   className={`member-presence ${member.status}`}
                   aria-label={
                     member.status === 'online'
-                      ? 'Çevrimiçi'
+                      ? t('Çevrimiçi')
                       : member.status === 'invisible'
-                        ? 'Çevrimdışı'
+                        ? t('Çevrimdışı')
                         : member.status === 'unknown'
-                          ? 'Durum bilinmiyor'
-                          : 'Uzakta'
+                          ? t('Durum bilinmiyor')
+                          : t('Uzakta')
                   }
                 />
               </span>
               <span>
                 <strong>
                   {member.user.displayName || member.user.username}
-                  {member.user.id === c.user?.id && <small>sen</small>}
+                  {member.user.id === c.user?.id && <small>{t('sen')}</small>}
                 </strong>
                 <em>
                   {member.statusText ||
                     (participant
                       ? participant.muted
-                        ? 'Mikrofon kapalı'
+                        ? t('Mikrofon kapalı')
                         : participant.speaking
-                          ? 'Konuşuyor'
+                          ? t('Konuşuyor')
                           : media.roomName
                       : member.statusText ||
                         (member.status === 'invisible'
-                          ? 'Çevrimdışı'
+                          ? t('Çevrimdışı')
                           : member.status === 'unknown'
-                            ? 'Durum bilinmiyor'
-                            : 'Çevrimiçi'))}
+                            ? t('Durum bilinmiyor')
+                            : t('Çevrimiçi')))}
                 </em>
               </span>
             </button>
@@ -134,17 +140,17 @@ export function RoomMembers({
   return (
     <aside className="room-members-panel">
       <header>
-        <span>ODA ÜYELERİ</span>
-        <IconButton label="Üye panelini kapat" onClick={onClose}>
+        <span>{t('ODA ÜYELERİ')}</span>
+        <IconButton label={t('Üye panelini kapat')} onClick={onClose}>
           <ReferenceIcon name="close" size={18} />
         </IconButton>
       </header>
       <div className="room-members-body">
-        {loading && <p role="status">Üyeler yükleniyor…</p>}
-        {group('ÇEVRİMİÇİ', online)}
-        {group('ÇEVRİMDIŞI', offline)}
-        {group('DURUM BİLİNMİYOR', unknown)}
-        {!loading && !members.length && !error && <p>Üye yok.</p>}
+        {loading && <p role="status">{t('Üyeler yükleniyor…')}</p>}
+        {group(t('ÇEVRİMİÇİ'), online)}
+        {group(t('ÇEVRİMDIŞI'), offline)}
+        {group(t('DURUM BİLİNMİYOR'), unknown)}
+        {!loading && !members.length && !error && <p>{t('Üye yok.')}</p>}
         {error && (
           <p role="alert" className="friends-error">
             {error}

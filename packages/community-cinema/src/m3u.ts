@@ -157,6 +157,7 @@ export function parseM3u(text: string, base: string): M3uParseResult {
       entries.push({
         id: createHash('sha256').update(url).digest('hex').slice(0, 24),
         kind,
+        // i18n-ignore: fallback name stored in the shared catalog by the server, not interface text
         name: (name || `Kanal ${entries.length + 1}`).slice(0, 300),
         url,
         group: (attrs.get('group-title') || group || '').slice(0, 200),

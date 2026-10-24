@@ -30,6 +30,8 @@ import { parseInviteLink, type InviteLink } from './native-links';
 import { setupAgent } from './agent';
 import { whiteboardSvg } from './whiteboard-export';
 import { whiteboardPng } from './whiteboard-raster';
+import { setupLocale } from './locale';
+import { t } from '@rooms/i18n';
 import type { ActivityResponse } from '@rooms/activity-protocol';
 const isolatedProfile = isolatedProfilePath(app.getPath('appData'), process.env.ROOMS_PROFILE);
 if (isolatedProfile) app.setPath('userData', isolatedProfile);
@@ -179,8 +181,55 @@ function createWindow() {
   if (devUrl) void win.loadURL(devUrl);
   else void win.loadFile(join(__dirname, '../dist/index.html'));
 }
+/** Native menus follow the interface language and are rebuilt when it changes. */
+function applyMenus() {
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate([
+      {
+        label: 'Tayfa',
+        submenu: [
+          { role: 'about' },
+          { type: 'separator' },
+          { role: 'hide' },
+          { role: 'hideOthers' },
+          { role: 'unhide' },
+          { type: 'separator' },
+          { role: 'quit' },
+        ],
+      },
+      { role: 'editMenu' },
+      {
+        label: t('Görüntü'),
+        submenu: [
+          { role: 'reload' },
+          { role: 'toggleDevTools' },
+          { role: 'resetZoom' },
+          { role: 'zoomIn' },
+          { role: 'zoomOut' },
+          { role: 'togglefullscreen' },
+        ],
+      },
+      { role: 'windowMenu' },
+    ]),
+  );
+  if (tray && !tray.isDestroyed())
+    tray.setContextMenu(
+      Menu.buildFromTemplate([
+        {
+          label: t('Tayfa’yı aç'),
+          click: () => {
+            if (win) showWindow(win);
+            else createWindow();
+          },
+        },
+        { type: 'separator' },
+        { role: 'quit' },
+      ]),
+    );
+}
 app.whenReady().then(async () => {
   if (!primaryInstance) return;
+  setupLocale(assertSender, applyMenus);
   const notifications = setupNotifications(
     () => win,
     assertSender,
@@ -545,35 +594,7 @@ app.whenReady().then(async () => {
     else writeFileSync(result.filePath, artwork, { encoding: 'utf8', mode: 0o600 });
     return true;
   });
-  Menu.setApplicationMenu(
-    Menu.buildFromTemplate([
-      {
-        label: 'Tayfa',
-        submenu: [
-          { role: 'about' },
-          { type: 'separator' },
-          { role: 'hide' },
-          { role: 'hideOthers' },
-          { role: 'unhide' },
-          { type: 'separator' },
-          { role: 'quit' },
-        ],
-      },
-      { role: 'editMenu' },
-      {
-        label: 'View',
-        submenu: [
-          { role: 'reload' },
-          { role: 'toggleDevTools' },
-          { role: 'resetZoom' },
-          { role: 'zoomIn' },
-          { role: 'zoomOut' },
-          { role: 'togglefullscreen' },
-        ],
-      },
-      { role: 'windowMenu' },
-    ]),
-  );
+  applyMenus();
   createWindow();
   const dockIcon = appImage('icon.png');
   if (process.platform === 'darwin' && !dockIcon.isEmpty()) app.dock?.setIcon(dockIcon);
@@ -582,19 +603,7 @@ app.whenReady().then(async () => {
   if (!icon.isEmpty()) {
     tray = new Tray(icon);
     tray.setToolTip('Tayfa');
-    tray.setContextMenu(
-      Menu.buildFromTemplate([
-        {
-          label: 'Tayfa’yı aç',
-          click: () => {
-            if (win) showWindow(win);
-            else createWindow();
-          },
-        },
-        { type: 'separator' },
-        { role: 'quit' },
-      ]),
-    );
+    applyMenus();
   }
   app.on('activate', () => {
     if (!win) createWindow();

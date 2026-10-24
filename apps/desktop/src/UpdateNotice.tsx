@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconButton } from '@rooms/design';
 import { CircleArrowUp } from 'lucide-react';
+import { t } from './i18n';
 
 type UpdateStatus = Awaited<ReturnType<NonNullable<Window['rooms']>['updates']['status']>>;
 const POLL_MS = 60_000;
@@ -39,10 +40,12 @@ export function UpdateNotice() {
   const waiting = useWaitingUpdate(),
     navigate = useNavigate();
   if (!waiting) return null;
-  const name = waiting.version ? `Tayfa ${waiting.version}` : 'Yeni sürüm';
+  const label = waiting.version
+    ? t('Tayfa {version} hazır, güncellemek için tıkla', { version: waiting.version })
+    : t('Yeni sürüm hazır, güncellemek için tıkla');
   return (
     <IconButton
-      label={`${name} hazır, güncellemek için tıkla`}
+      label={label}
       className="update-notice"
       onClick={() => navigate('/settings?tab=about&install=1')}
     >

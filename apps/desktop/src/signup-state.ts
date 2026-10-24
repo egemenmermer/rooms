@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { SocialPendingSignup } from '@rooms/social';
 import { startSession } from './community';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 
 /** How often the waiting screen asks whether an admin decided. */
 export const SIGNUP_POLL_MS = 30000;
@@ -29,7 +29,7 @@ export interface SignupState {
 }
 const social = () => {
   if (!window.rooms?.social?.pendingSignup)
-    throw new Error('Kayıt isteği için masaüstü uygulamasını aç.');
+    throw new Error(t('Kayıt isteği için masaüstü uygulamasını aç.'));
   return window.rooms.social;
 };
 

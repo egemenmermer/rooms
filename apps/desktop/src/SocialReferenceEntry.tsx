@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { SocialDetailFixture } from './dev/social-detail-fixture';
 import { useCommunity } from './community';
+import { t } from './i18n';
+import { people } from './dev/sample';
 import {
   ChannelEditor,
   CommunityEditor,
@@ -34,7 +36,7 @@ function useSocialDetailFixture(ids: readonly string[]) {
         })
         .catch((failure) => {
           if (current)
-            setError(failure instanceof Error ? failure.message : 'Yerel ekran açılamadı.');
+            setError(failure instanceof Error ? failure.message : t('Yerel ekran açılamadı.'));
         });
     return () => {
       current = false;
@@ -56,7 +58,7 @@ export function SocialReferenceOverlay({ onClose }: { onClose(): void }) {
   if (!fixture)
     return (
       <div className="social-detail-fixture-state" role={error ? 'alert' : 'status'}>
-        {error || 'Yerel görünüm hazırlanıyor…'}
+        {error || t('Yerel görünüm hazırlanıyor…')}
       </div>
     );
   if (fixture.ui.surface === 'community-editor')
@@ -79,14 +81,14 @@ export function SocialReferenceOverlay({ onClose }: { onClose(): void }) {
     if (!space)
       return (
         <div className="social-detail-fixture-state" role="alert">
-          Yerel topluluk örneği yok.
+          {t('Yerel topluluk örneği yok.')}
         </div>
       );
     const privateReference = fixture.ui.privateReferenceRequested
       ? {
           name: fixture.ui.draft.name,
           description: fixture.ui.draft.topic ?? '',
-          category: fixture.ui.initialType === 'voice' ? 'SES ODALARI' : 'SOHBET',
+          category: fixture.ui.initialType === 'voice' ? t('SES ODALARI') : t('SOHBET'),
           choices: [
             ...(fixture.publicState.user
               ? [
@@ -105,7 +107,7 @@ export function SocialReferenceOverlay({ onClose }: { onClose(): void }) {
           ],
           selectedIds: [
             fixture.publicState.user?.id,
-            fixture.friends.find((friend) => friend.user.displayName === 'Ece')?.user.id,
+            fixture.friends.find((friend) => friend.user.displayName === people.ece)?.user.id,
           ].filter((id): id is string => !!id),
         }
       : undefined;
@@ -118,7 +120,7 @@ export function SocialReferenceOverlay({ onClose }: { onClose(): void }) {
         initialType={fixture.ui.initialType}
         referenceDraftName={fixture.ui.draft.name}
         referenceDraftDescription={fixture.ui.draft.topic ?? ''}
-        referenceDraftCategory={fixture.ui.initialType === 'voice' ? 'SES ODALARI' : 'SOHBET'}
+        referenceDraftCategory={fixture.ui.initialType === 'voice' ? t('SES ODALARI') : t('SOHBET')}
         referencePrivate={privateReference}
         canManage={false}
         onClose={dismiss}
@@ -140,9 +142,9 @@ export function SocialNotificationsPage() {
       (community.readStates[channel.id]?.mentionMessageIds ?? []).map((id) => ({
         id,
         kind: 'mention' as const,
-        title: `${channel.name} kanalında etiketlendin`,
+        title: t('{channel} kanalında etiketlendin', { channel: channel.name }),
         unread: true,
-        actionLabel: 'Mesaja git',
+        actionLabel: t('Mesaja git'),
         onOpen: () => {
           if (opening) return;
           setOpening(true);
@@ -171,11 +173,11 @@ export function SocialNotificationsPage() {
             }
             if (current())
               setOpenError(
-                'Etiketlendiğin mesaj bu geçmişte bulunamadı. Kanalı açıp geçmişi kontrol et.',
+                t('Etiketlendiğin mesaj bu geçmişte bulunamadı. Kanalı açıp geçmişi kontrol et.'),
               );
           })()
             .catch(() =>
-              setOpenError('Mesaj açılamadı. Kanala erişimini ve bağlantını kontrol et.'),
+              setOpenError(t('Mesaj açılamadı. Kanala erişimini ve bağlantını kontrol et.')),
             )
             .finally(() => setOpening(false));
         },
@@ -185,7 +187,7 @@ export function SocialNotificationsPage() {
   if (enabled && !fixture)
     return (
       <div className="social-detail-fixture-state" role={error ? 'alert' : 'status'}>
-        {error || 'Yerel görünüm hazırlanıyor…'}
+        {error || t('Yerel görünüm hazırlanıyor…')}
       </div>
     );
   const items: CommunityNotification[] =
@@ -235,7 +237,7 @@ export function SocialNotificationsPage() {
       : nativeItems;
   return (
     <section className="social-notifications-page">
-      {opening && <p role="status">Mesaj açılıyor…</p>}
+      {opening && <p role="status">{t('Mesaj açılıyor…')}</p>}
       {openError && <p role="alert">{openError}</p>}
       <NotificationSurface
         items={items}

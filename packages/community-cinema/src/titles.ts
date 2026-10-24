@@ -50,6 +50,7 @@ export function cleanEpisodeTitle(
   const seriesPrefix = series ? new RegExp(`^${escape(series)}(?=\\s|[|:·–—-]|$)`, 'i') : null;
   const code = new RegExp(`^S0*${season}\\s*E0*${episode}\\b`, 'i');
   const longCode = new RegExp(
+    // i18n-ignore: matches Turkish provider episode names ("1. Sezon 2. Bölüm")
     `^0*${season}\\s*\\.\\s*(?:Sezon|Season)\\s*[|:·–—-]?\\s*0*${episode}\\s*\\.\\s*(?:Bölüm|Episode)(?=\\s|[|:·–—-]|$)`,
     'i',
   );

@@ -9,19 +9,19 @@ import type {
 import { useCommunity } from './community';
 import { useRealtime } from './realtime';
 import { ReferenceIcon } from './ReferenceIcon';
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 import './reference-agent-automation.css';
 
 const DevelopmentEntry = import.meta.env.DEV
   ? lazy(() => import('./dev/S63AutomationEntry'))
   : null;
 const scopeLabels = {
-  room: 'Oda',
-  workspace: 'Çalışma alanı',
+  room: t('Oda'),
+  workspace: t('Çalışma alanı'),
   github: 'GitHub',
   drive: 'Google Drive',
-  research: 'Araştırma',
-  browser: 'Tarayıcı',
+  research: t('Araştırma'),
+  browser: t('Tarayıcı'),
 };
 /** Includes the visible grant, not a route-local approximation of server authority. */
 export const automationGrantStamp = (authority: AgentAuthoritySnapshot) =>
@@ -86,14 +86,14 @@ export function AgentAutomationSurface(props: AgentAutomationProps) {
   const canManage = !!authority && authority.canManage && props.status?.canManage === true;
   const editable = canManage && !busy && !props.loading && (props.fixture || !!props.onChange);
   const disabledReason = invalidated
-    ? 'Erişim yeniden doğrulanmalı.'
+    ? t('Erişim yeniden doğrulanmalı.')
     : !authority
-      ? props.error || 'Agent bağlantısı ve oda yetkileri doğrulanmalı.'
+      ? props.error || t('Agent bağlantısı ve oda yetkileri doğrulanmalı.')
       : !canManage
-        ? 'Bu ayarı yalnızca yetkili asistan yöneticileri değiştirebilir.'
+        ? t('Bu ayarı yalnızca yetkili asistan yöneticileri değiştirebilir.')
         : !props.onChange && !props.fixture
-          ? 'Masaüstü Agent bağlantısı gerekli.'
-          : 'İşlem tamamlanıyor.';
+          ? t('Masaüstü Agent bağlantısı gerekli.')
+          : t('İşlem tamamlanıyor.');
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -143,7 +143,7 @@ export function AgentAutomationSurface(props: AgentAutomationProps) {
       automationGrantStamp(confirmed) !== automationGrantStamp(authority)
     ) {
       setConfirmed(null);
-      setNotice('İzinler veya mod değişti. Kapsamı yeniden incele.');
+      setNotice(t('İzinler veya mod değişti. Kapsamı yeniden incele.'));
     }
   }, [authority, confirmed, props.fixture]);
   const change = async (value: boolean, reviewed: AgentAuthoritySnapshot) => {
@@ -157,7 +157,7 @@ export function AgentAutomationSurface(props: AgentAutomationProps) {
     if (props.fixture) {
       setPreviewMode(value);
       setConfirmed(null);
-      setNotice('DEMO · Sunucu modu değiştirilmedi.');
+      setNotice(t('DEMO · Sunucu modu değiştirilmedi.'));
       return;
     }
     const ticket = epoch.current,
@@ -179,7 +179,7 @@ export function AgentAutomationSurface(props: AgentAutomationProps) {
       await props.onChange!(value, reviewed);
       if (current()) {
         setConfirmed(null);
-        setNotice(value ? 'YOLO açıldı.' : 'Normal mod etkin.');
+        setNotice(value ? t('YOLO açıldı.') : t('Normal mod etkin.'));
       }
     } catch (failure) {
       if (current()) setError(uiError(failure));
@@ -194,19 +194,19 @@ export function AgentAutomationSurface(props: AgentAutomationProps) {
   const grantRows = authority
     ? [
         {
-          label: 'Kişiler',
+          label: t('Kişiler'),
           value:
             authority.principals.map((person) => names(person.userId)).join(', ') ||
             names(props.userId),
-          detail: 'Her görev başlatanın kendi bağlantısıyla çalışır.',
+          detail: t('Her görev başlatanın kendi bağlantısıyla çalışır.'),
         },
-        { label: 'Oda', value: `${props.roomName} / #${props.channelName}` },
+        { label: t('Oda'), value: `${props.roomName} / #${props.channelName}` },
         ...authority.scopes
           .filter((scope) => scope.kind !== 'room' && (scope.read || scope.write))
           .map((scope) => ({
             label: scopeLabels[scope.kind],
-            value: scope.resources.join(', ') || 'Kaynak ayrıntıları bu erişimde sunulmuyor',
-            detail: [scope.read ? 'Okuma' : '', scope.write ? 'Değişiklik' : '']
+            value: scope.resources.join(', ') || t('Kaynak ayrıntıları bu erişimde sunulmuyor'),
+            detail: [scope.read ? t('Okuma') : '', scope.write ? t('Değişiklik') : '']
               .filter(Boolean)
               .join(' · '),
           })),
@@ -223,20 +223,20 @@ export function AgentAutomationSurface(props: AgentAutomationProps) {
   return (
     <section className="reference-agent-automation" aria-busy={props.loading || busy}>
       <header className="ref-settings-heading s63-heading">
-        <span>ASİSTAN YÖNETİMİ</span>
-        <h1>Otomasyon modu</h1>
-        <p>Agent sunucusunun onay modu. Mevcut erişim ve işlem kapsamını genişletmez.</p>
+        <span>{t('ASİSTAN YÖNETİMİ')}</span>
+        <h1>{t('Otomasyon modu')}</h1>
+        <p>{t('Agent sunucusunun onay modu. Mevcut erişim ve işlem kapsamını genişletmez.')}</p>
       </header>
       {props.fixture && (
-        <span className="s63-demo-label">DEMO · Yerel örnek. Sunucuya gönderilmez.</span>
+        <span className="s63-demo-label">{t('DEMO · Yerel örnek. Sunucuya gönderilmez.')}</span>
       )}
-      {props.loading && <p role="status">Yetkiler yükleniyor…</p>}
+      {props.loading && <p role="status">{t('Yetkiler yükleniyor…')}</p>}
       {(!authority || props.error) && !props.loading && (
         <div className="s63-callout warning" role="alert">
           <ReferenceIcon name="lock" size={18} />
           <span>{disabledReason}</span>
           <button className="text-button" onClick={() => navigate('/settings?tab=agent')}>
-            Agent bağlantısı
+            {t('Agent bağlantısı')}
           </button>
         </div>
       )}
@@ -246,14 +246,16 @@ export function AgentAutomationSurface(props: AgentAutomationProps) {
             <span>
               <ReferenceIcon name="shield" size={18} />
               <strong>
-                {canManage ? `${props.actorName} · Asistan yöneticisi` : 'Görüntüleme erişimi'}
+                {canManage
+                  ? t('{actorName} · Asistan yöneticisi', { actorName: props.actorName })
+                  : t('Görüntüleme erişimi')}
               </strong>
             </span>
             <span className={`s63-badge ${canManage ? 'purple' : 'amber'}`}>
-              {canManage ? 'Yönetme yetkisi var' : 'Değiştiremez'}
+              {canManage ? t('Yönetme yetkisi var') : t('Değiştiremez')}
             </span>
           </div>
-          <div className="s63-mode-grid" role="group" aria-label="Sunucu genelinde onay modu">
+          <div className="s63-mode-grid" role="group" aria-label={t('Sunucu genelinde onay modu')}>
             {([false, true] as const).map((value) => (
               <button
                 className={`s63-mode ${mode === value ? 'selected' : ''}`}
@@ -269,15 +271,21 @@ export function AgentAutomationSurface(props: AgentAutomationProps) {
                 <span className="s63-radio" />
                 <span>
                   <strong>
-                    {value ? 'YOLO' : 'Normal'}{' '}
+                    {value ? 'YOLO' : t('Normal')}{' '}
                     {mode === value && (
-                      <span className={`s63-badge ${value ? 'amber' : 'purple'}`}>Etkin</span>
+                      <span className={`s63-badge ${value ? 'amber' : 'purple'}`}>
+                        {t('Etkin')}
+                      </span>
                     )}
                   </strong>
                   <p>
                     {value
-                      ? 'İzin verilen işlemler için işlem başına onay kaldırılır. Mevcut erişim ve kapsam sınırları aynen geçerlidir.'
-                      : 'Dış sisteme yazma, silme ve yayınlama öncesinde somut işlem önizlemesi ve onay gösterilir.'}
+                      ? t(
+                          'İzin verilen işlemler için işlem başına onay kaldırılır. Mevcut erişim ve kapsam sınırları aynen geçerlidir.',
+                        )
+                      : t(
+                          'Dış sisteme yazma, silme ve yayınlama öncesinde somut işlem önizlemesi ve onay gösterilir.',
+                        )}
                   </p>
                 </span>
               </button>
@@ -287,26 +295,29 @@ export function AgentAutomationSurface(props: AgentAutomationProps) {
             <div className="s63-callout warning" role="status">
               <ReferenceIcon name={canManage ? 'shield' : 'lock'} size={18} />
               {canManage
-                ? 'YOLO sunucu genelinde açık. Tüm yetkili görevler mevcut izinleri içinde onay beklemeden devam edebilir.'
-                : 'Bu ayarı yalnızca yetkili asistan yöneticileri değiştirebilir.'}
+                ? t(
+                    'YOLO sunucu genelinde açık. Tüm yetkili görevler mevcut izinleri içinde onay beklemeden devam edebilir.',
+                  )
+                : t('Bu ayarı yalnızca yetkili asistan yöneticileri değiştirebilir.')}
             </div>
           )}
           <section className="s63-section">
             <header>
-              <h2>Bu odada görülebilen kapsam</h2>
+              <h2>{t('Bu odada görülebilen kapsam')}</h2>
               <button
                 className="text-button"
                 onClick={() => navigate('/settings?tab=assistant-permissions')}
               >
                 <ReferenceIcon name="arrow-right" size={16} />
-                Yetkileri incele
+
+                {t('Yetkileri incele')}
               </button>
             </header>
             <table className="s63-scope-table">
               <thead>
                 <tr>
-                  <th>Alan</th>
-                  <th>İzin verilen</th>
+                  <th>{t('Alan')}</th>
+                  <th>{t('İzin verilen')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -324,9 +335,11 @@ export function AgentAutomationSurface(props: AgentAutomationProps) {
           </section>
           <section className="s63-section">
             <header>
-              <h2>Değişiklik kaydı</h2>
+              <h2>{t('Değişiklik kaydı')}</h2>
               <small>
-                Kendi sunucu modu işlemlerin{props.audit?.limited ? ' · Son kayıtlar' : ''}
+                {props.audit?.limited
+                  ? t('Kendi sunucu modu işlemlerin · Son kayıtlar')
+                  : t('Kendi sunucu modu işlemlerin')}
               </small>
             </header>
             {history.map((entry, index) => {
@@ -336,32 +349,32 @@ export function AgentAutomationSurface(props: AgentAutomationProps) {
                 <div className="s63-log" key={`${entry.at}:${index}`}>
                   <time dateTime={entry.at}>
                     {Number.isNaN(at.getTime()) ? (
-                      'Tarih bilinmiyor'
+                      t('Tarih bilinmiyor')
                     ) : (
                       <>
-                        {at.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
+                        {at.toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
                         <br />
-                        {at.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                        {at.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                       </>
                     )}
                   </time>
                   <div>
-                    {names(entry.userId)} {enabled ? 'YOLO modunu açtı' : 'normal modu seçti'}
+                    {names(entry.userId)} {enabled ? t('YOLO modunu açtı') : t('normal modu seçti')}
                     <small>
                       {enabled
-                        ? 'Sunucu genelinde · Mevcut kapsam korundu'
-                        : 'Sunucu genelinde · İşlem başına onay etkin'}
+                        ? t('Sunucu genelinde · Mevcut kapsam korundu')
+                        : t('Sunucu genelinde · İşlem başına onay etkin')}
                     </small>
                   </div>
                   <span className={`s63-badge ${enabled ? 'amber' : 'purple'}`}>
-                    {enabled ? 'YOLO' : 'Normal'}
+                    {enabled ? 'YOLO' : t('Normal')}
                   </span>
                 </div>
               );
             })}
             {!history.length && (
               <p className="s63-empty">
-                {props.auditError ? 'Değişiklik kaydı alınamadı.' : 'Kayıt yok.'}
+                {props.auditError ? t('Değişiklik kaydı alınamadı.') : t('Kayıt yok.')}
               </p>
             )}
             {props.auditError && <p role="alert">{props.auditError}</p>}
@@ -381,33 +394,35 @@ export function AgentAutomationSurface(props: AgentAutomationProps) {
       <button
         className="text-button s63-refresh"
         disabled={props.loading || busy || props.fixture}
-        title={props.fixture ? 'Yerel demo: canlı sunucuya erişmez.' : undefined}
+        title={props.fixture ? t('Yerel demo: canlı sunucuya erişmez.') : undefined}
         onClick={() => void props.onRefresh()}
       >
         <ReferenceIcon name="refresh-cw" size={16} />
-        Durumu yenile
+
+        {t('Durumu yenile')}
       </button>
       {confirmed && authority && canManage && (
         <Modal
           className="s63-modal"
-          title="YOLO modunu aç?"
+          title={t('YOLO modunu aç?')}
           onClose={() => {
             if (!busy) setConfirmed(null);
           }}
         >
           <p>
-            Sunucu genelindeki yetkili görevler, mevcut izinleri içinde onay beklemeden devam
-            edebilir. Bekleyen onaylı işler de devam edebilir.
+            {t(
+              'Sunucu genelindeki yetkili görevler, mevcut izinleri içinde onay beklemeden devam edebilir. Bekleyen onaylı işler de devam edebilir.',
+            )}
           </p>
           <div className="s63-confirm-scope">
             <div>
-              <span>Görüntülenen oda</span>
+              <span>{t('Görüntülenen oda')}</span>
               <strong>
                 {props.roomName} / #{props.channelName}
               </strong>
             </div>
             {grantRows
-              .filter((row) => row.label !== 'Oda')
+              .filter((row) => row.label !== scopeLabels.room)
               .map((row, index) => (
                 <div key={`${row.label}:${index}`}>
                   <span>{row.label}</span>
@@ -417,15 +432,19 @@ export function AgentAutomationSurface(props: AgentAutomationProps) {
           </div>
           <div className="s63-callout warning">
             <ReferenceIcon name="shield" size={18} />
-            Bu liste mevcut odanın kapsamıdır. Sunucu modu diğer yetkili odalara da uygulanır. Yeni
-            kullanıcı, hesap veya kaynak izni vermez.
+
+            {t(
+              'Bu liste mevcut odanın kapsamıdır. Sunucu modu diğer yetkili odalara da uygulanır. Yeni kullanıcı, hesap veya kaynak izni vermez.',
+            )}
           </div>
           <small className="s63-acknowledgement">
-            Bu değişiklik {props.actorName} adına işlem geçmişine kaydedilir.
+            {t('Bu değişiklik {actor} adına işlem geçmişine kaydedilir.', {
+              actor: props.actorName,
+            })}
           </small>
           <div className="button-row">
             <button className="button secondary" disabled={busy} onClick={() => setConfirmed(null)}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button primary"
@@ -433,7 +452,7 @@ export function AgentAutomationSurface(props: AgentAutomationProps) {
               onClick={() => void change(true, confirmed)}
             >
               <ReferenceIcon name="check" size={16} />
-              {busy ? 'Değiştiriliyor…' : 'Sunucu genelinde YOLO’yu aç'}
+              {busy ? t('Değiştiriliyor…') : t('Sunucu genelinde YOLO’yu aç')}
             </button>
           </div>
           {error && <p role="alert">{error}</p>}
@@ -449,7 +468,7 @@ export default function AgentAutomation() {
     roomId = c.user ? (r.channelId ?? c.activeChannelId) : null;
   if (DevelopmentEntry && new URLSearchParams(window.location.search).get('fixture') === 'S63')
     return (
-      <Suspense fallback={<p role="status">Yetkiler yükleniyor…</p>}>
+      <Suspense fallback={<p role="status">{t('Yetkiler yükleniyor…')}</p>}>
         <DevelopmentEntry />
       </Suspense>
     );
@@ -489,15 +508,15 @@ function AutomationScope({ roomId }: { roomId: string | null }) {
       if (!bridge || !roomId || !identity)
         throw new Error(
           !identity
-            ? 'Önce giriş yap.'
+            ? t('Önce giriş yap.')
             : !roomId
-              ? 'Bir oda seç.'
-              : 'Masaüstü Agent bağlantısı gerekli.',
+              ? t('Bir oda seç.')
+              : t('Masaüstü Agent bağlantısı gerekli.'),
         );
       const status = await bridge.status();
       if (!live(ticket)) return;
       if (!status.connected || status.userId !== identity)
-        throw new Error(status.reason || 'Agent sunucusu bağlı değil.');
+        throw new Error(status.reason || t('Agent sunucusu bağlı değil.'));
       const authority = await bridge.authority(roomId);
       if (!live(ticket)) return;
       if (
@@ -505,13 +524,13 @@ function AutomationScope({ roomId }: { roomId: string | null }) {
         authority.roomId !== roomId ||
         authority.yolo !== status.yolo
       )
-        throw new Error('Yetkiler veya mod değişti. Yeniden doğrula.');
+        throw new Error(t('Yetkiler veya mod değişti. Yeniden doğrula.'));
       let audit: AgentAuditSnapshot | null = null,
         auditError = '';
       try {
         const value = await bridge.audit();
         if (value.scope !== 'own' || value.roomId !== null)
-          throw new Error('İşlem kaydı bu hesaba ait değil.');
+          throw new Error(t('İşlem kaydı bu hesaba ait değil.'));
         audit = value;
       } catch (failure) {
         auditError = uiError(failure);
@@ -542,7 +561,7 @@ function AutomationScope({ roomId }: { roomId: string | null }) {
     const invalidate = () => {
       epoch.current++;
       setData(null);
-      setError('Erişim yeniden doğrulanmalı.');
+      setError(t('Erişim yeniden doğrulanmalı.'));
       setRevision((value) => value + 1);
     };
     window.addEventListener('rooms:channel-access-invalidated', invalidate);
@@ -556,7 +575,7 @@ function AutomationScope({ roomId }: { roomId: string | null }) {
     const bridge = window.rooms?.agent,
       ticket = epoch.current;
     if (!bridge || !roomId || !data || !live(ticket))
-      throw new Error('Erişim yeniden doğrulanmalı.');
+      throw new Error(t('Erişim yeniden doğrulanmalı.'));
     const status = await bridge.status();
     if (!live(ticket)) return;
     const authority = await bridge.authority(roomId);
@@ -570,14 +589,14 @@ function AutomationScope({ roomId }: { roomId: string | null }) {
       authority.roomId !== roomId
     ) {
       void refresh();
-      throw new Error('Asistan yönetme yetkisi doğrulanamadı.');
+      throw new Error(t('Asistan yönetme yetkisi doğrulanamadı.'));
     }
     if (
       status.yolo !== reviewed.yolo ||
       automationGrantStamp(authority) !== automationGrantStamp(reviewed)
     ) {
       void refresh();
-      throw new Error('İzinler veya mod değişti. Kapsamı yeniden incele.');
+      throw new Error(t('İzinler veya mod değişti. Kapsamı yeniden incele.'));
     }
     const receipt = await bridge.yolo(value);
     if (!live(ticket)) return;
@@ -587,15 +606,15 @@ function AutomationScope({ roomId }: { roomId: string | null }) {
       receipt.canManage !== true ||
       receipt.yolo !== value
     )
-      throw new Error('Sunucunun mod değişikliği doğrulanamadı.');
-    if (!(await refresh())) throw new Error('Sunucu modu yeniden okunamadı. Durumu yenile.');
+      throw new Error(t('Sunucunun mod değişikliği doğrulanamadı.'));
+    if (!(await refresh())) throw new Error(t('Sunucu modu yeniden okunamadı. Durumu yenile.'));
   };
   return (
     <AgentAutomationSurface
       userId={identity}
       roomId={roomId || ''}
-      roomName={c.spaces.find((space) => space.id === c.activeSpaceId)?.name || 'Topluluk'}
-      channelName={c.channels.find((channel) => channel.id === roomId)?.name || 'Oda'}
+      roomName={c.spaces.find((space) => space.id === c.activeSpaceId)?.name || t('Topluluk')}
+      channelName={c.channels.find((channel) => channel.id === roomId)?.name || t('Oda')}
       actorName={c.user?.displayName || identity}
       names={data?.names || {}}
       status={data?.status || null}

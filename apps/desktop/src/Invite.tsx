@@ -1,4 +1,4 @@
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Globe, LoaderCircle, ShieldCheck, Users } from 'lucide-react';
@@ -41,7 +41,7 @@ export function InviteLanding({
     const inspect = async () => {
       try {
         if (!window.rooms?.social)
-          throw new Error('Daveti açmak için Tayfa masaüstü uygulamasını kullan.');
+          throw new Error(t('Daveti açmak için Tayfa masaüstü uygulamasını kullan.'));
         const value = await window.rooms.social.inspectInvite(invite.serverUrl, invite.code);
         if (!stale) setPreview(value);
       } catch (err) {
@@ -76,7 +76,7 @@ export function InviteLanding({
     setError('');
     try {
       await c.acceptInvite(invite.code);
-      notify('Davet kabul edildi. Topluluğuna hoş geldin.');
+      notify(t('Davet kabul edildi. Topluluğuna hoş geldin.'));
       onClose();
       navigate('/spaces');
     } catch (err) {
@@ -87,23 +87,25 @@ export function InviteLanding({
   };
 
   return (
-    <Modal title="Topluluk daveti" onClose={onClose} className="rooms-invitation">
+    <Modal title={t('Topluluk daveti')} onClose={onClose} className="rooms-invitation">
       <div className="invitation-art" aria-hidden="true">
         <Users size={29} />
       </div>
       {loading ? (
         <p className="modal-description invitation-loading" role="status">
           <LoaderCircle size={16} className="spin" />
-          Davet kontrol ediliyor…
+          {t('Davet kontrol ediliyor…')}
         </p>
       ) : (
         <div className="invitation-copy">
-          <h3>{preview?.space?.name ?? (error ? 'Davet açılamadı.' : 'Özel topluluk daveti')}</h3>
+          <h3>
+            {preview?.space?.name ?? (error ? t('Davet açılamadı.') : t('Özel topluluk daveti'))}
+          </h3>
           {preview && (
             <p className="modal-description">
               {preview.channel?.name
-                ? `${preview.channel.name} kanalına davetlisin.`
-                : 'Dostlarının topluluğuna katılmak için davet edildin.'}
+                ? t('{channel} kanalına davetlisin.', { channel: preview.channel.name })
+                : t('Dostlarının topluluğuna katılmak için davet edildin.')}
             </p>
           )}
         </div>
@@ -114,15 +116,16 @@ export function InviteLanding({
       </div>
       {preview?.expiresAt && (
         <p className="modal-footnote">
-          Son kullanım: {new Date(preview.expiresAt).toLocaleString('tr-TR')}
+          {t('Son kullanım: {date}', { date: new Date(preview.expiresAt).toLocaleString(locale) })}
         </p>
       )}
       {!sameServer && (
         <div className="settings-note">
           <ShieldCheck size={18} />
           <p>
-            Farklı bir sunucuda oturumun açık. Bu davete katılmak için çıkış yap; ardından davetle
-            kayıt olabilir ya da o sunucudaki hesabınla giriş yapabilirsin.
+            {t(
+              'Farklı bir sunucuda oturumun açık. Bu davete katılmak için çıkış yap; ardından davetle kayıt olabilir ya da o sunucudaki hesabınla giriş yapabilirsin.',
+            )}
           </p>
         </div>
       )}
@@ -134,7 +137,7 @@ export function InviteLanding({
             disabled={busy || loading}
             onClick={() => setAttempt((value) => value + 1)}
           >
-            Daveti yeniden kontrol et
+            {t('Daveti yeniden kontrol et')}
             <ArrowRight size={13} />
           </button>
         </div>
@@ -147,11 +150,11 @@ export function InviteLanding({
         {busy ? (
           <>
             <LoaderCircle size={16} className="spin" />
-            Katılınıyor…
+            {t('Katılınıyor…')}
           </>
         ) : (
           <>
-            Daveti kabul et
+            {t('Daveti kabul et')}
             <ArrowRight size={16} />
           </>
         )}
@@ -162,7 +165,7 @@ export function InviteLanding({
           disabled={busy}
           onClick={() => void switchServer()}
         >
-          Çıkış yap ve davetle devam et
+          {t('Çıkış yap ve davetle devam et')}
           <ArrowRight size={15} />
         </button>
       )}

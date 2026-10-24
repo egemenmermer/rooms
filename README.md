@@ -2,28 +2,221 @@
 
 # Tayfa
 
-> Tayfa'nın eski adı ROOMS'tur; kurulu uygulamanın dosya adı ve iç tanımlayıcılar şimdilik ROOMS olarak kalıyor.
+<img src="apps/desktop/public/icon.png" alt="Tayfa portal icon" width="96" height="96" />
 
-<img src="apps/desktop/public/icon.png" alt="Tayfa portal ikonu" width="96" height="96" />
+### Hang out with your friends. Keep your own server.
 
-### Arkadaşlarınla buluş. Sunucun sende kalsın.
+[![Latest release](https://img.shields.io/github/v/release/egemenmermer/rooms?style=flat-square&label=latest&color=8B5CF6)](https://github.com/egemenmermer/rooms/releases/latest)
+[![MIT license](https://img.shields.io/badge/license-MIT-64748B?style=flat-square)](LICENSE)
+[![Download for macOS](https://img.shields.io/badge/macOS-download-18181B?style=flat-square&logo=apple&logoColor=white)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-arm64.dmg)
+[![Download for Windows](https://img.shields.io/badge/Windows-download-2563EB?style=flat-square)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-windows-x64-setup.exe)
 
-[![Son sürüm](https://img.shields.io/github/v/release/egemenmermer/rooms?style=flat-square&label=son%20s%C3%BCr%C3%BCm&color=8B5CF6)](https://github.com/egemenmermer/rooms/releases/latest)
-[![MIT lisansı](https://img.shields.io/badge/lisans-MIT-64748B?style=flat-square)](LICENSE)
-[![macOS indir](https://img.shields.io/badge/macOS-indir-18181B?style=flat-square&logo=apple&logoColor=white)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-arm64.dmg)
-[![Windows indir](https://img.shields.io/badge/Windows-indir-2563EB?style=flat-square)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-windows-x64-setup.exe)
+Voice rooms, screen sharing, chat, music and shared activities — in one desktop app.
 
-Sesli sohbet, ekran paylaşımı, mesajlar, müzik ve ortak etkinlikler — tek masaüstü uygulamasında.
+[Get started](#get-started) · [Screenshots](#screenshots) · [Host your own](docs/SELF_HOSTING.md) · [Docs](#documentation) · **[Türkçe ↓](#türkçe)**
 
-[Başlangıç](#başlangıç) · [Ekran görüntüleri](#uygulamadan-görüntüler) · [Kendi sunucunu kur](docs/SELF_HOSTING.md) · [Belgeler](#belgeler)
-
-**Kendi sunucunda çalışır · Açık kaynak · MIT lisanslı**
+**Self-hosted · Open source · MIT licensed**
 
 </div>
 
-![Tayfa ses odası](docs/images/voice.png)
+> Tayfa used to be called ROOMS. The installed app's file name and internal identifiers still say ROOMS for now.
 
-## İçindekiler
+![Tayfa voice room](docs/images/voice.png)
+
+## What is Tayfa?
+
+Tayfa is a desktop hangout for a small community. Talk in a voice room, share your screen, chat, and spend time with your friends without leaving the app. The interface is available in English and Turkish (Settings → Appearance → Language).
+
+**You pick the server.** Tayfa is not a service where everyone signs in to one central account or browses a public room directory. A community admin runs the backend on their own server and sends invite links; the link points to that server, and your account belongs to it. The source code contains no built-in personal server address or shared account.
+
+The client uses Electron, React and TypeScript. Accounts and chat run on an unmodified, separately operated **Stoat** backend; real-time voice and video run on **LiveKit**. Tayfa's own services connect these systems and run the shared activities.
+
+## Get started
+
+| You want to | Start here | You need |
+| --- | --- | --- |
+| Join an existing community | [User guide](docs/USER_GUIDE.md) (Turkish) | The app and an invite link, or an account on that server |
+| Host your own community | [One-command install](docs/SELF_HOSTING.md#quick-install-one-command) | A Linux server (VPS) and a domain; the installer does the rest |
+| Work on the app | [Development guide](docs/DEVELOPMENT.md) (Turkish) | Git, Node.js, pnpm and the source code |
+| Change your community's DJ artwork | [Customization guide](docs/CUSTOMIZATION.md) (Turkish) | Control over your server's public image files |
+
+**Does everyone need to run a server?** No. One admin sets up the community's server; everyone else opens the desktop app and connects to it.
+
+## Download and join a community
+
+Current builds are on the [GitHub releases](https://github.com/egemenmermer/rooms/releases/latest) page. The latest friends-test build is **RC32**:
+
+| Platform | Package | Status |
+| --- | --- | --- |
+| macOS 14+ / Apple Silicon | [Download RC32 DMG](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-arm64.dmg) | Signed and notarized by Apple |
+| Windows x64 | [Download RC32 EXE](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-windows-x64-setup.exe) | Unsigned friends-test build; Windows may show a warning |
+
+1. Download the package for your platform and install the app.
+2. Get an invite link (`https://<server>/davet/…`) from your community admin.
+3. Open the app. On the **Sign up** tab, paste the link and enter a username, email and password; the link decides the server. If you already have an account on that server, use **Sign in**.
+4. Join a chat or a voice room. Grant microphone, camera and screen permissions when you first use each feature.
+
+Downloading the app does not give you membership or an account on any server. Communities that use the same app keep separate accounts and data. A tagged source archive is not an installer.
+
+Mac updates come through the configured Sparkle feed. On Windows, download and install the new EXE. Read the [release notes](https://github.com/egemenmermer/rooms/releases/latest) for version-specific limits and real-device acceptance status. To build from source, follow [the steps below](#run-from-source).
+
+## Screenshots
+
+### Community home
+
+Open your conversations, people and rooms from one place.
+
+![Community home](docs/images/home.png)
+
+### Chat
+
+Message your community and reach room activities from inside the conversation.
+
+![Community chat](docs/images/chat.png)
+
+### Voice rooms
+
+Join a room, talk, and reach the media controls.
+
+![Voice room](docs/images/voice.png)
+
+These screenshots come from the real interface with sample community data. They are not a recording of a live call or proof that every optional integration is configured. Labels and layout may change between releases.
+
+## What can you do?
+
+| Area | What it does | Needs |
+| --- | --- | --- |
+| Community and chat | Accounts, channels, messages, friends, profiles and roles | A compatible Stoat install and channel/role permissions |
+| Voice and screen share | Talking, camera and sharing a chosen screen or window | LiveKit, the access service, open media ports and OS permissions |
+| Remote control with consent | Mouse and keyboard control with the sharer's approval | Native input component, session authorization and platform permissions; real-device acceptance is separate |
+| Shared activities | Shared tools and server-run game state | Activities service and persistent storage |
+| Music | Community DJ, queue and shared playlists | Optional music service, supported sources and admin setup |
+| Cinema | A community hall that watches the same stream together | Optional cinema service and the owner's own legal source |
+| Personal media | Media connections you configure for yourself | A supported provider/source and your own authorized access |
+| Server management | Status and admin work for authorized people | HostOps setup and separate admin permissions |
+| Agent | Optional tasks, progress and results | Isolated Agent setup, a model connection and explicitly granted permissions |
+
+Seeing a screen does not set up its service or provider account. Get chat and voice working first, then add optional services. Provider limits and platform differences apply.
+
+## Run from source
+
+Install **Git**, **Node.js 22.22.0** and **pnpm 11.25.0**. On a Mac you may also need the Xcode Command Line Tools for native components. Platform details are in the [development guide](docs/DEVELOPMENT.md).
+
+```sh
+git clone https://github.com/egemenmermer/rooms.git
+cd rooms
+pnpm install --frozen-lockfile
+```
+
+macOS/Linux shell:
+
+```sh
+ROOMS_PROFILE=dev-contributor pnpm dev
+```
+
+Windows PowerShell:
+
+```powershell
+$env:ROOMS_PROFILE = 'dev-contributor'
+pnpm dev
+```
+
+The app opens with a separate development profile. Paste your invite link on the **Sign up** tab, or enter your community's address on **Sign in**. **Starting the client does not start a backend.** You can open the app without a running community, but you cannot complete real chat and voice flows.
+
+For build, verification and packaging commands, see the [development guide](docs/DEVELOPMENT.md). `pnpm dev:web` in the browser is for interface work only; it does not provide native desktop features. Pass `?lang=en` or `?lang=tr` to pick the interface language there; see [docs/I18N.md](docs/I18N.md) for how translations work.
+
+## Host your own community
+
+With a Linux server (2 GB RAM is enough, 4 GB recommended) and a domain, you can install your own Tayfa server with one command. No domain? A free [DuckDNS](https://www.duckdns.org) name works too.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/egemenmermer/rooms/main/deploy/install.sh | sudo bash
+```
+
+The script installs Docker, generates every password on the server, gets an HTTPS certificate automatically, creates the owner account and a first community with a voice channel, and prints your first invite link (`https://your-domain/davet/…`, 7 days, 10 people). Then invite friends with **Create invite** in the app or `sudo rooms invite`. The **Set up your own server** tab on the app's start screen walks through the same steps.
+
+See the [server guide](docs/SELF_HOSTING.md#quick-install-one-command) for details, ports, backups and updates. Music (DJ), the Cinema hall, Agent and the server management panel are optional and not part of the quick install.
+
+## How it works
+
+```mermaid
+flowchart LR
+    Desktop[Tayfa desktop] --> Social[Stoat: accounts and chat]
+    Desktop --> Access[Tayfa access: identity and media permissions]
+    Access --> Social
+    Desktop --> Media[LiveKit: real-time voice and video]
+    Access --> Media
+    Desktop --> Activities[Tayfa Activities: shared room state]
+    Activities --> Social
+    Access --> Music[Optional music service]
+    Desktop --> Agent[Optional isolated Agent]
+```
+
+Electron handles native credentials, screen capture and privileged operations; the interface talks to it through a typed bridge. Voice state is independent of pages, so moving around the app is not meant to end a call. Read the [architecture guide](docs/ARCHITECTURE.md) (Turkish) for boundaries and data ownership.
+
+## Platforms and project status
+
+Tayfa is in active development; the current build is a release candidate. Open source does not mean a finished public V1.
+
+- **macOS 14+ / Apple Silicon:** packaging is set up. Trusted distribution needs signing and Apple notarization.
+- **Windows x64:** there is an EXE installer. An unsigned friends-test build is not the same as a trusted signed release.
+- **Linux:** not offered as a packaged desktop target; used for the server components.
+- **iPhone:** a separate companion project with its own distribution. This repository's desktop package does not install on phones.
+- **Automatic updates:** need the distributor's compatible signed package and update feed. A build from source does not join the project owner's channel.
+- **Optional integrations:** need their own configuration and acceptance checks. Source tests and the gallery do not prove real-device or provider compatibility.
+
+Before deploying, read the [release guide](docs/RELEASING.md) and [troubleshooting](docs/TROUBLESHOOTING.md) (both Turkish).
+
+## Privacy and customization
+
+The community admin manages their own installation and data. Self-hosting is not end-to-end encryption: media is encrypted in transit; E2EE is not configured. The admin should decide retention, deletion, backup and support policies.
+
+The open client ships an original static DJ illustration. Each community can serve its own name, poster and optional animation without changing source code; see the [customization guide](docs/CUSTOMIZATION.md). Personal provider credentials and private operations files never go into Git.
+
+## Documentation
+
+Most guides are in Turkish for now: [all documents and reading order](docs/README.md) · [RC32 release and verification record](docs/RC32_RELEASE.md)
+
+| Guide | Covers |
+| --- | --- |
+| [Usage](docs/USER_GUIDE.md) | Joining, accounts, chat, voice, screen sharing and daily use |
+| [Self-hosting](docs/SELF_HOSTING.md) | Quick install (English and Turkish), services, networking, data, backups |
+| [Development](docs/DEVELOPMENT.md) | Toolchain, commands, source layout and verification levels |
+| [Architecture](docs/ARCHITECTURE.md) | Processes, trust boundaries, storage and extension points |
+| [Interface languages](docs/I18N.md) | How Turkish and English work, glossary and style (English) |
+| [Troubleshooting and FAQ](docs/TROUBLESHOOTING.md) | Install, connection, media and update problems |
+| [Community roles](docs/COMMUNITY_ROLES.md) | Custom roles, colors, permissions and limits |
+| [Remote control](docs/REMOTE_CONTROL.md) | Request/approval flow, native input and acceptance limits |
+| [Server operations](docs/SERVER_OPERATIONS.md) | Monitoring, terminal, HostOps and operator permissions |
+| [Customization](docs/CUSTOMIZATION.md) | Community-specific DJ artwork and name |
+| [Releasing](docs/RELEASING.md) | Development packages, signing, update feed and release checks |
+| [Backend integration](infra/stoat/README.md) | Adapter, registration and upstream acceptance notes |
+| [Media transport](docs/MEDIA_TRANSPORT.md) | Design and past verification records |
+| [Agent deployment](docs/AGENT_DEPLOYMENT.md) | Optional isolated Agent infrastructure |
+| [Asset register](docs/ASSETS.md) | Where images and fonts come from |
+| [Third-party notices](docs/THIRD_PARTY_NOTICES.md) | Dependency and upstream licenses |
+
+## Contributing
+
+Issues and focused PRs are welcome, in English or Turkish. Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing contracts between runtimes. In a bug report, include reproduction steps and your platform and version; never include passwords, private messages, invite links or personal media addresses.
+
+For security issues, follow [SECURITY.md](SECURITY.md) instead of opening a public issue.
+
+## License
+
+Original Tayfa code and eligible original assets are [MIT licensed](LICENSE). Dependencies, fonts and separate backend services keep their own licenses. Tayfa's MIT license does not relicense Stoat or third-party media. Original third-party license texts are kept in distributions.
+
+---
+
+## Türkçe
+
+> Tayfa'nın eski adı ROOMS'tur; kurulu uygulamanın dosya adı ve iç tanımlayıcılar şimdilik ROOMS olarak kalıyor.
+
+**Arkadaşlarınla buluş. Sunucun sende kalsın.** Sesli sohbet, ekran paylaşımı, mesajlar, müzik ve ortak etkinlikler — tek masaüstü uygulamasında. Arayüz Türkçe ve İngilizce kullanılabilir (Ayarlar → Görünüm → Dil).
+
+[Başlangıç](#başlangıç) · [Ekran görüntüleri](#uygulamadan-görüntüler) · [Kendi sunucunu kur](docs/SELF_HOSTING.md#türkçe) · [Belgeler](#belgeler) · [English ↑](#tayfa)
+
+### İçindekiler
 
 - [Tayfa nedir?](#tayfa-nedir)
 - [Başlangıç](#başlangıç)
@@ -39,7 +232,7 @@ Sesli sohbet, ekran paylaşımı, mesajlar, müzik ve ortak etkinlikler — tek 
 - [Katkıda bulunma](#katkıda-bulunma)
 - [Lisans](#lisans)
 
-## Tayfa nedir?
+### Tayfa nedir?
 
 Tayfa, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında konuşabilir, ekranını paylaşabilir, mesajlaşabilir ve uygulamadan çıkmadan arkadaşlarınla birlikte vakit geçirebilirsin.
 
@@ -47,7 +240,7 @@ Tayfa, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında 
 
 İstemci Electron, React ve TypeScript kullanır. Hesaplar ve sohbet için değiştirilmeden, ayrı çalıştırılan **Stoat** arka ucu; gerçek zamanlı ses ve görüntü için **LiveKit** kullanılır. Tayfa servisleri bu sistemleri birbirine bağlar ve ortak etkinlikleri yönetir.
 
-## Başlangıç
+### Başlangıç
 
 | İstediğin | Başlangıç noktası | Gerekenler |
 | --- | --- | --- |
@@ -58,7 +251,7 @@ Tayfa, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında 
 
 **Herkesin sunucu kurması gerekiyor mu?** Hayır. Bir yönetici topluluğun sunucusunu kurar; diğer üyeler masaüstü uygulamasını açıp o sunucuya bağlanır.
 
-## İndir ve topluluğa katıl
+### İndir ve topluluğa katıl
 
 Güncel paketler [GitHub sürümleri](https://github.com/egemenmermer/rooms/releases/latest) sayfasındadır. Son yayımlanan arkadaş test sürümü **RC32**:
 
@@ -76,21 +269,21 @@ Uygulamayı indirmek bir sunucuya üyelik veya hazır hesap sağlamaz. Aynı uyg
 
 Mac güncellemeleri yapılandırılmış Sparkle kanalından sunulur. Windows'ta yeni EXE indirilip kurulur. Sürüme özgü sınırlamalar ve gerçek cihaz kabul durumu için [sürüm notlarını](https://github.com/egemenmermer/rooms/releases/latest) oku. Kaynaktan derlemek istersen [aşağıdaki adımları](#kaynak-koddan-çalıştır) izle.
 
-## Uygulamadan görüntüler
+### Uygulamadan görüntüler
 
-### Topluluk ana sayfası
+#### Topluluk ana sayfası
 
 Konuşmalarını, kişileri ve odaları aynı yerden aç.
 
 ![Topluluk ana sayfası](docs/images/home.png)
 
-### Sohbet
+#### Sohbet
 
 Topluluğunla mesajlaş; odadaki etkinliklere konuşmanın içinden ulaş.
 
 ![Topluluk sohbeti](docs/images/chat.png)
 
-### Ses odaları
+#### Ses odaları
 
 Bir odaya katıl, konuş ve medya kontrollerine ulaş.
 
@@ -98,7 +291,7 @@ Bir odaya katıl, konuş ve medya kontrollerine ulaş.
 
 Bu görüntüler, uygulamanın gerçek arayüzünden örnek topluluk verileriyle alınmıştır. Canlı görüşme kaydı veya her isteğe bağlı entegrasyonun yapılandırıldığına dair kanıt değildir. Etiketler ve ekran düzeni sürümler arasında değişebilir.
 
-## Neler yapabilirsin?
+### Neler yapabilirsin?
 
 | Alan | Ne işe yarar? | Gereken altyapı |
 | --- | --- | --- |
@@ -113,7 +306,7 @@ Bu görüntüler, uygulamanın gerçek arayüzünden örnek topluluk verileriyle
 
 Bir ekranın görünmesi o servisi veya sağlayıcı hesabını kendiliğinden kurmaz. Önce temel sohbet ve sesi çalıştır; isteğe bağlı servisleri daha sonra ekle. Sağlayıcı kısıtları ve platform farkları geçerlidir.
 
-## Kaynak koddan çalıştır
+### Kaynak koddan çalıştır
 
 **Git**, **Node.js 22.22.0** ve **pnpm 11.25.0** kur. Mac'te yerel bileşenler için Xcode Command Line Tools da gerekebilir. Platform ayrıntıları [geliştirme rehberindedir](docs/DEVELOPMENT.md).
 
@@ -140,7 +333,7 @@ Uygulama ayrı geliştirme profiliyle açılır. **Kayıt ol** sekmesine davet b
 
 Derleme, doğrulama ve paket komutları için [geliştirme rehberine](docs/DEVELOPMENT.md) bak. Tarayıcıdaki `pnpm dev:web`, arayüz çalışmaları içindir; yerel masaüstü özelliklerini sağlamaz.
 
-## Kendi topluluğunu kur
+### Kendi topluluğunu kur
 
 Bir Linux sunucu (2 GB RAM yeterli, 4 GB önerilir) ve bir alan adı ile kendi Tayfa sunucunu tek komutla kurabilirsin. Alan adın yoksa ücretsiz bir [DuckDNS](https://www.duckdns.org) adı da işe yarar.
 
@@ -152,7 +345,7 @@ Betik Docker'ı kurar, tüm parolaları sunucuda üretir, HTTPS sertifikasını 
 
 Ayrıntılar, portlar, yedekleme ve güncelleme için [sunucu rehberine](docs/SELF_HOSTING.md#hızlı-kurulum-tek-komut) bak. Müzik (DJ), Sinema salonu, Agent ve sunucu yönetim paneli isteğe bağlıdır ve hızlı kuruluma dahil değildir.
 
-## Nasıl çalışıyor?
+### Nasıl çalışıyor?
 
 ```mermaid
 flowchart LR
@@ -169,7 +362,7 @@ flowchart LR
 
 Yerel kimlik bilgilerini, ekran yakalamayı ve yetkili işlemleri Electron yönetir. Arayüz, tipli bir köprü kullanır. Ses durumu sayfalardan bağımsızdır; uygulama içinde başka yere geçmek görüşmeyi sonlandırmak için tasarlanmamıştır. Sınırlar ve veri sahipliği için [mimari rehberini](docs/ARCHITECTURE.md) oku.
 
-## Platformlar ve projenin durumu
+### Platformlar ve projenin durumu
 
 Tayfa aktif geliştirme aşamasındadır; güncel sürüm bir yayın adayıdır. Kaynağın açık olması, tamamlanmış bir herkese açık V1 olduğu anlamına gelmez.
 
@@ -182,13 +375,13 @@ Tayfa aktif geliştirme aşamasındadır; güncel sürüm bir yayın adayıdır.
 
 Dağıtımdan önce [sürüm rehberini](docs/RELEASING.md) ve [sorun gidermeyi](docs/TROUBLESHOOTING.md) oku.
 
-## Gizlilik ve özelleştirme
+### Gizlilik ve özelleştirme
 
 Topluluk yöneticisi kendi kurulumunu ve verisini yönetir. Kendi sunucunda çalıştırmak uçtan uca şifreleme anlamına gelmez: medya aktarım sırasında şifrelenir; E2EE yapılandırılmış değildir. Saklama, silme, yedekleme ve destek politikalarını yönetici belirlemelidir.
 
 Açık istemcide özgün bir statik DJ çizimi bulunur. Her topluluk kendi adını, posterini ve isteğe bağlı animasyonunu kaynak kodu değiştirmeden sunabilir. [Özelleştirme rehberine](docs/CUSTOMIZATION.md) bak. Kişisel sağlayıcı kimlik bilgileri ve özel operasyon dosyaları Git'e konmaz.
 
-## Belgeler
+### Belgeler
 
 [Tüm belgeler ve okuma sırası](docs/README.md) · [RC32 yayın ve doğrulama kaydı](docs/RC32_RELEASE.md)
 
@@ -210,12 +403,12 @@ Açık istemcide özgün bir statik DJ çizimi bulunur. Her topluluk kendi adın
 | [Varlık kaydı](docs/ASSETS.md) | Görsellerin ve yazı tiplerinin kaynağı |
 | [Üçüncü taraf bildirimleri](docs/THIRD_PARTY_NOTICES.md) | Bağımlılık ve üst sistem lisansları |
 
-## Katkıda bulunma
+### Katkıda bulunma
 
 Issue ve odaklı PR'lara açığız. Çalışma ortamları arasındaki sözleşmeleri değiştirmeden önce [CONTRIBUTING.md](CONTRIBUTING.md) belgesini oku. Hata bildirimine yeniden üretim adımlarını ve ilgili platform/sürüm bilgisini ekle; parola, özel mesaj, davet bağlantısı ve kişisel medya adreslerini ekleme.
 
 Güvenlik açıklarında herkese açık issue yerine [SECURITY.md](SECURITY.md) yolunu izle.
 
-## Lisans
+### Lisans
 
 Özgün Tayfa kodu ve uygun özgün varlıklar [MIT lisanslıdır](LICENSE). Bağımlılıklar, yazı tipleri ve ayrı arka uç servisleri kendi lisanslarını korur. Tayfa'nın MIT lisansı Stoat'ı veya üçüncü taraf medyayı yeniden lisanslamaz. Üçüncü taraf lisanslarının özgün metinleri dağıtımlarda korunur.

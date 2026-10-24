@@ -1,5 +1,5 @@
 import { VoiceAvatar } from './VoiceAvatar';
-import { tr, uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -18,17 +18,17 @@ import type { SocialFriend } from '@rooms/social';
 import { useCommunity } from './community';
 import { useRealtime } from './realtime';
 const friendStatus: Record<SocialFriend['status'], string> = {
-  online: tr('\u00C7evrimi\u00E7i'),
-  idle: 'Uzakta',
-  dnd: tr('Rahats\u0131z etmeyin'),
-  invisible: tr('\u00C7evrimd\u0131\u015F\u0131'),
-  unknown: 'Durum bilinmiyor',
+  online: t('Çevrimiçi'),
+  idle: t('Uzakta'),
+  dnd: t('Rahatsız etmeyin'),
+  invisible: t('Çevrimdışı'),
+  unknown: t('Durum bilinmiyor'),
 };
 const relation: Record<SocialFriend['relationship'], string> = {
-  friend: tr('Arkada\u015F'),
-  incoming: 'Gelen istek',
-  outgoing: tr('\u0130stek g\u00F6nderildi'),
-  blocked: 'Engellendi',
+  friend: t('Arkadaş'),
+  incoming: t('Gelen istek'),
+  outgoing: t('İstek gönderildi'),
+  blocked: t('Engellendi'),
 };
 export function FriendsPanel({
   notify,
@@ -107,26 +107,26 @@ export function FriendsPanel({
         rank[left.status] - rank[right.status] ||
         (left.user.displayName || left.user.username).localeCompare(
           right.user.displayName || right.user.username,
-          'tr',
+          locale,
         )
       );
     });
   return (
     <aside className="friends-panel">
       <div className="friends-title">
-        <h3>{tr('Dostlar\u0131n')}</h3>
+        <h3>{t('Dostların')}</h3>
         {onClose && (
-          <IconButton label="Üye panelini kapat" onClick={onClose}>
+          <IconButton label={t('Üye panelini kapat')} onClick={onClose}>
             <X size={18} />
           </IconButton>
         )}
-        <IconButton label={tr('Arkada\u015F ekle')} onClick={() => setShow(true)}>
+        <IconButton label={t('Arkadaş ekle')} onClick={() => setShow(true)}>
           <Plus size={16} />
         </IconButton>
       </div>
       <div className="section-label">
-        <span>{tr('ARKADA\u015ELARIN')}</span>
-        <IconButton label={tr('Arkada\u015Flar\u0131 yenile')} onClick={() => void refresh()}>
+        <span>{t('ARKADAŞLARIN')}</span>
+        <IconButton label={t('Arkadaşları yenile')} onClick={() => void refresh()}>
           <RefreshCw size={12} />
         </IconButton>
       </div>
@@ -166,7 +166,7 @@ export function FriendsPanel({
                 }
               >
                 <Check size={12} />
-                {tr('Kabul et')}
+                {t('Kabul et')}
               </button>
             )}
           </div>
@@ -174,9 +174,9 @@ export function FriendsPanel({
       ) : (
         <div className="friends-empty">
           <Users size={23} />
-          <p>{'Arkada\u015F yok'}</p>
+          <p>{t('Arkadaş yok')}</p>
           <button className="text-button" onClick={() => setShow(true)}>
-            {tr('Arkada\u015F ekle')}
+            {t('Arkadaş ekle')}
             <Plus size={12} />
           </button>
         </div>
@@ -184,7 +184,7 @@ export function FriendsPanel({
       {r.participants.length > 0 && (
         <>
           <div className="section-label">
-            <span>{tr('SES ODAN')}</span>
+            <span>{t('SES ODAN')}</span>
             <span>{r.participants.length}</span>
           </div>
           {r.participants.map((p) => (
@@ -193,11 +193,7 @@ export function FriendsPanel({
               <div>
                 <strong>{p.name}</strong>
                 <small>
-                  {p.muted
-                    ? tr('Mikrofon kapal\u0131')
-                    : p.speaking
-                      ? tr('Konu\u015Fuyor')
-                      : 'Dinliyor'}
+                  {p.muted ? t('Mikrofon kapalı') : p.speaking ? t('Konuşuyor') : t('Dinliyor')}
                 </small>
               </div>
             </button>
@@ -210,11 +206,9 @@ export function FriendsPanel({
         </p>
       )}
       {show && (
-        <Modal title={'Arkada\u015F ekle'} onClose={() => setShow(false)}>
+        <Modal title={t('Arkadaş ekle')} onClose={() => setShow(false)}>
           <p className="modal-description">
-            {tr(
-              'Arkada\u015F\u0131n\u0131n tam Stoat kullan\u0131c\u0131 ad\u0131n\u0131 ve varsa numaras\u0131n\u0131 gir.',
-            )}
+            {t('Arkadaşının tam Stoat kullanıcı adını ve varsa numarasını gir.')}
           </p>
           <form
             onSubmit={(e) => {
@@ -222,23 +216,23 @@ export function FriendsPanel({
               void run(async () => {
                 await window.rooms!.social.addFriend(username.trim());
                 setUsername('');
-                notify(tr('Arkada\u015Fl\u0131k iste\u011Fi sunucuya g\u00F6nderildi.'));
+                notify(t('Arkadaşlık isteği sunucuya gönderildi.'));
               });
             }}
           >
             <label className="field-label">
-              {tr('KULLANICI ADI')}
+              {t('KULLANICI ADI')}
               <input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                placeholder="kullanici#1234"
+                placeholder={t('kullanici#1234')}
                 maxLength={80}
               />
             </label>
             <button className="button primary full" disabled={busy || !username.trim()}>
               <Plus size={16} />
-              {tr('Arkada\u015Fl\u0131k iste\u011Fi g\u00F6nder')}
+              {t('Arkadaşlık isteği gönder')}
             </button>
           </form>
           <div className="friends-management">
@@ -261,16 +255,16 @@ export function FriendsPanel({
                       )
                     }
                   >
-                    {tr('Kabul et')}
+                    {t('Kabul et')}
                   </button>
                 )}
                 <IconButton
                   label={
                     f.relationship === 'outgoing'
-                      ? tr('Arkada\u015Fl\u0131k iste\u011Fini iptal et')
+                      ? t('Arkadaşlık isteğini iptal et')
                       : f.relationship === 'incoming'
-                        ? tr('\u0130ste\u011Fi reddet')
-                        : tr('Arkada\u015Fl\u0131k ba\u011Flant\u0131s\u0131n\u0131 kald\u0131r')
+                        ? t('İsteği reddet')
+                        : t('Arkadaşlık bağlantısını kaldır')
                   }
                   disabled={busy}
                   onClick={() => void run(() => window.rooms!.social.removeFriend(f.user.id))}
@@ -300,7 +294,7 @@ export function AccountProfile({ notify }: { notify(message: string): void }) {
     [error, setError] = useState('');
   return (
     <>
-      <h3>{'Profil'}</h3>
+      <h3>{t('Profil')}</h3>
       <div className="profile-photo-control">
         {c.user && <VoiceAvatar id={c.user.id} name={c.user.displayName} large />}
         <button
@@ -311,21 +305,21 @@ export function AccountProfile({ notify }: { notify(message: string): void }) {
             void window
               .rooms!.social.chooseAvatar()
               .then((photo) => {
-                if (photo) notify('Fotoğraf güncellendi.');
+                if (photo) notify(t('Fotoğraf güncellendi.'));
               })
               .catch((e) => setError(uiError(e)))
               .finally(() => setBusy(false));
           }}
         >
-          Fotoğraf değiştir
+          {t('Fotoğraf değiştir')}
         </button>
         <small>PNG, JPEG, WebP · 2 MB</small>
       </div>
       <div className="profile-preview">
-        <Avatar name={c.user?.displayName || c.user?.username || 'Sen'} size="large" />
+        <Avatar name={c.user?.displayName || c.user?.username || t('Sen')} size="large" />
         <div>
           <h3>{c.user?.displayName}</h3>
-          <span className="small-tag">{tr('STOAT HESABIN')}</span>
+          <span className="small-tag">{t('STOAT HESABIN')}</span>
         </div>
       </div>
       <form
@@ -341,50 +335,46 @@ export function AccountProfile({ notify }: { notify(message: string): void }) {
             })
             .then((user) => {
               useCommunity.setState({ user });
-              notify(tr('Profilin sunucuda g\u00FCncellendi.'));
+              notify(t('Profilin sunucuda güncellendi.'));
             })
             .catch((e) => setError(uiError(e)))
             .finally(() => setBusy(false));
         }}
       >
         <label className="field-label">
-          {tr('G\u00D6R\u00DCNEN AD')}
+          {t('GÖRÜNEN AD')}
           <input required maxLength={32} value={name} onChange={(e) => setName(e.target.value)} />
         </label>
         <label className="field-label">
-          {tr('HAKKINDA \u00B7 DE\u011E\u0130\u015ET\u0130RMEK \u0130\u00C7\u0130N YAZ')}
+          {t('HAKKINDA · DEĞİŞTİRMEK İÇİN YAZ')}
           <textarea
             maxLength={2000}
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            placeholder={'Hakk\u0131nda'}
+            placeholder={t('Hakkında')}
           />
         </label>
         <label className="field-label">
-          {tr('DURUM MESAJI \u00B7 DE\u011E\u0130\u015ET\u0130RMEK \u0130\u00C7\u0130N YAZ')}
+          {t('DURUM MESAJI · DEĞİŞTİRMEK İÇİN YAZ')}
           <input
             maxLength={128}
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            placeholder={'Durum'}
+            placeholder={t('Durum')}
           />
         </label>
         <button className="button primary" disabled={busy || !name.trim()}>
           <Check size={16} />
-          {tr('Profili kaydet')}
+          {t('Profili kaydet')}
         </button>
       </form>
       <div className="settings-row">
         <div>
-          <h4>{tr('G\u00F6r\u00FCn\u00FCrl\u00FCk')}</h4>
-          <p>
-            {tr(
-              'Durumunu sunucuna bildir. G\u00F6r\u00FCnmezken \u00E7evrimi\u00E7i olarak g\u00F6sterilmezsin.',
-            )}
-          </p>
+          <h4>{t('Görünürlük')}</h4>
+          <p>{t('Durumunu sunucuna bildir. Görünmezken çevrimiçi olarak gösterilmezsin.')}</p>
         </div>
         <select
-          aria-label={tr('Topluluk g\u00F6r\u00FCn\u00FCrl\u00FC\u011F\u00FC')}
+          aria-label={t('Topluluk görünürlüğü')}
           value={presence}
           onChange={(e) => {
             const value = e.target.value as typeof presence;
@@ -393,17 +383,17 @@ export function AccountProfile({ notify }: { notify(message: string): void }) {
               .setPresence(value)
               .then(() => {
                 setPresence(value);
-                notify(tr('G\u00F6r\u00FCn\u00FCrl\u00FCk sunucuda g\u00FCncellendi.'));
+                notify(t('Görünürlük sunucuda güncellendi.'));
               })
               .catch((e) => setError(uiError(e)))
               .finally(() => setBusy(false));
           }}
           disabled={busy}
         >
-          <option value="online">{tr('\u00C7evrimi\u00E7i')}</option>
-          <option value="idle">{tr('Uzakta')}</option>
-          <option value="dnd">{tr('Rahats\u0131z etmeyin')}</option>
-          <option value="invisible">{tr('G\u00F6r\u00FCnmez')}</option>
+          <option value="online">{t('Çevrimiçi')}</option>
+          <option value="idle">{t('Uzakta')}</option>
+          <option value="dnd">{t('Rahatsız etmeyin')}</option>
+          <option value="invisible">{t('Görünmez')}</option>
         </select>
       </div>
       {error && (

@@ -26,6 +26,7 @@ export const INVITE_PAGE_HEADERS = {
   'referrer-policy': 'no-referrer',
   'x-content-type-options': 'nosniff',
   'x-robots-tag': 'noindex, nofollow',
+  vary: 'accept-language',
   'content-security-policy': `default-src 'none'; style-src 'sha256-${INVITE_PAGE_STYLE_HASH}'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
 } as const;
 
@@ -36,24 +37,118 @@ const escape = (value: string) =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] ?? char,
   );
 
-const formatExpiry = (iso: string) =>
-  new Intl.DateTimeFormat('tr-TR', {
-    dateStyle: 'long',
-    timeStyle: 'short',
-    timeZone: 'Europe/Istanbul',
-  }).format(new Date(iso));
+export type InviteLocale = 'tr' | 'en';
 
-function page(body: string) {
+/**
+ * Turkish when the most preferred language is Turkish; English for any other preference. A request
+ * that states no preference (link-preview crawlers, scripts) gets Turkish, the source language.
+ * Self-contained on purpose: this service does not import the desktop catalog.
+ */
+export function inviteLocale(acceptLanguage?: string | readonly string[]): InviteLocale {
+  const header = Array.isArray(acceptLanguage) ? acceptLanguage.join(',') : acceptLanguage;
+  const preferred = String(header ?? '')
+    .split(',')
+    .map((entry, index) => {
+      const [tag = '', ...params] = entry.trim().split(';');
+      const q = params.map((param) => /^\s*q=([\d.]+)\s*$/i.exec(param)?.[1]).find(Boolean);
+      return { tag: tag.trim().toLowerCase(), q: q === undefined ? 1 : Number(q), index };
+    })
+    .filter((entry) => entry.tag && entry.tag !== '*' && entry.q > 0)
+    .sort((a, b) => b.q - a.q || a.index - b.index)[0];
+  if (!preferred) return 'tr';
+  return preferred.tag.split('-')[0] === 'tr' ? 'tr' : 'en';
+}
+
+interface InviteCopy {
+  lang: InviteLocale;
+  pageTitle: string;
+  previewDescription: string;
+  invalidTitle: string;
+  invalidMeta: string;
+  invalidHint: string;
+  titleNamed: (name: string) => string;
+  titleAnonymous: string;
+  expires: (date: string) => string;
+  stepInstall: string;
+  download: string;
+  platforms: string;
+  stepOpen: string;
+  openInApp: string;
+  pasteAfterOpen: string;
+  pasteOnly: string;
+  note: string;
+}
+
+const copy: Record<InviteLocale, InviteCopy> = {
+  tr: {
+    lang: 'tr',
+    pageTitle: 'Tayfa daveti',
+    previewDescription: "Arkadaşların seni Tayfa'ya davet etti.", // i18n-ignore: Turkish copy of the page
+    invalidTitle: 'Bu davet bağlantısı artık geçerli değil', // i18n-ignore: Turkish copy of the page
+    invalidMeta: 'Süresi dolmuş, kişi sınırı dolmuş ya da iptal edilmiş olabilir.', // i18n-ignore: Turkish copy of the page
+    invalidHint: 'Seni davet eden kişiden yeni bir bağlantı iste.', // i18n-ignore: Turkish copy of the page
+    titleNamed: (name) => `${name} topluluğuna davet edildin`, // i18n-ignore: Turkish copy of the page
+    titleAnonymous: 'Bir Tayfa topluluğuna davet edildin', // i18n-ignore: Turkish copy of the page
+    expires: (date) => `Son geçerlilik: ${date}`, // i18n-ignore: Turkish copy of the page
+    stepInstall: "Tayfa'yı bilgisayarına kur", // i18n-ignore: Turkish copy of the page
+    download: 'Uygulamayı indir', // i18n-ignore: Turkish copy of the page
+    platforms: 'macOS (Apple Silicon) ve Windows için.', // i18n-ignore: Turkish copy of the page
+    stepOpen: 'Daveti uygulamada aç', // i18n-ignore: Turkish copy of the page
+    openInApp: "Tayfa'da aç", // i18n-ignore: Turkish copy of the page
+    pasteAfterOpen: "Açılmazsa Tayfa'da <b>Kayıt ol</b> sekmesine bu sayfanın adresini yapıştır.", // i18n-ignore: Turkish copy of the page
+    pasteOnly: "Tayfa'da <b>Kayıt ol</b> sekmesine bu sayfanın adresini yapıştır.", // i18n-ignore: Turkish copy of the page
+    note: 'Tayfa masaüstünde çalışır. Bu bağlantıyı telefondan açtıysan bilgisayarına gönder.', // i18n-ignore: Turkish copy of the page
+  },
+  en: {
+    lang: 'en',
+    pageTitle: 'Tayfa invite',
+    previewDescription: 'Your friends invited you to Tayfa.',
+    invalidTitle: 'This invite link is no longer valid',
+    invalidMeta: 'It may have expired, reached its member limit or been canceled.',
+    invalidHint: 'Ask the person who invited you for a new link.',
+    titleNamed: (name) => `You’ve been invited to join ${name}`,
+    titleAnonymous: 'You’ve been invited to a Tayfa community',
+    expires: (date) => `Valid until: ${date}`,
+    stepInstall: 'Install Tayfa on your computer',
+    download: 'Download the app',
+    platforms: 'For macOS (Apple Silicon) and Windows.',
+    stepOpen: 'Open the invite in the app',
+    openInApp: 'Open in Tayfa',
+    pasteAfterOpen:
+      'If it doesn’t open, paste this page’s address into the <b>Sign up</b> tab in Tayfa.',
+    pasteOnly: 'Paste this page’s address into the <b>Sign up</b> tab in Tayfa.',
+    note: 'Tayfa runs on desktop. If you opened this link on your phone, send it to your computer.',
+  },
+};
+
+const formatExpiry = (iso: string, locale: InviteLocale) =>
+  locale === 'tr'
+    ? new Intl.DateTimeFormat('tr-TR', {
+        dateStyle: 'long',
+        timeStyle: 'short',
+        timeZone: 'Europe/Istanbul',
+      }).format(new Date(iso))
+    : new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZone: 'Europe/Istanbul',
+        timeZoneName: 'short',
+      }).format(new Date(iso));
+
+function page(text: InviteCopy, body: string) {
   // Generic preview metadata: link previews never reveal the community name.
   return `<!doctype html>
-<html lang="tr">
+<html lang="${text.lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<meta property="og:title" content="Tayfa daveti">
-<meta property="og:description" content="Arkadaşların seni Tayfa'ya davet etti.">
-<title>Tayfa daveti</title>
+<meta property="og:title" content="${text.pageTitle}">
+<meta property="og:description" content="${text.previewDescription}">
+<title>${text.pageTitle}</title>
 <style>${STYLE}</style>
 </head>
 <body><main><p class="brand">Tayfa</p>${body}</main></body>
@@ -70,37 +165,44 @@ export type InvitePageState =
     }
   | { kind: 'invalid' };
 
-export function renderInvitePage(state: InvitePageState): { status: number; html: string } {
+/** `acceptLanguage` is the request's Accept-Language header; see inviteLocale. */
+export function renderInvitePage(
+  state: InvitePageState,
+  acceptLanguage?: string | readonly string[],
+): { status: number; html: string } {
+  const text = copy[inviteLocale(acceptLanguage)];
   if (state.kind === 'invalid')
     return {
       status: 404,
       html: page(
-        `<h1>Bu davet bağlantısı artık geçerli değil</h1>
-<p class="meta">Süresi dolmuş, kişi sınırı dolmuş ya da iptal edilmiş olabilir.</p>
-<p class="hint">Seni davet eden kişiden yeni bir bağlantı iste.</p>`,
+        text,
+        `<h1>${text.invalidTitle}</h1>
+<p class="meta">${text.invalidMeta}</p>
+<p class="hint">${text.invalidHint}</p>`,
       ),
     };
   const title = state.communityName
-    ? `${escape(state.communityName)} topluluğuna davet edildin`
-    : 'Bir Tayfa topluluğuna davet edildin';
+    ? text.titleNamed(escape(state.communityName))
+    : text.titleAnonymous;
   const open = state.appLink
-    ? `<li><p class="step"><span>2</span>Daveti uygulamada aç</p>
-<a class="button secondary" href="${escape(state.appLink)}">Tayfa'da aç</a>
-<p class="hint">Açılmazsa Tayfa'da <b>Kayıt ol</b> sekmesine bu sayfanın adresini yapıştır.</p></li>`
-    : `<li><p class="step"><span>2</span>Daveti uygulamada aç</p>
-<p class="hint">Tayfa'da <b>Kayıt ol</b> sekmesine bu sayfanın adresini yapıştır.</p></li>`;
+    ? `<li><p class="step"><span>2</span>${text.stepOpen}</p>
+<a class="button secondary" href="${escape(state.appLink)}">${text.openInApp}</a>
+<p class="hint">${text.pasteAfterOpen}</p></li>`
+    : `<li><p class="step"><span>2</span>${text.stepOpen}</p>
+<p class="hint">${text.pasteOnly}</p></li>`;
   return {
     status: 200,
     html: page(
+      text,
       `<h1>${title}</h1>
-<p class="meta">Son geçerlilik: ${escape(formatExpiry(state.expiresAt))}</p>
+<p class="meta">${text.expires(escape(formatExpiry(state.expiresAt, text.lang)))}</p>
 <ol>
-<li><p class="step"><span>1</span>Tayfa'yı bilgisayarına kur</p>
-<a class="button" href="${escape(state.downloadUrl)}">Uygulamayı indir</a>
-<p class="hint">macOS (Apple Silicon) ve Windows için.</p></li>
+<li><p class="step"><span>1</span>${text.stepInstall}</p>
+<a class="button" href="${escape(state.downloadUrl)}">${text.download}</a>
+<p class="hint">${text.platforms}</p></li>
 ${open}
 </ol>
-<p class="note">Tayfa masaüstünde çalışır. Bu bağlantıyı telefondan açtıysan bilgisayarına gönder.</p>`,
+<p class="note">${text.note}</p>`,
     ),
   };
 }

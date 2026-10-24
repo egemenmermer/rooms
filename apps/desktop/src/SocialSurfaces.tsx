@@ -33,7 +33,7 @@ import { useCommunity, type CommunityMessage } from './community';
 import { CommunityChat } from './RealSocial';
 import { VoiceAvatar } from './VoiceAvatar';
 import { useChannelAccess } from './channel-access';
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 import type {
   SocialDetailFixture,
   SocialDetailFixtureId,
@@ -43,23 +43,23 @@ import { preserveReferenceFixtureRoute } from './dev/fixture-navigation';
 
 const fixtureOnly = () =>
   import.meta.env.DEV && new URLSearchParams(window.location.search).has('fixture');
-const fixtureReason = 'Yerel görsel örnekte gerçek hesap işlemi kapalı';
+const fixtureReason = t('Yerel görsel örnekte gerçek hesap işlemi kapalı');
 type OpenMessage = (channelId: string, messageId: string) => void;
 const nameOf = (user: SocialUser) => user.displayName || user.username;
 const statusLabel = (status?: string) =>
   ({
-    online: 'Çevrimiçi',
-    idle: 'Uzakta',
-    dnd: 'Rahatsız etmeyin',
-    invisible: 'Görünmez',
-    offline: 'Çevrimdışı',
-  })[status ?? ''] ?? 'Durum alınamadı';
+    online: t('Çevrimiçi'),
+    idle: t('Uzakta'),
+    dnd: t('Rahatsız etmeyin'),
+    invisible: t('Görünmez'),
+    offline: t('Çevrimdışı'),
+  })[status ?? ''] ?? t('Durum alınamadı');
 const sizeOf = (size: number) =>
   size >= 1048576
-    ? `${(size / 1048576).toLocaleString('tr-TR', { maximumFractionDigits: 1 })} MB`
+    ? `${(size / 1048576).toLocaleString(locale, { maximumFractionDigits: 1 })} MB`
     : `${Math.ceil(size / 1024)} KB`;
 const dateOf = (date: string) =>
-  new Date(date).toLocaleString('tr-TR', {
+  new Date(date).toLocaleString(locale, {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
@@ -115,14 +115,14 @@ function useSocialDetailFixture(expected: SocialDetailFixtureId) {
     error:
       current?.error ??
       (fixture && !matches
-        ? 'Yerel örnek sosyal verileri henüz kurulmadı veya hesap/kanal değişti.'
+        ? t('Yerel örnek sosyal verileri henüz kurulmadı veya hesap/kanal değişti.')
         : ''),
   };
 }
 function FixtureOpening({ loading, error }: { loading: boolean; error: string }) {
   return (
     <p className={error ? 'ss-error' : 'ss-scope'} role={error ? 'alert' : 'status'}>
-      {error || (loading ? 'Yerel örnek hazırlanıyor…' : '')}
+      {error || (loading ? t('Yerel örnek hazırlanıyor…') : '')}
     </p>
   );
 }
@@ -202,12 +202,15 @@ function FileLink({ file }: { file: SocialAttachment }) {
   return url ? (
     <a className="ss-file-link" href={url} target="_blank" rel="noreferrer">
       <Download size={17} />
-      İndir
+      {t('İndir')}
     </a>
   ) : (
-    <button disabled title={fixtureOnly() ? fixtureReason : 'Sunucu dosya bağlantısını sağlamadı'}>
+    <button
+      disabled
+      title={fixtureOnly() ? fixtureReason : t('Sunucu dosya bağlantısını sağlamadı')}
+    >
       <Download size={17} />
-      İndir
+      {t('İndir')}
     </button>
   );
 }
@@ -244,9 +247,9 @@ function DirectMessageScope({
   const callReason = fixtureOnly()
     ? fixtureReason
     : scope.blocked
-      ? 'Kanal erişimi yeniden doğrulanmalı.'
+      ? t('Kanal erişimi yeniden doğrulanmalı.')
       : !window.rooms?.dmCalls
-        ? 'Özel arama için masaüstü uygulamasını aç.'
+        ? t('Özel arama için masaüstü uygulamasını aç.')
         : dmCallUnavailable();
   const call = async (mode: 'audio' | 'video') => {
     if (!channel || callReason) return;
@@ -317,8 +320,8 @@ function DirectMessageScope({
     return (
       <div className="ss-empty">
         <MessageCircle size={42} />
-        <h2>Özel konuşma seç</h2>
-        <p>Arkadaşlarından veya üyelerden bir konuşma aç.</p>
+        <h2>{t('Özel konuşma seç')}</h2>
+        <p>{t('Arkadaşlarından veya üyelerden bir konuşma aç.')}</p>
       </div>
     );
   const files = c.messages
@@ -341,35 +344,35 @@ function DirectMessageScope({
           <div>
             <IconButton
               disabled={!!callReason || relationship === 'blocked' || dm.busy}
-              label={callReason ?? 'Sesli arama başlat'}
+              label={callReason ?? t('Sesli arama başlat')}
               onClick={() => void call('audio')}
             >
               <Phone size={19} />
             </IconButton>
             <IconButton
               disabled={!!callReason || relationship === 'blocked' || dm.busy}
-              label={callReason ?? 'Görüntülü arama başlat'}
+              label={callReason ?? t('Görüntülü arama başlat')}
               onClick={() => void call('video')}
             >
               <Video size={19} />
             </IconButton>
             <IconButton
-              label="Bildirim ayarları"
+              label={t('Bildirim ayarları')}
               onClick={() => navigate(preserveReferenceFixtureRoute('/settings?tab=desktop'))}
             >
               <Bell size={19} />
             </IconButton>
-            <IconButton disabled label="Sabitlenen mesajlar bu bağlantıda sunulmuyor.">
+            <IconButton disabled label={t('Sabitlenen mesajlar bu bağlantıda sunulmuyor.')}>
               <Pin size={19} />
             </IconButton>
             <IconButton
-              label={inspectorVisible ? 'Üye panelini kapat' : 'Üye panelini aç'}
+              label={inspectorVisible ? t('Üye panelini kapat') : t('Üye panelini aç')}
               aria-pressed={inspectorVisible}
               onClick={() => setInspectorVisible((value) => !value)}
             >
               <Users size={19} />
             </IconButton>
-            <IconButton label="Yüklenen konuşmada ara" onClick={() => setSearch(true)}>
+            <IconButton label={t('Yüklenen konuşmada ara')} onClick={() => setSearch(true)}>
               <Search size={19} />
             </IconButton>
           </div>
@@ -377,14 +380,16 @@ function DirectMessageScope({
         <div className="ss-dm-intro">
           <VoiceAvatar id={peer.id} name={nameOf(peer)} />
           <div>
-            <strong>{nameOf(peer)} ile özel konuşman</strong>
-            <small>Bu konuşmayı yalnızca siz görebilirsiniz.</small>
+            <strong>{t('{name} ile özel konuşman', { name: nameOf(peer) })}</strong>
+            <small>{t('Bu konuşmayı yalnızca siz görebilirsiniz.')}</small>
           </div>
         </div>
         <CommunityChat
           notify={notify}
           composerPlaceholder={
-            fixture?.metadata.id === 'S12' ? `${nameOf(peer)}’ye mesaj yaz` : undefined
+            fixture?.metadata.id === 'S12'
+              ? t('{name}’ye mesaj yaz', { name: nameOf(peer) })
+              : undefined
           }
         />
         {relationshipReady && relationship !== 'friend' && (
@@ -396,12 +401,14 @@ function DirectMessageScope({
             )}
             <span>
               {relationship === 'blocked'
-                ? `${nameOf(peer)}’yi engelledin. Mesaj göndermek için engeli kaldır.`
+                ? t('{name}’yi engelledin. Mesaj göndermek için engeli kaldır.', {
+                    name: nameOf(peer),
+                  })
                 : relationship === 'outgoing'
-                  ? 'Arkadaşlık isteğin gönderildi.'
+                  ? t('Arkadaşlık isteğin gönderildi.')
                   : relationship === 'incoming'
-                    ? 'Bu kişiden arkadaşlık isteği var.'
-                    : 'Henüz arkadaş değilsiniz.'}
+                    ? t('Bu kişiden arkadaşlık isteği var.')
+                    : t('Henüz arkadaş değilsiniz.')}
             </span>
             <button
               className="button primary"
@@ -416,18 +423,18 @@ function DirectMessageScope({
                 fixtureOnly()
                   ? fixtureReason
                   : scope.blocked
-                    ? 'Kanal erişimi yeniden doğrulanmalı.'
+                    ? t('Kanal erişimi yeniden doğrulanmalı.')
                     : undefined
               }
               onClick={() => void changeRelationship()}
             >
               {busy
-                ? 'Bekleniyor…'
+                ? t('Bekleniyor…')
                 : relationship === 'blocked'
-                  ? 'Engeli kaldır'
+                  ? t('Engeli kaldır')
                   : relationship === 'incoming'
-                    ? 'İsteği kabul et'
-                    : 'Arkadaş ekle'}
+                    ? t('İsteği kabul et')
+                    : t('Arkadaş ekle')}
             </button>
           </div>
         )}
@@ -440,8 +447,8 @@ function DirectMessageScope({
       {inspectorVisible && (
         <aside className="ss-dm-inspector">
           <div className="ss-inspector-heading">
-            <h6>PROFİL</h6>
-            <IconButton label="Üye panelini kapat" onClick={() => setInspectorVisible(false)}>
+            <h6>{t('PROFİL')}</h6>
+            <IconButton label={t('Üye panelini kapat')} onClick={() => setInspectorVisible(false)}>
               <X size={17} />
             </IconButton>
           </div>
@@ -453,7 +460,7 @@ function DirectMessageScope({
           </button>
           {peerDetails?.mutualSpaces?.length ? (
             <>
-              <h6>ORTAK TOPLULUK</h6>
+              <h6>{t('ORTAK TOPLULUK')}</h6>
               {peerDetails.mutualSpaces.map((space) => (
                 <button
                   className={`ss-mutual-space ${fixture ? 'reference-match' : ''}`}
@@ -467,7 +474,7 @@ function DirectMessageScope({
               ))}
             </>
           ) : null}
-          <h6>PAYLAŞILANLAR</h6>
+          <h6>{t('PAYLAŞILANLAR')}</h6>
           {inspectorFiles.length ? (
             inspectorFiles.slice(-5).map((file) => (
               <div className="ss-shared-row" key={file.id}>
@@ -477,14 +484,14 @@ function DirectMessageScope({
               </div>
             ))
           ) : (
-            <p>Yüklenen mesajlarda dosya yok.</p>
+            <p>{t('Yüklenen mesajlarda dosya yok.')}</p>
           )}
           {!fixture && (
             <button
               className="button secondary"
               onClick={() => navigate(preserveReferenceFixtureRoute('/files'))}
             >
-              Dosyaları aç
+              {t('Dosyaları aç')}
             </button>
           )}
         </aside>
@@ -510,7 +517,7 @@ export function SocialSearchDialog(props: SocialSearchProps) {
   const intent = detail.fixture?.ui.surface === 'search' ? detail.fixture.ui : null;
   if (detail.loading || detail.error)
     return (
-      <Modal title="Arama" onClose={props.onClose}>
+      <Modal title={t('Arama')} onClose={props.onClose}>
         <FixtureOpening loading={detail.loading} error={detail.error} />
       </Modal>
     );
@@ -541,7 +548,7 @@ function SocialSearchScope({
     [error, setError] = useState('');
   const channels = [...c.channels, ...c.dms];
   const channel = channels.find((item) => item.id === c.activeChannelId);
-  const needle = query.trim().toLocaleLowerCase('tr-TR');
+  const needle = query.trim().toLocaleLowerCase(locale);
   const matches = (scope.blocked ? [] : c.messages)
     .filter(
       (message) =>
@@ -549,9 +556,9 @@ function SocialSearchScope({
         (!author || message.author.id === author) &&
         (mode === 'files'
           ? message.attachments?.some((file) =>
-              file.name.toLocaleLowerCase('tr-TR').includes(needle),
+              file.name.toLocaleLowerCase(locale).includes(needle),
             )
-          : message.content.toLocaleLowerCase('tr-TR').includes(needle)),
+          : message.content.toLocaleLowerCase(locale).includes(needle)),
     )
     .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp));
   const quickFixture =
@@ -564,10 +571,10 @@ function SocialSearchScope({
       ? quickFixture.filter(
           (item) =>
             (!item.channelId || channels.some((channel) => channel.id === item.channelId)) &&
-            item.keywords.some((keyword) => keyword.toLocaleLowerCase('tr-TR').includes(needle)),
+            item.keywords.some((keyword) => keyword.toLocaleLowerCase(locale).includes(needle)),
         )
       : channels
-          .filter((item) => item.name.toLocaleLowerCase('tr-TR').includes(needle))
+          .filter((item) => item.name.toLocaleLowerCase(locale).includes(needle))
           .map((item) => ({
             id: item.id,
             label: item.name,
@@ -591,7 +598,7 @@ function SocialSearchScope({
         (messageId &&
           !state.messages.some((message) => message.id === messageId && message.channelId === id))
       ) {
-        setError('Yerel örnekte bu kanal veya mesaj bulunamadı.');
+        setError(t('Yerel örnekte bu kanal veya mesaj bulunamadı.'));
         return;
       }
       useCommunity.setState({
@@ -642,7 +649,7 @@ function SocialSearchScope({
   };
   const highlight = (value: string) => {
     if (!needle) return value;
-    const index = value.toLocaleLowerCase('tr-TR').indexOf(needle);
+    const index = value.toLocaleLowerCase(locale).indexOf(needle);
     return index < 0 ? (
       value
     ) : (
@@ -657,10 +664,12 @@ function SocialSearchScope({
     <Modal
       title={
         mode === 'quick'
-          ? 'Nereye gitmek istersin?'
+          ? t('Nereye gitmek istersin?')
           : fixture?.metadata.id === 'S13'
-            ? 'Bizim Oda’da ara'
-            : `${c.spaces.find((item) => item.id === c.activeSpaceId)?.name ?? 'Konuşma'} içinde ara`
+            ? t('Bizim Oda’da ara')
+            : t('{name} içinde ara', {
+                name: c.spaces.find((item) => item.id === c.activeSpaceId)?.name ?? t('Konuşma'),
+              })
       }
       className={`ss-modal ss-search ${mode === 'files' ? 'ss-search-files' : ''} ${mode === 'quick' ? 'ss-search-quick' : ''} ${mode !== 'quick' && !matches.length ? 'ss-search-no-results' : ''}`}
       onClose={onClose}
@@ -668,8 +677,8 @@ function SocialSearchScope({
       <div className="ss-modal-body">
         <div className="ss-search-input">
           <input
-            aria-label="Arama"
-            placeholder="Mesaj, dosya veya kanal ara"
+            aria-label={t('Arama')}
+            placeholder={t('Mesaj, dosya veya kanal ara')}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
@@ -694,15 +703,17 @@ function SocialSearchScope({
           <div className="ss-search-filters">
             <span>
               {fixture?.metadata.id === 'S13'
-                ? 'Kanal: tümü'
-                : `Kanal: ${channel?.name ?? 'seçilmedi'}`}
+                ? t('Kanal: tümü')
+                : channel
+                  ? t('Kanal: {name}', { name: channel.name })
+                  : t('Kanal: seçilmedi')}
             </span>
             <select
-              aria-label="Kişi filtresi"
+              aria-label={t('Kişi filtresi')}
               value={author}
               onChange={(event) => setAuthor(event.target.value)}
             >
-              <option value="">Kişi: herkes</option>
+              <option value="">{t('Kişi: herkes')}</option>
               {people.map((person) => (
                 <option key={person.id} value={person.id}>
                   {nameOf(person)}
@@ -710,18 +721,20 @@ function SocialSearchScope({
               ))}
             </select>
             <select
-              aria-label="Arama türü"
+              aria-label={t('Arama türü')}
               value={mode}
               onChange={(event) => setMode(event.target.value as typeof mode)}
             >
-              <option value="messages">Tür: mesaj</option>
-              <option value="files">Tür: dosya</option>
-              <option value="quick">Kanal geçişi</option>
+              <option value="messages">{t('Tür: mesaj')}</option>
+              <option value="files">{t('Tür: dosya')}</option>
+              <option value="quick">{t('Kanal geçişi')}</option>
             </select>
           </div>
         )}
         {mode !== 'quick' && !fixture && (
-          <p className="ss-scope">Bu kanalda yüklenen {c.messages.length} mesaj içinde aranıyor.</p>
+          <p className="ss-scope">
+            {t('Bu kanalda yüklenen {count} mesaj içinde aranıyor.', { count: c.messages.length })}
+          </p>
         )}
         <div className="ss-search-results">
           {mode === 'quick'
@@ -742,14 +755,16 @@ function SocialSearchScope({
                   )}
                   <span>
                     {item.label}
-                    {item.memberCount !== undefined ? ` · ${item.memberCount} kişi` : ''}
+                    {item.memberCount !== undefined
+                      ? ` · ${t('{count} kişi', { count: item.memberCount })}`
+                      : ''}
                   </span>
                 </button>
               ))
             : matches.map((message) =>
                 mode === 'files' ? (
                   (message.attachments ?? [])
-                    .filter((file) => file.name.toLocaleLowerCase('tr-TR').includes(needle))
+                    .filter((file) => file.name.toLocaleLowerCase(locale).includes(needle))
                     .map((file) => (
                       <div className="ss-search-file" key={`${message.id}-${file.id}`}>
                         <FileText size={26} />
@@ -763,7 +778,7 @@ function SocialSearchScope({
                           disabled={scope.blocked}
                           onClick={() => void open(message.channelId, message.id)}
                         >
-                          Bağlamı aç
+                          {t('Bağlamı aç')}
                         </button>
                       </div>
                     ))
@@ -781,7 +796,7 @@ function SocialSearchScope({
                         onClick={() => void open(message.channelId, message.id)}
                       >
                         <ArrowRight size={14} />
-                        Mesaja git
+                        {t('Mesaja git')}
                       </button>
                     </div>
                   </article>
@@ -790,12 +805,12 @@ function SocialSearchScope({
           {!(mode === 'quick' ? destinations.length : matches.length) && (
             <div className="ss-empty">
               <Search size={38} />
-              <h2>Bir eşleşme bulamadık.</h2>
-              <p>Farklı bir kelime veya daha az filtre deneyebilirsin.</p>
+              <h2>{t('Bir eşleşme bulamadık.')}</h2>
+              <p>{t('Farklı bir kelime veya daha az filtre deneyebilirsin.')}</p>
             </div>
           )}
         </div>
-        {mode === 'quick' && <p className="ss-scope">↑ ↓ Seç · Enter Aç · Esc Kapat</p>}
+        {mode === 'quick' && <p className="ss-scope">{t('↑ ↓ Seç · Enter Aç · Esc Kapat')}</p>}
         {error && (
           <p className="ss-error" role="alert">
             {error}
@@ -803,7 +818,7 @@ function SocialSearchScope({
         )}
       </div>
       <footer className="ss-modal-footer">
-        <button onClick={onClose}>Kapat</button>
+        <button onClick={onClose}>{t('Kapat')}</button>
       </footer>
     </Modal>
   );
@@ -968,12 +983,22 @@ function SharedFilesScope({
       <header className="ss-files-heading">
         <div>
           <h1>
-            {fixture?.metadata.id === 'S14' ? 'Birbirimize bıraktıklarımız' : 'Paylaşılan dosyalar'}
+            {fixture?.metadata.id === 'S14'
+              ? t('Birbirimize bıraktıklarımız')
+              : t('Paylaşılan dosyalar')}
           </h1>
           <p>
             {fixture?.metadata.id === 'S14'
-              ? `${c.spaces.find((space) => space.id === c.activeSpaceId)?.name ?? 'Topluluk'}’da paylaşılan dosyalar.`
-              : `${c.channels.find((item) => item.id === c.activeChannelId)?.name ?? c.dms.find((item) => item.id === c.activeChannelId)?.name ?? 'Kanal seç'} · Yüklenen mesajlar`}
+              ? t('{name}’da paylaşılan dosyalar.', {
+                  name:
+                    c.spaces.find((space) => space.id === c.activeSpaceId)?.name ?? t('Topluluk'),
+                })
+              : t('{name} · Yüklenen mesajlar', {
+                  name:
+                    c.channels.find((item) => item.id === c.activeChannelId)?.name ??
+                    c.dms.find((item) => item.id === c.activeChannelId)?.name ??
+                    t('Kanal seç'),
+                })}
           </p>
         </div>
         <button
@@ -983,28 +1008,28 @@ function SharedFilesScope({
           }
           title={
             scope.blocked
-              ? 'Kanal erişimi yeniden doğrulanmalı.'
+              ? t('Kanal erişimi yeniden doğrulanmalı.')
               : fixtureOnly()
                 ? fixtureReason
                 : !c.activeChannelId
-                  ? 'Dosya paylaşmak için bir metin kanalı seç'
+                  ? t('Dosya paylaşmak için bir metin kanalı seç')
                   : undefined
           }
           onClick={() => void upload()}
         >
           <Upload size={18} />
-          Dosya yükle
+          {t('Dosya yükle')}
         </button>
       </header>
       {intent?.initialUploadState === 'unavailable' && !scope.blocked && (
         <div className="ss-upload" role="status">
           <AlertCircle size={26} />
           <div>
-            <strong>Yükleme durumu sağlanmıyor</strong>
+            <strong>{t('Yükleme durumu sağlanmıyor')}</strong>
             <small>{intent.initialError}</small>
           </div>
-          <button disabled title="Sunucu yükleme iptali sağlamıyor">
-            İptal
+          <button disabled title={t('Sunucu yükleme iptali sağlamıyor')}>
+            {t('İptal')}
           </button>
         </div>
       )}
@@ -1012,12 +1037,12 @@ function SharedFilesScope({
         <div className="ss-upload" role="status">
           <FileText size={26} />
           <div>
-            <strong>Dosya seçiliyor veya yükleniyor…</strong>
-            <progress aria-label="Dosya yüklemesi" />
-            <small>Sunucu yükleme yüzdesi sağlamıyor.</small>
+            <strong>{t('Dosya seçiliyor veya yükleniyor…')}</strong>
+            <progress aria-label={t('Dosya yüklemesi')} />
+            <small>{t('Sunucu yükleme yüzdesi sağlamıyor.')}</small>
           </div>
-          <button disabled title="Yerel yükleme iptali henüz uygulanmadı">
-            İptal
+          <button disabled title={t('Yerel yükleme iptali henüz uygulanmadı')}>
+            {t('İptal')}
           </button>
         </div>
       )}
@@ -1030,19 +1055,21 @@ function SharedFilesScope({
               setError('');
               if (!fixtureOnly())
                 notify(
-                  'Başarısız mesajı sohbetten yeniden gönderebilirsin; yeni yükleme için dosyayı tekrar seç.',
+                  t(
+                    'Başarısız mesajı sohbetten yeniden gönderebilirsin; yeni yükleme için dosyayı tekrar seç.',
+                  ),
                 );
             }}
           >
-            Kapat
+            {t('Kapat')}
           </button>
         </div>
       )}
-      <div className="ss-tabs" role="tablist" aria-label="Dosya türü">
+      <div className="ss-tabs" role="tablist" aria-label={t('Dosya türü')}>
         {[
-          ['all', 'Tümü'],
-          ['images', 'Görseller'],
-          ['documents', 'Belgeler'],
+          ['all', t('Tümü')],
+          ['images', t('Görseller')],
+          ['documents', t('Belgeler')],
         ].map(([key, label]) => (
           <button key={key} role="tab" aria-selected={tab === key} onClick={() => setTab(key)}>
             {label}
@@ -1062,12 +1089,12 @@ function SharedFilesScope({
                 title={
                   !image
                     ? boardReference
-                      ? 'Örnek PNG içeriği sağlanmadı.'
-                      : 'İzinli görsel önizleme kaynağı sağlanmadı'
+                      ? t('Örnek PNG içeriği sağlanmadı.')
+                      : t('İzinli görsel önizleme kaynağı sağlanmadı')
                     : undefined
                 }
                 onClick={() => setPreview(file)}
-                aria-label={`${file.name} önizle`}
+                aria-label={t('{name} önizle', { name: file.name })}
               >
                 {image ? (
                   <img src={image} alt={file.name} loading="lazy" />
@@ -1085,18 +1112,20 @@ function SharedFilesScope({
                   {nameOf(message.author)} ·{' '}
                   {fixture?.metadata.id === 'S14'
                     ? message.id === 'demo-detail-board-file'
-                      ? 'Dün 19.15'
-                      : 'Bugün 20.45'
+                      ? t('Dün 19.15')
+                      : t('Bugün 20.45')
                     : dateOf(message.timestamp)}{' '}
                   · {sizeOf(file.size)}
                 </p>
                 {boardReference ? (
                   <button
                     onClick={() => navigate(preserveReferenceFixtureRoute('/together?tab=board'))}
-                    title="Uygulamadaki ortak Whiteboard alanını açar; örnek PNG içeriği dahil değildir."
+                    title={t(
+                      'Uygulamadaki ortak Whiteboard alanını açar; örnek PNG içeriği dahil değildir.',
+                    )}
                   >
                     <ArrowRight size={17} />
-                    Tahtayı aç
+                    {t('Tahtayı aç')}
                   </button>
                 ) : message.delivery === 'failed' ? (
                   <button
@@ -1104,14 +1133,14 @@ function SharedFilesScope({
                     title={fixtureOnly() ? fixtureReason : undefined}
                     onClick={() => void scopedAction(() => c.retryMessage(message.id))}
                   >
-                    Gönderimi yeniden dene
+                    {t('Gönderimi yeniden dene')}
                   </button>
                 ) : message.delivery === 'pending' ? (
-                  <span role="status">Gönderiliyor…</span>
+                  <span role="status">{t('Gönderiliyor…')}</span>
                 ) : image ? (
                   <button onClick={() => setPreview(file)}>
                     <Image size={17} />
-                    Önizle
+                    {t('Önizle')}
                   </button>
                 ) : (
                   <FileLink file={file} />
@@ -1123,12 +1152,12 @@ function SharedFilesScope({
                       fixtureOnly()
                         ? fixtureReason
                         : scope.blocked
-                          ? 'Kanal erişimi yeniden doğrulanmalı.'
+                          ? t('Kanal erişimi yeniden doğrulanmalı.')
                           : undefined
                     }
                     onClick={() => openContext(message.channelId, message.id)}
                   >
-                    Bağlamı aç
+                    {t('Bağlamı aç')}
                   </button>
                 )}
               </footer>
@@ -1139,8 +1168,8 @@ function SharedFilesScope({
       {!files.length && (
         <div className="ss-empty">
           <FileText size={42} />
-          <h2>Dosya yok</h2>
-          <p>Seçili kanalda yüklenen mesajlarda bu türde dosya bulunamadı.</p>
+          <h2>{t('Dosya yok')}</h2>
+          <p>{t('Seçili kanalda yüklenen mesajlarda bu türde dosya bulunamadı.')}</p>
         </div>
       )}
       {c.hasOlder && (
@@ -1150,7 +1179,7 @@ function SharedFilesScope({
           title={fixtureOnly() ? fixtureReason : undefined}
           onClick={() => void scopedAction(() => c.loadOlder())}
         >
-          Önceki mesajların dosyalarını yükle
+          {t('Önceki mesajların dosyalarını yükle')}
         </button>
       )}
       {preview && previewUrl && (
@@ -1190,7 +1219,7 @@ export function UserProfileDialog(props: UserProfileProps) {
   if (changed) return null;
   if (detail.loading || detail.error)
     return (
-      <Modal title="Profil" onClose={props.onClose}>
+      <Modal title={t('Profil')} onClose={props.onClose}>
         <FixtureOpening loading={detail.loading} error={detail.error} />
       </Modal>
     );
@@ -1229,17 +1258,17 @@ function UserProfileScope({
     [error, setError] = useState('');
   if (scope.blocked)
     return (
-      <Modal title="Profil" className="ss-modal ss-profile" onClose={onClose}>
+      <Modal title={t('Profil')} className="ss-modal ss-profile" onClose={onClose}>
         <div className="ss-modal-body">
-          <p role="status">Hesap ve kanal erişimi yeniden doğrulanmalı.</p>
+          <p role="status">{t('Hesap ve kanal erişimi yeniden doğrulanmalı.')}</p>
         </div>
       </Modal>
     );
   if (!person)
     return (
-      <Modal title="Profil" className="ss-modal ss-profile" onClose={onClose}>
+      <Modal title={t('Profil')} className="ss-modal ss-profile" onClose={onClose}>
         <div className="ss-modal-body">
-          <p>Profil için giriş yap.</p>
+          <p>{t('Profil için giriş yap.')}</p>
         </div>
       </Modal>
     );
@@ -1262,17 +1291,17 @@ function UserProfileScope({
   };
   const title =
     view === 'status'
-      ? 'Durumunu seç'
+      ? t('Durumunu seç')
       : view === 'invisible' && own && status === 'invisible'
-        ? 'Görünmezsin'
+        ? t('Görünmezsin')
         : fixtureDetails?.about
-          ? 'Deniz’in profili'
-          : `${nameOf(person)} profili`;
+          ? t('Deniz’in profili')
+          : t('{name} profili', { name: nameOf(person) });
   const statusOptions: Array<[string, string, string]> = [
-    ['online', 'Çevrimiçi', ''],
-    ['idle', 'Uzakta', ''],
-    ['dnd', 'Rahatsız etmeyin', 'Durumunu diğer üyelere bildir'],
-    ['invisible', 'Görünmez', 'Başkalarına çevrimdışı görün'],
+    ['online', t('Çevrimiçi'), ''],
+    ['idle', t('Uzakta'), ''],
+    ['dnd', t('Rahatsız etmeyin'), t('Durumunu diğer üyelere bildir')],
+    ['invisible', t('Görünmez'), t('Başkalarına çevrimdışı görün')],
   ];
   return (
     <Modal
@@ -1294,7 +1323,7 @@ function UserProfileScope({
                     fixtureOnly()
                       ? fixtureReason
                       : scope.blocked
-                        ? 'Kanal erişimi yeniden doğrulanmalı.'
+                        ? t('Kanal erişimi yeniden doğrulanmalı.')
                         : undefined
                   }
                   onClick={() => void setStatus(key as 'online' | 'idle' | 'dnd' | 'invisible')}
@@ -1311,19 +1340,19 @@ function UserProfileScope({
           <>
             <div className="ss-invisible">
               <Eye size={18} />
-              Senin durumun: Görünmez
+              {t('Senin durumun: Görünmez')}
             </div>
             <div className="ss-offline-preview">
-              <h6>DİĞER ÜYELERİN GÖRDÜĞÜ</h6>
+              <h6>{t('DİĞER ÜYELERİN GÖRDÜĞÜ')}</h6>
               <div>
                 <VoiceAvatar id={person.id} name={nameOf(person)} />
                 <span>
                   <strong>{nameOf(person)}</strong>
-                  <small>Çevrimdışı</small>
+                  <small>{t('Çevrimdışı')}</small>
                 </span>
               </div>
             </div>
-            <p className="ss-scope">Görünmez olduğunu yalnızca sen görürsün.</p>
+            <p className="ss-scope">{t('Görünmez olduğunu yalnızca sen görürsün.')}</p>
           </>
         ) : (
           <>
@@ -1339,29 +1368,29 @@ function UserProfileScope({
                   {person.username} · {statusLabel(status)}
                 </p>
               </div>
-              {own && <span>SEN</span>}
+              {own && <span>{t('SEN')}</span>}
             </div>
             {fixtureDetails?.statusText && (
               <p className="ss-profile-status">{fixtureDetails.statusText}</p>
             )}
             {own && c.spaces.length > 0 && (
               <>
-                <h6>BİRLİKTE OLDUĞUN YER</h6>
+                <h6>{t('BİRLİKTE OLDUĞUN YER')}</h6>
                 {c.spaces.map((space) => (
                   <div className="ss-membership" key={space.id}>
                     <Home size={22} />
                     <span>{space.name}</span>
-                    <small>{space.ownerId === person.id ? 'Sahip' : 'Üye'}</small>
+                    <small>{space.ownerId === person.id ? t('Sahip') : t('Üye')}</small>
                   </div>
                 ))}
               </>
             )}
             {view === 'expanded' && (
               <div className="ss-about">
-                <h6>HAKKINDA</h6>
+                <h6>{t('HAKKINDA')}</h6>
                 <p>
                   {fixtureDetails?.about ??
-                    'Profil ayrıntıları ve katılma tarihi bu bağlantıdan henüz alınamıyor.'}
+                    t('Profil ayrıntıları ve katılma tarihi bu bağlantıdan henüz alınamıyor.')}
                 </p>
               </div>
             )}
@@ -1370,7 +1399,7 @@ function UserProfileScope({
                 className="ss-details-button"
                 onClick={() => setView(view === 'expanded' ? 'profile' : 'expanded')}
               >
-                {view === 'expanded' ? 'Daha az göster' : 'Ayrıntıları göster'}
+                {view === 'expanded' ? t('Daha az göster') : t('Ayrıntıları göster')}
               </button>
             )}
           </>
@@ -1386,7 +1415,7 @@ function UserProfileScope({
         {own && view !== 'status' ? (
           <>
             <button className="button secondary" onClick={() => setView('status')}>
-              Durum değiştir
+              {t('Durum değiştir')}
             </button>
             <button
               className="button primary"
@@ -1395,11 +1424,11 @@ function UserProfileScope({
                 navigate(preserveReferenceFixtureRoute('/settings?tab=profile'));
               }}
             >
-              Profili düzenle
+              {t('Profili düzenle')}
             </button>
           </>
         ) : (
-          <button onClick={onClose}>Kapat</button>
+          <button onClick={onClose}>{t('Kapat')}</button>
         )}
       </footer>
     </Modal>

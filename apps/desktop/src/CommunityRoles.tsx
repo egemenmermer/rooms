@@ -10,7 +10,7 @@ import {
   type SocialRolePermissionKey,
   type SocialRolePermissionValues,
 } from '@rooms/social';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import './community-roles.css';
 
 const permissions: {
@@ -21,107 +21,107 @@ const permissions: {
 }[] = [
   {
     key: 'view',
-    title: 'Kanalları gör',
-    detail: 'Topluluktaki sohbet ve odaları görür.',
-    group: 'Birlikte takılma',
+    title: t('Kanalları gör'),
+    detail: t('Topluluktaki sohbet ve odaları görür.'),
+    group: t('Birlikte takılma'),
   },
   {
     key: 'send',
-    title: 'Mesaj gönder',
-    detail: 'Sohbet kanallarına yazabilir.',
-    group: 'Birlikte takılma',
+    title: t('Mesaj gönder'),
+    detail: t('Sohbet kanallarına yazabilir.'),
+    group: t('Birlikte takılma'),
   },
   {
     key: 'files',
-    title: 'Fotoğraf ve dosya gönder',
-    detail: 'Sohbetlere dosya ekleyebilir.',
-    group: 'Birlikte takılma',
+    title: t('Fotoğraf ve dosya gönder'),
+    detail: t('Sohbetlere dosya ekleyebilir.'),
+    group: t('Birlikte takılma'),
   },
   {
     key: 'connect',
-    title: 'Ses odasına katıl',
-    detail: 'Ses odalarına girebilir.',
-    group: 'Birlikte takılma',
+    title: t('Ses odasına katıl'),
+    detail: t('Ses odalarına girebilir.'),
+    group: t('Birlikte takılma'),
   },
   {
     key: 'speak',
-    title: 'Mikrofon kullan',
-    detail: 'Ses odalarında konuşabilir.',
-    group: 'Birlikte takılma',
+    title: t('Mikrofon kullan'),
+    detail: t('Ses odalarında konuşabilir.'),
+    group: t('Birlikte takılma'),
   },
   {
     key: 'video',
-    title: 'Kamera ve ekran paylaş',
-    detail: 'Odada görüntü yayınlayabilir.',
-    group: 'Birlikte takılma',
+    title: t('Kamera ve ekran paylaş'),
+    detail: t('Odada görüntü yayınlayabilir.'),
+    group: t('Birlikte takılma'),
   },
   {
     key: 'manageMessages',
-    title: 'Mesajları yönet',
-    detail: 'Diğer üyelerin mesajlarını silebilir.',
-    group: 'Düzeni sağlama',
+    title: t('Mesajları yönet'),
+    detail: t('Diğer üyelerin mesajlarını silebilir.'),
+    group: t('Düzeni sağlama'),
   },
   {
     key: 'kickMembers',
-    title: 'Üyeleri çıkar',
-    detail: 'Kendisinden alt roldeki üyeleri topluluktan çıkarabilir.',
-    group: 'Düzeni sağlama',
+    title: t('Üyeleri çıkar'),
+    detail: t('Kendisinden alt roldeki üyeleri topluluktan çıkarabilir.'),
+    group: t('Düzeni sağlama'),
   },
   {
     key: 'banMembers',
-    title: 'Üyeleri yasakla',
-    detail: 'Kendisinden alt roldeki üyeleri çıkarıp geri dönmelerini engelleyebilir.',
-    group: 'Düzeni sağlama',
+    title: t('Üyeleri yasakla'),
+    detail: t('Kendisinden alt roldeki üyeleri çıkarıp geri dönmelerini engelleyebilir.'),
+    group: t('Düzeni sağlama'),
   },
   {
     key: 'moveMembers',
-    title: 'Odalar arasında taşı',
-    detail: 'Ses odasındaki birini başka odaya taşıyabilir ya da sesten çıkarabilir.',
-    group: 'Düzeni sağlama',
+    title: t('Odalar arasında taşı'),
+    detail: t('Ses odasındaki birini başka odaya taşıyabilir ya da sesten çıkarabilir.'),
+    group: t('Düzeni sağlama'),
   },
   {
     key: 'manageChannels',
-    title: 'Sohbet ve odaları yönet',
-    detail: 'Kanal oluşturabilir, düzenleyebilir ve silebilir.',
-    group: 'Yönetim',
+    title: t('Sohbet ve odaları yönet'),
+    detail: t('Kanal oluşturabilir, düzenleyebilir ve silebilir.'),
+    group: t('Yönetim'),
   },
   {
     key: 'assignRoles',
-    title: 'Üyelere rol ver',
-    detail: 'Kendi rolünden altındaki rolleri atayabilir.',
-    group: 'Yönetim',
+    title: t('Üyelere rol ver'),
+    detail: t('Kendi rolünden altındaki rolleri atayabilir.'),
+    group: t('Yönetim'),
   },
   {
     key: 'manageRoles',
-    title: 'Rolleri düzenle',
-    detail: 'Alt roller oluşturabilir, adını ve rengini değiştirebilir, silebilir.',
-    group: 'Yönetim',
+    title: t('Rolleri düzenle'),
+    detail: t('Alt roller oluşturabilir, adını ve rengini değiştirebilir, silebilir.'),
+    group: t('Yönetim'),
   },
   {
     key: 'managePermissions',
-    title: 'Yetkileri düzenle',
-    detail: 'Alt rollere ve kanallara kendi sahip olduğu yetkileri verebilir.',
-    group: 'Yönetim',
+    title: t('Yetkileri düzenle'),
+    detail: t('Alt rollere ve kanallara kendi sahip olduğu yetkileri verebilir.'),
+    group: t('Yönetim'),
   },
 ];
 const colors = ['#9b8afb', '#57ba9c', '#62a9e6', '#e8aa63', '#e482a7', '#bcc4d6'];
 const presets = [
   {
-    name: 'Kanka',
+    name: t('Kanka'),
     color: colors[0],
-    description: 'Sohbet ve ses odaları',
+    description: t('Sohbet ve ses odaları'),
     allow: ['view', 'send', 'files', 'connect', 'speak', 'video'],
   },
   {
-    name: 'Yayıncı',
+    name: t('Yayıncı'),
     color: colors[1],
-    description: 'Kamera ve ekran paylaşımı',
+    description: t('Kamera ve ekran paylaşımı'),
     allow: ['view', 'connect', 'speak', 'video'],
   },
   {
-    name: 'Moderatör',
+    name: t('Moderatör'),
     color: colors[3],
-    description: 'Mesaj ve üye düzeni',
+    description: t('Mesaj ve üye düzeni'),
     allow: ['manageMessages', 'kickMembers', 'moveMembers'],
   },
 ] satisfies {
@@ -169,7 +169,7 @@ export function CommunityRoles({ snapshot, busy, disabledReason, mutate }: Commu
       if (!alive.current) return;
       setCreating(false);
       setSelected(result.roleId);
-      setNotice('Rol oluşturuldu. Rengini ve yetkilerini seçebilirsin.');
+      setNotice(t('Rol oluşturuldu. Rengini ve yetkilerini seçebilirsin.'));
     } catch (failure) {
       if (alive.current) setError(uiError(failure));
     }
@@ -182,7 +182,7 @@ export function CommunityRoles({ snapshot, busy, disabledReason, mutate }: Commu
       if (!alive.current) return;
       setDeleting(null);
       setSelected(null);
-      setNotice('Rol silindi.');
+      setNotice(t('Rol silindi.'));
     } catch (failure) {
       if (alive.current) setError(uiError(failure));
     }
@@ -203,15 +203,15 @@ export function CommunityRoles({ snapshot, busy, disabledReason, mutate }: Commu
         <>
           <div className="roles-heading">
             <div>
-              <h2>Bizim roller</h2>
-              <p>İsmini koy, rengini seç, kim ne yapabilir belirle.</p>
+              <h2>{t('Bizim roller')}</h2>
+              <p>{t('İsmini koy, rengini seç, kim ne yapabilir belirle.')}</p>
             </div>
             <button
               className="button primary"
               disabled={blocked || !snapshot.capabilities.manageRoles}
               title={
                 disabledReason ||
-                (!snapshot.capabilities.manageRoles ? 'Rol oluşturma yetkin yok' : undefined)
+                (!snapshot.capabilities.manageRoles ? t('Rol oluşturma yetkin yok') : undefined)
               }
               onClick={() => {
                 setName('');
@@ -219,7 +219,7 @@ export function CommunityRoles({ snapshot, busy, disabledReason, mutate }: Commu
                 setCreating(true);
               }}
             >
-              <Plus size={16} /> Rol oluştur
+              <Plus size={16} /> {t('Rol oluştur')}
             </button>
           </div>
           <div className="roles-list">
@@ -236,16 +236,20 @@ export function CommunityRoles({ snapshot, busy, disabledReason, mutate }: Commu
                   <i style={{ backgroundColor: item.color ?? '#9b8afb' }} />
                   <strong>{item.name}</strong>
                   <span>
-                    {snapshot.members.filter((member) => member.roles.includes(item.id)).length} üye
+                    {t('{count} üye', {
+                      count: snapshot.members.filter((member) => member.roles.includes(item.id))
+                        .length,
+                    })}
                   </span>
                   <Pencil size={15} />
                 </button>
                 <button
                   className="roles-delete"
-                  aria-label={`${item.name} rolünü sil`}
+                  aria-label={t('{name} rolünü sil', { name: item.name })}
                   disabled={blocked || !item.editable}
                   title={
-                    disabledReason || (!item.editable ? 'Bu rolü silme yetkin yok' : 'Rolü sil')
+                    disabledReason ||
+                    (!item.editable ? t('Bu rolü silme yetkin yok') : t('Rolü sil'))
                   }
                   onClick={() => {
                     setError('');
@@ -258,11 +262,12 @@ export function CommunityRoles({ snapshot, busy, disabledReason, mutate }: Commu
             ))}
           </div>
           {!snapshot.roles.length && (
-            <p className="roles-empty">Henüz rol yok. İlk rolüne “Kanka” diyebilirsin.</p>
+            <p className="roles-empty">{t('Henüz rol yok. İlk rolüne “Kanka” diyebilirsin.')}</p>
           )}
           <p className="roles-help">
-            Rolü oluşturduktan sonra Üyeler sekmesinden arkadaşlarına verebilirsin. Bir kişiye
-            birden fazla rol verilebilir.
+            {t(
+              'Rolü oluşturduktan sonra Üyeler sekmesinden arkadaşlarına verebilirsin. Bir kişiye birden fazla rol verilebilir.',
+            )}
           </p>
         </>
       )}
@@ -279,7 +284,7 @@ export function CommunityRoles({ snapshot, busy, disabledReason, mutate }: Commu
       )}
       {creating && (
         <Modal
-          title="Yeni rol"
+          title={t('Yeni rol')}
           className="roles-modal"
           onClose={() => {
             if (!busy) setCreating(false);
@@ -292,12 +297,12 @@ export function CommunityRoles({ snapshot, busy, disabledReason, mutate }: Commu
             }}
           >
             <label className="roles-name">
-              Rol adı
+              {t('Rol adı')}
               <input
                 autoFocus
                 value={name}
                 maxLength={32}
-                placeholder="Mesela: Gece tayfası"
+                placeholder={t('Mesela: Gece tayfası')}
                 disabled={busy}
                 onChange={(event) => setName(event.target.value)}
               />
@@ -315,7 +320,9 @@ export function CommunityRoles({ snapshot, busy, disabledReason, mutate }: Commu
               ))}
             </div>
             <p className="roles-help">
-              Yeni rol topluluğun varsayılan yetkileriyle başlar. Sonraki ekranda değiştirebilirsin.
+              {t(
+                'Yeni rol topluluğun varsayılan yetkileriyle başlar. Sonraki ekranda değiştirebilirsin.',
+              )}
             </p>
             {error && (
               <p className="rcm-error" role="alert">
@@ -329,10 +336,10 @@ export function CommunityRoles({ snapshot, busy, disabledReason, mutate }: Commu
                 disabled={busy}
                 onClick={() => setCreating(false)}
               >
-                Vazgeç
+                {t('Vazgeç')}
               </button>
               <button className="button primary" disabled={blocked || !name.trim()}>
-                {busy ? 'Oluşturuluyor…' : 'Rolü oluştur'}
+                {busy ? t('Oluşturuluyor…') : t('Rolü oluştur')}
               </button>
             </footer>
           </form>
@@ -340,15 +347,16 @@ export function CommunityRoles({ snapshot, busy, disabledReason, mutate }: Commu
       )}
       {deleting && (
         <Modal
-          title="Rol silinsin mi?"
+          title={t('Rol silinsin mi?')}
           className="roles-modal"
           onClose={() => {
             if (!busy) setDeleting(null);
           }}
         >
           <p>
-            <strong>{deleting.name}</strong> rolü ve bu rolün verdiği yetkiler üyelerden
-            kaldırılacak.
+            {t('{name} rolü ve bu rolün verdiği yetkiler üyelerden kaldırılacak.', {
+              name: deleting.name,
+            })}
           </p>
           {error && (
             <p className="rcm-error" role="alert">
@@ -357,10 +365,10 @@ export function CommunityRoles({ snapshot, busy, disabledReason, mutate }: Commu
           )}
           <footer>
             <button className="button secondary" disabled={busy} onClick={() => setDeleting(null)}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button className="button danger" disabled={blocked} onClick={() => void remove()}>
-              {busy ? 'Siliniyor…' : 'Rolü sil'}
+              {busy ? t('Siliniyor…') : t('Rolü sil')}
             </button>
           </footer>
         </Modal>
@@ -417,7 +425,7 @@ function RoleEditor({
       if (!alive.current) return;
       const updated = result.management.roles.find((item) => item.id === role.id);
       if (!updated) {
-        setError('Rol artık bulunamıyor. Rol listesine dön.');
+        setError(t('Rol artık bulunamıyor. Rol listesine dön.'));
         return;
       }
       if (tab === 'appearance') {
@@ -436,18 +444,20 @@ function RoleEditor({
         disabled={busy}
         onClick={() => (dirty ? setLeaving(true) : onBack())}
       >
-        <ArrowLeft size={16} /> Rollere dön
+        <ArrowLeft size={16} /> {t('Rollere dön')}
       </button>
       <div className="roles-heading">
         <h2>
           <i style={{ backgroundColor: color ?? '#9b8afb' }} />
-          {name || 'Yeni rol'}
+          {name || t('Yeni rol')}
         </h2>
         <span>
-          {snapshot.members.filter((member) => member.roles.includes(role.id)).length} üye
+          {t('{count} üye', {
+            count: snapshot.members.filter((member) => member.roles.includes(role.id)).length,
+          })}
         </span>
       </div>
-      <div className="rcm-tabs" role="tablist" aria-label="Rol düzenleme">
+      <div className="rcm-tabs" role="tablist" aria-label={t('Rol düzenleme')}>
         <button
           role="tab"
           aria-selected={tab === 'appearance'}
@@ -456,7 +466,8 @@ function RoleEditor({
             setSaved(false);
           }}
         >
-          İsim ve renk{appearanceDirty ? ' ·' : ''}
+          {t('İsim ve renk')}
+          {appearanceDirty ? ' ·' : ''}
         </button>
         <button
           role="tab"
@@ -466,16 +477,17 @@ function RoleEditor({
             setSaved(false);
           }}
         >
-          Yetkiler{permissionsDirty ? ' ·' : ''}
+          {t('Yetkiler')}
+          {permissionsDirty ? ' ·' : ''}
         </button>
       </div>
       <fieldset disabled={blocked} className="role-fields">
         {tab === 'appearance' ? (
           <>
             <label className="roles-name">
-              Rol adı
+              {t('Rol adı')}
               <input
-                aria-label="Rol adı"
+                aria-label={t('Rol adı')}
                 value={name}
                 maxLength={32}
                 onChange={(event) => {
@@ -484,7 +496,7 @@ function RoleEditor({
                 }}
               />
             </label>
-            <span className="roles-label">Renk</span>
+            <span className="roles-label">{t('Renk')}</span>
             <div className="roles-colors">
               <button
                 type="button"
@@ -494,7 +506,7 @@ function RoleEditor({
                   setSaved(false);
                 }}
               >
-                Varsayılan
+                {t('Varsayılan')}
               </button>
               {colors.map((value) => (
                 <button
@@ -502,7 +514,7 @@ function RoleEditor({
                   key={value}
                   className="roles-swatch"
                   style={{ backgroundColor: value }}
-                  aria-label={`${value} renk`}
+                  aria-label={t('{value} renk', { value })}
                   aria-pressed={color === value}
                   onClick={() => {
                     setColor(value);
@@ -513,10 +525,10 @@ function RoleEditor({
                 </button>
               ))}
               <label className="roles-custom-color">
-                Özel renk
+                {t('Özel renk')}
                 <input
                   type="color"
-                  aria-label="Özel rol rengi"
+                  aria-label={t('Özel rol rengi')}
                   value={color ?? '#9b8afb'}
                   onChange={(event) => {
                     setColor(event.target.value);
@@ -528,15 +540,16 @@ function RoleEditor({
             <div className="roles-preview">
               <span style={{ borderColor: color ?? '#9b8afb' }}>
                 <i style={{ backgroundColor: color ?? '#9b8afb' }} />
-                {name || 'Rol adı'}
+                {name || t('Rol adı')}
               </span>
             </div>
           </>
         ) : (
           <>
             <p className="roles-help">
-              “Varsayılan” topluluğun mevcut ayarını kullanır. İzin ver veya engelle seçerek bu role
-              özel değiştirebilirsin. Diğer roller ve kanal izinleri de sonucu etkileyebilir.
+              {t(
+                '“Varsayılan” topluluğun mevcut ayarını kullanır. İzin ver veya engelle seçerek bu role özel değiştirebilirsin. Diğer roller ve kanal izinleri de sonucu etkileyebilir.',
+              )}
             </p>
             <div className="roles-presets">
               {presets.map((preset) => (
@@ -565,7 +578,7 @@ function RoleEditor({
                 </button>
               ))}
             </div>
-            {['Birlikte takılma', 'Düzeni sağlama', 'Yönetim'].map((group) => (
+            {[t('Birlikte takılma'), t('Düzeni sağlama'), t('Yönetim')].map((group) => (
               <section key={group} className="role-permission-group">
                 <h3>{group}</h3>
                 {permissions
@@ -582,7 +595,7 @@ function RoleEditor({
                         disabled={!snapshot.grantablePermissions.includes(permission.key)}
                         title={
                           !snapshot.grantablePermissions.includes(permission.key)
-                            ? 'Sahip olmadığın bir yetkiyi değiştiremezsin'
+                            ? t('Sahip olmadığın bir yetkiyi değiştiremezsin')
                             : undefined
                         }
                         onChange={(event) => {
@@ -593,9 +606,9 @@ function RoleEditor({
                           setSaved(false);
                         }}
                       >
-                        <option value="inherit">Varsayılan</option>
-                        <option value="allow">İzin ver</option>
-                        <option value="deny">Engelle</option>
+                        <option value="inherit">{t('Varsayılan')}</option>
+                        <option value="allow">{t('İzin ver')}</option>
+                        <option value="deny">{t('Engelle')}</option>
                       </select>
                     </label>
                   ))}
@@ -606,8 +619,9 @@ function RoleEditor({
       </fieldset>
       {!editable && (
         <p className="roles-help">
-          Bu rolün {tab === 'appearance' ? 'ismini ve rengini' : 'yetkilerini'} değiştirme yetkin
-          yok.
+          {tab === 'appearance'
+            ? t('Bu rolün ismini ve rengini değiştirme yetkin yok.')
+            : t('Bu rolün yetkilerini değiştirme yetkin yok.')}
         </p>
       )}
       {error && (
@@ -618,9 +632,9 @@ function RoleEditor({
       <footer className="role-save-bar">
         <span role="status">
           {saved
-            ? 'Kaydedildi'
+            ? t('Kaydedildi')
             : (tab === 'appearance' ? appearanceDirty : permissionsDirty)
-              ? 'Kaydedilmemiş değişiklikler'
+              ? t('Kaydedilmemiş değişiklikler')
               : ''}
         </span>
         <button
@@ -630,22 +644,22 @@ function RoleEditor({
           }
           onClick={() => void save()}
         >
-          {busy ? 'Kaydediliyor…' : 'Kaydet'}
+          {busy ? t('Kaydediliyor…') : t('Kaydet')}
         </button>
       </footer>
       {leaving && (
         <Modal
-          title="Değişikliklerden vazgeçilsin mi?"
+          title={t('Değişikliklerden vazgeçilsin mi?')}
           className="roles-modal"
           onClose={() => setLeaving(false)}
         >
-          <p>Kaydetmediğin isim, renk veya yetki değişiklikleri kaybolacak.</p>
+          <p>{t('Kaydetmediğin isim, renk veya yetki değişiklikleri kaybolacak.')}</p>
           <footer>
             <button className="button secondary" onClick={() => setLeaving(false)}>
-              Düzenlemeye devam et
+              {t('Düzenlemeye devam et')}
             </button>
             <button className="button primary" onClick={onBack}>
-              Vazgeç ve dön
+              {t('Vazgeç ve dön')}
             </button>
           </footer>
         </Modal>

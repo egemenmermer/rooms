@@ -4,6 +4,7 @@ import {
   compareNoise,
   type NoiseComparison as Comparison,
 } from '../../../packages/media-providers/src/noise-comparison';
+import { t } from './i18n';
 
 export function NoiseComparison({
   inputId,
@@ -73,10 +74,10 @@ export function NoiseComparison({
       if (controller.current === current && !current.signal.aborted)
         setError(
           failure instanceof DOMException && failure.name === 'NotAllowedError'
-            ? 'Mikrofon izni verilmedi. Sistem ayarlarından Tayfa için izin ver.'
+            ? t('Mikrofon izni verilmedi. Sistem ayarlarından Tayfa için izin ver.')
             : failure instanceof Error
               ? failure.message
-              : 'Ses karşılaştırması tamamlanamadı.',
+              : t('Ses karşılaştırması tamamlanamadı.'),
         );
     } finally {
       if (controller.current === current) {
@@ -89,14 +90,15 @@ export function NoiseComparison({
   const reduction =
     result?.rawDb != null && result.filteredDb != null ? result.rawDb - result.filteredDb : null;
   return (
-    <section className="noise-comparison mic-test" aria-label="Filtre karşılaştırması">
-      <h4>Filtre karşılaştırması</h4>
+    <section className="noise-comparison mic-test" aria-label={t('Filtre karşılaştırması')}>
+      <h4>{t('Filtre karşılaştırması')}</h4>
       <p>
-        İlk 3 saniye yalnızca gürültü olsun; sonra gürültü sürerken konuş. Mikrofon kaydı 15 saniye
-        sürer. Kayıtlar bu cihazda kalır.
+        {t(
+          'İlk 3 saniye yalnızca gürültü olsun; sonra gürültü sürerken konuş. Mikrofon kaydı 15 saniye sürer. Kayıtlar bu cihazda kalır.',
+        )}
       </p>
       <label className="field-label">
-        Test sesi
+        {t('Test sesi')}
         <select
           value={scenario}
           disabled={busy}
@@ -105,10 +107,10 @@ export function NoiseComparison({
             setScenario(event.target.value);
           }}
         >
-          <option value="keyboard">Klavye</option>
-          <option value="vacuum">Süpürge</option>
-          <option value="impact">Masa / kalem darbesi</option>
-          <option value="dishes">Tabak / çatal sesi</option>
+          <option value="keyboard">{t('Klavye')}</option>
+          <option value="vacuum">{t('Süpürge')}</option>
+          <option value="impact">{t('Masa / kalem darbesi')}</option>
+          <option value="dishes">{t('Tabak / çatal sesi')}</option>
         </select>
       </label>
       <div className="button-row">
@@ -117,14 +119,14 @@ export function NoiseComparison({
           disabled={busy || microphoneLive}
           onClick={() => void run()}
         >
-          15 saniye kaydet
+          {t('15 saniye kaydet')}
         </button>
         <button
           className="button secondary"
           disabled={busy}
           onClick={() => picker.current?.click()}
         >
-          Ses dosyası seç
+          {t('Ses dosyası seç')}
         </button>
         <input
           ref={picker}
@@ -140,36 +142,43 @@ export function NoiseComparison({
         />
         {busy && (
           <button className="button secondary" onClick={() => controller.current?.abort()}>
-            İptal
+            {t('İptal')}
           </button>
         )}
       </div>
       <p>
-        Dosya: 5–30 saniye, en fazla 20 MB. Dosyanın ilk 3 saniyesinde de yalnızca gürültü
-        bulunmalı.
+        {t(
+          'Dosya: 5–30 saniye, en fazla 20 MB. Dosyanın ilk 3 saniyesinde de yalnızca gürültü bulunmalı.',
+        )}
       </p>
-      {microphoneLive && <p>Yerel kayıt için görüşmedeki mikrofonunu kapat.</p>}
+      {microphoneLive && <p>{t('Yerel kayıt için görüşmedeki mikrofonunu kapat.')}</p>}
       {busy && (
         <p role="status">
-          {state === 'preparing' ? 'Ses işleme hazırlanıyor…' : 'Kayıt alınıyor…'}
+          {state === 'preparing' ? t('Ses işleme hazırlanıyor…') : t('Kayıt alınıyor…')}
         </p>
       )}
       {error && <p role="alert">{error}</p>}
       {result && (
         <>
           <p>
-            {{
-              keyboard: 'Klavye',
-              vacuum: 'Süpürge',
-              impact: 'Masa / kalem darbesi',
-              dishes: 'Tabak / çatal sesi',
-            }[result.scenario] ?? 'Ses'}{' '}
-            · {result.duration.toFixed(1)} saniye
+            {t('{label} · {seconds} saniye', {
+              label:
+                {
+                  keyboard: t('Klavye'),
+                  vacuum: t('Süpürge'),
+                  impact: t('Masa / kalem darbesi'),
+                  dishes: t('Tabak / çatal sesi'),
+                }[result.scenario] ?? t('Ses'),
+              seconds: result.duration.toFixed(1),
+            })}
           </p>
           <div className="noise-comparison-players">
             {[
-              ['Ham kayıt', result.rawUrl],
-              [result.mode === 'strong' ? 'Güçlü filtre' : 'Standart filtre', result.filteredUrl],
+              [t('Ham kayıt'), result.rawUrl],
+              [
+                result.mode === 'strong' ? t('Güçlü filtre') : t('Standart filtre'),
+                result.filteredUrl,
+              ],
             ].map(([label, url], index) => (
               <label key={label}>
                 {label}
@@ -189,9 +198,13 @@ export function NoiseComparison({
             ))}
           </div>
           <p>
-            İlk 3 saniyedeki seviye farkı:{' '}
-            <strong>{reduction === null ? 'Ölçülemedi' : `${reduction.toFixed(1)} dB`}</strong>. Bu
-            değer konuşma kalitesini veya görüşme gecikmesini ölçmez.
+            {t('İlk 3 saniyedeki seviye farkı:')}{' '}
+            <strong>
+              {reduction === null
+                ? t('Ölçülemedi')
+                : t('{value} dB', { value: reduction.toFixed(1) })}
+            </strong>
+            . {t('Bu değer konuşma kalitesini veya görüşme gecikmesini ölçmez.')}
           </p>
           <div className="button-row">
             <a
@@ -199,17 +212,17 @@ export function NoiseComparison({
               href={result.rawUrl}
               download={`${result.scenario}-raw.webm`}
             >
-              Ham kaydı indir
+              {t('Ham kaydı indir')}
             </a>
             <a
               className="button secondary"
               href={result.filteredUrl}
               download={`${result.scenario}-${result.mode}.webm`}
             >
-              Filtreli kaydı indir
+              {t('Filtreli kaydı indir')}
             </a>
             <button className="button secondary" onClick={clear}>
-              Kaydı sil
+              {t('Kaydı sil')}
             </button>
           </div>
         </>

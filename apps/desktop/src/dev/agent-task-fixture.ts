@@ -1,4 +1,5 @@
 import type { AgentArtifactPreview, AgentTask, ModelConnection } from '@rooms/agent-contracts';
+import { sample, people, places } from './sample';
 
 export const AGENT_TASK_FIXTURE_VARIANTS = {
   S56: [
@@ -56,9 +57,14 @@ export function getAgentTaskFixture(id: string, value: string): AgentTaskFixture
   const pending = {
     operationId,
     tool: 'drive_write',
-    description: 'Film gecesi planı dosyasına bölüm ekle',
-    preview:
+    description: sample(
+      'Film gecesi planı dosyasına bölüm ekle',
+      'Add a section to the movie night plan file',
+    ),
+    preview: sample(
       '+ Bu akşamın planı\n+ 21.00 — Salon’da buluşuyoruz.\n+ Herkes kendi kaynağıyla senkron katılıyor.\n+ Sonraki filmi birlikte seçiyoruz.',
+      '+ Tonight’s plan\n+ 9:00 PM — We meet in the Lounge.\n+ Everyone joins in sync with their own source.\n+ We pick the next movie together.',
+    ),
   };
   const task: AgentTask = {
     id: taskId,
@@ -66,9 +72,16 @@ export function getAgentTaskFixture(id: string, value: string): AgentTaskFixture
     ownerId: 'demo-deniz',
     modelConnectionId: modelId,
     kind: 'model',
-    prompt: 'Bu akşamın film gecesi planını konuşmalardan çıkar, bir dosya hazırla.',
+    prompt: sample(
+      'Bu akşamın film gecesi planını konuşmalardan çıkar, bir dosya hazırla.',
+      'Pull tonight’s movie night plan out of the conversations and put together a file.',
+    ),
     state: 'running',
-    progress: ['İstek alındı', 'Kaynaklar okunuyor', 'Plan hazırlanıyor'],
+    progress: [
+      sample('İstek alındı', 'Request received'),
+      sample('Kaynaklar okunuyor', 'Reading sources'),
+      sample('Plan hazırlanıyor', 'Preparing the plan'),
+    ],
     result: null,
     artifacts: [],
     createdAt: '2026-10-10T18:02:00.000Z',
@@ -80,8 +93,8 @@ export function getAgentTaskFixture(id: string, value: string): AgentTaskFixture
       id: modelId,
       ownerId: 'demo-deniz',
       provider: 'openrouter',
-      label: 'OpenRouter · Deniz',
-      model: 'Deniz’in kişisel seçimi',
+      label: `OpenRouter · ${people.deniz}`,
+      model: sample('Deniz’in kişisel seçimi', 'Maya’s personal pick'),
       status: 'connected',
     },
   ];
@@ -97,11 +110,17 @@ export function getAgentTaskFixture(id: string, value: string): AgentTaskFixture
     }
     if (variant === 'stopped') {
       task.state = 'cancelled';
-      task.progress = ['İstek alındı', 'Kaynaklar okunuyor'];
+      task.progress = [
+        sample('İstek alındı', 'Request received'),
+        sample('Kaynaklar okunuyor', 'Reading sources'),
+      ];
     }
     if (variant === 'failed') {
       task.state = 'failed';
-      task.error = 'Kişisel bağlantının limiti doldu.';
+      task.error = sample(
+        'Kişisel bağlantının limiti doldu.',
+        'The personal connection hit its limit.',
+      );
       models[0].status = 'unavailable';
       models[0].reason = task.error;
     }
@@ -112,18 +131,33 @@ export function getAgentTaskFixture(id: string, value: string): AgentTaskFixture
     (screen === 'S58' && variant === 'approved')
   ) {
     task.state = 'completed';
-    task.progress = ['İstek alındı', 'Plan hazırlandı', 'Sonuç ve dosya hazır'];
-    task.result = 'Bu akşam 21.00’de Salon’da buluşuyoruz. Herkes kendi kaynağını seçecek.';
+    task.progress = [
+      sample('İstek alındı', 'Request received'),
+      sample('Plan hazırlandı', 'Plan prepared'),
+      sample('Sonuç ve dosya hazır', 'Result and file ready'),
+    ];
+    task.result = sample(
+      'Bu akşam 21.00’de Salon’da buluşuyoruz. Herkes kendi kaynağını seçecek.',
+      'We meet in the Lounge at 9:00 PM tonight. Everyone will pick their own source.',
+    );
     if (variant !== 'empty')
       task.artifacts = [
-        { id: artifactId, name: 'film-gecesi-plani.md', mime: 'text/markdown', size: 398 },
+        {
+          id: artifactId,
+          name: sample('film-gecesi-plani.md', 'movie-night-plan.md'),
+          mime: 'text/markdown',
+          size: 398,
+        },
       ];
   }
   if (screen === 'S58') {
     if (variant === 'uncertain') {
       task.state = 'interrupted';
       task.uncertainOperation = { ...pending };
-      task.error = 'Dış işlem yanıtı alınamadı.';
+      task.error = sample(
+        'Dış işlem yanıtı alınamadı.',
+        'No response was received from the external operation.',
+      );
     } else if (variant === 'rejected') {
       task.state = 'cancelled';
       unsupportedReason =
@@ -155,7 +189,10 @@ export function getAgentTaskFixture(id: string, value: string): AgentTaskFixture
           artifact: { ...artifact },
           state: 'text',
           encoding: 'utf-8',
-          text: 'BİZİM ODA / 10 EKİM 2026\n\nFilm gecesi planı\n\nBu akşamın planı\n\n1. 21.00 — Salon’da buluşuyoruz.\n   Katılanlar ses odasına geçiyor.\n2. Herkes kendi kaynağını seçiyor.\n   Cinema’da kişisel kaynakla senkron izleme kullanılıyor.\n3. Önce kısa bir şey izliyoruz.\n   Sonraki içerik için birlikte karar veriyoruz.\n\nBu metin yalnızca yerel görsel örnektir.',
+          text: sample(
+            'BİZİM ODA / 10 EKİM 2026\n\nFilm gecesi planı\n\nBu akşamın planı\n\n1. 21.00 — Salon’da buluşuyoruz.\n   Katılanlar ses odasına geçiyor.\n2. Herkes kendi kaynağını seçiyor.\n   Cinema’da kişisel kaynakla senkron izleme kullanılıyor.\n3. Önce kısa bir şey izliyoruz.\n   Sonraki içerik için birlikte karar veriyoruz.\n\nBu metin yalnızca yerel görsel örnektir.',
+            'OUR PLACE / OCTOBER 10, 2026\n\nMovie night plan\n\nTonight’s plan\n\n1. 9:00 PM — We meet in the Lounge.\n   Everyone joins the voice room.\n2. Everyone picks their own source.\n   Cinema uses synced watching with a personal source.\n3. We start with something short.\n   We decide on the next pick together.\n\nThis text is only a local visual sample.',
+          ),
         }
     : undefined;
   // Metadata measures the exact local bytes; it is not a claim about remote storage.
@@ -174,7 +211,7 @@ export function getAgentTaskFixture(id: string, value: string): AgentTaskFixture
     task,
     models,
     userId: screen === 'S58' && variant === 'unauthorized' ? 'demo-ece' : 'demo-deniz',
-    roomName: '#genel · Bizim Oda',
+    roomName: `#${places.general} · ${places.community}`,
     view: screen === 'S57' ? 'result' : 'task',
     connected: variant !== 'offline',
     canManage: false,
@@ -189,7 +226,7 @@ export function getAgentTaskFixture(id: string, value: string): AgentTaskFixture
       variant,
       integration_status: 'LOCAL_FIXTURE',
       demo: true,
-      label: 'DEMO · Yerel Agent görevi örneği',
+      label: sample('DEMO · Yerel Agent görevi örneği', 'DEMO · Local Agent task sample'),
       unsupportedReason,
       originalPath: `<ROOMS_REFERENCE_ROOT>/04_screens/${screen}_${slug}${variant === 'default' ? '' : `__${variant}`}.png`,
     },

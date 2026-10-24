@@ -7,6 +7,7 @@ import type {
 } from '@rooms/social';
 import type { CommunityMessage, CommunityState } from '../community';
 import type { CommunityNotification } from '../CommunitySettings';
+import { people, places, sample } from './sample';
 
 export const SOCIAL_DETAIL_FIXTURE_VARIANTS = {
   S12: ['default', 'blocked', 'nonfriend'],
@@ -100,7 +101,7 @@ export interface SocialDetailFixtureMetadata {
   variant: string;
   integration_status: 'LOCAL_FIXTURE';
   demo: true;
-  label: 'DEMO · Yerel örnek veriler';
+  label: string;
   originalPath: string;
   route: string;
   /** Null never means visual acceptance or verification of a remote account. */
@@ -174,8 +175,7 @@ export function getSocialDetailFixtureMetadata(
   }
   if (screen === 'S13') {
     if (variant === 'quick')
-      unsupportedReason =
-        'The three quick-switch destinations and Salon participant count are explicit local demo projections. Channel actions open installed local channels and Oyun alanı opens the existing /games route; no voice connection or remote presence is claimed.';
+      unsupportedReason = `The three quick-switch destinations and ${places.lounge} participant count are explicit local demo projections. Channel actions open installed local channels and ${sample('Oyun alanı', 'Games')} opens the existing /games route; no voice connection or remote presence is claimed.`;
     else
       unsupportedReason =
         'The actual search covers loaded messages, not a server-wide indexed history. The fixture provides only explicit local messages.';
@@ -184,7 +184,7 @@ export function getSocialDetailFixtureMetadata(
     unsupportedReason =
       variant === 'uploading'
         ? 'Native attachment upload exposes neither byte progress nor cancellation. No ZIP, 65% progress, ongoing upload or cancellation success is fabricated.'
-        : 'The original pazar-plani.png is a prototype board-icon tile without a packaged PNG. Its sample attachment has no downloadable URL. The local PDF is 13,499 bytes, rather than the prototype label of 248 KB.';
+        : `The original ${sample('pazar-plani.png', 'sunday-plan.png')} is a prototype board-icon tile without a packaged PNG. Its sample attachment has no downloadable URL. The local PDF is 13,499 bytes, rather than the prototype label of 248 KB.`;
   }
   if (screen === 'S15') {
     unsupportedReason =
@@ -220,7 +220,7 @@ export function getSocialDetailFixtureMetadata(
     variant,
     integration_status: 'LOCAL_FIXTURE',
     demo: true,
-    label: 'DEMO · Yerel örnek veriler',
+    label: sample('DEMO · Yerel örnek veriler', 'DEMO · Local sample data'),
     route,
     originalPath: `${referenceRoot}/${screen}_${slugs[screen]}${variant === 'default' ? '' : `__${variant}`}.png`,
     unsupportedReason,
@@ -232,38 +232,52 @@ export function getSocialDetailFixtureMetadata(
 export function getSocialDetailFixture(id: string, value: string): SocialDetailFixture {
   const metadata = getSocialDetailFixtureMetadata(id, value);
   const { id: screen, variant } = metadata;
-  const names = ['Deniz', 'Ece', 'Can', 'Zeynep', 'Mert'] as const;
+  const names = ['deniz', 'ece', 'can', 'zeynep', 'mert'] as const;
   const users: Record<string, SocialUser> = Object.fromEntries(
-    names.map((name) => {
-      const username = name.toLowerCase();
-      return [username, { id: `demo-${username}`, username, displayName: name, avatar: null }];
+    names.map((key) => {
+      const displayName = people[key];
+      return [
+        key,
+        { id: `demo-${key}`, username: displayName.toLowerCase(), displayName, avatar: null },
+      ];
     }),
   );
-  const space: SocialSpace = { id: spaceId, name: 'Bizim Oda', icon: null, ownerId: users.ece.id };
+  const space: SocialSpace = {
+    id: spaceId,
+    name: places.community,
+    icon: null,
+    ownerId: users.ece.id,
+  };
   const channels: SocialChannel[] = [
-    { id: generalId, spaceId, name: 'genel', type: 0, topic: 'Her şey burada başlar.' },
+    {
+      id: generalId,
+      spaceId,
+      name: places.general,
+      type: 0,
+      topic: sample('Her şey burada başlar.', 'Where everything starts.'),
+    },
     {
       id: 'demo-channel-film-gecesi',
       spaceId,
-      name: 'film-gecesi',
+      name: places.movieNight,
       type: 0,
-      topic: 'Bu akşam ne izliyoruz?',
+      topic: sample('Bu akşam ne izliyoruz?', 'What are we watching tonight?'),
     },
-    { id: 'demo-channel-oyun-masasi', spaceId, name: 'oyun-masası', type: 0, topic: null },
-    { id: shareId, spaceId, name: 'paylaşımlar', type: 0, topic: null },
-    { id: 'demo-channel-salon', spaceId, name: 'Salon', type: 2, topic: null },
-    { id: 'demo-channel-sessiz-kose', spaceId, name: 'Sessiz köşe', type: 2, topic: null },
+    { id: 'demo-channel-oyun-masasi', spaceId, name: places.gameTable, type: 0, topic: null },
+    { id: shareId, spaceId, name: sample('paylaşımlar', places.shares), type: 0, topic: null },
+    { id: 'demo-channel-salon', spaceId, name: places.lounge, type: 2, topic: null },
+    { id: 'demo-channel-sessiz-kose', spaceId, name: places.quietCorner, type: 2, topic: null },
   ];
   const pdf: SocialAttachment = {
     id: pdfId,
-    name: 'hafta-sonu-listesi.pdf',
+    name: sample('hafta-sonu-listesi.pdf', 'weekend-list.pdf'),
     size: 248 * 1024,
     mime: 'application/pdf',
     url: '/__reference/06_handoff/examples/weekend-list.pdf',
   };
   const image: SocialAttachment = {
     id: imageId,
-    name: 'Kıyıda bir akşam',
+    name: sample('Kıyıda bir akşam', 'An evening by the coast'),
     size: 3172,
     mime: 'image/svg+xml',
     url: '/__reference/01_brand/cinema-still.svg',
@@ -288,10 +302,23 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
       'ece-film',
       'ece',
       '2026-10-10T18:42:00.000Z',
-      'Bu akşam filmi biraz erken açalım mı?',
+      sample(
+        'Bu akşam filmi biraz erken açalım mı?',
+        'Should we start the movie a bit early tonight?',
+      ),
     ),
-    makeMessage('can-film', 'can', '2026-10-09T18:43:00.000Z', 'Birkaç film daha ekledim listeye.'),
-    makeMessage('deniz-film', 'deniz', '2026-10-07T18:44:00.000Z', 'Film gecesine hazırım.'),
+    makeMessage(
+      'can-film',
+      'can',
+      '2026-10-09T18:43:00.000Z',
+      sample('Birkaç film daha ekledim listeye.', 'Added a few more movies to the list.'),
+    ),
+    makeMessage(
+      'deniz-film',
+      'deniz',
+      '2026-10-07T18:44:00.000Z',
+      sample('Film gecesine hazırım.', 'Ready for movie night.'),
+    ),
     makeMessage('zeynep-file', 'zeynep', '2026-10-10T18:45:00.000Z', '', { attachments: [pdf] }),
   ].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
   const publicState: SocialDetailPublicState = {
@@ -328,11 +355,43 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
   let ui: SocialDetailUIIntent;
   if (screen === 'S12') {
     const transcript = [
-      ['ece', '19:52', 'Bugün nasıldı? Akşam bir şeyler izleyelim mi?'],
-      ['deniz', '19:54', 'Olur! Salon’da buluşuruz. Listeye birkaç film ekledim.'],
-      ['ece', '20:03', 'Tamamdır. Diğerlerine de haber veriyorum.'],
-      ['deniz', '20:38', 'Ben geldim, istediğin zaman açabiliriz.'],
-      ['ece', '20:40', 'Bir sonraki filmi sen seç istersen.'],
+      [
+        'ece',
+        '19:52',
+        sample(
+          'Bugün nasıldı? Akşam bir şeyler izleyelim mi?',
+          'How was your day? Want to watch something tonight?',
+        ),
+      ],
+      [
+        'deniz',
+        '19:54',
+        sample(
+          'Olur! Salon’da buluşuruz. Listeye birkaç film ekledim.',
+          `Sure! Let's meet in the ${places.lounge}. I added a few movies to the list.`,
+        ),
+      ],
+      [
+        'ece',
+        '20:03',
+        sample(
+          'Tamamdır. Diğerlerine de haber veriyorum.',
+          "Sounds good. I'll let the others know.",
+        ),
+      ],
+      [
+        'deniz',
+        '20:38',
+        sample(
+          'Ben geldim, istediğin zaman açabiliriz.',
+          "I'm here, we can start whenever you want.",
+        ),
+      ],
+      [
+        'ece',
+        '20:40',
+        sample('Bir sonraki filmi sen seç istersen.', 'You can pick the next movie if you like.'),
+      ],
     ];
     publicState.activeSpaceId = null;
     publicState.activeChannelId = dmId;
@@ -350,7 +409,7 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
       {
         id: dmId,
         spaceId: null,
-        name: 'Ece',
+        name: people.ece,
         type: 1,
         topic: null,
         recipients: [{ ...users.deniz }, { ...users.ece }],
@@ -380,9 +439,9 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
       initialMode: variant === 'quick' ? 'quick' : variant === 'files' ? 'files' : 'messages',
       initialQuery:
         variant === 'quick'
-          ? 'salon'
+          ? sample('salon', 'lounge')
           : variant === 'empty'
-            ? 'dağ bisikleti'
+            ? sample('dağ bisikleti', 'mountain bike')
             : variant === 'files'
               ? 'pdf'
               : 'film',
@@ -391,25 +450,25 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
             quickDestinations: [
               {
                 id: 'demo-switch-salon',
-                label: 'Salon',
+                label: places.lounge,
                 kind: 'voice' as const,
                 channelId: 'demo-channel-salon',
                 memberCount: 4,
-                keywords: ['salon'],
+                keywords: [sample('salon', 'lounge')],
               },
               {
                 id: 'demo-switch-film',
-                label: 'film-gecesi',
+                label: places.movieNight,
                 kind: 'text' as const,
                 channelId: 'demo-channel-film-gecesi',
-                keywords: ['salon', 'film-gecesi'],
+                keywords: [sample('salon', 'lounge'), places.movieNight],
               },
               {
                 id: 'demo-switch-games',
-                label: 'Oyun alanı',
+                label: sample('Oyun alanı', 'Games'),
                 kind: 'games' as const,
                 route: '/games' as const,
-                keywords: ['salon', 'oyun'],
+                keywords: [sample('salon', 'lounge'), sample('oyun', 'games')],
               },
             ],
           }
@@ -423,7 +482,7 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
           attachments: [
             {
               id: 'demo-sunday-plan-png',
-              name: 'pazar-plani.png',
+              name: sample('pazar-plani.png', 'sunday-plan.png'),
               size: 92 * 1024,
               mime: 'image/png',
             },
@@ -444,14 +503,19 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
       ...(variant === 'uploading'
         ? {
             initialUploadState: 'unavailable' as const,
-            initialError: 'Yükleme ilerlemesi ve iptali bu bağlantıda sunulmuyor.',
+            initialError: sample(
+              'Yükleme ilerlemesi ve iptali bu bağlantıda sunulmuyor.',
+              'Upload progress and cancellation are not available on this connection.',
+            ),
           }
         : {}),
       ...(variant === 'failed'
         ? {
             initialUploadState: 'failed' as const,
-            initialError:
+            initialError: sample(
               'Yerel görsel örnekte yükleme hatası. Yeniden deneme için gerçek bir dosya seçilmeli.',
+              'Upload error in the local visual sample. Pick a real file to try again.',
+            ),
           }
         : {}),
     };
@@ -480,39 +544,51 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
             {
               id: 'demo-notice-mention',
               kind: 'mention',
-              title: 'Ece seni #genel kanalında etiketledi.',
-              detail: '“Deniz, sen de geliyor musun?”',
-              timestampLabel: '3 dakika önce',
+              title: sample(
+                `${people.ece} seni #${places.general} kanalında etiketledi.`,
+                `${people.ece} mentioned you in #${places.general}.`,
+              ),
+              detail: sample(
+                `“${people.deniz}, sen de geliyor musun?”`,
+                `“${people.deniz}, are you coming too?”`,
+              ),
+              timestampLabel: sample('3 dakika önce', '3 minutes ago'),
               unread: true,
               author: { ...users.ece },
-              actionLabel: 'Mesaja git',
+              actionLabel: sample('Mesaja git', 'Go to message'),
             },
             {
               id: 'demo-notice-cinema',
               kind: 'activity',
-              title: 'Sinema’da film başladı.',
-              detail: 'Ece, Can ve Zeynep izliyor',
-              timestampLabel: '6 dakika önce',
+              title: sample('Sinema’da film başladı.', 'A movie started in Cinema.'),
+              detail: sample(
+                `${people.ece}, ${people.can} ve ${people.zeynep} izliyor`,
+                `${people.ece}, ${people.can} and ${people.zeynep} are watching`,
+              ),
+              timestampLabel: sample('6 dakika önce', '6 minutes ago'),
               unread: true,
-              actionLabel: 'Sinema’yı aç',
+              actionLabel: sample('Sinema’yı aç', 'Open Cinema'),
             },
             {
               id: 'demo-notice-agent',
               kind: 'agent',
-              title: 'Tayfa araştırmanı tamamladı.',
-              detail: 'Hafta sonu için 3 seçenek',
-              timestampLabel: '12 dakika önce',
+              title: sample('Tayfa araştırmanı tamamladı.', 'Tayfa finished your research.'),
+              detail: sample('Hafta sonu için 3 seçenek', '3 options for the weekend'),
+              timestampLabel: sample('12 dakika önce', '12 minutes ago'),
               unread: true,
-              actionLabel: 'Tayfa Agent’ı aç',
+              actionLabel: sample('Tayfa Agent’ı aç', 'Open Tayfa Agent'),
             },
             {
               id: 'demo-notice-friend',
               kind: 'friend',
-              title: 'Mert arkadaş olmak istiyor.',
-              timestampLabel: 'Bugün 19.10',
+              title: sample(
+                `${people.mert} arkadaş olmak istiyor.`,
+                `${people.mert} wants to be friends.`,
+              ),
+              timestampLabel: sample('Bugün 19.10', 'Today 7:10 PM'),
               unread: false,
               author: { ...users.mert },
-              actionLabel: 'Arkadaşları aç',
+              actionLabel: sample('Arkadaşları aç', 'Open friends'),
             },
           ];
     if (variant !== 'empty') {
@@ -521,7 +597,7 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
           'notice-mention',
           'ece',
           '2026-10-10T18:47:00.000Z',
-          'Deniz, sen de geliyor musun?',
+          sample(`${people.deniz}, sen de geliyor musun?`, `${people.deniz}, are you coming too?`),
           { mentions: [users.deniz.id] },
         ),
       );
@@ -549,7 +625,10 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
       surface: 'community-editor',
       mode: variant === 'edit' ? 'edit' : 'create',
       draft: { ...space },
-      description: 'Arkadaşlarınla aynı yerde takıl.',
+      description: sample(
+        'Arkadaşlarınla aynı yerde takıl.',
+        'Hang out with your friends in one place.',
+      ),
       createdReferenceRequested: variant === 'created',
     };
   } else {
@@ -559,7 +638,7 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
         (channel) =>
           channel.id === (voice ? 'demo-channel-sessiz-kose' : 'demo-channel-film-gecesi'),
       )!,
-      topic: 'Bu akşam ne izliyoruz?',
+      topic: sample('Bu akşam ne izliyoruz?', 'What are we watching tonight?'),
     };
     ui = {
       surface: 'channel-editor',
@@ -583,21 +662,24 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
       : undefined,
     profileDetails: {
       [users.ece.id]: {
-        statusText: 'Bugün bir şeyler izleyelim.',
+        statusText: sample('Bugün bir şeyler izleyelim.', "Let's watch something today."),
         mutualSpaces: [{ id: spaceId, name: space.name }],
         sharedFiles: [{ ...pdf, id: 'demo-dm-weekend-list' }],
       },
       [users.deniz.id]: {
-        statusText: 'Buradayım.\nİyi bir film, uzun bir sohbet.',
-        about: 'Katılma tarihi · 4 Ekim 2026\nEn sevdiği yer · Salon',
+        statusText: sample(
+          'Buradayım.\nİyi bir film, uzun bir sohbet.',
+          "I'm here.\nA good movie, a long chat.",
+        ),
+        about: sample(
+          'Katılma tarihi · 4 Ekim 2026\nEn sevdiği yer · Salon',
+          `Joined · October 4, 2026\nFavorite place · ${places.lounge}`,
+        ),
       },
     },
     assets: {
       avatars: Object.fromEntries(
-        names.map((name) => [
-          `demo-${name.toLowerCase()}`,
-          `/__reference/01_brand/avatar-${name.toLowerCase()}.svg`,
-        ]),
+        names.map((key) => [`demo-${key}`, `/__reference/01_brand/avatar-${key}.svg`]),
       ),
       attachments: {
         [pdfId]: '/__reference/06_handoff/examples/weekend-list.pdf',

@@ -1,4 +1,5 @@
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
+import { sample } from './dev/sample';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
@@ -72,13 +73,13 @@ export type PersonalMediaView = 'home' | 'channels' | 'library';
 type MediaSource = PersonalPlaybackSource;
 type Program = PersonalProgram;
 const formatBytes = (size: number) =>
-  `${(size / 1024 / 1024).toLocaleString('tr-TR', { maximumFractionDigits: 1 })} MB`;
+  `${(size / 1024 / 1024).toLocaleString(locale, { maximumFractionDigits: 1 })} MB`;
 const connectionStatus = (c: ProviderConnection) =>
   c.status === 'connected'
-    ? 'Bağlı'
+    ? t('Bağlı')
     : c.status === 'auth-expired'
-      ? 'Yetkilendirme süresi doldu'
-      : 'Bağlantı kontrol edilemiyor';
+      ? t('Yetkilendirme süresi doldu')
+      : t('Bağlantı kontrol edilemiyor');
 
 export interface PersonalMediaProps {
   notify(message: string): void;
@@ -198,7 +199,7 @@ function PersonalMediaContent({
   const available = !!providers;
   const unavailableReason = available
     ? undefined
-    : 'Medya bağlantıları için masaüstü uygulaması gerekli.';
+    : t('Medya bağlantıları için masaüstü uygulaması gerekli.');
   useEffect(() => {
     active.current = true;
     return () => {
@@ -507,10 +508,10 @@ function PersonalMediaContent({
                 )
               ) {
                 setRdState('connected');
-                notify('Kişisel Real-Debrid hesabın bağlandı.');
+                notify(t('Kişisel Real-Debrid hesabın bağlandı.'));
               } else {
                 setRdState('error');
-                setError('Bağlantı sonucu okunamadı. Bağlantıları yenile.');
+                setError(t('Bağlantı sonucu okunamadı. Bağlantıları yenile.'));
               }
             } else if (result.state === 'expired') {
               setAuth(null);
@@ -582,7 +583,8 @@ function PersonalMediaContent({
       if (!active.current) return;
       if (epoch !== dialogEpoch.current) {
         await refresh();
-        if (active.current) notify(editing ? 'Bağlantı güncellendi.' : 'Kişisel kaynağın eklendi.');
+        if (active.current)
+          notify(editing ? t('Bağlantı güncellendi.') : t('Kişisel kaynağın eklendi.'));
         return;
       }
       await refresh();
@@ -597,7 +599,7 @@ function PersonalMediaContent({
       setUsername('');
       setPassword('');
       setPlaylistFile(null);
-      notify(editing ? 'Bağlantı güncellendi.' : 'Kişisel kaynağın eklendi.');
+      notify(editing ? t('Bağlantı güncellendi.') : t('Kişisel kaynağın eklendi.'));
       setChannels([]);
       setInlineGuide(null);
       setSelected(connection);
@@ -651,7 +653,7 @@ function PersonalMediaContent({
         <div className="ref-media-private">
           <span>
             <LockKeyhole size={15} />
-            Kişisel alanın · yalnızca sen görebilirsin
+            {t('Kişisel alanın · yalnızca sen görebilirsin')}
           </span>
           {user && <small>{user.displayName || user.username}</small>}
         </div>
@@ -661,17 +663,22 @@ function PersonalMediaContent({
               <div>
                 <h1>
                   {view === 'home'
-                    ? 'Kişisel medya'
+                    ? t('Kişisel medya')
                     : view === 'channels'
-                      ? 'Canlı kanallar'
-                      : 'Kütüphane'}
+                      ? t('Canlı kanallar')
+                      : t('Kütüphane')}
                 </h1>
                 <p>
                   {view === 'home'
-                    ? 'Kişisel kaynakların.'
+                    ? t('Kişisel kaynakların.')
                     : selected
-                      ? `${selected.name}${view === 'channels' ? ` · ${channels.length} kanal` : ''}`
-                      : 'Bir kaynak seç.'}
+                      ? view === 'channels'
+                        ? t('{name} · {count} kanal', {
+                            name: selected.name,
+                            count: channels.length,
+                          })
+                        : selected.name
+                      : t('Bir kaynak seç.')}
                 </p>
               </div>
               <div className="ref-media-actions">
@@ -687,11 +694,11 @@ function PersonalMediaContent({
                     }
                     title={
                       !selected
-                        ? 'Önce bir kaynak seç.'
+                        ? t('Önce bir kaynak seç.')
                         : !(selected.type === 'playlist'
                               ? providers?.updatePlaylist
                               : providers?.updateXtream)
-                          ? 'Bağlantı düzenleme için güncel masaüstü uygulaması gerekli.'
+                          ? t('Bağlantı düzenleme için güncel masaüstü uygulaması gerekli.')
                           : undefined
                     }
                     onClick={() => {
@@ -700,13 +707,13 @@ function PersonalMediaContent({
                     }}
                   >
                     <Settings2 size={15} />
-                    Bağlantıyı düzenle
+                    {t('Bağlantıyı düzenle')}
                   </button>
                 )}
                 {view !== 'home' && (
                   <button className="button secondary" disabled={busy} onClick={home}>
                     <ArrowLeft size={15} />
-                    Kişisel medyaya dön
+                    {t('Kişisel medyaya dön')}
                   </button>
                 )}
                 <button
@@ -722,7 +729,7 @@ function PersonalMediaContent({
                   }
                 >
                   {view === 'home' ? <Plus size={16} /> : <RefreshCw size={16} />}
-                  {view === 'home' ? 'Kaynak ekle' : 'Yenile'}
+                  {view === 'home' ? t('Kaynak ekle') : t('Yenile')}
                 </button>
               </div>
             </div>
@@ -730,7 +737,7 @@ function PersonalMediaContent({
             {loading && (
               <div className="ref-media-loading" role="status">
                 <LoaderCircle size={25} className="spin" />
-                Bağlantılar yükleniyor…
+                {t('Bağlantılar yükleniyor…')}
               </div>
             )}
             {view === 'home' && !loading && (
@@ -738,8 +745,8 @@ function PersonalMediaContent({
                 {!connections.length ? (
                   <div className="ref-media-empty">
                     <Film size={36} />
-                    <h2>Bağlı kaynak yok</h2>
-                    <p>İzlemek için kişisel bir kaynak ekle.</p>
+                    <h2>{t('Bağlı kaynak yok')}</h2>
+                    <p>{t('İzlemek için kişisel bir kaynak ekle.')}</p>
                     <div className="ref-media-actions">
                       <button
                         className="button primary"
@@ -748,7 +755,7 @@ function PersonalMediaContent({
                         onClick={() => begin('playlist')}
                       >
                         <Plus size={16} />
-                        IPTV ekle
+                        {t('IPTV ekle')}
                       </button>
                       <button
                         className="button secondary"
@@ -757,14 +764,14 @@ function PersonalMediaContent({
                         onClick={() => begin('rd')}
                       >
                         <Link2 size={16} />
-                        Real-Debrid bağla
+                        {t('Real-Debrid bağla')}
                       </button>
                     </div>
                   </div>
                 ) : (
                   <>
                     <div className="ref-media-section-head">
-                      <h2>Kaldığın yerden</h2>
+                      <h2>{t('Kaldığın yerden')}</h2>
                       {connections.some((connection) => connection.type === 'real-debrid') && (
                         <button
                           className="ref-media-ghost"
@@ -777,14 +784,14 @@ function PersonalMediaContent({
                           }}
                         >
                           <ArrowRight size={15} />
-                          Tümünü gör
+                          {t('Tümünü gör')}
                         </button>
                       )}
                     </div>
                     {resumeLoading ? (
                       <div className="ref-media-loading" role="status">
                         <LoaderCircle size={19} className="spin" />
-                        Kayıtlı konumlar yükleniyor…
+                        {t('Kayıtlı konumlar yükleniyor…')}
                       </div>
                     ) : resumeItems.length ? (
                       <div className="ref-media-resume-list">
@@ -808,26 +815,28 @@ function PersonalMediaContent({
                               <Play size={18} />
                             </span>
                             <strong>{item.name}</strong>
-                            <small>{resumeLabel(item.resumeAt)} · Real-Debrid</small>
+                            <small>
+                              {t('{label} · Real-Debrid', { label: resumeLabel(item.resumeAt) })}
+                            </small>
                           </button>
                         ))}
                       </div>
                     ) : (
                       <p className="ref-media-resume-empty">
                         {resumeError
-                          ? 'Kayıtlı izleme konumları alınamadı.'
-                          : 'Kayıtlı izleme konumu yok.'}
+                          ? t('Kayıtlı izleme konumları alınamadı.')
+                          : t('Kayıtlı izleme konumu yok.')}
                       </p>
                     )}
                     <div className="ref-media-section-head">
-                      <h2>Bağlantılar</h2>
+                      <h2>{t('Bağlantılar')}</h2>
                       <button
                         className="ref-media-ghost"
                         disabled={busy}
                         onClick={() => void run(refresh)}
                       >
                         <RefreshCw size={15} />
-                        Yenile
+                        {t('Yenile')}
                       </button>
                     </div>
                     <div className="ref-media-connections">
@@ -849,19 +858,19 @@ function PersonalMediaContent({
                             <small>
                               {connectionStatus(connection)}
                               {connection.type !== 'real-debrid'
-                                ? ` · ${connection.channelCount} kanal`
+                                ? ` · ${t('{count} kanal', { count: connection.channelCount })}`
                                 : ''}
                             </small>
                           </button>
                           <IconButton
-                            label={`${connection.name} aç`}
+                            label={t('{name} aç', { name: connection.name })}
                             disabled={busy}
                             onClick={() => void open(connection)}
                           >
                             <ChevronRight size={16} />
                           </IconButton>
                           <IconButton
-                            label={`${connection.name} bağlantısını kaldır`}
+                            label={t('{name} bağlantısını kaldır', { name: connection.name })}
                             disabled={busy}
                             onClick={() => setRemove(connection)}
                           >
@@ -877,7 +886,7 @@ function PersonalMediaContent({
                         onClick={() => begin('playlist')}
                       >
                         <Tv size={16} />
-                        IPTV ekle
+                        {t('IPTV ekle')}
                       </button>
                       <button
                         className="button secondary"
@@ -885,15 +894,17 @@ function PersonalMediaContent({
                         onClick={() => begin('rd')}
                       >
                         <Link2 size={16} />
-                        Real-Debrid bağla
+                        {t('Real-Debrid bağla')}
                       </button>
                       <button
                         className="ref-media-ghost"
                         disabled
-                        title="Kişisel kaynaklar Cinema'ya aktarılmaz. Ortak oynatma için her katılımcının ayrı yetkili kaynağı gerekir."
+                        title={t(
+                          "Kişisel kaynaklar Cinema'ya aktarılmaz. Ortak oynatma için her katılımcının ayrı yetkili kaynağı gerekir.",
+                        )}
                       >
                         <Users size={16} />
-                        Cinema’da izle
+                        {t('Cinema’da izle')}
                       </button>
                     </div>
                   </>
@@ -905,30 +916,31 @@ function PersonalMediaContent({
                 <label className="ref-media-search">
                   <Search size={17} />
                   <input
-                    aria-label={view === 'channels' ? 'Kanal ara' : 'Kütüphanede içerik ara'}
+                    aria-label={view === 'channels' ? t('Kanal ara') : t('Kütüphanede içerik ara')}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder={view === 'channels' ? 'Kanal ara' : 'Kütüphanende ara'}
+                    placeholder={view === 'channels' ? t('Kanal ara') : t('Kütüphanende ara')}
                   />
                 </label>
                 {!selected ? (
                   <div className="ref-media-empty">
                     <FolderOpen size={32} />
-                    <h2>Bağlı kaynak bulunamadı</h2>
+                    <h2>{t('Bağlı kaynak bulunamadı')}</h2>
                     <button className="button primary" onClick={home}>
-                      Kaynak ekle
+                      {t('Kaynak ekle')}
                     </button>
                   </div>
                 ) : view === 'channels' ? (
                   <div className="ref-media-browse">
-                    <nav className="ref-media-groups" aria-label="Kanal filtreleri">
-                      <h3>KANALLAR</h3>
+                    <nav className="ref-media-groups" aria-label={t('Kanal filtreleri')}>
+                      <h3>{t('KANALLAR')}</h3>
                       <button
                         className={!recentOnly && !favorites && !group ? 'selected' : ''}
                         onClick={resetFilters}
                       >
                         <Tv size={15} />
-                        Tüm kanallar<span>{channels.length}</span>
+                        {t('Tüm kanallar')}
+                        <span>{channels.length}</span>
                       </button>
                       <button
                         className={favorites ? 'selected' : ''}
@@ -939,14 +951,15 @@ function PersonalMediaContent({
                         }}
                       >
                         <Star size={15} />
-                        Favoriler<span>{channels.filter((c) => c.favorite).length}</span>
+                        {t('Favoriler')}
+                        <span>{channels.filter((c) => c.favorite).length}</span>
                       </button>
                       <button
                         className={recentOnly ? 'selected' : ''}
                         disabled={!providers?.recentChannels}
                         title={
                           !providers?.recentChannels
-                            ? 'İzleme geçmişi için güncel masaüstü uygulaması gerekli.'
+                            ? t('İzleme geçmişi için güncel masaüstü uygulaması gerekli.')
                             : undefined
                         }
                         onClick={() => {
@@ -956,9 +969,10 @@ function PersonalMediaContent({
                         }}
                       >
                         <Clock3 size={15} />
-                        Son izlenenler<span>{recentChannels.length}</span>
+                        {t('Son izlenenler')}
+                        <span>{recentChannels.length}</span>
                       </button>
-                      <h3>GRUPLAR</h3>
+                      <h3>{t('GRUPLAR')}</h3>
                       {groups.map((value) => (
                         <button
                           key={value}
@@ -977,29 +991,29 @@ function PersonalMediaContent({
                     <div className="ref-media-results">
                       {recentOnly && historyError && (
                         <div className="ref-media-notice error" role="alert">
-                          İzleme geçmişi alınamadı.
+                          {t('İzleme geçmişi alınamadı.')}
                         </div>
                       )}
                       {inlineGuide?.connectionId === selected.id &&
                         inlineGuide.status !== 'available' && (
                           <div className="ref-media-notice" role="status">
                             {inlineGuide.status === 'not-configured'
-                              ? 'Bu bağlantıda program rehberi yok.'
-                              : 'Program rehberi alınamadı.'}
+                              ? t('Bu bağlantıda program rehberi yok.')
+                              : t('Program rehberi alınamadı.')}
                           </div>
                         )}
                       {busy && (
                         <div className="ref-media-loading">
                           <LoaderCircle className="spin" size={22} />
-                          Kanallar yükleniyor…
+                          {t('Kanallar yükleniyor…')}
                         </div>
                       )}
                       {guide && (
                         <section className="ref-media-guide">
                           <div className="ref-media-section-head">
-                            <h2>{guide.name} · Program rehberi</h2>
+                            <h2>{t('{name} · Program rehberi', { name: guide.name })}</h2>
                             <IconButton
-                              label="Program rehberini kapat"
+                              label={t('Program rehberini kapat')}
                               onClick={() => setGuide(null)}
                             >
                               <X size={15} />
@@ -1009,12 +1023,12 @@ function PersonalMediaContent({
                             guide.programs.map((p, index) => (
                               <article key={index}>
                                 <time>
-                                  {new Date(p.startsAt).toLocaleTimeString('tr-TR', {
+                                  {new Date(p.startsAt).toLocaleTimeString(locale, {
                                     hour: '2-digit',
                                     minute: '2-digit',
                                   })}
                                   –
-                                  {new Date(p.endsAt).toLocaleTimeString('tr-TR', {
+                                  {new Date(p.endsAt).toLocaleTimeString(locale, {
                                     hour: '2-digit',
                                     minute: '2-digit',
                                   })}
@@ -1025,8 +1039,9 @@ function PersonalMediaContent({
                             ))
                           ) : (
                             <div className="ref-media-notice">
-                              Bu kanal için program bilgisi sunulmuyor. Kanal normal şekilde
-                              izlenebilir.
+                              {t(
+                                'Bu kanal için program bilgisi sunulmuyor. Kanal normal şekilde izlenebilir.',
+                              )}
                             </div>
                           )}
                         </section>
@@ -1034,7 +1049,7 @@ function PersonalMediaContent({
                       {filteredChannels.map((channel) => (
                         <article className="ref-media-channel" key={channel.id}>
                           <span className="ref-media-channel-icon" aria-hidden="true">
-                            {channel.name.slice(0, 3).toLocaleUpperCase('tr-TR')}
+                            {channel.name.slice(0, 3).toLocaleUpperCase(locale)}
                           </span>
                           <div>
                             <strong>{channel.name}</strong>
@@ -1045,11 +1060,11 @@ function PersonalMediaContent({
                                   : undefined
                               }
                               now={guideNow}
-                              fallback={channel.group || 'Kişisel kanal'}
+                              fallback={channel.group || t('Kişisel kanal')}
                             />
                           </div>
                           <IconButton
-                            label={`${channel.name} program rehberi`}
+                            label={t('{name} program rehberi', { name: channel.name })}
                             disabled={busy}
                             onClick={() =>
                               void run(async () => {
@@ -1063,8 +1078,8 @@ function PersonalMediaContent({
                           <IconButton
                             label={
                               channel.favorite
-                                ? `${channel.name} favorilerden çıkar`
-                                : `${channel.name} favorilere ekle`
+                                ? t('{name} favorilerden çıkar', { name: channel.name })
+                                : t('{name} favorilere ekle', { name: channel.name })
                             }
                             disabled={busy}
                             onClick={() =>
@@ -1101,17 +1116,17 @@ function PersonalMediaContent({
                             }
                           >
                             <Play size={15} />
-                            İzle
+                            {t('İzle')}
                           </button>
                         </article>
                       ))}
                       {!busy && !filteredChannels.length && (
                         <div className="ref-media-empty">
                           <Search size={30} />
-                          <h2>Kanal bulunamadı</h2>
-                          <p>Başka bir kelime dene veya seçili grubu değiştir.</p>
+                          <h2>{t('Kanal bulunamadı')}</h2>
+                          <p>{t('Başka bir kelime dene veya seçili grubu değiştir.')}</p>
                           <button className="button secondary" onClick={resetFilters}>
-                            Tüm kanalları göster
+                            {t('Tüm kanalları göster')}
                           </button>
                         </div>
                       )}
@@ -1122,16 +1137,16 @@ function PersonalMediaContent({
                     {busy && (
                       <div className="ref-media-loading">
                         <LoaderCircle size={22} className="spin" />
-                        Kütüphanen yükleniyor…
+                        {t('Kütüphanen yükleniyor…')}
                       </div>
                     )}
                     {filteredLibrary.length ? (
                       <table className="ref-media-library">
                         <thead>
                           <tr>
-                            <th>İÇERİK</th>
-                            <th>EKLENME</th>
-                            <th>İZLEME KONUMU</th>
+                            <th>{t('İÇERİK')}</th>
+                            <th>{t('EKLENME')}</th>
+                            <th>{t('İZLEME KONUMU')}</th>
                             <th />
                           </tr>
                         </thead>
@@ -1153,7 +1168,7 @@ function PersonalMediaContent({
                                   onClick={() => setDetail(item)}
                                 >
                                   <ChevronRight size={16} />
-                                  Aç
+                                  {t('Aç')}
                                 </button>
                               </td>
                             </tr>
@@ -1164,31 +1179,35 @@ function PersonalMediaContent({
                       !busy && (
                         <div className="ref-media-empty">
                           <Film size={36} />
-                          <h2>{query ? 'İçerik bulunamadı' : 'Henüz içerik görünmüyor'}</h2>
+                          <h2>{query ? t('İçerik bulunamadı') : t('Henüz içerik görünmüyor')}</h2>
                           <p>
                             {query
-                              ? 'Başka bir kelime dene.'
-                              : 'Kişisel hesabındaki uygun içerikler bağlantı yenilendikten sonra burada listelenir.'}
+                              ? t('Başka bir kelime dene.')
+                              : t(
+                                  'Kişisel hesabındaki uygun içerikler bağlantı yenilendikten sonra burada listelenir.',
+                                )}
                           </p>
                           <button
                             className="button primary"
                             onClick={() => (query ? setQuery('') : void open(selected))}
                           >
                             <RefreshCw size={16} />
-                            {query ? 'Aramayı temizle' : 'Kütüphaneyi yenile'}
+                            {query ? t('Aramayı temizle') : t('Kütüphaneyi yenile')}
                           </button>
                         </div>
                       )
                     )}
                     <div className="ref-media-section-head">
-                      <small>{filteredLibrary.length} içerik · kişisel listede</small>
+                      <small>
+                        {t('{count} içerik · kişisel listede', { count: filteredLibrary.length })}
+                      </small>
                       <button
                         className="ref-media-ghost"
                         disabled={busy}
                         onClick={() => begin('rd')}
                       >
                         <Settings2 size={15} />
-                        Bağlantıyı yönet
+                        {t('Bağlantıyı yönet')}
                       </button>
                     </div>
                   </>
@@ -1199,14 +1218,14 @@ function PersonalMediaContent({
         }
         <p className="ref-media-footnote">
           <ShieldCheck size={13} />
-          Kişisel oynatma · diğer üyelerle paylaşılmaz
+          {t('Kişisel oynatma · diğer üyelerle paylaşılmaz')}
         </p>
       </div>
       {detail && (
         <aside className="ref-media-detail">
           <div className="ref-media-section-head">
-            <h2>İçerik ayrıntısı</h2>
-            <IconButton label="İçerik ayrıntısını kapat" onClick={() => setDetail(null)}>
+            <h2>{t('İçerik ayrıntısı')}</h2>
+            <IconButton label={t('İçerik ayrıntısını kapat')} onClick={() => setDetail(null)}>
               <X size={17} />
             </IconButton>
           </div>
@@ -1215,12 +1234,12 @@ function PersonalMediaContent({
           </div>
           <h2>{detail.name}</h2>
           <p>
-            {formatBytes(detail.size)} · {detail.mime || 'Biçim belirtilmedi'}
+            {formatBytes(detail.size)} · {detail.mime || t('Biçim belirtilmedi')}
           </p>
           <dl className="ref-media-detail-metadata">
-            <dt>Eklenme</dt>
+            <dt>{t('Eklenme')}</dt>
             <dd>{addedDate(detail.addedAt)}</dd>
-            <dt>İzleme konumu</dt>
+            <dt>{t('İzleme konumu')}</dt>
             <dd>{resumeLabel(detail.resumeAt)}</dd>
           </dl>
           <button
@@ -1231,19 +1250,21 @@ function PersonalMediaContent({
             }
           >
             <Play size={16} />
-            {(resumePosition(detail.resumeAt) ?? 0) > 0 ? 'Kaldığım yerden izle' : 'İzle'}
+            {(resumePosition(detail.resumeAt) ?? 0) > 0 ? t('Kaldığım yerden izle') : t('İzle')}
           </button>
           <button
             className="button secondary full"
             disabled
-            title="Her katılımcının ayrı yetkili kaynağını eşleştiren Cinema bağlantısı henüz yok."
+            title={t(
+              'Her katılımcının ayrı yetkili kaynağını eşleştiren Cinema bağlantısı henüz yok.',
+            )}
           >
             <Users size={16} />
-            Cinema’da kullan
+            {t('Cinema’da kullan')}
           </button>
           <p className="ref-media-footnote">
             <LockKeyhole size={13} />
-            Kişisel bağlantı ayrıntıların yalnızca sende kalır.
+            {t('Kişisel bağlantı ayrıntıların yalnızca sende kalır.')}
           </p>
         </aside>
       )}
@@ -1251,10 +1272,10 @@ function PersonalMediaContent({
         <Modal
           title={
             show === 'rd'
-              ? 'Kişisel Real-Debrid bağlantısı'
+              ? t('Kişisel Real-Debrid bağlantısı')
               : editing
-                ? 'IPTV bağlantısını düzenle'
-                : 'Kişisel IPTV bağlantısı'
+                ? t('IPTV bağlantısını düzenle')
+                : t('Kişisel IPTV bağlantısı')
           }
           onClose={close}
           className={`ref-media-modal ${show === 'rd' ? 'rd' : 'iptv'}`}
@@ -1313,9 +1334,9 @@ function PersonalMediaContent({
             <form onSubmit={connect}>
               <fieldset disabled={busy}>
                 <p className="ref-media-description">
-                  Yalnızca kullanma yetkine sahip olduğun kişisel bir kaynak ekle.
+                  {t('Yalnızca kullanma yetkine sahip olduğun kişisel bir kaynak ekle.')}
                 </p>
-                <div className="ref-media-tabs" role="group" aria-label="IPTV bağlantı türü">
+                <div className="ref-media-tabs" role="group" aria-label={t('IPTV bağlantı türü')}>
                   <button
                     type="button"
                     aria-pressed={show === 'playlist'}
@@ -1323,7 +1344,7 @@ function PersonalMediaContent({
                     disabled={!!editing && editing.type !== 'playlist'}
                     title={
                       editing && editing.type !== 'playlist'
-                        ? 'Türü değiştirmek için yeni bağlantı ekle.'
+                        ? t('Türü değiştirmek için yeni bağlantı ekle.')
                         : undefined
                     }
                     onClick={() => selectInput('playlist')}
@@ -1337,7 +1358,7 @@ function PersonalMediaContent({
                     disabled={!!editing && editing.type !== 'xtream'}
                     title={
                       editing && editing.type !== 'xtream'
-                        ? 'Türü değiştirmek için yeni bağlantı ekle.'
+                        ? t('Türü değiştirmek için yeni bağlantı ekle.')
                         : undefined
                     }
                     onClick={() => selectInput('xtream')}
@@ -1346,18 +1367,18 @@ function PersonalMediaContent({
                   </button>
                 </div>
                 <label className="field-label">
-                  Bağlantı adı
+                  {t('Bağlantı adı')}
                   <input
                     required
                     autoFocus
                     maxLength={80}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Örn. Evdeki kanallar"
+                    placeholder={t('Örn. Evdeki kanallar')}
                   />
                 </label>
                 <label className="field-label">
-                  {show === 'playlist' ? 'Liste bağlantısı' : 'Sunucu adresi'}
+                  {show === 'playlist' ? t('Liste bağlantısı') : t('Sunucu adresi')}
                   <input
                     required={!playlistFile && !editing}
                     type="password"
@@ -1369,10 +1390,10 @@ function PersonalMediaContent({
                     }}
                     placeholder={
                       editing
-                        ? 'Değiştirmek için yeni adres yaz'
+                        ? t('Değiştirmek için yeni adres yaz')
                         : show === 'playlist'
-                          ? 'M3U veya M3U8 bağlantısını yapıştır'
-                          : 'https://sunucu-adresi'
+                          ? t('M3U veya M3U8 bağlantısını yapıştır')
+                          : t('https://sunucu-adresi')
                     }
                   />
                 </label>
@@ -1380,11 +1401,14 @@ function PersonalMediaContent({
                   <>
                     <div className="ref-media-upload">
                       <Upload size={28} />
-                      <strong>Bir M3U / M3U8 dosyası seç</strong>
+                      <strong>{t('Bir M3U / M3U8 dosyası seç')}</strong>
                       <p>
                         {playlistFile
-                          ? `${playlistFile.fileName} · ${playlistFile.channelCount} kanal`
-                          : 'M3U veya M3U8'}
+                          ? t('{file} · {count} kanal', {
+                              file: playlistFile.fileName,
+                              count: playlistFile.channelCount,
+                            })
+                          : t('M3U veya M3U8')}
                       </p>
                       <button
                         type="button"
@@ -1392,19 +1416,19 @@ function PersonalMediaContent({
                         disabled={busy || !providers?.pickPlaylist}
                         title={
                           !providers?.pickPlaylist
-                            ? 'Dosya seçimi için güncel masaüstü uygulaması gerekli.'
+                            ? t('Dosya seçimi için güncel masaüstü uygulaması gerekli.')
                             : undefined
                         }
                         onClick={choosePlaylist}
                       >
                         <Upload size={15} />
-                        {playlistFile ? 'Başka dosya seç' : 'Dosya seç'}
+                        {playlistFile ? t('Başka dosya seç') : t('Dosya seç')}
                       </button>
                     </div>
                     <details className="ref-media-epg-options">
-                      <summary>Program rehberi · isteğe bağlı</summary>
+                      <summary>{t('Program rehberi · isteğe bağlı')}</summary>
                       <label className="field-label">
-                        XMLTV adresi
+                        {t('XMLTV adresi')}
                         <input
                           type="password"
                           value={xmltv}
@@ -1412,7 +1436,7 @@ function PersonalMediaContent({
                           autoComplete="off"
                           onChange={(e) => setXmltv(e.target.value)}
                           placeholder={
-                            editing ? 'Mevcut rehberi korumak için boş bırak' : 'XMLTV adresi'
+                            editing ? t('Mevcut rehberi korumak için boş bırak') : t('XMLTV adresi')
                           }
                         />
                       </label>
@@ -1423,7 +1447,7 @@ function PersonalMediaContent({
                             checked={removeGuide}
                             onChange={(event) => setRemoveGuide(event.target.checked)}
                           />
-                          Program rehberini kaldır
+                          {t('Program rehberini kaldır')}
                         </label>
                       )}
                     </details>
@@ -1431,24 +1455,26 @@ function PersonalMediaContent({
                 ) : (
                   <div className="ref-media-form-grid">
                     <label className="field-label">
-                      Kullanıcı adı
+                      {t('Kullanıcı adı')}
                       <input
                         required={!editing}
                         autoComplete="off"
                         placeholder={
-                          editing ? 'Değiştirmek için yeni kullanıcı adı yaz' : undefined
+                          editing ? t('Değiştirmek için yeni kullanıcı adı yaz') : undefined
                         }
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                       />
                     </label>
                     <label className="field-label">
-                      Parola
+                      {t('Parola')}
                       <input
                         required={!editing}
                         type="password"
                         autoComplete="new-password"
-                        placeholder={editing ? 'Mevcut parolayı korumak için boş bırak' : undefined}
+                        placeholder={
+                          editing ? t('Mevcut parolayı korumak için boş bırak') : undefined
+                        }
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                       />
@@ -1458,18 +1484,19 @@ function PersonalMediaContent({
                 {busy && (
                   <div className="ref-media-notice" role="status">
                     <LoaderCircle className="spin" size={16} />
-                    Kaynak ve kanal listesi doğrulanıyor…
+                    {t('Kaynak ve kanal listesi doğrulanıyor…')}
                   </div>
                 )}
                 {errorBlock}
                 <p className="ref-media-footnote">
                   <LockKeyhole size={13} />
-                  Bu bilgiler yalnızca senin kişisel bağlantında kalır; ortak sohbet ve kuyruklarda
-                  görünmez.
+                  {t(
+                    'Bu bilgiler yalnızca senin kişisel bağlantında kalır; ortak sohbet ve kuyruklarda görünmez.',
+                  )}
                 </p>
                 <div className="ref-media-modal-footer">
                   <button type="button" className="button secondary" onClick={close}>
-                    Vazgeç
+                    {t('Vazgeç')}
                   </button>
                   <button
                     className="button primary"
@@ -1481,7 +1508,11 @@ function PersonalMediaContent({
                     }
                   >
                     <Check size={16} />
-                    {busy ? 'Doğrulanıyor…' : editing ? 'Değişiklikleri kaydet' : 'Doğrula ve ekle'}
+                    {busy
+                      ? t('Doğrulanıyor…')
+                      : editing
+                        ? t('Değişiklikleri kaydet')
+                        : t('Doğrula ve ekle')}
                   </button>
                 </div>
               </fieldset>
@@ -1491,22 +1522,23 @@ function PersonalMediaContent({
       )}
       {remove && (
         <Modal
-          title={`${remove.name} bağlantısını kaldır?`}
+          title={t('{name} bağlantısını kaldır?', { name: remove.name })}
           onClose={closeRemove}
           className="ref-media-modal remove"
         >
           <p className="ref-media-description">
-            Bu bağlantıya ait kanallar ve favoriler kişisel medya alanından kaldırılır. Yeniden
-            kullanmak için bağlantıyı tekrar eklemen gerekir.
+            {t(
+              'Bu bağlantıya ait kanallar ve favoriler kişisel medya alanından kaldırılır. Yeniden kullanmak için bağlantıyı tekrar eklemen gerekir.',
+            )}
           </p>
           <div className="ref-media-notice">
             <LockKeyhole size={17} />
-            Diğer kişisel bağlantıların ve topluluğun etkilenmez.
+            {t('Diğer kişisel bağlantıların ve topluluğun etkilenmez.')}
           </div>
           {errorBlock}
           <div className="ref-media-modal-footer">
             <button className="button secondary" disabled={busy} onClick={() => setRemove(null)}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button danger"
@@ -1522,12 +1554,12 @@ function PersonalMediaContent({
                   }
                   setRemove(null);
                   await refresh();
-                  if (active.current) notify('Kişisel bağlantın kaldırıldı.');
+                  if (active.current) notify(t('Kişisel bağlantın kaldırıldı.'));
                 })
               }
             >
               <Trash2 size={15} />
-              Bağlantıyı kaldır
+              {t('Bağlantıyı kaldır')}
             </button>
           </div>
         </Modal>
@@ -1620,13 +1652,13 @@ export function PersonalPlaybackRuntime({ notify }: { notify(message: string): v
         />
       </div>
       {!foreground && !miniFixture && (
-        <div className="personal-playback-mini" role="region" aria-label="Kişisel oynatma">
+        <div className="personal-playback-mini" role="region" aria-label={t('Kişisel oynatma')}>
           <span>{session.media.name}</span>
           <button onClick={() => navigate('/media?player=1')}>
             <Maximize size={15} />
-            Oynatıcıya dön
+            {t('Oynatıcıya dön')}
           </button>
-          <IconButton label="Kişisel oynatmayı durdur" onClick={() => stopPersonalPlayback()}>
+          <IconButton label={t('Kişisel oynatmayı durdur')} onClick={() => stopPersonalPlayback()}>
             <X size={15} />
           </IconButton>
         </div>
@@ -1715,7 +1747,7 @@ function PersonalPlayer({
     .filter((p) => Date.parse(p.startsAt) > programmeTime)
     .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))[0];
   const programmeClock = (value: string) =>
-    new Date(value).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    new Date(value).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   const stageRef = useRef<HTMLDivElement>(null);
   const realtime = useRealtime();
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1825,7 +1857,9 @@ function PersonalPlayer({
               setLoading(false);
               setFailure('unknown');
               setError(
-                'VLC bu yayını açamadı. Kaynak bağlantısı veya yayın biçimi nedeniyle oynatma durdu. Yeniden deneyebilirsin.',
+                t(
+                  'VLC bu yayını açamadı. Kaynak bağlantısı veya yayın biçimi nedeniyle oynatma durdu. Yeniden deneyebilirsin.',
+                ),
               );
               return;
             }
@@ -1881,7 +1915,7 @@ function PersonalPlayer({
             if (active) {
               setLoading(false);
               setFailure('expired');
-              setError('Oynatma oturumu sona erdi. Kaynağı yeniden aç.');
+              setError(t('Oynatma oturumu sona erdi. Kaynağı yeniden aç.'));
             }
           } finally {
             busy = false;
@@ -1895,7 +1929,7 @@ function PersonalPlayer({
         if (active) {
           setLoading(false);
           setFailure('unknown');
-          setError('VLC yayını başlatamadı. Kaynak bağlantısını kontrol edip yeniden dene.');
+          setError(t('VLC yayını başlatamadı. Kaynak bağlantısını kontrol edip yeniden dene.'));
         }
       });
     return () => {
@@ -2031,14 +2065,14 @@ function PersonalPlayer({
     if (engine === 'vlc' && native && nativeToken.current) {
       void native
         .control(nativeToken.current, { action: 'pause', value: playing ? 1 : 0 })
-        .catch(() => notify('Oynatma kontrolü uygulanamadı.'));
+        .catch(() => notify(t('Oynatma kontrolü uygulanamadı.')));
       return;
     }
     const video = ref.current;
     if (!video) return;
     if (video.paused)
       void video.play().catch(() => {
-        setError('Oynatma başlatılamadı. Kaynağını kontrol edip yeniden dene.');
+        setError(t('Oynatma başlatılamadı. Kaynağını kontrol edip yeniden dene.'));
       });
     else video.pause();
   };
@@ -2124,13 +2158,13 @@ function PersonalPlayer({
         setExternal(insetVariant === 'external');
         if (insetVariant === 'default') {
           setAudio([
-            { id: 0, label: 'Türkçe · DEV' },
-            { id: 1, label: 'İngilizce · DEV' },
+            { id: 0, label: sample('Türkçe · DEV', 'Turkish · DEV') }, // i18n-ignore: development fixture
+            { id: 1, label: sample('İngilizce · DEV', 'English · DEV') }, // i18n-ignore: development fixture
           ]);
           setAudioId(0);
           setCaptions([
-            { id: 0, label: 'Türkçe · DEV' },
-            { id: 1, label: 'İngilizce · DEV' },
+            { id: 0, label: sample('Türkçe · DEV', 'Turkish · DEV') }, // i18n-ignore: development fixture
+            { id: 1, label: sample('İngilizce · DEV', 'English · DEV') }, // i18n-ignore: development fixture
           ]);
           setCaptionId(0);
         }
@@ -2226,13 +2260,13 @@ function PersonalPlayer({
         setAudio(
           hls.audioTracks.map((track, id) => ({
             id,
-            label: track.name || track.lang || `Ses ${id + 1}`,
+            label: track.name || track.lang || t('Ses {number}', { number: id + 1 }),
           })),
         );
         setCaptions(
           hls.subtitleTracks.map((track, id) => ({
             id,
-            label: track.name || track.lang || `Altyazı ${id + 1}`,
+            label: track.name || track.lang || t('Altyazı {number}', { number: id + 1 }),
           })),
         );
         setAudioId(hls.audioTrack);
@@ -2241,7 +2275,7 @@ function PersonalPlayer({
         setCaptions(
           Array.from(video.textTracks).map((track, id) => ({
             id,
-            label: track.label || track.language || `Altyazı ${id + 1}`,
+            label: track.label || track.language || t('Altyazı {number}', { number: id + 1 }),
           })),
         );
       }
@@ -2308,7 +2342,7 @@ function PersonalPlayer({
       void Promise.all([
         native.control(token, { action: 'audio', value: audioId }),
         native.control(token, { action: 'caption', value: captionId }),
-      ]).catch(() => notify('Ses veya altyazı seçimi uygulanamadı.'));
+      ]).catch(() => notify(t('Ses veya altyazı seçimi uygulanamadı.')));
       setOptions(false);
       return;
     }
@@ -2389,7 +2423,7 @@ function PersonalPlayer({
     if (engine === 'vlc' && native && nativeToken.current && canSeek) {
       void native
         .control(nativeToken.current, { action: 'seek', value: next })
-        .catch(() => notify('Bu kaynakta konum değiştirilemiyor.'));
+        .catch(() => notify(t('Bu kaynakta konum değiştirilemiyor.')));
       return;
     }
     if (ref.current && canSeek) {
@@ -2405,7 +2439,7 @@ function PersonalPlayer({
       className={`ref-personal-player ${media.live ? 'live' : 'vod'} ${controlsVisible || loading || error ? '' : 'idle'} ${miniMode ? 's30-mini-player' : ''}`}
       onPointerMove={revealControls}
       onFocusCapture={revealControls}
-      aria-label={media.live ? 'Kişisel canlı yayın' : 'Kişisel oynatıcı'}
+      aria-label={media.live ? t('Kişisel canlı yayın') : t('Kişisel oynatıcı')}
       onKeyDown={(event) => {
         if (
           (event.target as HTMLElement).closest(
@@ -2435,13 +2469,13 @@ function PersonalPlayer({
       {inset && !media.live && (
         <div className="personal-inset-privacy">
           <LockKeyhole size={15} />
-          Kişisel alanın · yalnızca sen görebilirsin
+          {t('Kişisel alanın · yalnızca sen görebilirsin')}
         </div>
       )}
       <div className="ref-media-top">
         <div className="ref-media-title">
           {!inset && (
-            <button className="ref-media-back" aria-label="Geri" onClick={onBack}>
+            <button className="ref-media-back" aria-label={t('Geri')} onClick={onBack}>
               <ArrowLeft size={20} />
             </button>
           )}
@@ -2449,8 +2483,10 @@ function PersonalPlayer({
             <h1>{currentProgramme?.title || media.name}</h1>
             <p>
               {media.live
-                ? `${inset ? media.name + ' · ' : ''}Kişisel canlı yayın`
-                : 'Kişisel oynatma · yalnızca sen'}
+                ? inset
+                  ? t('{name} · Kişisel canlı yayın', { name: media.name })
+                  : t('Kişisel canlı yayın')
+                : t('Kişisel oynatma · yalnızca sen')}
             </p>
           </div>
         </div>
@@ -2460,36 +2496,36 @@ function PersonalPlayer({
             disabled={referenceFixture || realtime.status !== 'connected' || realtime.busy}
             title={
               referenceFixture
-                ? 'Örnek görünümde paylaşım kapalı.'
+                ? t('Örnek görünümde paylaşım kapalı.')
                 : realtime.status !== 'connected'
-                  ? 'Önce ses odasına katıl.'
-                  : 'Paylaşılacak pencereyi seç; istersen sistem sesini de aç.'
+                  ? t('Önce ses odasına katıl.')
+                  : t('Paylaşılacak pencereyi seç; istersen sistem sesini de aç.')
             }
             onClick={() => {
               if (realtime.sharing)
-                void stopScreen().catch(() => notify('Paylaşım durdurulamadı. Yeniden dene.'));
+                void stopScreen().catch(() => notify(t('Paylaşım durdurulamadı. Yeniden dene.')));
               else window.dispatchEvent(new Event('rooms:choose-capture'));
             }}
           >
-            {realtime.sharing ? 'Paylaşımı durdur' : 'Odayla paylaş'}
+            {realtime.sharing ? t('Paylaşımı durdur') : t('Odayla paylaş')}
           </button>
           {!inset && (
             <button className="button secondary" onClick={onChat}>
               <MessageCircle size={15} />
-              Sohbet
+              {t('Sohbet')}
             </button>
           )}
           <button className="button secondary" onClick={onBack}>
             {media.live ? <Tv size={15} /> : <Film size={15} />}{' '}
-            {media.live ? 'Kanallara dön' : 'Kütüphaneme dön'}
+            {media.live ? t('Kanallara dön') : t('Kütüphaneme dön')}
           </button>
           {inset && (
             <button className="ref-media-ghost" onClick={() => setOptions(true)}>
               <Settings2 size={18} />
-              Ses ve altyazı
+              {t('Ses ve altyazı')}
             </button>
           )}
-          <IconButton label="Kişisel oynatmayı durdur" onClick={onClose}>
+          <IconButton label={t('Kişisel oynatmayı durdur')} onClick={onClose}>
             <X size={18} />
           </IconButton>
         </div>
@@ -2497,9 +2533,11 @@ function PersonalPlayer({
       {inset && media.live && liveLag > 5 && (
         <div className="personal-inset-notice" role="status">
           <Clock3 size={17} />
-          <span>Canlı yayından {Math.floor(liveLag)} saniye geridesin.</span>
+          <span>
+            {t('Canlı yayından {count} saniye geridesin.', { count: Math.floor(liveLag) })}
+          </span>
           <button className="button secondary" onClick={returnLive} disabled={!canSeek}>
-            Canlıya dön
+            {t('Canlıya dön')}
           </button>
         </div>
       )}
@@ -2571,16 +2609,16 @@ function PersonalPlayer({
               setFailure(kind);
               setError(playbackFailureCopy[kind].message);
             }}
-            aria-label="Kişisel medya oynatıcısı"
+            aria-label={t('Kişisel medya oynatıcısı')}
           />
           {loading && !error && (
             <div className="ref-media-stage-state" role="status">
               <LoaderCircle size={40} className="spin" />
-              <h2>{media.live ? 'Yayın hazırlanıyor' : 'Kaynak hazırlanıyor'}</h2>
-              <p>Kişisel kaynağından görüntü bekleniyor.</p>
+              <h2>{media.live ? t('Yayın hazırlanıyor') : t('Kaynak hazırlanıyor')}</h2>
+              <p>{t('Kişisel kaynağından görüntü bekleniyor.')}</p>
               <button className="button secondary" onClick={() => setAttempt((value) => value + 1)}>
                 <RefreshCw size={15} />
-                Yeniden dene
+                {t('Yeniden dene')}
               </button>
             </div>
           )}
@@ -2591,7 +2629,9 @@ function PersonalPlayer({
               ) : (
                 <Film size={38} />
               )}
-              <h2>{failure ? playbackFailureCopy[failure].title : 'Kaynak şu anda açılamıyor'}</h2>
+              <h2>
+                {failure ? playbackFailureCopy[failure].title : t('Kaynak şu anda açılamıyor')}
+              </h2>
               <p>{error}</p>
               <div className="ref-media-actions">
                 <button
@@ -2604,11 +2644,11 @@ function PersonalPlayer({
                 >
                   <RefreshCw size={15} />
                   {failure === 'expired' || failure === 'unauthorized'
-                    ? 'Kaynağa dön'
-                    : 'Yeniden dene'}
+                    ? t('Kaynağa dön')
+                    : t('Yeniden dene')}
                 </button>
                 <button className="button secondary" onClick={() => setOptions(true)}>
-                  Oynatma seçenekleri
+                  {t('Oynatma seçenekleri')}
                 </button>
               </div>
             </div>
@@ -2616,12 +2656,12 @@ function PersonalPlayer({
         </div>
         <div
           className="personal-live-controls"
-          aria-label={media.live ? 'Canlı yayın kontrolleri' : 'Oynatma kontrolleri'}
+          aria-label={media.live ? t('Canlı yayın kontrolleri') : t('Oynatma kontrolleri')}
         >
           <input
             type="range"
             className="personal-live-scrubber"
-            aria-label={media.live ? 'Canlı yayın zaman aralığı' : 'Oynatma konumu'}
+            aria-label={media.live ? t('Canlı yayın zaman aralığı') : t('Oynatma konumu')}
             min={playbackWindow?.start ?? 0}
             max={playbackWindow?.end ?? 1}
             step=".1"
@@ -2631,14 +2671,14 @@ function PersonalPlayer({
               canSeek
                 ? undefined
                 : media.live
-                  ? 'Kaynak geri sarma aralığı sunmuyor.'
-                  : 'Kaynak aranabilir süre bildirmedi.'
+                  ? t('Kaynak geri sarma aralığı sunmuyor.')
+                  : t('Kaynak aranabilir süre bildirmedi.')
             }
             onChange={(event) => seekTo(Number(event.target.value))}
           />
           <div className="personal-live-row">
             <IconButton
-              label={playing ? 'Duraklat' : 'Oynat'}
+              label={playing ? t('Duraklat') : t('Oynat')}
               disabled={!!error || loading}
               onClick={togglePlayback}
             >
@@ -2646,7 +2686,7 @@ function PersonalPlayer({
             </IconButton>
             {!media.live && (
               <IconButton
-                label="10 saniye geri"
+                label={t('10 saniye geri')}
                 disabled={!canSeek}
                 onClick={() => seekTo(currentTime - 10)}
               >
@@ -2656,7 +2696,7 @@ function PersonalPlayer({
             <Volume2 size={18} />
             <input
               type="range"
-              aria-label="Yayın ses düzeyi"
+              aria-label={t('Yayın ses düzeyi')}
               min="0"
               max="1"
               step=".01"
@@ -2666,16 +2706,20 @@ function PersonalPlayer({
             {media.live ? (
               <>
                 <span role="status">
-                  {canSeekLive && liveLag > 5 ? `−${Math.floor(liveLag)} sn` : 'CANLI'}
+                  {canSeekLive && liveLag > 5
+                    ? t('−{seconds} sn', { seconds: Math.floor(liveLag) })
+                    : t('CANLI')}
                 </span>
-                <small>{!loading && !error && !canSeekLive ? 'Geri sarma yok' : ''}</small>
+                <small>{!loading && !error && !canSeekLive ? t('Geri sarma yok') : ''}</small>
                 <button
                   className="personal-live-edge"
                   onClick={returnLive}
                   disabled={!canSeek || !!error}
-                  title={canSeek ? 'Yayının sonuna git' : 'Kaynak zaman kaydırma aralığı sunmuyor.'}
+                  title={
+                    canSeek ? t('Yayının sonuna git') : t('Kaynak zaman kaydırma aralığı sunmuyor.')
+                  }
                 >
-                  Canlı
+                  {t('Canlı')}
                 </button>
               </>
             ) : (
@@ -2686,26 +2730,28 @@ function PersonalPlayer({
                 {fixturePersonal && (
                   <span className="personal-playback-badge">
                     <LockKeyhole size={13} />
-                    Kişisel oynatma
+                    {t('Kişisel oynatma')}
                   </span>
                 )}
               </>
             )}
-            <IconButton label="Ses ve altyazı" onClick={() => setOptions(true)}>
+            <IconButton label={t('Ses ve altyazı')} onClick={() => setOptions(true)}>
               <Settings2 size={20} />
             </IconButton>
             <IconButton
-              label="Ekrana aktar"
+              label={t('Ekrana aktar')}
               disabled
-              title="Harici ekrana güvenli aktarım bu sürümde desteklenmiyor."
+              title={t('Harici ekrana güvenli aktarım bu sürümde desteklenmiyor.')}
             >
               <ExternalLink size={18} />
             </IconButton>
             <IconButton
-              label={fullscreen ? 'Tam ekrandan çık' : 'Tam ekran'}
+              label={fullscreen ? t('Tam ekrandan çık') : t('Tam ekran')}
               disabled={!document.fullscreenEnabled}
               title={
-                !document.fullscreenEnabled ? 'Bu pencerede tam ekran desteklenmiyor.' : undefined
+                !document.fullscreenEnabled
+                  ? t('Bu pencerede tam ekran desteklenmiyor.')
+                  : undefined
               }
               onClick={toggleFullscreen}
             >
@@ -2715,10 +2761,10 @@ function PersonalPlayer({
         </div>
       </div>
       {inset && media.live && (
-        <section className="personal-programme-grid" aria-label="Program rehberi">
+        <section className="personal-programme-grid" aria-label={t('Program rehberi')}>
           {[
-            { label: 'ŞİMDİ', programme: currentProgramme },
-            { label: 'SONRA', programme: nextProgramme },
+            { label: t('ŞİMDİ'), programme: currentProgramme },
+            { label: t('SONRA'), programme: nextProgramme },
           ].map(({ label, programme }) => (
             <article key={label}>
               <small>
@@ -2733,21 +2779,25 @@ function PersonalPlayer({
                   </>
                 )}
               </small>
-              <strong>{programme?.title || 'Program bilgisi yok'}</strong>
+              <strong>{programme?.title || t('Program bilgisi yok')}</strong>
               {programme?.description && <p>{programme.description}</p>}
             </article>
           ))}
         </section>
       )}
       {referenceCaption && (
-        <div className="personal-reference-caption" aria-label="Örnek altyazı">
-          “Bazen aynı yere dönmek,
+        // i18n-ignore: development fixture
+        <div
+          className="personal-reference-caption"
+          aria-label={sample('Örnek altyazı', 'Sample caption')}
+        >
+          {sample('“Bazen aynı yere dönmek,', '“Sometimes going back to the same place')}
           <br />
-          yeni bir yol bulmaktır.”
+          {sample('yeni bir yol bulmaktır.”', 'is how you find a new road.”')}
         </div>
       )}
       {realtime.status === 'connected' && (
-        <div className="personal-playback-voice" role="region" aria-label="Ses salonu">
+        <div className="personal-playback-voice" role="region" aria-label={t('Ses salonu')}>
           <div className="personal-playback-avatars">
             {realtime.participants.slice(0, 5).map((person) => (
               <VoiceAvatar key={person.id} id={person.id} name={person.name} />
@@ -2755,10 +2805,10 @@ function PersonalPlayer({
           </div>
           <span className="personal-playback-room">
             <Headphones size={15} />
-            {realtime.roomName} · ses açık
+            {t('{room} · ses açık', { room: realtime.roomName ?? '' })}
           </span>
           <IconButton
-            label={!realtime.muted ? 'Mikrofonu kapat' : 'Mikrofonu aç'}
+            label={!realtime.muted ? t('Mikrofonu kapat') : t('Mikrofonu aç')}
             onClick={() => void toggleMic().catch((e) => notify(uiError(e)))}
           >
             {!realtime.muted ? <Mic size={18} /> : <MicOff size={18} />}
@@ -2771,12 +2821,12 @@ function PersonalPlayer({
           personal
           live={media.live}
           playing={playing}
-          time={media.live ? 'CANLI' : `${clock(currentTime)} / ${clock(duration)}`}
+          time={media.live ? t('CANLI') : `${clock(currentTime)} / ${clock(duration)}`}
           compact={miniCompact}
           voiceStatus={realtime.status}
           muted={realtime.muted}
           canControl={!loading && !error}
-          controlReason={error || (loading ? 'Kaynak hazırlanıyor.' : undefined)}
+          controlReason={error || (loading ? t('Kaynak hazırlanıyor.') : undefined)}
           onToggle={togglePlayback}
           onMute={() => void toggleMic().catch((e) => notify(uiError(e)))}
           onReturn={onReturn}
@@ -2788,10 +2838,10 @@ function PersonalPlayer({
         <Modal
           title={
             external
-              ? 'Harici oynatıcıda aç?'
+              ? t('Harici oynatıcıda aç?')
               : failure === 'unsupported'
-                ? 'Bu format desteklenmiyor'
-                : 'Ses ve altyazı'
+                ? t('Bu format desteklenmiyor')
+                : t('Ses ve altyazı')
           }
           onClose={closeOptions}
           className="ref-media-modal playback"
@@ -2804,37 +2854,38 @@ function PersonalPlayer({
                 </span>
                 <div>
                   <strong>{media.name}</strong>
-                  <small>Seçtiğin kişisel kaynak</small>
+                  <small>{t('Seçtiğin kişisel kaynak')}</small>
                 </div>
               </div>
               <div className="ref-media-notice warning">
-                Bu kişisel kaynak için güvenli harici oynatıcı bağlantısı henüz bulunmuyor. Özel
-                adres ve hesap bilgileri uygulamadan çıkarılmaz.
+                {t(
+                  'Bu kişisel kaynak için güvenli harici oynatıcı bağlantısı henüz bulunmuyor. Özel adres ve hesap bilgileri uygulamadan çıkarılmaz.',
+                )}
               </div>
               <label className="field-label">
-                Oynatıcı
-                <select disabled title="Güvenli harici oynatıcı işlemi henüz desteklenmiyor.">
-                  <option>Varsayılan video oynatıcı</option>
+                {t('Oynatıcı')}
+                <select disabled title={t('Güvenli harici oynatıcı işlemi henüz desteklenmiyor.')}>
+                  <option>{t('Varsayılan video oynatıcı')}</option>
                 </select>
               </label>
               <div className="ref-media-modal-footer">
                 <button className="button secondary" onClick={() => setExternal(false)}>
-                  Geri
+                  {t('Geri')}
                 </button>
                 <button
                   className="button primary"
                   disabled
-                  title="Güvenli harici oynatıcı işlemi henüz desteklenmiyor."
+                  title={t('Güvenli harici oynatıcı işlemi henüz desteklenmiyor.')}
                 >
                   <ExternalLink size={16} />
-                  Harici oynatıcıda aç
+                  {t('Harici oynatıcıda aç')}
                 </button>
               </div>
             </>
           ) : failure === 'unsupported' ? (
             <>
               <div className="ref-media-notice warning">
-                Bu ses veya video biçimi burada oynatılamıyor. Başka bir kaynak seçebilirsin.
+                {t('Bu ses veya video biçimi burada oynatılamıyor. Başka bir kaynak seçebilirsin.')}
               </div>
               <div className="ref-media-source">
                 <span className="ref-media-mark">
@@ -2842,20 +2893,20 @@ function PersonalPlayer({
                 </span>
                 <div>
                   <strong>{media.name}</strong>
-                  <small>Görüntü açılamadı.</small>
+                  <small>{t('Görüntü açılamadı.')}</small>
                 </div>
               </div>
               <button className="button secondary full" onClick={onBack}>
                 <RefreshCw size={16} />
-                Başka kaynak seç
+                {t('Başka kaynak seç')}
               </button>
               <div className="ref-media-modal-footer">
                 <button className="button secondary" onClick={closeOptions}>
-                  Kapat
+                  {t('Kapat')}
                 </button>
                 <button className="button primary" onClick={() => setExternal(true)}>
                   <ExternalLink size={16} />
-                  Harici oynatıcı seç
+                  {t('Harici oynatıcı seç')}
                 </button>
               </div>
             </>
@@ -2863,7 +2914,7 @@ function PersonalPlayer({
             <>
               {nativeAvailable && !referenceFixture && (
                 <label className="field-label">
-                  Oynatıcı
+                  {t('Oynatıcı')}
                   <select
                     value={engine}
                     onChange={(event) => {
@@ -2872,11 +2923,11 @@ function PersonalPlayer({
                     }}
                   >
                     <option value="vlc">VLC</option>
-                    <option value="web">Standart</option>
+                    <option value="web">{t('Standart')}</option>
                   </select>
                 </label>
               )}
-              <h3>Ses dili</h3>
+              <h3>{t('Ses dili')}</h3>
               {audio.length ? (
                 audio.map((track) => (
                   <label className="ref-media-track" key={track.id}>
@@ -2887,15 +2938,15 @@ function PersonalPlayer({
                       onChange={() => setAudioId(track.id)}
                     />
                     {track.label}
-                    <small>Kaynakta var</small>
+                    <small>{t('Kaynakta var')}</small>
                   </label>
                 ))
               ) : (
                 <div className="ref-media-notice">
-                  Bu kaynak değiştirilebilir ses dili sunmuyor.
+                  {t('Bu kaynak değiştirilebilir ses dili sunmuyor.')}
                 </div>
               )}
-              <h3>Altyazı</h3>
+              <h3>{t('Altyazı')}</h3>
               <label className="ref-media-track">
                 <input
                   type="radio"
@@ -2903,7 +2954,7 @@ function PersonalPlayer({
                   checked={captionId === -1}
                   onChange={() => setCaptionId(-1)}
                 />
-                Kapalı
+                {t('Kapalı')}
               </label>
               {captions.map((track) => (
                 <label className="ref-media-track" key={track.id}>
@@ -2917,20 +2968,20 @@ function PersonalPlayer({
                 </label>
               ))}
               {!captions.length && (
-                <p className="ref-media-description">Bu kaynak altyazı sunmuyor.</p>
+                <p className="ref-media-description">{t('Bu kaynak altyazı sunmuyor.')}</p>
               )}
               <p className="ref-media-footnote">
                 <LockKeyhole size={13} />
-                Yalnızca bu kaynağın sunduğu ses ve altyazı seçenekleri listelenir.
+                {t('Yalnızca bu kaynağın sunduğu ses ve altyazı seçenekleri listelenir.')}
               </p>
               <div className="ref-media-modal-footer">
                 <button className="button secondary" onClick={() => setExternal(true)}>
                   <ExternalLink size={15} />
-                  Harici oynatıcı
+                  {t('Harici oynatıcı')}
                 </button>
                 <button className="button primary" onClick={applyTracks}>
                   <Check size={15} />
-                  Tercihleri uygula
+                  {t('Tercihleri uygula')}
                 </button>
               </div>
             </>

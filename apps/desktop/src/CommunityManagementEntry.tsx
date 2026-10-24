@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import CommunityManagementSurface, {
   type CommunityManagementFixture,
 } from './CommunityManagementSurface';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 
 export function CommunityManagementEntry({
   onBack,
@@ -50,7 +50,7 @@ export function CommunityManagementEntry({
   if (demo && !fixture)
     return (
       <div className="community-fixture-state" role={error ? 'alert' : 'status'}>
-        {error || 'Yerel görünüm hazırlanıyor…'}
+        {error || t('Yerel görünüm hazırlanıyor…')}
       </div>
     );
   return (

@@ -1,6 +1,6 @@
 # ROOMS geliştirme talimatları
 
-- Proje sahibiyle tercih ettiği dilde iletişim kur. README, proje belgeleri ve katkı şablonlarını Türkçe yaz; kod, API adları ve kod yorumlarında İngilizceyi koru.
+- Proje sahibiyle tercih ettiği dilde iletişim kur. Arayüz Türkçe ve İngilizcedir: metni Türkçe yaz, `t()` ile sar ve İngilizcesini kataloğa ekle (docs/I18N.md). README ve katkı belgeleri önce İngilizce, sonra Türkçe; diğer proje belgeleri Türkçe kalabilir. Kod, API adları ve kod yorumlarında İngilizceyi koru.
 - Uygulamayı ve incelemeyi ana agent yürütür. Kullanıcının açık izni olmadan işi başka agentlara devretme.
 - Mevcut Electron/React istemcisini, tipli Stoat adapterini, değiştirilebilir medya katmanını ve sayfa geçişlerinden bağımsız ses bağlantısını koru.
 - Görünür her kontrol çalışmalı veya neden kullanılamadığını açıklamalı. Geliştirme örnekleri etiketli kalmalı ve üretim akışlarına girmemeli.

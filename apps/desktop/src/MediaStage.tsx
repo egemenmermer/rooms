@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { attachMediaTrack, useRealtime } from './realtime';
+import { t } from './i18n';
 
 /** Presentation observes the track; it never creates or disconnects a media room. */
 export function MediaStage({
@@ -72,10 +73,12 @@ export function MediaStage({
           className={`media-stage-status ${phase === 'error' ? 'error' : ''}`}
           role={phase === 'error' ? 'alert' : 'status'}
         >
-          {phase === 'error' ? 'Yayın açılamadı veya sona erdi.' : 'Yayın görüntüsü bekleniyor…'}
+          {phase === 'error'
+            ? t('Yayın açılamadı veya sona erdi.')
+            : t('Yayın görüntüsü bekleniyor…')}
           {phase === 'error' && (
             <button className="text-button" onClick={() => setAttempt((value) => value + 1)}>
-              Yeniden dene
+              {t('Yeniden dene')}
             </button>
           )}
         </span>

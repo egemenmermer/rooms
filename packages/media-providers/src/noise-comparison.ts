@@ -1,3 +1,4 @@
+import { t } from '@rooms/i18n';
 import { createNoiseSuppressionNode, type NoiseSuppressionMode } from './noise-suppression';
 
 export interface NoiseComparison {
@@ -45,7 +46,7 @@ export async function compareNoise(options: {
     denoiser = await createNoiseSuppressionNode(context, options.mode ?? 'strong', {
       signal: options.signal,
       error: () => {
-        processingFailure = new Error('Gürültü filtresi durdu. Kayıt iptal edildi.');
+        processingFailure = new Error(t('Gürültü filtresi durdu. Kayıt iptal edildi.'));
         failRecording?.();
         release();
       },
@@ -54,11 +55,11 @@ export async function compareNoise(options: {
     let duration = 15;
     let bufferSource: AudioBufferSourceNode | undefined;
     if (options.file) {
-      if (options.file.size > 20_000_000) throw new Error('En fazla 20 MB ses dosyası seç.');
+      if (options.file.size > 20_000_000) throw new Error(t('En fazla 20 MB ses dosyası seç.'));
       const buffer = await context.decodeAudioData(await options.file.arrayBuffer());
       check();
       if (buffer.duration < 5 || buffer.duration > 30)
-        throw new Error('5–30 saniyelik bir ses kaydı seç.');
+        throw new Error(t('5–30 saniyelik bir ses kaydı seç.'));
       duration = buffer.duration;
       bufferSource = context.createBufferSource();
       bufferSource.buffer = buffer;
@@ -96,7 +97,7 @@ export async function compareNoise(options: {
     const mimeType = ['audio/webm;codecs=opus', 'audio/webm'].find((type) =>
       MediaRecorder.isTypeSupported(type),
     );
-    if (!mimeType) throw new Error('Bu ortam ses kaydını desteklemiyor.');
+    if (!mimeType) throw new Error(t('Bu ortam ses kaydını desteklemiyor.'));
     const blobs = destinations.map((destination) => {
       const recorder = new MediaRecorder(destination.stream, { mimeType });
       recorders.push(recorder);
@@ -105,7 +106,7 @@ export async function compareNoise(options: {
         recorder.ondataavailable = (event) => {
           if (event.data.size) chunks.push(event.data);
         };
-        recorder.onerror = () => reject(new Error('Ses kaydı tamamlanamadı.'));
+        recorder.onerror = () => reject(new Error(t('Ses kaydı tamamlanamadı.')));
         recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
       });
     });
@@ -155,7 +156,7 @@ export async function compareNoise(options: {
       }, 50);
       const watchdog = setTimeout(() => {
         cleanup();
-        reject(new Error('Ses işleme durdu. Cihazı kontrol edip yeniden dene.'));
+        reject(new Error(t('Ses işleme durdu. Cihazı kontrol edip yeniden dene.')));
       }, 60_000);
       options.signal.addEventListener('abort', abort, { once: true });
     });

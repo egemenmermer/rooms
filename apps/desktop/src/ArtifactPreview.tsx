@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowDownToLine, FileText, RefreshCw, X } from 'lucide-react';
 import type { AgentArtifactPreview } from '@rooms/agent-contracts';
 import { useCommunity } from './community';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 
 /** Plain text only: output never becomes HTML, embedded media, or an external resource. */
 export function ArtifactPreview({
@@ -54,12 +54,12 @@ function ScopedPreview({
     setError('');
     setLoading(true);
     if (fixture) {
-      setError('Yerel örnekte dosya erişimi kapalı.');
+      setError(t('Yerel örnekte dosya erişimi kapalı.'));
       setLoading(false);
       return;
     }
     if (!window.rooms?.agent.previewArtifact) {
-      setError('Önizleme için masaüstü bağlantısı gerekli.');
+      setError(t('Önizleme için masaüstü bağlantısı gerekli.'));
       setLoading(false);
       return;
     }
@@ -77,7 +77,7 @@ function ScopedPreview({
     const invalidate = () => {
       epoch.current++;
       setResult(null);
-      setError('Dosya erişimi yeniden doğrulanmalı.');
+      setError(t('Dosya erişimi yeniden doğrulanmalı.'));
       setLoading(false);
     };
     window.addEventListener('rooms:community-management-invalidated', invalidate);
@@ -98,7 +98,7 @@ function ScopedPreview({
     try {
       const saved = await window.rooms.agent.downloadArtifact(taskId, artifactId);
       if (alive.current && request === epoch.current)
-        notify(saved ? 'Dosya kaydedildi.' : 'Kaydetme iptal edildi.');
+        notify(saved ? t('Dosya kaydedildi.') : t('Kaydetme iptal edildi.'));
     } catch (failure) {
       if (alive.current && request === epoch.current) setError(uiError(failure));
     } finally {
@@ -108,31 +108,31 @@ function ScopedPreview({
   };
   const reason =
     result?.state === 'too-large'
-      ? 'Metin önizlemesi 256 KiB ile sınırlı.'
+      ? t('Metin önizlemesi 256 KiB ile sınırlı.')
       : result?.state === 'unsupported'
-        ? 'Bu dosya türü metin olarak önizlenemiyor.'
+        ? t('Bu dosya türü metin olarak önizlenemiyor.')
         : result?.state === 'unavailable'
-          ? 'Dosyaya ulaşılamıyor.'
+          ? t('Dosyaya ulaşılamıyor.')
           : '';
   return (
-    <section className="artifact-preview" aria-label="Dosya önizlemesi" aria-busy={loading}>
+    <section className="artifact-preview" aria-label={t('Dosya önizlemesi')} aria-busy={loading}>
       <header>
         <FileText size={16} />
-        <strong>{result?.artifact?.name ?? 'Dosya önizlemesi'}</strong>
-        <button className="icon-button" aria-label="Önizlemeyi kapat" onClick={onClose}>
+        <strong>{result?.artifact?.name ?? t('Dosya önizlemesi')}</strong>
+        <button className="icon-button" aria-label={t('Önizlemeyi kapat')} onClick={onClose}>
           <X size={18} />
         </button>
       </header>
       {loading ? (
         <div className="artifact-preview-state" role="status">
-          Önizleme açılıyor…
+          {t('Önizleme açılıyor…')}
         </div>
       ) : result?.state === 'text' ? (
         <pre className="artifact-preview-document">{result.text}</pre>
       ) : (
         <div className="artifact-preview-state">
           <FileText size={30} />
-          <h3>Önizleme açılamadı</h3>
+          <h3>{t('Önizleme açılamadı')}</h3>
           <p>{error || reason}</p>
           <button
             className="button secondary small"
@@ -140,7 +140,8 @@ function ScopedPreview({
             onClick={() => setRevision((value) => value + 1)}
           >
             <RefreshCw size={15} />
-            Yeniden dene
+
+            {t('Yeniden dene')}
           </button>
         </div>
       )}
@@ -163,7 +164,7 @@ function ScopedPreview({
           onClick={() => void download()}
         >
           <ArrowDownToLine size={16} />
-          {downloading ? 'Kaydediliyor…' : 'Dosyayı indir'}
+          {downloading ? t('Kaydediliyor…') : t('Dosyayı indir')}
         </button>
       </footer>
     </section>

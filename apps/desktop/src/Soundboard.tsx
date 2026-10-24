@@ -6,7 +6,7 @@ import { Modal } from '@rooms/design';
 import { PartyPopper, Plus, Play, Square, Trash2 } from 'lucide-react';
 import { useCommunity } from './community';
 import { useRealtime, playSoundboard, stopSoundboard } from './realtime';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 
 type Clip = { id: string; name: string; buffer: AudioBuffer };
 const useClips = create<{ owner: string; clips: Clip[]; volume: number }>(() => ({
@@ -91,7 +91,7 @@ export function SoundboardButton({ showTrigger = true }: { showTrigger?: boolean
   const close = useCallback(() => setOpen(false), []);
   const shared = window.rooms?.soundboard;
   const upload = async (name: string, buffer: AudioBuffer) => {
-    if (!shared || !channelId) throw Error('Topluluk sesleri için sunucuyla bağlantı kur.');
+    if (!shared || !channelId) throw Error(t('Topluluk sesleri için sunucuyla bağlantı kur.'));
     await shared.upload(channelId, { name, audio: encodeSoundboard(buffer) });
     await refresh();
   };
@@ -126,16 +126,16 @@ export function SoundboardButton({ showTrigger = true }: { showTrigger?: boolean
     let context: AudioContext | null = null;
     try {
       if (file.size > 2_000_000 || !file.size)
-        throw new Error('En fazla 2 MB bir ses dosyası seç.');
+        throw new Error(t('En fazla 2 MB bir ses dosyası seç.'));
       context = new AudioContext({ sampleRate: 48000 });
       const buffer = await context.decodeAudioData(await file.arrayBuffer());
       if (buffer.duration > 8 || buffer.duration <= 0 || buffer.numberOfChannels > 2)
-        throw new Error('En fazla 8 saniyelik mono veya stereo bir ses seç.');
+        throw new Error(t('En fazla 8 saniyelik mono veya stereo bir ses seç.'));
       if (generation !== sessionGeneration || !sessionKey() || current.current !== captured) return;
       await upload(file.name.replace(/\.[^.]+$/, '').slice(0, 40), buffer);
     } catch (e) {
       if (current.current === captured)
-        setError(e instanceof Error ? e.message : 'Ses dosyası okunamadı.');
+        setError(e instanceof Error ? e.message : t('Ses dosyası okunamadı.'));
     } finally {
       await context?.close();
       if (current.current === captured) setBusy(false);
@@ -143,11 +143,11 @@ export function SoundboardButton({ showTrigger = true }: { showTrigger?: boolean
   }
   const reason =
     r.status !== 'connected'
-      ? 'Ses odasına katıl.'
+      ? t('Ses odasına katıl.')
       : r.deafened
-        ? 'Sağırlaştırmayı kapat.'
+        ? t('Sağırlaştırmayı kapat.')
         : r.muted
-          ? 'Mikrofonu aç.'
+          ? t('Mikrofonu aç.')
           : '';
   return (
     <>
@@ -184,14 +184,14 @@ export function SoundboardButton({ showTrigger = true }: { showTrigger?: boolean
                 onClick={() => picker.current?.click()}
               >
                 <Plus size={16} />
-                {busy ? 'Ekleniyor…' : 'Ses ekle'}
+                {busy ? t('Ekleniyor…') : t('Ses ekle')}
               </button>
               <button className="button secondary" onClick={stopSoundboard}>
                 <Square size={14} />
-                Durdur
+                {t('Durdur')}
               </button>
             </div>
-            <p className="muted">{reason || 'Ses açık mikrofonundan odaya gönderilir.'}</p>
+            <p className="muted">{reason || t('Ses açık mikrofonundan odaya gönderilir.')}</p>
             <div className="soundboard-grid">
               {catalog?.clips.map((clip) => (
                 <div key={clip.id}>
@@ -203,11 +203,11 @@ export function SoundboardButton({ showTrigger = true }: { showTrigger?: boolean
                   >
                     <Play size={18} />
                     <strong>{clip.name}</strong>
-                    <small>{clip.durationSec.toFixed(1)} sn</small>
+                    <small>{t('{seconds} sn', { seconds: clip.durationSec.toFixed(1) })}</small>
                   </button>
                   {(catalog.canManage || clip.ownerId === useCommunity.getState().user?.id) && (
                     <button
-                      aria-label={`${clip.name} topluluk sesini kaldır`}
+                      aria-label={t('{name} topluluk sesini kaldır', { name: clip.name })}
                       disabled={busy}
                       onClick={() => {
                         const captured = scope;
@@ -229,7 +229,7 @@ export function SoundboardButton({ showTrigger = true }: { showTrigger?: boolean
                 </div>
               ))}
             </div>
-            {clips.length > 0 && <p className="muted">Bu cihazdaki eski sesler</p>}
+            {clips.length > 0 && <p className="muted">{t('Bu cihazdaki eski sesler')}</p>}
             <div className="soundboard-grid">
               {clips.map((clip) => (
                 <div key={clip.id}>
@@ -243,7 +243,7 @@ export function SoundboardButton({ showTrigger = true }: { showTrigger?: boolean
                   >
                     <Play size={18} />
                     <strong>{clip.name}</strong>
-                    <small>{clip.buffer.duration.toFixed(1)} sn</small>
+                    <small>{t('{seconds} sn', { seconds: clip.buffer.duration.toFixed(1) })}</small>
                   </button>
                   <button
                     disabled={busy || !catalog?.canUpload}
@@ -259,10 +259,10 @@ export function SoundboardButton({ showTrigger = true }: { showTrigger?: boolean
                         });
                     }}
                   >
-                    Topluluğa ekle
+                    {t('Topluluğa ekle')}
                   </button>
                   <button
-                    aria-label={`${clip.name} sesini kaldır`}
+                    aria-label={t('{name} sesini kaldır', { name: clip.name })}
                     onClick={() => {
                       stopSoundboard();
                       useClips.setState((state) => ({
@@ -276,13 +276,13 @@ export function SoundboardButton({ showTrigger = true }: { showTrigger?: boolean
               ))}
             </div>
             {!catalog?.clips.length && !clips.length && (
-              <p className="muted">Topluluk sesi yok. En fazla 8 sn · 2 MB</p>
+              <p className="muted">{t('Topluluk sesi yok. En fazla 8 sn · 2 MB')}</p>
             )}
             <label className="field-label">
-              SES · {Math.round(volume * 100)}%
+              {t('SES')} · {Math.round(volume * 100)}%
               <input
                 type="range"
-                aria-label="Soundboard sesi"
+                aria-label={t('Soundboard sesi')}
                 min={0}
                 max={1}
                 step={0.05}
@@ -302,7 +302,7 @@ export function SoundboardButton({ showTrigger = true }: { showTrigger?: boolean
                 }}
               />
             </label>
-            <p className="muted">Yüklenen sesler toplulukta saklanır.</p>
+            <p className="muted">{t('Yüklenen sesler toplulukta saklanır.')}</p>
             {error && (
               <div className="error-pane" role="alert">
                 {error}

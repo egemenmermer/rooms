@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '@rooms/design';
 import type { SocialUser } from '@rooms/social';
-import { dmFriendRequired, uiError } from './i18n';
+import { dmFriendRequired, t, uiError } from './i18n';
 
 const useFriendOffer = create<{ user: SocialUser | null }>(() => ({ user: null }));
 
@@ -39,7 +39,7 @@ export function FriendRequiredDialog({ notify }: { notify(message: string): void
   const send = () => {
     const social = window.rooms?.social;
     if (!social) {
-      setError('Arkadaşlık isteği yalnızca masaüstü uygulamasında gönderilebilir.');
+      setError(t('Arkadaşlık isteği yalnızca masaüstü uygulamasında gönderilebilir.'));
       return;
     }
     setBusy(true);
@@ -49,24 +49,25 @@ export function FriendRequiredDialog({ notify }: { notify(message: string): void
       .then(() => {
         window.dispatchEvent(new Event('rooms:friends-changed'));
         close();
-        notify('Arkadaşlık isteği gönderildi. Kabul edilince özel mesaj gönderebilirsin.');
+        notify(t('Arkadaşlık isteği gönderildi. Kabul edilince özel mesaj gönderebilirsin.'));
       })
       .catch((failure) => setError(uiError(failure)))
       .finally(() => setBusy(false));
   };
   return (
-    <Modal title="Önce arkadaş olun" onClose={close} className="reference-add-friend">
+    <Modal title={t('Önce arkadaş olun')} onClose={close} className="reference-add-friend">
       <p>
-        {dmFriendRequired} {user.displayName} kabul edince özel mesaj gönderebilirsin.
+        {dmFriendRequired}{' '}
+        {t('{name} kabul edince özel mesaj gönderebilirsin.', { name: user.displayName })}
       </p>
       {error && <p role="alert">{error}</p>}
       <div className="button-row">
         <button className="button secondary" disabled={busy} onClick={close}>
-          Vazgeç
+          {t('Vazgeç')}
         </button>
         {handle ? (
           <button className="button primary" disabled={busy} onClick={send}>
-            Arkadaşlık isteği gönder
+            {t('Arkadaşlık isteği gönder')}
           </button>
         ) : (
           <button
@@ -76,7 +77,7 @@ export function FriendRequiredDialog({ notify }: { notify(message: string): void
               navigate('/friends');
             }}
           >
-            Arkadaşlar sayfasını aç
+            {t('Arkadaşlar sayfasını aç')}
           </button>
         )}
       </div>

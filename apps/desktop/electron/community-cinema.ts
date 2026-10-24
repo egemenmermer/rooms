@@ -3,6 +3,7 @@ import type { StoatClient } from '@rooms/stoat';
 import { SOCIAL_ID_PATTERN } from '@rooms/social';
 import { randomBytes } from 'node:crypto';
 import { isIP } from 'node:net';
+import { t } from '@rooms/i18n';
 import { CINEMA_REF_PATTERN, RMDB_REVIEW_MAX } from '../../../packages/community-cinema/src/types';
 import { STREMIO_ID, streamFacts } from '../../../packages/community-cinema/src/stremio';
 
@@ -212,7 +213,7 @@ export function setupCommunityCinema(options: {
       throw new CinemaRequestError('CINEMA_UNAVAILABLE');
     }
     const value = (await response.json().catch(() => null)) as { error?: unknown } | null;
-    if (!options.isCurrent(account)) throw new CinemaRequestError('Oturum değişti.');
+    if (!options.isCurrent(account)) throw new CinemaRequestError(t('Oturum değişti.'));
     if (!response.ok)
       throw new CinemaRequestError(
         typeof value?.error === 'string' && /^CINEMA_[A-Z_]{2,40}$/.test(value.error)

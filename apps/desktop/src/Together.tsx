@@ -18,6 +18,7 @@ import { useActivityRoom } from './activity';
 import Whiteboard from './Whiteboard';
 import { useCurrentRoom } from './Agent';
 import { useCommunity } from './community';
+import { t } from './i18n';
 import type { ActivityCommand, Poll } from '../../../packages/activity-protocol/src';
 
 export default function Together() {
@@ -39,9 +40,9 @@ export default function Together() {
     connected = activity.status === 'connected';
   const busy = activity.busy || pending,
     reason = fixture
-      ? 'Yerel görsel örnekte hesap işlemleri kapalı'
+      ? t('Yerel görsel örnekte hesap işlemleri kapalı')
       : !connected
-        ? 'Oda bağlantısı bekleniyor'
+        ? t('Oda bağlantısı bekleniyor')
         : '';
   const participant = activity.room?.participants.find(
       (person) => person.userId === community.user?.id,
@@ -50,8 +51,8 @@ export default function Together() {
   // A viewer who has not joined yet (fresh room, or pruned after idling) has no participant
   // record; send() joins first and the service still enforces canCreate on poll.create.
   const createReason =
-    reason || (participant?.canCreate === false ? 'Bu odada anket oluşturma yetkin yok.' : '');
-  const roomName = community.channels.find((channel) => channel.id === roomId)?.name ?? 'Oda';
+    reason || (participant?.canCreate === false ? t('Bu odada anket oluşturma yetkin yok.') : '');
+  const roomName = community.channels.find((channel) => channel.id === roomId)?.name ?? t('Oda');
   const send = async (command: ActivityCommand) => {
     if (fixture || !connected || activity.busy || lock.current) return false;
     lock.current = true;
@@ -85,7 +86,7 @@ export default function Together() {
           const meta = f.getGamesFixtureMetadata('S53', query.get('variant') || 'default');
           if (meta.ui.modal === 'poll-create') {
             setCreate(true);
-            setQuestion('Filmden sonra ne oynayalım?');
+            setQuestion('Filmden sonra ne oynayalım?'); // i18n-ignore: development fixture
             setOptions(['Hold’em', '101 Okey', 'Batak']);
           }
           if (meta.ui.modal === 'poll-close' && activity.room?.polls[0])
@@ -98,7 +99,8 @@ export default function Together() {
   }, [roomId, community.user?.id, activity.room?.roomId]);
   const owner = (poll: Poll) => poll.createdBy === community.user?.id || canControl;
   const actualName = (id: string) =>
-    activity.room?.participants.find((person) => person.userId === id)?.displayName ?? 'Katılımcı';
+    activity.room?.participants.find((person) => person.userId === id)?.displayName ??
+    t('Katılımcı');
   const counts = (poll: Poll) =>
     poll.options.map((option) => ({
       ...option,
@@ -110,15 +112,15 @@ export default function Together() {
     return max
       ? values
           .filter((option) => option.count === max)
-          .map((option) => `${option.label} · ${option.count} oy`)
+          .map((option) => t('{label} · {count} oy', { label: option.label, count: option.count }))
           .join(' / ')
-      : 'Henüz oy yok';
+      : t('Henüz oy yok');
   };
   const primary = activity.room?.primary;
   const guardedActivity = {
     ...activity,
     send: async (command: ActivityCommand) => {
-      if (fixture) throw new Error('Yerel görsel örnekte hesap işlemleri kapalı');
+      if (fixture) throw new Error(t('Yerel görsel örnekte hesap işlemleri kapalı'));
       return activity.send(command);
     },
   };
@@ -127,9 +129,9 @@ export default function Together() {
       {!board && (
         <header className="rt-heading">
           <div>
-            <h1>{board ? 'Whiteboard' : 'Oda anketi'}</h1>
+            <h1>{board ? t('Whiteboard') : t('Oda anketi')}</h1>
             <p>
-              {roomName} · {board ? 'Ortak tahta' : 'Yan etkinlik'}
+              {roomName} · {board ? t('Ortak tahta') : t('Yan etkinlik')}
             </p>
           </div>
           <div>
@@ -137,7 +139,7 @@ export default function Together() {
               className="button secondary"
               onClick={() => setParams(board ? {} : { tab: 'board' })}
             >
-              {board ? 'Anketler' : 'Whiteboard'}
+              {board ? t('Anketler') : t('Whiteboard')}
             </button>
             {!board && (
               <button
@@ -147,10 +149,10 @@ export default function Together() {
                 onClick={() => setCreate(true)}
               >
                 <Plus size={16} />
-                Yeni anket
+                {t('Yeni anket')}
               </button>
             )}
-            <IconButton label="Odayı yenile" onClick={() => void activity.refresh()}>
+            <IconButton label={t('Odayı yenile')} onClick={() => void activity.refresh()}>
               <RefreshCw size={17} />
             </IconButton>
           </div>
@@ -159,16 +161,16 @@ export default function Together() {
       {!connected && !(board && roomId) && (
         <div className="rt-banner warning" role="status">
           {activity.status === 'loading'
-            ? 'Oda getiriliyor…'
+            ? t('Oda getiriliyor…')
             : !roomId
-              ? 'Bir oda seç.'
-              : 'Bağlantı bekleniyor. Son alınan görünüm korunuyor; işlemler kapalı.'}
+              ? t('Bir oda seç.')
+              : t('Bağlantı bekleniyor. Son alınan görünüm korunuyor; işlemler kapalı.')}
           <button
             onClick={() =>
               roomId ? void activity.refresh() : navigate('/settings?tab=connections')
             }
           >
-            {roomId ? 'Yeniden dene' : 'Topluluğa bağlan'}
+            {roomId ? t('Yeniden dene') : t('Topluluğa bağlan')}
           </button>
         </div>
       )}
@@ -185,7 +187,7 @@ export default function Together() {
         ) : (
           <section className="rt-empty">
             <Users size={30} />
-            <h2>Tahta için bir oda seç.</h2>
+            <h2>{t('Tahta için bir oda seç.')}</h2>
           </section>
         )
       ) : (
@@ -194,15 +196,17 @@ export default function Together() {
             <section className="rt-context">
               <div className="rt-activity-card">
                 <Film size={38} />
-                <span>{primary ? 'ODANIN ETKİNLİĞİ' : 'ODA'}</span>
+                <span>{primary ? t('ODANIN ETKİNLİĞİ') : t('ODA')}</span>
                 <h2>{primary?.title ?? roomName}</h2>
-                <p>{primary ? 'Anket ana etkinliği değiştirmez.' : 'Açık ana etkinlik yok.'}</p>
+                <p>
+                  {primary ? t('Anket ana etkinliği değiştirmez.') : t('Açık ana etkinlik yok.')}
+                </p>
                 {primary && (
                   <button
                     className="button secondary"
                     onClick={() => openActivity(primary.activity, navigate)}
                   >
-                    Etkinliği aç
+                    {t('Etkinliği aç')}
                     <ArrowRight size={15} />
                   </button>
                 )}
@@ -215,9 +219,13 @@ export default function Together() {
                       <Avatar name={person.displayName} />
                     </span>
                   ))}
-                  <span>{activity.room?.participants.length ?? 0} oda katılımcısı</span>
+                  <span>
+                    {t('{count} oda katılımcısı', {
+                      count: activity.room?.participants.length ?? 0,
+                    })}
+                  </span>
                 </div>
-                <p>Oda anketleri oyun veya medya etkinliğinden bağımsızdır.</p>
+                <p>{t('Oda anketleri oyun veya medya etkinliğinden bağımsızdır.')}</p>
               </div>
             </section>
             <section className="rt-polls">
@@ -228,11 +236,11 @@ export default function Together() {
                   return (
                     <article className={`rt-poll ${poll.closed ? 'closed' : ''}`} key={poll.id}>
                       <header>
-                        <span>ODA ANKETİ</span>
-                        <small>{poll.closed ? 'Kapalı' : 'Oylama açık'}</small>
+                        <span>{t('ODA ANKETİ')}</span>
+                        <small>{poll.closed ? t('Kapalı') : t('Oylama açık')}</small>
                       </header>
                       <h2>{poll.question}</h2>
-                      <p>{actualName(poll.createdBy)} oluşturdu</p>
+                      <p>{t('{name} oluşturdu', { name: actualName(poll.createdBy) })}</p>
                       <div className="rt-options">
                         {counts(poll).map((option) => {
                           const percentage = votes.length
@@ -244,7 +252,7 @@ export default function Together() {
                               key={option.id}
                               className={voted === option.id ? 'voted' : ''}
                               disabled={poll.closed || busy || !!reason}
-                              title={poll.closed ? 'Oylama kapalı' : reason || undefined}
+                              title={poll.closed ? t('Oylama kapalı') : reason || undefined}
                               aria-pressed={voted === option.id}
                               onClick={() =>
                                 void send({
@@ -259,7 +267,8 @@ export default function Together() {
                                 {voted === option.id && <Check size={14} />} {option.label}
                               </span>
                               <small>
-                                {option.count} oy{votes.length ? ` · ${percentage}%` : ''}
+                                {t('{count} oy', { count: option.count })}
+                                {votes.length ? ` · ${percentage}%` : ''}
                               </small>
                             </button>
                           );
@@ -267,7 +276,9 @@ export default function Together() {
                       </div>
                       <div className="rt-voters">
                         <span>
-                          {votes.length ? `${votes.length} kişi oy verdi` : 'Henüz oy yok'}
+                          {votes.length
+                            ? t('{count} kişi oy verdi', { count: votes.length })
+                            : t('Henüz oy yok')}
                         </span>
                         <div>
                           {Object.keys(poll.votes)
@@ -282,17 +293,17 @@ export default function Together() {
                       </div>
                       <p>
                         {poll.closed
-                          ? `Sonuç: ${winner(poll)}`
+                          ? t('Sonuç: {result}', { result: winner(poll) })
                           : voted
-                            ? 'Seçimini istediğin zaman değiştirebilirsin.'
-                            : 'İlk oyu sen ver.'}
+                            ? t('Seçimini istediğin zaman değiştirebilirsin.')
+                            : t('İlk oyu sen ver.')}
                       </p>
                       {poll.closed ? (
                         <button
                           className="button secondary full"
                           onClick={() => navigate('/games')}
                         >
-                          Oyun alanını aç
+                          {t('Oyun alanını aç')}
                         </button>
                       ) : owner(poll) ? (
                         <button
@@ -302,11 +313,11 @@ export default function Together() {
                           onClick={() => setClosing(poll.id)}
                         >
                           <LockKeyhole size={16} />
-                          Anketi kapat
+                          {t('Anketi kapat')}
                         </button>
                       ) : (
                         <p className="rt-permission">
-                          Bu anketi sahibi veya oda yöneticileri kapatabilir.
+                          {t('Bu anketi sahibi veya oda yöneticileri kapatabilir.')}
                         </p>
                       )}
                     </article>
@@ -315,7 +326,7 @@ export default function Together() {
               ) : (
                 <article className="rt-poll rt-empty">
                   <Vote size={31} />
-                  <h2>{connected ? 'Henüz anket yok.' : 'Anket bağlantısı bekleniyor.'}</h2>
+                  <h2>{connected ? t('Henüz anket yok.') : t('Anket bağlantısı bekleniyor.')}</h2>
                   <button
                     className="button primary"
                     disabled={busy || !!createReason}
@@ -323,13 +334,13 @@ export default function Together() {
                     onClick={() => setCreate(true)}
                   >
                     <Plus size={15} />
-                    Yeni anket
+                    {t('Yeni anket')}
                   </button>
                 </article>
               )}
             </section>
           </div>
-          <p className="rt-footer">Anket sonucu ana etkinliği değiştirmez.</p>
+          <p className="rt-footer">{t('Anket sonucu ana etkinliği değiştirmez.')}</p>
         </>
       )}
       {activity.error && (
@@ -338,7 +349,11 @@ export default function Together() {
         </div>
       )}
       {create && (
-        <Modal title="Odaya bir soru sor" className="rt-modal" onClose={() => setCreate(false)}>
+        <Modal
+          title={t('Odaya bir soru sor')}
+          className="rt-modal"
+          onClose={() => setCreate(false)}
+        >
           <form
             onSubmit={(event) => {
               event.preventDefault();
@@ -359,9 +374,9 @@ export default function Together() {
             }}
           >
             <div className="rt-modal-body">
-              <p>Anket {roomName} odasında açılır.</p>
+              <p>{t('Anket {room} odasında açılır.', { room: roomName })}</p>
               <label>
-                Soru
+                {t('Soru')}
                 <input
                   autoFocus
                   required
@@ -372,7 +387,7 @@ export default function Together() {
               </label>
               {options.map((value, index) => (
                 <label key={index}>
-                  Seçenek {index + 1}
+                  {t('Seçenek {number}', { number: index + 1 })}
                   <div className="rt-option-input">
                     <input
                       required
@@ -387,7 +402,7 @@ export default function Together() {
                     {options.length > 2 && (
                       <button
                         type="button"
-                        aria-label={`Seçenek ${index + 1} kaldır`}
+                        aria-label={t('Seçenek {number} kaldır', { number: index + 1 })}
                         onClick={() => setOptions((values) => values.filter((_, i) => i !== index))}
                       >
                         <X size={14} />
@@ -403,14 +418,14 @@ export default function Together() {
                   onClick={() => setOptions((values) => [...values, ''])}
                 >
                   <Plus size={15} />
-                  Seçenek ekle
+                  {t('Seçenek ekle')}
                 </button>
               )}
               <div className="rt-modal-summary">
-                <span>Oy düzeni</span>
-                <strong>Kişi başına tek seçim</strong>
+                <span>{t('Oy düzeni')}</span>
+                <strong>{t('Kişi başına tek seçim')}</strong>
               </div>
-              <p>Herkes oyunu değiştirebilir. Sen kapatana kadar oylama açık kalır.</p>
+              <p>{t('Herkes oyunu değiştirebilir. Sen kapatana kadar oylama açık kalır.')}</p>
               {activity.error && (
                 <p className="rt-form-error" role="alert">
                   {activity.error}
@@ -419,7 +434,7 @@ export default function Together() {
             </div>
             <footer>
               <button type="button" className="button secondary" onClick={() => setCreate(false)}>
-                Vazgeç
+                {t('Vazgeç')}
               </button>
               <button
                 className="button primary"
@@ -431,22 +446,24 @@ export default function Together() {
                 }
                 title={createReason || undefined}
               >
-                Anketi başlat
+                {t('Anketi başlat')}
               </button>
             </footer>
           </form>
         </Modal>
       )}
       {closePoll && (
-        <Modal title="Oylamayı kapat?" className="rt-modal" onClose={() => setClosing(null)}>
+        <Modal title={t('Oylamayı kapat?')} className="rt-modal" onClose={() => setClosing(null)}>
           <div className="rt-modal-body">
             <h3>{closePoll.question}</h3>
             <p>
-              {Object.keys(closePoll.votes).length} kişi oy verdi. Kapatınca yeni oy alınmaz; sonuç
-              odada görünmeye devam eder.
+              {t(
+                '{count} kişi oy verdi. Kapatınca yeni oy alınmaz; sonuç odada görünmeye devam eder.',
+                { count: Object.keys(closePoll.votes).length },
+              )}
             </p>
             <div className="rt-modal-summary">
-              <span>Şu an önde</span>
+              <span>{t('Şu an önde')}</span>
               <strong>{winner(closePoll)}</strong>
             </div>
             {activity.error && (
@@ -457,7 +474,7 @@ export default function Together() {
           </div>
           <footer>
             <button className="button secondary" onClick={() => setClosing(null)}>
-              Oylama sürsün
+              {t('Oylama sürsün')}
             </button>
             <button
               className="button primary"
@@ -468,7 +485,7 @@ export default function Together() {
                 })
               }
             >
-              Anketi kapat
+              {t('Anketi kapat')}
             </button>
           </footer>
         </Modal>

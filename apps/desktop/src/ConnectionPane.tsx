@@ -1,5 +1,5 @@
 import { defaultServer } from './default-server';
-import { tr, uiError } from './i18n';
+import { locale, t, tr, uiError } from './i18n';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff, Globe, LoaderCircle, LogOut, Users } from 'lucide-react';
@@ -31,11 +31,12 @@ export const sameInviteServer = (a: string, b: string) => {
 };
 /** How a new person joins: with an invitation link, or by asking an admin to approve them. */
 export type SignupKind = 'invite' | 'approval';
-const NOT_AN_INVITE =
-  'Bu bir Tayfa davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.';
+const NOT_AN_INVITE = t(
+  'Bu bir Tayfa davet bağlantısı değil. Seni davet eden kişinin gönderdiği bağlantıyı yapıştır.',
+);
 const formatExpiry = (iso: string | null | undefined) => {
   const time = iso ? Date.parse(iso) : NaN;
-  return Number.isFinite(time) ? new Date(time).toLocaleString('tr-TR') : null;
+  return Number.isFinite(time) ? new Date(time).toLocaleString(locale) : null;
 };
 /** An invitation that arrived through `?server=…&invite=…` (deep link or landing page). */
 const linkFromParams = (server: string | null, code: string | null): InviteLink | null => {
@@ -167,7 +168,7 @@ export function ConnectionPane({
           inviteCode: signupInvite.code,
         });
         if (!useCommunity.getState().user)
-          throw new Error('Sunucu bir hesap oturumu döndürmedi. Yeniden giriş yap.');
+          throw new Error(t('Sunucu bir hesap oturumu döndürmedi. Yeniden giriş yap.'));
         useRooms.getState().setPreference('serverUrl', signupInvite.serverUrl);
         setLink('');
         forgetLink();
@@ -175,7 +176,7 @@ export function ConnectionPane({
         const serverUrl = normalizedServer(server);
         await c.connect({ serverUrl, email: email.trim(), password });
         if (!useCommunity.getState().user)
-          throw new Error('Sunucu bir hesap oturumu döndürmedi. Yeniden giriş yap.');
+          throw new Error(t('Sunucu bir hesap oturumu döndürmedi. Yeniden giriş yap.'));
         setPassword('');
         useRooms.getState().setPreference('serverUrl', serverUrl);
         if (fromLink && sameInviteServer(serverUrl, fromLink.serverUrl)) {
@@ -197,10 +198,14 @@ export function ConnectionPane({
     return (
       <section className="ref-auth-form" aria-busy={busy} aria-labelledby="reference-account-title">
         <h2 id="reference-account-title">
-          {registration ? 'Hesap oluştur' : sessionExpired ? 'Yeniden giriş yap' : 'Giriş yap'}
+          {registration
+            ? t('Hesap oluştur')
+            : sessionExpired
+              ? t('Yeniden giriş yap')
+              : t('Giriş yap')}
         </h2>
         {sessionExpired && !registration && (
-          <p>Oturumunun süresi doldu. Hesabına yeniden giriş yap.</p>
+          <p>{t('Oturumunun süresi doldu. Hesabına yeniden giriş yap.')}</p>
         )}
         {!c.user && c.error === SERVER_UNREACHABLE_MESSAGE && (
           <p role="status" className="ref-auth-waiting">
@@ -218,7 +223,7 @@ export function ConnectionPane({
               disabled={busy || !onAuthenticated}
               onClick={() => onAuthenticated?.()}
             >
-              Devam et
+              {t('Devam et')}
               <ArrowRight size={16} />
             </button>
             <button
@@ -233,7 +238,7 @@ export function ConnectionPane({
                   .finally(() => setWorking(false));
               }}
             >
-              Çıkış yap
+              {t('Çıkış yap')}
             </button>
           </>
         ) : (
@@ -245,18 +250,18 @@ export function ConnectionPane({
                     <span className="ref-auth-community-icon">
                       <Users size={22} />
                     </span>
-                    <h3>{communityName ?? 'Topluluk daveti'}</h3>
+                    <h3>{communityName ?? t('Topluluk daveti')}</h3>
                     {previewError ? (
                       <div className="ref-auth-notice error">{previewError}</div>
                     ) : (
                       <p>
                         {communityName
-                          ? 'Hesabını oluşturunca bu topluluğa katılacaksın.'
-                          : 'Davet kontrol ediliyor…'}
+                          ? t('Hesabını oluşturunca bu topluluğa katılacaksın.')
+                          : t('Davet kontrol ediliyor…')}
                         {expiry && (
                           <>
                             <br />
-                            Son geçerlilik: {expiry}
+                            {t('Son geçerlilik: {date}', { date: expiry })}
                           </>
                         )}
                       </p>
@@ -266,25 +271,29 @@ export function ConnectionPane({
                       {serverHost(fromLink.serverUrl)}
                     </p>
                     <button type="button" className="ref-auth-back" onClick={forgetLink}>
-                      Başka bir davet bağlantısı kullan
+                      {t('Başka bir davet bağlantısı kullan')}
                     </button>
                   </div>
                 ) : (
                   <>
-                    <div className="ref-auth-choice" role="group" aria-label="Nasıl katılacaksın?">
+                    <div
+                      className="ref-auth-choice"
+                      role="group"
+                      aria-label={t('Nasıl katılacaksın?')}
+                    >
                       <button
                         type="button"
                         aria-pressed={signupKind === 'invite'}
                         onClick={() => setSignupKind('invite')}
                       >
-                        Davet bağlantım var
+                        {t('Davet bağlantım var')}
                       </button>
                       <button
                         type="button"
                         aria-pressed={signupKind === 'approval'}
                         onClick={() => setSignupKind('approval')}
                       >
-                        Onay isteğiyle
+                        {t('Onay isteğiyle')}
                       </button>
                     </div>
                   </>
@@ -292,9 +301,11 @@ export function ConnectionPane({
               {approval && pendingSignup && (
                 <div className="ref-auth-notice">
                   <span>
-                    {pendingSignup.username} adına gönderilmiş bir kayıt isteğin var.{' '}
+                    {t('{name} adına gönderilmiş bir kayıt isteğin var.', {
+                      name: pendingSignup.username,
+                    })}{' '}
                     <button type="button" className="ref-auth-back" onClick={showPendingSignup}>
-                      İsteği göster
+                      {t('İsteği göster')}
                     </button>
                   </span>
                 </div>
@@ -302,7 +313,7 @@ export function ConnectionPane({
               {approval && (
                 <>
                   <label className="field-label ref-auth-field-with-help">
-                    Sunucu adresi
+                    {t('Sunucu adresi')}
                     <input
                       required
                       type="url"
@@ -311,7 +322,7 @@ export function ConnectionPane({
                       value={server}
                       aria-describedby="reference-approval-help"
                       onChange={(e) => setServer(e.target.value)}
-                      placeholder="https://sunucun.example"
+                      placeholder={t('https://sunucun.example')}
                     />
                   </label>
                   <p
@@ -320,23 +331,29 @@ export function ConnectionPane({
                     role="status"
                   >
                     {!approvalServer
-                      ? 'Katılmak istediğin topluluğun sunucu adresini yaz. Davet bağlantısı gerekmez.'
+                      ? t(
+                          'Katılmak istediğin topluluğun sunucu adresini yaz. Davet bağlantısı gerekmez.',
+                        )
                       : !approvalUrlValid
-                        ? 'Adresi https:// ile başlayarak yaz.'
+                        ? t('Adresi https:// ile başlayarak yaz.')
                         : approvalCheckError
                           ? approvalCheckError
                           : approvalOpen === null
-                            ? 'Sunucu kontrol ediliyor…'
+                            ? t('Sunucu kontrol ediliyor…')
                             : approvalOpen
-                              ? 'İsteğin yöneticiye gider. Hesabın, bir yönetici onaylayınca oluşur ve topluluğa katılırsın.'
-                              : 'Bu sunucu davetsiz kaydı açmamış. Topluluktan bir davet bağlantısı iste.'}
+                              ? t(
+                                  'İsteğin yöneticiye gider. Hesabın, bir yönetici onaylayınca oluşur ve topluluğa katılırsın.',
+                                )
+                              : t(
+                                  'Bu sunucu davetsiz kaydı açmamış. Topluluktan bir davet bağlantısı iste.',
+                                )}
                   </p>
                 </>
               )}
               {registration && !fromLink && !approval && (
                 <>
                   <label className="field-label ref-auth-field-with-help">
-                    Davet bağlantısı
+                    {t('Davet bağlantısı')}
                     <input
                       required
                       autoComplete="off"
@@ -357,14 +374,16 @@ export function ConnectionPane({
                     {linkInvalid
                       ? NOT_AN_INVITE
                       : pasted
-                        ? `Sunucu: ${serverHost(pasted.serverUrl)}`
-                        : 'Topluluktaki her üye davet bağlantısı oluşturabilir. Arkadaşının gönderdiği bağlantıyı buraya yapıştır.'}
+                        ? t('Sunucu: {host}', { host: serverHost(pasted.serverUrl) })
+                        : t(
+                            'Topluluktaki her üye davet bağlantısı oluşturabilir. Arkadaşının gönderdiği bağlantıyı buraya yapıştır.',
+                          )}
                   </p>
                 </>
               )}
               {registration && (
                 <label className="field-label">
-                  Kullanıcı adı
+                  {t('Kullanıcı adı')}
                   <input
                     required
                     autoComplete="nickname"
@@ -372,7 +391,7 @@ export function ConnectionPane({
                     minLength={2}
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Kullanıcı adın"
+                    placeholder={t('Kullanıcı adın')}
                   />
                 </label>
               )}
@@ -380,14 +399,16 @@ export function ConnectionPane({
                 <div className="ref-auth-notice">
                   <Users size={15} />
                   {!sameInviteServer(server, fromLink.serverUrl)
-                    ? 'Sunucu adresini değiştirdin; davet bu sunucuda geçerli değil.'
+                    ? t('Sunucu adresini değiştirdin; davet bu sunucuda geçerli değil.')
                     : communityName
-                      ? `Giriş yaptıktan sonra ${communityName} topluluğuna katılacaksın.`
-                      : 'Giriş yaptıktan sonra davet edildiğin topluluğa katılacaksın.'}
+                      ? t('Giriş yaptıktan sonra {community} topluluğuna katılacaksın.', {
+                          community: communityName,
+                        })
+                      : t('Giriş yaptıktan sonra davet edildiğin topluluğa katılacaksın.')}
                 </div>
               )}
               <label className="field-label">
-                E-posta adresi
+                {t('E-posta adresi')}
                 <input
                   required
                   type="email"
@@ -396,11 +417,11 @@ export function ConnectionPane({
                   spellCheck={false}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="sen@ornek.com"
+                  placeholder={t('sen@ornek.com')}
                 />
               </label>
               <label className="field-label">
-                Şifre
+                {t('Şifre')}
                 <span className="ref-auth-password">
                   <input
                     required
@@ -409,11 +430,11 @@ export function ConnectionPane({
                     minLength={registration ? 8 : 1}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder={registration ? 'En az 8 karakter' : 'Şifren'}
+                    placeholder={registration ? t('En az 8 karakter') : t('Şifren')}
                   />
                   <button
                     type="button"
-                    aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                    aria-label={showPassword ? t('Şifreyi gizle') : t('Şifreyi göster')}
                     aria-pressed={showPassword}
                     onClick={() => setShowPassword(!showPassword)}
                   >
@@ -424,9 +445,9 @@ export function ConnectionPane({
               {!registration && (
                 <>
                   <div className="ref-auth-options">
-                    <label title="Bu sürümde oturum, sistemin güvenli deposunda saklanır.">
+                    <label title={t('Bu sürümde oturum, sistemin güvenli deposunda saklanır.')}>
                       <input type="checkbox" checked disabled />
-                      Beni hatırla
+                      {t('Beni hatırla')}
                     </label>
                     <button
                       type="button"
@@ -436,13 +457,17 @@ export function ConnectionPane({
                       }}
                       disabled={!onRecovery}
                     >
-                      Şifreni mi unuttun?
+                      {t('Şifreni mi unuttun?')}
                     </button>
                   </div>
                   <details className="ref-auth-server" open={!server.trim()}>
-                    <summary>{server.trim() ? `Sunucu: ${serverHost(server)}` : 'Sunucu'}</summary>
+                    <summary>
+                      {server.trim()
+                        ? t('Sunucu: {host}', { host: serverHost(server) })
+                        : t('Sunucu')}
+                    </summary>
                     <label className="field-label">
-                      Sunucu adresi
+                      {t('Sunucu adresi')}
                       <input
                         required
                         type="url"
@@ -450,7 +475,7 @@ export function ConnectionPane({
                         spellCheck={false}
                         value={server}
                         onChange={(e) => setServer(e.target.value)}
-                        placeholder="https://sunucun.example"
+                        placeholder={t('https://sunucun.example')}
                       />
                     </label>
                   </details>
@@ -474,22 +499,22 @@ export function ConnectionPane({
                   <>
                     <LoaderCircle size={16} className="spin" />
                     {approval
-                      ? 'İstek gönderiliyor…'
+                      ? t('İstek gönderiliyor…')
                       : registration
-                        ? 'Hesap oluşturuluyor…'
-                        : 'Giriş yapılıyor…'}
+                        ? t('Hesap oluşturuluyor…')
+                        : t('Giriş yapılıyor…')}
                   </>
                 ) : (
                   <>
                     {approval
-                      ? 'Kayıt isteği gönder'
+                      ? t('Kayıt isteği gönder')
                       : registration
-                        ? 'Hesap oluştur ve katıl'
+                        ? t('Hesap oluştur ve katıl')
                         : fromLink
-                          ? 'Giriş yap ve katıl'
+                          ? t('Giriş yap ve katıl')
                           : sessionExpired
-                            ? 'Giriş yap ve devam et'
-                            : 'Giriş yap'}
+                            ? t('Giriş yap ve devam et')
+                            : t('Giriş yap')}
                     <ArrowRight size={16} />
                   </>
                 )}
@@ -515,7 +540,7 @@ export function ConnectionPane({
           <Users size={23} />
         </span>
         <div>
-          <h4 id="community-heading">{c.user ? 'Hesap' : 'Giriş'}</h4>
+          <h4 id="community-heading">{c.user ? t('Hesap') : t('Giriş')}</h4>
         </div>
         {c.user && (
           <span
@@ -560,21 +585,24 @@ export function ConnectionPane({
               {tr('Sign out')}
             </button>
           </div>
-          <p className="connection-disclosure">{c.spaces.length} özel topluluk</p>
+          <p className="connection-disclosure">
+            {t('{count} özel topluluk', { count: c.spaces.length })}
+          </p>
         </>
       ) : (
         <div className="onboarding-signed-out">
           <p>
-            Hesabınla giriş yap. Hesabın yoksa davet bağlantısıyla ya da sunucu izin veriyorsa onay
-            isteğiyle kayıt ol.
+            {t(
+              'Hesabınla giriş yap. Hesabın yoksa davet bağlantısıyla ya da sunucu izin veriyorsa onay isteğiyle kayıt ol.',
+            )}
           </p>
           <div className="onboarding-signed-out-actions">
             <button className="button primary" onClick={() => navigate('/setup/signin')}>
-              Giriş yap
+              {t('Giriş yap')}
               <ArrowRight size={15} />
             </button>
             <button className="button secondary" onClick={() => navigate('/setup/register')}>
-              Kayıt ol
+              {t('Kayıt ol')}
             </button>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { SOCIAL_ID_PATTERN } from '@rooms/social';
 import type { ChannelNotificationScope, ChannelNotificationInput } from '@rooms/contracts';
 import { showWindow } from './window-state';
+import { t } from '@rooms/i18n';
 /** Opt-in, content-free notifications; never disclose messages or account/provider details. */
 export function setupNotifications(
   getWindow: () => BrowserWindow | null,
@@ -136,7 +137,7 @@ export function setupNotifications(
     if (!enabled || !Notification.isSupported() || window?.isFocused()) return;
     const notification = new Notification({
       title: 'Tayfa',
-      body: 'Özel bir arama geliyor.',
+      body: t('Özel bir arama geliyor.'),
       silent: !sound,
     });
     notification.on('click', () => {
@@ -189,7 +190,7 @@ export function setupNotifications(
     serverAlert: (text: string, open?: () => void) => {
       if (!Notification.isSupported()) return;
       const notification = new Notification({
-        title: 'Tayfa · Sunucu uyarısı',
+        title: t('Tayfa · Sunucu uyarısı'),
         body: text.slice(0, 200),
         silent: !sound,
       });
@@ -226,7 +227,9 @@ export function setupNotifications(
       else lastShown = Date.now();
       const notification = new Notification({
         title: 'Tayfa',
-        body: mentioned ? 'Topluluğunda biri seni etiketledi.' : 'Topluluğunda yeni bir mesaj var.',
+        body: mentioned
+          ? t('Topluluğunda biri seni etiketledi.')
+          : t('Topluluğunda yeni bir mesaj var.'),
         silent: !sound,
       });
       notification.on('click', () => {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { LoaderCircle, Search } from 'lucide-react';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import './composer-pickers.css';
 
 type GifPage = Awaited<ReturnType<NonNullable<NonNullable<Window['rooms']>['media']['gifs']>>>;
@@ -22,7 +22,7 @@ export function GifPicker({ onPick, onClose }: { onPick(gif: GifResult): void; o
   const load = async (q: string, number: number) => {
     const search = window.rooms?.media.gifs;
     if (!search) {
-      setError('GIF araması için masaüstü uygulaması gerekiyor.');
+      setError(t('GIF araması için masaüstü uygulaması gerekiyor.'));
       return;
     }
     const current = ++ticket.current;
@@ -46,12 +46,12 @@ export function GifPicker({ onPick, onClose }: { onPick(gif: GifResult): void; o
     return () => clearTimeout(timer);
   }, [query]);
   return (
-    <div className="gif-picker" role="dialog" aria-label="GIF seç">
+    <div className="gif-picker" role="dialog" aria-label={t('GIF seç')}>
       <label className="gif-search">
         <Search size={16} aria-hidden="true" />
         <input
           autoFocus
-          aria-label="GIF ara"
+          aria-label={t('GIF ara')}
           placeholder="Search KLIPY"
           value={query}
           maxLength={80}
@@ -77,7 +77,7 @@ export function GifPicker({ onPick, onClose }: { onPick(gif: GifResult): void; o
             {error}
           </p>
         ) : !items.length && !loading ? (
-          <p className="gif-note">“{query.trim()}” için GIF bulunamadı.</p>
+          <p className="gif-note">{t('“{query}” için GIF bulunamadı.', { query: query.trim() })}</p>
         ) : (
           <div className="gif-grid">
             {items.map((item) => (
@@ -100,7 +100,7 @@ export function GifPicker({ onPick, onClose }: { onPick(gif: GifResult): void; o
         )}
         {loading && (
           <p className="gif-note" role="status">
-            <LoaderCircle size={16} className="spin" /> GIF’ler yükleniyor…
+            <LoaderCircle size={16} className="spin" /> {t('GIF’ler yükleniyor…')}
           </p>
         )}
       </div>
@@ -111,21 +111,21 @@ export function GifPicker({ onPick, onClose }: { onPick(gif: GifResult): void; o
 
 const emojiGroups: { name: string; emojis: string }[] = [
   {
-    name: 'Sık kullanılanlar',
+    name: t('Sık kullanılanlar'),
     emojis: '😂 ❤️ 👍 😭 🔥 🙏 😍 🥲 😅 😎 🤔 👀 🎉 💀 😡 🤝 😊 🙌 💯 🥳',
   },
   {
-    name: 'Yüzler',
+    name: t('Yüzler'),
     emojis:
       '😀 😃 😄 😁 😆 🤣 🙂 🙃 😉 😇 🥰 😘 😋 😜 🤪 🤨 🧐 🤓 😏 😒 😞 😔 😟 😕 🙁 😣 😫 😩 🥺 😢 😤 😠 🤯 😳 🥵 🥶 😱 😨 😰 🤗 🤭 🤫 😶 😐 😑 😬 🙄 😯 😴 🤤 😪 😵 🤐 🥴 🤢 🤮 🤧 😷 🤒 🤕 🤑 🤠 😈 👻 🤡 💩',
   },
   {
-    name: 'Eller',
+    name: t('Eller'),
     emojis: '👋 🤚 ✋ 🖖 👌 🤌 🤏 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 👇 ☝️ 👎 ✊ 👊 🤛 🤜 👏 👐 🤲 💪 🫶',
   },
-  { name: 'Kalpler', emojis: '🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝' },
+  { name: t('Kalpler'), emojis: '🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝' },
   {
-    name: 'Etkinlik',
+    name: t('Etkinlik'),
     emojis: '🎮 🎲 ♠️ ♥️ ♦️ ♣️ 🃏 🎬 🍿 🎵 🎶 🎧 🎤 ⚽ 🏀 🏆 🎂 🎁 🍕 🍺 ☕ 🚀 ✨ ⭐',
   },
 ];
@@ -135,7 +135,7 @@ export function EmojiPicker({ onPick, onClose }: { onPick(emoji: string): void; 
     <div
       className="emoji-picker"
       role="dialog"
-      aria-label="Emoji ekle"
+      aria-label={t('Emoji ekle')}
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
           event.stopPropagation();

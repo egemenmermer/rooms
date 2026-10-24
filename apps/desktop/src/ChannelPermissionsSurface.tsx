@@ -5,7 +5,7 @@ import { ChannelPermissions, type ChannelPermissionSnapshot } from './CommunityS
 import { useCommunity } from './community';
 import { useRealtime } from './realtime';
 import { SystemState } from './SystemState';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 
 const project = (state: SocialChannelPermissions): ChannelPermissionSnapshot => ({
   channelId: state.channelId,
@@ -81,11 +81,11 @@ export function ChannelPermissionsSurface({ channelId }: { channelId: string | n
       <div className="rcs-page">
         <p>
           {fixture
-            ? 'Yerel örnek durum; gerçek kanal izinleri okunmaz.'
-            : 'Kanal menüsünden İzinler’i seç.'}
+            ? t('Yerel örnek durum; gerçek kanal izinleri okunmaz.')
+            : t('Kanal menüsünden İzinler’i seç.')}
         </p>
         <button className="button secondary" onClick={back}>
-          Sohbete dön
+          {t('Sohbete dön')}
         </button>
       </div>
     );
@@ -97,7 +97,7 @@ export function ChannelPermissionsSurface({ channelId }: { channelId: string | n
         : 'unknown';
   const save = async (draft: ChannelPermissionSnapshot) => {
     if (!snapshot || !snapshot.effective.managePermissions || draft.channelId !== channelId)
-      throw new Error('Kanal yetkisi değişti. Yeniden aç.');
+      throw new Error(t('Kanal yetkisi değişti. Yeniden aç.'));
     const changed = draft.subjects.filter((subject) => {
       const previous = snapshot.subjects.find(
         (item) => item.id === subject.id && item.kind === subject.kind,
@@ -105,13 +105,13 @@ export function ChannelPermissionsSurface({ channelId }: { channelId: string | n
       return !previous || JSON.stringify(previous.values) !== JSON.stringify(subject.values);
     });
     if (changed.length !== 1)
-      throw new Error('Bir rolün değişikliklerini kaydedip sonraki role geç.');
+      throw new Error(t('Bir rolün değişikliklerini kaydedip sonraki role geç.'));
     const subject = changed[0]!;
     const previous = snapshot.subjects.find(
       (item) => item.id === subject.id && item.kind === subject.kind,
     );
     if (!previous?.editable || subject.kind === 'member')
-      throw new Error('Bu izin türü desteklenmiyor veya rol yetkisi yok.');
+      throw new Error(t('Bu izin türü desteklenmiyor veya rol yetkisi yok.'));
     const identity = c.user?.id,
       serverUrl = c.serverUrl;
     const result = await window.rooms!.social.setChannelPermissions({
@@ -123,7 +123,7 @@ export function ChannelPermissionsSurface({ channelId }: { channelId: string | n
       useCommunity.getState().user?.id !== identity ||
       useCommunity.getState().serverUrl !== serverUrl
     )
-      throw new Error('Topluluk oturumu değişti.');
+      throw new Error(t('Topluluk oturumu değişti.'));
     setSnapshot(result);
     await useCommunity.getState().refresh();
     return project(result);
@@ -143,8 +143,9 @@ export function ChannelPermissionsSurface({ channelId }: { channelId: string | n
       />
       {access === 'allowed' && (
         <p className="rcs-hint">
-          İzinler rol bazında kaydedilir. Kişiye özel izin ve eşzamanlı değişiklik koruması bu
-          sunucu sürümünde bulunmuyor.
+          {t(
+            'İzinler rol bazında kaydedilir. Kişiye özel izin ve eşzamanlı değişiklik koruması bu sunucu sürümünde bulunmuyor.',
+          )}
         </p>
       )}
     </>

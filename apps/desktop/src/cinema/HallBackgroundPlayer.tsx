@@ -11,6 +11,7 @@ import { stopHallBackground, useHallBackground } from './hall-background';
 import type { PlayerControls } from './HallPlayer';
 import { HallStage } from './HallStage';
 import { HallContext, useHallState } from './use-hall';
+import { t } from '../i18n';
 
 /** Corner players mounted per hall; a remount must not give up the seat. */
 const corners = new Map<string, number>();
@@ -92,7 +93,7 @@ function Corner({
       if (document.fullscreenElement) await document.exitFullscreen();
       else await host.current?.requestFullscreen({ navigationUI: 'hide' });
     } catch {
-      notify('Tam ekran açılamadı.');
+      notify(t('Tam ekran açılamadı.'));
     }
   }, [notify]);
   const open = useCallback(() => navigate('/cinema'), [navigate]);
@@ -100,7 +101,7 @@ function Corner({
   if (!hall.current) return null;
   return createPortal(
     <HallContext.Provider value={hall}>
-      <div className="hall-background" role="region" aria-label="Sinema küçük oynatıcı">
+      <div className="hall-background" role="region" aria-label={t('Sinema küçük oynatıcı')}>
         <div ref={host} className="hall-screen-host mini">
           <HallStage
             mode="mini"
@@ -121,16 +122,16 @@ function Corner({
         <div className="hall-background-actions">
           <button
             className="hall-icon-button"
-            aria-label={audio.muted ? 'Sinemanın sesini aç' : 'Sinemanın sesini kapat'}
-            title={audio.muted ? 'Sinemanın sesini aç' : 'Sinemanın sesini kapat'}
+            aria-label={audio.muted ? t('Sinemanın sesini aç') : t('Sinemanın sesini kapat')}
+            title={audio.muted ? t('Sinemanın sesini aç') : t('Sinemanın sesini kapat')}
             onClick={() => setAudio({ ...audio, muted: !audio.muted })}
           >
             {audio.muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
           </button>
           <button
             className="hall-icon-button"
-            aria-label="Küçük oynatıcıyı kapat"
-            title="Yalnızca sende kapanır, salon sürer."
+            aria-label={t('Küçük oynatıcıyı kapat')}
+            title={t('Yalnızca sende kapanır, salon sürer.')}
             onClick={stopHallBackground}
           >
             <X size={15} />

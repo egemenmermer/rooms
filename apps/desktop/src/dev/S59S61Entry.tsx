@@ -12,6 +12,7 @@ import type {
   ModelConnection,
 } from '../../../../packages/agent-contracts/src';
 import type { SocialMessage } from '@rooms/social';
+import { sample, people, places } from './sample';
 /** Exact, opt-in development projections. No bridge or native mutation is supplied. */
 export const S59_VARIANTS = [
   'default',
@@ -47,26 +48,35 @@ export function getS59Fixture(variant: string): AgentModelsProps {
             id: 'demo-openrouter',
             ownerId: userId,
             provider: 'openrouter',
-            label: 'Araştırma',
+            label: sample('Araştırma', 'Research'),
             model: 'demo-model',
             status: variant === 'limit' || variant === 'error' ? 'unavailable' : 'connected',
             reason:
               variant === 'limit'
-                ? 'Hesap limiti doldu. Başka bir hesaba geçilmedi.'
+                ? sample(
+                    'Hesap limiti doldu. Başka bir hesaba geçilmedi.',
+                    'The account limit was reached. Nothing switched to another account.',
+                  )
                 : variant === 'error'
-                  ? 'Anahtar doğrulanamadı. Hesabındaki erişimi kontrol et.'
+                  ? sample(
+                      'Anahtar doğrulanamadı. Hesabındaki erişimi kontrol et.',
+                      'The key could not be verified. Check the access on your account.',
+                    )
                   : undefined,
           },
           {
             id: 'demo-codex',
             ownerId: userId,
             provider: 'codex',
-            label: 'Codex · Deniz',
+            label: `Codex · ${people.deniz}`,
             model: 'demo-codex',
             status: variant === 'expired' ? 'login-required' : 'connected',
             reason:
               variant === 'expired'
-                ? 'Resmî giriş süresi doldu. Ayrı sunucuda yeniden giriş gerekli.'
+                ? sample(
+                    'Resmî giriş süresi doldu. Ayrı sunucuda yeniden giriş gerekli.',
+                    'The official sign-in expired. Sign in again on the separate server.',
+                  )
                 : undefined,
           },
         ];
@@ -101,13 +111,14 @@ export function getS60Fixture(variant: string): AgentConnectionsProps {
               kind: 'drive',
               read: true,
               write: true,
-              resources: variant === 'revoked' ? [] : ['Film-gecesi-plani'],
+              resources:
+                variant === 'revoked' ? [] : [sample('Film-gecesi-plani', 'Movie-night-plan')],
             },
             {
               kind: 'drive',
               read: true,
               write: false,
-              resources: variant === 'revoked' ? [] : ['Izleme-listesi'],
+              resources: variant === 'revoked' ? [] : [sample('Izleme-listesi', 'Watchlist')],
             },
           ],
     discord: { state: 'not-configured', mentionOnly: true, mappings: [] },
@@ -118,13 +129,16 @@ export function getS60Fixture(variant: string): AgentConnectionsProps {
     authority,
     userId,
     roomId,
-    roomName: 'Bizim Oda',
-    channelName: 'genel',
+    roomName: places.community,
+    channelName: places.general,
     fixture: true,
     fixtureView: variant,
     error:
       variant === 'error'
-        ? 'Yerel demo: Drive bağlantısı doğrulanamadı. Yeni işlemler bekletiliyor.'
+        ? sample(
+            'Yerel demo: Drive bağlantısı doğrulanamadı. Yeni işlemler bekletiliyor.',
+            'Local demo: the Drive connection could not be verified. New operations are on hold.',
+          )
         : undefined,
     onRefresh: async () => {},
   };
@@ -132,23 +146,35 @@ export function getS60Fixture(variant: string): AgentConnectionsProps {
 const sampleMessages: SocialMessage[] = [
   [
     'demo-memory-source-1',
-    'Ece',
-    'Film gecelerini genelde cumartesi 21.00’de yapalım. İzlerken herkes kendi kaynağını seçsin.',
+    'ece',
+    people.ece,
+    sample(
+      'Film gecelerini genelde cumartesi 21.00’de yapalım. İzlerken herkes kendi kaynağını seçsin.',
+      'Let’s usually do movie nights on Saturday at 9:00 PM. Everyone picks their own source while watching.',
+    ),
   ],
   [
     'demo-memory-source-2',
-    'Can',
-    'Film gecesi planı, bu odaya açıkça izin verilen Google Drive dosyasında tutuluyor.',
+    'can',
+    people.can,
+    sample(
+      'Film gecesi planı, bu odaya açıkça izin verilen Google Drive dosyasında tutuluyor.',
+      'The movie night plan lives in a Google Drive file this room was explicitly given access to.',
+    ),
   ],
   [
     'demo-memory-source-3',
-    'Deniz',
-    'Kısa akşamlarda Blackjack; dört kişi olduğumuzda Batak tercih ediyoruz.',
+    'deniz',
+    people.deniz,
+    sample(
+      'Kısa akşamlarda Blackjack; dört kişi olduğumuzda Batak tercih ediyoruz.',
+      'Blackjack on short evenings; when there are four of us we go for Batak.',
+    ),
   ],
-].map(([id, name, content]) => ({
+].map(([id, key, name, content]) => ({
   id,
   channelId: roomId,
-  author: { id: `demo-${name.toLowerCase()}`, username: name, displayName: name, avatar: null },
+  author: { id: `demo-${key}`, username: name, displayName: name, avatar: null },
   content,
   timestamp: '2026-10-08T18:30:00Z',
   editedTimestamp: null,
@@ -157,9 +183,18 @@ const sampleMessages: SocialMessage[] = [
 export function getS61Fixture(variant: string): AgentMemoryProps {
   assertVariant('S61', variant, S61_VARIANTS);
   const texts = [
-    'Cumartesi 21.00’de buluşuyoruz. Herkes kendi kaynağıyla senkron katılıyor.',
-    'Film gecesi planı, bu odaya açıkça izin verilen Google Drive dosyasında tutuluyor.',
-    'Kısa akşamlarda Blackjack; dört kişi olduğumuzda Batak tercih ediyoruz.',
+    sample(
+      'Cumartesi 21.00’de buluşuyoruz. Herkes kendi kaynağıyla senkron katılıyor.',
+      'We meet on Saturday at 9:00 PM. Everyone joins in sync with their own source.',
+    ),
+    sample(
+      'Film gecesi planı, bu odaya açıkça izin verilen Google Drive dosyasında tutuluyor.',
+      'The movie night plan lives in a Google Drive file this room was explicitly given access to.',
+    ),
+    sample(
+      'Kısa akşamlarda Blackjack; dört kişi olduğumuzda Batak tercih ediyoruz.',
+      'Blackjack on short evenings; when there are four of us we go for Batak.',
+    ),
   ];
   const memories: AgentMemory[] =
     variant === 'empty'
@@ -176,8 +211,8 @@ export function getS61Fixture(variant: string): AgentMemoryProps {
     memories,
     userId,
     roomId,
-    roomName: 'Bizim Oda',
-    channelName: 'genel',
+    roomName: places.community,
+    channelName: places.general,
     ready: true,
     fixture: true,
     fixtureView: variant,

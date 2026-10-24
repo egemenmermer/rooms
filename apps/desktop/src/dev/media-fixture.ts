@@ -4,17 +4,19 @@ import type { MediaSnapshot, RealtimeMediaProvider } from '@rooms/media';
 import { installDevelopmentRuntime } from '../runtime-sources';
 import { useVoiceContext } from '../realtime';
 import { useRooms } from '../store';
+import { people, places, sample } from './sample';
 
 const roomId = 'demo-channel-salon';
 const serverTimeMs = Date.UTC(2026, 9, 10, 18, 47);
 const artwork = '/__reference/01_brand/cinema-still.svg';
 const personRecords = [
-  { id: 'demo-deniz', name: 'Deniz' },
-  { id: 'demo-ece', name: 'Ece' },
-  { id: 'demo-can', name: 'Can' },
-  { id: 'demo-zeynep', name: 'Zeynep' },
-  { id: 'demo-mert', name: 'Mert' },
+  { id: 'demo-deniz', name: people.deniz },
+  { id: 'demo-ece', name: people.ece },
+  { id: 'demo-can', name: people.can },
+  { id: 'demo-zeynep', name: people.zeynep },
+  { id: 'demo-mert', name: people.mert },
 ] as const;
+const filmTitle = sample('Gecenin Kıyısında', 'Edge of Tonight');
 
 type ScreenId = 'S10' | 'S19' | 'S20' | 'S21' | 'S22' | 'S23';
 type FixtureVariant =
@@ -88,7 +90,9 @@ function makeParticipant(
 }
 
 function artworkForParticipant(participantId: string): string | null {
-  const name = personRecords.find((person) => person.id === participantId)?.name.toLowerCase();
+  const name = personRecords
+    .find((person) => person.id === participantId)
+    ?.id.slice('demo-'.length);
   return name ? `/__reference/01_brand/avatar-${name}.svg` : null;
 }
 
@@ -467,7 +471,7 @@ function makeRoom(screen: ScreenId, variant: FixtureVariant): RoomSnapshot {
   if (screen === 'S10')
     primary = {
       activity: 'cinema',
-      title: 'Gecenin Kıyısında',
+      title: filmTitle,
       hostUserId: 'demo-ece',
       startedAt: 0,
       state: 'live',
@@ -475,7 +479,7 @@ function makeRoom(screen: ScreenId, variant: FixtureVariant): RoomSnapshot {
   if (screen === 'S19')
     primary = {
       activity: 'cinema',
-      title: 'Gecenin Kıyısında',
+      title: filmTitle,
       hostUserId: 'demo-ece',
       startedAt: 0,
       state: 'live',
@@ -483,7 +487,7 @@ function makeRoom(screen: ScreenId, variant: FixtureVariant): RoomSnapshot {
   if (screen === 'S20')
     primary = {
       activity: 'cinema',
-      title: 'Gecenin Kıyısında',
+      title: filmTitle,
       hostUserId: 'demo-ece',
       startedAt: 0,
       state: 'live',
@@ -491,7 +495,7 @@ function makeRoom(screen: ScreenId, variant: FixtureVariant): RoomSnapshot {
   if (screen === 'S23' && ['active', 'forbidden'].includes(variant))
     primary = {
       activity: 'cinema',
-      title: 'Gecenin Kıyısında',
+      title: filmTitle,
       hostUserId: 'demo-ece',
       startedAt: 0,
       state: 'live',
@@ -500,7 +504,7 @@ function makeRoom(screen: ScreenId, variant: FixtureVariant): RoomSnapshot {
     const viewer = ['viewer', 'request_sent', 'handover', 'source_closed'].includes(variant);
     primary = {
       activity: 'cinema',
-      title: 'Gecenin Kıyısında',
+      title: filmTitle,
       hostUserId: viewer ? 'demo-ece' : 'demo-deniz',
       startedAt: 0,
       state: 'live',
@@ -607,8 +611,16 @@ export function installMediaFixture(id: string, value: string): () => void {
       };
   }
   const fixtureCaptureSources = [
-    { id: 'window:fixture-cinema', name: 'Cinema · önizleme penceresi', thumbnail: artwork },
-    { id: 'screen:fixture-desktop', name: 'Ekran 1 · Yerel demo', thumbnail: artwork },
+    {
+      id: 'window:fixture-cinema',
+      name: sample('Cinema · önizleme penceresi', 'Cinema · preview window'),
+      thumbnail: artwork,
+    },
+    {
+      id: 'screen:fixture-desktop',
+      name: sample('Ekran 1 · Yerel demo', 'Screen 1 · Local demo'),
+      thumbnail: artwork,
+    },
   ];
   const response = (): ActivityResponse => ({
     protocolVersion: 1,
@@ -629,7 +641,7 @@ export function installMediaFixture(id: string, value: string): () => void {
               ...room.participants,
               {
                 userId: 'demo-deniz',
-                displayName: 'Deniz',
+                displayName: people.deniz,
                 joinedAt: 0,
                 lastSeenAt: 0,
                 canControl: screen !== 'S23' || variant !== 'forbidden',
@@ -809,7 +821,13 @@ export function installMediaFixture(id: string, value: string): () => void {
   });
   if (screen === 'S19' && variant === 'empty')
     useVoiceContext.setState({ channelId: null, roomName: null, error: null, busy: false });
-  else useVoiceContext.setState({ channelId: roomId, roomName: 'Salon', error: null, busy: false });
+  else
+    useVoiceContext.setState({
+      channelId: roomId,
+      roomName: places.lounge,
+      error: null,
+      busy: false,
+    });
   useRooms.setState((state) => ({
     preferences: {
       ...state.preferences,

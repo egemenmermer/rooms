@@ -77,14 +77,15 @@ import { YouTubeTab } from './YouTubeTab';
 import { RmdbTab } from './RmdbTab';
 import { StremioTab, type StremioView } from './StremioTab';
 import type { RmdbView } from './rmdb-model';
+import { t } from '../i18n';
 
 type View = 'stage' | HallTab;
 
 const tabs: { id: View; label: string }[] = [
-  { id: 'stage', label: 'Salon' },
-  { id: 'live', label: 'Canlı TV' },
-  { id: 'movies', label: 'Filmler' },
-  { id: 'series', label: 'Diziler' },
+  { id: 'stage', label: t('Salon') },
+  { id: 'live', label: t('Canlı TV') },
+  { id: 'movies', label: t('Filmler') },
+  { id: 'series', label: t('Diziler') },
   { id: 'stremio', label: 'Stremio' },
   { id: 'youtube', label: 'YouTube' },
   { id: 'rmdb', label: 'Tayfa' },
@@ -98,8 +99,10 @@ export default function CinemaHall({ notify }: { notify(message: string): void }
     return (
       <HallMessage
         icon={<Clapperboard size={30} />}
-        title="Sinema bu sürümde kapalı"
-        detail="Sinema salonu güncel masaüstü uygulaması ve sinema hizmeti açık bir sunucu gerektirir."
+        title={t('Sinema bu sürümde kapalı')}
+        detail={t(
+          'Sinema salonu güncel masaüstü uygulaması ve sinema hizmeti açık bir sunucu gerektirir.',
+        )}
       />
     );
   if (cinema.loading) return <HallSkeleton />;
@@ -107,11 +110,11 @@ export default function CinemaHall({ notify }: { notify(message: string): void }
     return (
       <HallMessage
         icon={<Clapperboard size={30} />}
-        title="Sinema salonuna ulaşılamadı"
-        detail={cinema.error ?? 'Sinema hizmeti şu an yanıt vermiyor.'}
+        title={t('Sinema salonuna ulaşılamadı')}
+        detail={cinema.error ?? t('Sinema hizmeti şu an yanıt vermiyor.')}
         action={
           <button className="button primary" onClick={() => void cinema.refresh()}>
-            Yeniden dene
+            {t('Yeniden dene')}
           </button>
         }
       />
@@ -120,20 +123,24 @@ export default function CinemaHall({ notify }: { notify(message: string): void }
     return cinema.status.isOwner ? (
       <HallMessage
         icon={<Popcorn size={30} />}
-        title="Bir sinema salonu kur"
-        detail="Salon, topluluğun kalıcı sinemasıdır: bir kanal seç, sunucunun IPTV hesabını bağla; herkes birlikte izlesin."
+        title={t('Bir sinema salonu kur')}
+        detail={t(
+          'Salon, topluluğun kalıcı sinemasıdır: bir kanal seç, sunucunun IPTV hesabını bağla; herkes birlikte izlesin.',
+        )}
         action={
           <button className="button primary" onClick={() => navigate('/settings?tab=cinema')}>
             <Settings2 size={16} />
-            Salonu ayarla
+            {t('Salonu ayarla')}
           </button>
         }
       />
     ) : (
       <HallMessage
         icon={<Popcorn size={30} />}
-        title="Sinema salonu henüz açılmadı"
-        detail="Topluluk sahibi bir salon kanalı seçtiğinde burası birlikte izleme yerin olacak."
+        title={t('Sinema salonu henüz açılmadı')}
+        detail={t(
+          'Topluluk sahibi bir salon kanalı seçtiğinde burası birlikte izleme yerin olacak.',
+        )}
       />
     );
   return <HallRoom hallId={cinema.hallId} status={cinema.status} notify={notify} />;
@@ -268,13 +275,13 @@ function HallLayout() {
   const zap = useCallback(
     (step: 1 | -1) => {
       if (!hall.canDirect) {
-        show({ number: null, title: '', detail: null, note: 'Kumanda ev sahibinde' });
+        show({ number: null, title: '', detail: null, note: t('Kumanda ev sahibinde') });
         return;
       }
       const base = pendingZap.current?.target.ref ?? currentRef;
       const target = neighbour(zapItems, base, step);
       if (!target) {
-        show({ number: null, title: '', detail: null, note: 'Kanal listesi yükleniyor…' });
+        show({ number: null, title: '', detail: null, note: t('Kanal listesi yükleniyor…') });
         return;
       }
       show({ number: target.number, title: target.title, detail: describe(target) });
@@ -292,7 +299,7 @@ function HallLayout() {
   const typeDigit = useCallback(
     (digit: string) => {
       if (!hall.canDirect) {
-        show({ number: null, title: '', detail: null, note: 'Kumanda ev sahibinde' });
+        show({ number: null, title: '', detail: null, note: t('Kumanda ev sahibinde') });
         return;
       }
       if (digits.current) clearTimeout(digits.current.timer);
@@ -307,7 +314,12 @@ function HallLayout() {
             show({ number: target.number, title: target.title, detail: describe(target) });
             void hall.openItem(target);
           } else
-            show({ number: null, title: '', detail: null, note: `${text} numaralı kanal yok` });
+            show({
+              number: null,
+              title: '',
+              detail: null,
+              note: t('{number} numaralı kanal yok', { number: text }),
+            });
         }, NUMBER_ZAP_MS),
       };
     },
@@ -328,7 +340,7 @@ function HallLayout() {
       const item = hall.current;
       if (!item) return;
       if (!hall.canDirect) {
-        show({ number: null, title: '', detail: null, note: 'Kumanda ev sahibinde' });
+        show({ number: null, title: '', detail: null, note: t('Kumanda ev sahibinde') });
         return;
       }
       const pending = pendingSeek.current?.itemId === item.id ? pendingSeek.current : null;
@@ -393,7 +405,7 @@ function HallLayout() {
       if (document.fullscreenElement) await document.exitFullscreen();
       else await host.current?.requestFullscreen({ navigationUI: 'hide' });
     } catch {
-      hall.notify('Tam ekran açılamadı.');
+      hall.notify(t('Tam ekran açılamadı.'));
     }
   }, [hall]);
 
@@ -445,7 +457,7 @@ function HallLayout() {
             number: null,
             title: '',
             detail: null,
-            note: audio.muted ? 'Ses açıldı' : 'Ses kapalı',
+            note: audio.muted ? t('Ses açıldı') : t('Ses kapalı'),
           });
           return;
         case 'panel':
@@ -461,7 +473,7 @@ function HallLayout() {
           event.preventDefault();
           void controls.current
             ?.togglePictureInPicture()
-            .catch(() => hall.notify('Pencere içinde pencere açılamadı.'));
+            .catch(() => hall.notify(t('Pencere içinde pencere açılamadı.')));
           return;
       }
       if (!stage) return;
@@ -479,7 +491,7 @@ function HallLayout() {
         if (live) controls.current?.toggleLocalPause();
         else if (hall.canDirect && timeline) shared(!timeline.playing, currentPosition(hall));
         else if (!hall.canDirect)
-          show({ number: null, title: '', detail: null, note: 'Kumanda ev sahibinde' });
+          show({ number: null, title: '', detail: null, note: t('Kumanda ev sahibinde') });
       } else if (
         isHallItem(hall.current) &&
         (command === 'seekBack' || command === 'seekForward')
@@ -579,7 +591,7 @@ function HallLayout() {
       style={mini ? ({ '--hall-mini-h': `${rect!.height}px` } as CSSProperties) : undefined}
     >
       <header className="hall-bar">
-        <nav className="hall-tabs" role="tablist" aria-label="Sinema">
+        <nav className="hall-tabs" role="tablist" aria-label={t('Sinema')}>
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -597,7 +609,7 @@ function HallLayout() {
             >
               {tab.label}
               {tab.id === 'stage' && hall.current && live && (
-                <i className="hall-live-dot" aria-label="Canlı yayın açık" />
+                <i className="hall-live-dot" aria-label={t('Canlı yayın açık')} />
               )}
             </button>
           ))}
@@ -608,7 +620,7 @@ function HallLayout() {
           aria-keyshortcuts="Meta+K Control+K"
         >
           <Search size={15} />
-          <span>Aç…</span>
+          <span>{t('Aç…')}</span>
           <kbd>{paletteShortcut}</kbd>
         </button>
       </header>
@@ -693,9 +705,9 @@ function HallLayout() {
       )}
       {!hall.connected && hall.activity.status === 'error' && (
         <div className="hall-banner" role="status">
-          Salon hizmetine bağlanılamıyor. {hall.activity.error ?? ''}
+          {t('Salon hizmetine bağlanılamıyor.')} {hall.activity.error ?? ''}
           <button className="hall-text-button" onClick={() => void hall.activity.refresh()}>
-            Yeniden dene
+            {t('Yeniden dene')}
           </button>
         </div>
       )}
@@ -775,7 +787,7 @@ function NowBar() {
             <p>
               <strong>{onAir.title}</strong>
               <span>
-                {timeRange(onAir)} · {minutesLabel(onAir.stop - now)} kaldı
+                {timeRange(onAir)} · {t('{time} kaldı', { time: minutesLabel(onAir.stop - now) })}
               </span>
             </p>
             <span
@@ -787,16 +799,16 @@ function NowBar() {
           <p>
             <span>
               {item?.media.live
-                ? 'Canlı yayın'
+                ? t('Canlı yayın')
                 : current.media.kind === 'youtube'
-                  ? `YouTube · ${didThis(hall.nameOf(current.addedBy), 'açtı')}`
+                  ? `YouTube · ${didThis(hall.nameOf(current.addedBy), 'open')}`
                   : [
                       details.data?.item.year,
                       details.data?.genre,
                       details.data?.durationSec
                         ? minutesLabel(details.data.durationSec * 1000)
                         : null,
-                      didThis(hall.nameOf(current.addedBy), 'açtı'),
+                      didThis(hall.nameOf(current.addedBy), 'open'),
                     ]
                       .filter(Boolean)
                       .join(' · ')}
@@ -808,7 +820,7 @@ function NowBar() {
         {next && item ? (
           <div className="hall-next">
             <small>
-              Sıradaki · {hhmm(next.start)}
+              {t('Sıradaki · {time}', { time: hhmm(next.start) })}
               <ReminderBell
                 reminder={{
                   hallId: hall.hallId,
@@ -824,7 +836,7 @@ function NowBar() {
           </div>
         ) : upNext ? (
           <div className="hall-next">
-            <small>Sırada</small>
+            <small>{t('Sırada')}</small>
             <span>{upNext.media.title}</span>
           </div>
         ) : null}
@@ -840,9 +852,9 @@ function NowBar() {
           <button
             className="hall-text-button quiet"
             onClick={() => hall.run({ type: 'end' })}
-            title="Yayını herkes için kapatır"
+            title={t('Yayını herkes için kapatır')}
           >
-            Salonu kapat
+            {t('Salonu kapat')}
           </button>
         )}
       </div>
@@ -859,9 +871,11 @@ function ReminderBell({ reminder }: { reminder: Reminder }) {
       className={`hall-reminder-bell ${on ? 'on' : ''}`}
       aria-pressed={on}
       aria-label={
-        on ? `${reminder.title}: hatırlatmayı kaldır` : `${reminder.title} başlayınca haber ver`
+        on
+          ? t('{title}: hatırlatmayı kaldır', { title: reminder.title })
+          : t('{title} başlayınca haber ver', { title: reminder.title })
       }
-      title={on ? 'Hatırlatma kurulu · kaldır' : 'Başlayınca haber ver'}
+      title={on ? t('Hatırlatma kurulu · kaldır') : t('Başlayınca haber ver')}
       onClick={() => toggleReminder(reminder)}
     >
       {on ? <BellRing size={13} /> : <Bell size={13} />}
@@ -890,29 +904,31 @@ function Welcome({ onBrowse, onOpen }: { onBrowse(view: View): void; onOpen(): v
       <span className="hall-welcome-mark">
         <Popcorn size={26} />
       </span>
-      <h2>Bu akşam ne izliyoruz?</h2>
+      <h2>{t('Bu akşam ne izliyoruz?')}</h2>
       <p>
         {connected || stremioLinked
-          ? 'Açtığın şey salondaki herkes için aynı anda oynar.'
+          ? t('Açtığın şey salondaki herkes için aynı anda oynar.')
           : hall.status.isOwner
-            ? 'Sunucunun IPTV hesabını bağlayınca kanallar ve filmler burada olacak. YouTube şimdiden açılabilir.'
-            : 'Sahip henüz bir kaynak bağlamadı. Şimdilik YouTube açabilirsin.'}
+            ? t(
+                'Sunucunun IPTV hesabını bağlayınca kanallar ve filmler burada olacak. YouTube şimdiden açılabilir.',
+              )
+            : t('Sahip henüz bir kaynak bağlamadı. Şimdilik YouTube açabilirsin.')}
       </p>
       <div className="hall-welcome-actions">
         <button className="button primary" onClick={onOpen}>
           <Search size={16} />
-          Aç…
+          {t('Aç…')}
           <kbd>{paletteShortcut}</kbd>
         </button>
         {connected ? (
           <>
             <button className="button secondary" onClick={() => onBrowse('live')}>
               <Tv size={16} />
-              Canlı TV
+              {t('Canlı TV')}
             </button>
             <button className="button secondary" onClick={() => onBrowse('movies')}>
               <Film size={16} />
-              Filmler
+              {t('Filmler')}
             </button>
           </>
         ) : (
@@ -928,8 +944,8 @@ function Welcome({ onBrowse, onOpen }: { onBrowse(view: View): void; onOpen(): v
         )}
       </div>
       {connected && picks.length > 0 && (
-        <section className="hall-welcome-now" aria-label="Şu an yayında">
-          <span className="hall-eyebrow live">Şu an yayında</span>
+        <section className="hall-welcome-now" aria-label={t('Şu an yayında')}>
+          <span className="hall-eyebrow live">{t('Şu an yayında')}</span>
           <div>
             {picks.map((item) => {
               const onAir = programmeAt(guides[item.ref], now)!;
@@ -964,17 +980,23 @@ function NotConnected() {
   return (
     <HallMessage
       icon={<Plug size={28} />}
-      title={hall.status.isOwner ? 'Sunucu IPTV’sini bağla' : 'Sahip henüz bir kaynak bağlamadı'}
+      title={
+        hall.status.isOwner ? t('Sunucu IPTV’sini bağla') : t('Sahip henüz bir kaynak bağlamadı')
+      }
       detail={
         hall.status.isOwner
-          ? 'Hesap sunucuda kalır, şifre hiçbir üyeye gitmez. Bağladığında kanallar, rehber, filmler ve diziler burada görünür.'
-          : 'Topluluk sahibi sunucunun IPTV hesabını bağladığında kanallar ve filmler burada olacak.'
+          ? t(
+              'Hesap sunucuda kalır, şifre hiçbir üyeye gitmez. Bağladığında kanallar, rehber, filmler ve diziler burada görünür.',
+            )
+          : t(
+              'Topluluk sahibi sunucunun IPTV hesabını bağladığında kanallar ve filmler burada olacak.',
+            )
       }
       action={
         hall.status.isOwner ? (
           <button className="button primary" onClick={() => navigate('/settings?tab=cinema')}>
             <Settings2 size={16} />
-            Bağlantıyı kur
+            {t('Bağlantıyı kur')}
           </button>
         ) : undefined
       }
@@ -1005,7 +1027,7 @@ function HallMessage({
 
 function HallSkeleton() {
   return (
-    <div className="hall" role="status" aria-label="Sinema yükleniyor">
+    <div className="hall" role="status" aria-label={t('Sinema yükleniyor')}>
       <header className="hall-bar">
         <span className="hall-skeleton line" style={{ width: 360 }} />
       </header>

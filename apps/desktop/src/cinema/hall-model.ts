@@ -11,19 +11,20 @@ import type {
   CinemaProgramme,
 } from '../../../../packages/community-cinema/src/types';
 import { clock } from '../cinema-youtube';
+import { locale, t } from '../i18n';
 
 export type HallMedia = Extract<SharedMedia, { kind: 'community-media' }>;
 export type HallItem = QueueItem & { media: HallMedia };
 export type HallTab = 'live' | 'movies' | 'series' | 'stremio' | 'youtube' | 'rmdb';
 
-export const HALL_TITLE = 'Sinema salonu';
+export const HALL_TITLE = t('Sinema salonu');
 
 /** The queue entry for a catalog item. Titles are trimmed to the protocol's 240 characters. */
 export function hallMedia(item: CinemaItem): HallMedia {
   return {
     kind: 'community-media',
     ref: item.ref,
-    title: (item.title.trim() || 'Adsız').slice(0, 240),
+    title: (item.title.trim() || t('Adsız')).slice(0, 240),
     live: item.kind === 'live',
     art: item.art && /^[a-f0-9]{16,64}$/.test(item.art) ? item.art : null,
   };
@@ -107,7 +108,7 @@ export function resumeMedia(target: HallResume): HallMedia {
   return {
     kind: 'community-media',
     ref: target.ref,
-    title: (target.title.trim() || 'Adsız').slice(0, 240),
+    title: (target.title.trim() || t('Adsız')).slice(0, 240),
     live: false,
     art: target.art && /^[a-f0-9]{16,64}$/.test(target.art) ? target.art : null,
   };
@@ -140,8 +141,8 @@ export function resumeCommands(
   };
 }
 
-const timeFormat = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' });
-const dayFormat = new Intl.DateTimeFormat('tr-TR', {
+const timeFormat = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' });
+const dayFormat = new Intl.DateTimeFormat(locale, {
   weekday: 'long',
   day: 'numeric',
   month: 'long',
@@ -156,8 +157,8 @@ export function minutesLabel(ms: number) {
   const total = Math.max(1, Math.round(ms / 60_000));
   const hours = Math.floor(total / 60),
     minutes = total % 60;
-  if (!hours) return `${minutes} dk`;
-  return minutes ? `${hours} sa ${minutes} dk` : `${hours} sa`;
+  if (!hours) return t('{minutes} dk', { minutes });
+  return minutes ? t('{hours} sa {minutes} dk', { hours, minutes }) : t('{hours} sa', { hours });
 }
 
 export function programmeAt(list: CinemaProgramme[] | undefined, now: number) {
@@ -227,7 +228,10 @@ export function seekTarget(positionSec: number, durationSec: number | null) {
 
 /** The OSD of a pending ←/→ seek, e.g. `20 sn ileri · 21:10`. */
 export function seekNote(offsetSec: number, targetSec: number) {
-  return `${Math.abs(offsetSec)} sn ${offsetSec < 0 ? 'geri' : 'ileri'} · ${clock(targetSec)}`;
+  const seconds = Math.abs(offsetSec);
+  return offsetSec < 0
+    ? t('{seconds} sn geri · {time}', { seconds, time: clock(targetSec) })
+    : t('{seconds} sn ileri · {time}', { seconds, time: clock(targetSec) });
 }
 
 /** The palette shortcut as this platform writes it. */
@@ -235,11 +239,13 @@ export const paletteShortcut =
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';
 
 /** `Ece açtı`, but `Sen açtın` (Turkish verbs agree with the person). */
-export const didThis = (name: string, verb: 'açtı' | 'ekledi') =>
-  name === 'Sen' ? `Sen ${verb}n` : `${name} ${verb}`;
+export const didThis = (name: string, verb: 'open' | 'add') => {
+  const you = name === t('Sen');
+  if (verb === 'open') return you ? t('Sen açtın') : t('{name} açtı', { name });
+  return you ? t('Sen ekledin') : t('{name} ekledi', { name });
+};
 
-export const viewerLabel = (count: number) =>
-  count === 1 ? '1 kişi izliyor' : `${count} kişi izliyor`;
+export const viewerLabel = (count: number) => t('{count} kişi izliyor', { count });
 
 /** The episode after `ref` in a series' seasons (across seasons), or null after the last. */
 export function nextEpisode(
@@ -261,8 +267,8 @@ export const outroSec = (durationSec: number) => Math.max(60, durationSec * 0.04
 /** A queue id for the episode that follows queue item `itemId`; the same on every viewer. */
 export const nextItemId = (itemId: string) => `next-${itemId}`.slice(0, 128);
 
-const megabits = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 1 });
-const frames = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 2 });
+const megabits = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+const frames = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
 
 /** `4K · 23,98 fps · 14,2 Mb/s` pieces for the screen's info pills; unknown parts are left out. */
 export function streamFacts(

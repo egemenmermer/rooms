@@ -28,6 +28,8 @@ import { expectedPosition } from '../cinema-youtube';
 import { cinemaErrorCode, getCinemaBridge } from './cinema-bridge';
 import { cinemaPreferences, type CinemaPreferences } from './cinema-preferences';
 import type { HallItem } from './hall-model';
+import { t } from '../i18n';
+import { sample } from '../dev/sample';
 
 /** Live channels play this many relay segments behind the relay's live edge. */
 const LIVE_SYNC_SEGMENTS = 3;
@@ -104,8 +106,10 @@ function seekRange(element: HTMLVideoElement) {
 }
 
 const turkish = (track: { language: string | null; label: string }) =>
+  // i18n-ignore: matches the Turkish subtitle label the relay writes
   track.language === 'tur' || track.language === 'tr' || track.label.startsWith('Türkçe');
 const english = (track: { language: string | null; label: string }) =>
+  // i18n-ignore: matches the Turkish label of English subtitles the relay writes
   track.language === 'eng' || track.language === 'en' || track.label.startsWith('İngilizce');
 
 function subtitlesOff() {
@@ -138,12 +142,12 @@ export function autoSubtitle(
 ): string | null {
   if (off || language === 'off') return null;
   const matches = language === 'eng' ? english : turkish;
-  const candidates = tracks.filter((t) => t.origin !== 'file' && matches(t));
+  const candidates = tracks.filter((track) => track.origin !== 'file' && matches(track));
   if (audioLabel && matches({ language: null, label: audioLabel }))
-    return candidates.find((t) => t.forced)?.key ?? null;
-  const embedded = candidates.filter((t) => t.origin === 'embedded');
+    return candidates.find((track) => track.forced)?.key ?? null;
+  const embedded = candidates.filter((track) => track.origin === 'embedded');
   const pool = embedded.length ? embedded : candidates;
-  return (pool.find((t) => !t.forced) ?? pool[0])?.key ?? null;
+  return (pool.find((track) => !track.forced) ?? pool[0])?.key ?? null;
 }
 
 const embeddedKey = (index: number) => `e${index}`;
@@ -155,29 +159,29 @@ function subtitleSources(
   file: { name: string; src: string } | null,
 ): SubtitleSource[] {
   return [
-    ...(source?.subtitles ?? []).map((t) => ({
-      key: embeddedKey(t.index),
-      label: t.label,
-      language: t.language,
-      forced: t.forced,
+    ...(source?.subtitles ?? []).map((track) => ({
+      key: embeddedKey(track.index),
+      label: track.label,
+      language: track.language,
+      forced: track.forced,
       origin: 'embedded' as const,
-      src: t.src,
+      src: track.src,
       growing: true,
     })),
-    ...online.map((t) => ({
-      key: `o${t.id}`,
-      label: t.label,
-      language: t.language,
+    ...online.map((track) => ({
+      key: `o${track.id}`,
+      label: track.label,
+      language: track.language,
       forced: false,
       origin: 'online' as const,
-      src: t.src,
+      src: track.src,
       growing: false,
     })),
     ...(file
       ? [
           {
             key: 'file',
-            label: `Dosya · ${file.name}`,
+            label: t('Dosya · {name}', { name: file.name }),
             language: null,
             forced: false,
             origin: 'file' as const,
@@ -590,19 +594,20 @@ export function HallPlayer({
   // change as online results arrive.
   useEffect(() => {
     const chosen = subtitleChoice.current;
-    const audio = source?.audioTracks.find((t) => t.index === source.audioTrack)?.label ?? null;
+    const audio =
+      source?.audioTracks.find((track) => track.index === source.audioTrack)?.label ?? null;
     update({
       subtitleTracks: sources.map(({ src: _src, growing: _growing, ...option }) => option),
       subtitle:
         chosen?.ref === item.media.ref &&
-        (chosen.key === null || sources.some((t) => t.key === chosen.key))
+        (chosen.key === null || sources.some((track) => track.key === chosen.key))
           ? chosen.key
           : autoSubtitle(sources, audio),
     });
   }, [sources, source, item.media.ref, update]);
 
   // The relay keeps appending cues as it reads ahead; re-read its file while it grows.
-  const subtitleSource = sources.find((t) => t.key === snapshot.subtitle) ?? null;
+  const subtitleSource = sources.find((track) => track.key === snapshot.subtitle) ?? null;
   useEffect(() => {
     setCues([]);
     if (!subtitleSource) return;
@@ -741,7 +746,12 @@ function FixtureScene({ title, live, hallId }: { title: string; live: boolean; h
       <span className="hall-fixture-hill two" />
       <span className="hall-fixture-hill three" />
       <span className="hall-fixture-label">
-        DEMO · {live ? 'Örnek canlı yayın' : 'Örnek film'} — {title}
+        {/* i18n-ignore: development fixture label */}
+        DEMO ·{' '}
+        {live
+          ? sample('Örnek canlı yayın', 'Sample live stream')
+          : sample('Örnek film', 'Sample film')}{' '}
+        — {title}
       </span>
     </div>
   );

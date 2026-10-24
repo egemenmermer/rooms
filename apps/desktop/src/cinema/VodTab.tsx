@@ -43,6 +43,7 @@ import {
   hideContinue,
   visibleContinue,
 } from './continue-model';
+import { locale, t } from '../i18n';
 
 type VodKind = Extract<CatalogKind, 'movie' | 'series'>;
 export type VodView =
@@ -102,11 +103,14 @@ function VodHome({
   const recent = useItems(hall.hallId, kind, null, 'added', 24);
   const hero =
     recent.data?.items.find((item) => item.rating !== null) ?? recent.data?.items[0] ?? null;
-  const noun = kind === 'movie' ? 'film' : 'dizi';
   if (recent.loading && !recent.data) return <VodSkeleton />;
   if (recent.error) return <p className="hall-empty-note">{recent.error}</p>;
   if (!recent.data?.items.length)
-    return <p className="hall-empty-note">Katalogda henüz {noun} yok.</p>;
+    return (
+      <p className="hall-empty-note">
+        {kind === 'movie' ? t('Katalogda henüz film yok.') : t('Katalogda henüz dizi yok.')}
+      </p>
+    );
   return (
     <div className="hall-vod">
       {hero && (
@@ -122,13 +126,13 @@ function VodHome({
         onRmdb={onRmdb}
       />
       <Row
-        title="Yeni eklenenler"
+        title={t('Yeni eklenenler')}
         items={recent.data.items}
         onAll={() =>
           onView({
             mode: 'grid',
             categoryId: null,
-            label: kind === 'movie' ? 'Tüm filmler' : 'Tüm diziler',
+            label: kind === 'movie' ? t('Tüm filmler') : t('Tüm diziler'),
           })
         }
         onOpen={(ref) => onView({ mode: 'details', ref })}
@@ -168,7 +172,7 @@ function Hero({ item, kind, onDetails }: { item: CinemaItem; kind: VodKind; onDe
       )}
       <div className="hall-hero-shade" />
       <div className="hall-hero-text">
-        <span className="hall-eyebrow">{kind === 'movie' ? 'Yeni film' : 'Yeni dizi'}</span>
+        <span className="hall-eyebrow">{kind === 'movie' ? t('Yeni film') : t('Yeni dizi')}</span>
         <h2>{item.title}</h2>
         <Meta item={item} details={details.data} />
         {details.data?.plot && <p>{details.data.plot}</p>}
@@ -183,11 +187,15 @@ function Hero({ item, kind, onDetails }: { item: CinemaItem; kind: VodKind; onDe
             }
           >
             {steer ? <Play size={16} /> : <ListPlus size={16} />}
-            {steer ? (kind === 'movie' ? 'Salonda oynat' : 'İlk bölümü oynat') : 'Sıraya öner'}
+            {steer
+              ? kind === 'movie'
+                ? t('Salonda oynat')
+                : t('İlk bölümü oynat')
+              : t('Sıraya öner')}
           </button>
           <button className="button secondary" onClick={onDetails}>
             <Info size={16} />
-            Ayrıntılar
+            {t('Ayrıntılar')}
           </button>
         </div>
       </div>
@@ -208,14 +216,14 @@ function Meta({
     item.year,
     details?.genre,
     details?.durationSec ? minutesLabel(details.durationSec * 1000) : null,
-    details?.seasons.length ? `${details.seasons.length} sezon` : null,
+    details?.seasons.length ? t('{count} sezon', { count: details.seasons.length }) : null,
   ].filter(Boolean);
   return (
     <p className="hall-meta">
       {item.rating !== null && (
         <span className="hall-rating">
           <Star size={13} />
-          {item.rating.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}
+          {item.rating.toLocaleString(locale, { maximumFractionDigits: 1 })}
         </span>
       )}
       {parts.map((part) => (
@@ -242,7 +250,7 @@ function TitleLinks({
 }) {
   const hall = useHall();
   const [state, setState] = useState<'idle' | 'busy' | 'missing'>('idle');
-  const none = 'Sağlayıcı bu yapımın TMDB kimliğini vermiyor; sayfası bulunamadı.';
+  const none = t('Sağlayıcı bu yapımın TMDB kimliğini vermiyor; sayfası bulunamadı.');
   const imdb = async () => {
     const bridge = getCinemaBridge();
     if (!bridge?.titleLinks || state === 'busy') return;
@@ -268,10 +276,10 @@ function TitleLinks({
           !tmdbId
             ? none
             : state === 'missing'
-              ? 'Bu yapımın IMDb sayfası bulunamadı.'
-              : "IMDb'de aç"
+              ? t('Bu yapımın IMDb sayfası bulunamadı.')
+              : t("IMDb'de aç")
         }
-        aria-label="IMDb sayfasını aç"
+        aria-label={t('IMDb sayfasını aç')}
         onClick={() => void imdb()}
       >
         IMDb
@@ -280,8 +288,8 @@ function TitleLinks({
         <button
           className="hall-title-link letterboxd"
           disabled={!tmdbId}
-          title={tmdbId ? "Letterboxd'da aç" : none}
-          aria-label="Letterboxd sayfasını aç"
+          title={tmdbId ? t("Letterboxd'da aç") : none}
+          aria-label={t('Letterboxd sayfasını aç')}
           onClick={() => tmdbId && window.open(`https://letterboxd.com/tmdb/${tmdbId}/`)}
         >
           <i aria-hidden="true" />
@@ -325,7 +333,7 @@ function ContinueRow({
   const open = (item: CinemaContinueItem) =>
     item.resume ? void hall.resume(item.resume) : onDetails(item.ref);
   return (
-    <HallRow title="Devam et" wide>
+    <HallRow title={t('Devam et')} wide>
       {items.map((item) => {
         const days = item.upcomingAt ? daysUntil(item.upcomingAt, now) : null;
         const line = continueLine(item);
@@ -337,15 +345,21 @@ function ContinueRow({
             aria-label={[
               item.title,
               line,
-              item.upcomingAt ? `yakında, ${airDateLabel(item.upcomingAt)}` : null,
-              item.resume ? (steer ? 'salonda devam et' : 'sıraya öner') : 'ayrıntıları aç',
+              item.upcomingAt
+                ? t('yakında, {date}', { date: airDateLabel(item.upcomingAt) })
+                : null,
+              item.resume
+                ? steer
+                  ? t('salonda devam et')
+                  : t('sıraya öner')
+                : t('ayrıntıları aç'),
             ]
               .filter(Boolean)
               .join(', ')}
             onClick={() => open(item)}
             {...menu.bind(item.title, () => [
               {
-                label: 'Listeden kaldır',
+                label: t('Listeden kaldır'),
                 icon: <X size={15} />,
                 danger: true,
                 onSelect: () => {
@@ -356,21 +370,21 @@ function ContinueRow({
               ...(item.resume
                 ? [
                     {
-                      label: steer ? 'Devam et' : 'Sıraya öner',
+                      label: steer ? t('Devam et') : t('Sıraya öner'),
                       icon: steer ? <Play size={15} /> : <ListPlus size={15} />,
                       onSelect: () => open(item),
                     },
                   ]
                 : []),
               {
-                label: 'Ayrıntılar',
+                label: t('Ayrıntılar'),
                 icon: <Info size={15} />,
                 onSelect: () => onDetails(item.ref),
               },
               ...(onRmdb
                 ? [
                     {
-                      label: "Tayfa'da aç",
+                      label: t("Tayfa'da aç"),
                       icon: <NotebookPen size={15} />,
                       onSelect: () => onRmdb(item.workId),
                     },
@@ -382,8 +396,8 @@ function ContinueRow({
               <CinemaArt hallId={hall.hallId} art={item.art} title={item.title} shape="wide" />
               {item.upcomingAt ? (
                 <span className="hall-continue-badges">
-                  <span>Yakında · {airDateLabel(item.upcomingAt)}</span>
-                  {days !== null && <span>{days}g</span>}
+                  <span>{t('Yakında · {date}', { date: airDateLabel(item.upcomingAt) })}</span>
+                  {days !== null && <span>{t('{days}g', { days })}</span>}
                 </span>
               ) : (
                 <span className="hall-continue-play" aria-hidden="true">
@@ -498,7 +512,7 @@ export function HallRow({
   sectionRef?: React.Ref<HTMLElement>;
   onAll?(): void;
   loading?: boolean;
-  /** 16:9 cards (Devam et) instead of posters. */
+  /** 16:9 cards (the continue row) instead of posters. */
   wide?: boolean;
   children?: ReactNode;
 }) {
@@ -511,7 +525,7 @@ export function HallRow({
         </h3>
         {onAll && (
           <button className="hall-text-button" onClick={onAll}>
-            Tümünü gör
+            {t('Tümünü gör')}
             <ChevronRight size={15} />
           </button>
         )}
@@ -608,7 +622,7 @@ function RowTrack({ children }: { children?: ReactNode }) {
       {!ends.start && (
         <button
           className="hall-row-arrow left"
-          aria-label="Öncekiler"
+          aria-label={t('Öncekiler')}
           tabIndex={-1}
           onClick={() => page(-1)}
         >
@@ -618,7 +632,7 @@ function RowTrack({ children }: { children?: ReactNode }) {
       {!ends.end && (
         <button
           className="hall-row-arrow right"
-          aria-label="Sonrakiler"
+          aria-label={t('Sonrakiler')}
           tabIndex={-1}
           onClick={() => page(1)}
         >
@@ -648,14 +662,14 @@ function Poster({
       meta={[
         item.year,
         item.rating !== null
-          ? `★ ${item.rating.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}`
+          ? `★ ${item.rating.toLocaleString(locale, { maximumFractionDigits: 1 })}`
           : null,
       ]
         .filter(Boolean)
         .join(' · ')}
       onOpen={onOpen}
     >
-      {fresh && <span className="hall-new-badge">Yeni</span>}
+      {fresh && <span className="hall-new-badge">{t('Yeni')}</span>}
     </PosterCard>
   );
 }
@@ -725,17 +739,17 @@ function VodGrid({
       <header className="hall-grid-head">
         <button className="hall-text-button" onClick={onBack}>
           <ArrowLeft size={15} />
-          {kind === 'movie' ? 'Filmler' : 'Diziler'}
+          {kind === 'movie' ? t('Filmler') : t('Diziler')}
         </button>
         <h2>
           {label} {total > 0 && <small>{total}</small>}
         </h2>
         <label className="hall-sort">
-          Sırala
+          {t('Sırala')}
           <select value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
-            <option value="added">Yeni eklenen</option>
-            <option value="name">Ada göre</option>
-            <option value="rating">Puana göre</option>
+            <option value="added">{t('Yeni eklenen')}</option>
+            <option value="name">{t('Ada göre')}</option>
+            <option value="rating">{t('Puana göre')}</option>
           </select>
         </label>
       </header>
@@ -758,7 +772,7 @@ function VodGrid({
         <p className="hall-empty-note">
           {items.error}{' '}
           <button className="hall-text-button" onClick={items.retry}>
-            Yeniden dene
+            {t('Yeniden dene')}
           </button>
         </p>
       )}
@@ -824,12 +838,12 @@ function VodDetails({
     <div className="hall-vod details-view">
       <button className="hall-text-button hall-back" onClick={onBack}>
         <ArrowLeft size={15} />
-        {kind === 'movie' ? 'Filmler' : 'Diziler'}
+        {kind === 'movie' ? t('Filmler') : t('Diziler')}
       </button>
       {details.loading && !data ? (
         <VodSkeleton />
       ) : details.error || !data ? (
-        <p className="hall-empty-note">{details.error ?? 'Ayrıntılar alınamadı.'}</p>
+        <p className="hall-empty-note">{details.error ?? t('Ayrıntılar alınamadı.')}</p>
       ) : (
         <>
           <DetailsHead
@@ -838,7 +852,7 @@ function VodDetails({
             art={data.item.art}
             title={data.item.title}
           >
-            <span className="hall-eyebrow">{kind === 'movie' ? 'Film' : 'Dizi'}</span>
+            <span className="hall-eyebrow">{kind === 'movie' ? t('Film') : t('Dizi')}</span>
             <h2>{data.item.title}</h2>
             <Meta item={data.item} details={data}>
               <TitleLinks kind={kind} refId={data.item.ref} tmdbId={data.tmdbId ?? null} />
@@ -846,8 +860,8 @@ function VodDetails({
             {data.plot && <p>{data.plot}</p>}
             <Credits director={data.director} cast={data.cast} />
             {!!data.versions?.length && (
-              <div className="hall-versions" role="radiogroup" aria-label="Kalite">
-                <span>Kalite</span>
+              <div className="hall-versions" role="radiogroup" aria-label={t('Kalite')}>
+                <span>{t('Kalite')}</span>
                 {[{ ref: data.item.ref, badges: data.item.badges }, ...data.versions].map(
                   (version) => (
                     <button
@@ -857,7 +871,7 @@ function VodDetails({
                       className={version.ref === data.item.ref ? 'selected' : ''}
                       onClick={() => version.ref !== data.item.ref && onOpen(version.ref)}
                     >
-                      {version.badges.join(' ') || 'Standart'}
+                      {version.badges.join(' ') || t('Standart')}
                     </button>
                   ),
                 )}
@@ -872,18 +886,18 @@ function VodDetails({
                 >
                   {steer ? <Play size={16} /> : <ListPlus size={16} />}
                   {playingRef === data.item.ref
-                    ? 'Salonda açık'
+                    ? t('Salonda açık')
                     : steer
-                      ? 'Salonda oynat'
-                      : 'Sıraya öner'}
+                      ? t('Salonda oynat')
+                      : t('Sıraya öner')}
                 </button>
               )}
               <RmdbCatalogActions item={data.item} onRmdb={onRmdb} />
             </div>
           </DetailsHead>
           {kind === 'series' && activeSeason && (
-            <section className="hall-episodes" aria-label="Bölümler">
-              <div className="hall-season-tabs" role="tablist" aria-label="Sezonlar">
+            <section className="hall-episodes" aria-label={t('Bölümler')}>
+              <div className="hall-season-tabs" role="tablist" aria-label={t('Sezonlar')}>
                 {seasons.map((value) => (
                   <button
                     key={value.season}
@@ -892,7 +906,7 @@ function VodDetails({
                     className={value.season === activeSeason.season ? 'selected' : ''}
                     onClick={() => setSeason(value.season)}
                   >
-                    {value.season}. Sezon
+                    {t('{season}. Sezon', { season: value.season })}
                   </button>
                 ))}
               </div>
@@ -906,7 +920,7 @@ function VodDetails({
                       data.item.title,
                       episode.season,
                       episode.episode,
-                    ) || `${episode.episode}. Bölüm`;
+                    ) || t('{episode}. Bölüm', { episode: episode.episode });
                   const toggle = () => void markEpisode(episode.ref, !watched);
                   return (
                     <li
@@ -917,7 +931,9 @@ function VodDetails({
                       ].join(' ')}
                       {...menu.bind(name, () => [
                         {
-                          label: watched ? 'İzlenmedi olarak işaretle' : 'İzlendi olarak işaretle',
+                          label: watched
+                            ? t('İzlenmedi olarak işaretle')
+                            : t('İzlendi olarak işaretle'),
                           icon: watched ? <EyeOff size={15} /> : <Check size={15} />,
                           onSelect: toggle,
                         },
@@ -927,7 +943,19 @@ function VodDetails({
                         className="hall-episode"
                         disabled={playingRef === episode.ref}
                         onClick={() => void hall.openEpisode(data.item, episode)}
-                        aria-label={`${episode.episode}. bölüm, ${name}${watched ? ', izlendi' : ''}: ${steer ? 'salonda oynat' : 'sıraya öner'}`}
+                        aria-label={
+                          watched
+                            ? t('{number}. bölüm, {name}, izlendi: {action}', {
+                                number: episode.episode,
+                                name,
+                                action: steer ? t('salonda oynat') : t('sıraya öner'),
+                              })
+                            : t('{number}. bölüm, {name}: {action}', {
+                                number: episode.episode,
+                                name,
+                                action: steer ? t('salonda oynat') : t('sıraya öner'),
+                              })
+                        }
                       >
                         <span className={`hall-episode-thumb ${blur && !watched ? 'spoiler' : ''}`}>
                           <CinemaArt
@@ -940,7 +968,10 @@ function VodDetails({
                             {steer ? <Play size={18} /> : <ListPlus size={18} />}
                           </span>
                           <small>
-                            S{episode.season} B{episode.episode}
+                            {t('S{season} B{episode}', {
+                              season: episode.season,
+                              episode: episode.episode,
+                            })}
                           </small>
                           {mark && !mark.finished && mark.durationSec ? (
                             <span
@@ -971,13 +1002,13 @@ function VodDetails({
                         aria-pressed={watched}
                         aria-label={
                           watched
-                            ? `${name}: izlenmedi olarak işaretle`
-                            : `${name}: izlendi olarak işaretle`
+                            ? t('{name}: izlenmedi olarak işaretle', { name })
+                            : t('{name}: izlendi olarak işaretle', { name })
                         }
                         title={
                           watched
-                            ? 'İzlendi · izlenmedi olarak işaretle'
-                            : 'İzlendi olarak işaretle'
+                            ? t('İzlendi · izlenmedi olarak işaretle')
+                            : t('İzlendi olarak işaretle')
                         }
                         disabled={marking === episode.ref}
                         onClick={toggle}
@@ -1036,13 +1067,13 @@ export function Credits({ director, cast }: { director: string | null; cast: str
     <dl className="hall-credits">
       {director && (
         <>
-          <dt>Yönetmen</dt>
+          <dt>{t('Yönetmen')}</dt>
           <dd>{director}</dd>
         </>
       )}
       {cast && (
         <>
-          <dt>Oyuncular</dt>
+          <dt>{t('Oyuncular')}</dt>
           <dd>{cast}</dd>
         </>
       )}
@@ -1052,7 +1083,7 @@ export function Credits({ director, cast }: { director: string | null; cast: str
 
 export function VodSkeleton() {
   return (
-    <div className="hall-vod" role="status" aria-label="Yükleniyor">
+    <div className="hall-vod" role="status" aria-label={t('Yükleniyor')}>
       <span className="hall-skeleton hero" />
       <span className="hall-skeleton line" style={{ width: 180 }} />
       <div className="hall-row-track">

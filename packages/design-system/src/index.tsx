@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import { X } from 'lucide-react';
+import { t } from '@rooms/i18n';
 export function IconButton({
   label,
   children,
@@ -46,7 +47,7 @@ export function Avatar({
   return (
     <span
       className={`avatar ${size} ${color}`}
-      aria-label={name.trim() || 'Kullanıcı'}
+      aria-label={name.trim() || t('Kullanıcı')}
       title={name.trim() || undefined}
     >
       <span aria-hidden="true">{initials}</span>
@@ -177,7 +178,7 @@ export function Modal({
             <div>
               <h2>{title}</h2>
             </div>
-            <IconButton label="Pencereyi kapat" onClick={onClose}>
+            <IconButton label={t('Pencereyi kapat')} onClick={onClose}>
               <X size={18} />
             </IconButton>
           </div>

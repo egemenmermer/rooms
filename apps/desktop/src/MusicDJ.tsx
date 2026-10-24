@@ -30,11 +30,13 @@ import { useCommunity } from './community';
 import { useRealtime, setParticipantVolume, musicEqualizer, setMusicEqualizer } from './realtime';
 import type { MusicEqualizer } from '@rooms/media';
 import { useActivityRoom } from './activity';
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
+import { sample } from './dev/sample';
 import {
   musicSearchQuerySchema,
   type MusicCommand,
   type MusicSearchResult,
+  type MusicSnapshot,
 } from '../../../packages/shared-contracts/src/music';
 import './music-dj.css';
 const useDJ = create<{ open: boolean; show(): void; hide(): void }>((set) => ({
@@ -104,7 +106,7 @@ export function MusicPlaybackClock({
   }, [playing, anchor]);
   const estimate = position + (playing ? Math.min(6, anchor.age + elapsed) : 0);
   return (
-    <small aria-label="Parça süresi">
+    <small aria-label={t('Parça süresi')}>
       {clock(Math.max(0, Math.min(duration, estimate)))} / {clock(duration)}
     </small>
   );
@@ -135,7 +137,7 @@ export function MusicSeekControl({
     <input
       className="dj-seek"
       type="range"
-      aria-label="Parçada konum"
+      aria-label={t('Parçada konum')}
       aria-valuetext={clock(draft ?? position)}
       min={0}
       max={Math.max(0, duration - 0.1)}
@@ -221,7 +223,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           useCommunity.getState().serverUrl !== server ||
           useCommunity.getState().user?.id !== user
         )
-          throw new Error('Oturum değişti.');
+          throw new Error(t('Oturum değişti.'));
         return value;
       },
     },
@@ -239,7 +241,9 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
     },
     queryClient,
   );
-  const snapshot = query.data,
+  // DEV fixture with `dj=demo`: a fixed sample queue, so the panel can be reviewed playing.
+  const demo = fixture && new URLSearchParams(location.search).get('dj') === 'demo';
+  const snapshot = demo ? demoSnapshot(channelId) : query.data,
     active = snapshot?.queue.find((item) => item.id === snapshot.currentId),
     index = snapshot?.queue.findIndex((item) => item.id === snapshot.currentId) ?? -1;
   const bot = voice.participants.find((p) => p.id === snapshot?.identity);
@@ -273,7 +277,9 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           if (value.matchCandidates) {
             setResults(value.matchCandidates.candidates);
             setError(
-              'Tam eşleşme bulunamadı. Doğru parça bunlardan biri mi? Seçmeden kuyruğa eklenmez.',
+              t(
+                'Tam eşleşme bulunamadı. Doğru parça bunlardan biri mi? Seçmeden kuyruğa eklenmez.',
+              ),
             );
           } else {
             setInput('');
@@ -281,12 +287,18 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
             const n = value.importNotice;
             if (n)
               setInfo(
-                `${n.added} şarkı eklendi.` +
-                  (n.truncated
-                    ? ' Spotify herkese açık görünümde en fazla 100 parça gösterir; listenin devamı eklenmedi.'
-                    : '') +
-                  (n.queueFull ? ' Kuyrukta yer kalmadığı için listenin kalanı eklenmedi.' : '') +
-                  (n.skipped ? ` ${n.skipped} kayıt (bölüm/yerel dosya) atlandı.` : ''),
+                [
+                  t('{count} şarkı eklendi.', { count: n.added }),
+                  n.truncated &&
+                    t(
+                      'Spotify herkese açık görünümde en fazla 100 parça gösterir; listenin devamı eklenmedi.',
+                    ),
+                  n.queueFull && t('Kuyrukta yer kalmadığı için listenin kalanı eklenmedi.'),
+                  n.skipped &&
+                    t('{count} kayıt (bölüm/yerel dosya) atlandı.', { count: n.skipped }),
+                ]
+                  .filter(Boolean)
+                  .join(' '),
               );
           }
         }
@@ -389,7 +401,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           {branding.name}
           <small>{voice.roomName ?? ''}</small>
         </span>
-        <button aria-label="DJ panelini kapat" onClick={onClose}>
+        <button aria-label={t('DJ panelini kapat')} onClick={onClose}>
           <X size={18} />
         </button>
       </header>
@@ -404,8 +416,8 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           }}
         >
           <input
-            aria-label="YouTube, Spotify, SoundCloud veya ses bağlantısı"
-            placeholder="Şarkı adı veya şarkı/liste bağlantısı"
+            aria-label={t('YouTube, Spotify, SoundCloud veya ses bağlantısı')}
+            placeholder={t('Şarkı adı veya şarkı/liste bağlantısı')}
             maxLength={2048}
             value={input}
             onChange={(e) => {
@@ -417,7 +429,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           />
           <button
             type="submit"
-            aria-label={validSearch() ? 'Şarkı ara' : 'Kuyruğa ekle'}
+            aria-label={validSearch() ? t('Şarkı ara') : t('Kuyruğa ekle')}
             disabled={!available || busy || (!validLink() && !validSearch())}
           >
             {busy ? '…' : validSearch() ? <Search size={18} /> : <Plus size={18} />}
@@ -431,18 +443,22 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
               void run({ type: 'add', url: input.trim(), playNow: true, offerCandidates: true })
             }
           >
-            <Play size={15} /> Şimdi çal
+            <Play size={15} /> {t('Şimdi çal')}
           </button>
         )}
         {results && (
-          <div className="dj-search-results" role="region" aria-label="YouTube arama sonuçları">
+          <div
+            className="dj-search-results"
+            role="region"
+            aria-label={t('YouTube arama sonuçları')}
+          >
             {results.length === 0 ? (
-              <p>Parça bulunamadı.</p>
+              <p>{t('Parça bulunamadı.')}</p>
             ) : (
               results.map((item) => (
                 <div key={item.id} className="dj-search-result">
                   <button
-                    aria-label={`Kuyruğa ekle: ${item.title}`}
+                    aria-label={t('Kuyruğa ekle: {title}', { title: item.title })}
                     disabled={!available || busy}
                     onClick={() =>
                       void run({ type: 'add', url: `https://www.youtube.com/watch?v=${item.id}` })
@@ -453,7 +469,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
                     <Plus size={14} />
                   </button>
                   <button
-                    aria-label={`${item.title} — Şimdi çal`}
+                    aria-label={t('{title} — Şimdi çal', { title: item.title })}
                     disabled={!available || busy}
                     onClick={() =>
                       void run({
@@ -471,7 +487,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           </div>
         )}
         <div className="dj-track">
-          <strong>{active?.title ?? (query.isLoading ? 'Yükleniyor…' : 'Kuyruk boş')}</strong>
+          <strong>{active?.title ?? (query.isLoading ? t('Yükleniyor…') : t('Kuyruk boş'))}</strong>
           {active && (
             <MusicPlaybackClock
               key={`${snapshot?.currentId}:${query.dataUpdatedAt}:${snapshot?.status}:${!!query.error}`}
@@ -496,7 +512,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
         )}
         <div className="dj-transport">
           <button
-            aria-label="Önceki parça"
+            aria-label={t('Önceki parça')}
             disabled={!available || busy || index < 0}
             onClick={() => void run({ type: 'previous' })}
           >
@@ -504,14 +520,14 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           </button>
           <button
             className="dj-play"
-            aria-label={snapshot?.status === 'playing' ? 'Duraklat' : 'Oynat'}
+            aria-label={snapshot?.status === 'playing' ? t('Duraklat') : t('Oynat')}
             disabled={!available || busy || !active}
             onClick={() => void run({ type: snapshot?.status === 'playing' ? 'pause' : 'play' })}
           >
             {snapshot?.status === 'playing' ? <Pause size={24} /> : <Play size={24} />}
           </button>
           <button
-            aria-label="Sonraki parça"
+            aria-label={t('Sonraki parça')}
             disabled={
               !available || busy || index < 0 || index === (snapshot?.queue.length ?? 0) - 1
             }
@@ -520,7 +536,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
             <SkipForward size={21} />
           </button>
           <button
-            aria-label="Botu odadan çıkar"
+            aria-label={t('Botu odadan çıkar')}
             disabled={!available || busy || !snapshot || snapshot.status === 'disconnected'}
             onClick={() => void run({ type: 'stop' })}
           >
@@ -529,7 +545,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
         </div>
         <div className="dj-volume">
           <button
-            aria-label={bot?.volume === 0 ? 'Botun sesini aç' : 'Botun sesini kapat'}
+            aria-label={bot?.volume === 0 ? t('Botun sesini aç') : t('Botun sesini kapat')}
             disabled={!bot}
             onClick={() =>
               bot && setParticipantVolume(bot.id, bot.volume === 0 ? restoreVolume.current : 0)
@@ -539,7 +555,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           </button>
           <input
             type="range"
-            aria-label="Botun ses seviyesi"
+            aria-label={t('Botun ses seviyesi')}
             min={0}
             max={1}
             step={0.01}
@@ -549,23 +565,23 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           />
           <small>{Math.round((bot?.volume ?? 1) * 100)}%</small>
           <button
-            aria-label="Ekolayzır"
+            aria-label={t('Ekolayzır')}
             aria-expanded={equalizerOpen}
             className={equalizer && !flat(equalizer) ? 'dj-eq-on' : undefined}
             disabled={!equalizer}
-            title={equalizer ? 'Yalnızca senin duyduğun bas, orta ve tiz' : undefined}
+            title={equalizer ? t('Yalnızca senin duyduğun bas, orta ve tiz') : undefined}
             onClick={() => setEqualizerOpen((value) => !value)}
           >
             <SlidersHorizontal size={16} />
           </button>
         </div>
         {equalizerOpen && equalizer && (
-          <div className="dj-equalizer" role="group" aria-label="Ekolayzır">
+          <div className="dj-equalizer" role="group" aria-label={t('Ekolayzır')}>
             {(
               [
-                ['bass', 'Bas'],
-                ['mid', 'Orta'],
-                ['treble', 'Tiz'],
+                ['bass', t('Bas')],
+                ['mid', t('Orta')],
+                ['treble', t('Tiz')],
               ] as const
             ).map(([key, label]) => (
               <label key={key}>
@@ -586,12 +602,12 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
               </label>
             ))}
             <p>
-              Yalnızca senin duyduğun sesi değiştirir.
+              {t('Yalnızca senin duyduğun sesi değiştirir.')}
               <button
                 disabled={flat(equalizer)}
                 onClick={() => changeEqualizer({ bass: 0, mid: 0, treble: 0 })}
               >
-                Sıfırla
+                {t('Sıfırla')}
               </button>
             </p>
           </div>
@@ -607,29 +623,29 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           />
         )}
         <div className="dj-queue-heading">
-          <span>Kuyruk</span>
+          <span>{t('Kuyruk')}</span>
           <button
             aria-expanded={listsOpen}
             onClick={() => setListsOpen((value) => !value)}
             disabled={!window.rooms?.music.playlists || !window.rooms?.music.changePlaylist}
             title={
               !window.rooms?.music.playlists
-                ? 'Ortak listeler için güncel masaüstü uygulaması gerekiyor.'
+                ? t('Ortak listeler için güncel masaüstü uygulaması gerekiyor.')
                 : undefined
             }
           >
-            Listeler
+            {t('Listeler')}
           </button>
           <button aria-expanded={historyOpen} onClick={() => setHistoryOpen((value) => !value)}>
             <History size={14} />
-            Geçmiş
+            {t('Geçmiş')}
           </button>
           {((snapshot?.queue.length ?? 0) > 1 ||
             (snapshot?.status === 'error' && !!snapshot.queue.length)) && (
             <button
               className={clearing ? 'danger' : undefined}
               disabled={!available || busy}
-              title="Çalan parça dışında kuyruğu boşaltır"
+              title={t('Çalan parça dışında kuyruğu boşaltır')}
               onClick={() => {
                 if (!clearing) return setClearing(true);
                 setClearing(false);
@@ -638,8 +654,12 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
             >
               <Trash2 size={13} />
               {clearing
-                ? `${(snapshot?.queue.length ?? 1) - (active && snapshot?.status !== 'error' ? 1 : 0)} parçayı kaldır`
-                : 'Temizle'}
+                ? t('{count} parçayı kaldır', {
+                    count:
+                      (snapshot?.queue.length ?? 1) -
+                      (active && snapshot?.status !== 'error' ? 1 : 0),
+                  })
+                : t('Temizle')}
             </button>
           )}
         </div>
@@ -684,7 +704,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
                   className="dj-queue-title"
                   title={item.title}
                   disabled={!available || busy}
-                  aria-label={`${item.title} parçasını çal`}
+                  aria-label={t('{title} parçasını çal', { title: item.title })}
                   onClick={() => void run({ type: 'select', id: item.id })}
                 >
                   {item.title}
@@ -692,14 +712,14 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
                 <small>{clock(item.durationSec)}</small>
                 <div className="dj-order-controls">
                   <button
-                    aria-label={`${item.title} yukarı taşı`}
+                    aria-label={t('{title} yukarı taşı', { title: item.title })}
                     disabled={!available || busy || i === 0}
                     onClick={() => move(i - 1)}
                   >
                     <ArrowUp size={12} />
                   </button>
                   <button
-                    aria-label={`${item.title} aşağı taşı`}
+                    aria-label={t('{title} aşağı taşı', { title: item.title })}
                     disabled={!available || busy || i === snapshot.queue.length - 1}
                     onClick={() => move(i + 1)}
                   >
@@ -707,7 +727,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
                   </button>
                 </div>
                 <button
-                  aria-label={`${item.title} sıradan kaldır`}
+                  aria-label={t('{title} sıradan kaldır', { title: item.title })}
                   disabled={
                     !available ||
                     busy ||
@@ -724,41 +744,41 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
           })}
         </ol>
         {historyOpen && (
-          <div className="dj-history" aria-label="DJ oturum geçmişi">
+          <div className="dj-history" aria-label={t('DJ oturum geçmişi')}>
             {history.isLoading ? (
-              <p>Geçmiş yükleniyor…</p>
+              <p>{t('Geçmiş yükleniyor…')}</p>
             ) : history.error ? (
               <p role="alert">
                 {uiError(history.error)}
-                <button onClick={() => void history.refetch()}>Yeniden dene</button>
+                <button onClick={() => void history.refetch()}>{t('Yeniden dene')}</button>
               </p>
             ) : !history.data?.length ? (
-              <p>Henüz kayıtlı liste yok.</p>
+              <p>{t('Henüz kayıtlı liste yok.')}</p>
             ) : (
               history.data.map((session) => (
                 <details key={session.id}>
                   <summary>
-                    {new Date(session.startedAt).toLocaleString('tr-TR', {
+                    {new Date(session.startedAt).toLocaleString(locale, {
                       day: 'numeric',
                       month: 'short',
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
-                    <small>{session.tracks.length} parça</small>
+                    <small>{t('{count} parça', { count: session.tracks.length })}</small>
                   </summary>
                   <ol>
                     {session.tracks.map((track) => (
                       <li key={track.id}>
                         <button
                           disabled={!available || busy}
-                          aria-label={`${track.title} geçmişten çal`}
+                          aria-label={t('{title} geçmişten çal', { title: track.title })}
                           onClick={() =>
                             void run({ type: 'restore', sessionId: session.id, trackId: track.id })
                           }
                         >
                           {track.title}
                         </button>
-                        <small>{track.played ? 'Çalındı' : 'Kuyrukta'}</small>
+                        <small>{track.played ? t('Çalındı') : t('Kuyrukta')}</small>
                       </li>
                     ))}
                   </ol>
@@ -767,7 +787,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
                     onClick={() => void run({ type: 'restore', sessionId: session.id })}
                   >
                     <Play size={13} />
-                    Kuyruğa ekle ve çal
+                    {t('Kuyruğa ekle ve çal')}
                   </button>
                   <button
                     disabled={!available || busy || !window.rooms?.music.changePlaylist}
@@ -777,7 +797,9 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
                       void window
                         .rooms!.music.changePlaylist(channelId!, {
                           op: 'saveQueue',
-                          name: `Dinleme ${new Date(session.startedAt).toLocaleDateString('tr-TR')}`,
+                          name: t('Dinleme {date}', {
+                            date: new Date(session.startedAt).toLocaleDateString(locale),
+                          }),
                           sessionId: session.id,
                         })
                         .then((value) => {
@@ -797,7 +819,7 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
                         });
                     }}
                   >
-                    Ortak listeye kaydet
+                    {t('Ortak listeye kaydet')}
                   </button>
                 </details>
               ))
@@ -815,12 +837,14 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
         )}
         {!channelId && (
           <p className="dj-error" role="status">
-            Önce ses odasına katıl.
+            {t('Önce ses odasına katıl.')}
           </p>
         )}
         {fixture && (
           <p className="dj-error" role="status">
-            Yerel görünüm örneği; bot bağlantısı yok.
+            {demo
+              ? t('DEMO · örnek kuyruk; bot bağlantısı yok.')
+              : t('Yerel görünüm örneği; bot bağlantısı yok.')}
           </p>
         )}
         {info && !error && (
@@ -841,4 +865,29 @@ function DJPanel({ channelId, onClose }: { channelId: string | null; onClose(): 
       </div>
     </section>
   );
+}
+
+/** DEV only: a sample snapshot for reviewing the playing panel (no service involved). */
+function demoSnapshot(channelId: string | null | undefined): MusicSnapshot | undefined {
+  if (!channelId) return undefined;
+  const ids = [
+    '00000000-0000-4000-8000-000000000001',
+    '00000000-0000-4000-8000-000000000002',
+    '00000000-0000-4000-8000-000000000003',
+    '00000000-0000-4000-8000-000000000004',
+  ];
+  return {
+    channelId,
+    identity: `rooms-music-${channelId}`,
+    status: 'playing',
+    queue: [
+      { id: ids[0]!, title: sample('Gece Yarısı Sokakları', 'Midnight Streets'), durationSec: 228 },
+      { id: ids[1]!, title: sample('Sabah Treni', 'Morning Train'), durationSec: 201 },
+      { id: ids[2]!, title: sample('Eski Mahalle', 'Old Neighborhood'), durationSec: 242 },
+      { id: ids[3]!, title: sample('Rıhtım', 'Harbor Lights'), durationSec: 178 },
+    ],
+    currentId: ids[0]!,
+    positionSec: 134,
+    error: null,
+  };
 }

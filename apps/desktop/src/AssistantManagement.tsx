@@ -9,16 +9,16 @@ import { useCurrentRoom } from './Agent';
 import { useCommunity } from './community';
 import { ReferenceIcon } from './ReferenceIcon';
 import { VoiceAvatar } from './VoiceAvatar';
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 import './reference-agent-management.css';
 
 const scopeLabels = {
-  room: 'Oda',
-  workspace: 'Çalışma alanı',
+  room: t('Oda'),
+  workspace: t('Çalışma alanı'),
   github: 'GitHub',
   drive: 'Google Drive',
-  research: 'Araştırma',
-  browser: 'Tarayıcı',
+  research: t('Araştırma'),
+  browser: t('Tarayıcı'),
 };
 const scopeIcons = {
   room: 'message-circle',
@@ -29,25 +29,25 @@ const scopeIcons = {
   browser: 'globe',
 };
 export const auditActionLabels: Record<string, string> = {
-  'model-connected': 'Model bağlandı',
-  'model-disconnected': 'Model bağlantısı kaldırıldı',
-  'yolo-enabled': 'YOLO açıldı',
-  'yolo-disabled': 'YOLO kapatıldı',
-  'yolo-task-resumed': 'Görev YOLO ile sürdü',
-  'task-created': 'Görev başlatıldı',
-  'task-interrupted': 'Görev yarıda kaldı',
-  'reminder-created': 'Hatırlatıcı kuruldu',
-  'operation-awaiting-approval': 'İşlem onay bekliyor',
-  'operation-record-result': 'İşlem sonucu elle kaydedildi',
-  'operation-confirm-not-applied': 'İşlemin uygulanmadığı onaylandı',
-  'mention-ingested': 'Sohbetten görev alındı',
-  'task-completed': 'Görev tamamlandı',
-  'task-failed': 'Görev başarısız',
-  'task-cancelled': 'Görev iptal edildi',
-  'task-approved': 'Görev onaylandı',
-  'operation-approved': 'İşlem onaylandı',
-  'memory-deleted': 'Hafıza silindi',
-  'memory-saved': 'Hafıza kaydedildi',
+  'model-connected': t('Model bağlandı'),
+  'model-disconnected': t('Model bağlantısı kaldırıldı'),
+  'yolo-enabled': t('YOLO açıldı'),
+  'yolo-disabled': t('YOLO kapatıldı'),
+  'yolo-task-resumed': t('Görev YOLO ile sürdü'),
+  'task-created': t('Görev başlatıldı'),
+  'task-interrupted': t('Görev yarıda kaldı'),
+  'reminder-created': t('Hatırlatıcı kuruldu'),
+  'operation-awaiting-approval': t('İşlem onay bekliyor'),
+  'operation-record-result': t('İşlem sonucu elle kaydedildi'),
+  'operation-confirm-not-applied': t('İşlemin uygulanmadığı onaylandı'),
+  'mention-ingested': t('Sohbetten görev alındı'),
+  'task-completed': t('Görev tamamlandı'),
+  'task-failed': t('Görev başarısız'),
+  'task-cancelled': t('Görev iptal edildi'),
+  'task-approved': t('Görev onaylandı'),
+  'operation-approved': t('İşlem onaylandı'),
+  'memory-deleted': t('Hafıza silindi'),
+  'memory-saved': t('Hafıza kaydedildi'),
 };
 
 /** Displays actual server grants; administrative mutations require a server capability. */
@@ -120,7 +120,7 @@ export function AssistantManagement() {
       try {
         const status = await window.rooms!.agent.status();
         if (!live()) return;
-        if (!status.connected) throw new Error(status.reason || 'Agent sunucusu bağlı değil.');
+        if (!status.connected) throw new Error(status.reason || t('Agent sunucusu bağlı değil.'));
         // The room's history is for managers; everyone else reads their own, and sees the
         // "yetkin yok" view for the permissions instead of an error.
         const authority = await window.rooms!.agent.authority(roomId);
@@ -151,8 +151,9 @@ export function AssistantManagement() {
     name = (id: string) => projection?.names[id] ?? id;
   const space = c.spaces.find((s) => s.id === c.activeSpaceId),
     channel = c.channels.find((ch) => ch.id === roomId);
-  const saveReason =
-    'Kişi ve araç izinleri sunucu yöneticisi tarafından yapılandırılır; uygulamadan değiştirme desteklenmiyor.';
+  const saveReason = t(
+    'Kişi ve araç izinleri sunucu yöneticisi tarafından yapılandırılır; uygulamadan değiştirme desteklenmiyor.',
+  );
   const entries =
     audit?.entries.filter(
       (e) => (!actor || e.userId === actor) && (!action || e.action === action),
@@ -160,8 +161,8 @@ export function AssistantManagement() {
   const auditGroups = entries.reduce<Map<string, typeof entries>>((groups, entry) => {
     const date = new Date(entry.at);
     const label = Number.isNaN(date.getTime())
-      ? 'Tarih bilinmiyor'
-      : date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+      ? t('Tarih bilinmiyor')
+      : date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
     groups.set(label, [...(groups.get(label) ?? []), entry]);
     return groups;
   }, new Map());
@@ -169,27 +170,27 @@ export function AssistantManagement() {
     action === 'yolo-enabled'
       ? ['YOLO', 'warning']
       : action === 'task-failed'
-        ? ['Kontrol gerekiyor', 'warning']
+        ? [t('Kontrol gerekiyor'), 'warning']
         : action.endsWith('approved')
-          ? ['Onaylandı', 'success']
+          ? [t('Onaylandı'), 'success']
           : action === 'task-completed'
-            ? ['Tamamlandı', 'success']
+            ? [t('Tamamlandı'), 'success']
             : action === 'task-cancelled'
-              ? ['İptal edildi', 'muted']
+              ? [t('İptal edildi'), 'muted']
               : null;
   return (
     <div className="reference-agent-management">
       <div className="ref-settings-heading">
-        <span>{space?.name ?? 'ODA'}</span>
-        <h1>Asistan yönetimi</h1>
-        <p>Kimlerin ne yapabildiğini, bağlı alanları ve yapılan işlemleri gör.</p>
+        <span>{space?.name ?? t('ODA')}</span>
+        <h1>{t('Asistan yönetimi')}</h1>
+        <p>{t('Kimlerin ne yapabildiğini, bağlı alanları ve yapılan işlemleri gör.')}</p>
       </div>
-      <div className="agent-management-tabs" role="tablist" aria-label="Asistan yönetimi">
+      <div className="agent-management-tabs" role="tablist" aria-label={t('Asistan yönetimi')}>
         {(
           [
-            ['permissions', 'Yetkiler'],
-            ['history', 'İşlem geçmişi'],
-            ['discord', 'Discord botu'],
+            ['permissions', t('Yetkiler')],
+            ['history', t('İşlem geçmişi')],
+            ['discord', t('Discord botu')],
           ] as const
         ).map(([id, label]) => (
           <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>
@@ -200,27 +201,27 @@ export function AssistantManagement() {
           className="agent-management-refresh"
           disabled={busy}
           onClick={() => setRevision((v) => v + 1)}
-          aria-label="Asistan bilgilerini yenile"
+          aria-label={t('Asistan bilgilerini yenile')}
         >
           <ReferenceIcon name="refresh-cw" size={18} />
         </button>
       </div>
-      {busy && <p role="status">Yükleniyor…</p>}
+      {busy && <p role="status">{t('Yükleniyor…')}</p>}
       {error && (
         <div className="agent-management-callout error" role="alert">
           {error}
           <button className="text-button" onClick={() => navigate('/settings?tab=agent')}>
-            Model bağlantıları
+            {t('Model bağlantıları')}
           </button>
         </div>
       )}
       {!busy && !error && !a && (
         <p>
           {!c.user
-            ? 'Önce giriş yap.'
+            ? t('Önce giriş yap.')
             : !roomId
-              ? 'Bir oda seç.'
-              : 'Asistan bilgileri masaüstü uygulamasında kullanılabilir.'}
+              ? t('Bir oda seç.')
+              : t('Asistan bilgileri masaüstü uygulamasında kullanılabilir.')}
         </p>
       )}
       {a && (
@@ -228,34 +229,36 @@ export function AssistantManagement() {
           {tab === 'permissions' && !a.canManage ? (
             <div className="agent-management-denied">
               <ReferenceIcon name="shield" size={42} />
-              <h1>Bu ayarı yönetme yetkin yok</h1>
+              <h1>{t('Bu ayarı yönetme yetkin yok')}</h1>
               <p>
-                Asistanın kişi, araç ve çalışma alanı izinlerini yalnızca yetkilendirilmiş
-                yöneticiler değiştirebilir.
+                {t(
+                  'Asistanın kişi, araç ve çalışma alanı izinlerini yalnızca yetkilendirilmiş yöneticiler değiştirebilir.',
+                )}
               </p>
               <button className="button primary" onClick={() => navigate('/agent')}>
-                Oda asistanına dön
+                {t('Oda asistanına dön')}
               </button>
             </div>
           ) : tab === 'permissions' ? (
             <>
               <div className="agent-management-title">
-                <h2>Kişiler ve işlemler</h2>
+                <h2>{t('Kişiler ve işlemler')}</h2>
                 <button
                   className="text-button"
                   onClick={() => navigate('/settings?tab=automation')}
                 >
                   <ReferenceIcon name="sparkles" size={17} />
-                  Otomasyon modu
+
+                  {t('Otomasyon modu')}
                 </button>
               </div>
               <table className="agent-management-table">
                 <thead>
                   <tr>
-                    <th>Kişi</th>
-                    <th>İstek başlatma</th>
-                    <th>Dış değişiklik</th>
-                    <th>Yönetim</th>
+                    <th>{t('Kişi')}</th>
+                    <th>{t('İstek başlatma')}</th>
+                    <th>{t('Dış değişiklik')}</th>
+                    <th>{t('Yönetim')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -275,27 +278,28 @@ export function AssistantManagement() {
                         >
                           {p.canStart ? '✓' : '—'}
                         </span>{' '}
-                        {p.canStart ? 'İzinli' : 'Kapalı'}
+                        {p.canStart ? t('İzinli') : t('Kapalı')}
                       </td>
                       <td>
                         <span className="agent-management-badge">
-                          {a.yolo ? 'Kapsam içinde YOLO' : 'Onayla'}
+                          {a.yolo ? t('Kapsam içinde YOLO') : t('Onayla')}
                         </span>
                       </td>
-                      <td>{p.canManage ? 'İzinli' : 'Kapalı'}</td>
+                      <td>{p.canManage ? t('İzinli') : t('Kapalı')}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               <section>
                 <div className="agent-management-title">
-                  <h2>Araç ve çalışma alanı kapsamı</h2>
+                  <h2>{t('Araç ve çalışma alanı kapsamı')}</h2>
                   <button
                     className="text-button"
                     onClick={() => navigate('/settings?tab=connections')}
                   >
                     <ReferenceIcon name="arrow-right" size={17} />
-                    Bağlantıları düzenle
+
+                    {t('Bağlantıları düzenle')}
                   </button>
                 </div>
                 {a.scopes.map((s, i) => (
@@ -308,12 +312,12 @@ export function AssistantManagement() {
                       {s.resources.join(', ') ||
                         (s.kind === 'room'
                           ? (channel?.name ?? roomId)
-                          : 'Sunucunun izin verdiği kapsam')}
+                          : t('Sunucunun izin verdiği kapsam'))}
                     </strong>
                     <span className="agent-management-badge">
-                      {[s.read ? 'Okuma' : '', s.write ? 'Değişiklik' : '']
+                      {[s.read ? t('Okuma') : '', s.write ? t('Değişiklik') : '']
                         .filter(Boolean)
-                        .join(' + ') || 'Kapalı'}
+                        .join(' + ') || t('Kapalı')}
                     </span>
                   </div>
                 ))}
@@ -321,14 +325,15 @@ export function AssistantManagement() {
               <div className="agent-management-callout">
                 <ReferenceIcon name="shield" size={19} />
                 <span>
-                  Her görev, başlatanın seçtiği kişisel bağlantıyla çalışır. YOLO yalnızca izin
-                  verilen işlemlerde onay adımını kaldırır.
+                  {t(
+                    'Her görev, başlatanın seçtiği kişisel bağlantıyla çalışır. YOLO yalnızca izin verilen işlemlerde onay adımını kaldırır.',
+                  )}
                 </span>
               </div>
               <div className="agent-management-bottom">
                 <small>{saveReason}</small>
                 <button className="button primary" disabled title={saveReason}>
-                  Yetkileri kaydet
+                  {t('Yetkileri kaydet')}
                 </button>
               </div>
             </>
@@ -336,11 +341,11 @@ export function AssistantManagement() {
             <>
               <div className="agent-management-filters">
                 <select
-                  aria-label="Kişi filtresi"
+                  aria-label={t('Kişi filtresi')}
                   value={actor}
                   onChange={(e) => setActor(e.target.value)}
                 >
-                  <option value="">Tüm kişiler</option>
+                  <option value="">{t('Tüm kişiler')}</option>
                   {[...new Set(audit?.entries.map((e) => e.userId))].map((id) => (
                     <option key={id} value={id}>
                       {name(id)}
@@ -348,11 +353,11 @@ export function AssistantManagement() {
                   ))}
                 </select>
                 <select
-                  aria-label="İşlem türü"
+                  aria-label={t('İşlem türü')}
                   value={action}
                   onChange={(e) => setAction(e.target.value)}
                 >
-                  <option value="">Tüm işlemler</option>
+                  <option value="">{t('Tüm işlemler')}</option>
                   {[...new Set(audit?.entries.map((e) => e.action))].map((id) => (
                     <option key={id} value={id}>
                       {auditActionLabels[id] ?? id}
@@ -361,12 +366,16 @@ export function AssistantManagement() {
                 </select>
               </div>
               <div className="agent-management-title">
-                <h2>{audit?.scope === 'room' ? 'Oda işlem geçmişi' : 'Kendi işlem geçmişin'}</h2>
+                <h2>
+                  {audit?.scope === 'room' ? t('Oda işlem geçmişi') : t('Kendi işlem geçmişin')}
+                </h2>
                 <small>
-                  {entries.length} kayıt{audit?.limited ? ' · son kayıtlar' : ''}
+                  {audit?.limited
+                    ? t('{count} kayıt · son kayıtlar', { count: entries.length })
+                    : t('{count} kayıt', { count: entries.length })}
                 </small>
               </div>
-              {!entries.length && <p>İşlem kaydı yok.</p>}
+              {!entries.length && <p>{t('İşlem kaydı yok.')}</p>}
               {[...auditGroups].map(([date, group]) => (
                 <section className="agent-management-audit-day" key={date}>
                   <h3>{date}</h3>
@@ -378,14 +387,16 @@ export function AssistantManagement() {
                         <time dateTime={entry.at}>
                           {Number.isNaN(at.getTime())
                             ? '—'
-                            : at.toLocaleTimeString('tr-TR', {
+                            : at.toLocaleTimeString(locale, {
                                 hour: '2-digit',
                                 minute: '2-digit',
                               })}
                         </time>
                         <div>
                           {name(entry.userId)} · {auditActionLabels[entry.action] ?? entry.action}
-                          <small>{channel?.name ?? 'Oda'} · işlem kaydı</small>
+                          <small>
+                            {t('{channel} · işlem kaydı', { channel: channel?.name ?? t('Oda') })}
+                          </small>
                         </div>
                         {badge && (
                           <span className={`agent-management-badge ${badge[1]}`}>{badge[0]}</span>
@@ -397,7 +408,7 @@ export function AssistantManagement() {
                               navigate(`/agent?task=${encodeURIComponent(entry.taskId!)}`)
                             }
                           >
-                            İncele
+                            {t('İncele')}
                           </button>
                         )}
                       </div>
@@ -407,8 +418,10 @@ export function AssistantManagement() {
               ))}
               <div className="agent-management-callout">
                 <ReferenceIcon name="lock" size={19} />
-                İşlem geçmişinde hesap anahtarları, kişisel medya adresleri ve özel dosya yolları
-                gösterilmez.
+
+                {t(
+                  'İşlem geçmişinde hesap anahtarları, kişisel medya adresleri ve özel dosya yolları gösterilmez.',
+                )}
               </div>
             </>
           ) : (
@@ -417,41 +430,41 @@ export function AssistantManagement() {
                 <ReferenceIcon name="bot" size={32} />
                 <div>
                   <div className="agent-management-title">
-                    <h2>Resmi Discord bot bağlantısı</h2>
+                    <h2>{t('Resmi Discord bot bağlantısı')}</h2>
                     <span className="agent-management-badge">
                       {a.discord.state === 'configured'
-                        ? 'Yapılandırıldı'
+                        ? t('Yapılandırıldı')
                         : a.discord.state === 'not-configured'
-                          ? 'Bağlı değil'
-                          : 'Durum bilinmiyor'}
+                          ? t('Bağlı değil')
+                          : t('Durum bilinmiyor')}
                     </span>
                   </div>
-                  <p>Canlı Discord bağlantısı bu durum bilgisiyle doğrulanmaz.</p>
+                  <p>{t('Canlı Discord bağlantısı bu durum bilgisiyle doğrulanmaz.')}</p>
                   <div className="agent-management-title">
-                    <strong>Tayfa asistanı</strong>
+                    <strong>{t('Tayfa asistanı')}</strong>
                     <button
                       className="button secondary"
                       disabled
-                      title="Resmi bot bağlantısı sunucu yöneticisi tarafından yapılandırılır."
+                      title={t('Resmi bot bağlantısı sunucu yöneticisi tarafından yapılandırılır.')}
                     >
-                      Bağlantıyı yönet
+                      {t('Bağlantıyı yönet')}
                     </button>
                   </div>
                 </div>
               </div>
               <section>
-                <h2>İzin verilen alan</h2>
+                <h2>{t('İzin verilen alan')}</h2>
                 <div className="agent-management-scope">
-                  <span>Hesap türü</span>
-                  <strong>Resmi bot hesabı</strong>
+                  <span>{t('Hesap türü')}</span>
+                  <strong>{t('Resmi bot hesabı')}</strong>
                 </div>
                 <div className="agent-management-title">
                   <div>
-                    <h3>Yalnızca etiketlenince yanıt ver</h3>
-                    <p>Asistan normal sohbeti kendiliğinden bölmez.</p>
+                    <h3>{t('Yalnızca etiketlenince yanıt ver')}</h3>
+                    <p>{t('Asistan normal sohbeti kendiliğinden bölmez.')}</p>
                   </div>
                   <Toggle
-                    label="Yalnızca etiketlenince yanıt ver"
+                    label={t('Yalnızca etiketlenince yanıt ver')}
                     value={a.discord.mentionOnly}
                     disabled
                     onChange={() => {}}
@@ -460,21 +473,22 @@ export function AssistantManagement() {
               </section>
               <div className="agent-management-callout">
                 <ReferenceIcon name="shield" size={19} />
-                Discord görevi, başlatanın eşleştirilmiş kişisel bağlantısını kullanır.
+
+                {t('Discord görevi, başlatanın eşleştirilmiş kişisel bağlantısını kullanır.')}
               </div>
               <section>
-                <h2>Eşleştirilmiş kişiler</h2>
-                {!a.discord.mappings.length && <p>Eşleştirme yok.</p>}
+                <h2>{t('Eşleştirilmiş kişiler')}</h2>
+                {!a.discord.mappings.length && <p>{t('Eşleştirme yok.')}</p>}
                 {a.discord.mappings.map((m, i) => (
                   <div className="agent-management-scope" key={`${m.userId}-${m.channelId}-${i}`}>
                     <span>{name(m.userId)}</span>
                     <strong>{m.channelId}</strong>
                     <span className="agent-management-badge">
                       {m.personalModel === 'selected'
-                        ? 'Kişisel bağlantı seçilmiş'
+                        ? t('Kişisel bağlantı seçilmiş')
                         : m.personalModel === 'missing'
-                          ? 'Bağlantı gerekli'
-                          : 'Kişisel bağlantı gizli'}
+                          ? t('Bağlantı gerekli')
+                          : t('Kişisel bağlantı gizli')}
                     </span>
                   </div>
                 ))}

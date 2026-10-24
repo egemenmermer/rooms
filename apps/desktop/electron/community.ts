@@ -1,3 +1,4 @@
+import { t } from '@rooms/i18n';
 import { loadMusicLyrics } from './music-lyrics';
 import { CinemaRequestError, setupCommunityCinema } from './community-cinema';
 import { setupHostOps } from './hostops';
@@ -503,7 +504,7 @@ export async function setupCommunity(
   handle('rooms:social-signup-complete', async (input) => {
     const body = signupCompletion.parse(input);
     const registration = signups.registration(body);
-    if (!registration) throw new SocialInputError('Bu istek için onaylı kayıt bağlantısı yok.');
+    if (!registration) throw new SocialInputError(t('Bu istek için onaylı kayıt bağlantısı yok.'));
     return completeSignup(registration);
   });
   handle('rooms:social-signup-cancel', () => signups.cancel());
@@ -526,17 +527,17 @@ export async function setupCommunity(
   handle('rooms:social-password-recovery-request', async (input) => {
     const body = recoveryInput.parse(input);
     if (recoveryPending)
-      throw new SocialInputError('Kurtarma isteği sürüyor. Tamamlanmasını bekle.');
+      throw new SocialInputError(t('Kurtarma isteği sürüyor. Tamamlanmasını bekle.'));
     recoveryPending = true;
     try {
       // Isolated client: no current-session mutation, stored session, gateway, or renderer reset secret.
       const recovery = new StoatClient(body.serverUrl),
         capabilities = await recovery.passwordRecoveryCapabilities();
       if (!capabilities.emailEnabled)
-        throw new SocialInputError('Sunucuda kurtarma e-postası yapılandırılmamış.');
+        throw new SocialInputError(t('Sunucuda kurtarma e-postası yapılandırılmamış.'));
       if (capabilities.captcha.required)
         throw new SocialInputError(
-          'Sunucu hCaptcha doğrulaması istiyor. Kurtarmayı Stoat web uygulamasından başlat.',
+          t('Sunucu hCaptcha doğrulaması istiyor. Kurtarmayı Stoat web uygulamasından başlat.'),
         );
       return await recovery.requestPasswordRecovery({ email: body.email });
     } finally {
@@ -559,8 +560,8 @@ export async function setupCommunity(
       } catch {
         throw new Error(
           operation === 'import'
-            ? 'Seçili sunucunun kurtarma bağlantısını kopyalayıp yeniden dene.'
-            : 'Parola kurtarma işlemi tamamlanamadı. Bağlantıyı yeniden seç.',
+            ? t('Seçili sunucunun kurtarma bağlantısını kopyalayıp yeniden dene.')
+            : t('Parola kurtarma işlemi tamamlanamadı. Bağlantıyı yeniden seç.'),
         );
       }
     });
@@ -800,11 +801,13 @@ export async function setupCommunity(
       const stat = fstatSync(file);
       if (!stat.isFile() || stat.size < 12 || stat.size > limit)
         throw new SocialInputError(
-          `Görsel en fazla ${Math.floor((limit / 1_000_000) * 10) / 10} MB olabilir.`,
+          t('Görsel en fazla {size} MB olabilir.', {
+            size: Math.floor((limit / 1_000_000) * 10) / 10,
+          }),
         );
       const bytes = Buffer.alloc(stat.size);
       if (readSync(file, bytes, 0, bytes.length, 0) !== bytes.length)
-        throw new SocialInputError('Görsel okunamadı.');
+        throw new SocialInputError(t('Görsel okunamadı.'));
       const mime = bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
         ? 'image/png'
         : bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255
@@ -814,7 +817,7 @@ export async function setupCommunity(
             : bytes.toString('ascii', 0, 4) === 'GIF8'
               ? 'image/gif'
               : null;
-      if (!mime) throw new SocialInputError('PNG, JPEG, WebP ya da GIF bir görsel seç.');
+      if (!mime) throw new SocialInputError(t('PNG, JPEG, WebP ya da GIF bir görsel seç.'));
       return { bytes: new Uint8Array(bytes), mime, name: basename(path) };
     } finally {
       closeSync(file);
@@ -828,9 +831,9 @@ export async function setupCommunity(
       window = getWindow();
     if (!window) return null;
     const choice = await dialog.showOpenDialog(window, {
-      title: which === 'icon' ? 'Sunucu ikonu seç' : 'Sunucu afişi seç',
+      title: which === 'icon' ? t('Sunucu ikonu seç') : t('Sunucu afişi seç'),
       properties: ['openFile'],
-      filters: [{ name: 'Görseller', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }],
+      filters: [{ name: t('Görseller'), extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }],
     });
     if (choice.canceled || !choice.filePaths[0]) return null;
     if (client !== current || user?.id !== owner)
@@ -883,7 +886,7 @@ export async function setupCommunity(
     if (client !== current || user?.id !== owner)
       throw new SocialInputError('The conversation session changed.');
     const save = await dialog.showSaveDialog(window, {
-      title: 'Dosyayı kaydet',
+      title: t('Dosyayı kaydet'),
       defaultPath: basename(result.name).replace(/[\x00-\x1f]/g, '') || 'Attachment',
     });
     if (save.canceled || !save.filePath) return false;
@@ -1097,13 +1100,17 @@ export async function setupCommunity(
   ) {
     const mime = attachmentMime(name),
       limit = await current.attachmentSizeLimit();
-    if (bytes.byteLength > limit)
+    if (bytes.byteLength > limit) {
+      const exceeded = t('{name} sunucunun {limit} MB sınırını aşıyor.', {
+        name,
+        limit: Math.floor(limit / 1_000_000),
+      });
       throw new SocialInputError(
-        `${name} sunucunun ${Math.floor(limit / 1_000_000)} MB sınırını aşıyor.` +
-          (mime.startsWith('video/')
-            ? ' Uzun videoları Sinema’da “Kendi dosyamla” ile birlikte izleyebilirsiniz.'
-            : ''),
+        mime.startsWith('video/')
+          ? `${exceeded} ${t('Uzun videoları Sinema’da “Kendi dosyamla” ile birlikte izleyebilirsiniz.')}`
+          : exceeded,
       );
+    }
     const result = await current.uploadAttachment(bytes, name, mime);
     if (current !== client)
       throw new SocialInputError('The conversation session changed. Select the attachment again.');
@@ -1246,34 +1253,42 @@ export async function setupCommunity(
       throw new SocialInputError('The conversation session changed. Join the voice room again.');
     if (!response.ok) {
       const reasons: Record<string, string> = {
-        REMOTE_SOURCE_LIMIT:
+        REMOTE_SOURCE_LIMIT: t(
           'Bu odada çok fazla ekran kontrolü kaydı var. Bir paylaşımı kapatıp yeniden dene.',
-        REMOTE_HUMAN_PEER_REQUIRED:
+        ),
+        REMOTE_HUMAN_PEER_REQUIRED: t(
           'Ekran kontrolü yalnızca odadaki insanlar arasında kullanılabilir.',
-        REMOTE_ALREADY_ACTIVE:
+        ),
+        REMOTE_ALREADY_ACTIVE: t(
           'Senin veya arkadaşının başka bir kontrol oturumu açık. Önce onu bırak.',
-        REMOTE_REQUEST_PENDING: 'Kontrol isteğin gönderildi. Paylaşan kişinin onayını bekle.',
-        REMOTE_REQUEST_LIMIT: 'Çok fazla kontrol isteği var. Biraz sonra yeniden dene.',
-        REMOTE_REQUEST_STALE: 'Kontrol isteği sona erdi veya ekran değişti. Yeniden kontrol iste.',
-        REMOTE_SOURCE_STALE: 'Bu ekran paylaşımı değişti. Paylaşımı yenileyip tekrar kontrol iste.',
-        REMOTE_SCREEN_REQUIRED: 'Ekran yayını henüz hazır değil. Biraz sonra yeniden dene.',
-        PRESENTER_BUSY: 'Bu odada başka biri ekran paylaşıyor.',
-        PRESENT_PERMISSION_REQUIRED: 'Oda rolün ekran paylaşma izni vermiyor.',
-        VOICE_CHANNEL_REQUIRED: 'Önce bir ses odası seç.',
-        ROOM_ACCESS_DENIED:
+        ),
+        REMOTE_REQUEST_PENDING: t('Kontrol isteğin gönderildi. Paylaşan kişinin onayını bekle.'),
+        REMOTE_REQUEST_LIMIT: t('Çok fazla kontrol isteği var. Biraz sonra yeniden dene.'),
+        REMOTE_REQUEST_STALE: t(
+          'Kontrol isteği sona erdi veya ekran değişti. Yeniden kontrol iste.',
+        ),
+        REMOTE_SOURCE_STALE: t(
+          'Bu ekran paylaşımı değişti. Paylaşımı yenileyip tekrar kontrol iste.',
+        ),
+        REMOTE_SCREEN_REQUIRED: t('Ekran yayını henüz hazır değil. Biraz sonra yeniden dene.'),
+        PRESENTER_BUSY: t('Bu odada başka biri ekran paylaşıyor.'),
+        PRESENT_PERMISSION_REQUIRED: t('Oda rolün ekran paylaşma izni vermiyor.'),
+        VOICE_CHANNEL_REQUIRED: t('Önce bir ses odası seç.'),
+        ROOM_ACCESS_DENIED: t(
           'Ses odasına erişimin değişti. Üyeliğin doğrulandıktan sonra yeniden katıl.',
-        SCREEN_LEASE_STALE: 'Sunum sahibi değişti. Odayı yenileyip yeniden dene.',
-        SCREEN_RESERVATION_STALE: 'Devir süresi doldu. Yeniden sunum isteği gönder.',
-        SCREEN_HANDOFF_PENDING: 'Başka bir ekran devri devam ediyor.',
-        SCREEN_REQUEST_EXISTS: 'Bekleyen bir sunum talebin zaten var.',
-        SCREEN_REQUEST_STALE: 'Sunum talebi sona erdi veya artık kullanılamıyor.',
-        SCREEN_PRESENTER_REQUIRED: 'Bu talebi yalnızca mevcut sunum sahibi yanıtlayabilir.',
-        SCREEN_REQUEST_OWNER_REQUIRED: 'Yalnızca kendi sunum talebini iptal edebilirsin.',
-        ALREADY_PRESENTER: 'Zaten ekran paylaşıyorsun.',
-        JOIN_VOICE_FIRST: 'Sunum istemeden önce ses odasına katıl.',
-        MOVE_MEMBERS_REQUIRED: 'Bu odadaki kişileri taşıma veya sesten çıkarma yetkin yok.',
-        MEMBER_NOT_IN_ROOM: 'Bu kişi artık bu odada değil.',
-        SCREEN_REQUEST_LIMIT: 'Çok fazla sunum talebi var. Biraz sonra yeniden dene.',
+        ),
+        SCREEN_LEASE_STALE: t('Sunum sahibi değişti. Odayı yenileyip yeniden dene.'),
+        SCREEN_RESERVATION_STALE: t('Devir süresi doldu. Yeniden sunum isteği gönder.'),
+        SCREEN_HANDOFF_PENDING: t('Başka bir ekran devri devam ediyor.'),
+        SCREEN_REQUEST_EXISTS: t('Bekleyen bir sunum talebin zaten var.'),
+        SCREEN_REQUEST_STALE: t('Sunum talebi sona erdi veya artık kullanılamıyor.'),
+        SCREEN_PRESENTER_REQUIRED: t('Bu talebi yalnızca mevcut sunum sahibi yanıtlayabilir.'),
+        SCREEN_REQUEST_OWNER_REQUIRED: t('Yalnızca kendi sunum talebini iptal edebilirsin.'),
+        ALREADY_PRESENTER: t('Zaten ekran paylaşıyorsun.'),
+        JOIN_VOICE_FIRST: t('Sunum istemeden önce ses odasına katıl.'),
+        MOVE_MEMBERS_REQUIRED: t('Bu odadaki kişileri taşıma veya sesten çıkarma yetkin yok.'),
+        MEMBER_NOT_IN_ROOM: t('Bu kişi artık bu odada değil.'),
+        SCREEN_REQUEST_LIMIT: t('Çok fazla sunum talebi var. Biraz sonra yeniden dene.'),
       };
       if (typeof value?.error === 'string' && Object.hasOwn(reasons, value.error))
         throw new SocialInputError(reasons[value.error]);
@@ -1315,22 +1330,22 @@ export async function setupCommunity(
       },
     );
     const valid = () => current === client && current.getToken() === token;
-    if (!valid()) throw new SocialInputError('Oturum değişti.');
+    if (!valid()) throw new SocialInputError(t('Oturum değişti.'));
     if (!response.ok) {
       const error = (await response.json().catch(() => null))?.error;
       const messages: Record<string, string> = {
-        SOUNDBOARD_NOT_CONFIGURED: 'Sunucunun topluluk sesleri henüz yapılandırılmadı.',
-        SOUNDBOARD_UPLOAD_DENIED: 'Bu odada ses ekleme iznin yok.',
-        SOUNDBOARD_DELETE_DENIED: 'Yalnızca kendi sesini kaldırabilirsin.',
-        SOUNDBOARD_FULL: 'Toplulukta en fazla 32 ses saklanabilir.',
-        SOUNDBOARD_NOT_FOUND: 'Bu ses kaldırılmış.',
-        SOUNDBOARD_INVALID_AUDIO: 'En fazla 8 saniyelik mono veya stereo ses seç.',
+        SOUNDBOARD_NOT_CONFIGURED: t('Sunucunun topluluk sesleri henüz yapılandırılmadı.'),
+        SOUNDBOARD_UPLOAD_DENIED: t('Bu odada ses ekleme iznin yok.'),
+        SOUNDBOARD_DELETE_DENIED: t('Yalnızca kendi sesini kaldırabilirsin.'),
+        SOUNDBOARD_FULL: t('Toplulukta en fazla 32 ses saklanabilir.'),
+        SOUNDBOARD_NOT_FOUND: t('Bu ses kaldırılmış.'),
+        SOUNDBOARD_INVALID_AUDIO: t('En fazla 8 saniyelik mono veya stereo ses seç.'),
       };
-      throw new SocialInputError(messages[error] ?? 'Topluluk sesleri alınamadı. Yeniden dene.');
+      throw new SocialInputError(messages[error] ?? t('Topluluk sesleri alınamadı. Yeniden dene.'));
     }
     if (method === 'GET' && clip) {
       const reader = response.body?.getReader();
-      if (!reader) throw new SocialInputError('Ses dosyası alınamadı.');
+      if (!reader) throw new SocialInputError(t('Ses dosyası alınamadı.'));
       const chunks: Buffer[] = [];
       let size = 0;
       try {
@@ -1338,17 +1353,17 @@ export async function setupCommunity(
           const value = await reader.read();
           if (value.done) break;
           size += value.value.byteLength;
-          if (size > 2_000_000) throw new SocialInputError('Ses dosyası çok büyük.');
+          if (size > 2_000_000) throw new SocialInputError(t('Ses dosyası çok büyük.'));
           chunks.push(Buffer.from(value.value));
         }
       } finally {
         await reader.cancel().catch(() => {});
       }
-      if (!valid()) throw new SocialInputError('Oturum değişti.');
+      if (!valid()) throw new SocialInputError(t('Oturum değişti.'));
       return Buffer.concat(chunks).toString('base64');
     }
     const value = await response.json();
-    if (!valid()) throw new SocialInputError('Oturum değişti.');
+    if (!valid()) throw new SocialInputError(t('Oturum değişti.'));
     return method === 'GET'
       ? soundboardCatalogSchema.parse(value)
       : method === 'POST'
@@ -1389,30 +1404,35 @@ export async function setupCommunity(
       },
     );
     const valid = () => current === client && current.getToken() === token;
-    if (!valid()) throw new SocialInputError('Oturum değişti.');
+    if (!valid()) throw new SocialInputError(t('Oturum değişti.'));
     if (!response.ok) {
       const error = (await response.json().catch(() => null))?.error;
       const messages: Record<string, string> = {
-        PERSONAL_SOUNDS_NOT_CONFIGURED: 'Bu sunucuda giriş sesleri henüz açılmadı.',
-        PERSONAL_SOUND_UPLOADS_DISABLED:
+        PERSONAL_SOUNDS_NOT_CONFIGURED: t('Bu sunucuda giriş sesleri henüz açılmadı.'),
+        PERSONAL_SOUND_UPLOADS_DISABLED: t(
           'Sunucu yöneticisi ses yüklemeyi kapattı. Tayfa seslerinden birini seçebilirsin.',
-        PERSONAL_SOUND_INVALID_AUDIO: 'Ses dosyası okunamadı. En fazla 4 saniyelik bir kesit seç.',
-        PERSONAL_SOUND_SILENT: 'Seçtiğin kesit neredeyse sessiz. Başka bir bölüm seç.',
-        PERSONAL_SOUND_LIBRARY_FULL: `En fazla ${PERSONAL_SOUND_LIMITS.maxSounds} ses saklayabilirsin. Önce birini sil.`,
-        PERSONAL_SOUND_STORAGE_LIMIT: 'Sunucudaki ses alanı doldu. Yöneticiye haber ver.',
-        PERSONAL_SOUND_NOT_FOUND: 'Bu ses artık yok.',
+        ),
+        PERSONAL_SOUND_INVALID_AUDIO: t(
+          'Ses dosyası okunamadı. En fazla 4 saniyelik bir kesit seç.',
+        ),
+        PERSONAL_SOUND_SILENT: t('Seçtiğin kesit neredeyse sessiz. Başka bir bölüm seç.'),
+        PERSONAL_SOUND_LIBRARY_FULL: t('En fazla {count} ses saklayabilirsin. Önce birini sil.', {
+          count: PERSONAL_SOUND_LIMITS.maxSounds,
+        }),
+        PERSONAL_SOUND_STORAGE_LIMIT: t('Sunucudaki ses alanı doldu. Yöneticiye haber ver.'),
+        PERSONAL_SOUND_NOT_FOUND: t('Bu ses artık yok.'),
       };
       const fallback = {
-        GET: 'Giriş sesleri alınamadı. Yeniden dene.',
-        POST: 'Ses kaydedilemedi. Yeniden dene.',
-        PUT: 'Seçimin kaydedilemedi. Yeniden dene.',
-        DELETE: 'Ses silinemedi. Yeniden dene.',
+        GET: t('Giriş sesleri alınamadı. Yeniden dene.'),
+        POST: t('Ses kaydedilemedi. Yeniden dene.'),
+        PUT: t('Seçimin kaydedilemedi. Yeniden dene.'),
+        DELETE: t('Ses silinemedi. Yeniden dene.'),
       }[method];
       throw new SocialInputError(messages[error] ?? fallback);
     }
     if (audio) {
       const reader = response.body?.getReader();
-      if (!reader) throw new SocialInputError('Ses dosyası alınamadı.');
+      if (!reader) throw new SocialInputError(t('Ses dosyası alınamadı.'));
       const chunks: Buffer[] = [];
       let size = 0;
       try {
@@ -1421,17 +1441,17 @@ export async function setupCommunity(
           if (value.done) break;
           size += value.value.byteLength;
           if (size > PERSONAL_SOUND_LIMITS.maxClipBytes)
-            throw new SocialInputError('Ses dosyası çok büyük.');
+            throw new SocialInputError(t('Ses dosyası çok büyük.'));
           chunks.push(Buffer.from(value.value));
         }
       } finally {
         await reader.cancel().catch(() => {});
       }
-      if (!valid()) throw new SocialInputError('Oturum değişti.');
+      if (!valid()) throw new SocialInputError(t('Oturum değişti.'));
       return Buffer.concat(chunks).toString('base64');
     }
     const value = await response.json();
-    if (!valid()) throw new SocialInputError('Oturum değişti.');
+    if (!valid()) throw new SocialInputError(t('Oturum değişti.'));
     return value;
   }
   const soundPath = (soundId: unknown) => encodeURIComponent(personalSoundIdSchema.parse(soundId));
@@ -1486,49 +1506,60 @@ export async function setupCommunity(
     );
     const value = await response.json().catch(() => null);
     if (current !== client || current.getToken() !== token)
-      throw new SocialInputError('Oturum değişti.');
+      throw new SocialInputError(t('Oturum değişti.'));
     if (!response.ok) {
       const messages: Record<string, string> = {
-        MUSIC_SPOTIFY_PLAYLIST_UNAVAILABLE:
+        MUSIC_SPOTIFY_PLAYLIST_UNAVAILABLE: t(
           'Spotify listesi okunamadı. Listenin herkese açık olduğundan emin olup yeniden dene.',
-        MUSIC_SPOTIFY_PLAYLIST_EMPTY:
+        ),
+        MUSIC_SPOTIFY_PLAYLIST_EMPTY: t(
           'Spotify listesinin herkese açık görünümünde şarkı bulunamadı. Özel veya boş bir liste olabilir.',
-        MUSIC_SPOTIFY_PLAYLIST_LIMIT:
+        ),
+        MUSIC_SPOTIFY_PLAYLIST_LIMIT: t(
           'Spotify bu listenin tamamını göstermeyebilir. Eksik aktarmamak için 100 parçadan az bir liste kullan.',
-        MUSIC_SPOTIFY_PLAYLIST_INCOMPLETE:
+        ),
+        MUSIC_SPOTIFY_PLAYLIST_INCOMPLETE: t(
           'Spotify listesindeki bazı kayıtların şarkı bilgisi okunamadı. Liste eklenmedi; yerel dosya veya podcast içermeyen bir liste dene.',
-        MUSIC_QUEUE_CHANGED: 'Kuyruk değişti. Güncel sırayla yeniden dene.',
-        MUSIC_HISTORY_MISSING: 'Geçmiş liste bulunamadı.',
-        MUSIC_HISTORY_UNAVAILABLE: 'DJ geçmişi kaydedilemedi. Müzik bağlantısı korunuyor.',
-        MUSIC_SEARCH_BUSY: 'Arama meşgul. Biraz sonra yeniden dene.',
-        MUSIC_SEARCH_UNAVAILABLE: 'Arama şu anda kullanılamıyor. Yeniden dene.',
-        MUSIC_SEEK_INVALID: 'Bu parçanın süresi doğrulanmadı veya seçilen konum geçersiz.',
-        MUSIC_YOUTUBE_ACCESS_REQUIRED:
+        ),
+        MUSIC_QUEUE_CHANGED: t('Kuyruk değişti. Güncel sırayla yeniden dene.'),
+        MUSIC_HISTORY_MISSING: t('Geçmiş liste bulunamadı.'),
+        MUSIC_HISTORY_UNAVAILABLE: t('DJ geçmişi kaydedilemedi. Müzik bağlantısı korunuyor.'),
+        MUSIC_SEARCH_BUSY: t('Arama meşgul. Biraz sonra yeniden dene.'),
+        MUSIC_SEARCH_UNAVAILABLE: t('Arama şu anda kullanılamıyor. Yeniden dene.'),
+        MUSIC_SEEK_INVALID: t('Bu parçanın süresi doğrulanmadı veya seçilen konum geçersiz.'),
+        MUSIC_YOUTUBE_ACCESS_REQUIRED: t(
           'Sunucunun YouTube ses erişimi doğrulanamadı. DJ şu anda bu kaynaktan çalamıyor.',
-        MUSIC_YOUTUBE_UNAVAILABLE: 'YouTube parçası şu anda alınamıyor. Yeniden dene.',
-        MUSIC_SOURCE_TIMEOUT: 'Parça yüklenmesi zaman aşımına uğradı. Yeniden dene.',
-        MUSIC_NOT_CONFIGURED: 'Müzik botu sunucuda yapılandırılmadı.',
-        MUSIC_SOURCE_FAILED: 'Geçerli bir YouTube, Spotify, SoundCloud veya ses bağlantısı gir.',
-        MUSIC_MIRROR_METADATA_UNAVAILABLE:
+        ),
+        MUSIC_YOUTUBE_UNAVAILABLE: t('YouTube parçası şu anda alınamıyor. Yeniden dene.'),
+        MUSIC_SOURCE_TIMEOUT: t('Parça yüklenmesi zaman aşımına uğradı. Yeniden dene.'),
+        MUSIC_NOT_CONFIGURED: t('Müzik botu sunucuda yapılandırılmadı.'),
+        MUSIC_SOURCE_FAILED: t('Geçerli bir YouTube, Spotify, SoundCloud veya ses bağlantısı gir.'),
+        MUSIC_MIRROR_METADATA_UNAVAILABLE: t(
           'Şarkı bilgisi alınamadı. Herkese açık tek şarkı bağlantısını yeniden dene.',
-        MUSIC_MIRROR_SINGLE_TRACK_ONLY:
+        ),
+        MUSIC_MIRROR_SINGLE_TRACK_ONLY: t(
           'Spotify şarkısı veya herkese açık çalma listesi; SoundCloud için tek şarkı bağlantısı gir. Albümler desteklenmiyor.',
-        MUSIC_MIRROR_NOT_FOUND:
+        ),
+        MUSIC_MIRROR_NOT_FOUND: t(
           'Spotify/SoundCloud parçasıyla aynı sanatçı ve sürede bir YouTube kaydı bulunamadı. Şarkı adını arayıp uygun sonucu seçebilirsin.',
-        MUSIC_JOIN_FIRST: 'Önce ses odasına katıl.',
-        MUSIC_PERMISSION_DENIED: 'Bu odada müzik kontrol yetkin yok.',
-        MUSIC_QUEUE_FULL: 'Kuyruk dolu. En fazla 100 parça eklenebilir.',
-        MUSIC_CACHE_LIMIT: 'Müzik dosyaları toplam boyut sınırını aştı.',
-        MUSIC_TRANSPORT_UNAVAILABLE: 'Müzik botu ses odasına bağlanamadı.',
-        MUSIC_CURRENT_ITEM: 'Çalan parçayı kaldırmadan önce başka parçaya geç.',
+        ),
+        MUSIC_JOIN_FIRST: t('Önce ses odasına katıl.'),
+        MUSIC_PERMISSION_DENIED: t('Bu odada müzik kontrol yetkin yok.'),
+        MUSIC_QUEUE_FULL: t('Kuyruk dolu. En fazla 100 parça eklenebilir.'),
+        MUSIC_CACHE_LIMIT: t('Müzik dosyaları toplam boyut sınırını aştı.'),
+        MUSIC_TRANSPORT_UNAVAILABLE: t('Müzik botu ses odasına bağlanamadı.'),
+        MUSIC_CURRENT_ITEM: t('Çalan parçayı kaldırmadan önce başka parçaya geç.'),
       };
       const song = musicFailedSongSchema.safeParse(value?.song);
       if (value?.error === 'MUSIC_MIRROR_NOT_FOUND' && song.success)
         throw new SocialInputError(
-          `Spotify/SoundCloud şarkısı “${song.data.title}” (${song.data.artists.join(', ')}) için aynı sanatçı ve sürede bir YouTube kaydı bulunamadı. Şarkı adını arayıp uygun sonucu seçebilirsin.`,
+          t(
+            'Spotify/SoundCloud şarkısı “{title}” ({artists}) için aynı sanatçı ve sürede bir YouTube kaydı bulunamadı. Şarkı adını arayıp uygun sonucu seçebilirsin.',
+            { title: song.data.title, artists: song.data.artists.join(', ') },
+          ),
         );
       throw new SocialInputError(
-        messages[value?.error] ?? 'DJ sunucusu yanıt vermedi. Biraz sonra yeniden dene.',
+        messages[value?.error] ?? t('DJ sunucusu yanıt vermedi. Biraz sonra yeniden dene.'),
       );
     }
     return search !== undefined
@@ -1551,34 +1582,46 @@ export async function setupCommunity(
     );
     const value = await response.json();
     if (current !== client || current.getToken() !== token)
-      throw new SocialInputError('Oturum değişti.');
+      throw new SocialInputError(t('Oturum değişti.'));
     if (!response.ok) {
       const errors: Record<string, string> = {
-        MUSIC_SPOTIFY_PLAYLIST_UNAVAILABLE:
+        MUSIC_SPOTIFY_PLAYLIST_UNAVAILABLE: t(
           'Spotify listesi okunamadı. Listenin herkese açık olduğundan emin olup yeniden dene.',
-        MUSIC_SPOTIFY_PLAYLIST_EMPTY:
+        ),
+        MUSIC_SPOTIFY_PLAYLIST_EMPTY: t(
           'Spotify listesinin herkese açık görünümünde şarkı bulunamadı. Özel veya boş bir liste olabilir.',
-        MUSIC_SPOTIFY_PLAYLIST_LIMIT:
+        ),
+        MUSIC_SPOTIFY_PLAYLIST_LIMIT: t(
           'Spotify bu listenin tamamını göstermeyebilir. Eksik aktarmamak için 100 parçadan az bir liste kullan.',
-        MUSIC_SPOTIFY_PLAYLIST_INCOMPLETE:
+        ),
+        MUSIC_SPOTIFY_PLAYLIST_INCOMPLETE: t(
           'Spotify listesindeki bazı kayıtların şarkı bilgisi okunamadı. Liste eklenmedi; yerel dosya veya podcast içermeyen bir liste dene.',
-        MUSIC_PLAYLIST_CHANGED: 'Liste başka biri tarafından değiştirildi. Yenileyip tekrar dene.',
-        MUSIC_PLAYLIST_EMPTY: 'Kaydedilebilecek parça yok.',
-        MUSIC_PLAYLISTS_NOT_CONFIGURED: 'Ortak listeler sunucuda henüz açılmadı.',
-        MUSIC_NOT_CONFIGURED: 'Sunucunun DJ hizmeti henüz açılmadı.',
-        MUSIC_PERMISSION_DENIED:
+        ),
+        MUSIC_PLAYLIST_CHANGED: t(
+          'Liste başka biri tarafından değiştirildi. Yenileyip tekrar dene.',
+        ),
+        MUSIC_PLAYLIST_EMPTY: t('Kaydedilebilecek parça yok.'),
+        MUSIC_PLAYLISTS_NOT_CONFIGURED: t('Ortak listeler sunucuda henüz açılmadı.'),
+        MUSIC_NOT_CONFIGURED: t('Sunucunun DJ hizmeti henüz açılmadı.'),
+        MUSIC_PERMISSION_DENIED: t(
           'Bu odanın listelerine erişimin yok ya da listeleri değiştirmek için odada konuşma iznin yok.',
-        AUTH_REQUIRED: 'Oturum doğrulanamadı. Bağlantıyı yenileyip yeniden dene.',
-        MUSIC_PLAYLIST_LIMIT:
+        ),
+        AUTH_REQUIRED: t('Oturum doğrulanamadı. Bağlantıyı yenileyip yeniden dene.'),
+        MUSIC_PLAYLIST_LIMIT: t(
           'Topluluğun liste sınırına ulaşıldı. Kullanılmayan listeleri veya parçaları kaldır.',
-        MUSIC_PLAYLIST_INVALID:
+        ),
+        MUSIC_PLAYLIST_INVALID: t(
           'Liste bilgisi geçersiz. Desteklenen YouTube/Spotify bağlantılarını ve parça sınırını kontrol et.',
-        MUSIC_PLAYLIST_SOURCE_UNAVAILABLE:
+        ),
+        MUSIC_PLAYLIST_SOURCE_UNAVAILABLE: t(
           'Çalma listesi veya DJ geçmişi alınamadı. Kaynak erişimini kontrol edip yeniden dene.',
+        ),
       };
       throw new SocialInputError(
         errors[value?.error] ??
-          'Liste işleminin sonucu doğrulanamadı. Yenileyip kaydı kontrol et; değişiklik otomatik tekrarlanmadı.',
+          t(
+            'Liste işleminin sonucu doğrulanamadı. Yenileyip kaydı kontrol et; değişiklik otomatik tekrarlanmadı.',
+          ),
       );
     }
     return playlistCatalogSchema.parse(value);
@@ -1592,16 +1635,16 @@ export async function setupCommunity(
       room = id.parse(channelId),
       track = z.string().uuid().parse(trackId);
     if (lyricsPending)
-      throw new SocialInputError('Şarkı sözleri yükleniyor. Biraz sonra yeniden dene.');
+      throw new SocialInputError(t('Şarkı sözleri yükleniyor. Biraz sonra yeniden dene.'));
     lyricsPending = true;
     try {
       const snapshot = musicSnapshotSchema.parse(await musicRequest(room));
-      if (snapshot.currentId !== track) throw new SocialInputError('Çalan parça değişti.');
+      if (snapshot.currentId !== track) throw new SocialInputError(t('Çalan parça değişti.'));
       const item = snapshot.queue.find((item) => item.id === track);
-      if (!item) throw new SocialInputError('Çalan parça bulunamadı.');
+      if (!item) throw new SocialInputError(t('Çalan parça bulunamadı.'));
       const result = await loadMusicLyrics(item.title, item.durationSec);
       if (client !== current || current.getToken() !== token)
-        throw new SocialInputError('Oturum değişti.');
+        throw new SocialInputError(t('Oturum değişti.'));
       return result;
     } finally {
       lyricsPending = false;
@@ -1617,8 +1660,8 @@ export async function setupCommunity(
     );
     const value = await response.json();
     if (current !== client || current.getToken() !== token)
-      throw new SocialInputError('Oturum değişti.');
-    if (!response.ok) throw new SocialInputError('DJ geçmişi alınamadı.');
+      throw new SocialInputError(t('Oturum değişti.'));
+    if (!response.ok) throw new SocialInputError(t('DJ geçmişi alınamadı.'));
     return musicHistorySchema.parse(value);
   });
   handle('rooms:music-snapshot', (channelId) => musicRequest(id.parse(channelId)));
@@ -1663,7 +1706,7 @@ export async function setupCommunity(
     } catch (error) {
       if (error instanceof z.ZodError) throw error;
       throw new SocialInputError(
-        error instanceof Error ? error.message : 'Arama isteği tamamlanamadı.',
+        error instanceof Error ? error.message : t('Arama isteği tamamlanamadı.'),
       );
     }
     const call =
@@ -1678,7 +1721,7 @@ export async function setupCommunity(
     ) {
       if (call && call.state !== 'ended')
         await requestDmCall(current, 'respond', { callId: call.id, action: 'end' }).catch(() => {});
-      throw new SocialInputError('Oturum değişti. Aramayı yeniden başlat.');
+      throw new SocialInputError(t('Oturum değişti. Aramayı yeniden başlat.'));
     }
     if (path !== 'grant' && generation === dmNativeEpoch) {
       if (call && call.state !== 'ended') pendingDmCall = { client: current, id: call.id };
@@ -1742,12 +1785,12 @@ export async function setupCommunity(
     if (!response.ok)
       throw new SocialInputError(
         value?.error === 'GIFS_NOT_CONFIGURED'
-          ? 'GIF araması için sunucuya KLIPY anahtarı eklenmeli.'
+          ? t('GIF araması için sunucuya KLIPY anahtarı eklenmeli.')
           : response.status === 404
-            ? 'Bu sunucu GIF aramasını henüz desteklemiyor.'
+            ? t('Bu sunucu GIF aramasını henüz desteklemiyor.')
             : response.status === 429
-              ? 'Çok fazla GIF araması yapıldı. Biraz bekleyip yeniden dene.'
-              : 'GIF servisine şu an ulaşılamıyor. Biraz sonra yeniden dene.',
+              ? t('Çok fazla GIF araması yapıldı. Biraz bekleyip yeniden dene.')
+              : t('GIF servisine şu an ulaşılamıyor. Biraz sonra yeniden dene.'),
       );
     return z
       .object({
@@ -1782,7 +1825,7 @@ export async function setupCommunity(
       await broker('moderate', body);
     } catch (error) {
       if (error instanceof StoatError && error.status === 404)
-        throw new SocialInputError('Sunucu bu işlemi henüz desteklemiyor.');
+        throw new SocialInputError(t('Sunucu bu işlemi henüz desteklemiyor.'));
       throw error;
     }
   });
@@ -1825,13 +1868,13 @@ export async function setupCommunity(
         } catch (error) {
           throw new SocialInputError(
             error instanceof z.ZodError
-              ? 'Kontrol isteğinin bilgileri geçersiz.'
+              ? t('Kontrol isteğinin bilgileri geçersiz.')
               : error instanceof Error
                 ? error.message === 'REMOTE_CONTROL_INACTIVE' ||
                   error.message === 'REMOTE_APPROVAL_STALE'
-                  ? 'Kontrol oturumu sona erdi. Yeniden kontrol iste.'
+                  ? t('Kontrol oturumu sona erdi. Yeniden kontrol iste.')
                   : error.message
-                : 'Kontrol işlemi tamamlanamadı.',
+                : t('Kontrol işlemi tamamlanamadı.'),
           );
         }
       }),

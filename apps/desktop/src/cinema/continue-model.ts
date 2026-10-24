@@ -1,4 +1,5 @@
 import type { CinemaContinueItem } from '../../../../packages/community-cinema/src/types';
+import { locale, t } from '../i18n';
 import { minutesLabel } from './hall-model';
 
 const HIDDEN_KEY = 'rooms.cinema.continue-hidden';
@@ -9,13 +10,21 @@ const DAY_MS = 86_400_000;
 /** `S1 B2 · Bölüm adı` for an episode; how long is left of a film. */
 export function continueLine(item: CinemaContinueItem) {
   if (item.episode)
-    return [`S${item.episode.season} B${item.episode.episode}`, item.episode.title]
+    return [
+      t('S{season} B{episode}', {
+        season: item.episode.season,
+        episode: item.episode.episode,
+      }),
+      item.episode.title,
+    ]
       .filter(Boolean)
       .join(' · ');
-  return item.remainingSec ? `${minutesLabel(item.remainingSec * 1000)} kaldı` : 'Kaldığın yerden';
+  return item.remainingSec
+    ? t('{time} kaldı', { time: minutesLabel(item.remainingSec * 1000) })
+    : t('Kaldığın yerden');
 }
 
-const dateFormat = new Intl.DateTimeFormat('tr-TR', {
+const dateFormat = new Intl.DateTimeFormat(locale, {
   day: '2-digit',
   month: '2-digit',
   year: 'numeric',

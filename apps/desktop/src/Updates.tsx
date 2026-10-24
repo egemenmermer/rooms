@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowDownToLine, RefreshCw, ShieldCheck } from 'lucide-react';
 import { Toggle } from '@rooms/design';
-import { tr, uiError } from './i18n';
+import { t, uiError } from './i18n';
 type UpdateStatus = Awaited<ReturnType<NonNullable<Window['rooms']>['updates']['status']>>;
 const names: Record<UpdateStatus['state'], string> = {
-  unavailable: 'Dağıtım bekleniyor',
-  idle: 'Denetlemeye hazır',
-  checking: 'Güncelleme aranıyor',
-  available: 'Yeni sürüm hazır',
-  downloading: 'İndiriliyor',
-  verifying: 'İmza doğrulanıyor',
-  ready: 'Yüklemeye hazır',
-  error: 'Güncelleme tamamlanamadı',
+  unavailable: t('Dağıtım bekleniyor'),
+  idle: t('Denetlemeye hazır'),
+  checking: t('Güncelleme aranıyor'),
+  available: t('Yeni sürüm hazır'),
+  downloading: t('İndiriliyor'),
+  verifying: t('İmza doğrulanıyor'),
+  ready: t('Yüklemeye hazır'),
+  error: t('Güncelleme tamamlanamadı'),
 };
 export function DesktopUpdates() {
   const [status, setStatus] = useState<UpdateStatus | null>(null),
@@ -42,15 +42,13 @@ export function DesktopUpdates() {
     <section className="desktop-updates">
       <div className="settings-row">
         <div>
-          <h4>{tr('İmzalı güncellemeler')}</h4>
-          <p>
-            {tr('Yeni sürümleri isteğinle denetle; kurulumdan önce yayıncı imzası doğrulanır.')}
-          </p>
+          <h4>{t('İmzalı güncellemeler')}</h4>
+          <p>{t('Yeni sürümleri isteğinle denetle; kurulumdan önce yayıncı imzası doğrulanır.')}</p>
         </div>
         <Toggle
           value={status?.enabled ?? false}
           disabled={!status?.configured || working}
-          label={tr('İmzalı güncellemeleri etkinleştir')}
+          label={t('İmzalı güncellemeleri etkinleştir')}
           onChange={(value) => void run(() => window.rooms!.updates.setOptIn(value))}
         />
       </div>
@@ -58,18 +56,18 @@ export function DesktopUpdates() {
         <ShieldCheck size={19} />
         <div>
           <strong>
-            {tr(names[status?.state ?? 'unavailable'])}
+            {names[status?.state ?? 'unavailable']}
             {status?.version ? ` · ${status.version}` : ''}
           </strong>
           <p>
             {status?.reason
               ? uiError(status.reason)
               : !status?.enabled
-                ? tr('Denetlemek için imzalı güncellemeleri etkinleştir.')
-                : tr('Güncelleme kurulumu açık uygulamayı yeniden başlatır.')}
+                ? t('Denetlemek için imzalı güncellemeleri etkinleştir.')
+                : t('Güncelleme kurulumu açık uygulamayı yeniden başlatır.')}
           </p>
           {status?.state === 'downloading' && (
-            <progress max={100} value={status.progress} aria-label={tr('İndirme ilerlemesi')} />
+            <progress max={100} value={status.progress} aria-label={t('İndirme ilerlemesi')} />
           )}
         </div>
       </div>
@@ -79,13 +77,13 @@ export function DesktopUpdates() {
           disabled={!status?.configured || !status.enabled || working}
           title={
             !status?.configured
-              ? tr('İmzalı dağıtım ve güncelleme adresi yapılandırılmalı.')
+              ? t('İmzalı dağıtım ve güncelleme adresi yapılandırılmalı.')
               : undefined
           }
           onClick={() => void run(() => window.rooms!.updates.check())}
         >
           <RefreshCw size={15} />
-          {tr('Güncellemeleri denetle')}
+          {t('Güncellemeleri denetle')}
         </button>
         {status?.state === 'available' && (
           <button
@@ -94,7 +92,7 @@ export function DesktopUpdates() {
             onClick={() => void run(() => window.rooms!.updates.download())}
           >
             <ArrowDownToLine size={15} />
-            {tr('Güncellemeyi indir')}
+            {t('Güncellemeyi indir')}
           </button>
         )}
         {status?.state === 'ready' && (
@@ -103,7 +101,7 @@ export function DesktopUpdates() {
             disabled={busy || !status.enabled}
             onClick={() => void run(() => window.rooms!.updates.install())}
           >
-            {tr('Yükle ve yeniden başlat')}
+            {t('Yükle ve yeniden başlat')}
           </button>
         )}
       </div>

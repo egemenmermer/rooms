@@ -23,6 +23,7 @@ import {
   suggestCommands,
   type HallResume,
 } from './hall-model';
+import { t } from '../i18n';
 
 export type HallActions = ReturnType<typeof useHallState>;
 
@@ -48,10 +49,10 @@ export function useHallState({
   const isHost = !!me && primary?.hostUserId === me;
   const { current, upcoming } = hallProgress(room);
   const directReason = !connected
-    ? 'Salon hizmeti bağlı değil.'
+    ? t('Salon hizmeti bağlı değil.')
     : !roleControl
-      ? 'Bu salonda oynatmayı yönetme iznin yok.'
-      : 'Kumanda ev sahibinde. Sıraya öneri ekleyebilirsin.';
+      ? t('Bu salonda oynatmayı yönetme iznin yok.')
+      : t('Kumanda ev sahibinde. Sıraya öneri ekleyebilirsin.');
   const send = activity.send;
   const sendAll = useCallback(
     async (commands: ActivityCommand[]) => {
@@ -96,7 +97,7 @@ export function useHallState({
           await sendAll(openNowCommands(roomRef.current, media, itemId));
         } else {
           await sendAll(suggestCommands(roomRef.current, media, itemId));
-          if (!options.quiet) notify(`${label} sıraya önerildi.`);
+          if (!options.quiet) notify(t('{label} sıraya önerildi.', { label }));
         }
       } catch (error) {
         if (!options.quiet) notify(cinemaErrorText(error));
@@ -128,12 +129,16 @@ export function useHallState({
         const plan = resumeCommands(roomRef.current, target, crypto.randomUUID(), canDirect);
         await sendAll(plan.open);
         if (plan.suggested) {
-          notify(`${resumeMedia(target).title} sıraya önerildi; açılınca baştan başlar.`);
+          notify(
+            t('{title} sıraya önerildi; açılınca baştan başlar.', {
+              title: resumeMedia(target).title,
+            }),
+          );
           return;
         }
         if (!plan.seek) return;
         if (!(await showing(target.ref))) {
-          notify('Salon bu arada başka bir şeye geçti; kaldığı yere sarılmadı.');
+          notify(t('Salon bu arada başka bir şeye geçti; kaldığı yere sarılmadı.'));
           return;
         }
         await send(plan.seek);
@@ -152,10 +157,11 @@ export function useHallState({
         {
           kind: 'community-media',
           ref: episode.ref,
-          title: `${series.title} · ${episode.season}. Sezon ${episode.episode}. Bölüm`.slice(
-            0,
-            240,
-          ),
+          title: t('{title} · {season}. Sezon {episode}. Bölüm', {
+            title: series.title,
+            season: episode.season,
+            episode: episode.episode,
+          }).slice(0, 240),
           live: false,
           art: episode.art && /^[a-f0-9]{16,64}$/.test(episode.art) ? episode.art : null,
         },
@@ -167,10 +173,10 @@ export function useHallState({
   const nameOf = useCallback(
     (id: string) =>
       id === me
-        ? 'Sen'
+        ? t('Sen')
         : (room?.participants.find((p) => p.userId === id)?.displayName ??
           realtime.participants.find((p) => p.id === id)?.name ??
-          'Biri'),
+          t('Biri')),
     [room?.participants, realtime.participants, me],
   );
   return useMemo(

@@ -6,6 +6,7 @@ import {
   pushToTalkKeyFromEvent,
   serializePushToTalkKey,
 } from './push-to-talk-key';
+import { t } from './i18n';
 
 /** Records the next key combination; Escape alone cancels without changing the shortcut. */
 export function PushToTalkKeyField({
@@ -42,7 +43,7 @@ export function PushToTalkKeyField({
   return (
     <div className="ptt-key-field">
       <kbd aria-live="polite">
-        {capturing ? 'Tuşlara bas… (Esc vazgeç)' : formatPushToTalkKey(pushToTalkKey(value))}
+        {capturing ? t('Tuşlara bas… (Esc vazgeç)') : formatPushToTalkKey(pushToTalkKey(value))}
       </kbd>
       <button
         type="button"
@@ -50,7 +51,7 @@ export function PushToTalkKeyField({
         aria-pressed={capturing}
         onClick={() => setCapturing((current) => !current)}
       >
-        {capturing ? 'Vazgeç' : 'Değiştir'}
+        {capturing ? t('Vazgeç') : t('Değiştir')}
       </button>
       {!capturing && value !== DEFAULT_PUSH_TO_TALK_KEY && (
         <button
@@ -58,7 +59,7 @@ export function PushToTalkKeyField({
           className="button secondary"
           onClick={() => onChange(DEFAULT_PUSH_TO_TALK_KEY)}
         >
-          Varsayılan
+          {t('Varsayılan')}
         </button>
       )}
     </div>

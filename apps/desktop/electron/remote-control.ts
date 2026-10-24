@@ -10,6 +10,7 @@ import {
 } from '../../../packages/shared-contracts/src/remote-control';
 import { opsId } from '../../../packages/shared-contracts/src/hostops';
 import { RemoteInputGate } from './remote-input-gate';
+import { t } from '@rooms/i18n';
 interface NativeInput {
   status(): { supported: boolean; permission: boolean; active: boolean };
   begin(displayId: number, x: number, y: number, width: number, height: number): boolean;
@@ -196,15 +197,15 @@ export function setupRemoteControl(config: {
   const load = () => {
     if (native) return native;
     if (!['darwin', 'win32'].includes(process.platform))
-      throw Error('Uzaktan kontrol Mac ve Windows sürümlerinde kullanılabilir.');
+      throw Error(t('Uzaktan kontrol Mac ve Windows sürümlerinde kullanılabilir.'));
     const path = app.isPackaged
       ? join(process.resourcesPath, 'native', 'rooms-remote-input.node')
       : join(app.getAppPath(), 'dist-native', 'rooms-remote-input.node');
-    if (!existsSync(path)) throw Error('Bu sürümde yerel uzaktan kontrol modülü bulunmuyor.');
+    if (!existsSync(path)) throw Error(t('Bu sürümde yerel uzaktan kontrol modülü bulunmuyor.'));
     try {
       native = createRequire(join(app.getAppPath(), 'package.json'))(path) as NativeInput;
     } catch {
-      throw Error('Yerel kontrol modülü yüklenemedi. Uygulamayı yeniden başlat.');
+      throw Error(t('Yerel kontrol modülü yüklenemedi. Uygulamayı yeniden başlat.'));
     }
     return native;
   };
@@ -234,14 +235,14 @@ export function setupRemoteControl(config: {
   const select = async (value: unknown) => {
     const next = opsId.parse(value),
       person = config.identity();
-    if (!person.userId) throw Error('Önce topluluğa giriş yap.');
+    if (!person.userId) throw Error(t('Önce topluluğa giriş yap.'));
     if (channel !== next || !sameIdentity()) {
       const pending = scopeEpoch + 1;
       const stopping = stop(true);
       channel = next;
       owner = person;
       await stopping;
-      if (scopeEpoch !== pending) throw Error('Ekran veya hesap değişti.');
+      if (scopeEpoch !== pending) throw Error(t('Ekran veya hesap değişti.'));
       channel = next;
       owner = person;
     }
@@ -251,16 +252,16 @@ export function setupRemoteControl(config: {
     const started = Date.now();
     const value = remoteStateSchema.parse(await config.broker('remote/state', { channelId: id }));
     if (Date.now() - started > 1500)
-      throw Error('Bağlantı kontrol için fazla gecikiyor. Yeniden dene.');
+      throw Error(t('Bağlantı kontrol için fazla gecikiyor. Yeniden dene.'));
     return value;
   };
   const publicState = async (id: string) => {
     const expected = scopeEpoch;
     const value = await rawState(id);
-    if (expected !== scopeEpoch || channel !== id) throw Error('Oda değişti.');
+    if (expected !== scopeEpoch || channel !== id) throw Error(t('Oda değişti.'));
     if (!sameIdentity()) {
       await stop();
-      throw Error('Hesap değişti.');
+      throw Error(t('Hesap değişti.'));
     }
     if (gate.active()) {
       if (
@@ -291,7 +292,7 @@ export function setupRemoteControl(config: {
     try {
       load();
       if (!capture || !screen.getAllDisplays().some((d) => String(d.id) === capture.displayId))
-        throw Error('Uzaktan kontrol için bir pencere yerine tüm ekranını paylaş.');
+        throw Error(t('Uzaktan kontrol için bir pencere yerine tüm ekranını paylaş.'));
       await config.broker('remote/register', {
         channelId: id,
         trackId: z
@@ -304,12 +305,14 @@ export function setupRemoteControl(config: {
         supported: true,
         reason: native!.status().permission
           ? null
-          : 'Kontrol vermeden önce Tayfa için Erişilebilirlik ve Giriş İzleme izinlerini açmalısın.',
+          : t(
+              'Kontrol vermeden önce Tayfa için Erişilebilirlik ve Giriş İzleme izinlerini açmalısın.',
+            ),
       };
     } catch (error) {
       return {
         supported: false,
-        reason: error instanceof Error ? error.message : 'Yerel kontrol kullanılamıyor.',
+        reason: error instanceof Error ? error.message : t('Yerel kontrol kullanılamıyor.'),
       };
     }
   });
@@ -329,7 +332,7 @@ export function setupRemoteControl(config: {
     if (sameIdentity() && channel === id) requested = value.requestId;
   });
   config.handle('rooms:remote-decide', async (room, requestId, approve) => {
-    if (deciding) throw Error('Bir kontrol isteği zaten yanıtlanıyor.');
+    if (deciding) throw Error(t('Bir kontrol isteği zaten yanıtlanıyor.'));
     deciding = true;
     try {
       const id = await select(room),
@@ -343,7 +346,7 @@ export function setupRemoteControl(config: {
           (r) => r.id === request && r.source.publisherId === scope.userId,
         );
       if (!pending || !capture || pending.source.epoch !== capture.epoch)
-        throw Error('Kontrol isteği veya paylaşılan ekran değişti.');
+        throw Error(t('Kontrol isteği veya paylaşılan ekran değişti.'));
       if (!allow) {
         await config.broker('remote/decide', { channelId: id, requestId: request, approve: false });
         return;
@@ -351,20 +354,27 @@ export function setupRemoteControl(config: {
       const module = load();
       if (!module.status().permission)
         throw Error(
-          'Sistem Ayarları → Gizlilik ve Güvenlik bölümünde Tayfa için Erişilebilirlik ve Giriş İzleme izinlerini aç.',
+          t(
+            'Sistem Ayarları → Gizlilik ve Güvenlik bölümünde Tayfa için Erişilebilirlik ve Giriş İzleme izinlerini aç.',
+          ),
         );
       const display = screen.getAllDisplays().find((d) => String(d.id) === capture.displayId);
-      if (!display) throw Error('Paylaşılan ekran artık bağlı değil.');
+      if (!display) throw Error(t('Paylaşılan ekran artık bağlı değil.'));
       const window = config.window();
-      if (!window) throw Error('Tayfa penceresi kapandı.');
+      if (!window) throw Error(t('Tayfa penceresi kapandı.'));
       const answer = await dialog.showMessageBox(window, {
         type: 'question',
-        buttons: ['Reddet', 'Kontrol ver'],
+        buttons: [t('Reddet'), t('Kontrol ver')],
         defaultId: 0,
         cancelId: 0,
-        title: 'Ekran kontrolü',
-        message: `${pending.controllerName || pending.controllerId} paylaştığın ekranın fare ve klavyesini kontrol etmek istiyor.`,
-        detail: `${display.label || 'Seçilen ekran'} · Yalnızca bu paylaşım. Kendi fare/klavyenle işlem yapman kontrolü geri alır. Acil bırakma: Control + Alt/Option + Shift + K. Dosya ve pano aktarımı yok.`,
+        title: t('Ekran kontrolü'),
+        message: t('{name} paylaştığın ekranın fare ve klavyesini kontrol etmek istiyor.', {
+          name: pending.controllerName || pending.controllerId,
+        }),
+        detail: t(
+          '{screen} · Yalnızca bu paylaşım. Kendi fare/klavyenle işlem yapman kontrolü geri alır. Acil bırakma: Control + Alt/Option + Shift + K. Dosya ve pano aktarımı yok.',
+          { screen: display.label || t('Seçilen ekran') },
+        ),
       });
       if (answer.response !== 1) {
         await config.broker('remote/decide', { channelId: id, requestId: request, approve: false });
@@ -377,9 +387,9 @@ export function setupRemoteControl(config: {
         config.capture()?.epoch !== capture.epoch ||
         channel !== id
       )
-        throw Error('Ekran veya hesap değişti.');
+        throw Error(t('Ekran veya hesap değişti.'));
       if (!globalShortcut.register(hotkey, () => void stop()))
-        throw Error('Acil bırakma kısayolu kullanılamıyor; kontrol açılmadı.');
+        throw Error(t('Acil bırakma kısayolu kullanılamıyor; kontrol açılmadı.'));
       shortcutOwned = true;
       try {
         await config.broker('remote/decide', { channelId: id, requestId: request, approve: true });
@@ -390,14 +400,14 @@ export function setupRemoteControl(config: {
           current.lease?.id !== request ||
           current.lease.source.epoch !== config.capture()?.epoch
         )
-          throw Error('Kontrol onayı artık geçerli değil.');
+          throw Error(t('Kontrol onayı artık geçerli değil.'));
         const bounds =
           process.platform === 'win32'
             ? screen.dipToScreenRect(null, display.bounds)
             : display.bounds;
         if (!module.begin(Number(display.id), bounds.x, bounds.y, bounds.width, bounds.height))
           throw Error(
-            'Yerel kontrol başlatılamadı. Sistem izinlerini ve seçilen ekranı kontrol et.',
+            t('Yerel kontrol başlatılamadı. Sistem izinlerini ve seçilen ekranı kontrol et.'),
           );
         gate.activate(current.lease, scope.userId!, capture.epoch, current.serverAt);
         publisher = true;
@@ -415,7 +425,7 @@ export function setupRemoteControl(config: {
   config.handle('rooms:remote-frame', async (value, leaseId) => {
     if (!sameIdentity()) {
       await stop();
-      throw Error('Hesap değişti.');
+      throw Error(t('Hesap değişti.'));
     }
     const input = remoteInputSchema.parse(value),
       result = gate.encode(input, z.string().uuid().parse(leaseId));

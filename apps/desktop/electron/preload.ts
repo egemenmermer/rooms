@@ -25,6 +25,8 @@ const bridge: DesktopBridge = {
       return () => ipcRenderer.removeListener('rooms:hostops-terminal', handler);
     },
   },
+  locale: ipcRenderer.sendSync('rooms:locale'),
+  setLocale: (preference) => ipcRenderer.invoke('rooms:set-locale', preference),
   pendingInvite: () => ipcRenderer.invoke('rooms:pending-invite'),
   onInvite: (listener) => {
     const handler = (

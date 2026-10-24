@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { getLocale } from '../i18n';
 
 /** This viewer's own cinema choices; they never reach the hall or other members. */
 export type CinemaPreferences = {
@@ -9,7 +10,11 @@ export type CinemaPreferences = {
 };
 
 const KEY = 'rooms.cinema.preferences';
-const DEFAULTS: CinemaPreferences = { blurUnwatched: false, subtitleLanguage: 'auto' };
+// Until a viewer chooses, subtitles follow the interface language ('auto' is Turkish).
+const DEFAULTS: CinemaPreferences = {
+  blurUnwatched: false,
+  subtitleLanguage: getLocale() === 'en' ? 'eng' : 'auto',
+};
 const listeners = new Set<() => void>();
 let cached: CinemaPreferences | null = null;
 

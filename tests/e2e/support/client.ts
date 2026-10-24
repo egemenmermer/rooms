@@ -47,6 +47,7 @@ export class RoomsClient {
     delete env.ELECTRON_RUN_AS_NODE;
     delete env.ROOMS_DEV_URL;
     env.ROOMS_PROFILE = profile;
+    env.ROOMS_LOCALE ??= 'tr';
     const app = await electron.launch({
       args: [...(headed ? [] : ['-r', headlessHook]), '.', ...mediaSwitches],
       cwd: repoRoot,

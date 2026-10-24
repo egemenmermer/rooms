@@ -4,6 +4,7 @@ import { Check, Play, Plus, Square, Trash2 } from 'lucide-react';
 import {
   PERSONAL_SOUND_LIMITS,
   PERSONAL_SOUND_POLICY,
+  personalSoundPresetName,
   type PersonalSound,
   type PersonalSoundAssign,
   type PersonalSoundEvent,
@@ -19,7 +20,7 @@ import {
 } from '../../../packages/shared-contracts/src/personal-sound-audio';
 import { useCommunity } from './community';
 import { roomCueSource } from './room-event-sounds';
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 import './personal-sounds.css';
 
 type Slot = PersonalSoundEvent;
@@ -41,24 +42,29 @@ const MAX_SEC = PERSONAL_SOUND_LIMITS.maxDurationSec,
   BARS = 120;
 const copy = {
   enter: {
-    title: 'Odaya girince',
-    description: 'İçerideki herkes duyar.',
-    picker: 'Giriş sesi seç',
-    change: 'Giriş sesini değiştir',
-    saved: 'Giriş sesin kaydedildi',
+    title: t('Odaya girince'),
+    description: t('İçerideki herkes duyar.'),
+    picker: t('Giriş sesi seç'),
+    change: t('Giriş sesini değiştir'),
+    saved: t('Giriş sesin kaydedildi'),
   },
   leave: {
-    title: 'Odadan çıkınca',
-    description: 'Kalanlar duyar.',
-    picker: 'Çıkış sesi seç',
-    change: 'Çıkış sesini değiştir',
-    saved: 'Çıkış sesin kaydedildi',
+    title: t('Odadan çıkınca'),
+    description: t('Kalanlar duyar.'),
+    picker: t('Çıkış sesi seç'),
+    change: t('Çıkış sesini değiştir'),
+    saved: t('Çıkış sesin kaydedildi'),
   },
 } as const;
-const unreadable = 'Bu dosya okunamadı. MP3, WAV, M4A, OGG veya FLAC dene.',
-  tooLong = `Bu dosya ${MAX_SOURCE_SEC / 60} dakikadan uzun. Kısa bir bölümünü kaydedip yeniden dene.`,
-  silent = 'Seçtiğin kesit neredeyse sessiz. Başka bir bölüm seç.';
-const seconds = (value: number) => `${value.toFixed(1).replace('.', ',')} sn`;
+const unreadable = t('Bu dosya okunamadı. MP3, WAV, M4A, OGG veya FLAC dene.'),
+  tooLong = t('Bu dosya {minutes} dakikadan uzun. Kısa bir bölümünü kaydedip yeniden dene.', {
+    minutes: MAX_SOURCE_SEC / 60,
+  }),
+  silent = t('Seçtiğin kesit neredeyse sessiz. Başka bir bölüm seç.');
+const seconds = (value: number) =>
+  t('{value} sn', {
+    value: locale === 'tr-TR' ? value.toFixed(1).replace('.', ',') : value.toFixed(1),
+  });
 const same = (a: PersonalSoundAssign, b: PersonalSoundAssign) =>
   a.enter === b.enter && a.leave === b.leave;
 /** Focuses the first match once React has rendered the change. */
@@ -72,12 +78,13 @@ const focusSoon = (...selectors: string[]) =>
 
 function clipOf(profile: PersonalSoundProfile, id: string | null) {
   if (id === null)
-    return { name: 'Varsayılan', seconds: CLASSIC_SEC, gain: PERSONAL_SOUND_POLICY.classicGain };
-  const found =
-    profile.presets.find((preset) => preset.id === id) ??
-    profile.sounds.find((sound) => sound.id === id);
+    return { name: t('Varsayılan'), seconds: CLASSIC_SEC, gain: PERSONAL_SOUND_POLICY.classicGain };
+  const preset = profile.presets.find((item) => item.id === id);
+  const found = preset ?? profile.sounds.find((sound) => sound.id === id);
   return {
-    name: found?.name ?? 'Bilinmeyen ses',
+    name: preset
+      ? personalSoundPresetName(preset.id, preset.name)
+      : (found?.name ?? t('Bilinmeyen ses')),
     seconds: found?.durationSec ?? MAX_SEC,
     gain: PERSONAL_SOUND_POLICY.personalGain,
   };
@@ -177,7 +184,7 @@ function usePreview(outputId: string, level: number, fail: (message: string) => 
       player.volume = Math.min(1, clipGain * level);
       if (outputId && player.setSinkId)
         await player.setSinkId(outputId).catch(() => {
-          throw Error('Seçili hoparlör kullanılamadı. Sistem varsayılanını seçip yeniden dene.');
+          throw Error(t('Seçili hoparlör kullanılamadı. Sistem varsayılanını seçip yeniden dene.'));
         });
       if (mine !== token.current) return;
       audio.current = player;
@@ -189,7 +196,7 @@ function usePreview(outputId: string, level: number, fail: (message: string) => 
     } catch (e) {
       if (mine !== token.current) return;
       stop();
-      fail(e instanceof DOMException ? 'Ses çalınamadı. Yeniden dene.' : uiError(e));
+      fail(e instanceof DOMException ? t('Ses çalınamadı. Yeniden dene.') : uiError(e));
     }
   };
   return { playing, stop, toggle };
@@ -222,7 +229,7 @@ function PreviewParts({
   return (
     <>
       <IconButton
-        label={current ? `${name} sesini durdur` : `${name} sesini dinle`}
+        label={current ? t('{name} sesini durdur', { name }) : t('{name} sesini dinle', { name })}
         onClick={onPlay}
       >
         {current ? <Square size={14} /> : <Play size={15} />}
@@ -306,7 +313,7 @@ function UploadArea({
   if (!profile.uploads)
     return (
       <p className="ref-settings-note personal-sound-upload">
-        Sunucu yöneticisi ses yüklemeyi kapattı. Tayfa seslerinden birini seçebilirsin.
+        {t('Sunucu yöneticisi ses yüklemeyi kapattı. Tayfa seslerinden birini seçebilirsin.')}
       </p>
     );
   const read = async (file: File) => {
@@ -314,7 +321,7 @@ function UploadArea({
     setProblem('');
     setDraft(null);
     if (file.size > PERSONAL_SOUND_LIMITS.maxSourceBytes) {
-      setProblem('Bu dosya 20 MB’tan büyük. Daha küçük bir ses dosyası seç.');
+      setProblem(t('Bu dosya 20 MB’tan büyük. Daha küçük bir ses dosyası seç.'));
       return;
     }
     const captured = epoch.current;
@@ -341,7 +348,7 @@ function UploadArea({
           file.name
             .replace(/\.[^.]+$/, '')
             .trim()
-            .slice(0, PERSONAL_SOUND_LIMITS.maxNameLength) || 'Sesim',
+            .slice(0, PERSONAL_SOUND_LIMITS.maxNameLength) || t('Sesim'),
         rights: false,
       });
     } catch (e) {
@@ -395,12 +402,13 @@ function UploadArea({
         onClick={() => picker.current?.click()}
       >
         <Plus size={16} />
-        {reading ? 'Ses okunuyor…' : 'Bilgisayardan ses seç'}
+        {reading ? t('Ses okunuyor…') : t('Bilgisayardan ses seç')}
       </button>
       {full && (
         <p className="ref-settings-note">
-          En fazla {PERSONAL_SOUND_LIMITS.maxSounds} ses saklayabilirsin. Yeni ses için önce birini
-          sil.
+          {t('En fazla {count} ses saklayabilirsin. Yeni ses için önce birini sil.', {
+            count: PERSONAL_SOUND_LIMITS.maxSounds,
+          })}
         </p>
       )}
       {draft && (
@@ -409,10 +417,10 @@ function UploadArea({
             <>
               <Waveform peaks={draft.peaks} start={draft.start} duration={draft.duration} />
               <label className="field-label">
-                Başlangıç · {seconds(draft.start)}
+                {t('Başlangıç · {time}', { time: seconds(draft.start) })}
                 <input
                   type="range"
-                  aria-label="Başlangıç"
+                  aria-label={t('Başlangıç')}
                   aria-valuetext={seconds(draft.start)}
                   min={0}
                   max={Math.max(0, draft.duration - MAX_SEC)}
@@ -448,7 +456,7 @@ function UploadArea({
               }}
             >
               {playingDraft ? <Square size={14} /> : <Play size={15} />}
-              {playingDraft ? 'Durdur' : 'Kesiti dinle'}
+              {playingDraft ? t('Durdur') : t('Kesiti dinle')}
             </button>
             {clip && typeof clip === 'object' && (
               <span className="ref-settings-note">{seconds(clip.durationSec)}</span>
@@ -460,7 +468,7 @@ function UploadArea({
             {typeof clip === 'string' && clip}
           </p>
           <label className="field-label">
-            Ad
+            {t('Ad')}
             <input
               value={draft.name}
               maxLength={PERSONAL_SOUND_LIMITS.maxNameLength}
@@ -475,8 +483,9 @@ function UploadArea({
               disabled={saving}
               onChange={(e) => setDraft({ ...draft, rights: e.target.checked })}
             />
-            Bu sesi kullanma hakkım var. Telifli müzik, başkasının sesi veya rahatsız edici içerik
-            yüklemeyeceğim.
+            {t(
+              'Bu sesi kullanma hakkım var. Telifli müzik, başkasının sesi veya rahatsız edici içerik yüklemeyeceğim.',
+            )}
           </label>
           <div className="button-row">
             <button
@@ -488,14 +497,14 @@ function UploadArea({
                 setProblem('');
               }}
             >
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button primary"
               disabled={!ready || saving || full}
               onClick={() => void save()}
             >
-              {saving ? 'Kaydediliyor…' : 'Kaydet ve seç'}
+              {saving ? t('Kaydediliyor…') : t('Kaydet ve seç')}
             </button>
           </div>
         </div>
@@ -601,7 +610,7 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
   const fetchPreview = async (id: string) => {
     const cached = cache.current.get(id);
     if (cached) return cached;
-    if (!bridge) throw Error('Giriş sesleri bu ortamda kullanılamıyor.');
+    if (!bridge) throw Error(t('Giriş sesleri bu ortamda kullanılamıyor.'));
     const captured = epoch.current,
       audio = await bridge.preview(id);
     const url = URL.createObjectURL(
@@ -611,7 +620,7 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
     if (captured !== epoch.current || existing) {
       URL.revokeObjectURL(url);
       if (existing) return existing;
-      throw Error('Oturum değişti.');
+      throw Error(t('Oturum değişti.'));
     }
     cache.current.set(id, url);
     return url;
@@ -696,7 +705,7 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
     const saved = choose(event, sound.id);
     focusSoon(`.personal-sound-pick[data-sound="${sound.id}"]`);
     if (!(await saved) && captured === epoch.current)
-      setError('Ses kaydedildi ama seçilemedi. Listeden seçebilirsin.');
+      setError(t('Ses kaydedildi ama seçilemedi. Listeden seçebilirsin.'));
   };
   const remove = (id: string) => {
     if (!bridge) return;
@@ -734,7 +743,7 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
     setError('');
   }, [stop]);
   const quiet = level === 0 && (
-    <p className="ref-settings-note">Efekt ses düzeyi sıfırda; önizlemeleri duymazsın.</p>
+    <p className="ref-settings-note">{t('Efekt ses düzeyi sıfırda; önizlemeleri duymazsın.')}</p>
   );
   const option = (event: Slot, id: string | null, name: string, duration: number, own = false) => {
     const selected = profile?.assign[event] === id,
@@ -742,10 +751,14 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
     return (
       <li key={key} className={`personal-sound-option${selected ? ' selected' : ''}`}>
         {own && id && confirming === id ? (
-          <div className="personal-sound-confirm" role="group" aria-label={`${name} silinsin mi?`}>
-            <span>{name} silinsin mi?</span>
+          <div
+            className="personal-sound-confirm"
+            role="group"
+            aria-label={t('{name} silinsin mi?', { name })}
+          >
+            <span>{t('{name} silinsin mi?', { name })}</span>
             <button className="button danger" disabled={removing} onClick={() => remove(id)}>
-              {removing ? 'Siliniyor…' : 'Sil'}
+              {removing ? t('Siliniyor…') : t('Sil')}
             </button>
             <button
               className="button secondary"
@@ -753,7 +766,7 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
               disabled={removing}
               onClick={() => cancelDelete(id)}
             >
-              Vazgeç
+              {t('Vazgeç')}
             </button>
           </div>
         ) : (
@@ -766,7 +779,7 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
               onClick={() => void choose(event, id)}
             >
               <span>{name}</span>
-              <small>{id === null ? 'Klasik Tayfa sesi' : seconds(duration)}</small>
+              <small>{id === null ? t('Klasik Tayfa sesi') : seconds(duration)}</small>
               {selected && <Check size={15} aria-hidden="true" />}
             </button>
             <PreviewParts
@@ -777,7 +790,7 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
             />
             {own && id && (
               <IconButton
-                label={`${name} sesini sil`}
+                label={t('{name} sesini sil', { name })}
                 data-delete-sound={id}
                 onClick={() => setConfirming(id)}
               >
@@ -791,23 +804,25 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
   };
   return (
     <section className="personal-sounds">
-      <h2>Giriş ve çıkış sesin</h2>
+      <h2>{t('Giriş ve çıkış sesin')}</h2>
       {!bridge ? (
         <p className="ref-settings-note">
-          Giriş sesleri masaüstü uygulamasında ve bir sunucuya bağlıyken kullanılabilir.
+          {t('Giriş sesleri masaüstü uygulamasında ve bir sunucuya bağlıyken kullanılabilir.')}
         </p>
       ) : !signedIn ? (
-        <p className="ref-settings-note">Giriş sesini seçmek için önce bir sunucuya giriş yap.</p>
+        <p className="ref-settings-note">
+          {t('Giriş sesini seçmek için önce bir sunucuya giriş yap.')}
+        </p>
       ) : loadError ? (
         <div className="ref-settings-callout warning personal-sound-retry" role="alert">
           <span>{loadError}</span>
           <button className="button secondary" onClick={() => setAttempt((value) => value + 1)}>
-            Yeniden dene
+            {t('Yeniden dene')}
           </button>
         </div>
       ) : !profile ? (
         <p className="ref-settings-note" role="status">
-          Giriş seslerin yükleniyor…
+          {t('Giriş seslerin yükleniyor…')}
         </p>
       ) : (
         <>
@@ -839,7 +854,7 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
                         setSlot(event);
                       }}
                     >
-                      Değiştir
+                      {t('Değiştir')}
                     </button>
                   </div>
                 </div>
@@ -847,11 +862,12 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
             })}
           </div>
           <p className="ref-settings-note">
-            Seçimin hemen kaydedilir ve tüm cihazlarında geçerli olur.
+            {t('Seçimin hemen kaydedilir ve tüm cihazlarında geçerli olur.')}
           </p>
           <p className="ref-settings-note">
-            En fazla 4 saniye. Herkesin sesi aynı seviyede duyulsun diye ses düzeyi otomatik
-            ayarlanır.
+            {t(
+              'En fazla 4 saniye. Herkesin sesi aynı seviyede duyulsun diye ses düzeyi otomatik ayarlanır.',
+            )}
           </p>
           {quiet}
           {status && !slot && (
@@ -869,29 +885,34 @@ export function PersonalSoundSettings({ outputId, level }: { outputId: string; l
       {slot && profile && bridge && (
         <Modal title={copy[slot].picker} onClose={close} className="personal-sound-modal">
           <div className="personal-sound-group">
-            <h3>Varsayılan</h3>
-            <ul className="personal-sound-options" aria-label="Varsayılan">
-              {option(slot, null, 'Varsayılan', CLASSIC_SEC)}
+            <h3>{t('Varsayılan')}</h3>
+            <ul className="personal-sound-options" aria-label={t('Varsayılan')}>
+              {option(slot, null, t('Varsayılan'), CLASSIC_SEC)}
             </ul>
           </div>
           <div className="personal-sound-group">
-            <h3>Tayfa sesleri</h3>
-            <ul className="personal-sound-options" aria-label="Tayfa sesleri">
+            <h3>{t('Tayfa sesleri')}</h3>
+            <ul className="personal-sound-options" aria-label={t('Tayfa sesleri')}>
               {profile.presets.map((preset) =>
-                option(slot, preset.id, preset.name, preset.durationSec),
+                option(
+                  slot,
+                  preset.id,
+                  personalSoundPresetName(preset.id, preset.name),
+                  preset.durationSec,
+                ),
               )}
             </ul>
           </div>
           <div className="personal-sound-group">
-            <h3>Senin seslerin</h3>
+            <h3>{t('Senin seslerin')}</h3>
             {profile.sounds.length ? (
-              <ul className="personal-sound-options" aria-label="Senin seslerin">
+              <ul className="personal-sound-options" aria-label={t('Senin seslerin')}>
                 {profile.sounds.map((sound) =>
                   option(slot, sound.id, sound.name, sound.durationSec, true),
                 )}
               </ul>
             ) : (
-              <p className="ref-settings-note">Henüz ses yüklemedin.</p>
+              <p className="ref-settings-note">{t('Henüz ses yüklemedin.')}</p>
             )}
           </div>
           <UploadArea

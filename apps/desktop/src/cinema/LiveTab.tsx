@@ -9,6 +9,7 @@ import { useHallMenu } from './HallMenu';
 import { cachedGuide } from './guide-cache';
 import { programmeAfter, hhmm } from './hall-model';
 import { hasReminder, toggleReminder } from './reminders';
+import { t } from '../i18n';
 
 const TILE_MIN = 164;
 const TILE_GAP = 10;
@@ -43,9 +44,11 @@ export function LiveTab({
   }, [items.data, starred, favorites]);
   const list = useMemo(() => {
     const all = source;
+    // i18n-ignore: channel titles are folded as Turkish text
     const terms = filter.trim().toLocaleLowerCase('tr').split(/\s+/).filter(Boolean);
     return terms.length
       ? all.filter((item) => {
+          // i18n-ignore: channel titles are folded as Turkish text
           const title = item.title.toLocaleLowerCase('tr');
           return terms.every((term) => title.includes(term));
         })
@@ -101,8 +104,8 @@ export function LiveTab({
     return [
       {
         label: on
-          ? `Hatırlatmayı kaldır · ${next.title}`
-          : `Hatırlat · ${hhmm(next.start)} ${next.title}`,
+          ? t('Hatırlatmayı kaldır · {title}', { title: next.title })
+          : t('Hatırlat · {time} {title}', { time: hhmm(next.start), title: next.title }),
         icon: on ? <BellOff size={15} /> : <Bell size={15} />,
         onSelect: () => toggleReminder(reminder),
       },
@@ -130,7 +133,7 @@ export function LiveTab({
 
   return (
     <div className="hall-live">
-      <nav className="hall-categories" aria-label="Kanal kategorileri">
+      <nav className="hall-categories" aria-label={t('Kanal kategorileri')}>
         <button
           className={categoryId === null ? 'selected' : ''}
           aria-current={categoryId === null ? 'true' : undefined}
@@ -139,7 +142,7 @@ export function LiveTab({
           <span className="hall-category-flag">
             <Tv size={15} />
           </span>
-          <span>Tüm kanallar</span>
+          <span>{t('Tüm kanallar')}</span>
           <small>{total || ''}</small>
         </button>
         <button
@@ -150,7 +153,7 @@ export function LiveTab({
           <span className="hall-category-flag">
             <Star size={15} />
           </span>
-          <span>Favoriler</span>
+          <span>{t('Favoriler')}</span>
           <small>{favorites.length || ''}</small>
         </button>
         {categories.loading && !categories.data && <CategorySkeleton />}
@@ -167,14 +170,14 @@ export function LiveTab({
           </button>
         ))}
       </nav>
-      <section className="hall-channels" aria-label="Kanallar">
+      <section className="hall-channels" aria-label={t('Kanallar')}>
         <div className="hall-channels-head">
           <label className="hall-filter">
             <Search size={15} />
             <input
               value={filter}
-              placeholder="Bu listede ara"
-              aria-label="Kanallarda ara"
+              placeholder={t('Bu listede ara')}
+              aria-label={t('Kanallarda ara')}
               onChange={(event) => setFilter(event.target.value)}
             />
           </label>
@@ -184,7 +187,7 @@ export function LiveTab({
           ref={scroller}
           className="hall-channel-scroll"
           role="listbox"
-          aria-label="Kanal listesi"
+          aria-label={t('Kanal listesi')}
           aria-activedescendant={selected ? `hall-channel-${selected}` : undefined}
           tabIndex={0}
           onKeyDown={keyNav}
@@ -201,10 +204,12 @@ export function LiveTab({
           ) : !list.length ? (
             <p className="hall-empty-note">
               {filter
-                ? 'Bu adla bir kanal yok.'
+                ? t('Bu adla bir kanal yok.')
                 : starred
-                  ? 'Henüz favori kanal yok. Bir kanalın yıldızına bas ya da sağ tıklayıp favorilere ekle.'
-                  : 'Bu kategoride kanal yok.'}
+                  ? t(
+                      'Henüz favori kanal yok. Bir kanalın yıldızına bas ya da sağ tıklayıp favorilere ekle.',
+                    )
+                  : t('Bu kategoride kanal yok.')}
             </p>
           ) : (
             <div style={{ height: rows * ROW, position: 'relative' }}>
@@ -231,7 +236,7 @@ export function LiveTab({
                           id={`hall-channel-${item.ref}`}
                           role="option"
                           aria-selected={item.ref === selected}
-                          title={playing ? 'Bu kanal salonda açık.' : undefined}
+                          title={playing ? t('Bu kanal salonda açık.') : undefined}
                           className={`hall-tile ${item.ref === selected ? 'selected' : ''} ${playing ? 'playing' : ''}`}
                           onClick={() => {
                             setSelected(item.ref);
@@ -245,13 +250,13 @@ export function LiveTab({
                                 ? []
                                 : [
                                     {
-                                      label: direct ? 'Salonda aç' : 'Sıraya öner',
+                                      label: direct ? t('Salonda aç') : t('Sıraya öner'),
                                       icon: direct ? <Play size={15} /> : <ListPlus size={15} />,
                                       onSelect: () => void hall.openItem(item),
                                     },
                                   ]),
                               {
-                                label: favorite ? 'Favorilerden çıkar' : 'Favorilere ekle',
+                                label: favorite ? t('Favorilerden çıkar') : t('Favorilere ekle'),
                                 icon: favorite ? <StarOff size={15} /> : <Star size={15} />,
                                 onSelect: star,
                               },
@@ -264,10 +269,10 @@ export function LiveTab({
                             aria-pressed={favorite}
                             aria-label={
                               favorite
-                                ? `${item.title}: favorilerden çıkar`
-                                : `${item.title}: favorilere ekle`
+                                ? t('{title}: favorilerden çıkar', { title: item.title })
+                                : t('{title}: favorilere ekle', { title: item.title })
                             }
-                            title={favorite ? 'Favorilerden çıkar' : 'Favorilere ekle'}
+                            title={favorite ? t('Favorilerden çıkar') : t('Favorilere ekle')}
                             onClick={(event) => {
                               event.stopPropagation();
                               star();
@@ -281,7 +286,7 @@ export function LiveTab({
                             {playing ? (
                               <>
                                 <i className="hall-live-dot" aria-hidden="true" />
-                                Salonda
+                                {t('Salonda')}
                               </>
                             ) : (
                               <>
@@ -293,7 +298,7 @@ export function LiveTab({
                           {!playing && (
                             <span className="hall-tile-action" aria-hidden="true">
                               {direct ? <Play size={14} /> : <ListPlus size={14} />}
-                              {direct ? 'Salonda aç' : 'Sıraya öner'}
+                              {direct ? t('Salonda aç') : t('Sıraya öner')}
                             </span>
                           )}
                         </div>
@@ -327,7 +332,7 @@ function CategorySkeleton() {
 
 function ChannelSkeleton() {
   return (
-    <div className="hall-skeleton-list" aria-label="Kanallar yükleniyor" role="status">
+    <div className="hall-skeleton-list" aria-label={t('Kanallar yükleniyor')} role="status">
       {Array.from({ length: 7 }, (_, index) => (
         <span key={index} className="hall-skeleton row" />
       ))}

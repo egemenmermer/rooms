@@ -4,7 +4,7 @@ import { Modal } from '@rooms/design';
 import type { SocialUser } from '@rooms/social';
 import { useCommunity } from './community';
 import { VoiceAvatar } from './VoiceAvatar';
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 import { directMessageFailed } from './FriendRequiredDialog';
 export function Messages({ notify }: { notify(message: string): void }) {
   const c = useCommunity(),
@@ -16,11 +16,15 @@ export function Messages({ notify }: { notify(message: string): void }) {
         className="text-button"
         disabled={!c.user || !window.rooms}
         title={
-          !c.user ? 'Önce giriş yap.' : !window.rooms ? 'Masaüstü uygulamasını aç.' : undefined
+          !c.user
+            ? t('Önce giriş yap.')
+            : !window.rooms
+              ? t('Masaüstü uygulamasını aç.')
+              : undefined
         }
         onClick={() => setCreating(true)}
       >
-        Yeni özel mesaj
+        {t('Yeni özel mesaj')}
       </button>
       {c.dms.map((dm) => {
         const p = dm.recipients?.find((u) => u.id !== c.user?.id);
@@ -38,9 +42,9 @@ export function Messages({ notify }: { notify(message: string): void }) {
           </button>
         );
       })}
-      {!c.dms.length && <p>Henüz konuşma yok.</p>}
+      {!c.dms.length && <p>{t('Henüz konuşma yok.')}</p>}
       <button className="text-button" onClick={() => navigate('/friends')}>
-        Arkadaşlar
+        {t('Arkadaşlar')}
       </button>
       {creating && (
         <NewMessage
@@ -93,7 +97,7 @@ function NewMessage({ onClose, notify }: { onClose(): void; notify(message: stri
         ).values(),
       ]);
       if (friends.status === 'rejected' && members.status === 'rejected')
-        setError('Kişiler alınamadı.');
+        setError(t('Kişiler alınamadı.'));
       setLoading(false);
     });
     return () => {
@@ -141,11 +145,11 @@ function NewMessage({ onClose, notify }: { onClose(): void; notify(message: stri
     }
   };
   return (
-    <Modal title="Yeni özel mesaj" onClose={onClose}>
+    <Modal title={t('Yeni özel mesaj')} onClose={onClose}>
       <input
         className="full"
-        aria-label="Kişi ara"
-        placeholder="Kişi ara"
+        aria-label={t('Kişi ara')}
+        placeholder={t('Kişi ara')}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
@@ -153,8 +157,8 @@ function NewMessage({ onClose, notify }: { onClose(): void; notify(message: stri
         {people
           .filter((u) =>
             `${u.displayName} ${u.username}`
-              .toLocaleLowerCase('tr')
-              .includes(query.toLocaleLowerCase('tr')),
+              .toLocaleLowerCase(locale)
+              .includes(query.toLocaleLowerCase(locale)),
           )
           .map((u) => (
             <button key={u.id} disabled={busy} onClick={() => void select(u)}>
@@ -163,8 +167,8 @@ function NewMessage({ onClose, notify }: { onClose(): void; notify(message: stri
             </button>
           ))}
       </div>
-      {loading && <p role="status">Kişiler yükleniyor…</p>}
-      {!loading && !people.length && <p>Mesajlaşmak için bir arkadaş ekle.</p>}
+      {loading && <p role="status">{t('Kişiler yükleniyor…')}</p>}
+      {!loading && !people.length && <p>{t('Mesajlaşmak için bir arkadaş ekle.')}</p>}
       {error && <p role="alert">{error}</p>}
     </Modal>
   );

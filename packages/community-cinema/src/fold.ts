@@ -15,6 +15,7 @@ const apostrophes = new Set([0x27, 0x60, 0xb4, 0x2bb, 0x2bc, 0x2018, 0x2019, 0x2
 
 // Letters NFKD leaves alone, plus small capitals some providers use (`ʜᴅ`).
 const explicit = new Map<string, string>([
+  // i18n-ignore: Turkish dotless i is folded to i for title search
   ['ı', 'i'],
   ['ß', 'ss'],
   ['ẞ', 'ss'],

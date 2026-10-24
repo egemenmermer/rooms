@@ -1,9 +1,10 @@
 import type { PersonalProgram } from '../electron/provider-contracts';
+import { locale, t } from './i18n';
 
 /** Display only provider dates and positions that crossed the native boundary. */
 export function addedDate(value?: string): string {
-  if (!value || !Number.isFinite(Date.parse(value))) return 'Belirtilmedi';
-  return new Date(value).toLocaleDateString('tr-TR', {
+  if (!value || !Number.isFinite(Date.parse(value))) return t('Belirtilmedi');
+  return new Date(value).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -16,11 +17,12 @@ export function resumePosition(value?: number): number | null {
 }
 export function resumeLabel(value?: number): string {
   const position = resumePosition(value);
-  if (position === null) return 'Kayıtlı konum yok';
-  if (position === 0) return 'Henüz başlamadın';
+  if (position === null) return t('Kayıtlı konum yok');
+  if (position === 0) return t('Henüz başlamadın');
   const seconds = Math.floor(position),
     hours = Math.floor(seconds / 3600);
-  return `${hours ? `${hours}:` : ''}${String(Math.floor(seconds / 60) % 60).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')} kayıtlı`;
+  const time = `${hours ? `${hours}:` : ''}${String(Math.floor(seconds / 60) % 60).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+  return t('{time} kayıtlı', { time });
 }
 export function CurrentProgram({
   programs,
@@ -38,7 +40,7 @@ export function CurrentProgram({
   });
   if (!current) return <small>{fallback}</small>;
   const time = (value: string) =>
-    new Date(value).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    new Date(value).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   const elapsed = Math.max(
     0,
     Math.min(
@@ -54,7 +56,11 @@ export function CurrentProgram({
         <time>
           {time(current.startsAt)}–{time(current.endsAt)}
         </time>
-        <progress aria-label={`${current.title} yayın ilerlemesi`} max={1} value={elapsed} />
+        <progress
+          aria-label={t('{title} yayın ilerlemesi', { title: current.title })}
+          max={1}
+          value={elapsed}
+        />
       </div>
     </div>
   );

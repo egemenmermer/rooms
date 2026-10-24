@@ -1,5 +1,6 @@
 import { AgentSchedulesSurface, type AgentSchedulesProps } from '../Agent';
 import type { AgentTask, ModelConnection } from '../../../../packages/agent-contracts/src';
+import { sample, places } from './sample';
 /** Explicit DEV projection. No bridge is supplied, so account mutations are impossible. */
 export const S62_VARIANTS = [
   'default',
@@ -18,7 +19,7 @@ export function getS62Fixture(variant: string): AgentSchedulesProps {
     id: 's62-demo-model',
     ownerId: 's62-demo-owner',
     provider: 'openrouter',
-    label: 'OpenRouter / Araştırma',
+    label: sample('OpenRouter / Araştırma', 'OpenRouter / Research'),
     model: 'demo-model',
     status: 'connected',
   };
@@ -27,7 +28,7 @@ export function getS62Fixture(variant: string): AgentSchedulesProps {
     roomId: 's62-demo-room',
     ownerId: model.ownerId,
     modelConnectionId: model.id,
-    prompt: 'Film gecesi planını hazırla',
+    prompt: sample('Film gecesi planını hazırla', 'Put together the movie night plan'),
     createdAt: '2026-10-10T17:00:00Z',
     runAt: '2026-10-10T19:00:00Z',
     state:
@@ -39,15 +40,21 @@ export function getS62Fixture(variant: string): AgentSchedulesProps {
             ? 'failed'
             : 'scheduled',
     progress: [],
-    result: variant === 'completed' ? 'Yerel demo sonucu' : null,
+    result: variant === 'completed' ? sample('Yerel demo sonucu', 'Local demo result') : null,
     artifacts: [],
-    error: variant === 'failed' ? 'Kişisel model bağlantısı kullanılamıyor.' : null,
+    error:
+      variant === 'failed'
+        ? sample(
+            'Kişisel model bağlantısı kullanılamıyor.',
+            'The personal model connection is unavailable.',
+          )
+        : null,
   };
   const tasks: AgentTask[] = [
     {
       ...task,
       id: 's62-demo-history-1',
-      prompt: 'Hafta sonu planını özetle',
+      prompt: sample('Hafta sonu planını özetle', 'Summarize the weekend plan'),
       state: 'completed',
       runAt: '2026-10-09T18:00:00Z',
       createdAt: '2026-10-09T16:00:00Z',
@@ -55,7 +62,7 @@ export function getS62Fixture(variant: string): AgentSchedulesProps {
     {
       ...task,
       id: 's62-demo-history-2',
-      prompt: 'İzleme listesini düzenle',
+      prompt: sample('İzleme listesini düzenle', 'Tidy up the watchlist'),
       state: 'completed',
       runAt: '2026-10-08T17:30:00Z',
       createdAt: '2026-10-08T16:00:00Z',
@@ -67,21 +74,27 @@ export function getS62Fixture(variant: string): AgentSchedulesProps {
     models: [model],
     userId: model.ownerId,
     roomId: task.roomId,
-    roomName: 'Bizim Oda',
-    channelName: 'genel',
+    roomName: places.community,
+    channelName: places.general,
     ready: true,
     fixture: true,
     fixtureView: variant,
     onRefresh: async () => {},
     initialPrompt:
       variant === 'create'
-        ? 'Bu odadaki film gecesi kararlarını özetle ve plan dosyasını hazırla.'
+        ? sample(
+            'Bu odadaki film gecesi kararlarını özetle ve plan dosyasını hazırla.',
+            'Summarize the movie night decisions in this room and prepare the plan file.',
+          )
         : '',
     initialDate: '2026-10-10',
     initialTime: '21:00',
     fixtureNotice:
       variant === 'created'
-        ? 'Yerel demo: Görev planlandı. 10 Ekim 2026 · 21.00 · Europe/Amsterdam · Bir kez.'
+        ? sample(
+            'Yerel demo: Görev planlandı. 10 Ekim 2026 · 21.00 · Europe/Amsterdam · Bir kez.',
+            'Local demo: Task scheduled. October 10, 2026 · 9:00 PM · Europe/Amsterdam · Once.',
+          )
         : undefined,
   };
 }

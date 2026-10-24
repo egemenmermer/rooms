@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { cinemaArt } from './cinema-bridge';
+import { locale } from '../i18n';
 
 const ratios = { poster: 2 / 3, wide: 16 / 9 } as const;
 
@@ -33,7 +34,7 @@ export function CinemaArt({
     .map((word) => word.charAt(0))
     .join('')
     .slice(0, shape === 'logo' ? 2 : 3)
-    .toLocaleUpperCase('tr');
+    .toLocaleUpperCase(locale);
   return (
     <span
       className={`hall-art ${shape} ${mismatched ? 'letterbox' : ''} ${className}`}

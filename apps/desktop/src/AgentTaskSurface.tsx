@@ -20,7 +20,7 @@ import type {
   AgentTask,
   ModelConnection,
 } from '@rooms/agent-contracts';
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 
 export interface AgentTaskSurfaceProps {
   task: AgentTask;
@@ -44,24 +44,24 @@ export interface AgentTaskSurfaceProps {
   scopeKey?: string;
 }
 const stateNames: Record<AgentTask['state'], string> = {
-  scheduled: 'Zamanlandı',
-  queued: 'Sırada bekliyor',
-  running: 'Çalışıyor',
-  'awaiting-approval': 'Onay bekliyor',
-  completed: 'Tamamlandı',
-  failed: 'Başarısız',
-  cancelled: 'Durduruldu',
-  interrupted: 'Kesildi',
+  scheduled: t('Zamanlandı'),
+  queued: t('Sırada bekliyor'),
+  running: t('Çalışıyor'),
+  'awaiting-approval': t('Onay bekliyor'),
+  completed: t('Tamamlandı'),
+  failed: t('Başarısız'),
+  cancelled: t('Durduruldu'),
+  interrupted: t('Kesildi'),
 };
 const time = (value: string) =>
   Number.isFinite(Date.parse(value))
-    ? new Date(value).toLocaleString('tr-TR', {
+    ? new Date(value).toLocaleString(locale, {
         day: 'numeric',
         month: 'long',
         hour: '2-digit',
         minute: '2-digit',
       })
-    : 'Zaman bilgisi yok';
+    : t('Zaman bilgisi yok');
 
 /** Remount on identity/room/task/operation changes, synchronously discarding old drafts and previews. */
 export default function AgentTaskSurface(props: AgentTaskSurfaceProps) {
@@ -120,19 +120,19 @@ function TaskScope({
   const owner = task.ownerId === userId,
     authorized = owner || canManage;
   const disabledReason = invalid.current
-    ? 'Görev erişimi yeniden doğrulanmalı.'
+    ? t('Görev erişimi yeniden doğrulanmalı.')
     : demo
-      ? 'Yerel örnekte hesap ve dosya işlemleri kapalı.'
+      ? t('Yerel örnekte hesap ve dosya işlemleri kapalı.')
       : !connected
-        ? 'Agent bağlantısı doğrulanmalı.'
+        ? t('Agent bağlantısı doğrulanmalı.')
         : !authorized
-          ? 'Görev sahibi veya yetkili Agent yöneticisi gerekli.'
+          ? t('Görev sahibi veya yetkili Agent yöneticisi gerekli.')
           : '';
   const cancellable = ['queued', 'scheduled', 'running', 'awaiting-approval'].includes(task.state);
   const model = models.find(
     (item) => item.id === task.modelConnectionId && item.ownerId === userId && owner,
   );
-  const ownerLabel = owner ? 'Sen' : task.ownerId;
+  const ownerLabel = owner ? t('Sen') : task.ownerId;
   useEffect(() => {
     setView(initialView);
   }, [initialView]);
@@ -146,7 +146,7 @@ function TaskScope({
       setModal(null);
       setVerified('');
       setNotApplied(false);
-      setError('Görev erişimi yeniden doğrulanmalı.');
+      setError(t('Görev erişimi yeniden doğrulanmalı.'));
     };
     window.addEventListener('rooms:community-management-invalidated', invalidate);
     window.addEventListener('rooms:channel-access-invalidated', invalidate);
@@ -170,11 +170,11 @@ function TaskScope({
         (!fixturePreview.artifact || fixturePreview.artifact.id === selected)
       )
         setPreview(fixturePreview);
-      else setPreviewError('Yerel dosya önizlemesi sağlanmadı.');
+      else setPreviewError(t('Yerel dosya önizlemesi sağlanmadı.'));
       return;
     }
     if (!connected || invalid.current) {
-      setPreviewError('Dosya erişimi yeniden doğrulanmalı.');
+      setPreviewError(t('Dosya erişimi yeniden doğrulanmalı.'));
       return;
     }
     setPreviewLoading(true);
@@ -242,15 +242,15 @@ function TaskScope({
         latest.current.bridge === captured.bridge &&
         latest.current.userId === captured.userId
       )
-        notify(saved ? 'Dosya kaydedildi.' : 'Kaydetme iptal edildi.');
+        notify(saved ? t('Dosya kaydedildi.') : t('Kaydetme iptal edildi.'));
     }, false);
   const previewReason =
     preview?.state === 'too-large'
-      ? 'Metin önizlemesi 256 KiB ile sınırlı.'
+      ? t('Metin önizlemesi 256 KiB ile sınırlı.')
       : preview?.state === 'unsupported'
-        ? 'Bu dosya türü düz metin olarak önizlenemiyor.'
+        ? t('Bu dosya türü düz metin olarak önizlenemiyor.')
         : preview?.state === 'unavailable'
-          ? 'Dosyaya ulaşılamıyor.'
+          ? t('Dosyaya ulaşılamıyor.')
           : previewError;
   const operation = modal === 'uncertain' ? task.uncertainOperation : task.pendingApproval;
   const resultTitle =
@@ -261,11 +261,13 @@ function TaskScope({
         <header className="rat-heading">
           <div>
             <span className="rat-kicker">
-              {view === 'result' ? stateNames[task.state].toLocaleUpperCase('tr-TR') : 'ODA GÖREVİ'}
+              {view === 'result'
+                ? stateNames[task.state].toLocaleUpperCase(locale)
+                : t('ODA GÖREVİ')}
             </span>
             <h1>
               {view === 'result'
-                ? resultTitle.charAt(0).toLocaleUpperCase('tr-TR') + resultTitle.slice(1)
+                ? resultTitle.charAt(0).toLocaleUpperCase(locale) + resultTitle.slice(1)
                 : task.prompt}
             </h1>
             <p>{view === 'result' ? time(task.createdAt) : roomName}</p>
@@ -273,7 +275,8 @@ function TaskScope({
           {view === 'result' ? (
             <button className="rat-ghost" onClick={() => setView('task')}>
               <ArrowLeft size={16} />
-              Göreve dön
+
+              {t('Göreve dön')}
             </button>
           ) : cancellable ? (
             <button
@@ -283,74 +286,83 @@ function TaskScope({
               onClick={() => setModal('cancel')}
             >
               <Square size={14} />
-              Durdur
+
+              {t('Durdur')}
             </button>
           ) : (
             <button className="rat-ghost" onClick={onReturn}>
               <ArrowLeft size={16} />
-              Sohbete dön
+
+              {t('Sohbete dön')}
             </button>
           )}
         </header>
-        {demo && <p className="rat-demo">DEMO · Yerel görev görünümü · Gerçek işlem yapılmaz</p>}
+        {demo && (
+          <p className="rat-demo">{t('DEMO · Yerel görev görünümü · Gerçek işlem yapılmaz')}</p>
+        )}
         {view === 'task' ? (
           <>
             <section className="rat-status">
               <div>
                 <Clock3 size={18} />
-                <strong>{connected ? stateNames[task.state] : 'Bağlantı bekleniyor'}</strong>
-                <span>{task.progress.length} ilerleme kaydı</span>
+                <strong>{connected ? stateNames[task.state] : t('Bağlantı bekleniyor')}</strong>
+                <span>{t('{count} ilerleme kaydı', { count: task.progress.length })}</span>
               </div>
               <div className="rat-status-line" />
-              <small>Toplam aşama ve tamamlanma yüzdesi sunulmuyor.</small>
+              <small>{t('Toplam aşama ve tamamlanma yüzdesi sunulmuyor.')}</small>
             </section>
             {task.execution && (
               <p className="rat-muted" style={{ overflowWrap: 'anywhere' }}>
                 {task.execution.hostId} · {task.execution.modelProvider} ·{' '}
                 {task.execution.writer === 'human'
-                  ? 'İnsan kontrolünde'
+                  ? t('İnsan kontrolünde')
                   : task.execution.writer === 'ai' && task.state === 'running'
-                    ? 'AI çalışıyor'
-                    : 'Yürütme bekliyor/durdu'}
+                    ? t('AI çalışıyor')
+                    : t('Yürütme bekliyor/durdu')}
                 {task.execution.usage && (
                   <>
                     {' '}
-                    · Agent toplamı: sunucu CPU’su{' '}
-                    {task.execution.usage.cpuPercent == null
-                      ? 'veri yok'
-                      : `%${task.execution.usage.cpuPercent.toFixed(1)}`}{' '}
-                    · RAM{' '}
-                    {task.execution.usage.memoryBytes == null
-                      ? 'veri yok'
-                      : `${Math.round(task.execution.usage.memoryBytes / 1024 ** 2)} MB`}{' '}
-                    · {task.execution.usage.pids ?? '?'} süreç/iş parçacığı · Çalışma diski{' '}
-                    {task.execution.usage.workspaceBytes == null
-                      ? 'veri yok'
-                      : `${Math.round(task.execution.usage.workspaceBytes / 1024 ** 2)} MB`}{' '}
-                    · Son ölçüm{' '}
-                    {new Date(task.execution.usage.measuredAt).toLocaleTimeString('tr-TR')}
+                    {t(
+                      '· Agent toplamı: sunucu CPU’su {cpu} · RAM {memory} · {pids} süreç/iş parçacığı · Çalışma diski {disk} · Son ölçüm {time}',
+                      {
+                        cpu:
+                          task.execution.usage.cpuPercent == null
+                            ? t('veri yok')
+                            : t('%{value}', { value: task.execution.usage.cpuPercent.toFixed(1) }),
+                        memory:
+                          task.execution.usage.memoryBytes == null
+                            ? t('veri yok')
+                            : `${Math.round(task.execution.usage.memoryBytes / 1024 ** 2)} MB`,
+                        pids: task.execution.usage.pids ?? '?',
+                        disk:
+                          task.execution.usage.workspaceBytes == null
+                            ? t('veri yok')
+                            : `${Math.round(task.execution.usage.workspaceBytes / 1024 ** 2)} MB`,
+                        time: new Date(task.execution.usage.measuredAt).toLocaleTimeString(locale),
+                      },
+                    )}
                   </>
                 )}
               </p>
             )}
             {!connected && (
               <p className="rat-callout">
-                Bağlantı kesildi. Görevin son durumu yeniden doğrulanmalı.
+                {t('Bağlantı kesildi. Görevin son durumu yeniden doğrulanmalı.')}
               </p>
             )}
             {task.state === 'awaiting-approval' && (
               <p className="rat-callout">
-                {task.pendingApproval?.description ?? 'Görev yürütülmeden önce onay bekleniyor.'}
+                {task.pendingApproval?.description ?? t('Görev yürütülmeden önce onay bekleniyor.')}
               </p>
             )}
             {task.error && <p className="rat-callout error">{uiError(task.error)}</p>}
             {owner && connected && !demo && bridge.workspace && (
               <>
                 <button className="rat-ghost" onClick={() => setWorkspaceOpen((open) => !open)}>
-                  {workspaceOpen ? 'Terminal panelini kapat' : 'Çalışma terminali'}
+                  {workspaceOpen ? t('Terminal panelini kapat') : t('Çalışma terminali')}
                 </button>
                 {workspaceOpen && (
-                  <Suspense fallback={<p>Terminal açılıyor…</p>}>
+                  <Suspense fallback={<p>{t('Terminal açılıyor…')}</p>}>
                     <AgentWorkspace
                       api={bridge.workspace}
                       task={task}
@@ -363,10 +375,10 @@ function TaskScope({
             )}
             {task.state === 'cancelled' && (
               <p className="rat-callout">
-                Görev durduruldu. Tamamlanmış dış işlemler geri alınmaz.
+                {t('Görev durduruldu. Tamamlanmış dış işlemler geri alınmaz.')}
               </p>
             )}
-            <span className="rat-label">İSTEK</span>
+            <span className="rat-label">{t('İSTEK')}</span>
             <blockquote className="rat-prompt">{task.prompt}</blockquote>
             <ol className="rat-timeline">
               {task.progress.map((item, index) => (
@@ -378,7 +390,7 @@ function TaskScope({
                 </li>
               ))}
             </ol>
-            {!task.progress.length && <p className="rat-muted">Henüz ilerleme kaydı yok.</p>}
+            {!task.progress.length && <p className="rat-muted">{t('Henüz ilerleme kaydı yok.')}</p>}
             {task.result && <p className="rat-prompt">{task.result}</p>}
             {task.artifacts.map((artifact) => (
               <div className="rat-file" key={artifact.id}>
@@ -395,7 +407,7 @@ function TaskScope({
                     setSelected(artifact.id);
                   }}
                 >
-                  Aç
+                  {t('Aç')}
                 </button>
                 <button
                   disabled={demo || busy || !connected || invalid.current}
@@ -403,7 +415,8 @@ function TaskScope({
                   onClick={() => download(artifact.id)}
                 >
                   <ArrowDownToLine size={16} />
-                  İndir
+
+                  {t('İndir')}
                 </button>
               </div>
             ))}
@@ -411,18 +424,20 @@ function TaskScope({
               {task.state === 'awaiting-approval' && (
                 <button className="button primary" onClick={() => setModal('approval')}>
                   <ShieldCheck size={16} />
-                  Değişikliği incele
+
+                  {t('Değişikliği incele')}
                 </button>
               )}
               {task.uncertainOperation && task.state === 'interrupted' && (
                 <button className="button primary" onClick={() => setModal('uncertain')}>
-                  Belirsiz işlemi incele
+                  {t('Belirsiz işlemi incele')}
                 </button>
               )}
               {task.state === 'completed' && (
                 <button className="button primary" onClick={openResult}>
                   <ArrowRight size={16} />
-                  Sonuç ve dosyaları aç
+
+                  {t('Sonuç ve dosyaları aç')}
                 </button>
               )}
               {!connected && (
@@ -432,7 +447,8 @@ function TaskScope({
                   onClick={() => void onRefresh()}
                 >
                   <RefreshCw size={16} />
-                  Durumu yeniden kontrol et
+
+                  {t('Durumu yeniden kontrol et')}
                 </button>
               )}
             </div>
@@ -441,22 +457,24 @@ function TaskScope({
           <>
             <div className="rat-tabs" role="tablist">
               <button role="tab" aria-selected={tab === 'result'} onClick={() => setTab('result')}>
-                Sonuç
+                {t('Sonuç')}
               </button>
               <button
                 role="tab"
                 aria-selected={tab === 'sources'}
                 onClick={() => setTab('sources')}
               >
-                Kaynaklar
+                {t('Kaynaklar')}
               </button>
             </div>
             {tab === 'sources' ? (
               <div className="rat-empty">
                 <LockKeyhole size={28} />
-                <h2>Kaynak mesaj listesi sunulmuyor</h2>
+                <h2>{t('Kaynak mesaj listesi sunulmuyor')}</h2>
                 <p>
-                  Bu görev sözleşmesinde kaynak mesaj kimlikleri veya doğrulanmış kaynak sayısı yok.
+                  {t(
+                    'Bu görev sözleşmesinde kaynak mesaj kimlikleri veya doğrulanmış kaynak sayısı yok.',
+                  )}
                 </p>
               </div>
             ) : (
@@ -482,26 +500,26 @@ function TaskScope({
                       <header>
                         <FileText size={14} />
                         {task.artifacts.find((item) => item.id === selected)?.name ??
-                          'Dosya önizlemesi'}
-                        <span>Düz metin</span>
+                          t('Dosya önizlemesi')}
+                        <span>{t('Düz metin')}</span>
                       </header>
                       {previewLoading ? (
                         <div className="rat-empty" role="status">
-                          Önizleme açılıyor…
+                          {t('Önizleme açılıyor…')}
                         </div>
                       ) : preview?.state === 'text' ? (
                         <pre>{preview.text}</pre>
                       ) : (
                         <div className="rat-empty">
                           <FileText size={32} />
-                          <h2>Önizleme açılamadı</h2>
-                          <p>{previewReason || 'Bir dosya seç.'}</p>
+                          <h2>{t('Önizleme açılamadı')}</h2>
+                          <p>{previewReason || t('Bir dosya seç.')}</p>
                           <button
                             className="button secondary"
                             disabled={demo || !connected || !selected || invalid.current}
                             onClick={() => setRevision((value) => value + 1)}
                           >
-                            Yeniden dene
+                            {t('Yeniden dene')}
                           </button>
                         </div>
                       )}
@@ -515,16 +533,17 @@ function TaskScope({
                         onClick={() => selected && download(selected)}
                       >
                         <ArrowDownToLine size={16} />
-                        Dosyayı indir
+
+                        {t('Dosyayı indir')}
                       </button>
                     </div>
                   </>
                 ) : (
                   <div className="rat-empty">
                     <FileText size={32} />
-                    <h2>Bu görev dosya oluşturmadı</h2>
+                    <h2>{t('Bu görev dosya oluşturmadı')}</h2>
                     <button className="button primary" onClick={onReturn}>
-                      Sohbete dön
+                      {t('Sohbete dön')}
                     </button>
                   </div>
                 )}
@@ -539,65 +558,67 @@ function TaskScope({
         )}
       </main>
       <aside className="rat-rail">
-        <h2>{view === 'result' ? 'Sonuç bilgileri' : 'Görev bilgileri'}</h2>
+        <h2>{view === 'result' ? t('Sonuç bilgileri') : t('Görev bilgileri')}</h2>
         <dl>
-          <dt>Başlatan</dt>
+          <dt>{t('Başlatan')}</dt>
           <dd>{ownerLabel}</dd>
-          <dt>Oda</dt>
+          <dt>{t('Oda')}</dt>
           <dd>{roomName}</dd>
-          <dt>Kişisel bağlantı</dt>
+          <dt>{t('Kişisel bağlantı')}</dt>
           <dd>
             {model?.label ??
-              (task.kind === 'reminder' ? 'Model gerektirmez' : 'Başlatanın kişisel bağlantısı')}
+              (task.kind === 'reminder'
+                ? t('Model gerektirmez')
+                : t('Başlatanın kişisel bağlantısı'))}
           </dd>
           {model && (
             <>
-              <dt>Model profili</dt>
+              <dt>{t('Model profili')}</dt>
               <dd>{model.model}</dd>
             </>
           )}
-          <dt>Durum</dt>
+          <dt>{t('Durum')}</dt>
           <dd>{stateNames[task.state]}</dd>
-          <dt>Başlangıç</dt>
+          <dt>{t('Başlangıç')}</dt>
           <dd>{time(task.createdAt)}</dd>
           {task.runAt && (
             <>
-              <dt>Planlanan zaman</dt>
+              <dt>{t('Planlanan zaman')}</dt>
               <dd>{time(task.runAt)}</dd>
             </>
           )}
         </dl>
-        <p>Görev başlatanın seçtiği bağlantıyla çalışır.</p>
+        <p>{t('Görev başlatanın seçtiği bağlantıyla çalışır.')}</p>
         <button
           disabled={!owner || !onManageConnection}
           title={
             !onManageConnection
-              ? 'Bağlantı yönetimi bu görünümde bağlı değil.'
+              ? t('Bağlantı yönetimi bu görünümde bağlı değil.')
               : !owner
-                ? 'Başka bir üyenin kişisel bağlantısı açılamaz.'
+                ? t('Başka bir üyenin kişisel bağlantısı açılamaz.')
                 : undefined
           }
           onClick={onManageConnection}
         >
-          Bağlantıyı yönet
+          {t('Bağlantıyı yönet')}
         </button>
         <button
           disabled={!onHistory}
-          title={!onHistory ? 'İşlem geçmişi bu görünümde bağlı değil.' : undefined}
+          title={!onHistory ? t('İşlem geçmişi bu görünümde bağlı değil.') : undefined}
           onClick={onHistory}
         >
-          İşlem geçmişi
+          {t('İşlem geçmişi')}
         </button>
-        <p>Kaynak mesaj listesi ve dış işlem makbuzu bu görev görünümünde sunulmuyor.</p>
+        <p>{t('Kaynak mesaj listesi ve dış işlem makbuzu bu görev görünümünde sunulmuyor.')}</p>
       </aside>
       {modal && (
         <Modal
           title={
             modal === 'cancel'
-              ? 'Görevi durdur?'
+              ? t('Görevi durdur?')
               : modal === 'uncertain'
-                ? 'İşlemin sonucu doğrulanamadı'
-                : 'İşlemi onayla?'
+                ? t('İşlemin sonucu doğrulanamadı')
+                : t('İşlemi onayla?')
           }
           className="rat-modal"
           onClose={() => {
@@ -609,21 +630,21 @@ function TaskScope({
         >
           <div className="rat-modal-body">
             {modal === 'cancel' ? (
-              <p>Görevin devamı durdurulur. Tamamlanmış dış işlemler geri alınmaz.</p>
+              <p>{t('Görevin devamı durdurulur. Tamamlanmış dış işlemler geri alınmaz.')}</p>
             ) : (
               <>
-                <p>{operation?.description ?? 'Bu görev çalıştırılmayı bekliyor.'}</p>
+                <p>{operation?.description ?? t('Bu görev çalıştırılmayı bekliyor.')}</p>
                 <dl className="rat-scope">
                   <div>
-                    <dt>İşlem</dt>
-                    <dd>{operation?.tool ?? 'Görev yürütme'}</dd>
+                    <dt>{t('İşlem')}</dt>
+                    <dd>{operation?.tool ?? t('Görev yürütme')}</dd>
                   </div>
                   <div>
-                    <dt>Başlatan</dt>
+                    <dt>{t('Başlatan')}</dt>
                     <dd>{ownerLabel}</dd>
                   </div>
                   <div>
-                    <dt>Kapsam</dt>
+                    <dt>{t('Kapsam')}</dt>
                     <dd>{roomName}</dd>
                   </div>
                 </dl>
@@ -631,11 +652,12 @@ function TaskScope({
                 {modal === 'uncertain' ? (
                   <>
                     <p className="rat-callout">
-                      İşlem dış hizmette uygulanmış olabilir. Aynı işlemi tekrar göndermeden önce
-                      sonucu ilgili hizmetten kontrol et.
+                      {t(
+                        'İşlem dış hizmette uygulanmış olabilir. Aynı işlemi tekrar göndermeden önce sonucu ilgili hizmetten kontrol et.',
+                      )}
                     </p>
                     <label className="rat-field">
-                      Doğruladığın sonuç
+                      {t('Doğruladığın sonuç')}
                       <textarea
                         value={verified}
                         onChange={(event) => setVerified(event.target.value)}
@@ -656,7 +678,7 @@ function TaskScope({
                         )
                       }
                     >
-                      Doğrulanmış sonuçla devam et
+                      {t('Doğrulanmış sonuçla devam et')}
                     </button>
                     <label className="rat-confirm">
                       <input
@@ -664,7 +686,8 @@ function TaskScope({
                         checked={notApplied}
                         onChange={(event) => setNotApplied(event.target.checked)}
                       />
-                      Dış hizmeti kontrol ettim; işlem uygulanmadı.
+
+                      {t('Dış hizmeti kontrol ettim; işlem uygulanmadı.')}
                     </label>
                     <button
                       className="button secondary"
@@ -679,13 +702,14 @@ function TaskScope({
                         )
                       }
                     >
-                      Uygulanmadığını onayla ve devam et
+                      {t('Uygulanmadığını onayla ve devam et')}
                     </button>
                   </>
                 ) : (
                   <p className="rat-muted">
-                    Onay mevcut sunucu izinlerini genişletmez. İşlem yetkisini Agent sunucusu
-                    yeniden doğrular.
+                    {t(
+                      'Onay mevcut sunucu izinlerini genişletmez. İşlem yetkisini Agent sunucusu yeniden doğrular.',
+                    )}
                   </p>
                 )}
               </>
@@ -699,7 +723,7 @@ function TaskScope({
           </div>
           <footer>
             <button className="button secondary" disabled={busy} onClick={() => setModal(null)}>
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             {modal === 'cancel' && (
               <button
@@ -707,7 +731,7 @@ function TaskScope({
                 disabled={busy || !!disabledReason || !cancellable || invalid.current}
                 onClick={() => void run(() => bridge.cancel(task.id))}
               >
-                Durdur
+                {t('Durdur')}
               </button>
             )}
             {modal === 'approval' && (
@@ -719,7 +743,8 @@ function TaskScope({
                 onClick={() => void run(() => bridge.approve(task.id))}
               >
                 <Check size={16} />
-                Onayla ve devam et
+
+                {t('Onayla ve devam et')}
               </button>
             )}
           </footer>

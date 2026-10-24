@@ -1,6 +1,7 @@
 import type { DesktopBridge } from '@rooms/contracts';
 import { liveKitMediaProvider, type RealtimeMediaProvider } from '@rooms/media';
 import type { RoomSnapshot } from '@rooms/activity-protocol';
+import { t } from './i18n';
 
 interface DevelopmentRuntime {
   mediaProvider: RealtimeMediaProvider;
@@ -35,7 +36,9 @@ export function mediaBridge(): DesktopBridge['media'] {
 export function activityBridge(): DesktopBridge['activity'] {
   if (import.meta.env.DEV && development) return development.activityBridge;
   if (!window.rooms?.activity)
-    throw new Error('Ortak etkinlikler masaüstü uygulaması ve yapılandırılmış sunucu gerektirir.');
+    throw new Error(
+      t('Ortak etkinlikler masaüstü uygulaması ve yapılandırılmış sunucu gerektirir.'),
+    );
   return window.rooms.activity;
 }
 /** Explicit private development projection, never read from IPC or production configuration. */

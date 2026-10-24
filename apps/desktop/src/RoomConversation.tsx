@@ -3,6 +3,7 @@ import { CommunityChat, CommunityVoice } from './RealSocial';
 import { useCommunity } from './community';
 import { useRealtime } from './realtime';
 import { useChannelAccess } from './channel-access';
+import { t } from './i18n';
 import { ChannelAccessState } from './CommunitySettings';
 /** Room conversation is the room's actual upstream channel, never another room's log. */
 export function RoomConversation({
@@ -39,13 +40,13 @@ export function RoomConversation({
       );
     return (
       <div className="quiet-inline-state" role="status">
-        {access === 'checking' ? 'Erişim kontrol ediliyor…' : 'Sohbet alınamadı.'}
+        {access === 'checking' ? t('Erişim kontrol ediliyor…') : t('Sohbet alınamadı.')}
         <button
           onClick={() => {
             if (c.activeChannelId) void c.openChannel(c.activeChannelId);
           }}
         >
-          Yeniden dene
+          {t('Yeniden dene')}
         </button>
       </div>
     );
@@ -54,17 +55,20 @@ export function RoomConversation({
     return <CommunityVoice openLauncher={openLauncher} notify={notify} />;
   const inRoom =
     !r.busy && r.status === 'connected' && selected?.type === 2 && selected.id === r.channelId;
-  const screens = inRoom && r.tracks.some((t) => t.source === 'screen_share' && !t.muted);
-  const cameras = inRoom && r.tracks.some((t) => t.source === 'camera' && !t.muted);
+  const screens =
+    inRoom && r.tracks.some((track) => track.source === 'screen_share' && !track.muted);
+  const cameras = inRoom && r.tracks.some((track) => track.source === 'camera' && !track.muted);
   return (
     <div className="room-conversation">
       {(screens || cameras) && (
         <div className="minimal-live-content">
           {screens && (
-            <button onClick={() => navigate('/voice?view=share')}>Ekran paylaşımını izle</button>
+            <button onClick={() => navigate('/voice?view=share')}>
+              {t('Ekran paylaşımını izle')}
+            </button>
           )}
           {cameras && (
-            <button onClick={() => navigate('/voice?view=video')}>Kameraları göster</button>
+            <button onClick={() => navigate('/voice?view=video')}>{t('Kameraları göster')}</button>
           )}
         </div>
       )}

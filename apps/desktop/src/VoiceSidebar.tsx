@@ -26,8 +26,11 @@ import { useCommunity } from './community';
 import { useRealtime, joinVoice, leaveVoice, toggleMic, toggleDeafen } from './realtime';
 import { useVoiceDirectory } from './voice-directory';
 import { VoiceAvatar } from './VoiceAvatar';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import { useModerationRights } from './VoiceModeration';
+import { places } from './dev/sample';
+// Name of the dev fixture's empty voice room.
+const FIXTURE_VOICE_ROOM = places.lounge;
 export function VoiceSidebar({
   notify,
   invite,
@@ -48,7 +51,7 @@ export function VoiceSidebar({
     fixtureParams?.get('fixture')?.toUpperCase() === 'S19' &&
     fixtureParams.get('variant') === 'empty';
   const emptyVoiceChannelId = emptyVoiceFixture
-    ? (c.channels.find((ch) => ch.type === 2 && ch.name === 'Salon')?.id ?? null)
+    ? (c.channels.find((ch) => ch.type === 2 && ch.name === FIXTURE_VOICE_ROOM)?.id ?? null)
     : null;
   const activity = useActivityRoom(c.user ? (r.channelId ?? emptyVoiceChannelId) : null);
   const primary = activity.status === 'connected' ? activity.room?.primary : null;
@@ -128,13 +131,13 @@ export function VoiceSidebar({
           <button
             ref={triggerRef}
             className="community-menu-trigger"
-            aria-label="Topluluk menüsü"
+            aria-label={t('Topluluk menüsü')}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             title={currentSpace?.name}
             onClick={() => setMenuOpen((v) => !v)}
           >
-            <strong>{currentSpace?.name ?? 'Topluluk'}</strong>
+            <strong>{currentSpace?.name ?? t('Topluluk')}</strong>
             <ReferenceIcon name="chevron-down" size={16} />
           </button>
           {menuOpen && (
@@ -142,7 +145,7 @@ export function VoiceSidebar({
               ref={menuRef}
               className="community-menu"
               role="menu"
-              aria-label="Topluluk işlemleri"
+              aria-label={t('Topluluk işlemleri')}
             >
               {c.spaces.map((space) => (
                 <button
@@ -157,20 +160,20 @@ export function VoiceSidebar({
               <hr />
               <button role="menuitem" onClick={() => menuAction(invite)}>
                 <ReferenceIcon name="user-plus" size={15} />
-                Davet oluştur
+                {t('Davet oluştur')}
               </button>
               <button
                 role="menuitem"
                 disabled={!communityAdmin}
-                title={!communityAdmin ? 'Topluluk sahibi düzenleyebilir.' : undefined}
+                title={!communityAdmin ? t('Topluluk sahibi düzenleyebilir.') : undefined}
                 onClick={() => menuAction(editSpace)}
               >
                 <ReferenceIcon name="settings" size={15} />
-                Topluluğu düzenle
+                {t('Topluluğu düzenle')}
               </button>
               <button role="menuitem" onClick={() => menuAction(() => navigate('/files'))}>
                 <ReferenceIcon name="file" size={15} />
-                Dosyalar
+                {t('Dosyalar')}
               </button>
             </div>
           )}
@@ -178,12 +181,12 @@ export function VoiceSidebar({
         <div className="voice-channel-scroll">
           <button className="sidebar-search channel-quick-search" onClick={search}>
             <ReferenceIcon name="search" size={15} />
-            <span>Bir şeye geç…</span>
+            <span>{t('Bir şeye geç…')}</span>
             <kbd>⌘ K</kbd>
           </button>
           <div className="section-label" data-channel-type="text" tabIndex={0}>
-            SOHBET
-            <button data-create-type="text" aria-label="Metin kanalı oluştur">
+            {t('SOHBET')}
+            <button data-create-type="text" aria-label={t('Metin kanalı oluştur')}>
               <ReferenceIcon name="plus" size={14} />
             </button>
           </div>
@@ -204,8 +207,8 @@ export function VoiceSidebar({
             </button>
           ))}
           <div className="section-label" data-channel-type="voice" tabIndex={0}>
-            SES ODALARI
-            <button data-create-type="voice" aria-label="Ses odası oluştur">
+            {t('SES ODALARI')}
+            <button data-create-type="voice" aria-label={t('Ses odası oluştur')}>
               <ReferenceIcon name="plus" size={14} />
             </button>
           </div>
@@ -214,7 +217,7 @@ export function VoiceSidebar({
               <button
                 data-channel-id={ch.id}
                 title={ch.name}
-                className={`room-channel ${r.channelId === ch.id && location.pathname !== '/voice' ? 'joined' : ''} ${(r.channelId === ch.id && location.pathname === '/voice') || (emptyVoiceFixture && ch.name === 'Salon' && location.pathname === '/voice') ? 'selected' : ''}`}
+                className={`room-channel ${r.channelId === ch.id && location.pathname !== '/voice' ? 'joined' : ''} ${(r.channelId === ch.id && location.pathname === '/voice') || (emptyVoiceFixture && ch.name === FIXTURE_VOICE_ROOM && location.pathname === '/voice') ? 'selected' : ''}`}
                 disabled={r.busy}
                 onClick={() => {
                   navigate('/voice');
@@ -224,7 +227,8 @@ export function VoiceSidebar({
               >
                 <ReferenceIcon name="volume" size={19} />
                 <span>{ch.name}</span>
-                {(occupants(ch.id).length > 0 || (emptyVoiceFixture && ch.name === 'Salon')) && (
+                {(occupants(ch.id).length > 0 ||
+                  (emptyVoiceFixture && ch.name === FIXTURE_VOICE_ROOM)) && (
                   <span className="channel-count">{occupants(ch.id).length}</span>
                 )}
               </button>
@@ -241,7 +245,7 @@ export function VoiceSidebar({
                   <VoiceAvatar id={p.id} name={p.name} />
                   <span title={p.name}>{p.name}</span>
                   {p.deafened ? (
-                    <HeadphoneOff size={13} aria-label="Sağırlaştırdı" />
+                    <HeadphoneOff size={13} aria-label={t('Sağırlaştırdı')} />
                   ) : p.muted ? (
                     <ReferenceIcon name="mic-off" size={13} />
                   ) : p.speaking && r.status === 'connected' ? (
@@ -253,41 +257,42 @@ export function VoiceSidebar({
                   ) : null}
                 </button>
               ))}
-              {(r.channelId === ch.id || (emptyVoiceFixture && ch.name === 'Salon')) && primary && (
-                <button
-                  className="sidebar-activity-link"
-                  onClick={() => openActivity(primary.activity, navigate)}
-                >
-                  <ReferenceIcon name="film" size={12} />
-                  {primary.title} sürüyor
-                  <i />
-                </button>
-              )}
+              {(r.channelId === ch.id || (emptyVoiceFixture && ch.name === FIXTURE_VOICE_ROOM)) &&
+                primary && (
+                  <button
+                    className="sidebar-activity-link"
+                    onClick={() => openActivity(primary.activity, navigate)}
+                  >
+                    <ReferenceIcon name="film" size={12} />
+                    {t('{title} sürüyor', { title: primary.title })}
+                    <i />
+                  </button>
+                )}
             </div>
           ))}
           {directory.error && (
             <p className="muted" role="status">
-              Oda üyelerine ulaşılamıyor.
+              {t('Oda üyelerine ulaşılamıyor.')}
             </p>
           )}
-          {!voice.length && <p className="muted">Ses odası yok.</p>}
-          <div className="section-label">BİRLİKTE</div>
+          {!voice.length && <p className="muted">{t('Ses odası yok.')}</p>}
+          <div className="section-label">{t('BİRLİKTE')}</div>
           <button className="room-channel" onClick={() => navigate('/games')}>
             <ReferenceIcon name="gamepad" size={19} />
-            <span>Oyun alanı</span>
+            <span>{t('Oyun alanı')}</span>
           </button>
           <button className="room-channel" onClick={() => navigate('/agent')}>
             <ReferenceIcon name="bot" size={19} />
-            <span>Oda asistanı</span>
+            <span>{t('Oda asistanı')}</span>
           </button>
           <button className="room-channel" onClick={() => navigate('/together?tab=board')}>
             <ReferenceIcon name="whiteboard" size={19} />
             <span>Whiteboard</span>
           </button>
-          <div className="section-label">SANA ÖZEL</div>
+          <div className="section-label">{t('SANA ÖZEL')}</div>
           <button className="room-channel" onClick={() => navigate('/media')}>
             <ReferenceIcon name="film" size={19} />
-            <span>Medyam</span>
+            <span>{t('Medyam')}</span>
           </button>
           {c.dms.map((dm) => (
             <button
@@ -312,18 +317,18 @@ export function VoiceSidebar({
               <span>
                 <strong>
                   {r.status === 'connected'
-                    ? 'Ses bağlı'
+                    ? t('Ses bağlı')
                     : r.status === 'reconnecting'
-                      ? 'Yeniden bağlanıyor'
+                      ? t('Yeniden bağlanıyor')
                       : r.busy
-                        ? 'Bağlanıyor'
-                        : 'Bağlantı kesildi'}
+                        ? t('Bağlanıyor')
+                        : t('Bağlantı kesildi')}
                 </strong>
                 <small>
                   {r.roomName} / {c.spaces.find((s) => s.id === c.activeSpaceId)?.name}
                 </small>
               </span>
-              <IconButton label="Sesten ayrıl" onClick={() => run(leaveVoice())}>
+              <IconButton label={t('Sesten ayrıl')} onClick={() => run(leaveVoice())}>
                 <ReferenceIcon name="logout" size={17} />
               </IconButton>
             </div>
@@ -340,7 +345,7 @@ export function VoiceSidebar({
                 onClick={() => navigate('/voice?view=share&choose=1')}
               >
                 <ReferenceIcon name="monitor" size={14} />
-                Ekran
+                {t('Ekran')}
               </button>
             </div>
           </div>
@@ -352,15 +357,15 @@ export function VoiceSidebar({
               <strong>{c.user?.displayName || c.user?.username}</strong>
               <small>
                 {c.status === 'connected'
-                  ? 'Çevrimiçi'
+                  ? t('Çevrimiçi')
                   : c.status === 'reconnecting'
-                    ? 'Yeniden bağlanıyor'
-                    : 'Bağlantı kesildi'}
+                    ? t('Yeniden bağlanıyor')
+                    : t('Bağlantı kesildi')}
               </small>
             </span>
           </button>
           <IconButton
-            label={r.muted ? 'Mikrofonu aç' : 'Mikrofonu kapat'}
+            label={r.muted ? t('Mikrofonu aç') : t('Mikrofonu kapat')}
             aria-pressed={!r.muted}
             disabled={r.status !== 'connected'}
             onClick={() => run(toggleMic())}
@@ -372,7 +377,7 @@ export function VoiceSidebar({
             )}
           </IconButton>
           <IconButton
-            label={r.deafened ? 'Sesi aç' : 'Sağırlaştır'}
+            label={r.deafened ? t('Sesi aç') : t('Sağırlaştır')}
             aria-pressed={r.deafened}
             className={r.deafened ? 'muted-control' : ''}
             disabled={r.status !== 'connected'}
@@ -380,7 +385,7 @@ export function VoiceSidebar({
           >
             <ReferenceIcon name={r.deafened ? 'headphones-off' : 'headphones'} size={17} />
           </IconButton>
-          <IconButton label="Ayarlar" onClick={() => navigate('/settings')}>
+          <IconButton label={t('Ayarlar')} onClick={() => navigate('/settings')}>
             <ReferenceIcon name="settings" size={17} />
           </IconButton>
         </footer>

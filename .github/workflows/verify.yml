@@ -9,6 +9,9 @@ permissions:
 concurrency:
   group: verify-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+env:
+  # Native checks read the Turkish interface; runners are set up in English.
+  ROOMS_LOCALE: tr
 jobs:
   baseline:
     runs-on: ubuntu-24.04

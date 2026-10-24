@@ -8,17 +8,21 @@ import type {
 } from '@rooms/activity-protocol';
 import { installDevelopmentRuntime, mediaBridge, mediaProvider } from '../runtime-sources';
 import { installMediaFixture } from './media-fixture';
+import { sample, people as crew } from './sample';
 
-export const GAME_FIXTURE_LABEL = 'DEMO · Yerel oyun/anket/tahta örneği';
+export const GAME_FIXTURE_LABEL = sample(
+  'DEMO · Yerel oyun/anket/tahta örneği',
+  'DEMO · Local game/poll/board sample',
+);
 export const GAME_FIXTURE_ROOM = 'demo-channel-salon';
 const self = 'demo-deniz',
   epoch = Date.UTC(2026, 9, 10, 18, 47);
 const people = [
-  { userId: self, name: 'Deniz' },
-  { userId: 'demo-ece', name: 'Ece' },
-  { userId: 'demo-can', name: 'Can' },
-  { userId: 'demo-zeynep', name: 'Zeynep' },
-  { userId: 'demo-mert', name: 'Mert' },
+  { userId: self, name: crew.deniz },
+  { userId: 'demo-ece', name: crew.ece },
+  { userId: 'demo-can', name: crew.can },
+  { userId: 'demo-zeynep', name: crew.zeynep },
+  { userId: 'demo-mert', name: crew.mert },
 ];
 /** Exact inventory keys. Responsive keys describe viewport evidence, not a game command. */
 export const gameFixtureVariants = {
@@ -219,7 +223,10 @@ export function getGamesFixtureMetadata(id: string, value = 'default'): GamesFix
           ? 'error'
           : 'connected',
     error: ['error', 'offline', 'reconnect'].includes(v)
-      ? 'DEMO · Yerel bağlantı durumu örneği; sunucuya bağlanılmadı.'
+      ? sample(
+          'DEMO · Yerel bağlantı durumu örneği; sunucuya bağlanılmadı.',
+          'DEMO · Local connection state sample; no server was contacted.',
+        )
       : null,
     ui: {
       create: null,
@@ -344,7 +351,7 @@ const seats = (count: number) =>
     connected: true,
   }));
 const rules = {
-  name: 'Akşam eli',
+  name: sample('Akşam eli', 'Evening hand'),
   capacity: 6,
   smallBlind: 10,
   bigBlind: 20,
@@ -365,12 +372,12 @@ function baseGame(kind: GamePublicState['kind'], count = 4): GamePublicState {
       capacity: count,
       tableName:
         kind === 'holdem'
-          ? 'Akşam eli'
+          ? sample('Akşam eli', 'Evening hand')
           : kind === '101'
             ? 'Son bir el'
             : kind === 'batak'
-              ? 'Salon Batak'
-              : 'Bir el daha',
+              ? sample('Salon Batak', 'Lounge Batak')
+              : sample('Bir el daha', 'One more hand'),
       legalActions: [],
       turnDeadline: epoch + 40_000,
       statistics: { [self]: { hands: 0, wins: 0, score: 0 } },
@@ -970,9 +977,9 @@ function poll(v: string): Poll[] {
   return [
     {
       id: 'demo-room-poll',
-      question: 'Filmden sonra ne oynayalım?',
+      question: sample('Filmden sonra ne oynayalım?', 'What should we play after the movie?'),
       options: [
-        { id: 'demo-poll-film', label: 'Bir film daha' },
+        { id: 'demo-poll-film', label: sample('Bir film daha', 'One more movie') },
         { id: 'demo-poll-101', label: '101 Okey' },
         { id: 'demo-poll-batak', label: 'Batak' },
       ],
@@ -1001,7 +1008,7 @@ function board(v: string): BoardElement[] {
       authorId: self,
       kind: 'text',
       points: [[375, 90]],
-      text: 'Pazar planı',
+      text: sample('Pazar planı', 'Sunday plan'),
       color: '#B8CDFF',
       width: 2,
     },
@@ -1010,7 +1017,7 @@ function board(v: string): BoardElement[] {
       authorId: 'demo-ece',
       kind: 'text',
       points: [[135, 170]],
-      text: '11.00 · Kahve?',
+      text: sample('11.00 · Kahve?', '11:00 AM · Coffee?'),
       color: '#E7B96F',
       width: 2,
     },
@@ -1030,7 +1037,7 @@ function board(v: string): BoardElement[] {
       authorId: self,
       kind: 'text',
       points: [[395, 170]],
-      text: '15.00 · Yürüyüş',
+      text: sample('15.00 · Yürüyüş', '3:00 PM · Walk'),
       color: '#B8CDFF',
       width: 2,
     },
@@ -1039,7 +1046,7 @@ function board(v: string): BoardElement[] {
       authorId: 'demo-can',
       kind: 'text',
       points: [[680, 170]],
-      text: '18.30 · Bizde akşam',
+      text: sample('18.30 · Bizde akşam', '6:30 PM · Evening at ours'),
       color: '#65BC94',
       width: 2,
     },
@@ -1100,7 +1107,7 @@ export function createGamesFixtureProjection(
       if (!game.seats.some((seat) => seat.userId === self)) game.view.ownRecovery = null;
       if (v === 'spectator') {
         game.view.watching = true;
-        game.view.spectators = [{ userId: self, name: 'Deniz' }];
+        game.view.spectators = [{ userId: self, name: crew.deniz }];
         game.view.ownRecovery = null;
       }
     }
@@ -1202,7 +1209,7 @@ export function createGamesFixtureProjection(
     : screen === 'S53' || (screen === 'S41' && v === 'activity_conflict')
       ? {
           activity: 'cinema',
-          title: 'Gecenin Kıyısında',
+          title: sample('Gecenin Kıyısında', 'On the Night Shore'),
           hostUserId: 'demo-ece',
           startedAt: epoch - 120_000,
           state: 'live',

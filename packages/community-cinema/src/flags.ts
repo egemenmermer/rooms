@@ -95,6 +95,7 @@ const codes: Record<string, string> = {
   CL: 'CL',
   CO: 'CO',
   PE: 'PE',
+  // i18n-ignore: ISO country code VE (Venezuela), not the Turkish word
   VE: 'VE',
   LY: 'LY',
   USA: 'US',
@@ -430,6 +431,7 @@ const names: Record<string, string> = {
   australia: 'AU',
   avustralya: 'AU',
   'new zealand': 'NZ',
+  // i18n-ignore: Turkish country name matched against provider group titles
   'yeni zelanda': 'NZ',
   'south africa': 'ZA',
   'guney afrika': 'ZA',
@@ -464,6 +466,7 @@ const names: Record<string, string> = {
   colombia: 'CO',
   kolombiya: 'CO',
   peru: 'PE',
+  // i18n-ignore: ISO country code VE (Venezuela), not the Turkish word
   venezuela: 'VE',
   libya: 'LY',
   arabic: '',

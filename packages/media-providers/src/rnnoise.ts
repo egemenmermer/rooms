@@ -1,3 +1,4 @@
+import { t } from '@rooms/i18n';
 import workletUrl from '@sapphi-red/web-noise-suppressor/rnnoiseWorklet.js?url';
 import wasmUrl from '@sapphi-red/web-noise-suppressor/rnnoise.wasm?url';
 import simdUrl from '@sapphi-red/web-noise-suppressor/rnnoise_simd.wasm?url';
@@ -9,7 +10,7 @@ const modules = new WeakMap<BaseAudioContext, Promise<void>>();
 /** Bundled assets only; microphone audio never leaves the device for processing. */
 export async function createRnnoiseNode(context: AudioContext): Promise<RnnoiseWorkletNode> {
   if (context.sampleRate !== 48_000 || !context.audioWorklet)
-    throw new Error('RNNoise için 48 kHz ses işleme desteği gerekiyor.');
+    throw new Error(t('RNNoise için 48 kHz ses işleme desteği gerekiyor.'));
   const { loadRnnoise, RnnoiseWorkletNode } = await import('@sapphi-red/web-noise-suppressor');
   binary ??= loadRnnoise({ url: wasmUrl, simdUrl }).catch((error) => {
     binary = undefined;

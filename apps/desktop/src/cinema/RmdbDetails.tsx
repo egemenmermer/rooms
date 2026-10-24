@@ -56,6 +56,7 @@ import { mutateRmdbWork, removeFromRmdb, useRmdbWork } from './rmdb-store';
 import { HeartButton, StarPicker, Stars } from './RmdbStars';
 import { useHall } from './use-hall';
 import { Credits, DetailsHead, VodSkeleton } from './VodTab';
+import { getLocale, locale, t } from '../i18n';
 
 /** The signed-in member as RMDB names them. */
 function useMe(): RmdbPerson | null {
@@ -124,7 +125,7 @@ export function RmdbDetails({
       <div className="hall-vod details-view rmdb">
         {back}
         <div className="rmdb-empty" role="status">
-          <p>Bu kayıt artık Tayfa'da yok.</p>
+          <p>{t("Bu kayıt artık Tayfa'da yok.")}</p>
         </div>
       </div>
     );
@@ -136,7 +137,7 @@ export function RmdbDetails({
           <div className="rmdb-empty" role="alert">
             <p>{error}</p>
             <button className="button secondary" onClick={reload}>
-              Yeniden dene
+              {t('Yeniden dene')}
             </button>
           </div>
         ) : (
@@ -153,7 +154,9 @@ export function RmdbDetails({
         art={details.art}
         title={details.title}
       >
-        <span className="hall-eyebrow">{details.kind === 'movie' ? 'Film' : 'Dizi'} · Tayfa</span>
+        <span className="hall-eyebrow">
+          {details.kind === 'movie' ? t('Film') : t('Dizi')} · Tayfa
+        </span>
         <h2>{details.title}</h2>
         <WorkMeta details={details} />
         {unfinished(details) && details.progress && <ProgressNote progress={details.progress} />}
@@ -182,12 +185,12 @@ function WorkMeta({ details }: { details: RmdbWorkDetails }) {
   const watched =
     details.kind === 'series'
       ? details.episodes.length
-        ? `${details.episodes.length} bölüm izlendi`
+        ? t('{count} bölüm izlendi', { count: details.episodes.length })
         : null
       : details.watchCount > 1
-        ? `${details.watchCount} kez izlendi`
+        ? t('{count} kez izlendi', { count: details.watchCount })
         : details.watchCount === 1
-          ? 'Bir kez izlendi'
+          ? t('Bir kez izlendi')
           : null;
   const parts = [
     details.year,
@@ -200,8 +203,10 @@ function WorkMeta({ details }: { details: RmdbWorkDetails }) {
       {details.averageRating !== null && (
         <span
           className="hall-rating"
-          title={`${details.ratingCount} puan`}
-          aria-label={`Topluluk puanı ${averageText(details.averageRating)} / 5`}
+          title={t('{count} puan', { count: details.ratingCount })}
+          aria-label={t('Topluluk puanı {rating} / 5', {
+            rating: averageText(details.averageRating),
+          })}
         >
           <Star size={13} fill="currentColor" />
           {averageText(details.averageRating)}
@@ -223,15 +228,16 @@ function ProgressNote({ progress }: { progress: RmdbProgress }) {
         style={{ '--progress': progressShare(progress) } as CSSProperties}
       />
       <small>
-        Yarım kaldı ·{' '}
-        {[
-          progress.episode ? episodeShort(progress.episode) : null,
-          progress.durationSec
-            ? `${clock(progress.positionSec)} / ${clock(progress.durationSec)}`
-            : clock(progress.positionSec),
-        ]
-          .filter(Boolean)
-          .join(' · ')}
+        {t('Yarım kaldı · {progress}', {
+          progress: [
+            progress.episode ? episodeShort(progress.episode) : null,
+            progress.durationSec
+              ? `${clock(progress.positionSec)} / ${clock(progress.durationSec)}`
+              : clock(progress.positionSec),
+          ]
+            .filter(Boolean)
+            .join(' · '),
+        })}
       </small>
     </div>
   );
@@ -267,7 +273,7 @@ function WorkActions({ details, onRemoved }: { details: RmdbWorkDetails; onRemov
     setBusy(true);
     try {
       await removeFromRmdb(hall.hallId, details.id);
-      hall.notify(`${details.title} Tayfa'dan kaldırıldı.`);
+      hall.notify(t("{title} Tayfa'dan kaldırıldı.", { title: details.title }));
       onRemoved();
     } catch (error) {
       hall.notify(cinemaErrorText(error));
@@ -278,8 +284,8 @@ function WorkActions({ details, onRemoved }: { details: RmdbWorkDetails; onRemov
   };
   const watchlistBy = details.watchlist
     ? details.watchlist.by.userId === hall.me
-      ? 'sen ekledin'
-      : `${details.watchlist.by.name} ekledi`
+      ? t('sen ekledin')
+      : t('{name} ekledi', { name: details.watchlist.by.name })
     : null;
 
   return (
@@ -300,7 +306,7 @@ function WorkActions({ details, onRemoved }: { details: RmdbWorkDetails; onRemov
             ) : (
               <Play size={16} />
             )}
-            {playing ? 'Salonda açık' : steer ? action.label : 'Sıraya öner'}
+            {playing ? t('Salonda açık') : steer ? action.label : t('Sıraya öner')}
           </button>
         )}
         <button
@@ -309,7 +315,7 @@ function WorkActions({ details, onRemoved }: { details: RmdbWorkDetails; onRemov
           onClick={() => void toggleWatchlist()}
         >
           {details.onWatchlist ? <BookmarkCheck size={16} /> : <BookmarkPlus size={16} />}
-          {details.onWatchlist ? "İzlenecekler'de" : "İzlenecekler'e ekle"}
+          {details.onWatchlist ? t("İzlenecekler'de") : t("İzlenecekler'e ekle")}
         </button>
         <button
           className="button secondary"
@@ -317,13 +323,13 @@ function WorkActions({ details, onRemoved }: { details: RmdbWorkDetails; onRemov
           onClick={() => setLogging((value) => !value)}
         >
           <CalendarCheck size={16} />
-          İzledim
+          {t('İzledim')}
         </button>
         <HeartButton liked={heart.liked} disabled={heart.busy} onToggle={heart.toggle} />
         {hall.status.isOwner && (
           <button className="hall-text-button quiet rmdb-remove" onClick={() => setConfirm(true)}>
             <Trash2 size={14} />
-            Tayfa'dan kaldır
+            {t("Tayfa'dan kaldır")}
           </button>
         )}
       </div>
@@ -335,26 +341,32 @@ function WorkActions({ details, onRemoved }: { details: RmdbWorkDetails; onRemov
         !playing && (
           <div className="rmdb-note">
             {hall.directReason}
-            {action.kind === 'continue' && ' Önerilen başlık kaldığı yerden değil, baştan başlar.'}
+            {action.kind === 'continue' &&
+              ` ${t('Önerilen başlık kaldığı yerden değil, baştan başlar.')}`}
           </div>
         )
       )}
       {details.watchlist && (
         <div className="rmdb-note">
           <Bookmark size={13} />
-          İzlenecekler listesinde · {watchlistBy}, {dateLabel(details.watchlist.at)}
+          {t('İzlenecekler listesinde · {by}, {date}', {
+            by: watchlistBy ?? '',
+            date: dateLabel(details.watchlist.at),
+          })}
         </div>
       )}
       {confirm && (
-        <Modal title="Tayfa'dan kaldırılsın mı?" onClose={() => setConfirm(false)}>
+        <Modal title={t("Tayfa'dan kaldırılsın mı?")} onClose={() => setConfirm(false)}>
           <div className="cs-confirm">
             <p>
-              “{details.title}” bütün puanları, yorumları ve günlüğüyle birlikte Tayfa'dan silinir.
-              Bu geri alınamaz.
+              {t(
+                "“{title}” bütün puanları, yorumları ve günlüğüyle birlikte Tayfa'dan silinir. Bu geri alınamaz.",
+                { title: details.title },
+              )}
             </p>
             <div className="cs-actions">
               <button className="button secondary" onClick={() => setConfirm(false)}>
-                Vazgeç
+                {t('Vazgeç')}
               </button>
               <button
                 className="button primary danger"
@@ -362,7 +374,7 @@ function WorkActions({ details, onRemoved }: { details: RmdbWorkDetails; onRemov
                 onClick={() => void remove()}
               >
                 <Trash2 size={16} />
-                Kaldır
+                {t('Kaldır')}
               </button>
             </div>
           </div>
@@ -383,7 +395,7 @@ function LogForm({ details, onDone }: { details: RmdbWorkDetails; onDone(): void
     event.preventDefault();
     const watchedAt = watchedAtFromInput(date, Date.now());
     if (watchedAt === null) {
-      setError('Bugün ya da daha önceki bir gün seç.');
+      setError(t('Bugün ya da daha önceki bir gün seç.'));
       return;
     }
     setBusy(true);
@@ -392,7 +404,7 @@ function LogForm({ details, onDone }: { details: RmdbWorkDetails; onDone(): void
       await mutateRmdbWork(hall.hallId, details.id, null, (bridge) =>
         bridge.rmdbLog(hall.hallId, details.id, watchedAt),
       );
-      hall.notify('Günlüğe eklendi.');
+      hall.notify(t('Günlüğe eklendi.'));
       onDone();
     } catch (failure) {
       setError(cinemaErrorText(failure));
@@ -401,9 +413,13 @@ function LogForm({ details, onDone }: { details: RmdbWorkDetails; onDone(): void
     }
   };
   return (
-    <form className="rmdb-log" aria-label="Günlüğe ekle" onSubmit={(event) => void submit(event)}>
+    <form
+      className="rmdb-log"
+      aria-label={t('Günlüğe ekle')}
+      onSubmit={(event) => void submit(event)}
+    >
       <label>
-        Ne zaman izledin?
+        {t('Ne zaman izledin?')}
         <input
           type="date"
           value={date}
@@ -414,10 +430,10 @@ function LogForm({ details, onDone }: { details: RmdbWorkDetails; onDone(): void
         />
       </label>
       <button className="button primary small" type="submit" disabled={busy}>
-        Günlüğe ekle
+        {t('Günlüğe ekle')}
       </button>
       <button className="hall-text-button quiet" type="button" onClick={onDone}>
-        Vazgeç
+        {t('Vazgeç')}
       </button>
       {error && (
         <p className="hall-form-error" role="alert">
@@ -495,13 +511,13 @@ function ReviewEditor({ details }: { details: RmdbWorkDetails }) {
       spoiler: hasText && draft.spoiler,
       liked: details.mine.liked,
     };
-    void send(emptyReview(input) ? null : input, 'Kaydedildi');
+    void send(emptyReview(input) ? null : input, t('Kaydedildi'));
   };
 
   return (
-    <section className="rmdb-card rmdb-editor" aria-label="Senin puanın ve yorumun">
+    <section className="rmdb-card rmdb-editor" aria-label={t('Senin puanın ve yorumun')}>
       <header className="rmdb-card-head">
-        <h3>{own ? 'Senin puanın ve yorumun' : 'Puan ver, yorum yaz'}</h3>
+        <h3>{own ? t('Senin puanın ve yorumun') : t('Puan ver, yorum yaz')}</h3>
         <HeartButton liked={heart.liked} disabled={heart.busy} onToggle={heart.toggle} />
       </header>
       <StarPicker
@@ -511,8 +527,8 @@ function ReviewEditor({ details }: { details: RmdbWorkDetails }) {
       />
       <textarea
         className="rmdb-textarea"
-        aria-label="Yorumun"
-        placeholder="Ne düşündün? Yazmadan yalnızca puan da verebilirsin."
+        aria-label={t('Yorumun')}
+        placeholder={t('Ne düşündün? Yazmadan yalnızca puan da verebilirsin.')}
         maxLength={RMDB_REVIEW_MAX}
         rows={4}
         value={draft.text}
@@ -533,10 +549,10 @@ function ReviewEditor({ details }: { details: RmdbWorkDetails }) {
               setDraft((value) => ({ ...value, spoiler }));
             }}
           />
-          Spoiler içerir
+          {t('Spoiler içerir')}
         </label>
         <small className={`rmdb-counter ${left < 200 ? 'low' : ''}`}>
-          {left.toLocaleString('tr-TR')} karakter kaldı
+          {t('{count} karakter kaldı', { count: left.toLocaleString(locale) })}
         </small>
         <span className="rmdb-grow" />
         {status && (
@@ -553,15 +569,15 @@ function ReviewEditor({ details }: { details: RmdbWorkDetails }) {
             onClick={() => {
               if (!confirming) return setConfirming(true);
               setConfirming(false);
-              void send(null, 'Silindi');
+              void send(null, t('Silindi'));
             }}
           >
             <Trash2 size={13} />
-            {confirming ? 'Puanı ve yorumu sil' : 'Sil'}
+            {confirming ? t('Puanı ve yorumu sil') : t('Sil')}
           </button>
         )}
         <button className="button primary small" disabled={!dirty || busy} onClick={save}>
-          Kaydet
+          {t('Kaydet')}
         </button>
       </div>
       {error && (
@@ -596,9 +612,9 @@ function Reviews({ details }: { details: RmdbWorkDetails }) {
     }
   };
   return (
-    <section className="rmdb-section" aria-label="Yorumlar">
+    <section className="rmdb-section" aria-label={t('Yorumlar')}>
       <h3>
-        Yorumlar ve puanlar <small>{list.length}</small>
+        {t('Yorumlar ve puanlar')} <small>{list.length}</small>
       </h3>
       {list.length ? (
         <ol className="rmdb-reviews">
@@ -616,18 +632,22 @@ function Reviews({ details }: { details: RmdbWorkDetails }) {
           ))}
         </ol>
       ) : (
-        <p className="rmdb-muted">Henüz kimse puan vermedi ya da yorum yazmadı.</p>
+        <p className="rmdb-muted">{t('Henüz kimse puan vermedi ya da yorum yazmadı.')}</p>
       )}
       {removing && (
-        <Modal title="Yorum kaldırılsın mı?" onClose={() => setRemoving(null)}>
+        <Modal title={t('Yorum kaldırılsın mı?')} onClose={() => setRemoving(null)}>
           <div className="cs-confirm">
             <p>
-              {removing.author.name} adlı üyenin puanı, yorumu ve beğenisi Tayfa'dan silinir. Bu
-              geri alınamaz.
+              {t(
+                "{name} adlı üyenin puanı, yorumu ve beğenisi Tayfa'dan silinir. Bu geri alınamaz.",
+                {
+                  name: removing.author.name,
+                },
+              )}
             </p>
             <div className="cs-actions">
               <button className="button secondary" onClick={() => setRemoving(null)}>
-                Vazgeç
+                {t('Vazgeç')}
               </button>
               <button
                 className="button primary danger"
@@ -635,7 +655,7 @@ function Reviews({ details }: { details: RmdbWorkDetails }) {
                 onClick={() => void remove(removing)}
               >
                 <Trash2 size={16} />
-                Yorumu kaldır
+                {t('Yorumu kaldır')}
               </button>
             </div>
           </div>
@@ -664,10 +684,10 @@ function ReviewItem({
       <div className="rmdb-review-body">
         <div className="rmdb-review-head">
           <strong>{review.author.name}</strong>
-          {own && <span className="rmdb-tag">Sen</span>}
+          {own && <span className="rmdb-tag">{t('Sen')}</span>}
           {review.rating !== null && <Stars rating={review.rating} size={13} />}
           {review.liked && (
-            <span className="rmdb-liked" role="img" aria-label={own ? 'beğendin' : 'beğendi'}>
+            <span className="rmdb-liked" role="img" aria-label={own ? t('beğendin') : t('beğendi')}>
               <Heart size={13} fill="currentColor" aria-hidden="true" />
             </span>
           )}
@@ -678,10 +698,10 @@ function ReviewItem({
           {onRemove && (
             <button
               className="hall-text-button quiet rmdb-review-remove"
-              aria-label={`${review.author.name} adlı üyenin yorumunu kaldır`}
+              aria-label={t('{name} adlı üyenin yorumunu kaldır', { name: review.author.name })}
               onClick={onRemove}
             >
-              Kaldır
+              {t('Kaldır')}
             </button>
           )}
         </div>
@@ -691,7 +711,7 @@ function ReviewItem({
             {hidden && (
               <button className="rmdb-spoiler" onClick={() => setRevealed(true)}>
                 <Eye size={14} />
-                Spoiler'ı göster
+                {t("Spoiler'ı göster")}
               </button>
             )}
           </div>
@@ -699,11 +719,11 @@ function ReviewItem({
           <p className="rmdb-muted">
             {review.rating !== null
               ? own
-                ? 'Yalnızca puan verdin.'
-                : 'Yalnızca puan verdi.'
+                ? t('Yalnızca puan verdin.')
+                : t('Yalnızca puan verdi.')
               : own
-                ? 'Beğendin.'
-                : 'Beğendi.'}
+                ? t('Beğendin.')
+                : t('Beğendi.')}
           </p>
         )}
       </div>
@@ -716,8 +736,8 @@ function RatingSummary({ details }: { details: RmdbWorkDetails }) {
   const counts = ratingHistogram(details.reviews);
   const max = Math.max(1, ...counts);
   return (
-    <section className="rmdb-card" aria-label="Topluluk puanı">
-      <h3>Topluluk puanı</h3>
+    <section className="rmdb-card" aria-label={t('Topluluk puanı')}>
+      <h3>{t('Topluluk puanı')}</h3>
       {details.averageRating !== null ? (
         <>
           <div className="rmdb-score">
@@ -727,25 +747,25 @@ function RatingSummary({ details }: { details: RmdbWorkDetails }) {
           </div>
           <p className="rmdb-muted">
             {[
-              `${details.ratingCount} puan`,
-              details.likeCount ? `${details.likeCount} beğeni` : null,
-              details.reviewCount ? `${details.reviewCount} yorum` : null,
+              t('{count} puan', { count: details.ratingCount }),
+              details.likeCount ? t('{count} beğeni', { count: details.likeCount }) : null,
+              details.reviewCount ? t('{count} yorum', { count: details.reviewCount }) : null,
             ]
               .filter(Boolean)
               .join(' · ')}
           </p>
           <div className="rmdb-histogram">
             <span aria-hidden="true">½</span>
-            <ol aria-label="Puan dağılımı">
+            <ol aria-label={t('Puan dağılımı')}>
               {counts.map((count, index) => (
                 <li
                   key={index}
                   className={details.mine.rating === index + 1 ? 'mine' : ''}
-                  title={`${starsLabel(index + 1)} · ${count} kişi`}
+                  title={t('{label} · {count} kişi', { label: starsLabel(index + 1), count })}
                 >
                   <span className="rmdb-bar" style={{ '--share': count / max } as CSSProperties} />
                   <span className="rmdb-sr">
-                    {starsLabel(index + 1)}: {count} kişi
+                    {t('{label}: {count} kişi', { label: starsLabel(index + 1), count })}
                   </span>
                 </li>
               ))}
@@ -754,7 +774,7 @@ function RatingSummary({ details }: { details: RmdbWorkDetails }) {
           </div>
         </>
       ) : (
-        <p className="rmdb-muted">Henüz puan yok. İlk puanı sen ver.</p>
+        <p className="rmdb-muted">{t('Henüz puan yok. İlk puanı sen ver.')}</p>
       )}
     </section>
   );
@@ -763,19 +783,21 @@ function RatingSummary({ details }: { details: RmdbWorkDetails }) {
 /** Series: the episodes the hall played, by season, with how far each got. */
 function Episodes({ details }: { details: RmdbWorkDetails }) {
   return (
-    <section className="rmdb-card" aria-label="İzlenen bölümler">
+    <section className="rmdb-card" aria-label={t('İzlenen bölümler')}>
       <h3>
-        İzlenen bölümler <small>{details.episodes.length}</small>
+        {t('İzlenen bölümler')} <small>{details.episodes.length}</small>
       </h3>
       {seasonsOf(details.episodes).map((season) => (
         <div key={season.season} className="rmdb-season">
-          <h4>{season.season}. Sezon</h4>
+          <h4>{t('{season}. Sezon', { season: season.season })}</h4>
           <ol>
             {season.episodes.map((episode) => (
               <li key={episode.episode}>
                 <span className="rmdb-episode-no">{episode.episode}</span>
                 <span className="rmdb-episode-text">
-                  <span>{episode.title || `${episode.episode}. Bölüm`}</span>
+                  <span>
+                    {episode.title || t('{episode}. Bölüm', { episode: episode.episode })}
+                  </span>
                   {!episode.finished && (
                     <span
                       className="rmdb-progress"
@@ -787,10 +809,10 @@ function Episodes({ details }: { details: RmdbWorkDetails }) {
                   {episode.finished ? (
                     <>
                       <Check size={13} />
-                      Bitti
+                      {t('Bitti')}
                     </>
                   ) : (
-                    `yarım · ${clock(episode.positionSec)}`
+                    t('yarım · {time}', { time: clock(episode.positionSec) })
                   )}
                 </small>
               </li>
@@ -816,9 +838,9 @@ function Diary({ details }: { details: RmdbWorkDetails }) {
     }
   };
   return (
-    <section className="rmdb-card" aria-label="Günlük">
+    <section className="rmdb-card" aria-label={t('Günlük')}>
       <h3>
-        Günlük <small>{details.diary.length}</small>
+        {t('Günlük')} <small>{details.diary.length}</small>
       </h3>
       {details.diary.length ? (
         <ol className="rmdb-diary">
@@ -839,7 +861,7 @@ function Diary({ details }: { details: RmdbWorkDetails }) {
         </ol>
       ) : (
         <p className="rmdb-muted">
-          Henüz izlenmedi. Salonda açılınca ya da “İzledim” ile buraya yazılır.
+          {t('Henüz izlenmedi. Salonda açılınca ya da “İzledim” ile buraya yazılır.')}
         </p>
       )}
     </section>
@@ -870,19 +892,19 @@ function DiaryItem({
             {dateLabel(entry.watchedAt)}
             {entry.source === 'hall' && <small> · {hhmm(entry.watchedAt)}</small>}
           </time>
-          <span className="rmdb-tag">{entry.source === 'hall' ? 'Salonda' : 'Elle'}</span>
+          <span className="rmdb-tag">{entry.source === 'hall' ? t('Salonda') : t('Elle')}</span>
           {rewatch && (
-            <span className="rmdb-tag" title="Daha önce de izlenmişti">
+            <span className="rmdb-tag" title={t('Daha önce de izlenmişti')}>
               <RotateCcw size={11} />
-              Tekrar
+              {t('Tekrar')}
             </span>
           )}
         </span>
         {canRemove && (
           <button
             className={`hall-text-button ${confirming ? 'danger' : 'quiet'} rmdb-diary-remove`}
-            aria-label={confirming ? 'Kaldırmayı onayla' : 'Günlükten kaldır'}
-            title="Günlükten kaldır"
+            aria-label={confirming ? t('Kaldırmayı onayla') : t('Günlükten kaldır')}
+            title={t('Günlükten kaldır')}
             onBlur={() => setConfirming(false)}
             onClick={() => {
               if (!confirming) return setConfirming(true);
@@ -891,7 +913,7 @@ function DiaryItem({
             }}
           >
             <Trash2 size={13} />
-            {confirming && 'Kaldır'}
+            {confirming && t('Kaldır')}
           </button>
         )}
       </div>
@@ -908,16 +930,25 @@ function DiaryItem({
           ))}
         </span>
         <small>
-          {peopleText(entry.viewers.map((viewer) => (viewer.userId === me ? 'Sen' : viewer.name)))}
+          {peopleText(
+            // English puts "You" first ("You, Emma and Leo"); Turkish ends with it ("Ece, Can ve Sen").
+            [...entry.viewers]
+              .sort((a, b) =>
+                getLocale() === 'en' ? Number(b.userId === me) - Number(a.userId === me) : 0,
+              )
+              .map((viewer) => (viewer.userId === me ? t('Sen') : viewer.name)),
+          )}
         </small>
         <span className={`rmdb-diary-state ${entry.finished ? 'done' : ''}`}>
           {entry.finished ? (
             <>
               <Check size={13} />
-              Bitti
+              {t('Bitti')}
             </>
+          ) : position !== null ? (
+            t('yarım · {time}', { time: clock(position) })
           ) : (
-            `yarım${position !== null ? ` · ${clock(position)}` : ''}`
+            t('yarım')
           )}
         </span>
       </div>

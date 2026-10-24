@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import type { ActivityCommand, QueueItem, Timeline } from '../../../packages/activity-protocol/src';
 import { activityBridge } from './runtime-sources';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import {
   clock,
   expectedPosition,
@@ -136,7 +136,7 @@ export function CinemaYouTubeStage({
   useEffect(() => {
     if (ready || error) return;
     const timer = setTimeout(() => {
-      setError('YouTube oynatıcısı 25 saniyede açılmadı. Bağlantını kontrol edip yeniden dene.');
+      setError(t('YouTube oynatıcısı 25 saniyede açılmadı. Bağlantını kontrol edip yeniden dene.'));
       // An older server may not know the minimal player; the retry uses YouTube's own controls.
       setChrome('native');
     }, 25000);
@@ -362,7 +362,7 @@ export function CinemaYouTubeStage({
       <div className="cozy-yt-top">
         <div>
           <strong>{item.media.title}</strong>
-          <small>{addedBy} açtı</small>
+          <small>{t('{name} açtı', { name: addedBy })}</small>
         </div>
         <a
           className="cozy-chip"
@@ -371,12 +371,12 @@ export function CinemaYouTubeStage({
           rel="noreferrer"
         >
           <ExternalLink size={13} />
-          YouTube’da aç
+          {t('YouTube’da aç')}
         </a>
       </div>
       {error ? (
         <div className="cozy-yt-center cozy-card" role="alert">
-          <strong>Bu video burada oynatılamıyor</strong>
+          <strong>{t('Bu video burada oynatılamıyor')}</strong>
           <p>{error}</p>
           <div className="button-row">
             {next && (
@@ -387,24 +387,26 @@ export function CinemaYouTubeStage({
                 onClick={skip}
               >
                 <SkipForward size={15} />
-                Sıradakine geç
+                {t('Sıradakine geç')}
               </button>
             )}
             <button className="button secondary small" onClick={() => setAttempt((v) => v + 1)}>
               <RotateCcw size={15} />
-              Yeniden dene
+              {t('Yeniden dene')}
             </button>
           </div>
         </div>
       ) : !ready ? (
         <div className="cozy-yt-center" role="status">
           <LoaderCircle size={34} className="spin" />
-          <span>Oynatıcı hazırlanıyor…</span>
+          <span>{t('Oynatıcı hazırlanıyor…')}</span>
         </div>
       ) : finished ? (
         <div className="cozy-yt-center cozy-card" role="status">
-          <strong>{next ? `Sıradaki: ${next.media.title}` : 'Liste bitti'}</strong>
-          <p>{next ? 'Video bitti.' : 'Sırada başka video yok.'}</p>
+          <strong>
+            {next ? t('Sıradaki: {title}', { title: next.media.title }) : t('Liste bitti')}
+          </strong>
+          <p>{next ? t('Video bitti.') : t('Sırada başka video yok.')}</p>
           <div className="button-row">
             {next ? (
               <button
@@ -414,11 +416,11 @@ export function CinemaYouTubeStage({
                 onClick={skip}
               >
                 <SkipForward size={15} />
-                Sıradakine geç
+                {t('Sıradakine geç')}
               </button>
             ) : (
               <button className="button primary small" onClick={onOpenSource}>
-                Bir şey aç
+                {t('Bir şey aç')}
               </button>
             )}
             <button
@@ -428,7 +430,7 @@ export function CinemaYouTubeStage({
               onClick={() => send({ type: 'playback', playing: true, positionSec: 0, rate: 1 })}
             >
               <RotateCcw size={15} />
-              Baştan oynat
+              {t('Baştan oynat')}
             </button>
           </div>
         </div>
@@ -437,27 +439,29 @@ export function CinemaYouTubeStage({
           className="cozy-yt-bigplay"
           disabled={!canDirect}
           title={controlTitle}
-          aria-label="Herkes için oynat"
+          aria-label={t('Herkes için oynat')}
           onClick={togglePlay}
         >
           <Play size={34} fill="currentColor" />
-          {!canDirect && <span>Duraklatıldı</span>}
+          {!canDirect && <span>{t('Duraklatıldı')}</span>}
         </button>
       ) : state === BUFFERING ? (
-        <div className="cozy-yt-center" role="status" aria-label="Yükleniyor">
+        <div className="cozy-yt-center" role="status" aria-label={t('Yükleniyor')}>
           <LoaderCircle size={30} className="spin" />
         </div>
       ) : null}
       {native && ready && (
         <div className="cozy-yt-native-note" role="status">
-          YouTube otomatik oynatmayı engelledi. Oynatıcıdaki ▶ düğmesine bas; odaya eşitlenir.
+          {t(
+            'YouTube otomatik oynatmayı engelledi. Oynatıcıdaki ▶ düğmesine bas; odaya eşitlenir.',
+          )}
         </div>
       )}
       <div className="cozy-controls" onDoubleClick={(event) => event.stopPropagation()}>
         <input
           className="cozy-seek"
           type="range"
-          aria-label="Ortak oynatma konumu"
+          aria-label={t('Ortak oynatma konumu')}
           aria-valuetext={`${clock(seekDraft ?? position)} / ${clock(duration)}`}
           min={0}
           max={duration || 1}
@@ -478,8 +482,10 @@ export function CinemaYouTubeStage({
         <div className="cozy-control-row">
           <button
             className="cozy-control primary"
-            aria-label={timeline.playing ? 'Herkes için duraklat' : 'Herkes için oynat'}
-            title={controlTitle ?? (timeline.playing ? 'Duraklat (boşluk)' : 'Oynat (boşluk)')}
+            aria-label={timeline.playing ? t('Herkes için duraklat') : t('Herkes için oynat')}
+            title={
+              controlTitle ?? (timeline.playing ? t('Duraklat (boşluk)') : t('Oynat (boşluk)'))
+            }
             disabled={!ready || !canDirect || !connected}
             onClick={togglePlay}
           >
@@ -491,9 +497,12 @@ export function CinemaYouTubeStage({
           </button>
           <button
             className="cozy-control"
-            aria-label="Sıradaki video"
+            aria-label={t('Sıradaki video')}
             title={
-              controlTitle ?? (next ? `Sıradaki: ${next.media.title} (N)` : 'Sırada video yok')
+              controlTitle ??
+              (next
+                ? t('Sıradaki: {title} (N)', { title: next.media.title })
+                : t('Sırada video yok'))
             }
             disabled={!canDirect || !next || !connected}
             onClick={skip}
@@ -507,15 +516,15 @@ export function CinemaYouTubeStage({
           <div className="cozy-volume">
             <button
               className="cozy-control"
-              aria-label={audio.muted || !audio.volume ? 'Sesi aç' : 'Sesi kapat'}
-              title="Yalnızca senin için (M)"
+              aria-label={audio.muted || !audio.volume ? t('Sesi aç') : t('Sesi kapat')}
+              title={t('Yalnızca senin için (M)')}
               onClick={() => changeAudio({ ...audio, muted: !audio.muted })}
             >
               {audio.muted || !audio.volume ? <VolumeX size={19} /> : <Volume2 size={19} />}
             </button>
             <input
               type="range"
-              aria-label="Video ses düzeyi (yalnızca senin için)"
+              aria-label={t('Video ses düzeyi (yalnızca senin için)')}
               min={0}
               max={100}
               step={1}
@@ -529,9 +538,11 @@ export function CinemaYouTubeStage({
           {!native && (
             <button
               className="cozy-control"
-              aria-label="Oynatıcıya doğrudan tıkla"
+              aria-label={t('Oynatıcıya doğrudan tıkla')}
               aria-pressed={touch}
-              title="Reklamı geçmek veya YouTube uyarısına tıklamak için 20 saniye oynatıcıya doğrudan eriş"
+              title={t(
+                'Reklamı geçmek veya YouTube uyarısına tıklamak için 20 saniye oynatıcıya doğrudan eriş',
+              )}
               disabled={!ready}
               onClick={() => setTouch(!touch)}
             >
@@ -540,8 +551,8 @@ export function CinemaYouTubeStage({
           )}
           <button
             className="cozy-control"
-            aria-label="Odaya yeniden eşitle"
-            title="Görüntün geride kaldıysa odaya yeniden eşitle"
+            aria-label={t('Odaya yeniden eşitle')}
+            title={t('Görüntün geride kaldıysa odaya yeniden eşitle')}
             disabled={!ready}
             onClick={synchronize}
           >
@@ -549,8 +560,8 @@ export function CinemaYouTubeStage({
           </button>
           <button
             className="cozy-control"
-            aria-label={fullscreen ? 'Tam ekrandan çık' : 'Tam ekran'}
-            title={fullscreen ? 'Tam ekrandan çık (F)' : 'Tam ekran (F)'}
+            aria-label={fullscreen ? t('Tam ekrandan çık') : t('Tam ekran')}
+            title={fullscreen ? t('Tam ekrandan çık (F)') : t('Tam ekran (F)')}
             onClick={onToggleFullscreen}
           >
             {fullscreen ? <Minimize size={18} /> : <Maximize size={18} />}

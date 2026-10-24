@@ -4,7 +4,7 @@ import { Modal } from '@rooms/design';
 import type { SocialChannel } from '@rooms/social';
 import { queryClient } from './query-client';
 import { useCommunity } from './community';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import { ParticipantAudioControls } from './ParticipantAudioMenu';
 import { useRealtime } from './realtime';
 
@@ -79,7 +79,7 @@ export function useModerationRights(spaceId: string | null): ModerationRights {
 
 /** Moves someone to another voice room; their client joins it through the normal room check. */
 export async function moveVoiceMember(target: VoiceMemberTarget, to: string) {
-  if (!window.rooms?.media.moderate) throw Error('Masaüstü uygulaması gerekiyor.');
+  if (!window.rooms?.media.moderate) throw Error(t('Masaüstü uygulaması gerekiyor.'));
   await window.rooms.media.moderate({
     channelId: target.from,
     userId: target.id,
@@ -91,19 +91,19 @@ export async function moveVoiceMember(target: VoiceMemberTarget, to: string) {
 type Confirm = 'disconnect' | 'kick' | 'ban';
 const confirmText: Record<Confirm, { title: string; body: string; action: string }> = {
   disconnect: {
-    title: 'Sesten çıkar',
-    body: 'ses odasından çıkarılacak. İsterse yeniden katılabilir.',
-    action: 'Sesten çıkar',
+    title: t('Sesten çıkar'),
+    body: t('ses odasından çıkarılacak. İsterse yeniden katılabilir.'),
+    action: t('Sesten çıkar'),
   },
   kick: {
-    title: 'Topluluktan çıkar',
-    body: 'topluluktan çıkarılacak. Yeni bir davetle geri dönebilir.',
-    action: 'Topluluktan çıkar',
+    title: t('Topluluktan çıkar'),
+    body: t('topluluktan çıkarılacak. Yeni bir davetle geri dönebilir.'),
+    action: t('Topluluktan çıkar'),
   },
   ban: {
-    title: 'Yasakla',
-    body: 'topluluktan çıkarılıp yasaklanacak. Yasak kaldırılana kadar geri dönemez.',
-    action: 'Yasakla',
+    title: t('Yasakla'),
+    body: t('topluluktan çıkarılıp yasaklanacak. Yasak kaldırılana kadar geri dönemez.'),
+    action: t('Yasakla'),
   },
 };
 
@@ -187,10 +187,10 @@ export function VoiceMemberMenu({
             ? window.rooms!.social.removeCommunityMember({ spaceId: spaceId!, userId: target.id })
             : window.rooms!.social.banCommunityMember!({ spaceId: spaceId!, userId: target.id }),
       kind === 'disconnect'
-        ? `${target.name} sesten çıkarıldı.`
+        ? t('{name} sesten çıkarıldı.', { name: target.name })
         : kind === 'kick'
-          ? `${target.name} topluluktan çıkarıldı.`
-          : `${target.name} yasaklandı.`,
+          ? t('{name} topluluktan çıkarıldı.', { name: target.name })
+          : t('{name} yasaklandı.', { name: target.name }),
     );
   if (confirm)
     return (
@@ -205,10 +205,10 @@ export function VoiceMemberMenu({
         {error && <p role="alert">{error}</p>}
         <div className="button-row">
           <button className="button secondary" disabled={busy} onClick={onClose}>
-            Vazgeç
+            {t('Vazgeç')}
           </button>
           <button className="button danger" disabled={busy} onClick={() => void run(confirm)}>
-            {busy ? 'Yapılıyor…' : confirmText[confirm].action}
+            {busy ? t('Yapılıyor…') : confirmText[confirm].action}
           </button>
         </div>
       </Modal>
@@ -218,7 +218,7 @@ export function VoiceMemberMenu({
       className="channel-context-menu voice-member-menu"
       ref={ref}
       role="menu"
-      aria-label={`${target.name} için işlemler`}
+      aria-label={t('{name} için işlemler', { name: target.name })}
       style={{
         left: Math.max(8, Math.min(x, window.innerWidth - 248)),
         top: Math.max(8, Math.min(y, window.innerHeight - (heard ? 460 : 320))),
@@ -229,7 +229,7 @@ export function VoiceMemberMenu({
           <div
             className="voice-member-audio"
             role="group"
-            aria-label={`${heard.name} ses kontrolü`}
+            aria-label={t('{name} ses kontrolü', { name: heard.name })}
           >
             <ParticipantAudioControls person={heard} />
           </div>
@@ -243,12 +243,12 @@ export function VoiceMemberMenu({
           onClose();
         }}
       >
-        Profili aç
+        {t('Profili aç')}
       </button>
       {rights.moveMembers && others.length > 0 && (
         <>
           <hr />
-          <small className="voice-member-menu-label">Odaya taşı</small>
+          <small className="voice-member-menu-label">{t('Odaya taşı')}</small>
           {others.map((room) => (
             <button
               key={room.id}
@@ -257,7 +257,7 @@ export function VoiceMemberMenu({
               onClick={() =>
                 void act(
                   () => moveVoiceMember(target, room.id),
-                  `${target.name}, ${room.name} odasına taşındı.`,
+                  t('{name}, {room} odasına taşındı.', { name: target.name, room: room.name }),
                 )
               }
             >
@@ -269,17 +269,17 @@ export function VoiceMemberMenu({
       {(rights.moveMembers || rights.kickMembers || rights.banMembers) && <hr />}
       {rights.moveMembers && (
         <button role="menuitem" className="destructive" onClick={() => setConfirm('disconnect')}>
-          Sesten çıkar
+          {t('Sesten çıkar')}
         </button>
       )}
       {rights.kickMembers && (
         <button role="menuitem" className="destructive" onClick={() => setConfirm('kick')}>
-          Topluluktan çıkar
+          {t('Topluluktan çıkar')}
         </button>
       )}
       {rights.banMembers && window.rooms?.social.banCommunityMember && (
         <button role="menuitem" className="destructive" onClick={() => setConfirm('ban')}>
-          Yasakla
+          {t('Yasakla')}
         </button>
       )}
       {error && (

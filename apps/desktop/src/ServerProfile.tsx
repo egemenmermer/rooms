@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ImagePlus, LoaderCircle, Trash2 } from 'lucide-react';
 import type { SocialSpaceProfile } from '@rooms/social';
 import { useCommunity } from './community';
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 import './server-profile.css';
 
 /**
@@ -79,19 +79,21 @@ export function ServerProfile({ notify }: { notify(message: string): void }) {
       setBusy(null);
     }
   };
-  if (!spaceId) return <p className="sp-note">Önce bir topluluk seç.</p>;
+  if (!spaceId) return <p className="sp-note">{t('Önce bir topluluk seç.')}</p>;
   if (!social?.spaceProfile)
-    return <p className="sp-note">Sunucu profili için güncel masaüstü uygulaması gerekiyor.</p>;
+    return (
+      <p className="sp-note">{t('Sunucu profili için güncel masaüstü uygulaması gerekiyor.')}</p>
+    );
   if (loading)
     return (
       <p className="sp-note" role="status">
-        <LoaderCircle size={16} className="spin" /> Sunucu profili yükleniyor…
+        <LoaderCircle size={16} className="spin" /> {t('Sunucu profili yükleniyor…')}
       </p>
     );
   if (!profile)
     return (
       <p className="sp-note" role="alert">
-        {error || 'Sunucu profili okunamadı.'}
+        {error || t('Sunucu profili okunamadı.')}
       </p>
     );
   const image = (kind: 'icon' | 'banner') => (
@@ -103,12 +105,12 @@ export function ServerProfile({ notify }: { notify(message: string): void }) {
           void run(
             kind,
             () => social.chooseSpaceImage!(spaceId, kind),
-            kind === 'icon' ? 'Sunucu ikonu güncellendi.' : 'Sunucu afişi güncellendi.',
+            kind === 'icon' ? t('Sunucu ikonu güncellendi.') : t('Sunucu afişi güncellendi.'),
           )
         }
       >
         {busy === kind ? <LoaderCircle size={16} className="spin" /> : <ImagePlus size={16} />}
-        {kind === 'icon' ? 'İkonu değiştir' : 'Afişi değiştir'}
+        {kind === 'icon' ? t('İkonu değiştir') : t('Afişi değiştir')}
       </button>
       {profile[kind] && (
         <button
@@ -118,12 +120,12 @@ export function ServerProfile({ notify }: { notify(message: string): void }) {
             void run(
               kind,
               () => social.removeSpaceImage!(spaceId, kind),
-              kind === 'icon' ? 'Sunucu ikonu kaldırıldı.' : 'Sunucu afişi kaldırıldı.',
+              kind === 'icon' ? t('Sunucu ikonu kaldırıldı.') : t('Sunucu afişi kaldırıldı.'),
             )
           }
         >
           <Trash2 size={15} />
-          Kaldır
+          {t('Kaldır')}
         </button>
       )}
     </div>
@@ -131,18 +133,20 @@ export function ServerProfile({ notify }: { notify(message: string): void }) {
   const initials = (name.trim() || profile.name)
     .split(/\s+/)
     .slice(0, 2)
-    .map((word) => word.charAt(0).toLocaleUpperCase('tr'))
+    .map((word) => word.charAt(0).toLocaleUpperCase(locale))
     .join('');
   return (
     <div className="server-profile">
       <div className="sp-form">
         <header>
-          <h1>Sunucu profili</h1>
-          <p>Sunucunun davetlerde ve uygulamada nasıl görüneceğini ayarla.</p>
+          <h1>{t('Sunucu profili')}</h1>
+          <p>{t('Sunucunun davetlerde ve uygulamada nasıl görüneceğini ayarla.')}</p>
         </header>
         {!canEdit && (
           <p className="sp-note inline">
-            Profili yalnızca topluluk sahibi veya “Sunucuyu yönet” izni olanlar değiştirebilir.
+            {t(
+              'Profili yalnızca topluluk sahibi veya “Sunucuyu yönet” izni olanlar değiştirebilir.',
+            )}
           </p>
         )}
         <label className="sp-field">
@@ -155,26 +159,30 @@ export function ServerProfile({ notify }: { notify(message: string): void }) {
           />
         </label>
         <label className="sp-field">
-          <span>Açıklama</span>
+          <span>{t('Açıklama')}</span>
           <textarea
             value={description}
             maxLength={1024}
             rows={3}
-            placeholder="Bu topluluk ne için? Davet edilenler burada okur."
+            placeholder={t('Bu topluluk ne için? Davet edilenler burada okur.')}
             disabled={!canEdit || !!busy}
             onChange={(event) => setDescription(event.target.value)}
           />
         </label>
         <hr />
         <section className="sp-section">
-          <h2>İkon</h2>
-          <p>En az 512×512 kare bir görsel önerilir. PNG, JPEG, WebP ya da GIF; en fazla 2,5 MB.</p>
+          <h2>{t('İkon')}</h2>
+          <p>
+            {t(
+              'En az 512×512 kare bir görsel önerilir. PNG, JPEG, WebP ya da GIF; en fazla 2,5 MB.',
+            )}
+          </p>
           {image('icon')}
         </section>
         <hr />
         <section className="sp-section">
-          <h2>Afiş</h2>
-          <p>Profil kartının üstünde görünür. Geniş bir görsel seç; en fazla 6 MB.</p>
+          <h2>{t('Afiş')}</h2>
+          <p>{t('Profil kartının üstünde görünür. Geniş bir görsel seç; en fazla 6 MB.')}</p>
           {image('banner')}
         </section>
         {error && (
@@ -183,7 +191,7 @@ export function ServerProfile({ notify }: { notify(message: string): void }) {
           </p>
         )}
       </div>
-      <aside className="sp-preview" aria-label="Önizleme">
+      <aside className="sp-preview" aria-label={t('Önizleme')}>
         <div
           className="sp-banner"
           style={profile.banner ? { backgroundImage: `url("${profile.banner}")` } : undefined}
@@ -196,15 +204,16 @@ export function ServerProfile({ notify }: { notify(message: string): void }) {
           {description.trim() && <p>{description.trim()}</p>}
           {members && (
             <small>
-              <i className="online" /> {members.online} çevrimiçi <i /> {members.total} üye
+              <i className="online" /> {t('{count} çevrimiçi', { count: members.online })} <i />{' '}
+              {t('{count} üye', { count: members.total })}
             </small>
           )}
-          {space?.ownerId === userId && <small className="sp-owner">Sahibi sensin</small>}
+          {space?.ownerId === userId && <small className="sp-owner">{t('Sahibi sensin')}</small>}
         </div>
       </aside>
       {dirty && canEdit && (
-        <div className="sp-savebar" role="region" aria-label="Kaydedilmemiş değişiklikler">
-          <span>Dikkat, kaydedilmemiş değişikliklerin var.</span>
+        <div className="sp-savebar" role="region" aria-label={t('Kaydedilmemiş değişiklikler')}>
+          <span>{t('Dikkat, kaydedilmemiş değişikliklerin var.')}</span>
           <button
             className="button subtle"
             disabled={!!busy}
@@ -213,7 +222,7 @@ export function ServerProfile({ notify }: { notify(message: string): void }) {
               setDescription(profile.description);
             }}
           >
-            Sıfırla
+            {t('Sıfırla')}
           </button>
           <button
             className="button primary"
@@ -222,11 +231,11 @@ export function ServerProfile({ notify }: { notify(message: string): void }) {
               void run(
                 'save',
                 () => social.updateSpaceProfile!({ spaceId, name: name.trim(), description }),
-                'Sunucu profili kaydedildi.',
+                t('Sunucu profili kaydedildi.'),
               )
             }
           >
-            {busy === 'save' ? 'Kaydediliyor…' : 'Değişiklikleri kaydet'}
+            {busy === 'save' ? t('Kaydediliyor…') : t('Değişiklikleri kaydet')}
           </button>
         </div>
       )}

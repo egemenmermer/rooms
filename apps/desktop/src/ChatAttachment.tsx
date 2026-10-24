@@ -3,6 +3,7 @@ import { Download, FileText, LoaderCircle, Play } from 'lucide-react';
 import { Modal } from '@rooms/design';
 import type { SocialAttachment } from '@rooms/social';
 import { useCommunity } from './community';
+import { t } from './i18n';
 
 /** Recently shown photos, per account and channel, so reopening a channel does not refetch them. */
 const imageCache = new Map<string, string>();
@@ -36,7 +37,7 @@ if (typeof window !== 'undefined')
 const inlineVideo = ['video/mp4', 'video/webm', 'video/quicktime'];
 
 async function saveAttachment(channelId: string, messageId: string, fileId: string) {
-  if (!window.rooms) throw Error('Dosya indirmek için masaüstü uygulaması gerekiyor.');
+  if (!window.rooms) throw Error(t('Dosya indirmek için masaüstü uygulaması gerekiyor.'));
   await window.rooms.social.downloadAttachment(channelId, messageId, fileId);
 }
 
@@ -89,7 +90,7 @@ function ChatVideo({
           controls
           autoPlay
           playsInline
-          aria-label="Paylaşılan video"
+          aria-label={t('Paylaşılan video')}
           onError={() => {
             setSource(null);
             setState('failed');
@@ -98,7 +99,7 @@ function ChatVideo({
       ) : (
         <button
           className="chat-video-poster"
-          aria-label={state === 'loading' ? 'Video yükleniyor' : 'Videoyu oynat'}
+          aria-label={state === 'loading' ? t('Video yükleniyor') : t('Videoyu oynat')}
           disabled={state === 'loading'}
           onClick={() => void load()}
         >
@@ -107,8 +108,8 @@ function ChatVideo({
           </span>
           <small>
             {state === 'failed'
-              ? 'Video oynatılamadı. Yeniden dene ya da indir.'
-              : `Video · ${size}`}
+              ? t('Video oynatılamadı. Yeniden dene ya da indir.')
+              : t('Video · {size}', { size })}
           </small>
         </button>
       )}
@@ -117,12 +118,12 @@ function ChatVideo({
         onClick={() => {
           setSaveError('');
           void saveAttachment(channelId, messageId, file.id).catch(() =>
-            setSaveError('Video indirilemedi. Bağlantını kontrol edip yeniden dene.'),
+            setSaveError(t('Video indirilemedi. Bağlantını kontrol edip yeniden dene.')),
           );
         }}
       >
         <Download size={14} />
-        İndir
+        {t('İndir')}
       </button>
       {saveError && <p role="alert">{saveError}</p>}
     </div>
@@ -185,7 +186,7 @@ export function ChatAttachment({
               await saveAttachment(channelId, messageId, file.id);
             } catch {
               setDownloadError(
-                'Dosya indirilemedi. Mesaja erişimini ve bağlantını kontrol edip yeniden dene.',
+                t('Dosya indirilemedi. Mesaja erişimini ve bağlantını kontrol edip yeniden dene.'),
               );
             } finally {
               setDownloading(false);
@@ -207,12 +208,12 @@ export function ChatAttachment({
       {source ? (
         <button
           className="chat-image-preview"
-          aria-label="Fotoğrafı büyüt"
+          aria-label={t('Fotoğrafı büyüt')}
           onClick={() => setExpanded(true)}
         >
           <img
             src={source}
-            alt="Paylaşılan fotoğraf"
+            alt={t('Paylaşılan fotoğraf')}
             onError={() => {
               setSource(null);
               setFailed(true);
@@ -223,17 +224,21 @@ export function ChatAttachment({
         <div className="chat-image-status" role="status">
           {failed ? (
             <>
-              <span>Fotoğraf yüklenemedi.</span>
-              <button onClick={() => setRetry((n) => n + 1)}>Yeniden dene</button>
+              <span>{t('Fotoğraf yüklenemedi.')}</span>
+              <button onClick={() => setRetry((n) => n + 1)}>{t('Yeniden dene')}</button>
             </>
           ) : (
-            <span>Fotoğraf yükleniyor…</span>
+            <span>{t('Fotoğraf yükleniyor…')}</span>
           )}
         </div>
       )}
       {expanded && source && (
-        <Modal title="Fotoğraf" onClose={() => setExpanded(false)} className="chat-image-modal">
-          <img src={source} alt="Paylaşılan fotoğraf" />
+        <Modal
+          title={t('Fotoğraf')}
+          onClose={() => setExpanded(false)}
+          className="chat-image-modal"
+        >
+          <img src={source} alt={t('Paylaşılan fotoğraf')} />
         </Modal>
       )}
     </div>

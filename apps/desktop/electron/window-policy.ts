@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, renameSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DesktopWindowPreferences } from '@rooms/contracts';
 import { hideWindow } from './window-state';
+import { t } from '@rooms/i18n';
 
 /** Closing a window and explicitly quitting the application are separate user actions. */
 export function setupWindowPolicy(
@@ -73,9 +74,9 @@ export function setupWindowPolicy(
         .showMessageBox(window, {
           type: 'question',
           title: 'Tayfa',
-          message: 'Pencereyi kapat?',
-          detail: 'Ses bağlantın sonlanacak.',
-          buttons: ['Vazgeç', 'Pencereyi kapat'],
+          message: t('Pencereyi kapat?'),
+          detail: t('Ses bağlantın sonlanacak.'),
+          buttons: [t('Vazgeç'), t('Pencereyi kapat')],
           defaultId: 0,
           cancelId: 0,
           noLink: true,

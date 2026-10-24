@@ -1,5 +1,5 @@
 import { useCommunity } from './community';
-import { uiError } from './i18n';
+import { t, uiError } from './i18n';
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { activityBridge, developmentActivityState } from './runtime-sources';
 import type {
@@ -189,12 +189,12 @@ export function useActivityRoom(roomId: string | null) {
   );
   const send = useCallback(
     async (command: ActivityCommand) => {
-      if (!entry) throw new Error('Önce bir oda seçin.');
+      if (!entry) throw new Error(t('Önce bir oda seçin.'));
       const generation = entry.generation;
       const task = entry.pending
         .catch(() => {})
         .then(async () => {
-          if (!valid(entry, generation)) throw new Error('Oturum değişti. Yeniden dene.');
+          if (!valid(entry, generation)) throw new Error(t('Oturum değişti. Yeniden dene.'));
           patch(entry, { busy: true, error: null });
           try {
             let state = entry.view.room;
@@ -203,7 +203,7 @@ export function useActivityRoom(roomId: string | null) {
               accept(entry, response, generation);
               state = response.room;
             }
-            if (!valid(entry, generation)) throw new Error('Oturum değişti. Yeniden dene.');
+            if (!valid(entry, generation)) throw new Error(t('Oturum değişti. Yeniden dene.'));
             const selfId = useCommunity.getState().user?.id ?? null;
             if (
               command.type !== 'join' &&
@@ -219,7 +219,7 @@ export function useActivityRoom(roomId: string | null) {
               accept(entry, result, generation);
               state = result.room;
             }
-            if (!valid(entry, generation)) throw new Error('Oturum değişti. Yeniden dene.');
+            if (!valid(entry, generation)) throw new Error(t('Oturum değişti. Yeniden dene.'));
             accept(
               entry,
               await activityBridge().command(entry.roomId, {

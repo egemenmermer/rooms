@@ -9,6 +9,7 @@ import {
   Trash2,
   TriangleAlert,
 } from 'lucide-react';
+import { locale, t } from './i18n';
 import './reference-rd-connection.css';
 
 export interface ReferenceRDConnectionProps {
@@ -25,23 +26,23 @@ export interface ReferenceRDConnectionProps {
   onRemove(): void;
 }
 
-const unavailableReason = 'Real-Debrid bağlantısı için güncel masaüstü uygulaması gerekli.';
-const busyReason = 'Devam eden işlemin tamamlanması bekleniyor.';
+const unavailableReason = t('Real-Debrid bağlantısı için güncel masaüstü uygulaması gerekli.');
+const busyReason = t('Devam eden işlemin tamamlanması bekleniyor.');
 
 function PersonalConnectionDetails() {
   return (
     <ul className="ref-rd-checks">
       <li>
         <Check size={15} aria-hidden="true" />
-        Yalnızca senin kişisel hesabın
+        {t('Yalnızca senin kişisel hesabın')}
       </li>
       <li>
         <Check size={15} aria-hidden="true" />
-        Kütüphanen ortak sohbetten ayrı
+        {t('Kütüphanen ortak sohbetten ayrı')}
       </li>
       <li>
         <Check size={15} aria-hidden="true" />
-        Bağlantıyı bu cihazdan kaldırabilirsin
+        {t('Bağlantıyı bu cihazdan kaldırabilirsin')}
       </li>
     </ul>
   );
@@ -65,7 +66,7 @@ export function ReferenceRDConnection({
   const operationReason = busy ? busyReason : !available ? unavailableReason : undefined;
   const cancelReason =
     operationReason ??
-    (!canCancel ? 'Bu uygulama sürümü bağlantı denemesini iptal edemiyor.' : undefined);
+    (!canCancel ? t('Bu uygulama sürümü bağlantı denemesini iptal edemiyor.') : undefined);
   const validGrant =
     state === 'waiting' &&
     grant !== null &&
@@ -79,13 +80,13 @@ export function ReferenceRDConnection({
       : null;
   const linkReason =
     operationReason ??
-    (!verificationUrl ? 'Geçerli sağlayıcı yetkilendirme adresi alınamadı.' : undefined);
+    (!verificationUrl ? t('Geçerli sağlayıcı yetkilendirme adresi alınamadı.') : undefined);
   const retryLabel =
     state === 'initial'
-      ? 'Bağlantıyı başlat'
+      ? t('Bağlantıyı başlat')
       : state === 'cancelled'
-        ? 'Tekrar başlat'
-        : 'Kendi hesabımla yenile';
+        ? t('Tekrar başlat')
+        : t('Kendi hesabımla yenile');
 
   return (
     <div className={`ref-rd-connection state-${state}`} aria-busy={busy}>
@@ -97,13 +98,14 @@ export function ReferenceRDConnection({
                 <Link2 size={25} aria-hidden="true" />
               </span>
               <div>
-                <h3>Kendi Real-Debrid hesabını bağla</h3>
-                <p>Tarayıcıda sağlayıcının giriş sayfasında onay ver.</p>
+                <h3>{t('Kendi Real-Debrid hesabını bağla')}</h3>
+                <p>{t('Tarayıcıda sağlayıcının giriş sayfasında onay ver.')}</p>
               </div>
             </div>
             <p className="ref-rd-description">
-              Bağlantıyı başlattığında sağlayıcının sayfası açılır. Parolanı yalnızca Real-Debrid'e
-              gir.
+              {t(
+                "Bağlantıyı başlattığında sağlayıcının sayfası açılır. Parolanı yalnızca Real-Debrid'e gir.",
+              )}
             </p>
             <PersonalConnectionDetails />
           </>
@@ -113,32 +115,34 @@ export function ReferenceRDConnection({
           <>
             {validGrant ? (
               <>
-                <ol className="ref-rd-stepper" aria-label="Bağlantı adımları">
+                <ol className="ref-rd-stepper" aria-label={t('Bağlantı adımları')}>
                   <li className="complete">
                     <span>
                       <Check size={12} aria-hidden="true" />
                     </span>
-                    Başlatıldı
+                    {t('Başlatıldı')}
                   </li>
                   <li className="current" aria-current="step">
-                    <span>2</span>Tarayıcıda onayla
+                    <span>2</span>
+                    {t('Tarayıcıda onayla')}
                   </li>
                   <li>
-                    <span>3</span>Tamamlanması bekleniyor
+                    <span>3</span>
+                    {t('Tamamlanması bekleniyor')}
                   </li>
                 </ol>
-                <div className="ref-rd-code ref-media-code" aria-label="Cihaz doğrulama kodu">
+                <div className="ref-rd-code ref-media-code" aria-label={t('Cihaz doğrulama kodu')}>
                   <code>{grant!.userCode}</code>
                 </div>
                 <p className="ref-rd-description">
-                  Sağlayıcının sayfasında kendi hesabına giriş yap ve bu kodu onayla.
+                  {t('Sağlayıcının sayfasında kendi hesabına giriş yap ve bu kodu onayla.')}
                 </p>
                 <div className="ref-rd-notice pending" role="status">
                   <Clock3 size={17} aria-hidden="true" />
                   <div>
-                    <strong>Onay bekleniyor.</strong> Kodun son geçerlilik zamanı:{' '}
+                    <strong>{t('Onay bekleniyor.')}</strong> {t('Kodun son geçerlilik zamanı:')}{' '}
                     <time dateTime={grant!.expiresAt}>
-                      {new Date(grant!.expiresAt).toLocaleString('tr-TR', {
+                      {new Date(grant!.expiresAt).toLocaleString(locale, {
                         day: '2-digit',
                         month: '2-digit',
                         year: 'numeric',
@@ -155,7 +159,8 @@ export function ReferenceRDConnection({
               <div className="ref-rd-notice warning" role="alert">
                 <TriangleAlert size={18} aria-hidden="true" />
                 <div>
-                  <strong>Bağlantı kodu alınamadı.</strong> Bu denemeyi iptal edip yeniden başlat.
+                  <strong>{t('Bağlantı kodu alınamadı.')}</strong>{' '}
+                  {t('Bu denemeyi iptal edip yeniden başlat.')}
                 </div>
               </div>
             )}
@@ -168,7 +173,7 @@ export function ReferenceRDConnection({
                 tabIndex={0}
               >
                 <ExternalLink size={16} aria-hidden="true" />
-                Yetkilendirme sayfasını aç
+                {t('Yetkilendirme sayfasını aç')}
               </a>
             ) : (
               <>
@@ -180,7 +185,7 @@ export function ReferenceRDConnection({
                   aria-describedby={`${id}-link-reason`}
                 >
                   <ExternalLink size={16} aria-hidden="true" />
-                  Yetkilendirme sayfasını aç
+                  {t('Yetkilendirme sayfasını aç')}
                 </button>
                 <p className="ref-rd-reason" id={`${id}-link-reason`}>
                   {linkReason}
@@ -188,8 +193,9 @@ export function ReferenceRDConnection({
               </>
             )}
             <p className="ref-rd-note">
-              İptal etmek Tayfa'nın bu denemeyi tamamlamasını durdurur. Kod, sağlayıcıda süresi
-              dolana kadar geçerli kalabilir.
+              {t(
+                "İptal etmek Tayfa'nın bu denemeyi tamamlamasını durdurur. Kod, sağlayıcıda süresi dolana kadar geçerli kalabilir.",
+              )}
             </p>
           </>
         )}
@@ -199,14 +205,16 @@ export function ReferenceRDConnection({
             <div className="ref-rd-account-card connected" role="status">
               <Check size={24} aria-hidden="true" />
               <div>
-                <h3>Real-Debrid bağlandı</h3>
-                <p>Kişisel bağlantın</p>
+                <h3>{t('Real-Debrid bağlandı')}</h3>
+                <p>{t('Kişisel bağlantın')}</p>
               </div>
-              <span className="ref-rd-badge">Bağlı</span>
+              <span className="ref-rd-badge">{t('Bağlı')}</span>
             </div>
             <PersonalConnectionDetails />
             <p className="ref-rd-description">
-              Bağlantı bilgilerin ve kişisel oynatma adreslerin diğer kullanıcılarla paylaşılmaz.
+              {t(
+                'Bağlantı bilgilerin ve kişisel oynatma adreslerin diğer kullanıcılarla paylaşılmaz.',
+              )}
             </p>
           </>
         )}
@@ -214,10 +222,11 @@ export function ReferenceRDConnection({
         {state === 'cancelled' && (
           <div className="ref-rd-cancelled" role="status">
             <Link2 size={38} aria-hidden="true" />
-            <h3>Onay kontrolü durduruldu.</h3>
+            <h3>{t('Onay kontrolü durduruldu.')}</h3>
             <p>
-              Tayfa bu denemeyi tamamlamayacak. Kod, sağlayıcıda süresi dolana kadar geçerli
-              kalabilir.
+              {t(
+                'Tayfa bu denemeyi tamamlamayacak. Kod, sağlayıcıda süresi dolana kadar geçerli kalabilir.',
+              )}
             </p>
           </div>
         )}
@@ -229,12 +238,12 @@ export function ReferenceRDConnection({
               <div>
                 <strong>
                   {state === 'expired'
-                    ? 'Yetkilendirme kodunun süresi doldu.'
-                    : 'Yetkilendirme tamamlanamadı.'}
+                    ? t('Yetkilendirme kodunun süresi doldu.')
+                    : t('Yetkilendirme tamamlanamadı.')}
                 </strong>{' '}
                 {state === 'expired'
-                  ? 'Kendi hesabında yeniden onay vererek bağlantıyı başlat.'
-                  : error || 'Bağlantı sonucu doğrulanamadı. Yeniden deneyebilirsin.'}
+                  ? t('Kendi hesabında yeniden onay vererek bağlantıyı başlat.')
+                  : error || t('Bağlantı sonucu doğrulanamadı. Yeniden deneyebilirsin.')}
               </div>
             </div>
             <PersonalConnectionDetails />
@@ -269,7 +278,7 @@ export function ReferenceRDConnection({
               onClick={onRemove}
             >
               <Trash2 size={15} aria-hidden="true" />
-              Bağlantıyı kaldır
+              {t('Bağlantıyı kaldır')}
             </button>
             <button
               type="button"
@@ -280,7 +289,7 @@ export function ReferenceRDConnection({
               onClick={onOpenLibrary}
             >
               <Film size={16} aria-hidden="true" />
-              Kütüphanemi aç
+              {t('Kütüphanemi aç')}
             </button>
           </>
         ) : state === 'waiting' ? (
@@ -294,7 +303,7 @@ export function ReferenceRDConnection({
             }
             onClick={onCancel}
           >
-            Onay kontrolünü durdur
+            {t('Onay kontrolünü durdur')}
           </button>
         ) : (
           <>
@@ -307,10 +316,10 @@ export function ReferenceRDConnection({
               onClick={onClose}
             >
               {state === 'initial'
-                ? 'Şimdi değil'
+                ? t('Şimdi değil')
                 : state === 'cancelled'
-                  ? 'Kişisel medyama dön'
-                  : 'Şimdilik kapat'}
+                  ? t('Kişisel medyama dön')
+                  : t('Şimdilik kapat')}
             </button>
             <button
               type="button"

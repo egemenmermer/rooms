@@ -1,4 +1,5 @@
 import type { Timeline } from '../../../packages/activity-protocol/src';
+import { t } from './i18n';
 
 const VIDEO_ID = /^[\w-]{11}$/;
 
@@ -49,15 +50,15 @@ export function clock(seconds: number) {
 
 // Official codes: https://developers.google.com/youtube/iframe_api_reference#onError
 const playerErrors: Record<number, string> = {
-  2: 'Video bağlantısı geçersiz.',
-  5: 'Bu video oynatıcıda açılamadı.',
-  100: 'Video kaldırılmış veya gizli.',
-  101: 'Video sahibi başka uygulamalarda oynatılmasına izin vermiyor.',
-  150: 'Video sahibi başka uygulamalarda oynatılmasına izin vermiyor.',
-  153: 'YouTube bu oynatıcıyı doğrulayamadı.',
+  2: t('Video bağlantısı geçersiz.'),
+  5: t('Bu video oynatıcıda açılamadı.'),
+  100: t('Video kaldırılmış veya gizli.'),
+  101: t('Video sahibi başka uygulamalarda oynatılmasına izin vermiyor.'),
+  150: t('Video sahibi başka uygulamalarda oynatılmasına izin vermiyor.'),
+  153: t('YouTube bu oynatıcıyı doğrulayamadı.'),
 };
 export const youtubeErrorText = (code: number) =>
-  playerErrors[code] ?? 'Video bu bölgede veya bu oynatıcıda kullanılamıyor olabilir.';
+  playerErrors[code] ?? t('Video bu bölgede veya bu oynatıcıda kullanılamıyor olabilir.');
 
 const VOLUME_KEY = 'rooms.cinema.volume';
 export function storedVolume(): { volume: number; muted: boolean } {

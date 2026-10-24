@@ -6,7 +6,7 @@ import type {
   SocialSignupRequest,
   SocialSignupRequests,
 } from '@rooms/social';
-import { uiError } from './i18n';
+import { locale, t, uiError } from './i18n';
 
 export interface CommunitySignupRequestsBridge {
   signupRequests(spaceId: string): Promise<SocialSignupRequests>;
@@ -17,7 +17,7 @@ export interface CommunitySignupRequestsBridge {
   ): Promise<void>;
 }
 
-const formatDate = (iso: string) => new Date(iso).toLocaleString('tr-TR');
+const formatDate = (iso: string) => new Date(iso).toLocaleString(locale);
 
 /**
  * Owner/admin view of approved sign-up requests (people who signed up without an invitation
@@ -82,14 +82,16 @@ export function CommunitySignupRequestsTab({
   if (!supported)
     return (
       <div className="rcm-invites">
-        <h2>Kayıt istekleri</h2>
+        <h2>{t('Kayıt istekleri')}</h2>
         <div className="rcm-unavailable">
           <UserPlus size={24} />
           <div>
-            <strong>Kayıt isteklerini burada yönetemezsin</strong>
+            <strong>{t('Kayıt isteklerini burada yönetemezsin')}</strong>
             <p>
               {disabledReason ||
-                'Davetsiz kayıt isteklerini yalnızca topluluk sahibi ve yöneticiler görebilir ve onaylayabilir.'}
+                t(
+                  'Davetsiz kayıt isteklerini yalnızca topluluk sahibi ve yöneticiler görebilir ve onaylayabilir.',
+                )}
             </p>
           </div>
         </div>
@@ -98,10 +100,10 @@ export function CommunitySignupRequestsTab({
   return (
     <div className="rcm-invites">
       <div className="rcm-invites-heading">
-        <h2>Kayıt istekleri</h2>
+        <h2>{t('Kayıt istekleri')}</h2>
         <button
           className="rcm-refresh"
-          aria-label="Kayıt isteklerini yenile"
+          aria-label={t('Kayıt isteklerini yenile')}
           disabled={loading}
           onClick={() => void load()}
         >
@@ -109,9 +111,9 @@ export function CommunitySignupRequestsTab({
         </button>
       </div>
       <p className="rcm-invites-note">
-        Davet bağlantısı olmadan kayıt isteği gönderenler burada bekler; henüz hesapları yok.
-        Onayladığın kişiye tek kullanımlık bir kayıt bağlantısı verilir (Davetler listesinde
-        görünür); hesabı o zaman oluşur ve topluluğa katılır. Reddettiğin kişiye bu söylenir.
+        {t(
+          'Davet bağlantısı olmadan kayıt isteği gönderenler burada bekler; henüz hesapları yok. Onayladığın kişiye tek kullanımlık bir kayıt bağlantısı verilir (Davetler listesinde görünür); hesabı o zaman oluşur ve topluluğa katılır. Reddettiğin kişiye bu söylenir.',
+        )}
       </p>
       {error && !confirm && (
         <p className="rcm-invites-error" role="alert">
@@ -120,21 +122,22 @@ export function CommunitySignupRequestsTab({
       )}
       {value === null ? (
         <p className="rcm-no-members" role="status">
-          {loading ? 'Kayıt istekleri yükleniyor…' : 'Kayıt istekleri alınamadı.'}
+          {loading ? t('Kayıt istekleri yükleniyor…') : t('Kayıt istekleri alınamadı.')}
         </p>
       ) : !value.enabled ? (
         <div className="rcm-unavailable">
           <UserPlus size={24} />
           <div>
-            <strong>Bu topluluk için davetsiz kayıt kapalı</strong>
+            <strong>{t('Bu topluluk için davetsiz kayıt kapalı')}</strong>
             <p>
-              Sunucu yöneticisi erişim servisinde ROOMS_SIGNUP_SPACE_ID ayarını bu topluluğa verince
-              istekler burada görünür.
+              {t(
+                'Sunucu yöneticisi erişim servisinde ROOMS_SIGNUP_SPACE_ID ayarını bu topluluğa verince istekler burada görünür.',
+              )}
             </p>
           </div>
         </div>
       ) : value.requests.length ? (
-        <ul className="rcm-invite-list" aria-label="Bekleyen kayıt istekleri">
+        <ul className="rcm-invite-list" aria-label={t('Bekleyen kayıt istekleri')}>
           {value.requests.map((item) => (
             <li key={item.id}>
               <div>
@@ -142,11 +145,11 @@ export function CommunitySignupRequestsTab({
                 <span
                   className={`rcm-invite-state ${item.state === 'approved' ? 'full' : 'active'}`}
                 >
-                  {item.state === 'approved' ? 'Onaylandı' : 'Bekliyor'}
+                  {item.state === 'approved' ? t('Onaylandı') : t('Bekliyor')}
                 </span>
                 <small>
-                  İstek: {formatDate(item.createdAt)}
-                  {item.state === 'approved' && ' · Uygulamayı açınca hesabı oluşacak'}
+                  {t('İstek: {date}', { date: formatDate(item.createdAt) })}
+                  {item.state === 'approved' && ` · ${t('Uygulamayı açınca hesabı oluşacak')}`}
                 </small>
               </div>
               <div className="rcm-signup-actions">
@@ -156,7 +159,7 @@ export function CommunitySignupRequestsTab({
                   onClick={() => void decide(item, 'approve')}
                 >
                   <Check size={15} />
-                  {item.state === 'approved' ? 'Yeniden onayla' : 'Onayla'}
+                  {item.state === 'approved' ? t('Yeniden onayla') : t('Onayla')}
                 </button>
                 <button
                   className="button secondary"
@@ -164,24 +167,24 @@ export function CommunitySignupRequestsTab({
                   onClick={() => setConfirm(item)}
                 >
                   <X size={15} />
-                  Reddet
+                  {t('Reddet')}
                 </button>
               </div>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="rcm-no-members">Bekleyen kayıt isteği yok.</p>
+        <p className="rcm-no-members">{t('Bekleyen kayıt isteği yok.')}</p>
       )}
       {confirm && (
         <Modal
-          title={`${confirm.username} reddedilsin mi?`}
+          title={t('{name} reddedilsin mi?', { name: confirm.username })}
           onClose={() => {
             if (!deciding) setConfirm(null);
           }}
         >
           <p className="modal-description">
-            Bu kişi için hesap oluşturulmaz ve isteğinin reddedildiğini görür.
+            {t('Bu kişi için hesap oluşturulmaz ve isteğinin reddedildiğini görür.')}
           </p>
           <div className="rcm-invite-actions">
             <button
@@ -189,14 +192,14 @@ export function CommunitySignupRequestsTab({
               disabled={!!deciding}
               onClick={() => setConfirm(null)}
             >
-              Vazgeç
+              {t('Vazgeç')}
             </button>
             <button
               className="button primary"
               disabled={!!deciding}
               onClick={() => void decide(confirm, 'reject')}
             >
-              {deciding ? 'Reddediliyor…' : 'İsteği reddet'}
+              {deciding ? t('Reddediliyor…') : t('İsteği reddet')}
             </button>
           </div>
           {error && (

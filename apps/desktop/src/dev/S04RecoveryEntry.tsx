@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ConnectionPane } from '../ConnectionPane';
 import { PasswordResetPane, type PasswordResetBridge } from '../PasswordResetPane';
 import { PasswordRecoveryPane, ReferenceAuthFrame } from '../ReferenceOnboarding';
+import { sample } from './sample';
 
 const fixtureServer = 'https://recovery.example.test';
 const requestBridge = {
@@ -38,7 +39,7 @@ export default function S04RecoveryEntry({ variant }: { variant: string }) {
         style={{ position: 'fixed', top: 8, right: 16, zIndex: 20 }}
         title="Local component fixture; no recovery email or account mutation."
       >
-        DEMO · Yerel örnek
+        {sample('DEMO · Yerel örnek', 'DEMO · Local sample')}
       </div>
       {view === 'signin' ? (
         <ConnectionPane

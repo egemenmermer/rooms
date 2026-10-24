@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { MediaParticipant } from '@rooms/media';
 import { useRealtime, setParticipantVolume } from './realtime';
+import { t } from './i18n';
 import { setPersonalSoundMuted, usePersonalSoundMutes } from './personal-sound-mutes';
 import './participant-audio-menu.css';
 /** The level each person had before this listener muted them, whichever menu muted them. */
@@ -29,17 +30,19 @@ export function ParticipantAudioControls({
           volume(person.volume === 0 ? (restoreLevels.get(person.id) ?? 1) : 0);
         }}
       >
-        {person.volume === 0 ? 'Sesini aç' : 'Sesini kapat'} <small>Yalnızca bende</small>
+        {person.volume === 0 ? t('Sesini aç') : t('Sesini kapat')}{' '}
+        <small>{t('Yalnızca bende')}</small>
       </button>
       {(person.sounds?.enter || person.sounds?.leave || soundMuted) && (
         <button onClick={() => setPersonalSoundMuted(person.id, !soundMuted)}>
-          {soundMuted ? 'Giriş sesini aç' : 'Giriş sesini sustur'} <small>Yalnızca bende</small>
+          {soundMuted ? t('Giriş sesini aç') : t('Giriş sesini sustur')}{' '}
+          <small>{t('Yalnızca bende')}</small>
         </button>
       )}
       <label>
-        Ses düzeyi <span>{Math.round(person.volume * 100)}%</span>
+        {t('Ses düzeyi')} <span>{Math.round(person.volume * 100)}%</span>
         <input
-          aria-label={`${person.name} ses düzeyi`}
+          aria-label={t('{name} ses düzeyi', { name: person.name })}
           type="range"
           min={0}
           max={1}
@@ -126,7 +129,7 @@ export function ParticipantAudioMenu() {
     <div
       ref={menu}
       role="dialog"
-      aria-label={`${person.name} ses kontrolü`}
+      aria-label={t('{name} ses kontrolü', { name: person.name })}
       tabIndex={-1}
       className="participant-audio-menu"
       style={{ left: target.x, top: target.y }}

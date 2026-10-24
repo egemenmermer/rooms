@@ -8,6 +8,7 @@ import { safeMediaLabel } from '../../../packages/personal-media/src/playlist';
 import { createVLCStream } from './personal-vlc-stream';
 import type { setupProviders } from './providers';
 import type { PersonalNativeState } from './provider-contracts';
+import { t } from '@rooms/i18n';
 
 interface Binding {
   initialize(runtime: string, plugins: string): void;
@@ -67,7 +68,7 @@ export function setupPersonalVLC(
       !existsSync(addon) ||
       !existsSync(runtime)
     )
-      throw new Error('VLC motoru bu kurulumda bulunmuyor.');
+      throw new Error(t('VLC motoru bu kurulumda bulunmuyor.'));
     const candidate = createRequire(__filename)(addon) as Binding;
     candidate.initialize(runtime, plugins);
     binding = candidate;
@@ -104,7 +105,7 @@ export function setupPersonalVLC(
   scopeTimer.unref();
   function assertPlayback(value: unknown) {
     if (typeof value !== 'string' || value !== token || !token || !check)
-      throw new Error('Oynatma oturumu değişti. Kaynağı yeniden aç.');
+      throw new Error(t('Oynatma oturumu değişti. Kaynağı yeniden aç.'));
     check();
     return load();
   }
@@ -127,19 +128,19 @@ export function setupPersonalVLC(
     const current = ++revision;
     let result!: { token: string };
     const task = queue.then(async () => {
-      if (current !== revision) throw new Error('Oynatma hedefi değişti.');
+      if (current !== revision) throw new Error(t('Oynatma hedefi değişti.'));
       teardown();
       await disposal;
-      if (current !== revision) throw new Error('Oynatma hedefi değişti.');
+      if (current !== revision) throw new Error(t('Oynatma hedefi değişti.'));
       const ownRevision = revision;
       sourceCheck();
       const native = load();
       const win = getWindow();
-      if (!win || win.isDestroyed()) throw new Error('Oynatıcı penceresi kapandı.');
+      if (!win || win.isDestroyed()) throw new Error(t('Oynatıcı penceresi kapandı.'));
       const nextStream = await createVLCStream(url, providers.fetchPlayback, sourceCheck);
       if (ownRevision !== revision) {
         nextStream.close();
-        throw new Error('Oynatma hedefi değişti.');
+        throw new Error(t('Oynatma hedefi değişti.'));
       }
       stream = nextStream;
       check = sourceCheck;
@@ -149,10 +150,10 @@ export function setupPersonalVLC(
       if (ownRevision !== revision) {
         nextStream.close();
         await native.dispose();
-        throw new Error('Oynatma hedefi değişti.');
+        throw new Error(t('Oynatma hedefi değişti.'));
       }
       sourceCheck();
-      if (win.isDestroyed()) throw new Error('Oynatıcı penceresi kapandı.');
+      if (win.isDestroyed()) throw new Error(t('Oynatıcı penceresi kapandı.'));
       native.play(nextStream.url);
       token = randomUUID();
       result = { token };
@@ -166,7 +167,7 @@ export function setupPersonalVLC(
         teardown();
         await disposal;
       }
-      throw new Error('VLC yayını başlatamadı. Kaynak bağlantısını kontrol edip yeniden dene.');
+      throw new Error(t('VLC yayını başlatamadı. Kaynak bağlantısını kontrol edip yeniden dene.'));
     }
   });
   ipcMain.handle('rooms:provider-native-state', (event, value) => {

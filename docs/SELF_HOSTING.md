@@ -1,8 +1,105 @@
-# Kendi Tayfa topluluğunu kur
+# Host your own Tayfa community
 
-[← README](../README.md) · [Kullanım](USER_GUIDE.md) · [Sorun giderme](TROUBLESHOOTING.md)
+[← README](../README.md) · **[Türkçe ↓](#türkçe)**
 
-## İçindekiler
+This English section covers the one-command install. The manual setup, optional services and operations details below are in Turkish for now.
+
+## Quick install (one command)
+
+You can set up a Tayfa server for your group of friends in about 15 minutes. Chat, voice, screen sharing and shared activities come with it; music (DJ), Cinema, Agent and the server management panel are optional and not included.
+
+The **Set up your own server** tab on the app's start screen shows the same steps one screen at a time: rent a server, get a DuckDNS address, open the ports, run the install command, sign in and create an invite.
+
+### What you need
+
+| Need | Note |
+| --- | --- |
+| Linux server (VPS) | Ubuntu 22.04/24.04 or Debian 12, **at least 2 GB RAM (4 GB recommended)**, 2 vCPU, 20 GB disk. x86_64 and ARM64 are supported. |
+| Domain | For example `chat.example.com`. No domain? Get a free name from [DuckDNS](https://www.duckdns.org) (`friends.duckdns.org`). |
+| Open ports | `80/tcp`, `443/tcp` (HTTPS) and `7881/tcp`, `7882/udp` (voice/video). Open them in your provider's firewall. |
+
+A computer at home works too, but you must forward these ports on your router and have a stable public IP. A rented VPS is easier to start with.
+
+### 1. Point the domain at the server
+
+Set your domain's **A record** to the server's public IPv4 address. With DuckDNS, the install script does this for you; just have your subdomain and DuckDNS token ready.
+
+### 2. Run the install command
+
+Connect to the server over SSH and run:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/egemenmermer/rooms/main/deploy/install.sh | sudo bash
+```
+
+The script, in order:
+
+1. Installs Docker if missing and downloads Tayfa to `/opt/rooms`.
+2. Asks for the domain and the certificate email; generates every password and key randomly on the server.
+3. Starts the services. The HTTPS certificate comes from Let's Encrypt automatically and renews itself.
+4. Creates the **community owner** account (email, username, password) and the first community with a voice channel.
+5. Prints your first invite link (7 days, 10 people).
+
+The installer's prompts are in Turkish.
+
+### 3. Connect from the app
+
+1. [Download the Tayfa app](https://github.com/egemenmermer/rooms/releases/latest) and open it.
+2. On the **Sign in** tab, enter `https://your-domain` as the server and sign in with the owner account.
+3. Invite friends with **Create invite** in the app, or make new links on the server:
+
+```sh
+sudo rooms invite                     # one link: 7 days, 10 people
+sudo rooms invite --uses=3 --days=2   # 3 people, valid for 2 days
+sudo rooms invite --count=5           # five separate links
+```
+
+`--uses` is 1–50, `--days` 1–7, `--count` 1–20. Each line looks like `https://your-domain/davet/<token>  (7 gün · 10 kişi · son geçerlilik: …)`.
+
+You can send one link to several friends. Your friend opens it in a browser; the page (Turkish or English, following the browser) has **Download the app** and **Open in Tayfa** buttons. If the button does not open the app, pasting the link on the app's **Sign up** tab is enough; the link decides the server address.
+
+- **Uses:** opening the link uses nothing. A use counts only on a successful sign-up, or when an existing account that is not yet a member joins. A member who opens the link again uses nothing.
+- **Copying:** a link is shown only when it is created; the server stores only its SHA-256 hash. If you lose it, create a new one.
+- **Managing:** see active links under **Settings → Members and roles → Invites**: uses (for example 3/10 people), expiry, creator and Active/Full status; links made with `rooms invite` show "Server" as the creator. **Cancel** closes a link at once; people who joined through it stay in the community. Every member allowed to invite (everyone by default in Stoat) can create links; listing and revoking belong to the community owner. A community can have at most 50 active links.
+
+Known limits:
+
+- The link carries the right to sign up in its address. A short lifetime, a people limit and revoking limit that risk; the page is hidden from search engines (`noindex`) and sends no referrer (`no-referrer`). Still, do not share links in public places.
+- **Download the app** goes to GitHub's `releases/latest`. GitHub does not show pre-releases there; if RC builds are not marked "latest", your friend may get an older version.
+- When a link expires, its upstream community invite stays in Stoat; only a revoked link's invite is deleted.
+- The invite link flow has not yet been accepted on two physical computers.
+
+### Day-to-day management
+
+| Command | What it does |
+| --- | --- |
+| `sudo rooms status` | Shows the services and whether the server is reachable from outside |
+| `sudo rooms invite` | Creates a new invite link (default 7 days, 10 people; `--uses`, `--days`, `--count`) |
+| `sudo rooms logs [service]` | Follows the logs (for example `rooms logs access`) |
+| `sudo rooms backup` | Backs up the database, files and configuration under `/opt/rooms/deploy/backups` |
+| `sudo rooms update [version]` | Takes a backup, then updates to the latest `main` (or to the given release tag, e.g. `v0.1.18-rc.30`) and restarts Caddy |
+| `sudo rooms restart` / `stop` | Restarts / stops the services (data is kept) |
+
+The backup holds passwords and messages. Copy it somewhere safe off the server, and try restoring it now and then.
+
+### If something goes wrong
+
+- **No certificate:** the domain's A record must point at the server IP and ports 80/443 must be open. After fixing it, run `sudo rooms restart`.
+- **Messages work, voice does not connect:** open `7881/tcp` and `7882/udp` in your provider's firewall. If `ufw` is active on the server, run `sudo rooms firewall`.
+- **The invite link does not open the Tayfa page in a browser:** the page is served from `/davet`. If you updated a server installed before that path existed, run `sudo rooms restart` once; Caddy reads the new route when it restarts.
+- **Anything else:** check `sudo rooms status` and `sudo rooms logs` against the [troubleshooting guide](TROUBLESHOOTING.md) (Turkish) or open a GitHub issue. Never share passwords, tokens or invite links.
+
+The quick install is for one server and a small-to-medium group of friends. For hundreds of concurrent users, a separate media server, or optional services like music and Agent, use the detailed setup in the Turkish section below.
+
+---
+
+## Türkçe
+
+**Kendi Tayfa topluluğunu kur**
+
+[English ↑](#host-your-own-tayfa-community) · [Kullanım](USER_GUIDE.md) · [Sorun giderme](TROUBLESHOOTING.md)
+
+### İçindekiler
 
 - [Hızlı kurulum (tek komut)](#hızlı-kurulum-tek-komut)
 - [Neyi çalıştırıyorsun?](#neyi-çalıştırıyorsun)
@@ -19,13 +116,13 @@
 - [Operasyon kontrolleri](#operasyon-kontrolleri)
 - [Başkalarını davet etmeden önce](#başkalarını-davet-etmeden-önce)
 
-## Hızlı kurulum (tek komut)
+### Hızlı kurulum (tek komut)
 
 Kendi arkadaş grubun için Tayfa sunucusunu yaklaşık 15 dakikada kurabilirsin. Sohbet, ses, ekran paylaşımı ve ortak etkinlikler bu kurulumla gelir; müzik (DJ), Agent ve sunucu yönetim paneli isteğe bağlıdır ve dahil değildir.
 
 Uygulamanın başlangıç ekranındaki **Kendi sunucunu kur** sekmesi aynı adımları her ekranda bir adım olacak şekilde gösterir: sunucu kirala, DuckDNS adresi al, portları aç, kurulum komutunu çalıştır, giriş yapıp davet oluştur.
 
-### Gerekenler
+#### Gerekenler
 
 | Gereken | Not |
 | --- | --- |
@@ -35,11 +132,11 @@ Uygulamanın başlangıç ekranındaki **Kendi sunucunu kur** sekmesi aynı adı
 
 Evdeki bilgisayarda da çalışır, ancak modemde bu portları yönlendirmen ve sabit bir genel IP'ye sahip olman gerekir. Başlamak için kiralık bir VPS daha kolaydır.
 
-### 1. Alan adını sunucuya yönlendir
+#### 1. Alan adını sunucuya yönlendir
 
 Alan adının **A kaydını** sunucunun genel IPv4 adresine ayarla. DuckDNS kullanıyorsan bu adımı kurulum betiği senin için yapar; yalnızca alt adını ve DuckDNS token'ını hazır tut.
 
-### 2. Kurulum komutunu çalıştır
+#### 2. Kurulum komutunu çalıştır
 
 Sunucuya SSH ile bağlan ve şunu çalıştır:
 
@@ -55,7 +152,7 @@ Betik sırasıyla şunları yapar:
 4. **Topluluk sahibi** hesabını (e-posta, kullanıcı adı, parola) ve ilk topluluğu, ses kanalıyla birlikte oluşturur.
 5. İlk davet bağlantını yazdırır (7 gün, 10 kişi).
 
-### 3. Uygulamadan bağlan
+#### 3. Uygulamadan bağlan
 
 1. [Tayfa uygulamasını indir](https://github.com/egemenmermer/rooms/releases/latest) ve aç.
 2. **Giriş yap** sekmesinde sunucu olarak `https://alan-adin` gir ve sahip hesabınla giriş yap.
@@ -82,7 +179,7 @@ Bilinen sınırlar:
 - Süresi dolan bağlantının üst sistem topluluk daveti Stoat'ta kalır; yalnızca iptal edilen bağlantınınki silinir.
 - Davet bağlantısı akışının iki fiziksel bilgisayarla gerçek cihaz kabulü henüz yapılmadı.
 
-### Günlük yönetim
+#### Günlük yönetim
 
 | Komut | Ne yapar? |
 | --- | --- |
@@ -95,7 +192,7 @@ Bilinen sınırlar:
 
 Yedek dosyası parolaları ve mesajları içerir. Onu sunucunun dışında güvenli bir yere kopyala ve ara sıra geri yüklemeyi dene.
 
-### Sorun çıkarsa
+#### Sorun çıkarsa
 
 - **Sertifika alınamıyor:** Alan adının A kaydı sunucu IP'sini göstermeli ve 80/443 portları açık olmalı. Düzelttikten sonra `sudo rooms restart` çalıştır.
 - **Mesajlar çalışıyor, ses bağlanmıyor:** `7881/tcp` ve `7882/udp` portlarını sağlayıcının güvenlik duvarında aç. Sunucuda `ufw` etkinse `sudo rooms firewall` çalıştır.
@@ -104,7 +201,7 @@ Yedek dosyası parolaları ve mesajları içerir. Onu sunucunun dışında güve
 
 Hızlı kurulum tek sunucu ve küçük-orta bir arkadaş grubu içindir. Yüzlerce eşzamanlı kullanıcı, ayrı medya sunucusu veya müzik/Agent gibi isteğe bağlı servisler için aşağıdaki ayrıntılı kurulumu kullan.
 
-## Neyi çalıştırıyorsun?
+### Neyi çalıştırıyorsun?
 
 Aşağıdaki bölümler hızlı kurulumun arkasındaki parçaları ve elle kurulumu anlatır.
 
@@ -124,7 +221,7 @@ Bu rehber mevcut kaynağı ve kurulum sınırlarını anlatır; **tek komutla ü
 
 Yerel adımlar loopback adreslerini kullanır. Başka bilgisayardan bağlanmadan dış ağ adımlarını tamamla. Önce temiz veya izole ortam kullan. Mevcut canlı veri birimi üzerinde uyumlu yedek ve incelenmiş veri geçişi planı olmadan kurulum çalıştırma.
 
-## Gereksinimler
+### Gereksinimler
 
 - Yönettiğin sunucu, kalıcı disk ve uygun güvenlik duvarı.
 - Git, Node.js **22.22.0**, pnpm **11.25.0**.
@@ -135,7 +232,7 @@ Yerel adımlar loopback adreslerini kullanır. Başka bilgisayardan bağlanmadan
 
 Bu depo belirli CPU/RAM paketini veya kişi sayısını sertifikalandırmaz. Hedef yayıncı/izleyici sayısıyla medya trafiğini ve yükü ölç. Müzik ve Agent için kaynak ihtiyacı ayrıca değerlendirilir.
 
-## 1. Kaynak kodu al
+### 1. Kaynak kodu al
 
 ```sh
 git clone https://github.com/egemenmermer/rooms.git
@@ -146,7 +243,7 @@ pnpm services:build
 
 Aksi belirtilmedikçe depo kökünde çalış. Derlenmiş servisler `dist-services/` altındadır. Bağımlılık yüklemek bir sunucuyu başlatmaz.
 
-## 2. Sosyal arka uç kurulumu
+### 2. Sosyal arka uç kurulumu
 
 Tayfa, [UPSTREAM.json](../infra/stoat/UPSTREAM.json) ile sabitlenmiş, **değiştirilmemiş** Stoat kullanır. Bu sürümü habersiz üst sistem `main` ile değiştirme. Yardımcı betik sabit dağıtım dosyalarını indirip özel yerel yapılandırma oluşturur:
 
@@ -167,7 +264,7 @@ node scripts/stoat-start.mjs
 
 Başlatıcı seçilen sosyal servisleri açar; Tayfa erişim, Activities veya bağımsız Tayfa LiveKit servisini açmaz. Upstream web/native ses profilleri varsayılan olarak kapalıdır. [Entegrasyon ayrıntılarına](../infra/stoat/README.md) bak.
 
-### Yerel adresler
+#### Yerel adresler
 
 | Adres | Amaç | Erişim |
 | --- | --- | --- |
@@ -179,7 +276,7 @@ Başlatıcı seçilen sosyal servisleri açar; Tayfa erişim, Activities veya ba
 
 Docker'dan ana makineye erişim için `.env.web`, `host.docker.internal` kullanır. Bu adın ve dinleme adresinin kendi Docker ortamında çalıştığını doğrula. Servisleri konteyner içine alırsan gerçek iç servis adlarını ve erişilebilir dinleme adreslerini kullan. Linux bridge konteyner, ana makinenin yalnız loopback dinleyen servisine ulaşamayabilir. Bunu ham API veya veritabanını internete açarak çözme.
 
-## 3. LiveKit yapılandırması
+### 3. LiveKit yapılandırması
 
 Resmî LiveKit sunucusunu [kendi sunucunda çalıştırma belgesine](https://docs.livekit.io/transport/self-hosting/) göre kur. Yapılandırmayı sen sağlarsın; istemciye açık adres ile servislerin kullandığı iç adres farklı amaçlar taşır.
 
@@ -211,7 +308,7 @@ Bu loopback örneği uzak üyeler için uygun değildir. Herkese açık kurulumd
 
 Geçmişteki `scripts/livekit-*` yardımcıları `infra/local/` altında özel dosyalar bekler. Bunlar yerel doğrulama kolaylığıdır; bu rehberin üretim kurulum tarifi değildir. Önce beklenen girdilerini incele. Yukarıdaki açık yapılandırma, geçmişte üretilmiş dosyalara bağımlı değildir.
 
-## 4. Tayfa servislerini yapılandır ve başlat
+### 4. Tayfa servislerini yapılandır ve başlat
 
 Özel dizinleri oluşturup ortam kontrol listesini kopyala:
 
@@ -266,7 +363,7 @@ node --env-file=.local/core.env dist-services/activities.cjs
 
 Aynı ortam ortak değerleri sağlayabilir; süreçler kendi port ayarlarını kullanır. Node keyfî `.env` dosyalarını otomatik okumaz. Üretimde ayrı işletim sistemi kullanıcısı, açık çalışma dizini/ortamı, yazılabilir veri dizinleri ve yeniden başlatma sınırları olan denetimli servisler kullan.
 
-## 5. İlk hesap ve davetler
+### 5. İlk hesap ve davetler
 
 **Bu zorunlu yönetici adımı kurulumun otomatik sonucu değildir.** Davet üretme betiği, zaten var olan ve yetkili olduğun üst sistem topluluk davetini ister; ilk yöneticiyi veya topluluğu oluşturmaz.
 
@@ -291,7 +388,7 @@ Eski sürüm 1 defter ilk yazmada sürüm 2'ye çevrilir; özgün dosya bir kez 
 
 Ayrıntılı entegrasyon notları üst sistem kabul açıklarını kaydeder. API yolunun belgelenmesi, kendi ilk hesap/kayıt akışının denendiği anlamına gelmez.
 
-### Onaylı kayıt (davet bağlantısı olmadan)
+#### Onaylı kayıt (davet bağlantısı olmadan)
 
 İsteğe bağlıdır ve varsayılan olarak kapalıdır. Açıkken masaüstündeki ve iPhone'daki **Kayıt ol** ekranında **Onay isteğiyle** seçeneği çıkar: kişi kullanıcı adını, e-postasını ve şifresini girer (masaüstünde sunucu adresini de), davet bağlantısı gerekmez. **İstek gönderilince hesap oluşmaz.** Topluluk sahibi veya yöneticisi (davet bağlantılarını yönetebilen kişiler) isteği **Ayarlar → Üyeler ve roller → Kayıt istekleri** bölümünde onaylar ya da reddeder. Onaydan sonra hesap, mevcut davet bağlantılı kayıtla oluşur ve kişi topluluğa aynı adımda katılır. Reddedilen veya süresi dolan isteğe hiç hesap açılmaz.
 
@@ -325,7 +422,7 @@ Kapatmak için `ROOMS_SIGNUP_SPACE_ID` değerini boşalt ve servisi yeniden baş
 | `POST /v1/spaces/:spaceId/signup-requests/:id/approve` | Sahip/yönetici | Onaylar, tek kullanımlık bağlantı üretir |
 | `POST /v1/spaces/:spaceId/signup-requests/:id/reject` | Sahip/yönetici | Reddeder |
 
-## 6. Masaüstü istemcisini bağla
+### 6. Masaüstü istemcisini bağla
 
 Uyumlu masaüstü derlemesini aç veya kur. **Giriş yap** sekmesinde aynı makinede yerel ters vekil adresini; uzak üyelerde gerçek herkese açık HTTPS kaynak adresini gir. Yeni üye, önceki adımın davet bağlantısını **Kayıt ol** sekmesine yapıştırır; sunucuyu bağlantı belirler.
 
@@ -333,7 +430,7 @@ Uyumlu masaüstü derlemesini aç veya kur. **Giriş yap** sekmesinde aynı maki
 
 Sesten önce iki hesapla mesajlaşmayı dene. Ardından gerçek üyelik, ViewChannel, Connect ve yayın izinleri bulunan ses özellikli kanala katıl. Yalnız metin kanalı olması ses yetkisi almak için yeterli değildir.
 
-## 7. Dış ağdan erişim
+### 7. Dış ağdan erişim
 
 Herkese açık kaynak adresini seç ve arka uçta buna uygun HTTPS/WSS adreslerini duyur. Alan adı kullanışlıdır; IP kullanıyorsan da istemcinin güveneceği TLS kurulumu gerekir. Uzak güvensiz WS bağlantıları istemci tarafından reddedilir.
 
@@ -352,7 +449,7 @@ LiveKit sinyali ayrıca yapılandırılmış, istemcinin ulaşabileceği adreste
 
 Ham API'yi, MongoDB/Redis/RabbitMQ'yu, nesne deposu yönetimini ve sırları özel tut. Sınırlı kimlik bilgileri ve güvenilir iç ağ sağla. Üretimde güvenmeden önce konteyner özetlerini sabitle ve kaydet; kaynak pin dosyası bunların doğrulandığını iddia etmez.
 
-## İsteğe bağlı servisler
+### İsteğe bağlı servisler
 
 Temel giriş, sohbet, izinler ve medya çalıştıktan sonra ekle:
 
@@ -362,7 +459,7 @@ Temel giriş, sohbet, izinler ve medya çalıştıktan sonra ekle:
 - **İndirme portalı:** kaynak `apps/distribution/` altındadır. `ROOMS_DISTRIBUTION_ORIGIN` ve kendi özel davet/yayın işlem defterini kur. Proje sahibinin adresi hazır gelmez.
 - **Görseller:** [topluluk manifesti](CUSTOMIZATION.md) ile DJ adı/posteri/animasyonu sun. Bu bir görsel ayarıdır; oynatma entegrasyonu değildir.
 
-## Veriler ve yedekler
+### Veriler ve yedekler
 
 | Veri | Konum | Kurtarma gereksinimi |
 | --- | --- | --- |
@@ -383,7 +480,7 @@ Kaynak SHA, yapılandırma sürümü, üst sistem imajları, veri yolları ve ye
 
 Yükseltmeden önce gerektiği şekilde yazan süreçleri durdur/sakinleştir, tutarlı yedek al ve veri biçimi uyumluluğunu incele. Uyumlu verisi olmadan yalnız kodu geri almak tam kurtarma planı değildir.
 
-## Operasyon kontrolleri
+### Operasyon kontrolleri
 
 Servisler yerelde çalışırken:
 
@@ -396,7 +493,7 @@ Bunlar servis sağlık kontrolleridir; tam kabul testi değildir. Yeniden başla
 
 `pnpm stoat:verify`, özel JSON dosyasında açıkça sahip olunan atılabilir hesaplar ister; [entegrasyon belgesine](../infra/stoat/README.md) bak. Doğrulama betikleri veri oluşturabilir veya eski özel girdiler bekleyebilir. Kapsamlarını oku; başkasının canlı topluluğuna yöneltme.
 
-## Başkalarını davet etmeden önce
+### Başkalarını davet etmeden önce
 
 - İki gerçek kişi davet bağlantısıyla herkese açık adres üzerinden kayıt olup mesajlaşabilir; bağlantı sayfası tarayıcıda açılır ve **Tayfa'da aç** uygulamayı başlatır.
 - Yetkisiz dış hesap kanalları okuyamaz veya medya/etkinlik yetkisi alamaz.

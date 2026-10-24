@@ -1,7 +1,7 @@
 import { test, expect, _electron as electron, type ElectronApplication } from '@playwright/test';
 import { readFile, rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
-const launch = async () => {
+const launch = async (locale: 'tr' | 'en' = 'tr') => {
   const env: Record<string, string> = {
     ...Object.fromEntries(
       Object.entries(process.env).filter(
@@ -9,6 +9,8 @@ const launch = async () => {
       ),
     ),
     ROOMS_PROFILE: `qa-${randomUUID()}`,
+    // These checks read Turkish text; the machine's own language must not decide it.
+    ROOMS_LOCALE: locale,
   };
   delete env.ELECTRON_RUN_AS_NODE;
   return electron.launch({ args: ['.'], env });

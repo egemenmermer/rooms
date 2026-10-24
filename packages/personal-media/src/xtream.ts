@@ -1,3 +1,4 @@
+import { t } from '@rooms/i18n';
 import { safeMediaLabel } from './playlist';
 
 function categoryId(value: unknown): string | undefined {
@@ -7,7 +8,7 @@ function categoryId(value: unknown): string | undefined {
 }
 function categoryName(value: unknown): string | undefined {
   if (typeof value !== 'string' || !value.trim() || /^\d+$/.test(value.trim())) return;
-  return safeMediaLabel(value, 'Kategori adı alınamadı');
+  return safeMediaLabel(value, t('Kategori adı alınamadı'));
 }
 export function xtreamCategories(value: unknown): Map<string, string> {
   let rows: unknown[] = [];
@@ -40,6 +41,6 @@ export function xtreamGroup(
     categories.get(categoryId(stream.category_id) ?? '') ??
     categoryName(stream.category_name) ??
     categoryName(stream['group-title']) ??
-    'Kategori adı alınamadı'
+    t('Kategori adı alınamadı')
   );
 }

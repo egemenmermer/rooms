@@ -1,3 +1,4 @@
+import { t } from '@rooms/i18n';
 import workletUrl from './noise-worklet.ts?worker&url';
 import rnnoiseUrl from '@sapphi-red/web-noise-suppressor/rnnoise.wasm?url';
 import gtcrnUrl from '@sapphi-red/gtcrn-wasm/gtcrn.wasm?url';
@@ -65,7 +66,7 @@ export async function createNoiseSuppressionNode(
     context.sampleRate !== 48000 ||
     !context.audioWorklet
   )
-    throw new Error('Gürültü azaltma için 48 kHz ses işleme desteği gerekiyor.');
+    throw new Error(t('Gürültü azaltma için 48 kHz ses işleme desteği gerekiyor.'));
   let module = modules.get(context);
   if (!module) {
     module = context.audioWorklet.addModule(workletUrl).catch((error) => {
@@ -103,7 +104,7 @@ export async function createNoiseSuppressionNode(
         if (!ready) {
           clearTimeout(timer);
           callbacks.signal?.removeEventListener('abort', abort);
-          reject(new Error('Gürültü filtresi başlatılamadı. Standart modu seçip yeniden dene.'));
+          reject(new Error(t('Gürültü filtresi başlatılamadı. Standart modu seçip yeniden dene.')));
         } else callbacks.error?.();
       };
       const abort = () => {

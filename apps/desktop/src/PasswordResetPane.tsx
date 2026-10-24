@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, ClipboardPaste, LockKeyhole } from 'lucide-react';
+import { t } from './i18n';
 
 export interface PasswordResetSelection {
   handle: string;
@@ -32,14 +33,18 @@ interface Props {
   onNewRequest(): void;
 }
 const messages: Record<PasswordResetOutcome['state'], string> = {
-  completed: 'Şifre kaydedildi. Yeni şifrenle giriş yap.',
-  'invalid-token': 'Kurtarma bağlantısı geçersiz veya süresi dolmuş. Yeni kurtarma isteği gönder.',
-  'selection-expired': 'Kurtarma işleminin süresi doldu. Bağlantıyı yeniden aktar.',
-  rejected:
+  completed: t('Şifre kaydedildi. Yeni şifrenle giriş yap.'),
+  'invalid-token': t(
+    'Kurtarma bağlantısı geçersiz veya süresi dolmuş. Yeni kurtarma isteği gönder.',
+  ),
+  'selection-expired': t('Kurtarma işleminin süresi doldu. Bağlantıyı yeniden aktar.'),
+  rejected: t(
     'Sunucu yeni şifreyi kabul etmedi. Şifre kurallarını kontrol edip bağlantıyı yeniden aktar.',
-  uncertain: 'Şifre değişikliği doğrulanamadı. Önce yeni şifrenle giriş yapmayı dene.',
-  'scope-changed':
+  ),
+  uncertain: t('Şifre değişikliği doğrulanamadı. Önce yeni şifrenle giriş yapmayı dene.'),
+  'scope-changed': t(
     'Hesap veya sunucu değişti. Kurtarma bağlantısını mevcut sunucu için yeniden aktar.',
+  ),
 };
 
 /** The renderer receives an opaque native capability, never the reset URL or token. Password drafts are ephemeral. */
@@ -113,7 +118,9 @@ export function PasswordResetPane({ serverUrl, scopeKey, bridge, onBack, onNewRe
     } catch {
       if (epoch === generation.current)
         setError(
-          'Bağlantı aktarılamadı. Seçili HTTPS sunucusunun /login/reset/ bağlantısını kopyala. E-posta farklı bir uygulama alan adı kullanıyorsa Stoat web akışından devam et.',
+          t(
+            'Bağlantı aktarılamadı. Seçili HTTPS sunucusunun /login/reset/ bağlantısını kopyala. E-posta farklı bir uygulama alan adı kullanıyorsa Stoat web akışından devam et.',
+          ),
         );
     } finally {
       if (epoch === generation.current) setBusy(false);
@@ -156,11 +163,11 @@ export function PasswordResetPane({ serverUrl, scopeKey, bridge, onBack, onNewRe
     callback();
   };
   const unavailable = !bridge
-    ? 'Şifre sıfırlama yalnızca masaüstü uygulamasında kullanılabilir.'
+    ? t('Şifre sıfırlama yalnızca masaüstü uygulamasında kullanılabilir.')
     : null;
   return (
     <div className="ref-auth-recovery" aria-busy={busy}>
-      <h2>{outcome?.state === 'completed' ? 'Şifre kaydedildi' : 'Yeni şifre'}</h2>
+      <h2>{outcome?.state === 'completed' ? t('Şifre kaydedildi') : t('Yeni şifre')}</h2>
       {outcome ? (
         <div
           className={`ref-auth-notice ${outcome.state === 'completed' ? 'recovery-accepted' : 'error'}`}
@@ -175,7 +182,7 @@ export function PasswordResetPane({ serverUrl, scopeKey, bridge, onBack, onNewRe
           <p className="ref-auth-help">{selection.serverOrigin}</p>
           <form onSubmit={(event) => void submit(event)}>
             <label className="field-label">
-              Yeni şifre
+              {t('Yeni şifre')}
               <input
                 required
                 type="password"
@@ -188,7 +195,7 @@ export function PasswordResetPane({ serverUrl, scopeKey, bridge, onBack, onNewRe
               />
             </label>
             <label className="field-label">
-              Yeni şifreyi tekrar yaz
+              {t('Yeni şifreyi tekrar yaz')}
               <input
                 required
                 type="password"
@@ -202,21 +209,21 @@ export function PasswordResetPane({ serverUrl, scopeKey, bridge, onBack, onNewRe
             </label>
             {repeatedPassword && password !== repeatedPassword && (
               <div className="ref-auth-notice" role="status">
-                Şifreler eşleşmiyor.
+                {t('Şifreler eşleşmiyor.')}
               </div>
             )}
-            <p className="ref-auth-help">Diğer oturumlar kapatılır.</p>
+            <p className="ref-auth-help">{t('Diğer oturumlar kapatılır.')}</p>
             <button
               className="button primary full"
               disabled={busy || password.length < 8 || password !== repeatedPassword}
             >
-              {busy ? 'Kaydediliyor…' : 'Şifreyi kaydet'}
+              {busy ? t('Kaydediliyor…') : t('Şifreyi kaydet')}
               <ArrowRight size={16} />
             </button>
           </form>
         </>
       ) : (
-        <p className="ref-auth-help">E-postadaki kurtarma bağlantısını kopyalayıp aktar.</p>
+        <p className="ref-auth-help">{t('E-postadaki kurtarma bağlantısını kopyalayıp aktar.')}</p>
       )}
       {error && (
         <div className="ref-auth-notice error" ref={notice} tabIndex={-1} role="alert">
@@ -237,17 +244,17 @@ export function PasswordResetPane({ serverUrl, scopeKey, bridge, onBack, onNewRe
           onClick={() => void importLink()}
         >
           <ClipboardPaste size={16} />
-          {busy ? 'Aktarılıyor…' : 'Panodan kurtarma bağlantısını aktar'}
+          {busy ? t('Aktarılıyor…') : t('Panodan kurtarma bağlantısını aktar')}
         </button>
       )}
       {outcome?.state === 'invalid-token' && (
         <button className="button secondary full" onClick={() => leave(onNewRequest)}>
-          Yeni kurtarma isteği
+          {t('Yeni kurtarma isteği')}
         </button>
       )}
       <button className="ref-auth-back" onClick={() => leave(onBack)}>
         <ArrowLeft size={14} />
-        Giriş ekranına dön
+        {t('Giriş ekranına dön')}
       </button>
     </div>
   );

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { t } from './i18n';
 
 export interface PersonalPlaybackSource {
   url: string;
@@ -36,7 +37,7 @@ export function startPersonalPlayback(
     parsed.search ||
     parsed.hash
   )
-    throw new Error('Geçersiz kişisel oynatma kaynağı.');
+    throw new Error(t('Geçersiz kişisel oynatma kaynağı.'));
   usePersonalPlayback.setState({ session: { media, connectionId, ownerId, ownerServerUrl } });
 }
 export function stopPersonalPlayback(connectionId?: string) {

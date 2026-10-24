@@ -25,6 +25,7 @@ import { youtubeThumbnail } from '../cinema-youtube';
 import { cinemaArt } from './cinema-bridge';
 import { didThis, paletteShortcut } from './hall-model';
 import { useHall } from './use-hall';
+import { t } from '../i18n';
 
 export type PanelTab = 'chat' | 'queue' | 'people';
 
@@ -44,14 +45,14 @@ export function HallPanel({
   const queueCount = hall.room?.queue.length ?? 0;
   const people = hall.room?.participants.length ?? 0;
   const tabs: { id: PanelTab; label: string; count?: number }[] = [
-    { id: 'chat', label: 'Sohbet' },
-    { id: 'queue', label: 'Sıra', count: queueCount },
-    { id: 'people', label: 'İzleyenler', count: people },
+    { id: 'chat', label: t('Sohbet') },
+    { id: 'queue', label: t('Sıra'), count: queueCount },
+    { id: 'people', label: t('İzleyenler'), count: people },
   ];
   return (
-    <aside className="hall-panel" aria-label="Salon paneli">
+    <aside className="hall-panel" aria-label={t('Salon paneli')}>
       <header className="hall-panel-head">
-        <div className="hall-panel-tabs" role="tablist" aria-label="Salon paneli">
+        <div className="hall-panel-tabs" role="tablist" aria-label={t('Salon paneli')}>
           {tabs.map((value) => (
             <button
               key={value.id}
@@ -65,7 +66,7 @@ export function HallPanel({
             </button>
           ))}
         </div>
-        <button className="hall-icon-button" aria-label="Paneli kapat (C)" onClick={onClose}>
+        <button className="hall-icon-button" aria-label={t('Paneli kapat (C)')} onClick={onClose}>
           <X size={16} />
         </button>
       </header>
@@ -104,12 +105,12 @@ function HallChat({ notify }: { notify(message: string): void }) {
     return (
       <div className="hall-panel-empty">
         <MessageSquare size={22} />
-        <p>Salon sohbeti açılamadı.</p>
+        <p>{t('Salon sohbeti açılamadı.')}</p>
         <button
           className="button secondary small"
           onClick={() => void openChannel(hall.hallId, true)}
         >
-          Yeniden dene
+          {t('Yeniden dene')}
         </button>
       </div>
     );
@@ -117,12 +118,12 @@ function HallChat({ notify }: { notify(message: string): void }) {
     return (
       <div className="hall-panel-empty" role="status">
         <span className="hall-spinner" />
-        <p>Sohbet açılıyor…</p>
+        <p>{t('Sohbet açılıyor…')}</p>
       </div>
     );
   return (
     <div className="hall-chat">
-      <CommunityChat notify={notify} composerPlaceholder="Mesaj yaz" />
+      <CommunityChat notify={notify} composerPlaceholder={t('Mesaj yaz')} />
     </div>
   );
 }
@@ -178,7 +179,11 @@ function HallQueue() {
     return (
       <div className="hall-panel-empty">
         <Film size={22} />
-        <p>Sıra boş. {paletteShortcut} ile bir kanal, film ya da YouTube videosu ekle.</p>
+        <p>
+          {t('Sıra boş. {shortcut} ile bir kanal, film ya da YouTube videosu ekle.', {
+            shortcut: paletteShortcut,
+          })}
+        </p>
       </div>
     );
   const others = queue.filter((item) => item.id !== current?.id).length;
@@ -186,7 +191,7 @@ function HallQueue() {
     <>
       {hall.canDirect && others > 0 && (
         <div className="hall-queue-head">
-          <span>{queue.length} öğe</span>
+          <span>{t('{count} öğe', { count: queue.length })}</span>
           <button
             className={`hall-text-button ${confirming ? 'danger' : ''}`}
             onClick={() => {
@@ -198,7 +203,7 @@ function HallQueue() {
             onBlur={() => setConfirming(false)}
           >
             <Trash2 size={13} />
-            {confirming ? `${others} öğeyi kaldır` : 'Sırayı temizle'}
+            {confirming ? t('{count} öğeyi kaldır', { count: others }) : t('Sırayı temizle')}
           </button>
         </div>
       )}
@@ -212,7 +217,9 @@ function HallQueue() {
               <button
                 className="hall-queue-open"
                 disabled={playing || !hall.canDirect}
-                title={playing ? 'Şu an oynuyor' : hall.canDirect ? 'Şimdi aç' : hall.directReason}
+                title={
+                  playing ? t('Şu an oynuyor') : hall.canDirect ? t('Şimdi aç') : hall.directReason
+                }
                 onClick={() => hall.run({ type: 'queue.select', itemId: item.id, play: true })}
               >
                 <QueueThumb item={item} />
@@ -224,10 +231,10 @@ function HallQueue() {
                         {item.media.kind === 'community-media' && item.media.live && (
                           <i className="hall-live-dot" />
                         )}
-                        Şimdi oynuyor
+                        {t('Şimdi oynuyor')}
                       </span>
                     ) : (
-                      didThis(hall.nameOf(item.addedBy), 'ekledi')
+                      didThis(hall.nameOf(item.addedBy), 'add')
                     )}
                   </small>
                 </span>
@@ -238,14 +245,14 @@ function HallQueue() {
                   {hall.canDirect && (
                     <>
                       <button
-                        aria-label="Yukarı taşı"
+                        aria-label={t('Yukarı taşı')}
                         disabled={index === 0 || index - 1 === currentIndex}
                         onClick={() => move(index, -1)}
                       >
                         <ArrowUp size={13} />
                       </button>
                       <button
-                        aria-label="Aşağı taşı"
+                        aria-label={t('Aşağı taşı')}
                         disabled={index === queue.length - 1}
                         onClick={() => move(index, 1)}
                       >
@@ -255,7 +262,7 @@ function HallQueue() {
                   )}
                   {(own || hall.canDirect) && (
                     <button
-                      aria-label="Sıradan kaldır"
+                      aria-label={t('Sıradan kaldır')}
                       onClick={() => hall.run({ type: 'queue.remove', itemId: item.id })}
                     >
                       <Trash2 size={13} />
@@ -304,16 +311,16 @@ function HallPeople() {
     return (
       <div className="hall-panel-empty">
         <Users size={22} />
-        <p>Salonda şu an kimse yok. Bir şey açtığında burada görünürler.</p>
+        <p>{t('Salonda şu an kimse yok. Bir şey açtığında burada görünürler.')}</p>
       </div>
     );
   return (
     <div className="hall-people" ref={ref}>
-      <div className="hall-control-mode" role="radiogroup" aria-label="Kumanda">
+      <div className="hall-control-mode" role="radiogroup" aria-label={t('Kumanda')}>
         {(
           [
-            { value: 'everyone', label: 'Herkes yönetir', icon: <Users size={14} /> },
-            { value: 'host', label: 'Ev sahibi yönetir', icon: <Lock size={14} /> },
+            { value: 'everyone', label: t('Herkes yönetir'), icon: <Users size={14} /> },
+            { value: 'host', label: t('Ev sahibi yönetir'), icon: <Lock size={14} /> },
           ] as const
         ).map((option) => (
           <button
@@ -322,7 +329,7 @@ function HallPeople() {
             aria-checked={mode === option.value}
             className={mode === option.value ? 'selected' : ''}
             disabled={!hall.isHost}
-            title={hall.isHost ? undefined : 'Kumanda ayarını yalnızca ev sahibi değiştirir.'}
+            title={hall.isHost ? undefined : t('Kumanda ayarını yalnızca ev sahibi değiştirir.')}
             onClick={() =>
               mode !== option.value && hall.run({ type: 'session.control', mode: option.value })
             }
@@ -334,8 +341,8 @@ function HallPeople() {
       </div>
       <p className="hall-people-note">
         {mode === 'host'
-          ? 'Oynatmayı ev sahibi ve kumanda verdikleri yönetir. Diğerleri sıraya öneri ekler.'
-          : 'Salondaki herkes kanal değiştirebilir, oynatıp durdurabilir.'}
+          ? t('Oynatmayı ev sahibi ve kumanda verdikleri yönetir. Diğerleri sıraya öneri ekler.')
+          : t('Salondaki herkes kanal değiştirebilir, oynatıp durdurabilir.')}
       </p>
       <ul>
         {people.map((person) => {
@@ -350,19 +357,21 @@ function HallPeople() {
               </span>
               <span className="hall-person-text">
                 <strong>
-                  {person.userId === hall.me ? `${person.displayName} (sen)` : person.displayName}
+                  {person.userId === hall.me
+                    ? t('{name} (sen)', { name: person.displayName })
+                    : person.displayName}
                 </strong>
                 <small>
                   {host ? (
                     <>
-                      <Crown size={11} /> Ev sahibi
+                      <Crown size={11} /> {t('Ev sahibi')}
                     </>
                   ) : remote ? (
                     <>
-                      <Gamepad2 size={11} /> Kumandası var
+                      <Gamepad2 size={11} /> {t('Kumandası var')}
                     </>
                   ) : (
-                    'İzliyor'
+                    t('İzliyor')
                   )}
                 </small>
               </span>
@@ -370,7 +379,7 @@ function HallPeople() {
                 <span className="hall-person-menu">
                   <button
                     className="hall-icon-button"
-                    aria-label={`${person.displayName} için seçenekler`}
+                    aria-label={t('{name} için seçenekler', { name: person.displayName })}
                     aria-haspopup="menu"
                     aria-expanded={menu === person.userId}
                     onClick={() => setMenu(menu === person.userId ? null : person.userId)}
@@ -392,14 +401,14 @@ function HallPeople() {
                           }}
                         >
                           {remote ? <UserRoundX size={15} /> : <UserRoundCheck size={15} />}
-                          {remote ? 'Kumandayı geri al' : 'Kumandayı ver'}
+                          {remote ? t('Kumandayı geri al') : t('Kumandayı ver')}
                         </button>
                       )}
                       <button
                         role="menuitem"
                         disabled={!person.canControl}
                         title={
-                          person.canControl ? undefined : 'Bu kişinin salonda yönetme izni yok.'
+                          person.canControl ? undefined : t('Bu kişinin salonda yönetme izni yok.')
                         }
                         onClick={() => {
                           close();
@@ -407,7 +416,7 @@ function HallPeople() {
                         }}
                       >
                         <Crown size={15} />
-                        Ev sahipliğini devret
+                        {t('Ev sahipliğini devret')}
                       </button>
                     </div>
                   )}

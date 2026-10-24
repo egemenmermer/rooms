@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { locale, t } from '../i18n';
 
 /** What the cinema hall's keys do. Esc, digits (channel numbers) and ⌘/Ctrl K stay fixed. */
 export type HallCommand =
@@ -17,16 +18,16 @@ export type HallCommand =
 export type KeyChord = { key: string; shift: boolean };
 
 export const hallCommands: { id: HallCommand; label: string }[] = [
-  { id: 'playPause', label: 'Oynat / duraklat' },
-  { id: 'seekBack', label: '10 saniye geri (film)' },
-  { id: 'seekForward', label: '10 saniye ileri (film)' },
-  { id: 'channelUp', label: 'Önceki kanal' },
-  { id: 'channelDown', label: 'Sonraki kanal' },
-  { id: 'fullscreen', label: 'Tam ekran' },
-  { id: 'mute', label: 'Sesi kapat / aç' },
-  { id: 'panel', label: 'Paneli göster / gizle' },
-  { id: 'pictureInPicture', label: 'Pencere içinde pencere' },
-  { id: 'help', label: 'Kısayolları göster' },
+  { id: 'playPause', label: t('Oynat / duraklat') },
+  { id: 'seekBack', label: t('10 saniye geri (film)') },
+  { id: 'seekForward', label: t('10 saniye ileri (film)') },
+  { id: 'channelUp', label: t('Önceki kanal') },
+  { id: 'channelDown', label: t('Sonraki kanal') },
+  { id: 'fullscreen', label: t('Tam ekran') },
+  { id: 'mute', label: t('Sesi kapat / aç') },
+  { id: 'panel', label: t('Paneli göster / gizle') },
+  { id: 'pictureInPicture', label: t('Pencere içinde pencere') },
+  { id: 'help', label: t('Kısayolları göster') },
 ];
 
 export const defaultKeys: Record<HallCommand, KeyChord | null> = {
@@ -55,6 +56,7 @@ const same = (a: KeyChord | null, b: KeyChord | null) =>
 /** The chord a key press makes; letters ignore case, `?` and other symbols carry their own Shift. */
 export function chordOf(event: Pick<KeyboardEvent, 'key' | 'shiftKey'>): KeyChord {
   const letter = /^[a-zA-ZçğıöşüÇĞİÖŞÜ]$/.test(event.key);
+  // i18n-ignore: stored chords are normalized the same way in every interface language
   const key = letter ? event.key.toLocaleLowerCase('tr') : event.key;
   // A symbol like `?` already says Shift; a letter or an arrow needs it spelled out.
   const shift = letter || key.length > 1 || key === ' ' ? event.shiftKey : false;
@@ -136,7 +138,7 @@ export function hallCommandOf(event: Pick<KeyboardEvent, 'key' | 'shiftKey'>): H
 }
 
 const names: Record<string, string> = {
-  ' ': 'Boşluk',
+  ' ': t('Boşluk'),
   ArrowLeft: '←',
   ArrowRight: '→',
   ArrowUp: '↑',
@@ -153,7 +155,7 @@ const names: Record<string, string> = {
 export function keyLabel(chord: KeyChord | null) {
   if (!chord) return '—';
   const name =
-    names[chord.key] ?? (chord.key.length === 1 ? chord.key.toLocaleUpperCase('tr') : chord.key);
+    names[chord.key] ?? (chord.key.length === 1 ? chord.key.toLocaleUpperCase(locale) : chord.key);
   return chord.shift ? `⇧ ${name}` : name;
 }
 
