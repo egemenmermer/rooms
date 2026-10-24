@@ -12,6 +12,27 @@ export const useVoiceContext = create<{
   error: string | null;
   busy: boolean;
 }>(() => ({ channelId: null, roomName: null, error: null, busy: false }));
+/** An automatic return to a voice room after the connection dropped on its own. */
+export interface VoiceRejoin {
+  channelId: string;
+  roomName: string;
+  /** 1-based attempt that runs now or next; equals maxAttempts once it gave up. */
+  attempt: number;
+  maxAttempts: number;
+  /** waiting between attempts, joining during one, failed after the last one. */
+  phase: 'waiting' | 'joining' | 'failed';
+}
+export const useVoiceRejoin = create<{ rejoin: VoiceRejoin | null }>(() => ({ rejoin: null }));
+/** Capped backoff before each automatic attempt (about two minutes in all, a service restart). */
+export const VOICE_REJOIN_DELAYS_MS = [1000, 2000, 4000, 8000, 15000, 30000, 30000, 30000];
+/**
+ * A drop this soon after an automatic rejoin keeps counting attempts instead of starting over,
+ * so a connection that keeps being taken away (the same account joining the room on another
+ * device) ends after the limit instead of fighting for ever.
+ */
+const REJOIN_STABLE_MS = 60_000;
+/** Text the LiveKit provider sets for DisconnectReason.PARTICIPANT_REMOVED (moderator kick). */
+const KICKED_ERROR = 'A moderator disconnected you from the voice room.';
 const bridge = mediaBridge;
 const errorText = uiError;
 export function useRealtime(): MediaSnapshot & {
@@ -25,14 +46,17 @@ export function useRealtime(): MediaSnapshot & {
     () => mediaProvider().snapshot(),
   );
   const context = useVoiceContext();
+  const rejoin = useVoiceRejoin((state) => state.rejoin);
+  // An automatic rejoin reads as one reconnect, not as a failed join followed by a new one.
+  const rejoining = !!rejoin && rejoin.phase !== 'failed';
   return {
     ...snapshot,
     ...(context.busy
       ? { participants: [], tracks: [], muted: true, camera: false, sharing: false }
       : {}),
     ...context,
-    status: context.busy ? 'connecting' : snapshot.status,
-    error: context.error ?? (snapshot.error ? uiError(snapshot.error) : null),
+    status: rejoining ? 'reconnecting' : context.busy ? 'connecting' : snapshot.status,
+    error: rejoining ? null : (context.error ?? (snapshot.error ? uiError(snapshot.error) : null)),
   };
 }
 let transitionEpoch = 0,
@@ -93,6 +117,136 @@ useCommunity.subscribe((state, previous) => {
   if (state.user?.id !== previous.user?.id || state.serverUrl !== previous.serverUrl)
     updateListenerScope();
 });
+let rejoinTimer: ReturnType<typeof setTimeout> | null = null,
+  rejoinGeneration = 0,
+  /** True only while the rejoin loop itself calls joinVoice, so that join does not cancel it. */
+  automaticJoin = false,
+  rejoinedAt = 0,
+  rejoinedAttempts = 0;
+const dmCallActive = () => {
+  const dm = useDmCall.getState();
+  return dm.busy || dm.call?.state === 'ringing' || dm.call?.state === 'accepted';
+};
+/** Stops a pending automatic rejoin and forgets its state (a leave, another join, a move). */
+function cancelRejoin() {
+  rejoinGeneration++;
+  if (rejoinTimer) clearTimeout(rejoinTimer);
+  rejoinTimer = null;
+  if (useVoiceRejoin.getState().rejoin) useVoiceRejoin.setState({ rejoin: null });
+}
+function scheduleRejoin(channelId: string, roomName: string, index: number, scope: string) {
+  const generation = rejoinGeneration;
+  useVoiceRejoin.setState({
+    rejoin: {
+      channelId,
+      roomName,
+      attempt: index + 1,
+      maxAttempts: VOICE_REJOIN_DELAYS_MS.length,
+      phase: 'waiting',
+    },
+  });
+  rejoinTimer = setTimeout(() => {
+    rejoinTimer = null;
+    void attemptRejoin(channelId, roomName, index, scope, generation);
+  }, VOICE_REJOIN_DELAYS_MS[index]);
+}
+async function attemptRejoin(
+  channelId: string,
+  roomName: string,
+  index: number,
+  scope: string,
+  generation: number,
+) {
+  if (generation !== rejoinGeneration) return;
+  const context = useVoiceContext.getState();
+  // Decided when the timer fires: the kick reason lands after the status change, and a move,
+  // a private call or another account may have taken over meanwhile.
+  if (
+    context.channelId !== channelId ||
+    context.busy ||
+    mediaProvider().snapshot().error === KICKED_ERROR ||
+    dmCallActive() ||
+    scope !== sessionScope()
+  ) {
+    cancelRejoin();
+    return;
+  }
+  useVoiceRejoin.setState({
+    rejoin: {
+      channelId,
+      roomName,
+      attempt: index + 1,
+      maxAttempts: VOICE_REJOIN_DELAYS_MS.length,
+      phase: 'joining',
+    },
+  });
+  let joined = true;
+  automaticJoin = true;
+  try {
+    const join = joinVoice(channelId, roomName);
+    automaticJoin = false;
+    await join;
+  } catch {
+    joined = false;
+  } finally {
+    automaticJoin = false;
+  }
+  if (generation !== rejoinGeneration) return;
+  if (joined && mediaProvider().snapshot().status === 'connected') {
+    rejoinedAt = Date.now();
+    rejoinedAttempts = index + 1;
+    cancelRejoin();
+    return;
+  }
+  if (index + 1 < VOICE_REJOIN_DELAYS_MS.length) {
+    scheduleRejoin(channelId, roomName, index + 1, scope);
+    return;
+  }
+  giveUpRejoin(channelId, roomName);
+}
+/** The last attempt failed: leave properly so the room stops listing this person, then say so. */
+function giveUpRejoin(channelId: string, roomName: string) {
+  void leaveVoice().catch(() => {});
+  const max = VOICE_REJOIN_DELAYS_MS.length;
+  useVoiceRejoin.setState({
+    rejoin: { channelId, roomName, attempt: max, maxAttempts: max, phase: 'failed' },
+  });
+}
+function startRejoin(channelId: string, roomName: string) {
+  // Never unmute on its own: the automatic return (and a manual one) joins muted.
+  desiredMuted = true;
+  const index = Date.now() - rejoinedAt < REJOIN_STABLE_MS ? rejoinedAttempts : 0;
+  rejoinedAt = 0;
+  rejoinedAttempts = 0;
+  rejoinGeneration++;
+  if (index >= VOICE_REJOIN_DELAYS_MS.length) giveUpRejoin(channelId, roomName);
+  else scheduleRejoin(channelId, roomName, index, sessionScope());
+}
+// A full drop (LiveKit gave up on its own reconnect) of the room this person is in: go back.
+// User leaves, room switches and private calls go through leaveVoice/joinVoice first, which
+// clear activeChannel or mark the context busy, so they never look like a drop here.
+let heardStatus = mediaProvider().snapshot().status;
+mediaProvider().subscribeState(() => {
+  const { status, error } = mediaProvider().snapshot();
+  const previous = heardStatus;
+  heardStatus = status;
+  if (error === KICKED_ERROR) {
+    // The kick reason can arrive just after the drop: stop the wait it started.
+    if (useVoiceRejoin.getState().rejoin?.phase === 'waiting') cancelRejoin();
+    return;
+  }
+  if (status !== 'error' || (previous !== 'connected' && previous !== 'reconnecting')) return;
+  const context = useVoiceContext.getState();
+  if (!context.channelId || context.busy || activeChannel !== context.channelId) return;
+  if (rejoinTimer || useVoiceRejoin.getState().rejoin?.phase === 'joining') return;
+  startRejoin(context.channelId, context.roomName ?? t('Oda'));
+});
+/** Stops trying to rejoin and leaves the room ("Vazgeç ve ayrıl"). */
+export const cancelVoiceRejoin = () => leaveVoice();
+/** Hides the message left after the last automatic attempt failed. */
+export function dismissVoiceRejoin() {
+  if (useVoiceRejoin.getState().rejoin?.phase === 'failed') cancelRejoin();
+}
 function disconnectActive() {
   const id = activeChannel;
   activeChannel = null;
@@ -109,6 +263,7 @@ export function joinVoice(channelId: string, roomName: string): Promise<void> {
   const dm = useDmCall.getState();
   if (dm.busy || dm.call?.state === 'ringing' || dm.call?.state === 'accepted')
     return Promise.reject(new Error(t('Önce özel görüşmeyi bitir.')));
+  if (!automaticJoin) cancelRejoin();
   const context = useVoiceContext.getState(),
     snapshot = mediaProvider().snapshot();
   if (context.busy && pendingTarget === channelId && pendingPromise) return pendingPromise;
@@ -199,6 +354,7 @@ export function joinVoice(channelId: string, roomName: string): Promise<void> {
   return next;
 }
 export function leaveVoice(preserveBusy = false): Promise<void> {
+  cancelRejoin();
   const context = useVoiceContext.getState();
   if (!activeChannel && mediaProvider().snapshot().status === 'connected')
     activeChannel = context.channelId;
