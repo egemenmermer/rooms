@@ -474,6 +474,14 @@ export function okey101Action(
   }
   throw new Error('INVALID_101_ACTION');
 }
+/** A tile as clients see it: the two sahte okeys (ids `false-joker-N`, valid for stored states too) carry `fake: true`. */
+export type Okey101ViewTile = OkeyTile & { fake?: true };
+export function markFakeTile(tile: OkeyTile): Okey101ViewTile {
+  return tile.id.startsWith('false-joker') && !tile.joker ? { ...tile, fake: true } : tile;
+}
+const markFakeTiles = (tiles: OkeyTile[]) => tiles.map(markFakeTile);
+export const markFakeMelds = (melds: OkeyRound['melds']) =>
+  melds.map((meld) => ({ ...meld, tiles: markFakeTiles(meld.tiles) }));
 export function okey101View(state: OkeyRound, seat: number | null) {
   return {
     rules: state.rules,
@@ -484,9 +492,9 @@ export function okey101View(state: OkeyRound, seat: number | null) {
     highestOpening: state.highestOpening,
     highestPairs: state.highestPairs ?? 0,
     requiredPairs: required101Pairs(state.rules, state.highestPairs ?? 0),
-    melds: state.melds,
+    melds: markFakeMelds(state.melds),
     opened: state.opened,
-    discards: state.discards.map((cards) => cards.slice(-1)),
+    discards: state.discards.map((cards) => markFakeTiles(cards.slice(-1))),
     scores: state.scores,
     winner: state.winner,
     penalties: state.penalties ?? [0, 0, 0, 0],
@@ -495,7 +503,7 @@ export function okey101View(state: OkeyRound, seat: number | null) {
     ending: state.ending ?? null,
     hands: state.hands.map((tiles, index) => ({
       seat: index,
-      tiles: index === seat ? tiles : [],
+      tiles: index === seat ? markFakeTiles(tiles) : [],
       count: tiles.length,
     })),
   };

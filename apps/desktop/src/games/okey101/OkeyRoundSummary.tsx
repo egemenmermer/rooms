@@ -1,5 +1,6 @@
 import { t } from '../../i18n';
-import { array, object } from '../shared/model';
+import { array, object, type Tile } from '../shared/model';
+import { faceName, okeyFace, OkeyTileView } from './OkeyTile';
 import { penaltyReason, signed, type PenaltyEntry } from './moves';
 
 export type Okey101Ending = { okey: boolean; pairs: boolean; elden: boolean; multiplier: number };
@@ -18,6 +19,20 @@ export function endingLine(
   if (ending?.okey) return t('{name} okey atarak bitirdi', { name });
   if (ending?.pairs) return t('{name} çift bitirdi', { name });
   return t('{name} bitirdi', { name });
+}
+
+/** The round's gösterge tile and the okey it set; null when the view carries no indicator (older servers). */
+export function IndicatorLine({ indicator }: { indicator: unknown }) {
+  const tile = object(indicator) as Partial<Tile>;
+  if (typeof tile.id !== 'string' || typeof tile.value !== 'number') return null;
+  return (
+    <div className="o1-round-indicator">
+      <OkeyTileView tile={tile as Tile} fake={false} small />
+      <span>
+        {t('Gösterge')} · {t('Okey · {face}', { face: faceName(okeyFace(tile as Tile)) })}
+      </span>
+    </div>
+  );
 }
 
 /** Penalty lines of a round (işlek, unused side pick, reclaimed okey, gösterge). */
@@ -69,6 +84,7 @@ export function OkeyRoundSummary({
           </span>
         )}
       </header>
+      <IndicatorLine indicator={view.indicator} />
       <p>
         {winner === null
           ? t('Açanlar elinde kalan taşları, açmayanlar 202 yazar.')

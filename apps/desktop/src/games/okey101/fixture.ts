@@ -11,7 +11,13 @@ const tile = (color: TileColor, value: number, copy = 0): OkeyTile => ({
   value,
 });
 const okey = (copy: number): OkeyTile => ({ ...tile('yellow', 8, copy), joker: true });
-const sahte: OkeyTile = { id: 'false-joker-0', color: 'yellow', value: 8 };
+/** As the server marks it (`fake: true`) on the two sahte okeys. */
+const sahte: OkeyTile & { fake: true } = {
+  id: 'false-joker-0',
+  color: 'yellow',
+  value: 8,
+  fake: true,
+};
 const indicator = tile('yellow', 7, 0);
 
 export type Okey101Scene = 'draw' | 'discard' | 'opponent' | 'finished' | 'spectator';

@@ -1,5 +1,7 @@
 import {
   extend101Meld,
+  markFakeMelds,
+  markFakeTile,
   okey101Action,
   okey101GostergeTile,
   okey101IsIslek,
@@ -14,6 +16,11 @@ import {
   type OkeyTile,
 } from './okey101';
 import { caught, parseSwitches, type GameActionInput, type GameModule } from './module';
+
+function lastDiscardOf(round: OkeyRound) {
+  const tile = round.winner === null ? undefined : round.discards[round.winner].at(-1);
+  return tile ? markFakeTile(tile) : null;
+}
 
 /** Table settings: the built-in folding/teams fields plus the house rules from `game.create.options`. */
 export interface Okey101TableOptions {
@@ -156,11 +163,13 @@ export const okey101Module = {
     scores: round.scores,
     winner: round.winner,
     rules: round.rules,
+    /** The gösterge that set this round's okey (public from the deal). */
+    indicator: round.indicator,
     opened: round.opened,
     highestOpening: round.highestOpening,
-    melds: round.melds,
-    lastDiscards: round.discards.map((tiles) => tiles.slice(-1)),
-    lastDiscard: round.winner === null ? null : (round.discards[round.winner].at(-1) ?? null),
+    melds: markFakeMelds(round.melds),
+    lastDiscards: round.discards.map((tiles) => tiles.slice(-1).map(markFakeTile)),
+    lastDiscard: lastDiscardOf(round),
     penaltyLog: round.penaltyLog ?? [],
     ending: round.ending ?? null,
   }),

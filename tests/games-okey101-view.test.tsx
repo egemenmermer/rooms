@@ -179,6 +179,19 @@ describe('101 Okey table', () => {
     expect(rows[1].textContent).toBe('EceAçmadı+101303');
     expect(rows[2].textContent).toBe('OsmanBitirdi—-101');
     expect(screen.queryByRole('group', { name: 'Istaka' })).toBeNull();
+    // The round summary names the gösterge and the okey it set.
+    expect(screen.getByText('Gösterge · Okey · Sarı 8')).toBeTruthy();
+  });
+
+  it('uses the server fake flag: a marked tile is a sahte okey whatever its face', () => {
+    show('your-turn', (game) => {
+      const hands = game.view.hands as { seat: number; tiles: Record<string, unknown>[] }[];
+      const own = hands.find((hand) => hand.seat === 0)!;
+      own.tiles.push({ id: 'false-joker-1', color: 'red', value: 12, fake: true });
+    });
+    // The fixture's own sahte okey plus the red 12 the server marked.
+    expect(within(rack()).getAllByRole('button', { name: /Sahte okey/ })).toHaveLength(2);
+    expect(within(rack()).queryByRole('button', { name: 'Kırmızı 12' })).toBeNull();
   });
 
   it('spectator: no rack and no controls', () => {
@@ -204,6 +217,41 @@ describe('101 Okey table', () => {
     );
     expect(screen.getByText('Osman elden bitirdi · Cezalar ×2')).toBeTruthy();
     expect(screen.getByText('İşlek taş attı')).toBeTruthy();
+  });
+
+  it('history shows the round gösterge and renders a fake last discard as a sahte okey', () => {
+    const game = okey101Fixture('finished', 'ece');
+    render(
+      <OkeyHistory
+        entry={{
+          hand: 0,
+          endedAt: 1,
+          result: {
+            ...game.view,
+            lastDiscard: { id: 'false-joker-1', color: 'yellow', value: 8, fake: true },
+          },
+          seats: game.seats.map((seat) => ({ ...seat, position: seat.seat })),
+        }}
+      />,
+    );
+    expect(screen.getByText('Gösterge · Okey · Sarı 8')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Sahte okey/ })).toBeTruthy();
+  });
+
+  it('history without an indicator (older servers) shows no gösterge line', () => {
+    const game = okey101Fixture('finished', 'ece');
+    const { indicator: _indicator, ...result } = game.view;
+    render(
+      <OkeyHistory
+        entry={{
+          hand: 0,
+          endedAt: 1,
+          result,
+          seats: game.seats.map((seat) => ({ ...seat, position: seat.seat })),
+        }}
+      />,
+    );
+    expect(screen.queryByText(/^Gösterge ·/)).toBeNull();
   });
 });
 
