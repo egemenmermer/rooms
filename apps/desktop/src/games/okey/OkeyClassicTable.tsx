@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { Avatar } from '@rooms/design';
 import type { TableUI } from '../shared/table-ui';
 import { SeatAvatar } from '../shared/SeatAvatar';
+import { TableDock } from '../shared/TableDock';
 import { useGameSounds } from '../shared/sounds';
 import { arrangePairs, arrangeRuns, canFinishWith, finishingTile } from './auto-arrange';
 import { ClassicTileView, TileBack, tileLabel } from './ClassicTile';
@@ -98,23 +99,17 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
     previousIds.current = handIds;
   }, [handIds]);
 
-  // A short log of the latest moves, derived from consecutive views.
-  const [log, setLog] = useState<{ round: number; lines: string[] }>({
-    round: game.history.length,
-    lines: [],
-  });
+  // The latest move, shown on the felt; it belongs to the round it happened in.
+  const [latest, setLatest] = useState<{ round: number; line: string } | null>(null);
   const lastKey = JSON.stringify(view.lastAction ?? null),
     seenKey = useRef('');
   useEffect(() => {
     const last = view.lastAction;
     if (!last || lastKey === seenKey.current) return;
     seenKey.current = lastKey;
-    const line = describeAction(last, nameOf(last.seat), okey);
-    setLog((current) => ({
-      round: game.history.length,
-      lines: [line, ...(current.round === game.history.length ? current.lines : [])].slice(0, 4),
-    }));
+    setLatest({ round: game.history.length, line: describeAction(last, nameOf(last.seat), okey) });
   }, [lastKey]);
+  const latestLine = latest?.round === game.history.length ? latest.line : null;
 
   const finisher = useMemo(
     () => (me !== null && stage === 'discard' && myTurn ? finishingTile(hand) : null),
@@ -155,22 +150,35 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
       ? view.lastAction.tile.id
       : null;
 
+  const handNumber = Math.max(1, game.history.length + (ended ? 0 : 1));
+  const statusTitle = myTurn
+    ? stage === 'draw'
+      ? t('Taş çek')
+      : t('Taş at')
+    : t('{name} oynuyor', { name: turn === null ? '—' : nameOf(turn) });
+  const statusText =
+    notice ||
+    (myTurn
+      ? stage === 'draw'
+        ? t('Ortadan çek ya da soldakinin attığını al.')
+        : finisher
+          ? t('Bitirebilirsin: {tile}', { tile: tileLabel(finisher, okey) })
+          : t('Bir taş seç ve at. Taşı sürükleyip köşene de bırakabilirsin.')
+      : t('Istakanı dizebilirsin.'));
+
   return (
     <div className="ok-table">
-      <div className="rx-badges">
-        <span>{view.options?.scoring === 'winner' ? t('Kazanan +1') : t('Geri sayım')}</span>
-        <span>{t('El {hand}', { hand: game.history.length + (ended ? 0 : 1) })}</span>
-      </div>
-      <section className="ok-felt" aria-label={t('Okey masası')}>
+      <section className={`ok-felt ${ended ? 'ended' : ''}`} aria-label={t('Okey masası')}>
         {[0, 1, 2, 3].map((offset) => {
           const seat = (base + offset) % 4,
             info = seats[seat],
             place = PLACES[offset],
-            playing = turn === seat;
+            playing = turn === seat,
+            own = me !== null && seat === me;
           return (
             <article
               key={`seat-${seat}`}
-              className={`ok-seat ${place} ${playing ? 'turn' : ''}`}
+              className={`ok-seat ${place} ${playing ? 'turn' : ''} ${own ? 'own' : ''}`}
               aria-label={playing ? t('{name} · Sırada', { name: nameOf(seat) }) : nameOf(seat)}
             >
               {order[seat] ? (
@@ -179,8 +187,12 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
                 <Avatar name={nameOf(seat)} />
               )}
               <div>
-                <strong title={nameOf(seat)}>{nameOf(seat)}</strong>
+                <strong title={nameOf(seat)}>
+                  <span>{nameOf(seat)}</span>
+                  {own && <span className="ok-you">{t(' · sen')}</span>}
+                </strong>
                 <small>
+                  {order[seat]?.bot && <b className="ok-bot">{'BOT'}</b>}
                   {t('{count} taş', { count: info?.tileCount ?? 0 })}
                   {info?.showedIndicator ? ` · ${t('Gösterge gösterdi')}` : ''}
                 </small>
@@ -200,14 +212,15 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
             pile = seats[seat]?.discards ?? [],
             top = pile.at(-1),
             takeable = seat === left && can('draw') && !!top,
-            own = me !== null && seat === me;
+            own = me !== null && seat === me,
+            label = own ? t('Attığın taşlar') : t('{name} attı', { name: nameOf(seat) });
           return (
             <div
               key={`pile-${seat}`}
-              className={`ok-pile ${CORNERS[offset]} ${own ? dropClass('discard') : ''}`}
+              className={`ok-pile ${CORNERS[offset]} ${own ? `own ${dropClass('discard')}` : ''}`}
               {...(own ? dragProps('discard') : {})}
             >
-              <small>{own ? t('Attığın taşlar') : t('{name} attı', { name: nameOf(seat) })}</small>
+              <small title={label}>{label}</small>
               {top ? (
                 <span className={`ok-pile-top ${top.id === lastDiscard ? 'last' : ''}`}>
                   {pile.length > 1 && <TileBack />}
@@ -226,43 +239,51 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
           );
         })}
         <div className={`ok-middle ${dropClass('finish')}`} {...dragProps('finish')}>
-          <button
-            type="button"
-            className="ok-stock"
-            disabled={!can('draw')}
-            onClick={() => draw('stock')}
-            aria-label={t('Kapalı taş çek · {count} taş', { count: view.stockCount ?? 0 })}
-          >
-            <TileBack />
-            <b>{view.stockCount ?? '—'}</b>
-          </button>
-          {view.indicator && (
-            <div className="ok-indicator">
-              <ClassicTileView tile={view.indicator} okey={okey} />
-              <small>{t('Gösterge')}</small>
-            </div>
+          <span className="ok-hand-no">{t('El {hand}', { hand: handNumber })}</span>
+          <div className="ok-middle-row">
+            <button
+              type="button"
+              className="ok-stock"
+              disabled={!can('draw')}
+              onClick={() => draw('stock')}
+              aria-label={t('Kapalı taş çek · {count} taş', { count: view.stockCount ?? 0 })}
+            >
+              <span className="ok-stack">
+                <TileBack />
+                <TileBack />
+                <TileBack />
+              </span>
+              <b>{view.stockCount ?? '—'}</b>
+            </button>
+            {view.indicator && (
+              <div className="ok-indicator">
+                <ClassicTileView tile={view.indicator} okey={okey} />
+                <small>{t('Gösterge')}</small>
+              </div>
+            )}
+          </div>
+          {latestLine && (
+            <p className="ok-last" aria-live="polite" title={latestLine}>
+              {latestLine}
+            </p>
           )}
           {dragId && can('finish') && (
             <em className="ok-middle-hint">{t('Bitirmek için bırak')}</em>
           )}
         </div>
+        {ended && <OkeyRoundSummary game={game} view={view} nameOf={nameOf} />}
       </section>
 
-      {log.lines.length > 0 && (
-        <ol className="ok-log" aria-label={t('Son hamleler')} aria-live="polite">
-          {log.lines.map((line, index) => (
-            <li key={`${index}-${line}`}>{line}</li>
-          ))}
-        </ol>
-      )}
-
-      {ended && <OkeyRoundSummary game={game} view={view} nameOf={nameOf} />}
-
       {me !== null && !ended && (
-        <section className="ok-rack-section">
-          <header>
-            <strong>{t('Istakan · {count} taş', { count: hand.length })}</strong>
-            <div>
+        <TableDock label={t('Elin')} className="ok-dock">
+          <div className="ok-dock-bar">
+            <div className="ok-dock-status">
+              <strong>{statusTitle}</strong>
+              <span role="status" title={statusText}>
+                {statusText}
+              </span>
+            </div>
+            <div className="ok-dock-actions">
               <button
                 type="button"
                 className="button secondary small"
@@ -277,8 +298,57 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
               >
                 {t('Çift diz')}
               </button>
+              <span className="ok-dock-sep" aria-hidden="true" />
+              {can('show-indicator') && (
+                <button
+                  type="button"
+                  className="button secondary small"
+                  onClick={() => void action('show-indicator')}
+                >
+                  {t('Göstergeyi göster')}
+                </button>
+              )}
+              {stage === 'draw' ? (
+                <>
+                  <button
+                    type="button"
+                    className="button secondary small"
+                    disabled={!can('draw') || !leftTop}
+                    onClick={() => draw('discard')}
+                  >
+                    {t('Önceki taşı al')}
+                  </button>
+                  <button
+                    type="button"
+                    className="button primary small"
+                    disabled={!can('draw')}
+                    onClick={() => draw('stock')}
+                  >
+                    {t('Kapalı taş çek')}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="button secondary small"
+                    disabled={!can('finish') || !finishId}
+                    onClick={() => finishId && finish(finishId)}
+                  >
+                    {t('Bitir')}
+                  </button>
+                  <button
+                    type="button"
+                    className="button primary small"
+                    disabled={!can('discard') || !selected}
+                    onClick={() => selected && discard(selected)}
+                  >
+                    {t('Seçili taşı at')}
+                  </button>
+                </>
+              )}
             </div>
-          </header>
+          </div>
           <div className="ok-rack" role="group" aria-label={t('Istaka')}>
             {layout.slice(0, RACK_CELLS).map((id, cell) => {
               const tile = id ? byId.get(id) : undefined;
@@ -330,81 +400,7 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
               );
             })}
           </div>
-        </section>
-      )}
-
-      {me !== null && !ended && (
-        <div className="rg-hand-strip ok-actions">
-          <div>
-            <h3>
-              {myTurn
-                ? stage === 'draw'
-                  ? t('Taş çek')
-                  : t('Taş at')
-                : t('{name} oynuyor', { name: turn === null ? '—' : nameOf(turn) })}
-            </h3>
-            <p role="status">
-              {notice ||
-                (myTurn
-                  ? stage === 'draw'
-                    ? t('Ortadan çek ya da soldakinin attığını al.')
-                    : finisher
-                      ? t('Bitirebilirsin: {tile}', { tile: tileLabel(finisher, okey) })
-                      : t('Bir taş seç ve at. Taşı sürükleyip köşene de bırakabilirsin.')
-                  : t('Istakanı dizebilirsin.'))}
-            </p>
-          </div>
-          <div className="rg-actions">
-            {can('show-indicator') && (
-              <button
-                type="button"
-                className="button secondary"
-                onClick={() => void action('show-indicator')}
-              >
-                {t('Göstergeyi göster')}
-              </button>
-            )}
-            {stage === 'draw' ? (
-              <>
-                <button
-                  type="button"
-                  className="button secondary"
-                  disabled={!can('draw') || !leftTop}
-                  onClick={() => draw('discard')}
-                >
-                  {t('Önceki taşı al')}
-                </button>
-                <button
-                  type="button"
-                  className="button primary"
-                  disabled={!can('draw')}
-                  onClick={() => draw('stock')}
-                >
-                  {t('Kapalı taş çek')}
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className="button secondary"
-                  disabled={!can('finish') || !finishId}
-                  onClick={() => finishId && finish(finishId)}
-                >
-                  {t('Bitir')}
-                </button>
-                <button
-                  type="button"
-                  className="button primary"
-                  disabled={!can('discard') || !selected}
-                  onClick={() => selected && discard(selected)}
-                >
-                  {t('Seçili taşı at')}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+        </TableDock>
       )}
     </div>
   );
