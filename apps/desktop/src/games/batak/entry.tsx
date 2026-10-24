@@ -14,7 +14,7 @@ export const batakGame: GameDefinition = {
   catalog: batakCatalog,
   Table: ReferenceBatak,
   ruleRows: (game) => {
-    const rules = { ...BATAK_RULE_DEFAULTS, ...(game.view.rules as object | undefined) },
+    const rules = { ...BATAK_RULE_DEFAULTS, ...game.view.rules },
       kozMaca = game.view.variant === 'koz-maca';
     return [
       [t('Tür'), variantName(String(game.view.variant ?? ''))],

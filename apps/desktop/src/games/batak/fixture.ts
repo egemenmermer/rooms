@@ -105,8 +105,7 @@ const firstTrick = {
 export function batakFixture(scene: BatakScene): GamePublicState {
   const game = base(scene === 'gommeli' ? 3 : 4, scene === 'spectator' ? null : 'self');
   const view = game.view;
-  // `view.rules` is typed for Hold'em; Batak's view carries its own house rules under that key.
-  Object.assign(view, { rules: { ...BATAK_RULE_DEFAULTS } });
+  view.rules = { ...BATAK_RULE_DEFAULTS };
   if (scene === 'spectator') {
     game.seats = game.seats.map((seat) =>
       seat.userId === 'self' ? { ...seat, userId: 'demo-deniz', name: 'Deniz (demo)' } : seat,

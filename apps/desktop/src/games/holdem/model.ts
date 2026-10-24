@@ -1,5 +1,13 @@
 import { locale, t } from '../../i18n';
+import type {
+  GamePublicState,
+  HoldemTableRules,
+} from '../../../../../packages/activity-protocol/src';
 import { array, object } from '../shared/model';
+
+/** A Hold'em table's rules: `view.rules` carries each game's own rules, Hold'em's on its own kind. */
+export const holdemViewRules = (game: GamePublicState): HoldemTableRules | undefined =>
+  game.kind === 'holdem' ? (game.view.rules as HoldemTableRules | undefined) : undefined;
 
 /** One public betting action from `view.log` (server `HoldemLogEntry`). */
 export interface HoldemLogItem {

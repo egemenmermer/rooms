@@ -6,10 +6,11 @@ import { holdemBuyIn } from './HoldemBuyIn';
 import { HoldemHistory } from './HoldemHistory';
 import { holdemTableRules } from './HoldemRulesForm';
 import { HoldemTable } from './HoldemTable';
+import { holdemViewRules } from './model';
 
 const holdemRules = (game: Parameters<GameDefinition['ruleRows']>[0]): RuleRow[] => {
   const view = game.view,
-    nativeRules = view.rules;
+    nativeRules = holdemViewRules(game);
   return [
     [
       'Blind',

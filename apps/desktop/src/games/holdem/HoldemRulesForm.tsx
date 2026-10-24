@@ -1,6 +1,7 @@
 import { t } from '../../i18n';
 import type { HoldemTableRules } from '../../../../../packages/activity-protocol/src';
 import type { GameSetupValues, TableRulesDefinition } from '../registry';
+import { holdemViewRules } from './model';
 
 export const holdemRuleDefaults: HoldemTableRules = {
   name: 'Texas Hold’em',
@@ -123,8 +124,11 @@ export function HoldemRulesForm({
 
 /** Hold'em's rules in the lobby's create dialog and the owner's "Düzenle" before the first hand. */
 export const holdemTableRules: TableRulesDefinition = {
-  initial: (game) =>
-    game ? (game.view.rules ? { ...game.view.rules } : null) : { ...holdemRuleDefaults },
+  initial: (game) => {
+    if (!game) return { ...holdemRuleDefaults };
+    const rules = holdemViewRules(game);
+    return rules ? { ...rules } : null;
+  },
   Form: HoldemRulesForm,
   valid: (value) => validHoldemRules(holdemRulesOf(value)),
   command: (value) => ({

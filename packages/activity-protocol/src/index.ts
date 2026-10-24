@@ -415,6 +415,19 @@ export interface GameRecoveryEvent {
   action?: string;
   toCall?: number;
 }
+/** The table-rule fields the shared game views read whatever the game (seat count, spectators). */
+export interface GameTableRulesCommon {
+  capacity?: number;
+  spectatorsAllowed?: boolean;
+}
+/**
+ * `view.rules`: every game sends its own table rules under this key (Hold'em `HoldemTableRules`,
+ * Batak's house rules, Blackjack's insurance/surrender switches, 101's profile). Shared views read
+ * only the common fields; a game reads its own shape from its own view (Hold'em narrows by kind).
+ */
+export type GameViewRules =
+  | HoldemTableRules
+  | (GameTableRulesCommon & { readonly [key: string]: unknown });
 export interface GamePublicState {
   /**
    * Typed as the kinds the current clients render, so their views stay exhaustive. The service may
@@ -442,7 +455,7 @@ export interface GamePublicState {
       events?: GameRecoveryEvent[];
     } | null;
     tableName?: string;
-    rules?: HoldemTableRules;
+    rules?: GameViewRules;
     spectators?: GameSpectator[];
     watching?: boolean;
     spectatorAccess?: boolean;

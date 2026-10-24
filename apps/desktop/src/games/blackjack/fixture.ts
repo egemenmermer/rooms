@@ -107,7 +107,6 @@ export function blackjackFixture(scene: BlackjackScene): GamePublicState {
         { userId: 'demo-zeynep', hand: 0, outcome: 'win', returned: 200 },
       ]
     : [];
-  // `view.rules` is typed as Hold'em's table rules; Blackjack sends its own switches there.
   return {
     kind: 'blackjack',
     ownerId: watcher ? 'demo-ali' : 'self',
@@ -144,5 +143,5 @@ export function blackjackFixture(scene: BlackjackScene): GamePublicState {
       statistics: {},
       ownRecovery: null,
     },
-  } as unknown as GamePublicState;
+  };
 }
