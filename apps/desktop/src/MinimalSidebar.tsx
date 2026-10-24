@@ -166,12 +166,10 @@ function SectionHeader({
   type,
   label,
   createLabel,
-  disabledReason,
 }: {
   type: 'text' | 'voice';
   label: string;
   createLabel: string;
-  disabledReason?: string;
 }) {
   const { canManage } = useChannelManagement(),
     hint = useId();
@@ -190,12 +188,7 @@ function SectionHeader({
           <small id={hint} className="sidebar-nav-sr">
             {t('Seçenekler için Shift+F10')}
           </small>
-          <IconButton
-            data-create-type={type}
-            label={createLabel}
-            disabled={!!disabledReason}
-            title={disabledReason}
-          >
+          <IconButton data-create-type={type} label={createLabel}>
             <Plus size={14} />
           </IconButton>
         </>
