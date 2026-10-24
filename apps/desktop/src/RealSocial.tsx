@@ -144,10 +144,6 @@ export function CommunityChat({
   notify,
   composerPlaceholder,
 }: {
-  // Unused since the toolbar owns members and search (UI-06); kept until callers stop passing them.
-  membersVisible?: boolean;
-  onToggleMembers?(): void;
-  onSearch?(): void;
   composerPlaceholder?: string;
   notify(message: string): void;
 }) {

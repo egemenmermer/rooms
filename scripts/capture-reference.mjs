@@ -318,8 +318,11 @@ try {
     await page.locator('.s62-modal:not(.s62-cancel-modal)').waitFor();
   if (id === 'S62' && variant === 'cancel') await page.locator('.s62-cancel-modal').waitFor();
   if (id === 'S23') {
-    await page.getByRole('button', { name: 'Etkinlik başlat', exact: true }).first().click();
-    await page.locator('.reference-launcher-modal').waitFor();
+    await page
+      .locator('.real-voice-dock')
+      .getByRole('button', { name: 'Etkinlikler', exact: true })
+      .click();
+    await page.locator('.appdir-modal, .reference-launcher-modal').first().waitFor();
   }
   if ((id === 'S22' && ['request', 'request_sent'].includes(variant)) || id === 'S23') {
     await page.keyboard.press('Tab');

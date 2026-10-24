@@ -317,7 +317,6 @@ export const shell: Catalog = {
     'The saved server can’t be reached. Reconnect from Settings.',
   'Kendi sunucunu kur': 'Set up your own server',
   'Kişi bilgisi': 'Contact info',
-  'Kişisel medyam': 'My personal media',
   'Kişisel oynatıcı': 'Personal player',
   'Klavye kısayolları': 'Keyboard shortcuts',
   'Kontrol edilebilir': 'Ready to check',
@@ -381,7 +380,6 @@ export const shell: Catalog = {
     'The room was updated by another member. The latest state was loaded; try again.',
   'Oda işlemleri': 'Room actions',
   'Oda sesini aç': 'Turn room sound on',
-  'Oda veya komut ara…': 'Search rooms or commands…',
   'Oda üyelerine ulaşılamıyor.': 'Can’t reach the room members.',
   'Odada başka bir etkinlik açık. Önce mevcut etkinliği bitirin.':
     'Another activity is open in the room. Finish the current activity first.',
@@ -403,7 +401,6 @@ export const shell: Catalog = {
   'Ortak odada birlikte karar ver': 'Decide together in a shared room',
   'Ortak sıra dolu. Yeni içerik eklemek için bir öğeyi kaldır.':
     'The shared queue is full. Remove an item to add new content.',
-  'Ortak tahta ve anketler': 'Shared whiteboard and polls',
   'Oturum değişti. Davet iptali doğrulanamadı.':
     'Your session changed. The invite cancellation couldn’t be confirmed.',
   'Oturum değişti. Davet listesi gösterilmedi.':
@@ -657,7 +654,6 @@ export const shell: Catalog = {
     'You need to be friends before you can send a direct message.',
   'Özel sunucuna bağlanmak için masaüstü uygulamasını aç.':
     'Open the desktop app to connect to your private server.',
-  'Özel topluluk': 'Private community',
   'Özel topluluk daveti': 'Private community invite',
   'Özel topluluğuna devam etmek için hesabınla tekrar giriş yap.':
     'Sign in to your account again to continue to your private community.',
@@ -833,4 +829,21 @@ export const shell: Catalog = {
   'Ses yalnızca bu cihazda ölçülür, kimseye gönderilmez.':
     'Sound is only measured on this device and isn’t sent to anyone.',
   'Sistem izinleri {os} tarafından gösterilir.': 'System permissions are shown by {os}.',
+  Anketler: 'Polls',
+  'Arkadaşlarınla özel konuşmalar': 'Private conversations with your friends',
+  'Arkadaş ekle, istekleri gör': 'Add friends, see requests',
+  'Senden bahsedilen mesajlar': 'Messages that mention you',
+  'Bir odaya katıl, sesli konuş': 'Join a room and talk',
+  'Sohbetlerde paylaşılan dosyalar': 'Files shared in conversations',
+  'Kart ve masa oyunları': 'Card and table games',
+  'Sayfa veya komut ara': 'Search pages or commands',
+  'Sayfa veya komut ara…': 'Search pages or commands…',
+  Sonuçlar: 'Results',
+  'Sonuç bulunamadı': 'No results',
+  'Başka bir sözcükle dene.': 'Try another word.',
+  '↑ ↓ ile seç · Enter ile aç · Esc ile kapat': '↑ ↓ to choose · Enter to open · Esc to close',
+  'Mikrofon değiştirilemedi. Ses ayarlarını kontrol edip yeniden dene.':
+    'Couldn’t change the microphone. Check your voice settings and try again.',
+  'Bu mesajın kanalı açılamadı. Kanal listesinden yeniden dene.':
+    'Couldn’t open this message’s channel. Try again from the channel list.',
 };
