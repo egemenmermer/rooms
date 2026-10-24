@@ -97,7 +97,12 @@ it('summarises a finished deal from series.previous without blocking the next on
   expect(row('Alınan kart')).toEqual(['Alınan kart', '22', '30']);
   expect(row('En çok kart')).toEqual(['En çok kart', '—', '+3']);
   expect(row('Pişti (10)')).toEqual(['Pişti (10)', '—', '1 · +10']);
-  expect(row('As, vale, ♣2, ♦10')).toEqual(['As, vale, ♣2, ♦10', '+5', '+8']);
+  // The server's per-card split replaces the single combined line.
+  expect(row('As (1)')).toEqual(['As (1)', '2 · +2', '2 · +2']);
+  expect(row('Vale (1)')).toEqual(['Vale (1)', '—', '4 · +4']);
+  expect(row('♣2 (2)')).toEqual(['♣2 (2)', '—', '1 · +2']);
+  expect(row('♦10 (3)')).toEqual(['♦10 (3)', '1 · +3', '—']);
+  expect(within(summary).queryByRole('rowheader', { name: 'As, vale, ♣2, ♦10' })).toBeNull();
   expect(row('Bu el')).toEqual(['Bu el', '5', '21']);
   // The new deal is already playable underneath.
   expect(handButtons().filter((card) => !(card as HTMLButtonElement).disabled)).toHaveLength(4);
@@ -111,6 +116,20 @@ it('summarises a finished deal from series.previous without blocking the next on
   expect(screen.getByRole('heading', { name: 'El 1 bitti' })).toBeTruthy();
   // Match score per side towards the target.
   expect(screen.getByLabelText('Ali (demo) · 21 / 151')).toBeTruthy();
+});
+
+it('falls back to the combined card-point line when the server sends no breakdown', () => {
+  const game = scene('deal-end');
+  const previous = (game.view.series as { previous: { result: Record<string, unknown> } }).previous;
+  delete previous.result.breakdown;
+  render(<PistiTable {...ui(game)} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Önceki el özeti' }));
+  const summary = screen.getByRole('heading', { name: 'El 1 bitti' }).closest('section')!;
+  const cells = [
+    ...within(summary).getByRole('rowheader', { name: 'As, vale, ♣2, ♦10' }).parentElement!
+      .children,
+  ].map((cell) => cell.textContent);
+  expect(cells).toEqual(['As, vale, ♣2, ♦10', '+5', '+8']);
 });
 
 it('sends a play the protocol accepts and the Pişti module understands', () => {

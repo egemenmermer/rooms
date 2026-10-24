@@ -443,6 +443,8 @@ export interface GamePublicState {
     chips: number;
     connected: boolean;
     pendingNextHand?: boolean;
+    /** The viewer may free this seat now (`game.seat.remove`): the server's own rule, per viewer. */
+    removable?: boolean;
   }[];
   turn: number | null;
   view: Record<string, unknown> & {

@@ -563,6 +563,84 @@ describe('pisti hidden information', () => {
   });
 });
 
+describe('pisti score breakdown and rules in the view', () => {
+  const finished = (captured: Card[][], pisti = [0, 0], jackPisti = [0, 0]): PistiState =>
+    scenario({ turn: null, captured, pisti, jackPisti, table: [], hands: [[], []], deck: [] });
+
+  it('splits card points per side and keeps the total consistent', () => {
+    const s = finished(
+      [
+        [card(14), card(14, 'spades'), card(11), card(5), card(6)],
+        [card(2, 'clubs'), card(10, 'diamonds'), card(10, 'hearts'), card(11, 'clubs')],
+      ],
+      [0, 1],
+      [1, 0],
+    );
+    const result = settlePisti(s)!;
+    expect(result.breakdown).toEqual([
+      {
+        aces: 2,
+        jacks: 1,
+        clubsTwo: 0,
+        diamondsTen: 0,
+        cards: 5,
+        mostCards: true,
+        pisti: 0,
+        jackPisti: 1,
+      },
+      {
+        aces: 0,
+        jacks: 1,
+        clubsTwo: 1,
+        diamondsTen: 1,
+        cards: 4,
+        mostCards: false,
+        pisti: 1,
+        jackPisti: 0,
+      },
+    ]);
+    // 3 + 20 + 3 (most cards) = 26 and 1 + 2 + 3 + 10 = 16.
+    expect(result.points).toEqual([26, 16]);
+    result.breakdown.forEach((b, side) => {
+      const sum =
+        b.aces +
+        b.jacks +
+        b.clubsTwo * 2 +
+        b.diamondsTen * 3 +
+        (b.mostCards ? 3 : 0) +
+        b.pisti * 10 +
+        b.jackPisti * 20;
+      expect(sum).toBe(result.points[side]);
+    });
+  });
+
+  it('gives nobody the most-cards bonus on a tie and one entry per side in a team game', () => {
+    const tie = settlePisti(
+      finished([
+        [card(5), card(6)],
+        [card(7), card(8)],
+      ]),
+    )!;
+    expect(tie.breakdown.map((b) => b.mostCards)).toEqual([false, false]);
+    const teams = scenario({ turn: null, table: [], hands: [[], [], [], []], deck: [] }, 4);
+    expect(settlePisti(teams)!.breakdown).toHaveLength(2);
+    expect(settlePisti(teams)!.points).toHaveLength(4);
+  });
+
+  it('exposes the house rules and treats states stored without the flag as reshuffling', () => {
+    expect(viewPisti(startPisti(2, {}, 0, seeded(1)), 0).rules).toEqual({
+      target: 151,
+      reshuffleJackTop: true,
+    });
+    expect(
+      viewPisti(startPisti(2, { target: 101, reshuffleJackTop: false }, 0, seeded(1)), 0).rules,
+    ).toEqual({ target: 101, reshuffleJackTop: false });
+    const old = startPisti(2, {}, 0, seeded(1)) as Partial<PistiState>;
+    delete old.reshuffleJackTop;
+    expect(viewPisti(old as PistiState, 0).rules.reshuffleJackTop).toBe(true);
+  });
+});
+
 describe('pisti module contract', () => {
   it('declares kind, seats and actions and validates payloads', () => {
     expect(pistiModule.kind).toBe('rooms-pisti-v1');

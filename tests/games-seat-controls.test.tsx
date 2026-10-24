@@ -142,6 +142,28 @@ it('gives the room host the same control and nobody else', () => {
   expect(seatRemovable(table(), table().seats[0], 'ece', 'ece')).toBe(false);
 });
 
+it('follows the per-seat removable flag over its own guess', () => {
+  // The server knows the 30 s rule and the viewer's authority: a disconnected seat that is still
+  // inside the grace period is not offered, a seat it marks is, whoever the viewer guesses to be.
+  const game = table();
+  game.seats[2] = { ...game.seats[2], removable: false };
+  game.seats[3] = { ...game.seats[3], removable: true };
+  game.seats[1] = { ...game.seats[1], removable: true };
+  shell(game);
+  expect(removeButtons().map((button) => button.getAttribute('aria-label'))).toEqual([
+    'Osman koltuğunu boşalt',
+    'Can koltuğunu boşalt',
+  ]);
+  expect(seatRemovable(game, game.seats[1], 'ece', undefined)).toBe(true);
+  expect(seatRemovable(game, game.seats[2], 'ece', undefined)).toBe(false);
+  // Signed out: never.
+  expect(seatRemovable(game, game.seats[1], undefined, undefined)).toBe(false);
+  cleanup();
+  // A server that sends no flag keeps the old client-side guess.
+  shell(table());
+  expect(removeButtons()).toHaveLength(2);
+});
+
 it('shows the speaking ring, the bot badge and the clock of whoever is playing', () => {
   f.speaking.add('osman');
   shell(table());

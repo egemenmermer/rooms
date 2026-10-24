@@ -24,6 +24,17 @@ export interface PistiCapture {
   kind: PistiCaptureKind;
   card: Card | null;
 }
+/** One side's card-point split in a settled deal; absent from servers that predate it. */
+export interface PistiBreakdown {
+  aces: number;
+  jacks: number;
+  clubsTwo: number;
+  diamondsTen: number;
+  cards: number;
+  mostCards: boolean;
+  pisti: number;
+  jackPisti: number;
+}
 export interface PistiDeal {
   seats: number;
   teams: boolean;
@@ -40,7 +51,9 @@ export interface PistiDeal {
   jackPisti: number[];
   lastPlay: PistiPlay | null;
   lastCapture: PistiCapture | null;
-  result: { points: number[]; winners: number[] } | null;
+  /** House rules; `reshuffleJackTop` is null when an older server does not send it. */
+  rules: { target: number; reshuffleJackTop: boolean | null };
+  result: { points: number[]; winners: number[]; breakdown: PistiBreakdown[] | null } | null;
 }
 export interface PistiSeries {
   totals: number[];
@@ -53,6 +66,22 @@ export const PISTI_JACK = 11;
 export const PISTI_BONUS = { pisti: 10, jackPisti: 20, mostCards: 3 } as const;
 
 const numbers = (value: unknown) => array<unknown>(value).map((item) => Number(item) || 0);
+const breakdown = (value: unknown): PistiBreakdown[] | null =>
+  Array.isArray(value)
+    ? value.map((item) => {
+        const side = object(item);
+        return {
+          aces: Number(side.aces) || 0,
+          jacks: Number(side.jacks) || 0,
+          clubsTwo: Number(side.clubsTwo) || 0,
+          diamondsTen: Number(side.diamondsTen) || 0,
+          cards: Number(side.cards) || 0,
+          mostCards: side.mostCards === true,
+          pisti: Number(side.pisti) || 0,
+          jackPisti: Number(side.jackPisti) || 0,
+        };
+      })
+    : null;
 const card = (value: unknown): Card | null => {
   const item = object(value);
   return typeof item.id === 'string'
@@ -90,7 +119,8 @@ const capture = (value: unknown): PistiCapture | null => {
 export function readDeal(value: unknown): PistiDeal | null {
   const view = object(value);
   if (typeof view.seats !== 'number') return null;
-  const result = object(view.result);
+  const result = object(view.result),
+    rules = object(view.rules);
   return {
     seats: view.seats,
     teams: view.teams === true,
@@ -110,8 +140,16 @@ export function readDeal(value: unknown): PistiDeal | null {
     lastPlay: play(view.lastPlay),
     lastCapture: capture(view.lastCapture),
     result: Array.isArray(result.points)
-      ? { points: numbers(result.points), winners: numbers(result.winners) }
+      ? {
+          points: numbers(result.points),
+          winners: numbers(result.winners),
+          breakdown: breakdown(result.breakdown),
+        }
       : null,
+    rules: {
+      target: Number(rules.target) || Number(view.target) || 151,
+      reshuffleJackTop: typeof rules.reshuffleJackTop === 'boolean' ? rules.reshuffleJackTop : null,
+    },
   };
 }
 
@@ -171,27 +209,37 @@ export interface SideSummary {
   mostCards: boolean;
   pisti: number;
   jackPisti: number;
-  /** Aces, jacks, ♣2 and ♦10 together: the deal total minus the bonuses (the view has no split). */
+  /** Aces, jacks, ♣2 and ♦10 together: the deal total minus the bonuses. */
   cardPoints: number;
+  /** The per-card split; null when an older server only sent the totals. */
+  cardsSplit: Pick<PistiBreakdown, 'aces' | 'jacks' | 'clubsTwo' | 'diamondsTen'> | null;
   total: number;
 }
 
 /** How a settled deal scored per side, from what the view carries. */
 export function dealSummary(deal: PistiDeal, points: number[]): SideSummary[] {
-  const counts = deal.capturedCounts,
+  const split = deal.result?.breakdown ?? null,
+    counts = deal.capturedCounts,
     most = Math.max(0, ...counts),
     leaders = counts.filter((count) => count === most).length;
   return Array.from({ length: sideCount(deal) }, (_, side) => {
     const total = sidePoints(deal, points, side),
       mostCards = leaders === 1 && counts[side] === most,
       pisti = deal.pisti[side] ?? 0,
-      jackPisti = deal.jackPisti[side] ?? 0;
+      jackPisti = deal.jackPisti[side] ?? 0,
+      detail = split?.[side] ?? null;
     return {
       side,
       cards: counts[side] ?? 0,
       mostCards,
       pisti,
       jackPisti,
+      cardsSplit: detail && {
+        aces: detail.aces,
+        jacks: detail.jacks,
+        clubsTwo: detail.clubsTwo,
+        diamondsTen: detail.diamondsTen,
+      },
       cardPoints: Math.max(
         0,
         total -
