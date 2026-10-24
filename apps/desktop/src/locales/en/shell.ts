@@ -2,6 +2,9 @@ import type { Catalog } from '@rooms/i18n';
 
 /** English for the shell group. Keys are the Turkish source text exactly as written in the code. */
 export const shell: Catalog = {
+  '{count} bahsetme': { one: '{count} mention', other: '{count} mentions' },
+  '{count} kişi seste': { one: '{count} person in voice', other: '{count} people in voice' },
+  '{count} okunmamış': '{count} unread',
   '%{progress}': '{progress}%',
   'Adım {step} / {total}': 'Step {step} of {total}',
   'Adım {step} / {total}: {title}': 'Step {step} of {total}: {title}',
@@ -15,8 +18,15 @@ export const shell: Catalog = {
   'Anketi kapatma iznin yok.': 'You don’t have permission to close the poll.',
   Ara: 'Search',
   Araçlar: 'Tools',
+  'Arkadaş ekleyince kimin çevrimiçi olduğunu burada görürsün.':
+    'Add friends to see who is online here.',
   'Arkadaş listesini aç': 'Open friends list',
+  'Arkadaşından aldığın davet bağlantısıyla onların topluluğuna katıl ya da kendi topluluğunu kur.':
+    'Join your friends’ community with the invite link they sent you, or set up your own.',
+  'Arkadaşını davet et': 'Invite a friend',
   Arkadaşlar: 'Friends',
+  'Arkadaşlarını çağır ya da bir odaya gir; kim nerede, burada görünür.':
+    'Invite your friends or hop into a room; who is where shows up here.',
   'Arkadaşlarınla aynı yerde.': 'Together with your friends.',
   'Arkadaşlık isteğin henüz kabul edilmedi. Kabul edilince özel mesaj gönderebilirsin.':
     'Your friend request hasn’t been accepted yet. You can send a direct message once it is.',
@@ -47,6 +57,7 @@ export const shell: Catalog = {
   Bağlanıyor: 'Connecting',
   'Bağlanıyor…': 'Connecting…',
   Bağlısın: 'You’re connected',
+  'Bakılıyor…': 'Checking…',
   'Başka bir davet bağlantısı kullan': 'Use a different invite link',
   Başlangıç: 'Start',
   'Beni hatırla': 'Remember me',
@@ -54,11 +65,14 @@ export const shell: Catalog = {
   Bildirimler: 'Notifications',
   'Bir el zaten devam ediyor. Tamamlanmasını bekle.':
     'A hand is already in progress. Wait for it to finish.',
+  'Bir ses odasına katıl': 'Join a voice room',
   'Bir şeye geç…': 'Jump to…',
+  'Bir yönetici kanal açınca burada görünür.': 'Channels show up here once an admin creates them.',
   Birlikte: 'Together',
   'Birlikte izle': 'Watch together',
   'Birlikte çiz, birlikte karar ver': 'Draw together, decide together',
   'Birlikte çiz, yaz; imleçler canlı görünür.': 'Draw and write together; cursors show live.',
+  Boş: 'Empty',
   'Bu alan için iznin yok': 'You don’t have permission for this area',
   'Bu alana ilk mesajı veya dosyayı ekleyerek birlikte başlayabilirsiniz.':
     'You can get started together by adding the first message or file here.',
@@ -142,6 +156,7 @@ export const shell: Catalog = {
     'You don’t have permission to create invites in this community. Ask the community owner for permission.',
   'Bu toplulukta çok fazla etkin davet bağlantısı var. Topluluk yönetimi → Davetler bölümünden birini iptal et.':
     'This community has too many active invite links. Cancel one under Community management → Invites.',
+  'Bu toplulukta henüz kanal yok': 'This community has no channels yet',
   'Bu topluluktaki rol sınırına ulaşıldı. Kullanılmayan bir rolü kaldırıp yeniden dene.':
     'This community has reached its role limit. Remove an unused role and try again.',
   'Bu turda yeniden artırma hakkın yok.': 'You can’t raise again this round.',
@@ -153,6 +168,8 @@ export const shell: Catalog = {
   BİRLİKTE: 'TOGETHER',
   'Canlı kanallar': 'Live channels',
   Cihazlar: 'Devices',
+  'Çevrimiçi arkadaşlar': 'Friends online',
+  'Davet et': 'Invite',
   'DEMO · Yerel örnek': 'DEMO · Local sample',
   'DEMO · Yerel örnek durum.': 'DEMO · Local sample state.',
   'DJ için önce giriş yap.': 'Sign in first to use DJ.',
@@ -263,6 +280,7 @@ export const shell: Catalog = {
   'Güncellemeleri denetle': 'Check for updates',
   'Güncellemeleri kontrol et': 'Check for updates',
   'Güncellemeyi indir': 'Download update',
+  'Henüz bir topluluğun yok': 'You’re not in a community yet',
   'Henüz bir topluluğun yok.': 'You don’t have a community yet.',
   'Henüz burada bir şey yok': 'Nothing here yet',
   'Henüz kanal yok': 'No channels yet',
@@ -374,10 +392,12 @@ export const shell: Catalog = {
   'Oda üyelerine ulaşılamıyor.': 'Can’t reach the room members.',
   'Odada başka bir etkinlik açık. Önce mevcut etkinliği bitirin.':
     'Another activity is open in the room. Finish the current activity first.',
+  'Odada: {title}': 'In the room: {title}',
   Odalar: 'Rooms',
   'Odalar ve gezinme': 'Rooms and navigation',
   'Odan hazırlanıyor': 'Getting your room ready',
   'Odan hazırlanıyor.': 'Getting your room ready.',
+  'Odaya dön': 'Back to room',
   'Odaya müzik aç: YouTube, Spotify listeleri ve sıra.':
     'Play music in the room: YouTube, Spotify playlists and a queue.',
   'Odaya soru sor, oyları canlı gör.': 'Ask the room a question and watch votes come in live.',
@@ -433,6 +453,10 @@ export const shell: Catalog = {
   'SANA ÖZEL': 'JUST FOR YOU',
   'SES ODALARI': 'VOICE ROOMS',
   'Seçenekler için Shift+F10': 'Shift+F10 for options',
+  'Ses odalarında kimin olduğu şu an alınamadı.':
+    'Couldn’t load who is in the voice rooms right now.',
+  'Sinemada şimdi': 'Now in the cinema',
+  'Sinemaya git': 'Go to the cinema',
   SOHBET: 'CHAT',
   'Sahip olmadığın bir yetkiyi değiştiremez veya başka bir role veremezsin.':
     'You can’t change or grant a permission you don’t have.',
@@ -467,8 +491,8 @@ export const shell: Catalog = {
   'Sistem sesi kullanılamıyor': 'System audio unavailable',
   'Sohbet kanalı oluştur': 'Create text channel',
   'Sohbete dön': 'Back to chat',
+  'Sohbete katıl': 'Join the chat',
   Sohbetler: 'Chats',
-  'Soldan bir topluluk seç.': 'Pick a community on the left.',
   'Son geçerlilik: {date}': 'Valid until: {date}',
   'Son kontrol: {date}': 'Last checked: {date}',
   'Son kullanım: {date}': 'Expires: {date}',
@@ -500,11 +524,13 @@ export const shell: Catalog = {
     'Couldn’t reach the server. Check your network connection and the server address.',
   'Sürüm {version}': 'Version {version}',
   'Sırada başka video yok.': 'There are no more videos in the queue.',
+  'Şu an çevrimiçi arkadaşın yok.': 'None of your friends are online right now.',
   'Tayfa {version}': 'Tayfa {version}',
   'Tayfa {version} hazır, güncellemek için tıkla': 'Tayfa {version} is ready, click to update',
   'Tayfa {version} hazır.': 'Tayfa {version} is ready.',
   'Tayfa’yı güncel tut ve destek bilgilerini yönet.':
     'Keep Tayfa up to date and manage support info.',
+  'Tayfana hoş geldin': 'Welcome to your crew',
   'Tekrar dene': 'Try again',
   Topluluk: 'Community',
   'Topluluk bağlantısı açık.': 'Your community connection is open.',

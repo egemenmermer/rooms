@@ -79,7 +79,6 @@ export const social: Catalog = {
   'Eşleşen kişi yok.': 'No matching people.',
   'Masaüstü uygulamasını aç.': 'Open the desktop app.',
   'Yeni özel mesaj': 'New direct message',
-  'Henüz konuşma yok.': 'No conversations yet.',
   Arkadaşlar: 'Friends',
   'Kişiler alınamadı.': 'Couldn’t load people.',
   'Kişi ara': 'Search people',
