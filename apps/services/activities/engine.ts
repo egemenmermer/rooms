@@ -12,14 +12,16 @@ import {
   playbackPosition,
 } from '../../../packages/activity-protocol/src/index';
 import type { StoredRoom } from './repository';
-import { advanceGameBots, createGame, disconnectGame, gameCommand, gameView } from './games';
+import { isGameKind } from '../../../packages/games/src/registry';
+import {
+  advanceGameBots,
+  createGame,
+  disconnectGame,
+  gameCommand,
+  gameTitle,
+  gameView,
+} from './games';
 
-const gameTitles = {
-  holdem: 'Texas Hold’em',
-  blackjack: 'Blackjack',
-  batak: 'Batak',
-  '101': '101 Okey',
-} as const;
 /** Queue media each shared player accepts. The hall plays catalog items and YouTube. */
 function acceptsMedia(activity: string, kind: SharedMedia['kind']) {
   if (activity === 'cinema') return kind === 'independent-source';
@@ -255,7 +257,7 @@ export function applyCommand(
     case 'start':
       if (!identity.canCreate) fail(403, 'ACTIVITY_CREATE_DENIED');
       if (state.primary) fail(409, 'PRIMARY_ACTIVITY_ACTIVE');
-      if (['holdem', 'blackjack', 'batak', '101'].includes(command.activity))
+      if (isGameKind(command.activity))
         fail(409, 'GAME_SERVICE_NOT_CONNECTED');
       state.primary = {
         activity: command.activity,
@@ -548,7 +550,7 @@ export function applyCommand(
       room.game = next;
       state.primary = {
         activity: command.game,
-        title: next.holdemRules?.name ?? gameTitles[command.game],
+        title: next.holdemRules?.name ?? gameTitle(command.game),
         hostUserId: identity.userId,
         startedAt: now,
         state: 'live',
@@ -579,7 +581,7 @@ export function applyCommand(
       if (adopting)
         state.primary = {
           activity: next.kind,
-          title: next.holdemRules?.name ?? gameTitles[next.kind],
+          title: next.holdemRules?.name ?? gameTitle(next.kind),
           hostUserId: identity.userId,
           startedAt: now,
           state: 'live',

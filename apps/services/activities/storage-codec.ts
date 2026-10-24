@@ -1,11 +1,13 @@
 import { z } from 'zod';
+import { gameModule, isGameKind } from '../../../packages/games/src/registry';
 import type { StoredRoom } from './repository';
 
 export const ACTIVITY_STORAGE_VERSION = 1;
 const id = z.string().min(1).max(128),
   number = z.number().finite(),
   revision = z.number().int().nonnegative();
-const gameKind = z.enum(['holdem', 'blackjack', 'batak', '101']);
+// A stored table must belong to a game the registry still hosts.
+const gameKind = z.string().refine(isGameKind, 'Unknown game kind');
 const history = z.array(
   z
     .object({ hand: revision, endedAt: number, result: z.record(z.string(), z.unknown()) })
@@ -49,7 +51,8 @@ const game = z
   })
   .passthrough()
   .superRefine((value, context) => {
-    if (value.status === 'playing' && !value[value.kind === '101' ? 'okey' : value.kind])
+    const stateKey = gameModule(value.kind)?.table?.stateKey ?? 'round';
+    if (value.status === 'playing' && !(value as Record<string, unknown>)[stateKey])
       context.addIssue({ code: 'custom', message: 'Missing active game engine state' });
   });
 const source = z
@@ -79,16 +82,7 @@ const snapshot = z
     ),
     primary: z
       .object({
-        activity: z.enum([
-          'cinema',
-          'youtube',
-          'hall',
-          'screen',
-          'holdem',
-          'blackjack',
-          'batak',
-          '101',
-        ]),
+        activity: z.union([z.enum(['cinema', 'youtube', 'hall', 'screen']), gameKind]),
         title: z.string(),
         hostUserId: id,
         startedAt: number,
