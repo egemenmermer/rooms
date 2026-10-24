@@ -491,9 +491,6 @@ button.o1-cell.empty {
 .o1-meld.selected {
   border-color: var(--color-action-primary);
 }
-.o1-meld .rx-tile {
-  pointer-events: none;
-}
 .o1-meld-tile {
   display: inline-flex;
 }

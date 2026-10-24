@@ -65,7 +65,8 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
     opened = me !== null ? (openedList[me] ?? null) : null,
     stage = String(view.stage),
     ended = stage === 'ended' || game.status === 'finished',
-    turn = game.status === 'playing' && typeof view.turn === 'number' ? view.turn : null,
+    // The round's turn; older views (and the dev harness) only carry it on the game.
+    turn = game.status !== 'playing' ? null : typeof view.turn === 'number' ? view.turn : game.turn,
     myTurn = me !== null && turn === me,
     indicator = (view.indicator as Tile | undefined) ?? null,
     okey = indicator ? okeyFace(indicator) : null,
@@ -228,9 +229,22 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
     ]);
     setSelected([]);
   };
+  // Rack blocks that read as a valid meld (Seri diz leaves the leftovers as one more block).
+  const validBlock = (group: Tile[]) => {
+    try {
+      const read = previewOkeyGroup(group, pairs, { wrapAround });
+      if (pairs) return read[0].color === read[1].color && read[0].value === read[1].value;
+      meldPoints(read, wrapAround);
+      return true;
+    } catch {
+      return false;
+    }
+  };
   const blocks = rackBlocks(layout, RACK_COLUMNS).filter(
     (block) =>
-      !block.some((id) => used.includes(id)) && (pairs ? block.length === 2 : block.length >= 3),
+      !block.some((id) => used.includes(id)) &&
+      (pairs ? block.length === 2 : block.length >= 3) &&
+      validBlock(block.map((id) => byId.get(id)!)),
   );
   const draw = (fromSide: boolean) => {
     const top = leftTop?.id ?? null;
@@ -321,6 +335,7 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
                     <OkeyTileView
                       tile={tile}
                       small
+                      still
                       fake={false}
                       label={
                         tile.joker ? t('Okey · {face} yerine', { face: faceName(tile) }) : undefined

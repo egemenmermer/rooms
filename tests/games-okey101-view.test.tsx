@@ -74,6 +74,8 @@ describe('101 Okey table', () => {
     // Opened melds sit on the table with their owner; the okey shows the value it stands for.
     const melds = screen.getByLabelText('Osman perleri');
     expect(within(melds).getByLabelText('Okey · Mavi 6 yerine')).toBeTruthy();
+    // Meld tiles are drawn inside the meld button, never as nested buttons.
+    expect(document.querySelector('button button')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Seçili taşı at' })).toBeNull();
   });
 
@@ -132,6 +134,10 @@ describe('101 Okey table', () => {
     expect(rackTiles().slice(0, 2)).toEqual(['Mavi 2', 'Mavi 2']);
     fireEvent.click(screen.getByRole('button', { name: 'Seri diz' }));
     expect(rack().querySelector('[data-cell="3"]')!.getAttribute('data-tile')).toBeNull();
+    // Taking the rack's sets drafts only valid melds, never the leftover block.
+    fireEvent.click(screen.getByRole('button', { name: 'Istakadaki dizileri al' }));
+    expect(screen.getAllByRole('button', { name: /^Grup \d+ kaldır$/ }).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Hazır gruplardan biri geçersiz')).toBeNull();
     // Dropping a tile on your own corner discards it.
     fireEvent.dragStart(
       within(rack()).getByRole('button', { name: 'Mavi 6' }).closest('[data-cell]')!,

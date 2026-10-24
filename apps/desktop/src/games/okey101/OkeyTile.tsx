@@ -41,6 +41,7 @@ export function OkeyTileView({
   face,
   label,
   highlight,
+  still,
 }: {
   tile: Tile & { fake?: boolean };
   selected?: boolean;
@@ -52,6 +53,8 @@ export function OkeyTileView({
   face?: TileFace;
   label?: string;
   highlight?: boolean;
+  /** Render as a non-interactive span (inside another control, e.g. a table meld button). */
+  still?: boolean;
 }) {
   const sahte = fake ?? !!tile.fake,
     shown = face ?? tile;
@@ -62,10 +65,24 @@ export function OkeyTileView({
       : tile.joker
         ? t('Okey · {face}', { face: faceName(shown) })
         : faceName(tile));
+  const className = `rx-tile ${sahte ? 'o1-fake' : shown.color} ${tile.joker && !sahte ? 'o1-okey' : ''} ${selected ? 'selected' : ''} ${small ? 'small' : ''} ${highlight ? 'o1-highlight' : ''}`;
+  const content = (
+    <>
+      <strong>{sahte ? '★' : shown.value}</strong>
+      <span>•</span>
+      {tile.joker && !sahte && <i className="o1-okey-mark" aria-hidden="true" />}
+    </>
+  );
+  if (still)
+    return (
+      <span className={className} role="img" aria-label={name} title={name}>
+        {content}
+      </span>
+    );
   return (
     <button
       type="button"
-      className={`rx-tile ${sahte ? 'o1-fake' : shown.color} ${tile.joker && !sahte ? 'o1-okey' : ''} ${selected ? 'selected' : ''} ${small ? 'small' : ''} ${highlight ? 'o1-highlight' : ''}`}
+      className={className}
       disabled={disabled || !onClick}
       onClick={onClick}
       onDoubleClick={disabled ? undefined : onDoubleClick}
@@ -73,9 +90,7 @@ export function OkeyTileView({
       aria-label={name}
       title={sahte || tile.joker ? name : undefined}
     >
-      <strong>{sahte ? '★' : shown.value}</strong>
-      <span>•</span>
-      {tile.joker && !sahte && <i className="o1-okey-mark" aria-hidden="true" />}
+      {content}
     </button>
   );
 }
