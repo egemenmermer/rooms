@@ -54,6 +54,13 @@ type GameModuleShape<State, Command, View, Options = unknown> = {
   botCommand(state: State, seat: number, rng: () => number): Command;
   /** Final result once `turn(state) === null`: points per seat (this round) and winner seats. */
   settle(state: State): { points: number[]; winners: number[] } | null;
+  // Optional G-REG refinements (coordinator/specs/game-module.md).
+  title?: string;
+  parseOptions?(
+    input: Record<string, string | number | boolean> | undefined,
+  ): Options | { error: string };
+  legalActions?(state: State, seat: number): readonly string[];
+  summary?(state: State): Record<string, unknown>;
 };
 
 export const OKEY_CLASSIC_KIND = 'rooms-okey-v1';
@@ -652,8 +659,28 @@ export function parseOkeyClassicCommand(input: {
   }
 }
 
+export function okeyClassicLegalActions(state: OkeyClassicState, seat: number): string[] {
+  if (state.stage === 'ended' || state.turn !== seat) return [];
+  const legal = state.stage === 'draw' ? ['draw'] : ['discard', 'finish'];
+  if (canShowIndicator(state, seat)) legal.push('show-indicator');
+  return legal;
+}
+
+/** Public end-of-round record: the open winning rack and the result, never the other racks or the middle. */
+export function okeyClassicSummary(state: OkeyClassicState): Record<string, unknown> {
+  return {
+    outcome: state.outcome,
+    indicator: { ...state.indicator },
+    okey: { ...state.okey },
+    indicatorShown: state.indicatorShown ? structuredClone(state.indicatorShown) : null,
+    finish: state.finish ? structuredClone(state.finish) : null,
+    ...(settleOkeyClassic(state) ?? { points: [], winners: [] }),
+  };
+}
+
 export const okeyClassicModule = {
   kind: OKEY_CLASSIC_KIND,
+  title: 'Okey',
   seats: [SEATS],
   actions: ACTIONS,
   parseCommand: parseOkeyClassicCommand,
@@ -666,6 +693,9 @@ export const okeyClassicModule = {
   turn: (state) => (state.stage === 'ended' ? null : state.turn),
   botCommand: (state, seat) => okeyClassicBotCommand(state, seat),
   settle: settleOkeyClassic,
+  parseOptions: (input) => resolveOkeyClassicOptions(input),
+  legalActions: okeyClassicLegalActions,
+  summary: okeyClassicSummary,
 } satisfies GameModuleShape<
   OkeyClassicState,
   OkeyClassicCommand,

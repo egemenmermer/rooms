@@ -529,13 +529,29 @@ describe('classic Okey hidden information', () => {
     while (turn(state) !== null && steps < 800) {
       check();
       const seat = turn(state)!;
-      state = ok(action(state, seat, botCommand(state, seat, rng), rng));
+      const legal = okeyClassicModule.legalActions(state, seat);
+      expect(legal).toContain(state.stage === 'draw' ? 'draw' : 'discard');
+      expect(okeyClassicModule.legalActions(state, (seat + 1) % 4)).toEqual([]);
+      const command = botCommand(state, seat, rng);
+      expect(legal).toContain(command.type);
+      state = ok(action(state, seat, command, rng));
       if (state.lastAction?.type === 'draw' && state.lastAction.from === 'stock')
         expect('tile' in state.lastAction).toBe(false);
       else if (state.lastAction && 'tile' in state.lastAction) opened.add(state.lastAction.tile.id);
       steps++;
     }
     check();
+    const hidden = new Set(
+      [
+        ...state.stock.map((t) => t.id),
+        ...state.hands.flatMap((h, seat) =>
+          seat === state.finish?.seat ? [] : h.map((t) => t.id),
+        ),
+      ].filter((id) => !opened.has(id)),
+    );
+    const summary = okeyClassicModule.summary(state);
+    for (const id of tileIds(summary)) expect(hidden.has(id), `summary shows ${id}`).toBe(false);
+    expect(summary).toMatchObject(settle(state)!);
   });
 });
 
@@ -562,6 +578,10 @@ describe('classic Okey command parsing', () => {
     });
     expect(parseCommand({ action: 'show-indicator' })).toEqual({ type: 'show-indicator' });
     expect(parseCommand({ action: 'open' })).toEqual({ error: 'INVALID_OKEY_ACTION' });
+    expect(okeyClassicModule.parseOptions({ scoring: 'winner', finishPoints: 'x' })).toEqual({
+      ...OKEY_CLASSIC_DEFAULT_OPTIONS,
+      scoring: 'winner',
+    });
     expect(okeyClassicModule.kind).toBe('rooms-okey-v1');
     expect(okeyClassicModule.seats).toEqual([4]);
   });
