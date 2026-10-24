@@ -126,10 +126,10 @@
 /* The owner's "Koltuğu boşalt": an icon in the chip's corner (its title names it). */
 .ok-seat .rg-seat-remove {
   position: absolute;
-  top: -8px;
-  right: -8px;
+  top: 3px;
+  right: 3px;
   z-index: 1;
-  padding: 3px;
+  padding: 2px;
 }
 .ok-seat small {
   font-size: var(--font-size-micro);
@@ -589,6 +589,10 @@ button.ok-cell.empty {
   }
   .ok-pile {
     padding: 2px var(--space-4);
+  }
+  /* The ring on the tile and the dock button already say it can be taken. */
+  .ok-pile > em {
+    display: none;
   }
   .ok-dock .ok-rack {
     max-width: 580px;
