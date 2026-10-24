@@ -94,7 +94,9 @@ function useTableEvents(game: GamePublicState, deal: PistiDeal, series: PistiSer
     if (seen.current.key === key) return;
     const dealEnded = rounds > seen.current.rounds;
     seen.current = { ...seen.current, key, rounds };
-    const source = dealEnded && series.previous ? series.previous : deal,
+    // The match module deals the next round inside the same action, so a finished deal is in
+    // `series.previous`; the final deal of a match stays the current view (`previous` is older).
+    const source = dealEnded && !series.winners && series.previous ? series.previous : deal,
       play = source.lastPlay,
       capture = source.lastCapture;
     if (dealEnded) setSummaryFor(rounds);
@@ -152,7 +154,15 @@ export function PistiTable(ui: TableUI) {
         {t('Masanın durumu birazdan gelir.')}
       </EmptyState>
     );
-  return <PistiBoard {...ui} deal={deal} series={readSeries(ui.game.view)} />;
+  // A rematch is a new history entry: start its log, summary and baselines afresh.
+  return (
+    <PistiBoard
+      key={ui.game.history.length}
+      {...ui}
+      deal={deal}
+      series={readSeries(ui.game.view)}
+    />
+  );
 }
 
 function PistiBoard({
@@ -267,7 +277,7 @@ function PistiBoard({
                 )}
               </span>
               <span>
-                <b>{deal.capturedCounts[side] ?? 0}</b> {t('kart')}
+                <b>{t('{count} kart', { count: deal.capturedCounts[side] ?? 0 })}</b>
                 {(deal.pisti[side] ?? 0) + (deal.jackPisti[side] ?? 0) > 0 && (
                   <em>
                     {' · '}

@@ -1101,7 +1101,6 @@ export const games: Catalog = {
     one: '{name} · took {count} card',
     other: '{name} · took {count} cards',
   },
-  kart: 'cards',
   '{count} pişti': { one: '{count} pisti', other: '{count} pistis' },
   'Destede {count} kart': { one: '{count} card in the deck', other: '{count} cards in the deck' },
   'Deste {count}': 'Deck {count}',

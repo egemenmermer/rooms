@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import type { GamePublicState } from '../packages/activity-protocol/src';
+import { commandSchema, type GamePublicState } from '../packages/activity-protocol/src';
+import { pistiMatchModule } from '../packages/games/src/matches';
 import { pistiCreate } from '../apps/desktop/src/games/pisti/create';
 import { pistiGame } from '../apps/desktop/src/games/pisti/entry';
 import { pistiFixture, type PistiScene } from '../apps/desktop/src/games/pisti/fixture';
@@ -106,6 +107,33 @@ it('summarises a finished deal from series.previous without blocking the next on
   expect(screen.getByRole('heading', { name: 'El 1 bitti' })).toBeTruthy();
   // Match score per side towards the target.
   expect(screen.getByLabelText('Ali (demo) · 21 / 151')).toBeTruthy();
+});
+
+it('sends a play the protocol accepts and the Pişti module understands', () => {
+  // The command TableShell builds from action('play', { payload: { cardId } }).
+  const command = { type: 'game.action', action: 'play', payload: { cardId: 'hearts-7-0' } };
+  const envelope = commandSchema.parse({
+    protocolVersion: 1,
+    commandId: '7c4a52a6-6f7e-4f5c-9a77-0d6f5c3f2b11',
+    expectedRevision: 0,
+    command,
+  });
+  expect(pistiMatchModule.parseCommand(envelope.command as typeof command)).toEqual({
+    type: 'play',
+    cardId: 'hearts-7-0',
+  });
+});
+
+it('reads the last play of the final deal from the view, not from series.previous', () => {
+  const view = render(<PistiTable {...ui(scene('your-turn'))} />);
+  view.rerender(<PistiTable {...ui(scene('match-end'))} />);
+  // series.previous holds an older pişti: it must not replay.
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(cues).not.toHaveBeenCalledWith('pisti');
+  expect(
+    screen.getByText('Yerde kalan 3 kart son alan Ali (demo) tarafına gitti', { selector: 'li' }),
+  ).toBeTruthy();
+  expect(screen.getByText('Ece (demo) Maça 4 attı', { selector: 'li' })).toBeTruthy();
 });
 
 it('shows the match result with every deal and no playable cards at the end', () => {

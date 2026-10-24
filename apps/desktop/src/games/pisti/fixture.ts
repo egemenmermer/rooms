@@ -143,7 +143,12 @@ export function pistiFixture(scene: PistiScene): GamePublicState {
             { points: [5, 21], winners: [1] },
           ],
           winners: [1],
-          previous: null,
+          // The deal before the last one (the match module keeps the final deal as the view).
+          previous: {
+            ...finishedDeal(2, 0),
+            lastPlay: { seq: 48, seat: 1, card: card('hearts', 5), captured: true },
+            lastCapture: { seq: 48, seat: 1, count: 2, kind: 'pisti', card: card('hearts', 5) },
+          },
         },
       });
       return game;
