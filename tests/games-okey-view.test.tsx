@@ -5,6 +5,7 @@ import type { GamePublicState } from '../packages/activity-protocol/src';
 import { okeyFixture, type OkeyScene } from '../apps/desktop/src/games/okey/fixture';
 import { OkeyClassicTable } from '../apps/desktop/src/games/okey/OkeyClassicTable';
 import type { TableUI } from '../apps/desktop/src/games/shared/table-ui';
+import { TableDockContext } from '../apps/desktop/src/games/shared/TableDock';
 
 beforeEach(() => sessionStorage.clear());
 afterEach(cleanup);
@@ -160,6 +161,45 @@ describe('classic Okey table', () => {
     fireEvent.drop(corner);
     expect(action).toHaveBeenLastCalledWith('discard', { payload: { tileId: 'blue-4-0' } });
   });
+
+  it('in the shell the rack and the moves sit in the dock; the felt keeps state and the latest move', () => {
+    const dock = document.body.appendChild(document.createElement('div'));
+    const { props, action } = ui(okeyFixture('draw'));
+    const { container } = render(
+      <TableDockContext.Provider value={dock}>
+        <OkeyClassicTable {...props} />
+      </TableDockContext.Provider>,
+    );
+    // The ıstaka and every move button are portalled into the shell's dock.
+    const region = within(dock).getByRole('region', { name: 'Elin' });
+    expect(within(region).getByRole('group', { name: 'Istaka' })).toBeTruthy();
+    fireEvent.click(within(region).getByRole('button', { name: 'Kapalı taş çek' }));
+    expect(action).toHaveBeenLastCalledWith('draw', { payload: { from: 'stock' } });
+    expect(container.querySelector('.ok-rack')).toBeNull();
+    // No rule chips over the felt (scoring is in the rules popover); the hand number is on the felt.
+    expect(container.querySelector('.rx-badges')).toBeNull();
+    expect(screen.queryByText('Geri sayım')).toBeNull();
+    const felt = screen.getByRole('region', { name: 'Okey masası' });
+    expect(within(felt).getByText('El 1')).toBeTruthy();
+    // The latest move is a line on the felt, not a list under it.
+    expect(within(felt).getByText('Can Abdurrahmanoğlu Uzunisim Sarı 8 attı')).toBeTruthy();
+    expect(screen.queryByRole('list', { name: 'Son hamleler' })).toBeNull();
+    // Your seat is marked; the others are not.
+    const own = screen.getByRole('article', { name: 'Ece · Sırada' });
+    expect(own.className).toContain('own');
+    expect(within(own).getByText('· sen')).toBeTruthy();
+    expect(screen.getAllByText('· sen')).toHaveLength(1);
+    dock.remove();
+  });
+
+  it('a spectator sees no “sen” seat, and a finished round never reads “El 0”', () => {
+    show('spectator');
+    expect(screen.queryByText('· sen')).toBeNull();
+    cleanup();
+    show('finished');
+    expect(screen.queryByText('El 0')).toBeNull();
+    expect(screen.getByText('El 1')).toBeTruthy();
+  });
 });
 
 describe('classic Okey table in English', () => {
@@ -180,7 +220,8 @@ describe('classic Okey table in English', () => {
     expect(screen.getByRole('button', { name: 'Sort runs' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Sort pairs' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'False okey · Red 6' })).toBeTruthy();
-    expect(screen.getByText('Your rack · 14 tiles')).toBeTruthy();
+    expect(screen.getByText('Hand 1')).toBeTruthy();
+    expect(screen.getByText('· you')).toBeTruthy();
     expect(screen.getByText('Can Abdurrahmanoğlu Uzunisim discarded Yellow 8')).toBeTruthy();
   });
 });
