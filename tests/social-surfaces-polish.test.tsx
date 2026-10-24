@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import type { DesktopBridge } from '@rooms/contracts';
+import type { SocialUser } from '@rooms/social';
 import { queryClient } from '../apps/desktop/src/query-client';
 import { useCommunity } from '../apps/desktop/src/community';
 import {
@@ -38,7 +39,7 @@ const bora = { id: 'bora', username: 'bora', displayName: 'Bora', avatar: null }
 // 01JB… ULIDs: the later id sorts first.
 const older = '01JB0000000000000000000000',
   newer = '01JC0000000000000000000000';
-const dm = (id: string, peer: typeof ada, lastMessageId: string | null) => ({
+const dm = (id: string, peer: SocialUser, lastMessageId: string | null) => ({
   id,
   spaceId: null,
   name: '',
@@ -47,7 +48,7 @@ const dm = (id: string, peer: typeof ada, lastMessageId: string | null) => ({
   recipients: [self, peer],
   lastMessageId,
 });
-const message = (id: string, channelId: string, author: typeof ada, content: string) => ({
+const message = (id: string, channelId: string, author: SocialUser, content: string) => ({
   id,
   channelId,
   author,
@@ -94,7 +95,8 @@ afterEach(() => {
 });
 
 it('decodes ULID times and ignores ids that are not ULIDs', () => {
-  expect(ulidTime('01ARZ3NDEKTSV4RRFFQ69G5FAV')).toBe(1469918176385);
+  expect(ulidTime('01ARZ3NDEKTSV4RRFFQ69G5FAV')).toBe(1469922850259);
+  expect(ulidTime('7ZZZZZZZZZ0000000000000000')).toBe(2 ** 48 - 1);
   expect(ulidTime('1234567890')).toBeUndefined();
   expect(ulidTime(null)).toBeUndefined();
 });
@@ -116,18 +118,13 @@ it('lists conversations newest first with preview, own prefix, unread mark and t
   const onOpen = vi.fn();
   inRouter(<DirectMessageList onOpen={onOpen} />);
   const rows = screen.getAllByRole('button');
-  expect(rows.map((row) => within(row).getByText(/Ada|Bora/).textContent)).toEqual([
-    'Bora',
-    'Ada',
-  ]);
+  expect(rows.map((row) => within(row).getByText(/Ada|Bora/).textContent)).toEqual(['Bora', 'Ada']);
   await waitFor(() => expect(screen.getByText('film saat 9da')).toBeTruthy());
   expect(screen.getByText('Sen: Dosya: plan.pdf')).toBeTruthy();
   expect(rows[1]!.className).toContain('unread');
   expect(within(rows[1]!).getByRole('img', { name: 'Okunmamış mesaj var' })).toBeTruthy();
   expect(within(rows[0]!).queryByRole('img')).toBeNull();
-  expect(rows[0]!.querySelector('time')?.getAttribute('dateTime')).toBe(
-    '2026-10-20T18:30:00.000Z',
-  );
+  expect(rows[0]!.querySelector('time')?.getAttribute('dateTime')).toBe('2026-10-20T18:30:00.000Z');
   fireEvent.click(rows[1]!);
   expect(onOpen).toHaveBeenCalledWith('dm-ada');
 });
@@ -219,9 +216,7 @@ it('friends page shows the own tag to copy and keyboard-operable tabs', async ()
   await waitFor(() => expect(screen.getByTestId('where').textContent).toBe('/friends?tab=all'));
   expect(screen.getAllByRole('tab')[1]!.getAttribute('aria-selected')).toBe('true');
   fireEvent.keyDown(screen.getAllByRole('tab')[1]!, { key: 'End' });
-  await waitFor(() =>
-    expect(screen.getByTestId('where').textContent).toBe('/friends?tab=blocked'),
-  );
+  await waitFor(() => expect(screen.getByTestId('where').textContent).toBe('/friends?tab=blocked'));
   const panel = screen.getByRole('tabpanel');
   expect(panel.getAttribute('aria-labelledby')).toBe(screen.getAllByRole('tab')[3]!.id);
 });
