@@ -376,7 +376,7 @@ export function BlackjackTable({ game, userId, can, action, timer }: TableUI) {
               <li
                 key={seat.userId}
                 className={`bj-spot${seat.userId === userId ? ' own' : ''}${acting === seat.userId ? ' acting' : ''}${player?.hands.length ? '' : ' idle'}`}
-                style={{ '--bj-lift': `${Math.round(lift * 34)}px` } as CSSProperties}
+                style={{ '--bj-lift': `${Math.round(lift * 22)}px` } as CSSProperties}
                 aria-label={t('{name} · {chips} fiş', {
                   name: seat.name,
                   chips: player?.credits ?? seat.chips,
