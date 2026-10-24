@@ -171,6 +171,13 @@ const ROUTES = {
   S72: '/chat',
   S80: '/cinema',
 };
+// Fixtures that cannot render by design: skipped (and listed in the summary), never reported as failures.
+const SKIPS = {
+  'S68/invite': 'unsupported by design: the fixture throws (no broker invitation capability yet)',
+  'S68/invite_created':
+    'unsupported by design: the fixture throws (no broker invitation capability)',
+  'S68/revoke': 'unsupported by design: the fixture throws (no broker revocation capability)',
+};
 function routeFor(id, variant) {
   if (id === 'S38' && variant === 'playing') return '/media?player=1';
   if (ROUTES[id]) return ROUTES[id];
@@ -577,6 +584,9 @@ async function run() {
     return 0;
   }
   if (!fixtures.length) throw new Error('No fixture matches --only');
+  const skipped = fixtures.filter((f) => SKIPS[f.key]);
+  fixtures = fixtures.filter((f) => !SKIPS[f.key]);
+  if (!fixtures.length) throw new Error('Every fixture matching --only is skipped');
   opts.out = path.resolve(root, opts.out);
   if (opts.compare) {
     opts.compare = path.resolve(root, opts.compare);
@@ -695,6 +705,7 @@ async function run() {
     if (differ) console.log(`diff images: ${path.join(opts.out, 'diff')}`);
     if (differ || missing) exitCode = 1;
   }
+  for (const f of skipped) console.log(`SKIPPED ${f.key}: ${SKIPS[f.key]}`);
   for (const r of failed) console.log(`FAILED ${r.fixture.key} ${r.viewport.key}: ${r.failure}`);
   if (withProblems.length)
     console.log(
