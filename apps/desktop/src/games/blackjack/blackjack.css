@@ -1,0 +1,513 @@
+/* Blackjack table (games/blackjack). Tokens only; every motion is off under prefers-reduced-motion. */
+.bj-table {
+  --bj-felt: color-mix(in srgb, var(--color-status-success) 24%, var(--color-background-canvas));
+  --bj-felt-deep: color-mix(
+    in srgb,
+    var(--color-status-success) 10%,
+    var(--color-background-canvas)
+  );
+  --bj-line: color-mix(in srgb, var(--color-text-primary) 22%, transparent);
+  --bj-card-w: 54px;
+  --bj-card-h: 76px;
+  display: grid;
+  gap: var(--space-12);
+  min-width: 0;
+}
+.bj-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+.bj-badges span {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-metadata);
+  padding: 2px 10px;
+}
+
+/* The felt: dealer at the top, the spots on a semicircle below. */
+.bj-felt {
+  position: relative;
+  display: grid;
+  gap: var(--space-12);
+  min-height: 430px;
+  overflow: hidden;
+  border: 1px solid var(--bj-line);
+  border-radius: var(--radius-24) var(--radius-24) 50% 50% / var(--radius-24) var(--radius-24) 34%
+    34%;
+  background: radial-gradient(ellipse at 50% 18%, var(--bj-felt), var(--bj-felt-deep) 78%);
+  padding: var(--space-16) var(--space-20) var(--space-32);
+  box-shadow: inset 0 0 60px color-mix(in srgb, var(--color-background-canvas) 55%, transparent);
+}
+.bj-dealer {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-8);
+}
+.bj-dealer > small {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-metadata);
+  letter-spacing: 2px;
+}
+.bj-shoe {
+  position: absolute;
+  top: 0;
+  right: 4%;
+  width: 62px;
+  height: 52px;
+  border-radius: var(--radius-8);
+  background: color-mix(in srgb, var(--color-background-canvas) 70%, var(--bj-felt));
+  border: 1px solid var(--bj-line);
+}
+.bj-shoe span {
+  position: absolute;
+  inset: 8px 10px auto auto;
+  width: 34px;
+  height: 36px;
+  border-radius: var(--radius-4);
+  background: color-mix(in srgb, var(--color-action-primary) 45%, var(--color-background-raised));
+  border: 1px solid var(--color-text-secondary);
+}
+.bj-shoe span:nth-child(2) {
+  transform: translate(-4px, 2px);
+}
+.bj-shoe span:nth-child(3) {
+  transform: translate(-8px, 4px);
+}
+.bj-brand {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  color: color-mix(in srgb, var(--color-text-primary) 18%, transparent);
+  letter-spacing: 3px;
+  text-align: center;
+}
+.bj-brand strong {
+  font-size: var(--font-size-h2);
+}
+.bj-brand span {
+  font-size: var(--font-size-metadata);
+}
+
+/* Cards: fanned, slid in from the shoe; the hole card flips at the reveal. */
+.bj-cards {
+  display: flex;
+  justify-content: center;
+  min-height: var(--bj-card-h);
+}
+.bj-cards .bj-card + .bj-card {
+  margin-left: calc(var(--bj-card-w) * -0.45);
+}
+.bj-cards.dealer .bj-card + .bj-card {
+  margin-left: 6px;
+}
+.bj-card .playing-card {
+  width: var(--bj-card-w);
+  height: var(--bj-card-h);
+  opacity: 1;
+}
+.bj-card {
+  display: block;
+}
+.bj-card.enter {
+  animation: bj-deal 260ms var(--motion-ease-out, ease-out) both;
+  animation-delay: calc(var(--bj-n, 0) * 40ms);
+}
+.bj-card.flip {
+  animation: bj-flip 300ms ease-out both;
+}
+@keyframes bj-deal {
+  from {
+    opacity: 0;
+    transform: translate(180px, -160px) rotate(-12deg) scale(0.85);
+  }
+}
+@keyframes bj-flip {
+  from {
+    transform: perspective(400px) rotateY(90deg);
+  }
+}
+.bj-total,
+.bj-badge {
+  display: inline-block;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-metadata);
+  font-weight: var(--font-weight-semibold);
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.bj-total {
+  background: color-mix(in srgb, var(--color-background-canvas) 75%, transparent);
+  border: 1px solid var(--bj-line);
+  color: var(--color-text-primary);
+}
+.bj-total.bust,
+.bj-badge.lose,
+.bj-badge.surrender {
+  color: var(--color-status-error);
+}
+.bj-badge {
+  background: color-mix(in srgb, var(--color-background-canvas) 60%, transparent);
+  color: var(--color-text-secondary);
+}
+.bj-badge.win,
+.bj-badge.blackjack {
+  color: var(--color-status-success);
+  border: 1px solid var(--color-status-success);
+}
+.bj-badge.blackjack {
+  color: var(--color-status-warning);
+  border-color: var(--color-status-warning);
+}
+.bj-badge.push {
+  color: var(--color-text-primary);
+}
+.bj-badge.turn {
+  background: var(--color-action-primary);
+  color: var(--color-text-onAccent);
+}
+.bj-badge.insurance {
+  justify-self: center;
+  border: 1px dashed var(--color-status-warning);
+  color: var(--color-status-warning);
+}
+
+/* Insurance prompt: a clear panel over the felt while the dealer shows an ace. */
+.bj-insurance {
+  justify-self: center;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-12);
+  max-width: min(560px, 100%);
+  border: 1px solid var(--color-status-warning);
+  border-radius: var(--radius-12);
+  background: color-mix(in srgb, var(--color-background-raised) 92%, transparent);
+  padding: var(--space-12) var(--space-16);
+  box-shadow: var(--shadow-2);
+  z-index: var(--z-raised);
+}
+.bj-insurance > div {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.bj-insurance p {
+  margin: 2px 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-metadata);
+}
+
+/* Spots: one per seat on an arc, the middle ones closest to the viewer. */
+.bj-spots {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--space-12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+.bj-spot {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: var(--space-8);
+  flex: 0 1 190px;
+  min-width: 0;
+  transform: translateY(var(--bj-lift, 0));
+  border-radius: var(--radius-16);
+  padding: var(--space-8);
+  transition:
+    background-color 200ms ease,
+    box-shadow 200ms ease;
+}
+.bj-spot.acting {
+  background: color-mix(in srgb, var(--color-action-primary) 14%, transparent);
+  box-shadow: 0 0 0 1px var(--color-action-primary);
+}
+.bj-spot.own .bj-seat strong {
+  color: var(--color-text-accent);
+}
+.bj-spot.idle .bj-hands {
+  opacity: 0.7;
+}
+.bj-hands {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-8);
+  min-width: 0;
+  max-width: 100%;
+}
+.bj-sitout {
+  margin: var(--space-24) 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-metadata);
+}
+.bj-hand {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-width: 0;
+  border-radius: var(--radius-12);
+  padding: 6px;
+  transition:
+    box-shadow 200ms ease,
+    opacity 200ms ease;
+}
+.bj-hand.active {
+  box-shadow: 0 0 0 2px var(--color-action-primary);
+  background: color-mix(in srgb, var(--color-action-primary) 12%, transparent);
+}
+.bj-spot.acting .bj-hand:not(.active) {
+  opacity: 0.6;
+}
+.bj-hand.pending .bj-cards::after {
+  content: '';
+  width: var(--bj-card-w);
+  height: var(--bj-card-h);
+  margin-left: calc(var(--bj-card-w) * -0.45);
+  border: 1px dashed var(--bj-line);
+  border-radius: var(--radius-8);
+}
+.bj-hand.moved .bj-card:last-child .playing-card {
+  box-shadow: 0 0 0 2px var(--color-status-warning);
+}
+.bj-hand-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* Betting circle and chips: denominations by colour, payout slides from the dealer. */
+.bj-circle {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  width: 64px;
+  height: 64px;
+  border: 2px solid var(--bj-line);
+  border-radius: 50%;
+  padding-bottom: 10px;
+}
+.bj-chips {
+  position: relative;
+  display: inline-grid;
+  justify-items: center;
+  width: 30px;
+  height: calc(10px + 4px * 10);
+  align-content: end;
+}
+.bj-chip {
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--bj-i, 0) * 4px);
+  width: 30px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px dashed color-mix(in srgb, var(--color-text-primary) 80%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--color-background-canvas) 70%, transparent);
+}
+.bj-v1 {
+  --bj-chip: color-mix(in srgb, var(--color-text-primary) 90%, var(--color-background-canvas));
+}
+.bj-v5,
+.bj-v2 {
+  --bj-chip: var(--color-status-error);
+}
+.bj-v10,
+.bj-v20 {
+  --bj-chip: color-mix(in srgb, var(--color-action-primary) 70%, var(--color-background-canvas));
+}
+.bj-v25,
+.bj-v50 {
+  --bj-chip: var(--color-status-success);
+}
+.bj-v100 {
+  --bj-chip: color-mix(in srgb, var(--color-background-canvas) 85%, var(--color-text-primary));
+}
+.bj-v500 {
+  --bj-chip: color-mix(
+    in srgb,
+    var(--accent-lilac, var(--color-action-primary)) 80%,
+    var(--color-background-canvas)
+  );
+}
+.bj-chip {
+  background: var(--bj-chip);
+}
+.bj-chips > b {
+  position: relative;
+  top: 14px;
+  font-size: var(--font-size-metadata);
+  color: var(--color-text-primary);
+  text-shadow: 0 1px 2px var(--color-background-canvas);
+}
+.bj-chips.collect {
+  opacity: 0;
+}
+.bj-chips.collect.animate {
+  animation: bj-collect 600ms ease-in both;
+}
+.bj-chips.pay.animate {
+  animation: bj-pay 600ms 250ms ease-out both;
+}
+@keyframes bj-collect {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-180px);
+  }
+}
+@keyframes bj-pay {
+  from {
+    opacity: 0;
+    transform: translateY(-180px);
+  }
+}
+
+.bj-seat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+  max-width: 100%;
+}
+.bj-seat > div {
+  display: grid;
+  min-width: 0;
+}
+.bj-seat strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-ui);
+}
+.bj-seat small {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-metadata);
+}
+.bj-seat b.up {
+  color: var(--color-status-success);
+}
+.bj-seat b.down {
+  color: var(--color-status-error);
+}
+
+.bj-log {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-metadata);
+}
+.bj-log li:last-child {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+.bj-summary {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-12);
+  background: var(--color-background-raised);
+  padding: var(--space-12) var(--space-16);
+}
+.bj-summary h3 {
+  margin: 0 0 var(--space-8);
+  font-size: var(--font-size-ui);
+}
+.bj-summary ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-metadata);
+}
+.bj-summary li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-12);
+  min-width: 0;
+}
+.bj-summary li strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Bet panel between hands. */
+.bj-strip {
+  flex-wrap: wrap;
+}
+.bj-bet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
+.bj-bet .bj-chips.next {
+  margin-right: var(--space-4);
+}
+.bj-bet-chips {
+  display: flex;
+  gap: 6px;
+}
+.bj-chip-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px dashed color-mix(in srgb, var(--color-text-primary) 80%, transparent);
+  background: var(--bj-chip);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-metadata);
+  font-weight: var(--font-weight-semibold);
+  text-shadow: 0 1px 2px var(--color-background-canvas);
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+.bj-chip-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+.bj-chip-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1000px) {
+  .bj-table {
+    --bj-card-w: 42px;
+    --bj-card-h: 60px;
+  }
+  .bj-spots {
+    gap: 4px;
+  }
+  .bj-spot {
+    padding: 4px;
+  }
+  .bj-felt {
+    padding-inline: var(--space-8);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bj-card.enter,
+  .bj-card.flip,
+  .bj-chips.collect.animate,
+  .bj-chips.pay.animate {
+    animation: none;
+  }
+  .bj-spot,
+  .bj-hand,
+  .bj-chip-button {
+    transition: none;
+  }
+}
