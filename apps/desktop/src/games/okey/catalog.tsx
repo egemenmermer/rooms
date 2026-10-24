@@ -2,7 +2,7 @@ import type { GameCatalogEntry } from '../catalog';
 import { t } from '../../i18n';
 import { KhTiles, LobbyTiles } from '../shared/catalog-art';
 
-/** Classic Okey. Not offered until its table view ships (track NG-okey UI replaces `entry.tsx`). */
+/** Classic Okey: the table view lives in `entry.tsx`. */
 export const okeyCatalog: GameCatalogEntry = {
   kind: 'rooms-okey-v1',
   name: 'Okey',
@@ -12,7 +12,7 @@ export const okeyCatalog: GameCatalogEntry = {
   scoring: 'points',
   section: 'tables',
   fallbackCapacity: 4,
-  offered: false,
+  offered: true,
   Art: () => (
     <KhTiles
       tiles={[
