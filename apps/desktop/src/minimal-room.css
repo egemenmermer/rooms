@@ -331,10 +331,14 @@
   flex: 1;
   min-height: 0;
 }
+.minimal-room-ui .chat-heading,
 .minimal-room-ui .ss-dm-header {
   display: none;
 }
-/* A channel's conversation names itself in one compact row; the toolbar above leaves the name out. */
+/*
+ * A channel's conversation (RoomConversation) names itself in one compact row and the toolbar above
+ * leaves the name out. Other chat mounts (cinema hall panel) keep the heading hidden.
+ */
 .minimal-room-ui .room-conversation > .reference-chat > .chat-heading {
   display: flex;
   height: 44px;

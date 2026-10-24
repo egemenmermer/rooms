@@ -15,10 +15,14 @@ const rules = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)].map(([, selector, body])
 }));
 
 it('shows the channel chat heading and leaves the name out of the toolbar there', () => {
-  const hidden = rules.filter((rule) => /display:\s*none/.test(rule.body));
+  // The blanket hide stays for other chat mounts; the scoped rule outranks it (0,4,0 > 0,2,0).
   expect(
-    hidden.some((rule) => /(^|,|\s)\.minimal-room-ui \.chat-heading\b/.test(rule.selector)),
-  ).toBe(false);
+    rules.some(
+      (rule) =>
+        /(^|,)\s*\.minimal-room-ui \.chat-heading\s*(,|$)/.test(rule.selector) &&
+        /display:\s*none/.test(rule.body),
+    ),
+  ).toBe(true);
   const heading = rules.find(
     (rule) =>
       rule.selector === '.minimal-room-ui .room-conversation > .reference-chat > .chat-heading',
