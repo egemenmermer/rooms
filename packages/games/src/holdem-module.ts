@@ -24,7 +24,10 @@ export const holdemModule = {
   // The service always deals through `table.chips.start`; this fallback seats default stacks.
   start: (seatCount, rules, first) =>
     startHoldem(
-      Array.from({ length: seatCount }, (_, i) => ({ userId: `seat-${i}`, chips: rules.initialChips })),
+      Array.from({ length: seatCount }, (_, i) => ({
+        userId: `seat-${i}`,
+        chips: rules.initialChips,
+      })),
       first,
       rules.smallBlind,
       rules.bigBlind,
@@ -110,15 +113,11 @@ export const holdemModule = {
           rules.smallBlind,
           rules.bigBlind,
         ),
-      finalChips: (state) => state.seats.map((seat) => ({ userId: seat.userId, chips: seat.chips })),
+      finalChips: (state) =>
+        state.seats.map((seat) => ({ userId: seat.userId, chips: seat.chips })),
     },
     timeoutDetails: (state, seat) => ({
       toCall: Math.max(0, state.maximumBet - state.seats[seat].streetBet),
     }),
   },
-} satisfies GameModule<
-  HoldemHand,
-  HoldemCommand,
-  ReturnType<typeof holdemView>,
-  HoldemTableRules
->;
+} satisfies GameModule<HoldemHand, HoldemCommand, ReturnType<typeof holdemView>, HoldemTableRules>;

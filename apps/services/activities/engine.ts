@@ -257,8 +257,7 @@ export function applyCommand(
     case 'start':
       if (!identity.canCreate) fail(403, 'ACTIVITY_CREATE_DENIED');
       if (state.primary) fail(409, 'PRIMARY_ACTIVITY_ACTIVE');
-      if (isGameKind(command.activity))
-        fail(409, 'GAME_SERVICE_NOT_CONNECTED');
+      if (isGameKind(command.activity)) fail(409, 'GAME_SERVICE_NOT_CONNECTED');
       state.primary = {
         activity: command.activity,
         title: command.title,

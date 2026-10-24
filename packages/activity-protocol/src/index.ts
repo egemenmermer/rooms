@@ -76,7 +76,10 @@ const gameSeat = z
 /** Per-game `game.action` data, checked by the game module's `parseCommand`. */
 const gamePayload = z
   .json()
-  .refine((value) => JSON.stringify(value).length <= MAX_GAME_PAYLOAD_BYTES, 'Game payload too large');
+  .refine(
+    (value) => JSON.stringify(value).length <= MAX_GAME_PAYLOAD_BYTES,
+    'Game payload too large',
+  );
 /** Flat `game.create` options for registry games, checked by the module's `parseOptions`. */
 const gameOptions = z
   .record(
@@ -398,7 +401,11 @@ export interface GameRecoveryEvent {
   toCall?: number;
 }
 export interface GamePublicState {
-  kind: GameKind;
+  /**
+   * Typed as the kinds the current clients render, so their views stay exhaustive. The service may
+   * send any registered kind; add it to `builtInGameKinds` when its client view ships.
+   */
+  kind: BuiltInGameKind;
   ownerId: string;
   status: 'waiting' | 'playing' | 'finished';
   seats: {

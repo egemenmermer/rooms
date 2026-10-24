@@ -157,7 +157,8 @@ function recordFinished(table: GameTable, now: number) {
     ? module.summary(state)
     : { points: settled.points, winners: settled.winners };
   const chips = module.table?.chips;
-  for (const player of chips?.finalChips(state) ?? []) seated(table, player.userId)!.chips = player.chips;
+  for (const player of chips?.finalChips(state) ?? [])
+    seated(table, player.userId)!.chips = player.chips;
   const players = roundPlayers(table, module, state);
   for (const seat of ordered(table)) {
     const index = players.indexOf(seat.userId);
@@ -339,8 +340,7 @@ export function gameCommand(
       throw new Error('SEAT_UNAVAILABLE');
     if (table.status === 'playing' && !moduleOf(table).table?.lateSeating)
       throw new Error('WAIT_FOR_NEXT_HAND');
-    if (command.buyIn !== undefined && !holdemRulesOf(table))
-      throw new Error('HOLDEM_BUY_IN_ONLY');
+    if (command.buyIn !== undefined && !holdemRulesOf(table)) throw new Error('HOLDEM_BUY_IN_ONLY');
     const chips = holdemRulesOf(table) ? buyIn(table, command.buyIn) : 1000;
     table.spectators = (table.spectators ?? []).filter((value) => value.userId !== actor.userId);
     table.seats.push({
@@ -549,7 +549,7 @@ export function gameView(table: GameTable, userId: string): GamePublicState {
         }
       : null;
   return {
-    kind: table.kind,
+    kind: table.kind as GamePublicState['kind'],
     ownerId: table.ownerId,
     status: table.status,
     seats: table.seats.map(({ seat, userId, name, bot, chips, connected }) => ({

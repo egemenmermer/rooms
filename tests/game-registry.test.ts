@@ -185,7 +185,10 @@ describe('game registry', () => {
       game: 'test-pick-v1',
       options: { target: 4 },
     });
-    expect(created.room.primary).toMatchObject({ activity: 'test-pick-v1', title: 'Pick a number' });
+    expect(created.room.primary).toMatchObject({
+      activity: 'test-pick-v1',
+      title: 'Pick a number',
+    });
     expect(created.room.game).toMatchObject({ kind: 'test-pick-v1', status: 'waiting' });
     expect(created.room.game!.view.capacity).toBe(2);
     expect(await post('alice', { type: 'game.action', action: 'start' })).toMatchObject({

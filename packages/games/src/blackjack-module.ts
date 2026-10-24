@@ -26,7 +26,11 @@ export const blackjackModule = {
   // The service always deals through `table.chips.start`; this fallback seats default stacks.
   start: (seatCount) =>
     startBlackjackTable(
-      Array.from({ length: seatCount }, (_, i) => ({ userId: `seat-${i}`, credits: 1000, bet: 10 })),
+      Array.from({ length: seatCount }, (_, i) => ({
+        userId: `seat-${i}`,
+        credits: 1000,
+        bet: 10,
+      })),
     ),
   action: (state, seat, command) =>
     caught(() => blackjackTableAction(state, state.players[seat].userId, command.action)),
