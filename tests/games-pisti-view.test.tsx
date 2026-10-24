@@ -221,3 +221,19 @@ it('renders the table in English', async () => {
   expect(screen.getByRole('rowheader', { name: 'Cards taken' })).toBeTruthy();
   expect(document.body.textContent).not.toMatch(/[çğıöşüİ]/);
 });
+
+it('words the finish strip for a match: "Maç bitti" / "Rövanş" once the series has winners', () => {
+  const over = pistiGame.finishLabels?.(scene('match-end'));
+  expect(over?.title).toBe('Maç bitti');
+  expect(over?.next).toBe('Rövanş');
+  expect(pistiGame.finishLabels?.(scene('your-turn'))).toBeNull();
+});
+
+it('words the match finish strip in English', async () => {
+  vi.resetModules();
+  globalThis.__roomsLocale = 'en';
+  const { pistiGame: game } = await import('../apps/desktop/src/games/pisti/entry');
+  const { pistiFixture: fixture } = await import('../apps/desktop/src/games/pisti/fixture');
+  const labels = game.finishLabels?.(fixture('match-end'));
+  expect([labels?.title, labels?.next]).toEqual(['Match over', 'Rematch']);
+});
