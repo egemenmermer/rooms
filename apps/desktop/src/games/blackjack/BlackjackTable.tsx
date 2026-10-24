@@ -4,6 +4,7 @@ import { t } from '../../i18n';
 import { array, type Card } from '../shared/model';
 import { PlayingCard } from '../shared/PlayingCard';
 import { SeatAvatar } from '../shared/SeatAvatar';
+import { TableDock } from '../shared/TableDock';
 import { useGameSounds, type GameSoundOptions } from '../shared/sounds';
 import type { TableUI } from '../shared/table-ui';
 import { TurnClock } from '../shared/TurnClock';
@@ -312,12 +313,8 @@ export function BlackjackTable({ game, userId, can, action, timer }: TableUI) {
 
   return (
     <div className="bj-table">
-      <div className="bj-badges">
-        <span>{t('6 deste')}</span>
-        <span>{t('Krupiye 17’de durur')}</span>
-        <span>{t('Blackjack 3:2 öder')}</span>
-        <span>{rules.insurance ? t('Sigorta 2:1') : t('Sigorta kapalı')}</span>
-        <span>{rules.surrender ? t('Teslim açık') : t('Teslim kapalı')}</span>
+      {/* The fixed rules (decks, S17, 3:2, insurance, surrender) live in the rules popover. */}
+      <div className="rx-badges">
         <span>{t('El {hand}', { hand: game.history.length + (finished ? 0 : 1) })}</span>
       </div>
       <section className="bj-felt" aria-label={t('Blackjack masası')}>
@@ -354,43 +351,20 @@ export function BlackjackTable({ game, userId, can, action, timer }: TableUI) {
             </span>
           )}
         </div>
-        <div className="bj-brand" aria-hidden="true">
-          <strong>BLACKJACK PAYS 3:2</strong>
-          <span>{rules.insurance ? 'INSURANCE PAYS 2:1' : 'DEALER STANDS ON 17'}</span>
-        </div>
-        {insurance && (
+        {finished ? (
+          <ResultSummary game={game} dealer={dealer} netOf={netOf} nameOf={nameOf} />
+        ) : insurance ? (
+          // The decision itself is in the dock; the felt says who is being asked.
           <div className="bj-insurance" role="group" aria-label={t('Sigorta')}>
-            {can('insurance') || can('decline-insurance') ? (
-              <>
-                <div>
-                  <strong>{t('Krupiye As gösteriyor')}</strong>
-                  <p>
-                    {t('Sigorta {stake} fiş. Krupiye blackjack yaparsa 2:1 öder.', {
-                      stake: insuranceStake,
-                    })}
-                  </p>
-                </div>
-                <button
-                  className="button primary"
-                  disabled={!can('insurance')}
-                  title={!can('insurance') ? t('Fişin sigortaya yetmiyor') : undefined}
-                  onClick={() => void action('insurance')}
-                >
-                  {t('Sigorta al')}
-                </button>
-                <button
-                  className="button secondary"
-                  disabled={!can('decline-insurance')}
-                  onClick={() => void action('decline-insurance')}
-                >
-                  {t('Sigorta alma')}
-                </button>
-              </>
-            ) : (
-              <p role="status">
-                {t('Sigorta soruluyor · {name}', { name: acting ? nameOf(acting) : '—' })}
-              </p>
-            )}
+            <strong>{t('Krupiye As gösteriyor')}</strong>
+            <span role="status">
+              {t('Sigorta soruluyor · {name}', { name: acting ? nameOf(acting) : '—' })}
+            </span>
+          </div>
+        ) : (
+          <div className="bj-brand" aria-hidden="true">
+            <strong>BLACKJACK PAYS 3:2</strong>
+            <span>{rules.insurance ? 'INSURANCE PAYS 2:1' : 'DEALER STANDS ON 17'}</span>
           </div>
         )}
         <ol className="bj-spots">
@@ -469,127 +443,179 @@ export function BlackjackTable({ game, userId, can, action, timer }: TableUI) {
           ))}
         </ol>
       )}
-      {finished && (
-        <section className="bj-summary" aria-label={t('El sonucu')}>
-          <h3>
-            {dealerTotal.best > 21
-              ? t('Krupiye {total} ile aştı', { total: dealerTotal.best })
-              : isNatural({ cards: dealer })
-                ? t('Krupiye blackjack yaptı')
-                : t('Krupiye {total}', { total: dealerTotal.best })}
-          </h3>
-          <ul>
-            {list.map((player) => (
-              <li key={player.userId}>
-                <strong>{nameOf(player.userId)}</strong>
-                <span>
-                  {netOf(player)
-                    ? `${netOf(player) > 0 ? '+' : ''}${t('{amount} fiş', { amount: netOf(player) })} · `
-                    : ''}
-                  {player.hands
-                    .map((_, index) => outcomeOf(resultList, player.userId, index))
-                    .filter((outcome): outcome is string => !!outcome)
-                    .map(outcomeLabel)
-                    .join(' · ')}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
       {own && (
-        <div className="rg-hand-strip bj-strip">
-          <div>
-            <h3>{status}</h3>
-            {ownTurn && !insurance && <p>{t('Kısayollar: H kart · S dur · D katla · P ayır')}</p>}
-          </div>
-          <TurnClock timer={timer} />
-          {game.status === 'playing' ? (
-            !insurance && (
-              <div className="rg-actions">
-                {PLAY_ACTIONS.map(([name]) => (
-                  <button
-                    className={`button ${name === 'hit' ? 'primary' : 'secondary'}`}
-                    key={name}
-                    disabled={!can(name)}
-                    title={
-                      !can(name) ? t('Bu hamle şu anda sunucu tarafından izinli değil') : undefined
-                    }
-                    onClick={() => void action(name)}
-                  >
-                    {actionLabel(name)}
-                  </button>
-                ))}
-                {can('surrender') && (
-                  <button className="button secondary" onClick={() => void action('surrender')}>
-                    {actionLabel('surrender')}
-                  </button>
-                )}
-              </div>
-            )
-          ) : (
-            <div className="bj-bet" role="group" aria-label={t('Sonraki el bahsi')}>
-              <ChipStack amount={betValid ? bet : 0} className="next" />
-              <div className="bj-bet-chips">
-                {BET_CHIPS.map((value) => (
-                  <button
-                    key={value}
-                    className={`bj-chip-button bj-v${value}`}
-                    disabled={!can('bet') || (betValid ? bet : 0) + value > limit}
-                    aria-label={t('{amount} fiş ekle', { amount: value })}
-                    onClick={() => {
-                      setSentBet(null);
-                      setBet((current) => (current >= 2 && current <= stack ? current : 0) + value);
-                    }}
-                  >
-                    {value}
-                  </button>
-                ))}
-              </div>
-              <button
-                className="button secondary"
-                disabled={!can('bet')}
-                onClick={() => {
-                  setSentBet(null);
-                  setBet(0);
-                }}
-              >
-                {t('Temizle')}
-              </button>
-              <button
-                className="button secondary"
-                disabled={!can('bet') || lastBet < 2 || lastBet > limit}
-                onClick={() => {
-                  setSentBet(null);
-                  setBet(lastBet);
-                }}
-              >
-                {t('Aynı bahis')}
-              </button>
-              <button
-                className="button primary"
-                disabled={!can('bet') || !betValid}
-                title={
-                  stack < 2
-                    ? t('Fişin en küçük bahsi karşılamıyor.')
-                    : !betValid
-                      ? t('Bahis en az 2 ve çift olmalı')
-                      : undefined
-                }
-                onClick={() =>
-                  void action('bet', { amount: bet }).then((ok) => {
-                    if (ok) setSentBet(bet);
-                  })
-                }
-              >
-                {sentBet === bet
-                  ? t('Bahis {amount} · tamam', { amount: bet })
-                  : t('Bahsi belirle')}
-              </button>
+        <TableDock label={t('Hamle')} className="bj-dock">
+          <div className="rg-hand-strip bj-strip">
+            <div>
+              <h3>{status}</h3>
+              {ownTurn && !insurance && <p>{t('Kısayollar: H kart · S dur · D katla · P ayır')}</p>}
             </div>
-          )}
-        </div>
+            <TurnClock timer={timer} />
+            {game.status === 'playing' ? (
+              insurance ? (
+                // Your own insurance question: both answers right here, disabled with a reason.
+                ownTurn && (
+                  <div
+                    className="bj-insurance-choice"
+                    role="group"
+                    aria-label={t('Sigorta kararı')}
+                  >
+                    <p>
+                      {t('Sigorta {stake} fiş. Krupiye blackjack yaparsa 2:1 öder.', {
+                        stake: insuranceStake,
+                      })}
+                    </p>
+                    <button
+                      className="button primary"
+                      disabled={!can('insurance')}
+                      title={!can('insurance') ? t('Fişin sigortaya yetmiyor') : undefined}
+                      onClick={() => void action('insurance')}
+                    >
+                      {t('Sigorta al')}
+                    </button>
+                    <button
+                      className="button secondary"
+                      disabled={!can('decline-insurance')}
+                      onClick={() => void action('decline-insurance')}
+                    >
+                      {t('Sigorta alma')}
+                    </button>
+                  </div>
+                )
+              ) : (
+                <div className="rg-actions">
+                  {PLAY_ACTIONS.map(([name]) => (
+                    <button
+                      className={`button ${name === 'hit' ? 'primary' : 'secondary'}`}
+                      key={name}
+                      disabled={!can(name)}
+                      title={
+                        !can(name)
+                          ? t('Bu hamle şu anda sunucu tarafından izinli değil')
+                          : undefined
+                      }
+                      onClick={() => void action(name)}
+                    >
+                      {actionLabel(name)}
+                    </button>
+                  ))}
+                  {can('surrender') && (
+                    <button className="button secondary" onClick={() => void action('surrender')}>
+                      {actionLabel('surrender')}
+                    </button>
+                  )}
+                </div>
+              )
+            ) : (
+              <div className="bj-bet" role="group" aria-label={t('Sonraki el bahsi')}>
+                <ChipStack amount={betValid ? bet : 0} className="next" />
+                <div className="bj-bet-chips">
+                  {BET_CHIPS.map((value) => (
+                    <button
+                      key={value}
+                      className={`bj-chip-button bj-v${value}`}
+                      disabled={!can('bet') || (betValid ? bet : 0) + value > limit}
+                      aria-label={t('{amount} fiş ekle', { amount: value })}
+                      onClick={() => {
+                        setSentBet(null);
+                        setBet(
+                          (current) => (current >= 2 && current <= stack ? current : 0) + value,
+                        );
+                      }}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  className="button secondary"
+                  disabled={!can('bet')}
+                  onClick={() => {
+                    setSentBet(null);
+                    setBet(0);
+                  }}
+                >
+                  {t('Temizle')}
+                </button>
+                <button
+                  className="button secondary"
+                  disabled={!can('bet') || lastBet < 2 || lastBet > limit}
+                  onClick={() => {
+                    setSentBet(null);
+                    setBet(lastBet);
+                  }}
+                >
+                  {t('Aynı bahis')}
+                </button>
+                <button
+                  className="button primary"
+                  disabled={!can('bet') || !betValid}
+                  title={
+                    stack < 2
+                      ? t('Fişin en küçük bahsi karşılamıyor.')
+                      : !betValid
+                        ? t('Bahis en az 2 ve çift olmalı')
+                        : undefined
+                  }
+                  onClick={() =>
+                    void action('bet', { amount: bet }).then((ok) => {
+                      if (ok) setSentBet(bet);
+                    })
+                  }
+                >
+                  {sentBet === bet
+                    ? t('Bahis {amount} · tamam', { amount: bet })
+                    : t('Bahsi belirle')}
+                </button>
+              </div>
+            )}
+          </div>
+        </TableDock>
       )}
     </div>
+  );
+}
+
+/** The settled hand on the felt: the dealer's result and each player's net and outcomes. */
+function ResultSummary({
+  game,
+  dealer,
+  netOf,
+  nameOf,
+}: {
+  game: GamePublicState;
+  dealer: Card[];
+  netOf: (player: BlackjackPlayerView) => number;
+  nameOf: (id: string) => string;
+}) {
+  const dealerTotal = handTotal(dealer),
+    resultList = resultsOf(game);
+  return (
+    <section className="bj-summary" aria-label={t('El sonucu')}>
+      <h3>
+        {dealerTotal.best > 21
+          ? t('Krupiye {total} ile aştı', { total: dealerTotal.best })
+          : isNatural({ cards: dealer })
+            ? t('Krupiye blackjack yaptı')
+            : t('Krupiye {total}', { total: dealerTotal.best })}
+      </h3>
+      <ul>
+        {playersOf(game).map((player) => (
+          <li key={player.userId}>
+            <strong>{nameOf(player.userId)}</strong>
+            <span>
+              {netOf(player)
+                ? `${netOf(player) > 0 ? '+' : ''}${t('{amount} fiş', { amount: netOf(player) })} · `
+                : ''}
+              {player.hands
+                .map((_, index) => outcomeOf(resultList, player.userId, index))
+                .filter((outcome): outcome is string => !!outcome)
+                .map(outcomeLabel)
+                .join(' · ')}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
