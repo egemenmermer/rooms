@@ -1,3 +1,39 @@
+/*
+ * Tayfa design tokens: the single token source for the desktop renderer.
+ *
+ * Theme. Tayfa is dark-only on purpose (`color-scheme: dark`); the OS light setting does not flip it.
+ * Every colour below is a semantic token, so a future light theme is one `:root[data-theme='light']`
+ * block that redefines the --color-* values. Do not bind light colours to prefers-color-scheme while
+ * surfaces still hard-code hex values.
+ *
+ * Accent. `--color-action-primary` is the one accent variable. `:root[data-accent=…]` (0,2,0) sets it
+ * per Settings > Görünüm > Vurgu choice; every variant is derived from it with color-mix(), so never
+ * hard-code the accent hex in a surface:
+ *   --color-action-primary         fills: primary buttons, selected states, sliders
+ *   --color-action-primaryHover    hover fill            --color-action-primaryActive  pressed fill
+ *   --color-action-primarySubtle   tinted background     --color-action-primaryBorder  tinted border
+ *   --color-action-focus           focus ring            --color-text-accent           accent text/links
+ *   --color-text-onAccent          text on an accent fill (set per accent for contrast >= 4.5:1)
+ *   --accent-lilac, --accent-sage  fixed swatch colours (Settings only); `--accent` is a legacy alias
+ * Derived values resolve on <html>, so never redeclare --color-action-primary on a descendant.
+ *
+ * Scales (use these, not literals):
+ *   radius  --radius-4 / 8 / 12 / 16 / 24 / --radius-pill
+ *   type    --font-size-micro 11 (the floor; nothing smaller) / metadata 12 / ui 13 / body 15 /
+ *           h2 20 / h1 26 / display 32, each with a matching --line-height-*
+ *   z-index --z-raised 1 < --z-dock 15 < --z-sticky 20 < --z-drawer 30 < --z-panel 40 < --z-modal 60
+ *           < --z-dropdown 100 = --z-toast 100 < --z-popover 1600. Each value is the literal it replaced,
+ *           so swapping an equal literal for its token never reorders layers. Surfaces still hard-code
+ *           70-95, 110-180, 500 and 1000-2000 (all above --z-modal); do not swap those for a token
+ *           with a different number without checking what they must sit above or below.
+ *   shadow  --shadow-1 (menus, raised cards) / --shadow-2 (modals, toasts)
+ *   focus   --focus-ring-width / --focus-ring-offset / --focus-ring-color
+ *   space   --space-4 … --space-64      motion  --motion-quick / --motion-modal / --motion-ease-*
+ *
+ * Base components built on these tokens: reference-shell.css (`.button` primary / secondary / ghost /
+ * subtle / danger, small / full, disabled, aria-busy) and styles.css (`.field-label` with `.field-hint`
+ * and `.field-error`). The focus ring is defined once, in interaction-quality.css.
+ */
 @font-face {
   font-family: 'Inter';
   src: url('/reference-brand/fonts/InterVariable.woff2') format('woff2');
@@ -7,28 +43,84 @@
 }
 
 :root {
+  color-scheme: dark;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'tnum';
+  font-synthesis: none;
+  color: var(--color-text-primary);
+  background: var(--color-background-canvas);
+
   --color-background-canvas: #141518;
   --color-background-sidebar: #1b1d22;
   --color-background-main: #22252c;
   --color-background-raised: #2b2f38;
   --color-background-hover: #343946;
+  --color-background-field: #1b1d22;
+  --color-background-overlay: #03070c8a;
 
   --color-text-primary: #f2f3f7;
   --color-text-secondary: #b1b5c2;
   --color-text-muted: #9197a7;
   --color-text-onAccent: #151324;
+  --color-text-onDanger: #f6d6d7;
 
   --color-border-default: #3c414e;
   --color-border-subtle: #30343d;
   --color-border-interactive: #6c7385;
 
-  --color-action-primary: #8b83ff;
-  --color-action-primaryHover: #a49dff;
-  --color-action-focus: #c1bcff;
+  --accent-lilac: #8b83ff;
+  --accent-sage: #9ebfac;
+
+  --color-action-primary: var(--accent-lilac);
+  --color-action-primaryHover: color-mix(in oklab, var(--color-action-primary) 82%, white);
+  --color-action-primaryActive: color-mix(in oklab, var(--color-action-primary) 86%, black);
+  --color-action-primarySubtle: color-mix(in srgb, var(--color-action-primary) 16%, transparent);
+  --color-action-primaryBorder: color-mix(in srgb, var(--color-action-primary) 45%, transparent);
+  --color-action-focus: color-mix(in oklab, var(--color-action-primary) 55%, white);
+  --color-text-accent: color-mix(in oklab, var(--color-action-primary) 70%, white);
+  --color-action-secondary: #363b47;
+  --color-action-secondaryHover: #404655;
+  --color-action-secondaryBorder: #484e5d;
+  --color-action-danger: #743e42;
+  --color-action-dangerHover: #84474c;
+  --color-action-dangerActive: #643538;
 
   --color-status-success: #53c793;
   --color-status-warning: #f2bb67;
   --color-status-error: #f17984;
+
+  --shadow-1: 0 4px 14px rgb(0 0 0 / 0.28);
+  --shadow-2: 0 12px 40px rgb(0 0 0 / 0.33);
+
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 3px;
+  --focus-ring-color: var(--color-action-focus);
+
+  --z-raised: 1;
+  --z-dock: 15;
+  --z-sticky: 20;
+  --z-drawer: 30;
+  --z-panel: 40;
+  --z-modal: 60;
+  --z-dropdown: 100;
+  --z-toast: 100;
+  --z-popover: 1600;
+
+  /* Legacy aliases kept for older surfaces; new code uses the semantic names above. */
+  --bg: var(--color-background-canvas);
+  --surface: var(--color-background-main);
+  --muted: var(--color-text-secondary);
+  --secondary: var(--color-text-muted);
+  --accent: var(--color-action-primary);
+  --line: var(--color-border-subtle);
+  --glass: rgb(27 32 42 / 0.78);
 
   --space-4: 4px;
   --space-8: 8px;
@@ -42,24 +134,26 @@
   --space-64: 64px;
 
   --radius-4: 4px;
-  --radius-7: 7px;
   --radius-8: 8px;
   --radius-12: 12px;
   --radius-16: 16px;
   --radius-24: 24px;
+  --radius-pill: 999px;
 
   --font-family: Inter, system-ui, sans-serif;
-  --font-size-body: 15px;
-  /* tokens.json says 12px; D01 Foundations labels metadata as 11/16/400. */
+  --font-size-micro: 11px;
   --font-size-metadata: 12px;
-  --font-size-metadata-visual: 11px;
   --font-size-ui: 13px;
+  --font-size-body: 15px;
   --font-size-h2: 20px;
   --font-size-h1: 26px;
   --font-size-display: 32px;
-  --line-height-body: 23px;
+  /* Deprecated alias (D01 Foundations labels metadata as 11/16/400); use --font-size-micro. */
+  --font-size-metadata-visual: var(--font-size-micro);
+  --line-height-micro: 14px;
   --line-height-metadata: 16px;
   --line-height-ui: 20px;
+  --line-height-body: 23px;
   --line-height-h2: 26px;
   --line-height-h1: 32px;
   --line-height-display: 38px;
@@ -82,4 +176,14 @@
   --layout-toolbar: 59px;
   --layout-min-window-width: 900px;
   --layout-min-window-height: 700px;
+}
+
+/* One block per Preferences['accent'] value (store.ts). 'pearl' is the lilac default. */
+:root[data-accent='pearl'] {
+  --color-action-primary: var(--accent-lilac);
+  --color-text-onAccent: #151324;
+}
+:root[data-accent='sage'] {
+  --color-action-primary: var(--accent-sage);
+  --color-text-onAccent: #102018;
 }

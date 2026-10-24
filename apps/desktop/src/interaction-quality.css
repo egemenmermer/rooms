@@ -22,9 +22,10 @@ html[data-input='pointer'][data-motion='full'] :is(.button, .icon-button):active
   transform: scale(0.97);
   transition-duration: 100ms;
 }
+/* The only focus-visible ring in the app; it follows the chosen accent. */
 :is(button, a, input, textarea, select, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-action-focus);
-  outline-offset: 3px;
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }
 .modal:focus {
   outline: none;
@@ -85,9 +86,6 @@ html[data-input='keyboard']
 .voice-call-tile,
 .voice-tile-avatar {
   transition: none;
-}
-.game-tile:hover {
-  transform: none;
 }
 .voice-context-panel > header > span,
 .reference-participant-name > span,
@@ -180,13 +178,7 @@ html[data-motion='reduce'] *::after {
 html[data-motion='reduce'] :is(.button, .icon-button):active {
   transform: none !important;
 }
-html[data-motion='reduce'] .game-tile:hover {
-  transform: none !important;
-}
 @media (hover: none), (pointer: coarse) {
-  .game-tile:hover {
-    transform: none !important;
-  }
   .button:hover,
   .icon-button:hover {
     transform: none;
