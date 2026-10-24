@@ -403,9 +403,7 @@ function focusSelectedCategory(nav: HTMLElement | null) {
   const list = selected.closest<HTMLElement>('.ref-settings-nav-scroll');
   if (!list) return;
   const bottom =
-    selected.getBoundingClientRect().bottom -
-    list.getBoundingClientRect().top +
-    list.scrollTop;
+    selected.getBoundingClientRect().bottom - list.getBoundingClientRect().top + list.scrollTop;
   if (bottom <= list.clientHeight) list.scrollTop = 0;
   else selected.scrollIntoView({ block: 'nearest' });
 }

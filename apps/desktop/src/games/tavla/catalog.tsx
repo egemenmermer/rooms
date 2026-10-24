@@ -33,11 +33,24 @@ function TavlaArt() {
         <rect x="72" y="8" width="6" height="80" fill="#5a3a28" />
         <g transform="rotate(-12 100 48)">
           <rect x="92" y="40" width="16" height="16" rx="3" fill="#f7f4ee" />
-          <g fill="#1d1d24">{pips(92, 40, [[4, 4], [12, 12], [8, 8]])}</g>
+          <g fill="#1d1d24">
+            {pips(92, 40, [
+              [4, 4],
+              [12, 12],
+              [8, 8],
+            ])}
+          </g>
         </g>
         <g transform="rotate(9 122 56)">
           <rect x="114" y="48" width="16" height="16" rx="3" fill="#f7f4ee" />
-          <g fill="#c2283e">{pips(114, 48, [[4, 4], [12, 12], [4, 12], [12, 4]])}</g>
+          <g fill="#c2283e">
+            {pips(114, 48, [
+              [4, 4],
+              [12, 12],
+              [4, 12],
+              [12, 4],
+            ])}
+          </g>
         </g>
       </svg>
     </span>
