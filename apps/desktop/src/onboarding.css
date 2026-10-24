@@ -27,7 +27,7 @@
   box-shadow: inset 0 1px #ffffff09;
 }
 .onboarding-eyebrow {
-  font-size: 8px;
+  font-size: var(--font-size-micro);
   letter-spacing: 1.6px;
   color: #98a7bc;
   font-weight: 600;
@@ -89,7 +89,7 @@
   align-items: stretch;
   gap: 8px;
   margin: 0;
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.8px;
   color: #a8b3c2;
 }
@@ -133,7 +133,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 8px;
+  font-size: var(--font-size-micro);
   font-weight: 600;
   letter-spacing: 1.1px;
   color: #a1aec0;
@@ -152,7 +152,7 @@
   border: 1px solid #d6e3fa12;
   border-radius: 8px;
   padding: 7px 10px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #9aa9bd;
   background: #ffffff02;
   min-height: 30px;
@@ -167,7 +167,7 @@
   color: #e2eaf6;
 }
 .rooms-onboarding .onboarding-address {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0;
   gap: 7px;
 }
@@ -193,13 +193,13 @@
   position: absolute;
   right: 0;
   top: 0;
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0;
   color: #8696ad;
   font-weight: 400;
 }
 .onboarding-account-invite small {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0;
   line-height: 1.5;
   color: #8f9caf;
@@ -216,7 +216,7 @@
   justify-content: center;
   align-items: flex-start;
   gap: 7px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   line-height: 1.6;
   color: #8e9bae;
   margin-top: 16px;
@@ -268,7 +268,7 @@
 .onboarding-error small {
   display: block;
   margin-top: 7px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #c1a5a5;
 }
 .rooms-onboarding button:disabled {
@@ -333,7 +333,7 @@
     gap: 12px;
   }
   .onboarding-heading > .connection-status {
-    font-size: 8px;
+    font-size: var(--font-size-micro);
   }
   .onboarding-credentials,
   .onboarding-registration {
@@ -352,7 +352,7 @@
   }
   .onboarding-access button {
     padding: 9px 6px;
-    font-size: 10px;
+    font-size: var(--font-size-micro);
   }
   .rooms-onboarding.connection-card {
     padding: 18px;

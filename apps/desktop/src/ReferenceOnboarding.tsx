@@ -1,5 +1,5 @@
 import { defaultServer } from './default-server';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -8,6 +8,7 @@ import {
   Mail,
   Mic,
   Monitor,
+  Square,
   Users,
   Video,
 } from 'lucide-react';
@@ -42,7 +43,175 @@ export interface ReferenceOnboardingProps {
   mode: ReferenceOnboardingMode;
   onNavigate(mode: ReferenceOnboardingMode): void;
   onComplete?(): void;
+  /** No longer used: the avatar pick and the mic test run inline. App can stop passing it. */
   onOpenSettings?(tab: 'profile' | 'audio'): void;
+}
+
+const OS_NAMES: Record<string, string> = { darwin: 'macOS', win32: 'Windows', linux: 'Linux' };
+
+/** Human OS name for the running desktop app, or null outside it. */
+export function platformName(platform = window.rooms?.platform): string | null {
+  return (platform && OS_NAMES[platform]) || null;
+}
+
+const MIC_DENIED = () =>
+  t('Mikrofon izni kapalı. Sistem ayarlarının gizlilik bölümünden Tayfa’ya mikrofon izni ver.');
+
+/**
+ * First-run microphone check: pick the input (the same preference voice rooms use) and watch a
+ * local level meter. Nothing is sent anywhere; the stream stops on "end", on a device change and
+ * when the step unmounts.
+ */
+export function OnboardingMicTest({ onGranted }: { onGranted?(): void }) {
+  const inputId = useRooms((state) => state.preferences.inputId);
+  const setPreference = useRooms((state) => state.setPreference);
+  const media = typeof navigator === 'undefined' ? undefined : navigator.mediaDevices;
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [testing, setTesting] = useState(false);
+  const [level, setLevel] = useState(0);
+  const [error, setError] = useState('');
+  const epoch = useRef(0);
+  const stream = useRef<MediaStream | null>(null);
+  const audio = useRef<AudioContext | null>(null);
+  const frame = useRef(0);
+  const stop = useCallback(() => {
+    epoch.current++;
+    cancelAnimationFrame(frame.current);
+    stream.current?.getTracks().forEach((track) => track.stop());
+    stream.current = null;
+    if (audio.current) void audio.current.close().catch(() => {});
+    audio.current = null;
+    setTesting(false);
+    setLevel(0);
+  }, []);
+  const refresh = useCallback(async () => {
+    try {
+      const list = await media?.enumerateDevices();
+      if (list) setDevices(list);
+    } catch {
+      // The picker keeps "System default"; the test itself reports a missing device.
+    }
+  }, [media]);
+  useEffect(() => {
+    if (!media) return;
+    void refresh();
+    const changed = () => void refresh();
+    media.addEventListener?.('devicechange', changed);
+    return () => {
+      media.removeEventListener?.('devicechange', changed);
+      stop();
+    };
+  }, [media, refresh, stop]);
+  if (!media?.getUserMedia) return null;
+  const start = async () => {
+    if (testing) {
+      stop();
+      return;
+    }
+    stop();
+    setError('');
+    const current = epoch.current;
+    try {
+      const next = await media.getUserMedia({
+        audio: inputId ? { deviceId: { exact: inputId } } : true,
+        video: false,
+      });
+      if (current !== epoch.current) {
+        next.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      stream.current = next;
+      const context = new AudioContext();
+      audio.current = context;
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 256;
+      context.createMediaStreamSource(next).connect(analyser);
+      const values = new Uint8Array(analyser.frequencyBinCount);
+      let last = 0;
+      const tick = (now: number) => {
+        if (current !== epoch.current) return;
+        if (now - last > 100) {
+          analyser.getByteFrequencyData(values);
+          setLevel(Math.min(100, (values.reduce((a, b) => a + b, 0) / values.length) * 1.8));
+          last = now;
+        }
+        frame.current = requestAnimationFrame(tick);
+      };
+      frame.current = requestAnimationFrame(tick);
+      setTesting(true);
+      onGranted?.();
+      // Device names are only readable once permission is granted.
+      void refresh();
+      next.getAudioTracks()[0]?.addEventListener('ended', () => {
+        if (current !== epoch.current) return;
+        stop();
+        setError(t('Seçili mikrofon kullanılamıyor. Başka bir mikrofon seç.'));
+      });
+    } catch (e) {
+      if (current !== epoch.current) return;
+      stop();
+      setError(
+        e instanceof DOMException && e.name === 'NotAllowedError'
+          ? MIC_DENIED()
+          : t('Seçili mikrofon kullanılamıyor. Başka bir mikrofon seç.'),
+      );
+    }
+  };
+  // Before permission, Chromium may list unnamed inputs with an empty id: "System default" covers them.
+  const inputs = devices.filter(
+    (d) => d.kind === 'audioinput' && d.deviceId && d.deviceId !== 'default',
+  );
+  const percent = Math.round(level);
+  return (
+    <div className="ref-auth-device-card">
+      <label className="field-label">
+        {t('Mikrofon')}
+        <select
+          value={inputId}
+          onChange={(e) => {
+            stop();
+            setPreference('inputId', e.target.value);
+          }}
+        >
+          <option value="">{t('Sistem varsayılanı')}</option>
+          {inputId && !inputs.some((d) => d.deviceId === inputId) && (
+            <option value={inputId}>{t('Seçili mikrofon kullanılamıyor')}</option>
+          )}
+          {inputs.map((d, i) => (
+            <option key={d.deviceId} value={d.deviceId}>
+              {d.label || t('Mikrofon {number}', { number: i + 1 })}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div
+        className="ref-auth-meter"
+        role="meter"
+        aria-label={t('Mikrofon giriş seviyesi')}
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        {Array.from({ length: 20 }, (_, i) => (
+          <i key={i} className={testing && i < level / 5 ? 'on' : ''} />
+        ))}
+      </div>
+      <p className="ref-auth-help">
+        {testing
+          ? t('Konuş; çubuklar sesinle birlikte hareket etmeli.')
+          : t('Ses yalnızca bu cihazda ölçülür, kimseye gönderilmez.')}
+      </p>
+      <button type="button" className="button secondary full" onClick={() => void start()}>
+        {testing ? <Square size={15} /> : <Mic size={15} />}
+        {testing ? t('Denemeyi bitir') : t('Mikrofonu dene')}
+      </button>
+      {error && (
+        <div className="ref-auth-notice warning" role="alert">
+          {error}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /** Account-neutral recovery request; reset link ingress is a separate main-only operation. */
@@ -230,12 +399,7 @@ export function ReferenceAuthFrame({
 }
 
 /** Reference geometry with real native account operations; no prototype scenario state. */
-export function ReferenceOnboarding({
-  mode,
-  onNavigate,
-  onComplete,
-  onOpenSettings,
-}: ReferenceOnboardingProps) {
+export function ReferenceOnboarding({ mode, onNavigate, onComplete }: ReferenceOnboardingProps) {
   const c = useCommunity();
   const recoveryServer = useRooms((state) => state.preferences.serverUrl.trim() || defaultServer);
   const [recoveryView, setRecoveryView] = useState<'request' | 'reset'>('request');
@@ -276,25 +440,30 @@ export function ReferenceOnboarding({
   useEffect(() => {
     setName(c.user?.displayName || c.user?.username || '');
   }, [c.user?.id, c.user?.displayName, c.user?.username]);
+  const permissionEpoch = useRef(0);
+  const loadPermissions = useCallback(() => {
+    const epoch = ++permissionEpoch.current;
+    const media = window.rooms?.media;
+    if (!media?.captureStatus) return;
+    void media
+      .captureStatus()
+      .then((status) => {
+        if (epoch === permissionEpoch.current) setPermissions(status);
+      })
+      .catch((e) => {
+        if (epoch === permissionEpoch.current) setError(uiError(e));
+      });
+  }, []);
   useEffect(() => {
-    let active = true;
     setBusy(false);
     setError('');
     setRecoveryView('request');
-    if (mode === 'devices' && window.rooms)
-      void window.rooms.media
-        .captureStatus()
-        .then((status) => {
-          if (active) setPermissions(status);
-        })
-        .catch((e) => {
-          if (active) setError(uiError(e));
-        });
+    if (mode === 'devices') loadPermissions();
     return () => {
-      active = false;
+      permissionEpoch.current++;
       request.current++;
     };
-  }, [mode]);
+  }, [mode, loadPermissions]);
   const inspect = async () => {
     if (busy || !link.trim()) return;
     const parsed = parseInviteLink(link, {
@@ -347,6 +516,22 @@ export function ReferenceOnboarding({
       setBusy(false);
     }
   };
+  const avatarAvailable = typeof window.rooms?.social?.chooseAvatar === 'function';
+  const pickAvatar = async () => {
+    if (busy || !c.user || !avatarAvailable) return;
+    const epoch = ++request.current;
+    setBusy(true);
+    setError('');
+    try {
+      // Null means the picker was cancelled.
+      const user = await window.rooms!.social.chooseAvatar();
+      if (user && epoch === request.current) useCommunity.setState({ user });
+    } catch (e) {
+      if (epoch === request.current) setError(uiError(e));
+    } finally {
+      if (epoch === request.current) setBusy(false);
+    }
+  };
   const saveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy || !c.user || !name.trim()) return;
@@ -370,8 +555,7 @@ export function ReferenceOnboarding({
   const expires = invite?.expiresAt ? Date.parse(invite.expiresAt) : NaN;
   const expired = Number.isFinite(expires) && expires <= Date.now();
   const sameServer = sameInviteServer(c.serverUrl || '', server || '');
-  const configure = (tab: 'profile' | 'audio') => onOpenSettings?.(tab);
-  const settingsReason = onOpenSettings ? undefined : t('Ayarlar bu görünümde henüz bağlanmadı.');
+  const os = platformName();
   return (
     <ReferenceAuthFrame mode={mode}>
       {mode === 'signin' || mode === 'register' || mode === 'selfhost' ? (
@@ -396,12 +580,16 @@ export function ReferenceOnboarding({
       ) : (
         <section className="ref-auth-form" aria-busy={busy}>
           {(mode === 'profile' || mode === 'devices') && (
-            <div
-              className="ref-auth-steps"
-              aria-label={t('Kurulum: {step}. adım', { step: mode === 'profile' ? 1 : 2 })}
-            >
-              <i className="active" />
-              <i className={mode === 'devices' ? 'active' : ''} />
+            <div className="ref-auth-steps">
+              <span aria-hidden="true">
+                <i className="active" />
+                <i className={mode === 'devices' ? 'active' : ''} />
+              </span>
+              <span>
+                {mode === 'profile'
+                  ? t('{step}/2 · Profil', { step: 1 })
+                  : t('{step}/2 · Cihazlar', { step: 2 })}
+              </span>
             </div>
           )}
           {mode === 'recovery' &&
@@ -529,15 +717,15 @@ export function ReferenceOnboarding({
                   <fieldset disabled={busy}>
                     <div className="ref-auth-avatar">
                       <VoiceAvatar id={c.user.id} name={name || c.user.username} large />
-                      <button
-                        type="button"
-                        className="button secondary"
-                        disabled={!onOpenSettings}
-                        title={settingsReason}
-                        onClick={() => configure('profile')}
-                      >
-                        {t('Avatar seç')}
-                      </button>
+                      {avatarAvailable && (
+                        <button
+                          type="button"
+                          className="button secondary"
+                          onClick={() => void pickAvatar()}
+                        >
+                          {t('Avatar seç')}
+                        </button>
+                      )}
                     </div>
                     <label className="field-label">
                       {t('Görünen ad')}
@@ -590,11 +778,7 @@ export function ReferenceOnboarding({
               <h2>{t('Cihazlar')}</h2>
               <p>{t('İzinleri yalnızca ilgili özelliği kullandığında isteyeceğiz.')}</p>
               {permissions?.microphone === 'denied' && (
-                <div className="ref-auth-notice warning">
-                  {t(
-                    'Mikrofon izni kapalı. Ses ve video ayarlarından sistem izinlerini açabilirsin.',
-                  )}
-                </div>
+                <div className="ref-auth-notice warning">{MIC_DENIED()}</div>
               )}
               <div className="ref-auth-permission">
                 <Mic size={22} />
@@ -608,14 +792,6 @@ export function ReferenceOnboarding({
                         : t('Sesli konuşmak için')}
                   </p>
                 </div>
-                <button
-                  className="button secondary small"
-                  disabled={!onOpenSettings}
-                  title={settingsReason}
-                  onClick={() => configure('audio')}
-                >
-                  {t('Ayarlar')}
-                </button>
               </div>
               <div className="ref-auth-permission">
                 <Video size={22} />
@@ -631,21 +807,9 @@ export function ReferenceOnboarding({
                   <strong>{t('Ekran paylaşımı')}</strong>
                   <p>{t('Paylaşımı başlatırken izin istenir.')}</p>
                 </div>
-                <span>{t('Sonra')}</span>
+                <span>{t('İsteğe bağlı')}</span>
               </div>
-              <div className="ref-auth-device-card">
-                <span>{t('Giriş cihazı')}</span>
-                <strong>{t('Ses ve video ayarlarından seç')}</strong>
-                <button
-                  className="button secondary full"
-                  disabled={!onOpenSettings}
-                  title={settingsReason}
-                  onClick={() => configure('audio')}
-                >
-                  <Mic size={15} />
-                  {t('Mikrofonu dene')}
-                </button>
-              </div>
+              <OnboardingMicTest onGranted={loadPermissions} />
               <button
                 className="button primary full"
                 disabled={!onComplete}
@@ -657,7 +821,11 @@ export function ReferenceOnboarding({
                 {t('Topluluğuma gir')}
                 <ArrowRight size={16} />
               </button>
-              <p className="ref-auth-footer">{t('Sistem izinleri macOS tarafından gösterilir.')}</p>
+              {os && (
+                <p className="ref-auth-footer">
+                  {t('Sistem izinleri {os} tarafından gösterilir.', { os })}
+                </p>
+              )}
             </>
           )}
           {error && (

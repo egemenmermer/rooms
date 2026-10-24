@@ -39,7 +39,6 @@ export const shell: Catalog = {
   Asistan: 'Assistant',
   'Avatar seç': 'Choose avatar',
   Ayarlar: 'Settings',
-  'Ayarlar bu görünümde henüz bağlanmadı.': 'Settings aren’t wired up in this view yet.',
   'Aynı yere dönmek güzel.': 'Nice to be back.',
   'Ayrıntılı kurulum rehberi': 'Detailed setup guide',
   Aç: 'Open',
@@ -60,7 +59,6 @@ export const shell: Catalog = {
   'Bakılıyor…': 'Checking…',
   'Başka bir davet bağlantısı kullan': 'Use a different invite link',
   Başlangıç: 'Start',
-  'Beni hatırla': 'Remember me',
   'Beyaz tahta': 'Whiteboard',
   Bildirimler: 'Notifications',
   'Bir el zaten devam ediyor. Tamamlanmasını bekle.':
@@ -150,8 +148,6 @@ export const shell: Catalog = {
     'This server doesn’t support expiring or single-use invites. Ask your server administrator for an invite.',
   'Bu sunucuda yalnızca OpenRouter API bağlantısı kullanılabiliyor. Codex ve Claude CLI bağlantıları etkin değil.':
     'This server only supports the OpenRouter API connection. Codex and Claude CLI connections are not enabled.',
-  'Bu sürümde oturum, sistemin güvenli deposunda saklanır.':
-    'In this version your session is kept in the system’s secure storage.',
   'Bu toplulukta davet oluşturma iznin yok. Topluluk sahibinden izin iste.':
     'You don’t have permission to create invites in this community. Ask the community owner for permission.',
   'Bu toplulukta çok fazla etkin davet bağlantısı var. Topluluk yönetimi → Davetler bölümünden birini iptal et.':
@@ -245,7 +241,6 @@ export const shell: Catalog = {
     'Enter a valid HTTPS server address. HTTP can be used for a server on this computer.',
   'Geçerli bir rol rengi seç.': 'Pick a valid role color.',
   Giriş: 'Sign in',
-  'Giriş cihazı': 'Input device',
   'Giriş ekranına dön': 'Back to sign in',
   'Giriş ekranından sunucu adresini seç.': 'Choose the server address on the sign-in screen.',
   'Giriş yap': 'Sign in',
@@ -350,7 +345,6 @@ export const shell: Catalog = {
   'Kurtarma işleminin süresi doldu. Bağlantıyı yeniden aktar.':
     'The recovery session expired. Import the link again.',
   'Kurulum komutu': 'Install command',
-  'Kurulum: {step}. adım': 'Setup: step {step}',
   Kütüphane: 'Library',
   KİŞİSEL: 'PERSONAL',
   Kıraathane: 'Kıraathane',
@@ -377,8 +371,6 @@ export const shell: Catalog = {
     'Checking the latest messages and room activity. No new actions start until the connection is back.',
   'Metin kanalı oluştur': 'Create text channel',
   Mikrofon: 'Microphone',
-  'Mikrofon izni kapalı. Ses ve video ayarlarından sistem izinlerini açabilirsin.':
-    'Microphone permission is off. You can turn on system permissions from the audio and video settings.',
   'Mikrofon kapalı': 'Mic off',
   'Mikrofonu aç': 'Turn mic on',
   'Mikrofonu dene': 'Test microphone',
@@ -473,7 +465,6 @@ export const shell: Catalog = {
   'Ses odası oluştur': 'Create voice room',
   'Ses odası yok.': 'No voice rooms.',
   'Ses odası: {status}': 'Voice room: {status}',
-  'Ses ve video ayarlarından seç': 'Choose in the audio and video settings',
   'Sesi aç': 'Turn sound on',
   'Sesini kapattın, yalnızca sende': 'You muted them, only for you',
   'Sesli konuşmak için': 'For talking in voice',
@@ -483,7 +474,6 @@ export const shell: Catalog = {
   'Seçtiğin taşlar bu seriye işlenemiyor. Renk ve sırayı kontrol et.':
     'The tiles you picked can’t be added to this run. Check the color and order.',
   Sinema: 'Cinema',
-  'Sistem izinleri macOS tarafından gösterilir.': 'System permissions are shown by macOS.',
   'Sistem izni vermek, desteklenmeyen bir özelliği etkinleştirmez.':
     'Granting a system permission doesn’t enable an unsupported feature.',
   'Sistem sesi': 'System audio',
@@ -496,7 +486,6 @@ export const shell: Catalog = {
   'Son geçerlilik: {date}': 'Valid until: {date}',
   'Son kontrol: {date}': 'Last checked: {date}',
   'Son kullanım: {date}': 'Expires: {date}',
-  Sonra: 'Later',
   'Soru sor, özet çıkar, görev ver.': 'Ask questions, get summaries, assign tasks.',
   Sunucu: 'Server',
   'Sunucu adresi': 'Server address',
@@ -832,4 +821,16 @@ export const shell: Catalog = {
     'Create a channel in the community before approving requests.',
   'Bu e-posta adresiyle zaten bir hesap var. O hesapla giriş yap veya farklı bir e-posta adresi kullan.':
     'This email address already has an account. Sign in with it, or use a different email address.',
+  'Oturumun bu cihazda güvenle saklanır.': 'Your session is stored securely on this device.',
+  '{step}/2 · Profil': '{step}/2 · Profile',
+  '{step}/2 · Cihazlar': '{step}/2 · Devices',
+  'Mikrofon izni kapalı. Sistem ayarlarının gizlilik bölümünden Tayfa’ya mikrofon izni ver.':
+    'Microphone permission is off. Allow Tayfa to use the microphone in the privacy section of your system settings.',
+  'Seçili mikrofon kullanılamıyor. Başka bir mikrofon seç.':
+    'The selected microphone isn’t available. Choose another microphone.',
+  'Konuş; çubuklar sesinle birlikte hareket etmeli.':
+    'Speak; the bars should move with your voice.',
+  'Ses yalnızca bu cihazda ölçülür, kimseye gönderilmez.':
+    'Sound is only measured on this device and isn’t sent to anyone.',
+  'Sistem izinleri {os} tarafından gösterilir.': 'System permissions are shown by {os}.',
 };
