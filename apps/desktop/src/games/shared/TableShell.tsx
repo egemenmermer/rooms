@@ -13,7 +13,7 @@ import { gameDefinition } from '../registry';
 import { useGameFixtureMetadata } from './fixture';
 import { GameRecovery } from './GameRecovery';
 import { GameResults } from './GameResults';
-import { array, names } from './model';
+import { array } from './model';
 import type { TableUI } from './table-ui';
 
 export function ReferenceOtherGame({
@@ -101,11 +101,11 @@ export function ReferenceOtherGame({
       <header className="rg-heading">
         <div>
           <div className="rg-title">
-            <h1>{game.status === 'finished' ? t('El tamamlandı') : names[game.kind]}</h1>
+            <h1>{game.status === 'finished' ? t('El tamamlandı') : definition.catalog.name}</h1>
             <span>{t('Kurallar kilitli')}</span>
           </div>
           <p>
-            {roomName} · {names[game.kind]} ·{' '}
+            {roomName} · {definition.catalog.name} ·{' '}
             {definition.catalog.scoring === 'chips' ? t('Sanal fiş') : t('Sanal puan')}
           </p>
         </div>

@@ -572,6 +572,20 @@ export const games: Catalog = {
   'Odada {activity} açık. Masa açınca o etkinlik herkes için kapanır; bunu etkinliğin hostu yapabilir.':
     '{activity} is open in the room. Opening a table closes it for everyone; the activity’s host can do this.',
   'Bu oyuna geç': 'Switch to this game',
+  Pişti: 'Pisti',
+  '2 veya 4 oyuncu': '2 or 4 players',
+  'Yerdeki kartı aynı kartla ya da valeyle topla.': 'Take the pile with a matching card or a jack.',
+  '2 veya 4 oyuncu · Puan': '2 or 4 players · Points',
+  'Klasik Okey: 14 taşı per ya da çift olarak diz.':
+    'Classic Okey: arrange 14 tiles into sets, runs or pairs.',
+  '4 oyuncu · Klasik': '4 players · Classic',
+  '2 oyuncu': '2 players',
+  'Zarı at, pullarını topla. Maç sayıya oynanır.':
+    'Roll the dice and bear off your checkers. Matches play to a target score.',
+  '2 oyuncu · Maç': '2 players · Match',
+  'Bu oyunun masası yakında': 'This game’s table is coming soon',
+  'Masa açık ve sunucuda oynanıyor; bu sürüm henüz gösteremiyor.':
+    'The table is open and running on the server; this version cannot show it yet.',
   'Masa aç': 'Open table',
   Etkinlikler: 'Activities',
   'Devam eden etkinlik': 'Ongoing activity',
