@@ -61,6 +61,19 @@ export function SignupPendingScreen({ onCreated }: { onCreated?(): void } = {}) 
     </button>
   );
   const requested = formatTime(pending.createdAt);
+  // Without a keychain (or after a failed write) a restart forgets the request; say so.
+  const unsaved = pending.persisted === false;
+  const unsavedNotice = unsaved && (
+    <div className="ref-auth-notice" role="status">
+      {pending.ready
+        ? t(
+            'Bu cihaz onay bağlantını saklayamıyor. Uygulamayı kapatmadan hesabını oluştur; yoksa yeni bir istek göndermen gerekir.',
+          )
+        : t(
+            'Bu cihaz isteğini saklayamıyor. Onay gelene kadar uygulamayı açık bırak; kapatırsan istek unutulur ve yeniden göndermen gerekir.',
+          )}
+    </div>
+  );
   return (
     <section className="ref-auth-form ref-signup-pending" aria-busy={working || signup.checking}>
       {pending.ready ? (
@@ -111,6 +124,7 @@ export function SignupPendingScreen({ onCreated }: { onCreated?(): void } = {}) 
               </form>
             </>
           )}
+          {unsavedNotice}
           {back}
           {forget(t('İsteği bırak'))}
         </>
@@ -125,22 +139,30 @@ export function SignupPendingScreen({ onCreated }: { onCreated?(): void } = {}) 
           </p>
           {forget(t('Tamam'))}
         </>
-      ) : pending.status === 'expired' || pending.status === 'issued' ? (
+      ) : pending.status === 'expired' ||
+        pending.status === 'issued' ||
+        pending.status === 'closed' ? (
         <>
           <Clock size={34} aria-hidden="true" />
           <h2>
             {pending.status === 'expired'
               ? t('İsteğinin süresi doldu')
-              : t('Bağlantı kullanılamıyor')}
+              : pending.status === 'closed'
+                ? t('İsteğin kapandı')
+                : t('Bağlantı kullanılamıyor')}
           </h2>
           <p>
             {pending.status === 'expired'
               ? t(
                   '14 gün içinde kimse karar vermediği için isteğin kapandı. İstersen yeni bir istek gönderebilirsin.',
                 )
-              : t(
-                  'Onay bağlantısı bu cihazda değil. Yeni bir istek gönder ya da topluluktan davet bağlantısı iste.',
-                )}
+              : pending.status === 'closed'
+                ? t(
+                    'Sunucu bu isteği artık tanımıyor; geri çekilmiş, süresi dolmuş ya da sunucudan silinmiş olabilir. Yeni bir istek gönderebilirsin.',
+                  )
+                : t(
+                    'Onay bağlantısı bu cihazda değil ya da zaten kullanıldı. Hesabın oluştuysa giriş ekranından giriş yap; değilse yeni bir istek gönder ya da topluluktan davet bağlantısı iste.',
+                  )}
           </p>
           {forget(t('Yeni istek gönder'))}
           {back}
@@ -152,10 +174,15 @@ export function SignupPendingScreen({ onCreated }: { onCreated?(): void } = {}) 
           </span>
           <h2>{t('Onay bekliyor')}</h2>
           <p role="status">
-            {t(
-              '{name}, isteğin topluluk yöneticisine iletildi. Onaylanınca hesabın oluşturulur ve topluluğa katılırsın. Bu ekran kendiliğinden yenilenir; uygulamayı kapatırsan onaydan sonra şifreni yeniden girmen yeterli.',
-              { name: pending.username },
-            )}
+            {unsaved
+              ? t(
+                  '{name}, isteğin topluluk yöneticisine iletildi. Onaylanınca hesabın oluşturulur ve topluluğa katılırsın. Bu ekran kendiliğinden yenilenir.',
+                  { name: pending.username },
+                )
+              : t(
+                  '{name}, isteğin topluluk yöneticisine iletildi. Onaylanınca hesabın oluşturulur ve topluluğa katılırsın. Bu ekran kendiliğinden yenilenir; uygulamayı kapatırsan onaydan sonra şifreni yeniden girmen yeterli.',
+                  { name: pending.username },
+                )}
           </p>
           {requested && (
             <p className="ref-auth-help">{t('İstek zamanı: {time}', { time: requested })}</p>
@@ -168,6 +195,7 @@ export function SignupPendingScreen({ onCreated }: { onCreated?(): void } = {}) 
             <RefreshCw size={16} />
             {signup.checking ? t('Kontrol ediliyor…') : t('Durumu yenile')}
           </button>
+          {unsavedNotice}
           {back}
           {forget(t('İsteği geri çek'))}
         </>

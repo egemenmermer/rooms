@@ -725,8 +725,17 @@ export const shell: Catalog = {
   'Bağlantı kullanılamıyor': 'The link can’t be used',
   '14 gün içinde kimse karar vermediği için isteğin kapandı. İstersen yeni bir istek gönderebilirsin.':
     'Your request closed because nobody decided on it within 14 days. You can send a new one if you like.',
-  'Onay bağlantısı bu cihazda değil. Yeni bir istek gönder ya da topluluktan davet bağlantısı iste.':
-    'The approval link isn’t on this device. Send a new request or ask the community for an invite link.',
+  'Onay bağlantısı bu cihazda değil ya da zaten kullanıldı. Hesabın oluştuysa giriş ekranından giriş yap; değilse yeni bir istek gönder ya da topluluktan davet bağlantısı iste.':
+    'The approval link isn’t on this device or was already used. If your account was created, sign in from the sign-in screen; otherwise send a new request or ask the community for an invite link.',
+  'İsteğin kapandı': 'Your request is closed',
+  'Sunucu bu isteği artık tanımıyor; geri çekilmiş, süresi dolmuş ya da sunucudan silinmiş olabilir. Yeni bir istek gönderebilirsin.':
+    'The server no longer recognizes this request; it may have been withdrawn, expired or deleted from the server. You can send a new request.',
+  'Bu cihaz onay bağlantını saklayamıyor. Uygulamayı kapatmadan hesabını oluştur; yoksa yeni bir istek göndermen gerekir.':
+    'This device can’t store your approval link. Create your account before closing the app, or you’ll need to send a new request.',
+  'Bu cihaz isteğini saklayamıyor. Onay gelene kadar uygulamayı açık bırak; kapatırsan istek unutulur ve yeniden göndermen gerekir.':
+    'This device can’t store your request. Keep the app open until it’s approved; if you close it, the request is forgotten and you’ll need to send it again.',
+  '{name}, isteğin topluluk yöneticisine iletildi. Onaylanınca hesabın oluşturulur ve topluluğa katılırsın. Bu ekran kendiliğinden yenilenir.':
+    '{name}, your request was sent to the community admins. Once it’s approved, your account is created and you join the community. This screen refreshes by itself.',
   'Yeni istek gönder': 'Send a new request',
   '{name}, isteğin topluluk yöneticisine iletildi. Onaylanınca hesabın oluşturulur ve topluluğa katılırsın. Bu ekran kendiliğinden yenilenir; uygulamayı kapatırsan onaydan sonra şifreni yeniden girmen yeterli.':
     '{name}, your request was sent to the community admins. Once it’s approved, your account is created and you join the community. This screen refreshes by itself; if you close the app, just enter your password again after approval.',

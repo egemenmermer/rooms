@@ -25,6 +25,9 @@ export interface SignupRegistration {
   inviteCode: string;
 }
 
+/** Consecutive "unknown request" answers before the waiting screen gives up on a request. */
+export const SIGNUP_NOT_FOUND_LIMIT = 3;
+
 const stored = z
   .object({
     version: z.literal(1),
@@ -53,6 +56,10 @@ export class PendingSignupBroker {
   private status: SocialPendingSignup['status'] = 'unknown';
   private error: string | null = null;
   private loaded = false;
+  /** Whether the current request is stored on disk (false: no keychain or a failed write). */
+  private saved = false;
+  /** Consecutive 404 answers to the poll; a request the service forgot never comes back. */
+  private notFound = 0;
   constructor(
     private readonly deps: {
       path: string;
@@ -71,17 +78,20 @@ export class PendingSignupBroker {
       if (parsed.success) {
         this.current = { ...parsed.data, password: null };
         this.status = parsed.data.inviteCode ? 'approved' : 'unknown';
+        this.saved = true;
       } else unlinkSync(this.deps.path);
     } catch {
       // An unreadable file is a lost request; the person can ask again.
     }
   }
-  private persist() {
+  /** Writes the request encrypted; returns whether it is now stored (false: followed in memory only). */
+  private persist(): boolean {
     const value = this.current;
+    this.saved = false;
     try {
       if (!value || !this.deps.storage.isEncryptionAvailable()) {
         if (existsSync(this.deps.path)) unlinkSync(this.deps.path);
-        return;
+        return false;
       }
       // The password is deliberately left out.
       const record: Stored = {
@@ -97,9 +107,12 @@ export class PendingSignupBroker {
       writeFileSync(this.deps.path, this.deps.storage.encryptString(JSON.stringify(record)), {
         mode: 0o600,
       });
+      this.saved = true;
     } catch {
-      // Without a keychain the request is followed only while the app stays open.
+      // Without a keychain the request is followed only while the app stays open; the snapshot
+      // says so (`persisted: false`) and the screen warns instead of promising a restart works.
     }
+    return this.saved;
   }
   snapshot(): SocialPendingSignup | null {
     this.load();
@@ -113,15 +126,37 @@ export class PendingSignupBroker {
       status: this.status,
       ready: !!value.inviteCode,
       passwordKnown: !!value.password,
+      persisted: this.saved,
       error: this.error,
     };
   }
   async request(input: { serverUrl: string; email: string; password: string; username: string }) {
     this.load();
-    const created = await this.deps
-      .client(input.serverUrl)
-      .requestSignup({ email: input.email, username: input.username });
-    // A newer request replaces whatever this device followed before.
+    const previous = this.current;
+    const sameEmail =
+      !!previous &&
+      previous.serverUrl === input.serverUrl &&
+      previous.email.toLowerCase() === input.email.toLowerCase();
+    const ask = () =>
+      this.deps
+        .client(input.serverUrl)
+        .requestSignup({ email: input.email, username: input.username });
+    let created: Awaited<ReturnType<typeof ask>>;
+    let withdrawn = false;
+    try {
+      created = await ask();
+    } catch (error) {
+      // The service allows one open request per address: free the address this device holds
+      // and ask once more. Other failures keep the old request untouched.
+      if (!sameEmail || (error as { status?: number }).status !== 409) throw error;
+      await this.withdraw(previous!);
+      withdrawn = true;
+      created = await ask();
+    }
+    // A newer request replaces whatever this device followed before; the old one is withdrawn
+    // so an admin cannot approve a link nobody can claim and it stops blocking the address.
+    if (previous && !withdrawn) await this.withdraw(previous);
+    this.notFound = 0;
     this.current = {
       version: 1,
       serverUrl: input.serverUrl,
@@ -138,6 +173,13 @@ export class PendingSignupBroker {
     this.persist();
     return this.snapshot()!;
   }
+  /** Best-effort DELETE of a request this device no longer follows. */
+  private async withdraw(value: Stored) {
+    await this.deps
+      .client(value.serverUrl)
+      .cancelSignup(value.requestId, value.pollSecret)
+      .catch(() => {});
+  }
   /**
    * Asks the service once. Returns the registration to run when the request was approved and
    * the password is still in memory; otherwise the person types it on the waiting screen.
@@ -149,7 +191,8 @@ export class PendingSignupBroker {
     this.load();
     const value = this.current;
     if (!value) return { pending: null, registration: null };
-    if (!value.inviteCode) {
+    // A request the service forgot is final; nothing to ask any more.
+    if (!value.inviteCode && this.status !== 'closed') {
       try {
         const poll = await this.deps
           .client(value.serverUrl)
@@ -157,15 +200,26 @@ export class PendingSignupBroker {
         if (this.current !== value) return { pending: this.snapshot(), registration: null };
         this.status = poll.status;
         this.error = null;
+        this.notFound = 0;
         if (poll.createdAt) value.createdAt = poll.createdAt;
         if (poll.status === 'approved' && poll.inviteCode) {
-          // Fetched exactly once; keep it until the account exists.
+          // Keep it until the account exists. Newer services repeat it on every poll until the
+          // link is used; older ones hand it out once, so it is stored right away.
           value.inviteCode = poll.inviteCode;
           this.persist();
         }
       } catch (error) {
         const status = (error as { status?: number }).status;
-        if (status === 404) this.status = 'unknown';
+        if (status === 404) {
+          // Pruned, cancelled elsewhere or the service lost its store: after a few answers in a
+          // row the request counts as closed instead of "waiting" for ever.
+          this.notFound++;
+          this.status = this.notFound >= SIGNUP_NOT_FOUND_LIMIT ? 'closed' : 'unknown';
+          if (this.status === 'closed') {
+            this.error = null;
+            return { pending: this.snapshot(), registration: null };
+          }
+        }
         this.error = error instanceof Error ? error.message : 'SIGNUP_UNAVAILABLE';
         return { pending: this.snapshot(), registration: null };
       }
@@ -195,6 +249,7 @@ export class PendingSignupBroker {
   completed() {
     this.current = null;
     this.status = 'unknown';
+    this.notFound = 0;
     this.error = null;
     this.persist();
   }

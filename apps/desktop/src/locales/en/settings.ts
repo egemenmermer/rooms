@@ -826,6 +826,18 @@ export const settings: Catalog = {
   'Bu kişi için hesap oluşturulmaz ve isteğinin reddedildiğini görür.':
     'No account is created for this person, and they’ll see that their request was rejected.',
   'Reddediliyor…': 'Rejecting…',
+  'Hepsini reddet': 'Reject all',
+  '{count} bekleyen istek reddedilsin mi?': {
+    one: 'Reject {count} waiting request?',
+    other: 'Reject {count} waiting requests?',
+  },
+  'Hiçbiri için hesap oluşturulmaz ve kişiler isteklerinin reddedildiğini görür. Onayladıkların bundan etkilenmez. Sahte ya da istenmeyen istekleri toplu temizlemek için kullan.':
+    'No accounts are created and the people see that their requests were rejected. Requests you already approved aren’t affected. Use this to clear fake or unwanted requests in one go.',
+  'Reddediliyor… {done}/{count}': 'Rejecting… {done}/{count}',
+  '{count} istek reddedilemedi: {reason}': {
+    one: 'Couldn’t reject {count} request: {reason}',
+    other: 'Couldn’t reject {count} requests: {reason}',
+  },
   'Yeni uyarılar sahibe ve developer rolündekilere masaüstü bildirimi olarak da gelir (Tayfa açıkken, pencere kapalı olsa bile).':
     'New alerts also reach the owner and members with the developer role as desktop notifications (while Tayfa is running, even with its window closed).',
   'Mikrofon seviyesi': 'Microphone level',
