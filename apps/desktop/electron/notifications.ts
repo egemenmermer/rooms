@@ -129,12 +129,13 @@ export function setupNotifications(
     }
     return { muted: value.muted };
   });
-  // A ringing private call shows even during voice (it is the point of being reachable), but
-  // never while the window is focused, where the call card already rings.
+  // A ringing private call shows even during voice (it is the point of being reachable) and
+  // even with chat notifications off, like a reminder: a call nobody hears is a missed call.
+  // It never shows while the window is focused, where the call card already rings.
   ipcMain.handle('rooms:notification-incoming-call', (event) => {
     assertSender(event);
     const window = getWindow();
-    if (!enabled || !Notification.isSupported() || window?.isFocused()) return;
+    if (!Notification.isSupported() || window?.isFocused()) return;
     const notification = new Notification({
       title: 'Tayfa',
       body: t('Özel bir arama geliyor.'),

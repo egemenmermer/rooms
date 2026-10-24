@@ -237,8 +237,6 @@ describe('notification delivery', () => {
   });
   it('announces an incoming private call without content, only when the window is not in front', () => {
     setup();
-    invoke('incoming-call');
-    expect(mock.shown).toHaveLength(0);
     invoke('opt-in', true);
     mock.focused = true;
     invoke('incoming-call');
@@ -246,6 +244,14 @@ describe('notification delivery', () => {
     mock.focused = false;
     invoke('incoming-call');
     expect(mock.shown).toEqual([{ title: 'Tayfa', body: 'Özel bir arama geliyor.', silent: true }]);
+  });
+  it('rings the system notification for a private call even when chat notifications were never enabled', () => {
+    setup();
+    invoke('incoming-call');
+    expect(mock.shown).toEqual([{ title: 'Tayfa', body: 'Özel bir arama geliyor.', silent: true }]);
+    mock.focused = true;
+    invoke('incoming-call');
+    expect(mock.shown).toHaveLength(1);
   });
   it('shows a mention right after another message and opens its channel on click', () => {
     vi.useFakeTimers();
