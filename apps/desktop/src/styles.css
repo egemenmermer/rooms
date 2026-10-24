@@ -4746,66 +4746,6 @@ body,
 .playing-card:not(:disabled):hover {
   transform: translateY(-7px);
 }
-.game-catalog {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 13px;
-}
-.game-tile {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  text-align: left;
-  padding: 23px 24px;
-  background: #141d25;
-  border: 1px solid #ffffff0a;
-  border-radius: 16px;
-  transition:
-    background 0.16s,
-    transform 0.16s;
-}
-.game-tile:hover {
-  background: #1a2530;
-  transform: translateY(-2px);
-}
-.game-tile > div {
-  flex: 1;
-  min-width: 0;
-}
-.game-tile h3 {
-  font-size: 17px;
-  margin: 7px 0 5px;
-  letter-spacing: -0.4px;
-  font-weight: 550;
-}
-.game-tile p {
-  font-size: 11px;
-  color: #7c8fa7;
-  line-height: 1.6;
-  margin: 0;
-}
-.game-tile .eyebrow {
-  font-size: 8px;
-}
-.game-symbol {
-  display: grid;
-  place-items: center;
-  flex: 0 0 57px;
-  height: 64px;
-  border-radius: 12px;
-  border: 1px solid #c6d3be13;
-  background: #a5bfa507;
-  color: #b8c9b9;
-  font-family: Georgia, serif;
-  font-size: 34px;
-}
-.game-tile.blackjack .game-symbol,
-.game-tile.\31 01 .game-symbol {
-  font-size: 24px;
-}
-.game-tile > svg {
-  color: #4f6985;
-}
 .games-footnote {
   display: flex;
   align-items: center;
@@ -4841,15 +4781,6 @@ body,
   height: 5px;
   border-radius: 50%;
   background: #86b79d;
-}
-.game-table {
-  min-height: 410px;
-  position: relative;
-  padding: 25px 35px 120px;
-  border-radius: 24px;
-  background: radial-gradient(ellipse at 50% 20%, #4d696918, transparent 70%), #101719;
-  overflow: hidden;
-  border: 1px solid #ffffff09;
 }
 .table-felt {
   position: relative;
@@ -5017,41 +4948,6 @@ body,
   font-size: 24px !important;
   min-width: 45px;
   justify-content: center;
-}
-.game-history {
-  border-top: 1px solid #ffffff0b;
-  margin-top: 25px;
-  padding-top: 20px;
-}
-.game-history h3 {
-  font-size: 15px;
-}
-.game-history > div {
-  display: flex;
-  gap: 12px;
-  padding: 12px 0;
-  font-size: 11px;
-  color: #889cac;
-}
-.game-history > p {
-  font-size: 12px;
-  color: #718697;
-}
-.game-rule-options {
-  display: flex;
-  gap: 30px;
-  margin: 25px 0;
-}
-.game-rule-options label {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 13px;
-}
-.game-rule-options input {
-  width: 16px;
-  height: 16px;
-  margin: 0;
 }
 .blackjack-hand {
   display: flex;
@@ -5362,15 +5258,6 @@ body,
     gap: 35px;
     padding: 32px;
   }
-  .game-tile {
-    gap: 14px;
-    padding: 20px 16px;
-  }
-  .game-symbol {
-    flex-basis: 43px;
-    height: 53px;
-    font-size: 28px;
-  }
   .agent-banner {
     padding: 22px;
     gap: 16px;
@@ -5383,9 +5270,6 @@ body,
   }
   .task-detail {
     padding: 22px;
-  }
-  .game-table {
-    padding: 24px 20px 35px;
   }
   .table-seats {
     gap: 9px;
@@ -5495,9 +5379,6 @@ body,
     flex-basis: 150px;
     width: 150px;
   }
-  .game-catalog {
-    grid-template-columns: 1fr;
-  }
   .whiteboard-toolbar {
     gap: 15px;
   }
@@ -5538,9 +5419,6 @@ body,
 }
 [data-motion='reduce'] .spin {
   animation: none;
-}
-[data-motion='reduce'] .game-tile:hover {
-  transform: none;
 }
 [data-transparency='reduce'] .agent-banner {
   background: #151e29;
@@ -5907,10 +5785,6 @@ body,
   max-width: 200px;
   font-size: 12px;
 }
-.game-table {
-  min-height: 0;
-  padding: 20px 28px 24px;
-}
 .table-felt {
   min-height: 180px;
 }
@@ -5933,10 +5807,6 @@ body,
 .table-toolbar > div > .text-button {
   font-size: 10px;
   margin-right: 8px;
-}
-.game-table .table-brand {
-  top: 19px;
-  font-size: 24px;
 }
 .program-guide {
   padding: 18px;

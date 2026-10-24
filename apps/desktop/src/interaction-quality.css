@@ -87,9 +87,6 @@ html[data-input='keyboard']
 .voice-tile-avatar {
   transition: none;
 }
-.game-tile:hover {
-  transform: none;
-}
 .voice-context-panel > header > span,
 .reference-participant-name > span,
 .reference-voice-heading h2 {
@@ -181,13 +178,7 @@ html[data-motion='reduce'] *::after {
 html[data-motion='reduce'] :is(.button, .icon-button):active {
   transform: none !important;
 }
-html[data-motion='reduce'] .game-tile:hover {
-  transform: none !important;
-}
 @media (hover: none), (pointer: coarse) {
-  .game-tile:hover {
-    transform: none !important;
-  }
   .button:hover,
   .icon-button:hover {
     transform: none;
