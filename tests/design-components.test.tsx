@@ -62,10 +62,11 @@ describe('EmptyState', () => {
       />,
     );
     const actions = container.querySelector('.ds-empty-actions') as HTMLElement;
-    expect(within(actions).getAllByRole('button').map((b) => b.textContent)).toEqual([
-      'Arkadaş ekle',
-      'Davet gönder',
-    ]);
+    expect(
+      within(actions)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Arkadaş ekle', 'Davet gönder']);
     expect(container.querySelector('.empty-description')).toBeNull();
     expect(container.querySelector('.empty-state')?.classList.contains('ds-empty-inline')).toBe(
       true,
@@ -109,10 +110,11 @@ describe('Modal footer', () => {
     const dialog = screen.getByRole('dialog', { name: 'Mesajı sil' });
     const footer = dialog.querySelector('footer.modal-footer') as HTMLElement;
     expect(footer).toBeTruthy();
-    expect(within(footer).getAllByRole('button').map((b) => b.textContent)).toEqual([
-      'Vazgeç',
-      'Sil',
-    ]);
+    expect(
+      within(footer)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Vazgeç', 'Sil']);
     expect(dialog.lastElementChild).toBe(footer);
   });
   it('renders no footer element without the prop', () => {
@@ -135,8 +137,7 @@ describe('English default text', () => {
   });
   it('names a label-less LoadingView in English', async () => {
     await import('../apps/desktop/src/i18n'); // configures the English catalog
-    const { LoadingView: EnglishLoadingView } =
-      await import('../packages/design-system/src/index');
+    const { LoadingView: EnglishLoadingView } = await import('../packages/design-system/src/index');
     render(<EnglishLoadingView />);
     expect(screen.getByRole('status', { name: 'Loading…' })).toBeTruthy();
   });

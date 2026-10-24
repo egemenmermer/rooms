@@ -213,7 +213,9 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={`empty-state ${size === 'inline' ? 'ds-empty-inline' : ''} ${className}`.trim()}>
+    <div
+      className={`empty-state ${size === 'inline' ? 'ds-empty-inline' : ''} ${className}`.trim()}
+    >
       <span className="empty-icon">{icon}</span>
       <h2>{title}</h2>
       {children != null && children !== false && (
