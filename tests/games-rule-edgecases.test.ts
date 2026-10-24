@@ -67,7 +67,8 @@ describe('friends table edge cases', () => {
     pairs = okey101Action(pairs, 0, { action: 'discard', cardId: 'keep' });
     expect(pairs.stage).toBe('ended');
     expect(pairs.scores[0]).toBe(-202);
-    const picked = startOkey101(false, false, 0);
+    // v1 refusal; the v2 default (+101 instead) is covered in okey101-rules-v2.test.ts.
+    const picked = startOkey101(false, false, 0, { pickupPenalty: false });
     picked.turn = 1;
     picked.stage = 'draw';
     picked.discards[0] = [tile('pickup', 13)];
