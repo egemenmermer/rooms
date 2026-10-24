@@ -1,22 +1,18 @@
 import { t } from '../../i18n';
 import type { GameDefinition } from '../registry';
 import { array, chipNet } from '../shared/model';
-import { ReferenceBlackjack } from './BlackjackTable';
+import { BlackjackTable } from './BlackjackTable';
 import { blackjackCatalog } from './catalog';
+import { blackjackCreate, blackjackRuleRows } from './create';
 import { BlackjackHistory } from './BlackjackHistory';
+import { rulesOf } from './model';
 
 export const blackjackGame: GameDefinition = {
   catalog: blackjackCatalog,
-  Table: ReferenceBlackjack,
-  ruleRows: () => [
-    [t('Deste'), '6'],
-    [t('Krupiye'), t('Soft 17’de durur (S17)')],
-    ['Blackjack', '3:2'],
-    ['Insurance', t('Kapalı')],
-    ['Double', t('İlk iki kartta')],
-    ['Split', t('Aynı puan değeri · En fazla 4 el')],
-    [t('Split As'), t('Tek kart · yeniden ayırma kapalı')],
-  ],
+  Table: BlackjackTable,
+  // Insurance and surrender follow the table's switches (`view.rules`; defaults before the first deal).
+  ruleRows: (game) => blackjackRuleRows(rulesOf(game)),
+  create: blackjackCreate,
   HistoryDetail: BlackjackHistory,
   historyResult: (result, _entry, userId) => {
     const net = chipNet(result, userId);
@@ -34,6 +30,7 @@ export const blackjackGame: GameDefinition = {
                   lose: t('Kaybetti'),
                   push: t('Berabere'),
                   blackjack: 'Blackjack',
+                  surrender: t('Teslim oldu'),
                 }) as Record<string, string>
               )[String(item.outcome)] ?? t('Sonuç'),
           )
