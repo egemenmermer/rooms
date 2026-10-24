@@ -426,8 +426,7 @@ export interface GameTableRulesCommon {
  * only the common fields; a game reads its own shape from its own view (Hold'em narrows by kind).
  */
 export type GameViewRules =
-  | HoldemTableRules
-  | (GameTableRulesCommon & { readonly [key: string]: unknown });
+  HoldemTableRules | (GameTableRulesCommon & { readonly [key: string]: unknown });
 export interface GamePublicState {
   /**
    * Typed as the kinds the current clients render, so their views stay exhaustive. The service may
