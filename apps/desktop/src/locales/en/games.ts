@@ -28,7 +28,6 @@ export const games: Catalog = {
   'Oyunu yalnızca masa sahibi başlatabilir': 'Only the table owner can start the game',
   'Etkinlik bağlantısı bekleniyor': 'Waiting for the activity connection',
   'Başlamak için koltukları doldurun': 'Fill the seats to start',
-  'Bir oyuncunun fişi blind için yetersiz': 'A player’s chips aren’t enough for the blind',
   Oda: 'Room',
   'Oyun alanı': 'Game area',
   Oyuncu: 'Player',
@@ -136,7 +135,6 @@ export const games: Catalog = {
   Bırak: 'Fold',
   'Kontrol et': 'Check',
   'Gör · {min}': 'Call · {min}',
-  'Artır · {min}': 'Raise · {min}',
   'Sonraki el': 'Next hand',
   'Masaya geri dön': 'Back to the table',
   'Yalnızca sunucunun açtığı eller görünür. Katlanmış eller diğer oyunculara gösterilmez.':
@@ -156,10 +154,7 @@ export const games: Catalog = {
   Vazgeç: 'Cancel',
   Katıl: 'Join',
   'Artırma tutarı': 'Raise amount',
-  'Karşılanacak bahis': 'Bet to call',
-  '{call} sanal fiş': '{call} play chips',
   'Bu turdaki toplam tutarın': 'Your total this round',
-  'Minimum {min}': 'Minimum {min}',
   'All-in · {maxRaise}': 'All-in · {maxRaise}',
   'All-in toplamı {maxRaise}. Minimum artırma için yeterli fişin yok.':
     'All-in total is {maxRaise}. You don’t have enough chips for the minimum raise.',
