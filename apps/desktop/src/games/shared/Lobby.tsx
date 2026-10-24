@@ -4,12 +4,30 @@ import type { SocialInvite } from '@rooms/social';
 import { locale, t, uiError } from '../../i18n';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bot, Coins, Eye, Headphones, X, UserPlus, SlidersHorizontal, Gamepad2, History, Plus, RefreshCw, Spade, Trophy } from 'lucide-react';
+import {
+  Bot,
+  Coins,
+  Eye,
+  Headphones,
+  X,
+  UserPlus,
+  SlidersHorizontal,
+  Gamepad2,
+  History,
+  Plus,
+  RefreshCw,
+  Spade,
+  Trophy,
+} from 'lucide-react';
 import { Avatar, IconButton, Modal } from '@rooms/design';
 import { useActivityRoom } from '../../activity';
 import { retiredActivity } from '../../activity-route';
 import { useCommunity } from '../../community';
-import type { ActivityCommand, GamePublicState, HoldemTableRules } from '../../../../../packages/activity-protocol/src';
+import type {
+  ActivityCommand,
+  GamePublicState,
+  HoldemTableRules,
+} from '../../../../../packages/activity-protocol/src';
 import { endsActivity } from '../../../../../packages/activity-protocol/src';
 import { HoldemRulesForm, validHoldemRules } from '../holdem/HoldemRulesForm';
 import { pokerCategory } from '../holdem/poker-labels';

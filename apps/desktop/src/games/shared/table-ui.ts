@@ -1,4 +1,7 @@
-import type { ActivityCommand, GamePublicState } from '../../../../../packages/activity-protocol/src';
+import type {
+  ActivityCommand,
+  GamePublicState,
+} from '../../../../../packages/activity-protocol/src';
 
 type GameAction = Extract<ActivityCommand, { type: 'game.action' }>['action'];
 export type TableUI = {

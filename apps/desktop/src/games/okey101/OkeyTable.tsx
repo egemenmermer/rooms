@@ -1,4 +1,9 @@
-import { validate101Meld, validate101Opening, validate101Pairs, type OkeyTile } from '../../../../../packages/games/src/okey101';
+import {
+  validate101Meld,
+  validate101Opening,
+  validate101Pairs,
+  type OkeyTile,
+} from '../../../../../packages/games/src/okey101';
 import { t } from '../../i18n';
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';

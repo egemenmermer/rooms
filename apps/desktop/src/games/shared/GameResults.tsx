@@ -2,7 +2,13 @@ import { t } from '../../i18n';
 import type { GamePublicState } from '../../../../../packages/activity-protocol/src';
 import { array } from './model';
 
-export function GameResults({ game, result }: { game: GamePublicState; result: Record<string, unknown> }) {
+export function GameResults({
+  game,
+  result,
+}: {
+  game: GamePublicState;
+  result: Record<string, unknown>;
+}) {
   const scores = array<number>(result.scores),
     results = array<Record<string, unknown>>(result.results);
   if (scores.length)

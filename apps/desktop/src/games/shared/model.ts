@@ -22,7 +22,12 @@ export const tableTitle = (title: string | undefined, kind: GameKind | undefined
       ? names[kind]
       : title
     : title;
-export const suits: Record<string, string> = { clubs: '♣', diamonds: '♦', hearts: '♥', spades: '♠' };
+export const suits: Record<string, string> = {
+  clubs: '♣',
+  diamonds: '♦',
+  hearts: '♥',
+  spades: '♠',
+};
 // Spoken names: screen readers say "Kupa As", not "14 ♥".
 export const suitNames: Record<string, string> = {
   clubs: t('Sinek'),
@@ -42,6 +47,6 @@ export const tileColors: Record<string, string> = {
   blue: t('Mavi'),
   yellow: t('Sarı'),
 };
-export const array = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
+export const array = <T>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 export const object = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' ? (value as Record<string, unknown>) : {};

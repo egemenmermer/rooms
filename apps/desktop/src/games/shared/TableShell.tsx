@@ -5,7 +5,10 @@ import { Eye, History, RefreshCw, ShieldCheck, Trophy } from 'lucide-react';
 import { IconButton, Modal } from '@rooms/design';
 import { useActivityRoom } from '../../activity';
 import { useCommunity } from '../../community';
-import type { ActivityCommand, GamePublicState } from '../../../../../packages/activity-protocol/src';
+import type {
+  ActivityCommand,
+  GamePublicState,
+} from '../../../../../packages/activity-protocol/src';
 import { ReferenceBatak } from '../batak/BatakTable';
 import { ReferenceBlackjack } from '../blackjack/BlackjackTable';
 import { ReferenceOkey } from '../okey101/OkeyTable';
