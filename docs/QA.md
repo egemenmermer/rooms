@@ -28,19 +28,20 @@ count; red-marked diff images are written to `<out>/diff/`.
 
 ## Options
 
-| Option                  | Meaning                                                                                                                                                                       |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--out <dir>`           | Output directory (default `.local/fixture-shots/latest`, wiped at start).                                                                                                     |
-| `--compare <dir>`       | Baseline directory from an earlier run.                                                                                                                                       |
-| `--only <regex>`        | Filter on `S42/full_table`, e.g. `--only '^S4[2-9]/'` for the game tables.                                                                                                    |
-| `--viewports <list>`    | Default `1280x800,900x700`.                                                                                                                                                   |
-| `--full`                | Also store `<name>-full.png`: the viewport grown to the page's scrollable height (max 2400 px). Use it for tables whose hand or action bar sits below the fold.               |
-| `--theme light\|dark`   | Colour scheme (default `dark`). The app has no light theme yet; the value is applied as `prefers-color-scheme` and `?theme=`.                                                 |
-| `--locale tr\|en`       | Interface language, sent as `?lang=` and as the browser locale (default `tr`). It only takes effect after the i18n branch is merged; before that both locales render Turkish. |
-| `--workers <n>`         | Parallel pages (default 2; keep it low on the 8 GB Mac).                                                                                                                      |
-| `--max-diff-pixels <n>` | Pixels allowed to differ per image (default 0).                                                                                                                               |
-| `--pixel-tolerance <n>` | Per-channel difference (0-255) still counted as equal (default 0).                                                                                                            |
-| `--all`                 | Print every compared row, not only failures.                                                                                                                                  |
+| Option                  | Meaning                                                                                                                                                                                                                           |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--out <dir>`           | Output directory (default `.local/fixture-shots/latest`, wiped at start).                                                                                                                                                         |
+| `--compare <dir>`       | Baseline directory from an earlier run.                                                                                                                                                                                           |
+| `--only <regex>`        | Filter on `S42/full_table`, e.g. `--only '^S4[2-9]/'` for the game tables.                                                                                                                                                        |
+| `--sizes <list>`        | Comma separated `WxH` list, default `1280x800` (`--viewports` is an alias). Add `900x700` for the narrow check.                                                                                                                   |
+| `--timeout <s>`         | Per-capture limit, 3-15 s (default 15). A slow capture is reported as FAILED; known unrenderable variants (S50/penalty, S54/saved, S68 invite/invite_created/revoke: the fixtures throw by design) are SKIPPED with a reason.     |
+| `--full`                | Also store `<name>-full.png`: the viewport grown to the page's scrollable height (max 2400 px). Use it for tables whose hand or action bar sits below the fold.                                                                   |
+| `--theme light\|dark`   | Colour scheme (default `dark`). The app has no light theme yet; the value is applied as `prefers-color-scheme` and `?theme=`.                                                                                                     |
+| `--locale tr\|en`       | Forces the interface language through the renderer's `?lang=` query (read by `apps/desktop/src/i18n.ts` `startupLocale`; localStorage is cleared per page, so nothing else interferes) and sets the browser locale. Default `tr`. |
+| `--workers <n>`         | Parallel pages (default 2; keep it low on the 8 GB Mac).                                                                                                                                                                          |
+| `--max-diff-pixels <n>` | Pixels allowed to differ per image (default 0).                                                                                                                                                                                   |
+| `--pixel-tolerance <n>` | Per-channel difference (0-255) still counted as equal (default 0).                                                                                                                                                                |
+| `--all`                 | Print every compared row, not only failures.                                                                                                                                                                                      |
 
 ## Determinism
 

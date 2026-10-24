@@ -177,6 +177,8 @@ const SKIPS = {
   'S68/invite_created':
     'unsupported by design: the fixture throws (no broker invitation capability)',
   'S68/revoke': 'unsupported by design: the fixture throws (no broker revocation capability)',
+  'S50/penalty': 'unsupported by design: games-fixture throws (no penalty-event projection yet)',
+  'S54/saved': 'unsupported by design: games-fixture throws (no named saved-board archive yet)',
 };
 function routeFor(id, variant) {
   if (id === 'S38' && variant === 'playing') return '/media?player=1';
