@@ -35,6 +35,7 @@ function base(count: number, viewer: number | null): GamePublicState {
       seats: count,
       teams: count === 4,
       target: 151,
+      rules: { target: 151, reshuffleJackTop: true },
       viewerSeat: viewer,
       turn: 0,
       hand: viewer === null ? null : [card('hearts', 7), card('clubs', 11), card('spades', 3)],
@@ -76,7 +77,32 @@ const finishedDeal = (count: number, viewer: number | null) => ({
   lastPlay: { seq: 48, seat: 0, card: card('spades', 4), captured: false },
   lastCapture: { seq: 48, seat: 1, count: 3, kind: 'remainder', card: null },
   // Ece: aces 2 + ♦10 3 = 5; Ali: aces 2 + jacks 4 + ♣2 2 = 8, most cards 3, pişti 10.
-  result: { points: [5, 21], winners: [1] },
+  result: {
+    points: [5, 21],
+    winners: [1],
+    breakdown: [
+      {
+        aces: 2,
+        jacks: 0,
+        clubsTwo: 0,
+        diamondsTen: 1,
+        cards: 22,
+        mostCards: false,
+        pisti: 0,
+        jackPisti: 0,
+      },
+      {
+        aces: 2,
+        jacks: 4,
+        clubsTwo: 1,
+        diamondsTen: 0,
+        cards: 30,
+        mostCards: true,
+        pisti: 1,
+        jackPisti: 0,
+      },
+    ],
+  },
 });
 
 export function pistiFixture(scene: PistiScene): GamePublicState {

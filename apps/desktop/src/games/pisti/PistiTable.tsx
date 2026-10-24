@@ -498,6 +498,9 @@ function MatchScore({
   );
 }
 
+/** `count · +points` for one card kind, an em dash when the side took none. */
+const splitCell = (count: number, value: number) => (count ? `${count} · +${count * value}` : '—');
+
 function DealSummary({
   game,
   deal,
@@ -537,7 +540,16 @@ function DealSummary({
         {line(t('Vale pişti (20)'), (side) =>
           side.jackPisti ? `${side.jackPisti} · +${side.jackPisti * 20}` : '—',
         )}
-        {line(t('As, vale, ♣2, ♦10'), (side) => `+${side.cardPoints}`)}
+        {rows.every((side) => side.cardsSplit) ? (
+          <>
+            {line(t('As (1)'), (side) => splitCell(side.cardsSplit?.aces ?? 0, 1))}
+            {line(t('Vale (1)'), (side) => splitCell(side.cardsSplit?.jacks ?? 0, 1))}
+            {line(t('♣2 (2)'), (side) => splitCell(side.cardsSplit?.clubsTwo ?? 0, 2))}
+            {line(t('♦10 (3)'), (side) => splitCell(side.cardsSplit?.diamondsTen ?? 0, 3))}
+          </>
+        ) : (
+          line(t('As, vale, ♣2, ♦10'), (side) => `+${side.cardPoints}`)
+        )}
       </tbody>
       <tfoot>{line(t('Bu el'), (side) => String(side.total))}</tfoot>
     </table>
