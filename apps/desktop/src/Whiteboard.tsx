@@ -350,7 +350,7 @@ export default function Whiteboard({
     <div ref={frame} className={`wb ${fullscreen ? 'is-fullscreen' : ''}`}>
       <div className="wb-top">
         <div className="wb-title">
-          <strong>{t('Whiteboard')}</strong>
+          <strong>{t('Beyaz tahta')}</strong>
           <span>
             {roomName ?? t('Oda')}
             {others.length ? ` · ${t('{count} kişi burada', { count: others.length + 1 })}` : ''}
@@ -563,8 +563,8 @@ export default function Whiteboard({
               }}
               value={draft.text}
               maxLength={2000}
-              aria-label="Beyaz tahta notu"
-              placeholder="Yaz, Enter'a bas"
+              aria-label={t('Beyaz tahta notu')}
+              placeholder={t('Yaz, Enter’a bas')}
               style={{
                 color,
                 left: `${(draft.x / W) * 100}%`,

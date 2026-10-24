@@ -129,17 +129,14 @@ export default function Together() {
       {!board && (
         <header className="rt-heading">
           <div>
-            <h1>{board ? t('Whiteboard') : t('Oda anketi')}</h1>
+            <h1>{t('Anketler')}</h1>
             <p>
-              {roomName} · {board ? t('Ortak tahta') : t('Yan etkinlik')}
+              {roomName} · {t('Yan etkinlik')}
             </p>
           </div>
           <div>
-            <button
-              className="button secondary"
-              onClick={() => setParams(board ? {} : { tab: 'board' })}
-            >
-              {board ? t('Anketler') : t('Whiteboard')}
+            <button className="button secondary" onClick={() => setParams({ tab: 'board' })}>
+              {t('Beyaz tahta')}
             </button>
             {!board && (
               <button
