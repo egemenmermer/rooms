@@ -81,7 +81,7 @@ export const okey101Module = {
   turn: (state) => state.turn,
   // Showing the gösterge keeps the turn; it is a decision of its own, so the clock starts again after it.
   phase: (state) => (state.gostergeShown ?? []).filter(Boolean).length,
-  botCommand(state, index, _rng, context) {
+  botCommand(state, index, _rng?, context?) {
     const hand = state.hands[index],
       options = okey101Options(state.rules);
     // A timed-out human is only kept in the game: draw and discard. Opening is irreversible (and with

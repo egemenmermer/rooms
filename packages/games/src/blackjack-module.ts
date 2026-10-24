@@ -59,7 +59,7 @@ export const blackjackModule = {
   // Player cards are open at a real table; the dealer's hole card and the shoe stay hidden.
   view: (state) => blackjackTableView(state),
   turn: (state) => state.turn,
-  botCommand(state, seat, _rng, context) {
+  botCommand(state, seat, _rng?, context?) {
     // Insurance is a losing side bet for a player who cannot count cards; bots and timeouts decline it.
     if (state.insurancePending) return { action: 'decline-insurance' };
     const player = state.players[seat],

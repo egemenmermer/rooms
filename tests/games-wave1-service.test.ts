@@ -186,7 +186,7 @@ describe('blackjack insurance and surrender in the module', () => {
       action: 'insurance',
     }) as BlackjackTableRound;
     expect(insured.insurancePending).toBe(false);
-    expect(blackjackModule.phase(insured)).toBe('play');
+    expect(blackjackModule.phase(insured)).toBe('play:0');
     expect(blackjackModule.legalActions(insured, 0)).toEqual([
       'hit',
       'stand',
