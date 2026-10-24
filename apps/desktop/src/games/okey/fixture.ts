@@ -188,7 +188,8 @@ export function okeyFixture(scene: OkeyScene, viewerId = 'ece'): GamePublicState
       legalActions,
       watching: scene === 'spectator',
       ownRecovery: null,
-      turnDeadline: 0,
+      // A live clock on the table in play, like the server sends.
+      turnDeadline: status === 'playing' ? Date.now() + 25_000 : 0,
       statistics: scene === 'finished' ? { ...statistics, [viewerId]: statistics.ece } : {},
     },
     history: [],

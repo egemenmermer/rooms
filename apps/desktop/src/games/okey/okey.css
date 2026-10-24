@@ -1,5 +1,6 @@
 /* Classic Okey table. Felt and wood are table materials (local custom properties); chrome uses tokens. */
-.ok-table {
+.ok-table,
+.ok-dock {
   --ok-felt-light: #1d4d3a;
   --ok-felt-dark: #0c271d;
   --ok-felt-line: #2f5a48;
@@ -10,17 +11,21 @@
   --ok-tile-back-edge: #b4a27a;
   --ok-okey-glow: #f2c84b;
   --ok-fake: #2e7d4f;
+}
+/* The table fills the shell's table area; the felt takes what the dock leaves. */
+.ok-table {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
-  gap: var(--space-12);
   min-width: 0;
+  min-height: 0;
 }
 
 /* Felt: seats on the four sides, discard piles in the corners, middle stack in the centre. */
 .ok-felt {
   display: grid;
   grid-template-columns: minmax(118px, 1fr) minmax(0, 1.6fr) minmax(118px, 1fr);
-  grid-template-rows: auto minmax(110px, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   grid-template-areas:
     'top-left top top-right'
     'left middle right'
@@ -30,9 +35,14 @@
   border: 1px solid var(--ok-felt-line);
   border-radius: var(--radius-16);
   background: radial-gradient(ellipse at 50% 40%, var(--ok-felt-light), var(--ok-felt-dark));
+  position: relative;
+  flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 .ok-seat {
+  position: relative;
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr);
   align-items: center;
@@ -82,10 +92,44 @@
   flex-direction: column;
 }
 .ok-seat strong {
+  display: flex;
+  min-width: 0;
   font-size: var(--font-size-ui);
+  white-space: nowrap;
+}
+.ok-seat strong > span:first-child {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+}
+/* Your own seat: tinted and marked "· sen", distinct from the turn ring. */
+.ok-seat.own {
+  border-color: color-mix(in srgb, var(--color-action-primary) 45%, var(--ok-felt-line));
+  background: color-mix(in srgb, var(--color-action-primary) 16%, var(--ok-felt-dark));
+}
+.ok-you {
+  flex: none;
+  white-space: pre;
+  color: var(--color-text-accent);
+}
+/* The bot mark sits in the text line, not over the avatar. */
+.ok-seat .rg-seat-badge {
+  display: none;
+}
+.ok-bot {
+  margin-right: var(--space-4);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+}
+/* The owner's "Koltuğu boşalt": an icon in the chip's corner (its title names it). */
+.ok-seat .rg-seat-remove {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 1;
+  padding: 2px;
 }
 .ok-seat small {
   font-size: var(--font-size-micro);
@@ -160,6 +204,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.ok-pile.own > small {
+  color: var(--color-text-accent);
+}
 .ok-pile > em {
   font-style: normal;
   font-size: var(--font-size-micro);
@@ -203,18 +250,46 @@
 .ok-middle {
   grid-area: middle;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-24);
+  gap: var(--space-4);
+  min-width: 0;
+  min-height: 0;
   position: relative;
   border: 1px dashed transparent;
   border-radius: var(--radius-16);
   transition: border-color 150ms var(--motion-ease-out);
 }
+.ok-middle-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-24);
+}
+.ok-hand-no {
+  padding: 0 var(--space-8);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ok-felt-dark) 70%, transparent);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-micro);
+}
+/* The latest move, one line on the felt under the stack. */
+.ok-last {
+  max-width: 100%;
+  margin: 0;
+  padding: 2px var(--space-8);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ok-felt-dark) 80%, transparent);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-metadata);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .ok-stock {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--space-4);
   padding: var(--space-8);
   border: 1px solid transparent;
@@ -222,15 +297,40 @@
   background: none;
   color: var(--color-text-primary);
 }
-.ok-stock .ok-back {
+/* The face-down stack: three offset tile backs, full colour even when it is not your draw. */
+.ok-stack {
+  position: relative;
+  width: 45px;
+  height: 64px;
+}
+.ok-stack .ok-back {
+  position: absolute;
   width: 37px;
   height: 56px;
-  box-shadow:
-    0 2px 0 var(--ok-tile-back-edge),
-    3px 5px 0 var(--ok-tile-back-edge);
+}
+.ok-stack .ok-back:nth-child(1) {
+  left: 8px;
+  top: 0;
+}
+.ok-stack .ok-back:nth-child(2) {
+  left: 4px;
+  top: 4px;
+}
+.ok-stack .ok-back:nth-child(3) {
+  left: 0;
+  top: 8px;
 }
 .ok-stock b {
-  font-size: var(--font-size-h2);
+  min-width: 28px;
+  padding: 1px var(--space-8);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ok-felt-dark) 85%, transparent);
+  font-size: var(--font-size-ui);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.ok-stock:disabled {
+  opacity: 1;
 }
 .ok-stock:not(:disabled) {
   cursor: pointer;
@@ -244,6 +344,14 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-4);
+}
+.ok-indicator .rx-tile {
+  width: 48px;
+  height: 73px;
+  flex-basis: 48px;
+}
+.ok-indicator .rx-tile strong {
+  font-size: 26px;
 }
 .ok-indicator small,
 .ok-middle-hint {
@@ -276,7 +384,8 @@
 .rx-tile.ok-fake {
   color: var(--ok-fake);
 }
-.ok-table .rx-tile {
+.ok-table .rx-tile,
+.ok-dock .rx-tile {
   transition: transform 180ms var(--motion-ease-out);
 }
 .ok-pile .rx-tile:not(:disabled),
@@ -284,36 +393,54 @@
   cursor: pointer;
 }
 
-/* Log of the latest moves. */
-.ok-log {
+/* The dock: one bar (turn status, arrange and move buttons) over the ıstaka. */
+.ok-dock-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-4) var(--space-12);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--font-size-micro);
-  color: var(--color-text-secondary);
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px var(--space-12);
+  min-height: 32px;
 }
-.ok-log li:first-child {
-  color: var(--color-text-primary);
+.ok-dock-status {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.ok-dock-status strong {
+  flex: none;
+  font-size: var(--font-size-ui);
+}
+.ok-dock-status span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-metadata);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ok-dock-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.ok-dock-sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 2px;
+  background: var(--color-border-default);
 }
 
 /* Own rack: a wooden ıstaka with two shelves of 15 fixed cells; it never wraps. */
-.ok-rack-section > header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
-  margin-bottom: var(--space-8);
-  font-size: var(--font-size-metadata);
-}
-.ok-rack-section > header > div {
-  display: flex;
-  gap: var(--space-8);
-}
 .ok-rack {
   container-type: inline-size;
+  width: 100%;
+  max-width: 800px;
+  margin-inline: auto;
   display: grid;
   grid-template-columns: repeat(15, minmax(0, 1fr));
   gap: 14px 4px;
@@ -383,6 +510,21 @@ button.ok-cell.empty {
   border-radius: var(--radius-12);
   background: var(--color-background-raised);
 }
+/* On the felt: the result card sits over the dimmed table and scrolls inside itself. */
+.ok-felt > .ok-summary {
+  position: absolute;
+  inset: var(--space-12);
+  z-index: 2;
+  width: min(680px, calc(100% - 2 * var(--space-12)));
+  height: fit-content;
+  max-height: calc(100% - 2 * var(--space-12));
+  margin: auto;
+  overflow: auto;
+  box-shadow: 0 12px 32px #0008;
+}
+.ok-felt.ended > :not(.ok-summary) {
+  opacity: 0.35;
+}
 .ok-summary h3 {
   margin: 0;
   font-size: var(--font-size-body);
@@ -433,11 +575,36 @@ button.ok-cell.empty {
   }
 }
 
+/* Short windows (900x700): a compact felt and a smaller ıstaka, so the dock never scrolls. */
+@media (max-height: 760px) {
+  .ok-felt {
+    padding: var(--space-8) var(--space-12);
+    gap: var(--space-4) var(--space-8);
+  }
+  .ok-seat {
+    padding: var(--space-4) var(--space-8);
+  }
+  .ok-mini-rack {
+    display: none;
+  }
+  .ok-pile {
+    padding: 2px var(--space-4);
+  }
+  /* The ring on the tile and the dock button already say it can be taken. */
+  .ok-pile > em {
+    display: none;
+  }
+  .ok-dock .ok-rack {
+    max-width: 580px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ok-seat,
   .ok-pile,
   .ok-middle,
-  .ok-table .rx-tile {
+  .ok-table .rx-tile,
+  .ok-dock .rx-tile {
     transition: none;
   }
   .ok-seat.turn {

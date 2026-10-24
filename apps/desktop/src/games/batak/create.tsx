@@ -52,7 +52,7 @@ export const batakCreate: GameCreateDefinition = {
             aria-pressed={variantOf(value) === id}
             onClick={() => onChange({ variant: id })}
           >
-            <span>{symbol}</span>
+            <span className={symbol === '♦' ? 'suit red' : 'suit'}>{symbol}</span>
             <strong>{label}</strong>
             <small>{detail}</small>
           </button>

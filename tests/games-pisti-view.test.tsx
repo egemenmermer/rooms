@@ -256,3 +256,31 @@ it('words the match finish strip in English', async () => {
   const labels = game.finishLabels?.(fixture('match-end'));
   expect([labels?.title, labels?.next]).toEqual(['Match over', 'Rematch']);
 });
+
+it('keeps the felt tidy: piles beside the seat chips, live chips only, no empty move log', () => {
+  render(<PistiTable {...ui(scene('opponent-turn'))} />);
+  // Each side's won pile sits in that side's seat, next to (not inside) the name chip.
+  const ali = screen.getByLabelText('Ali (demo) · sırası · 3 kart');
+  const pile = within(ali).getByLabelText('Ali (demo) · 4 kart aldı');
+  expect(pile.closest('.pp-chip')).toBeNull();
+  expect(ali.querySelector('.pp-chip .pp-backs')).toBeNull();
+  expect(ali.querySelector('.pp-seat-side .pp-backs')).toBeTruthy();
+  // The match target and partner chips live in the rules popover (ruleRows), not above the felt.
+  const badges = document.querySelector('.rx-badges')!.textContent!;
+  expect(badges).toContain('El 1');
+  expect(badges).not.toContain('puan');
+  cleanup();
+
+  // A table opened before any move shows no "Henüz hamle yok" box.
+  render(
+    <PistiTable
+      {...ui({
+        ...scene('your-turn'),
+        view: { ...scene('your-turn').view, lastPlay: null, lastCapture: null },
+      })}
+    />,
+  );
+  expect(screen.queryByText('Son hamleler')).toBeNull();
+  // The hand renders in place outside the shell (TableDock), labelled for the dock.
+  expect(screen.getByRole('region', { name: 'Elin' }).querySelector('.pp-hand')).toBeTruthy();
+});

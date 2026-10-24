@@ -214,7 +214,6 @@ export const settings: Catalog = {
   'Topluluk düzenleme yetkisi gerekli.': 'You need permission to edit the community.',
   'Topluluk oluşturmak ve düzenlemek için önce sunucuna bağlan.':
     'Connect to your server first to create or edit a community.',
-  'Topluluğun hazır · Yerel referans': 'Your community is ready · Local reference',
   'Topluluğun hazır': 'Your community is ready',
   'Topluluk oluştur': 'Create community',
   'Davet oluşturuluyor…': 'Creating invite…',
@@ -234,7 +233,6 @@ export const settings: Catalog = {
   'Davet dışı erişim açık.': 'Access without an invite is open.',
   Bitti: 'Done',
   'Topluluğu oluştur': 'Create community',
-  SOHBET: 'CHAT',
   'Kanal yönetimi için yetkili olman gerekiyor.': 'You need permission to manage channels.',
   'Kanal işlemi bağlantısı hazır değil.': 'The channel action connection isn’t ready.',
   'Kanalı sil?': 'Delete channel?',

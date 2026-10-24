@@ -36,3 +36,24 @@ it('shows self and friend previews, enlarges the selected share, and falls back 
     view.container.querySelector('[data-screen-focus] video')?.getAttribute('data-testid'),
   ).toBe('two');
 });
+it('keeps the view open and reports when the provider has no watch control', () => {
+  const messages: string[] = [];
+  const onWatch = () => {
+    throw new Error('Stream watch control is unavailable.');
+  };
+  const view = render(
+    <ScreenShareGallery
+      tracks={tracks}
+      people={people}
+      initialTrackId="two"
+      onWatch={onWatch}
+      notify={(message) => messages.push(message)}
+      renderTrack={(id: string) => <video data-testid={id} />}
+    />,
+  );
+  expect(
+    view.container.querySelector('[data-screen-focus] video')?.getAttribute('data-testid'),
+  ).toBe('two');
+  expect(messages.length).toBeGreaterThan(0);
+  expect(() => view.unmount()).not.toThrow();
+});

@@ -533,7 +533,7 @@ html[data-input='keyboard'] .hall-tabs button::after {
 .hall-subtitle {
   position: absolute;
   left: 50%;
-  bottom: 7%;
+  bottom: 9%;
   z-index: 4;
   width: max-content;
   max-width: min(84%, 1100px);
@@ -550,12 +550,12 @@ html[data-input='keyboard'] .hall-tabs button::after {
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
   color: #fff;
-  font: 600 clamp(15px, 2.4vw, 34px) / 1.42 var(--font-family);
+  font: 600 clamp(14px, 1.7vw, 28px) / 1.38 var(--font-family);
   white-space: pre-line;
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.8);
 }
 .hall-screen:not(.idle) .hall-subtitle {
-  bottom: max(7%, 96px);
+  bottom: max(9%, 88px);
 }
 .hall-screen.mini .hall-subtitle {
   bottom: 8px;

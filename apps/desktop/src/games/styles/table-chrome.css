@@ -1,5 +1,5 @@
 .rg-hand-strip .eyebrow {
-  font-size: 10px;
+  font-size: 11px;
   color: #bab0fb;
   letter-spacing: 1.3px;
   display: block;
@@ -39,6 +39,142 @@
 .rg-actions .button {
   min-width: 99px;
   justify-content: center;
+}
+/* The playing table's one-row header (TableShell): back, title, rules chip, history, actions. */
+.rx-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: 40px;
+  max-height: 56px;
+}
+.rx-head .icon-button {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  color: var(--color-text-secondary);
+}
+.rx-head-title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.rx-head-title h1 {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-semibold);
+}
+.rx-head-title small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-metadata);
+}
+.rx-head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: none;
+}
+.rx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: 30px;
+  padding: 0 var(--space-12);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--color-background-raised);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-metadata);
+  white-space: nowrap;
+}
+.rx-chip:hover:not(:disabled),
+.rx-chip[aria-expanded='true'] {
+  border-color: var(--color-border-interactive);
+  color: var(--color-text-primary);
+}
+.rx-chip:disabled {
+  opacity: 0.5;
+}
+.rx-pop {
+  position: relative;
+}
+.rx-pop-panel {
+  position: absolute;
+  top: calc(100% + var(--space-4));
+  right: 0;
+  z-index: var(--z-popover);
+  max-width: calc(100vw - 32px);
+  max-height: min(60vh, 420px);
+  overflow: auto;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-12);
+  background: var(--color-background-raised);
+  box-shadow: var(--shadow-2);
+}
+.rx-rules {
+  width: 320px;
+  padding: var(--space-12) var(--space-16);
+}
+.rx-rules h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-ui);
+}
+.rx-rules > p {
+  margin: 2px 0 var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-metadata);
+}
+.rx-rules .rg-rules {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.rx-rules .rg-rules > div {
+  min-height: 32px;
+}
+.rx-rules .rg-rules > div:last-child {
+  border-bottom: 0;
+}
+.rx-menu {
+  display: grid;
+  min-width: 200px;
+  padding: var(--space-4);
+}
+.rx-menu button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-8);
+  background: none;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-ui);
+  text-align: left;
+}
+.rx-menu button:hover:not(:disabled),
+.rx-menu button:focus-visible {
+  background: var(--color-background-hover);
+}
+.rx-menu button.danger {
+  color: var(--color-status-error);
+}
+.rx-menu button:disabled {
+  opacity: 0.5;
+}
+/* The route's own back link duplicates the header's back button on a playing table. */
+.coffeehouse-return:has(+ .rx-game) {
+  display: none;
 }
 .rg-end {
   background: none;

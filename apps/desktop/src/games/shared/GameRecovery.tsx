@@ -111,7 +111,6 @@ export function GameRecovery({
       <div className="rh-recovery-callout">
         <Bot size={24} />
         <div>
-          <strong>{title}</strong>
           <p>
             {!current && event
               ? eventText

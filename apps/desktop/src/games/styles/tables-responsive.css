@@ -1,14 +1,35 @@
 @media (max-width: 1100px) {
   .rx-game {
-    padding: 24px;
+    padding: var(--space-8) var(--space-16);
+  }
+  /* Icons only: the title keeps the room for itself. */
+  .rx-head-actions .rx-chip span {
+    display: none;
   }
   .rx-create-options {
     grid-template-columns: repeat(2, 1fr);
   }
+  /* Narrow page: one column, the table summary right after the options so it stays above the fold. */
+  .rx-create-body {
+    grid-template-columns: 1fr;
+  }
+  .rx-create-main {
+    display: contents;
+  }
+  .rx-create-body > aside {
+    position: static;
+    order: 1;
+  }
+  .rx-create-body > .rx-create-main > section {
+    order: 2;
+  }
 }
 @media (max-width: 800px) {
   .rx-game {
-    padding: 18px 14px;
+    padding: var(--space-8) var(--space-12);
+  }
+  .rx-head-title small {
+    display: none;
   }
   .rx-create-body {
     grid-template-columns: 1fr;

@@ -433,6 +433,25 @@ class FixtureMedia implements RealtimeMediaProvider {
       ),
     });
   }
+  setScreenVolume(id: string, screenVolume: number) {
+    if (!Number.isFinite(screenVolume) || screenVolume < 0 || screenVolume > 1)
+      throw new Error('Volume must be between 0 and 1.');
+    this.patch({
+      participants: this.value.participants.map((person) =>
+        person.id === id ? { ...person, screenVolume } : person,
+      ),
+    });
+  }
+  /** Local projection of the watch announcement; no data channel exists in the fixture. */
+  watchScreen(watching: string | null) {
+    const local = this.value.participants.find((person) => person.local);
+    if (!local || local.watching === watching) return;
+    this.patch({
+      participants: this.value.participants.map((person) =>
+        person.local ? { ...person, watching } : person,
+      ),
+    });
+  }
   async startAudio() {
     this.patch({ audioBlocked: false });
   }

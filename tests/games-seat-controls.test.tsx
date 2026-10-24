@@ -177,6 +177,22 @@ it('shows the speaking ring, the bot badge and the clock of whoever is playing',
   expect(screen.getByTestId('seat-2').querySelector('.rg-seat-badge')?.textContent).toBe('BOT');
 });
 
+it('shows an hourglass chip, never a red "0", once the turn time is up', () => {
+  shell(table({ view: { legalActions: [], watching: false, turnDeadline: Date.now() - 5_000 } }));
+  const osman = screen.getByTestId('seat-1');
+  const chip = osman.querySelector('.rg-seat-clock')!;
+  expect(chip.textContent).toBe('');
+  expect(chip.className).toContain('expired');
+  expect(chip.getAttribute('aria-label')).toBe('Süre doldu');
+  expect(osman.querySelector('.rg-seat-ring')?.getAttribute('class')).toContain('expired');
+});
+
+it('draws no clock for a far-future deadline instead of a ten-digit number', () => {
+  shell(table({ view: { legalActions: [], watching: false, turnDeadline: 4_000_000_000_000 } }));
+  expect(document.querySelector('.rg-seat-clock')).toBeNull();
+  expect(document.querySelector('.rg-seat-ring')).toBeNull();
+});
+
 it('offers "Para al" between hands of a chip table once the stack cannot cover a bet', () => {
   const activity = shell(table({ status: 'finished', turn: null }, 'test-chips-v1'));
   fireEvent.click(screen.getByRole('button', { name: 'Para al' }));

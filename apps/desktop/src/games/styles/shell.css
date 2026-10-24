@@ -1,19 +1,75 @@
 /* S44–S50: public table projections and local, uncommitted hand drafts. */
+/*
+ * The playing table fills the main view without page scroll: header row, banners, the table area
+ * (.rx-stage, flex: 1, scrolls only when a game's own layout is taller) and the dock (.rx-dock,
+ * always on screen). Games put their own hand/rack/action bar in the dock with `TableDock`.
+ */
 .rx-game {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  height: 100%;
   max-width: 1160px;
-  margin: auto;
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-24);
+  overflow: hidden;
 }
+.rx-game > * {
+  flex: none;
+}
+.rx-game > .rg-banner {
+  margin: 0;
+  padding: var(--space-8) var(--space-12);
+}
+.rx-game > .rx-stage {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+.rx-dock {
+  display: grid;
+  gap: var(--space-8);
+  max-height: 50%;
+  overflow: auto;
+}
+.rx-dock:not(:has(> .rx-dock-slot > *, > .rg-hand-strip)) {
+  display: none;
+}
+.rx-dock-slot:empty {
+  display: none;
+}
+.rx-dock-body {
+  display: grid;
+  gap: var(--space-8);
+}
+.rx-dock .rg-hand-strip {
+  margin: 0;
+  min-height: 0;
+  padding: var(--space-8) var(--space-16);
+}
+/* Rule and state chips above a felt: one short line, never a wrapped block. */
 .rx-badges {
   display: flex;
-  gap: 7px;
-  flex-wrap: wrap;
-  margin: 20px 0 16px;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: nowrap;
+  min-height: 28px;
+  margin: 0 0 var(--space-8);
+  padding: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.rx-badges > * {
+  flex: none;
+  white-space: nowrap;
 }
 .rx-badges > span {
-  padding: 6px 10px;
+  padding: var(--space-4) var(--space-8);
   background: #171821;
   border: 1px solid #282a37;
   border-radius: 7px;
   color: #b5b6c7;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
 }

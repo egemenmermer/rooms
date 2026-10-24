@@ -1,5 +1,7 @@
-/* 101 Okey table. Felt and wood are table materials (local custom properties); chrome uses tokens. */
-.o1-table {
+/* 101 Okey table. Felt and wood are table materials (local custom properties); chrome uses tokens.
+   The dock is portalled out of the table, so it carries the materials too. */
+.o1-table,
+.o1-dock {
   --o1-felt-light: #1d4d3a;
   --o1-felt-dark: #0c271d;
   --o1-felt-line: #2f5a48;
@@ -10,23 +12,29 @@
   --o1-tile-back-edge: #b4a27a;
   --o1-okey-glow: #f2c84b;
   --o1-fake: #2e7d4f;
+}
+.o1-table {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
-  gap: var(--space-12);
+  gap: var(--space-8);
   min-width: 0;
+  min-height: 0;
 }
 
 /* Felt: seats on the four sides, discard piles in the corners, middle stack in the centre. */
 .o1-felt {
   display: grid;
-  grid-template-columns: minmax(118px, 1fr) minmax(0, 1.6fr) minmax(118px, 1fr);
-  grid-template-rows: auto minmax(110px, 1fr) auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   grid-template-areas:
     'top-left top top-right'
     'left middle right'
     'bottom-left bottom bottom-right';
-  gap: var(--space-12);
-  padding: var(--space-16);
+  gap: var(--space-8) var(--space-12);
+  padding: var(--space-12) var(--space-16);
   border: 1px solid var(--o1-felt-line);
   border-radius: var(--radius-16);
   background: radial-gradient(ellipse at 50% 40%, var(--o1-felt-light), var(--o1-felt-dark));
@@ -37,8 +45,8 @@
   grid-template-columns: 30px minmax(0, 1fr);
   align-items: center;
   align-content: center;
-  gap: var(--space-4) var(--space-8);
-  padding: var(--space-8) var(--space-12);
+  gap: 2px var(--space-8);
+  padding: var(--space-4) var(--space-12) var(--space-4) var(--space-8);
   min-width: 0;
   border: 1px solid var(--o1-felt-line);
   border-radius: var(--radius-12);
@@ -49,21 +57,52 @@
     box-shadow 200ms var(--motion-ease-out),
     transform 200ms var(--motion-ease-out);
 }
-.o1-seat.top {
+/* Each side holds a seat and, in front of it, that player's opened melds. */
+.o1-side {
+  display: flex;
+  gap: var(--space-8);
+  min-width: 0;
+  min-height: 0;
+}
+.o1-side.top,
+.o1-side.bottom {
+  align-items: center;
+  justify-content: center;
+}
+.o1-side.top {
   grid-area: top;
-  justify-self: center;
 }
-.o1-seat.left {
-  grid-area: left;
-  align-self: center;
-}
-.o1-seat.right {
-  grid-area: right;
-  align-self: center;
-}
-.o1-seat.bottom {
+.o1-side.bottom {
   grid-area: bottom;
-  justify-self: center;
+}
+.o1-side.left,
+.o1-side.right {
+  flex-direction: column;
+  justify-content: center;
+}
+.o1-side.left {
+  grid-area: left;
+}
+.o1-side.right {
+  grid-area: right;
+}
+.o1-side > .o1-seat {
+  flex: none;
+  max-width: 100%;
+}
+.o1-side.top > .o1-seat,
+.o1-side.bottom > .o1-seat {
+  max-width: 50%;
+}
+.o1-meld-zone {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+.o1-side.top > .o1-meld-zone,
+.o1-side.bottom > .o1-meld-zone {
+  flex: 0 1 auto;
+  max-height: 96px;
 }
 .o1-seat .avatar {
   width: 30px;
@@ -123,12 +162,12 @@
 /* Corner discard piles: only the top tile is visible, a back hints at the tiles under it. */
 .o1-pile {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: var(--space-4);
+  gap: var(--space-4) var(--space-8);
   min-width: 0;
-  padding: var(--space-8);
+  padding: var(--space-4);
   border: 1px dashed transparent;
   border-radius: var(--radius-12);
   transition: border-color 150ms var(--motion-ease-out);
@@ -206,24 +245,39 @@
 }
 .o1-stock {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-8);
   padding: var(--space-8);
   border: 1px solid transparent;
   border-radius: var(--radius-8);
   background: none;
   color: var(--color-text-primary);
 }
+/* The face-down stack: three offset tile backs and a count chip. */
+.o1-stack {
+  display: inline-flex;
+  margin: 0 8px 8px 0;
+}
 .o1-stock .o1-back {
   width: 37px;
   height: 56px;
   box-shadow:
     0 2px 0 var(--o1-tile-back-edge),
-    3px 5px 0 var(--o1-tile-back-edge);
+    3px 4px 0 var(--o1-tile-back),
+    4px 5px 0 var(--o1-tile-back-edge),
+    7px 8px 0 var(--o1-tile-back),
+    8px 9px 0 var(--o1-tile-back-edge);
 }
 .o1-stock b {
-  font-size: var(--font-size-h2);
+  padding: 1px var(--space-8);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--o1-felt-dark) 85%, transparent);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-metadata);
+  font-weight: var(--font-weight-semibold);
+}
+.o1-stock:disabled {
+  opacity: 1;
 }
 .o1-stock:not(:disabled) {
   cursor: pointer;
@@ -284,40 +338,93 @@
   cursor: pointer;
 }
 
-/* Log of the latest moves. */
+/* Log of the latest moves: one line under the felt, or a short list beside the docked rack. */
 .o1-log {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--space-4) var(--space-12);
+  min-width: 0;
   margin: 0;
   padding: 0;
   list-style: none;
   font-size: var(--font-size-micro);
   color: var(--color-text-secondary);
+  overflow: hidden;
+}
+.o1-log li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .o1-log li:first-child {
   color: var(--color-text-primary);
 }
+.o1-dock-row > .o1-log {
+  flex-direction: column;
+  align-self: center;
+}
 
-/* Own rack: a wooden ıstaka with two shelves of 15 fixed cells; it never wraps. */
-.o1-rack-section > header {
+/* Docked controls: the turn line with tools and actions, then the ıstaka with the opening
+   builder (or the move log) beside it. The rack is sized by the viewport height, so the felt keeps
+   its room; narrower windows shrink it by width. */
+.o1-dock {
+  gap: var(--space-8);
+}
+.o1-dock > .o1-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8) var(--space-12);
+  margin: 0;
+  padding: var(--space-8) var(--space-12);
+}
+.o1-dock > .o1-actions > div:first-child {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.o1-dock > .o1-actions h3 {
+  margin: 0;
+  font-size: var(--font-size-ui);
+}
+.o1-dock > .o1-actions p {
+  margin: 0;
+  font-size: var(--font-size-micro);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.o1-tools {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-8);
-  margin-bottom: var(--space-8);
-  font-size: var(--font-size-metadata);
 }
-.o1-rack-section > header > div {
+.o1-tools > small {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.o1-dock-row {
   display: flex;
-  gap: var(--space-8);
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-12);
+  min-width: 0;
+}
+.o1-dock-row > :not(.o1-rack) {
+  flex: 1 1 0;
+  min-width: 0;
 }
 .o1-rack {
+  --o1-cell-h: clamp(38px, 6.6vh, 58px);
+  --o1-cell-w: calc(var(--o1-cell-h) * 37 / 56);
   container-type: inline-size;
+  flex: 0 1 auto;
+  box-sizing: border-box;
+  width: calc(15 * var(--o1-cell-w) + 14 * 4px + 24px);
+  max-width: 100%;
   display: grid;
   grid-template-columns: repeat(15, minmax(0, 1fr));
-  gap: 14px 4px;
-  padding: 10px 12px 14px;
+  gap: 12px 4px;
+  padding: 8px 12px 10px;
   border-radius: var(--radius-8);
   border-bottom: 8px solid var(--o1-wood-edge);
   background:
@@ -418,12 +525,13 @@ button.o1-cell.empty {
   font-weight: var(--font-weight-semibold);
 }
 
-/* 101: the middle holds the stack and gösterge, then each player's opened melds on their side. */
+/* 101: the middle holds the stack, the gösterge and the round line. */
 .o1-middle {
   flex-direction: column;
-  justify-content: flex-start;
-  gap: var(--space-12);
+  justify-content: center;
+  gap: var(--space-4);
   min-width: 0;
+  min-height: 0;
 }
 .o1-center {
   display: flex;
@@ -431,38 +539,12 @@ button.o1-cell.empty {
   justify-content: center;
   gap: var(--space-24);
 }
-.o1-melds {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas:
-    'top top'
-    'left right'
-    'bottom bottom';
-  gap: var(--space-8);
-  width: 100%;
-  min-width: 0;
-}
-.o1-melds > p {
-  grid-column: 1 / -1;
+.o1-round,
+.o1-no-melds {
   margin: 0;
-  text-align: center;
   font-size: var(--font-size-micro);
   color: var(--color-text-secondary);
-}
-.o1-meld-zone.top {
-  grid-area: top;
-}
-.o1-meld-zone.left {
-  grid-area: left;
-}
-.o1-meld-zone.right {
-  grid-area: right;
-}
-.o1-meld-zone.bottom {
-  grid-area: bottom;
-}
-.o1-meld-zone:empty {
-  display: none;
+  text-align: center;
 }
 .o1-meld-row {
   display: flex;
@@ -486,15 +568,17 @@ button.o1-cell.empty {
   display: inline-flex;
   gap: 2px;
   padding: 3px;
+  opacity: 1;
+  color: inherit;
   border: 1px solid transparent;
   border-radius: var(--radius-8);
   background: color-mix(in srgb, var(--o1-felt-dark) 70%, transparent);
   transition: border-color 150ms var(--motion-ease-out);
 }
-.o1-meld:not(:disabled) {
+button.o1-meld {
   cursor: pointer;
 }
-.o1-meld:not(:disabled):hover,
+button.o1-meld:hover,
 .o1-meld.selected {
   border-color: var(--color-action-primary);
 }
@@ -536,6 +620,58 @@ button.o1-cell.empty {
 }
 .o1-actions .rg-actions {
   flex-wrap: wrap;
+}
+.o1-editor.rx-meld-editor {
+  margin: 0;
+  padding: var(--space-8) var(--space-12);
+}
+.o1-editor > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+.o1-editor .rx-draft-groups {
+  margin: var(--space-8) 0;
+  gap: var(--space-8);
+}
+.o1-editor .rx-draft-groups:empty {
+  display: none;
+}
+.o1-editor .rx-draft-groups article {
+  padding: var(--space-4);
+}
+.o1-editor footer {
+  margin-top: var(--space-8);
+  gap: var(--space-8);
+}
+.o1-editor footer .button {
+  min-height: 30px;
+  padding: var(--space-4) var(--space-12);
+  font-size: var(--font-size-metadata);
+}
+.o1-editor footer > span {
+  flex: 1 1 100%;
+  order: -1;
+}
+.o1-editor .rx-process {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  margin-top: var(--space-8);
+  padding-top: var(--space-8);
+}
+.o1-editor .rx-process label {
+  flex-direction: row;
+  align-items: center;
+}
+.o1-editor .rx-process select {
+  padding: var(--space-4) var(--space-8);
+}
+.o1-editor .rx-process .button {
+  min-height: 30px;
+  padding: var(--space-4) var(--space-12);
+  font-size: var(--font-size-metadata);
 }
 
 /* Round summary: ending, multiplier, penalties. */
@@ -599,16 +735,67 @@ button.o1-cell.empty {
 
 @media (max-width: 960px) {
   .o1-felt {
-    grid-template-columns: minmax(96px, 1fr) minmax(0, 1.3fr) minmax(96px, 1fr);
-    padding: var(--space-12);
+    padding: var(--space-8) var(--space-12);
     gap: var(--space-8);
   }
   .o1-mini-rack {
     display: none;
   }
-  .o1-rack {
-    gap: 12px 3px;
-    padding: 8px;
+  /* The rack shows its own tiles; keep the turn line on one row. */
+  .o1-rack-count {
+    display: none;
+  }
+}
+
+/* Short windows: smaller face-up tiles on the felt so the docked rack keeps its room. */
+@media (max-height: 820px) {
+  .o1-editor .rx-draft-groups .rx-tile.small,
+  .o1-meld-zone .rx-tile.small {
+    width: 22px;
+    flex-basis: 22px;
+    height: 31px;
+  }
+  .o1-editor .rx-draft-groups .rx-tile.small strong,
+  .o1-meld-zone .rx-tile.small strong {
+    font-size: 14px;
+  }
+  .o1-editor .rx-draft-groups .rx-tile.small > span,
+  .o1-meld-zone .rx-tile.small > span {
+    display: none;
+  }
+  .o1-side.left > .o1-meld-zone,
+  .o1-side.right > .o1-meld-zone {
+    min-height: 52px;
+  }
+  .o1-editor .rx-draft-groups {
+    gap: var(--space-4);
+  }
+  .o1-editor .rx-draft-groups article {
+    padding: 2px var(--space-4);
+  }
+  /* The dock's turn line already names the step; keep the builder's heading for screen readers. */
+  .o1-editor > header > h3 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .o1-pile .rx-tile,
+  .o1-indicator .rx-tile,
+  .o1-pile-empty {
+    width: 30px;
+    flex-basis: 30px;
+    height: 44px;
+  }
+  .o1-pile .rx-tile strong,
+  .o1-indicator .rx-tile strong {
+    font-size: 18px;
+  }
+  .o1-stock .o1-back {
+    width: 30px;
+    height: 44px;
   }
 }
 
@@ -629,4 +816,25 @@ button.o1-cell.empty {
   .o1-meld {
     transition: none;
   }
+}
+
+/* End of round: the result card lies on the felt (the table stays visible around it) so the
+   summary and the shell's "next hand" strip fit without scrolling. */
+.o1-table.ended {
+  position: relative;
+}
+.o1-table.ended > .o1-summary {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(720px, calc(100% - 32px));
+  max-height: calc(100% - 16px);
+  overflow: auto;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 12px 32px #0008;
+}
+.o1-scores.rx-results th,
+.o1-scores.rx-results td {
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-4);
 }

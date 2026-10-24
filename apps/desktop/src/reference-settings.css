@@ -785,6 +785,7 @@
   overscroll-behavior: contain;
   padding: 2px 3px 8px;
   margin: 0 -3px;
+  scroll-padding: var(--space-8) 0;
 }
 .settings-reference-surface .settings-nav-connection {
   margin-top: 0;

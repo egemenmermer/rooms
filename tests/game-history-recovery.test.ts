@@ -153,7 +153,16 @@ describe('authoritative hand history and own recovery', () => {
         expect(h.result).not.toHaveProperty('hands');
       } else {
         expect(h.result.scores).toEqual(t.okey!.scores);
-        expect(h.result.melds).toEqual(t.okey!.melds);
+        // The public summary marks sahte okey tiles with `fake: true`; the round state does not.
+        const unmarked = JSON.parse(
+          JSON.stringify(h.result.melds, (key, value) => (key === 'fake' ? undefined : value)),
+        );
+        expect(unmarked).toEqual(t.okey!.melds);
+        const tiles = (h.result.melds as { tiles: { id: string; fake?: boolean }[] }[]).flatMap(
+          (meld) => meld.tiles,
+        );
+        for (const tile of tiles)
+          expect(tile.fake === true).toBe(tile.id.startsWith('false-joker-'));
         expect(h.result).not.toHaveProperty('hands');
       }
       expect(gameView(t, 'owner').view.ownRecovery!.events!.length).toBeLessThanOrEqual(8);

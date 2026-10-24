@@ -275,7 +275,6 @@ export const social: Catalog = {
   'Yerel örnekte bu kanal veya mesaj bulunamadı.':
     'This channel or message wasn’t found in the local sample.',
   'Nereye gitmek istersin?': 'Where do you want to go?',
-  'Bizim Oda’da ara': 'Search in Bizim Oda',
   '{name} içinde ara': 'Search in {name}',
   Konuşma: 'Conversation',
   'Mesaj, dosya veya kanal ara': 'Search messages, files or channels',
@@ -336,7 +335,6 @@ export const social: Catalog = {
   'Profil için giriş yap.': 'Sign in to see the profile.',
   'Durumunu seç': 'Choose your status',
   Görünmezsin: 'You’re invisible',
-  'Deniz’in profili': 'Deniz’s profile',
   '{name} profili': '{name}’s profile',
   'Durumunu diğer üyelere bildir': 'Show your status to other members',
   'Başkalarına çevrimdışı görün': 'Appear offline to others',
@@ -378,8 +376,6 @@ export const social: Catalog = {
   'kişi-{id}': 'person-{id}',
   'Düzenlemeyi bitirince dosya ekleyebilirsin.': 'You can attach files once you finish editing.',
   Sohbet: 'Chat',
-  'Eski Sinema oturumu · bu sürümde açılmıyor':
-    'Old Cinema session · can’t be opened in this version',
   Ayrıntılar: 'Details',
   'Etkinliğe dön': 'Back to the activity',
   'Kanal mesajları': 'Channel messages',

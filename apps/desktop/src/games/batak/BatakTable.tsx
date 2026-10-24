@@ -18,11 +18,11 @@ import {
   takenBy,
   sortHand,
   target,
-  variantName,
   type BatakState,
   type TrickPlay,
 } from './model';
 import { SeatAvatar } from '../shared/SeatAvatar';
+import { TableDock } from '../shared/TableDock';
 import { playGameCue, useGameSounds } from '../shared/sounds';
 import './batak.css';
 
@@ -149,6 +149,10 @@ function BatakBoard({ game, can, action, timer, state }: TableUI & { state: Bata
     legal = legalCardIds(state),
     hand = state.hand ? sortHand(state.hand, state.trump) : null,
     teams = state.variant === 'esli',
+    // What the server offers this viewer drives the look (legal cards, auction controls); `can`
+    // only gates the clicks, so the hand does not flash dim while a move is in flight.
+    offered = (name: string) =>
+      Array.isArray(game.view.legalActions) && game.view.legalActions.includes(name),
     [showLast, setShowLast] = useState(false),
     [picked, setPicked] = useState<string[]>([]);
   useEffect(() => setPicked([]), [state.stage, game.history.length]);
@@ -162,14 +166,16 @@ function BatakBoard({ game, can, action, timer, state }: TableUI & { state: Bata
           ? lastTrick.plays
           : [],
     turnName = state.turn === null ? '' : seatName(game, state.turn);
+  const scored = scoreSheet(game, state.seats).rows.length > 0,
+    side = scored || state.buried.length > 0 || events.log.length > 0;
   const toggle = (id: string) =>
     setPicked((ids) =>
       ids.includes(id) ? ids.filter((value) => value !== id) : ids.length < 4 ? [...ids, id] : ids,
     );
   return (
     <div className="bt-table">
+      {/* Live state only; the variant and house rules are in the shell's rules popover. */}
       <div className="rx-badges">
-        <span>{variantName(state.variant)}</span>
         {state.variant !== 'koz-maca' && state.stage !== 'bidding' && (
           <span>
             {t('İhale {bid} · {name}', { bid: state.bid, name: seatName(game, state.bidder) })}
@@ -197,7 +203,7 @@ function BatakBoard({ game, can, action, timer, state }: TableUI & { state: Bata
           </button>
         )}
       </div>
-      <div className="bt-layout">
+      <div className={`bt-layout ${side ? 'has-side' : ''}`}>
         <section
           className={`bt-felt seats-${state.seats}`}
           aria-label={t('Batak masası')}
@@ -238,51 +244,48 @@ function BatakBoard({ game, can, action, timer, state }: TableUI & { state: Bata
                     {turn && timer !== null && ` · ${t('{seconds} sn', { seconds: timer })}`}
                   </small>
                 </span>
-                {state.stage !== 'bidding' && (
-                  <span
-                    className={`bt-tricks ${goal !== null && tricks >= goal ? 'made' : ''}`}
-                    aria-label={
-                      goal === null
-                        ? t('{count} el aldı', { count: tricks })
-                        : t('{count} / {goal} el', { count: tricks, goal })
-                    }
-                  >
-                    {goal === null ? tricks : `${tricks}/${goal}`}
-                  </span>
-                )}
-                {round === state.bidder &&
-                  state.variant !== 'koz-maca' &&
-                  state.stage !== 'bidding' && (
-                    <span className="bt-bidder" title={t('İhaleyi aldı')}>
-                      {t('İhale')}
-                      {state.trump && <b className={state.trump}>{suits[state.trump]}</b>}
+                <span className="bt-seat-marks">
+                  {state.stage !== 'bidding' && (
+                    <span
+                      className={`bt-tricks ${goal !== null && tricks >= goal ? 'made' : ''}`}
+                      aria-label={
+                        goal === null
+                          ? t('{count} el aldı', { count: tricks })
+                          : t('{count} / {goal} el', { count: tricks, goal })
+                      }
+                    >
+                      {goal === null ? tricks : `${tricks}/${goal}`}
                     </span>
                   )}
-                {said !== null && (
-                  <span className="bt-bubble" aria-label={t('Son sözü: {bid}', { bid: said })}>
-                    {said}
-                  </span>
-                )}
-                {!own && count > 0 && (
-                  <span className="bt-backs" aria-hidden="true">
-                    {Array.from({ length: Math.min(count, 5) }, (_, index) => (
-                      <i key={index} />
-                    ))}
-                  </span>
-                )}
+                  {round === state.bidder &&
+                    state.variant !== 'koz-maca' &&
+                    state.stage !== 'bidding' && (
+                      <span className="bt-bidder" title={t('İhaleyi aldı')}>
+                        {t('İhale')}
+                        {state.trump && <b className={state.trump}>{suits[state.trump]}</b>}
+                      </span>
+                    )}
+                  {said !== null && (
+                    <span className="bt-bubble" aria-label={t('Son sözü: {bid}', { bid: said })}>
+                      {said}
+                    </span>
+                  )}
+                  {!own && count > 0 && (
+                    <span className="bt-backs" aria-hidden="true">
+                      {Array.from({ length: Math.min(count, 5) }, (_, index) => (
+                        <i key={index} />
+                      ))}
+                    </span>
+                  )}
+                </span>
               </article>
             );
           })}
 
           {auction ? (
-            <Auction
-              game={game}
-              state={state}
-              can={can}
-              action={action}
-              picked={picked}
-              onBuried={() => setPicked([])}
-            />
+            <Auction game={game} state={state} offered={offered} />
+          ) : finished ? (
+            <RoundSummary game={game} state={state} />
           ) : (
             <div className="bt-trick" aria-label={t('Ortadaki el')}>
               {shown.map((play) => {
@@ -302,11 +305,9 @@ function BatakBoard({ game, can, action, timer, state }: TableUI & { state: Bata
               })}
               {!shown.length && (
                 <span className="bt-trick-empty">
-                  {finished
-                    ? t('El tamamlandı')
-                    : yourTurn
-                      ? t('Sıra sende · bir kart aç')
-                      : t('{name} açıyor', { name: turnName || t('Oyuncu') })}
+                  {yourTurn
+                    ? t('Sıra sende · bir kart aç')
+                    : t('{name} açıyor', { name: turnName || t('Oyuncu') })}
                 </span>
               )}
               {held && (
@@ -318,66 +319,87 @@ function BatakBoard({ game, can, action, timer, state }: TableUI & { state: Bata
           )}
         </section>
 
-        <aside className="bt-side">
-          {finished && <RoundSummary game={game} state={state} />}
-          <ScoreSheet game={game} state={state} />
-          {state.buried.length > 0 && (
-            <section className="bt-panel bt-gomu">
-              <h3>{t('Gömü')}</h3>
-              <div>
-                {state.buried.map((card) => (
-                  <PlayingCard key={card.id} card={card} />
-                ))}
-              </div>
-              <p>{t('Gömdüğün kartları yalnızca sen görürsün.')}</p>
-            </section>
-          )}
-          <section className="bt-panel bt-log">
-            <h3>{t('Son hamleler')}</h3>
-            {events.log.length ? (
-              <ol aria-live="polite">
-                {events.log.map((line, index) => (
-                  <li key={`${index}:${line}`}>{line}</li>
-                ))}
-              </ol>
-            ) : (
-              <p>{t('Henüz hamle yok.')}</p>
+        {/* Only what has content: an empty "no moves yet" panel would only take the felt's room. */}
+        {side && (
+          <aside className="bt-side">
+            <ScoreSheet game={game} state={state} />
+            {state.buried.length > 0 && (
+              <section className="bt-panel bt-gomu">
+                <h3>{t('Gömü')}</h3>
+                <div>
+                  {state.buried.map((card) => (
+                    <PlayingCard key={card.id} card={card} />
+                  ))}
+                </div>
+                <p>{t('Gömdüğün kartları yalnızca sen görürsün.')}</p>
+              </section>
             )}
-          </section>
-        </aside>
+            {events.log.length > 0 && (
+              <section className="bt-panel bt-log">
+                <h3>{t('Son hamleler')}</h3>
+                <ol aria-live="polite">
+                  {events.log.map((line, index) => (
+                    <li key={`${index}:${line}`}>{line}</li>
+                  ))}
+                </ol>
+              </section>
+            )}
+          </aside>
+        )}
       </div>
 
+      {/* The own hand and the auction controls stay on screen in the shell's dock. A finished
+          hand leaves the dock to the shell's result strip ("Sonraki el"). */}
       {hand && !finished && (
-        <section className="rx-rack bt-rack">
-          <header>
-            <strong>
+        <TableDock label={t('Elin')} className="bt-dock">
+          <div className="bt-dock-bar">
+            <strong className="bt-status" role="status">
               {state.stage === 'bury'
                 ? yourTurn
                   ? t('Gömeceğin 4 kartı seç')
                   : t('{name} kart gömüyor', { name: turnName || t('Oyuncu') })
                 : auction
-                  ? t('Elin · ihale sürüyor')
+                  ? offered('bid')
+                    ? state.variant === 'koz-maca'
+                      ? t('Kaç el alacaksın?')
+                      : t('İhale')
+                    : offered('trump')
+                      ? t('Koz seçimi')
+                      : t('Elin · ihale sürüyor')
                   : yourTurn
                     ? t('Sıra sende · bir kart at')
                     : t('{name} oynuyor', { name: turnName || t('Oyuncu') })}
             </strong>
-            <small>{t('ELİN · {count} kart', { count: hand.length })}</small>
-          </header>
+            {auction && (
+              <AuctionControls
+                state={state}
+                can={can}
+                action={action}
+                offered={offered}
+                picked={picked}
+                onBuried={() => setPicked([])}
+              />
+            )}
+            <small className="bt-count">{t('ELİN · {count} kart', { count: hand.length })}</small>
+          </div>
           <div className="bt-hand" style={{ '--count': hand.length } as CSSProperties}>
             {hand.map((card, index) => {
-              const burying = state.stage === 'bury' && can('bury'),
-                playable = !auction && can('play') && legal.includes(card.id);
+              const burying = state.stage === 'bury' && offered('bury'),
+                legalCard = !auction && yourTurn && offered('play') && legal.includes(card.id),
+                playable = legalCard && can('play');
               return (
                 <span
                   key={card.id}
-                  className={`bt-hand-card ${playable ? 'legal' : ''} ${!auction && yourTurn && !playable ? 'illegal' : ''} ${card.suit === state.trump ? 'trump' : ''}`}
+                  className={`bt-hand-card ${legalCard ? 'legal' : ''} ${!auction && yourTurn && !legalCard ? 'illegal' : ''} ${card.suit === state.trump ? 'trump' : ''}`}
                   style={{ '--i': index } as CSSProperties}
                 >
                   <PlayingCard
                     card={card}
                     selected={burying && picked.includes(card.id)}
                     disabled={
-                      burying ? picked.length === 4 && !picked.includes(card.id) : !playable
+                      burying
+                        ? !can('bury') || (picked.length === 4 && !picked.includes(card.id))
+                        : !playable
                     }
                     onClick={
                       burying
@@ -389,30 +411,20 @@ function BatakBoard({ game, can, action, timer, state }: TableUI & { state: Bata
               );
             })}
           </div>
-        </section>
+        </TableDock>
       )}
     </div>
   );
 }
 
+/** The auction on the felt: what everyone sees (title, every call). The controls are docked. */
 function Auction({
   game,
   state,
-  can,
-  action,
-  picked,
-  onBuried,
-}: Pick<TableUI, 'game' | 'can' | 'action'> & {
-  state: BatakState;
-  picked: string[];
-  onBuried(): void;
-}) {
-  const { minimum, maximum } = bidRange(state),
-    [bid, setBid] = useState(minimum),
-    [trump, setTrump] = useState<string>('spades'),
-    turnName = state.turn === null ? t('Oyuncu') : seatName(game, state.turn),
+  offered,
+}: Pick<TableUI, 'game'> & { state: BatakState; offered(name: string): boolean }) {
+  const turnName = state.turn === null ? t('Oyuncu') : seatName(game, state.turn),
     bidderName = seatName(game, state.bidder);
-  useEffect(() => setBid(minimum), [minimum, state.stage]);
   const title =
     state.stage === 'bidding'
       ? state.variant === 'koz-maca'
@@ -421,6 +433,12 @@ function Auction({
       : state.stage === 'trump'
         ? t('Koz seçimi')
         : t('Gömü');
+  const waiting =
+    state.stage === 'bidding'
+      ? !offered('bid') && t('{name} düşünüyor', { name: turnName })
+      : state.stage === 'trump'
+        ? !offered('trump') && t('{name} kozu seçiyor', { name: turnName })
+        : !offered('bury') && t('{name} 4 kart gömüyor', { name: turnName });
   return (
     <section className="bt-auction" aria-label={title}>
       <header>
@@ -455,104 +473,119 @@ function Auction({
           <li className="empty">{t('İlk söz {name}', { name: turnName })}</li>
         )}
       </ol>
-      {state.stage === 'bidding' &&
-        (can('bid') ? (
-          <>
-            <div className="bt-bid-grid" role="group" aria-label={t('İhale miktarı')}>
-              {Array.from(
-                { length: Math.max(0, maximum - minimum + 1) },
-                (_, index) => minimum + index,
-              ).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={bid === value ? 'selected' : ''}
-                  aria-pressed={bid === value}
-                  onClick={() => setBid(value)}
-                >
-                  {value}
-                </button>
-              ))}
-            </div>
-            <footer>
-              {state.variant !== 'koz-maca' && (
-                <button
-                  type="button"
-                  className="button secondary"
-                  disabled={!can('pass')}
-                  onClick={() => void action('pass')}
-                >
-                  {t('Pas')}
-                </button>
-              )}
-              <button
-                type="button"
-                className="button primary"
-                disabled={bid < minimum || bid > maximum}
-                onClick={() => void action('bid', { amount: bid })}
-              >
-                {state.variant === 'koz-maca'
-                  ? t('{count} el de', { count: bid })
-                  : t('{bid} · İhale ver', { bid })}
-              </button>
-            </footer>
-          </>
-        ) : (
-          <p className="bt-wait">{t('{name} düşünüyor', { name: turnName })}</p>
-        ))}
-      {state.stage === 'trump' &&
-        (can('trump') ? (
-          <>
-            <div className="bt-trump-pick" role="group" aria-label={t('Koz rengi')}>
-              {Object.entries(suits).map(([suit, symbol]) => (
-                <button
-                  type="button"
-                  key={suit}
-                  className={`${trump === suit ? 'selected' : ''} ${suit === 'hearts' || suit === 'diamonds' ? 'red' : ''}`}
-                  aria-pressed={trump === suit}
-                  aria-label={suitNames[suit]}
-                  onClick={() => setTrump(suit)}
-                >
-                  <span aria-hidden="true">{symbol}</span>
-                  <small aria-hidden="true">{suitNames[suit]}</small>
-                </button>
-              ))}
-            </div>
-            <footer>
-              <button
-                type="button"
-                className="button primary"
-                onClick={() => void action('trump', { trump })}
-              >
-                {t('Kozu onayla')}
-              </button>
-            </footer>
-          </>
-        ) : (
-          <p className="bt-wait">{t('{name} kozu seçiyor', { name: turnName })}</p>
-        ))}
-      {state.stage === 'bury' &&
-        (can('bury') ? (
-          <footer>
-            <span>{t('{selectedCount} / 4 kart', { selectedCount: picked.length })}</span>
-            <button
-              type="button"
-              className="button primary"
-              disabled={picked.length !== 4}
-              onClick={() =>
-                void action('bury', { tileIds: picked }).then((ok) => {
-                  if (ok) onBuried();
-                })
-              }
-            >
-              {t('4 kartı göm')}
-            </button>
-          </footer>
-        ) : (
-          <p className="bt-wait">{t('{name} 4 kart gömüyor', { name: turnName })}</p>
-        ))}
+      {waiting && <p className="bt-wait">{waiting}</p>}
     </section>
   );
+}
+
+/** The viewer's own auction controls, in the dock above the hand: bid, trump or bury. */
+function AuctionControls({
+  state,
+  can,
+  action,
+  offered,
+  picked,
+  onBuried,
+}: Pick<TableUI, 'can' | 'action'> & {
+  state: BatakState;
+  offered(name: string): boolean;
+  picked: string[];
+  onBuried(): void;
+}) {
+  const { minimum, maximum } = bidRange(state),
+    [bid, setBid] = useState(minimum),
+    [trump, setTrump] = useState<string>('spades');
+  useEffect(() => setBid(minimum), [minimum, state.stage]);
+  if (state.stage === 'bidding' && offered('bid'))
+    return (
+      <div className="bt-controls">
+        <div className="bt-bid-grid" role="group" aria-label={t('İhale miktarı')}>
+          {Array.from(
+            { length: Math.max(0, maximum - minimum + 1) },
+            (_, index) => minimum + index,
+          ).map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={bid === value ? 'selected' : ''}
+              aria-pressed={bid === value}
+              onClick={() => setBid(value)}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+        {state.variant !== 'koz-maca' && (
+          <button
+            type="button"
+            className="button secondary"
+            disabled={!can('pass')}
+            onClick={() => void action('pass')}
+          >
+            {t('Pas')}
+          </button>
+        )}
+        <button
+          type="button"
+          className="button primary"
+          disabled={!can('bid') || bid < minimum || bid > maximum}
+          onClick={() => void action('bid', { amount: bid })}
+        >
+          {state.variant === 'koz-maca'
+            ? t('{count} el de', { count: bid })
+            : t('{bid} · İhale ver', { bid })}
+        </button>
+      </div>
+    );
+  if (state.stage === 'trump' && offered('trump'))
+    return (
+      <div className="bt-controls">
+        <div className="bt-trump-pick" role="group" aria-label={t('Koz rengi')}>
+          {Object.entries(suits).map(([suit, symbol]) => (
+            <button
+              type="button"
+              key={suit}
+              className={`${trump === suit ? 'selected' : ''} ${suit === 'hearts' || suit === 'diamonds' ? 'red' : ''}`}
+              aria-pressed={trump === suit}
+              aria-label={suitNames[suit]}
+              onClick={() => setTrump(suit)}
+            >
+              <span aria-hidden="true">{symbol}</span>
+              <small aria-hidden="true">{suitNames[suit]}</small>
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="button primary"
+          disabled={!can('trump')}
+          onClick={() => void action('trump', { trump })}
+        >
+          {t('Kozu onayla')}
+        </button>
+      </div>
+    );
+  if (state.stage === 'bury' && offered('bury'))
+    return (
+      <div className="bt-controls">
+        <span className="bt-picked">
+          {t('{selectedCount} / 4 kart', { selectedCount: picked.length })}
+        </span>
+        <button
+          type="button"
+          className="button primary"
+          disabled={!can('bury') || picked.length !== 4}
+          onClick={() =>
+            void action('bury', { tileIds: picked }).then((ok) => {
+              if (ok) onBuried();
+            })
+          }
+        >
+          {t('4 kartı göm')}
+        </button>
+      </div>
+    );
+  return null;
 }
 
 function RoundSummary({ game, state }: { game: GamePublicState; state: BatakState }) {

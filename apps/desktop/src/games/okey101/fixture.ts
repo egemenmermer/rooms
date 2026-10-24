@@ -146,6 +146,8 @@ export function okey101Fixture(scene: Okey101Scene, viewer?: string): GamePublic
       count: ended ? (seat === 1 ? 0 : counts[seat]) : counts[seat],
     })),
     legalActions,
+    // A live clock on the table in play, like the server sends.
+    turnDeadline: ended ? 0 : Date.now() + 25_000,
   };
   return {
     kind: '101',

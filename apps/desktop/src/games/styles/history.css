@@ -21,6 +21,9 @@
   font-weight: 650;
   color: #d9d8ee;
 }
+.rh-stats.stale article {
+  opacity: 0.55;
+}
 .rh-history-panel {
   border: 1px solid #ffffff0e;
   border-radius: 14px;
@@ -118,6 +121,30 @@
 }
 .rh-detail {
   width: min(660px, calc(100vw - 50px));
+}
+.rh-detail {
+  background: var(--color-background-main) !important;
+}
+/* Scroll shadows: a soft edge appears only on the side that has more content, so a clipped hand reads as scrollable. */
+.rh-detail .rg-modal-body {
+  background:
+    linear-gradient(var(--color-background-main) 30%, transparent) center top / 100% 28px no-repeat
+      local,
+    linear-gradient(transparent, var(--color-background-main) 70%) center bottom / 100% 28px
+      no-repeat local,
+    radial-gradient(
+        farthest-side at 50% 0,
+        color-mix(in srgb, var(--color-background-canvas) 70%, transparent),
+        transparent
+      )
+      center top / 100% 12px no-repeat scroll,
+    radial-gradient(
+        farthest-side at 50% 100%,
+        color-mix(in srgb, var(--color-background-canvas) 70%, transparent),
+        transparent
+      )
+      center bottom / 100% 12px no-repeat scroll;
+  scrollbar-gutter: stable;
 }
 .rh-detail .rg-modal-body > p {
   font-size: 12px;
@@ -329,6 +356,9 @@
   font-size: 12px;
   color: #acb5c8;
   line-height: 1.7;
+}
+.rh-dealer-history {
+  margin-top: var(--space-16);
 }
 .rh-dealer-history > small {
   display: block;

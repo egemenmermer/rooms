@@ -188,7 +188,8 @@ export function tavlaFixtureGame(scene: TavlaScene, viewer = 'ece'): GamePublicS
       legalActions: seat === null ? [] : tavlaMatchModule.legalActions!(state, seat),
       watching: seat === null,
       ownRecovery: null,
-      turnDeadline: 0,
+      // A live clock on the table in play, like the server sends.
+      turnDeadline: state.winners ? 0 : Date.now() + 25_000,
     },
     history: [],
   } as unknown as GamePublicState;

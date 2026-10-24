@@ -114,7 +114,9 @@ it('shows the opponent on turn and names their last move', () => {
 it('opens the insurance panel exactly as legalActions allow it', () => {
   const action = vi.fn(async () => true);
   const first = render(<BlackjackTable {...ui(scene('insurance'), action)} />);
-  const panel = screen.getByRole('group', { name: 'Sigorta' });
+  // The felt names who is asked; the viewer's own answer sits with the other controls.
+  expect(within(screen.getByRole('group', { name: 'Sigorta' })).queryByRole('button')).toBeNull();
+  const panel = screen.getByRole('group', { name: 'Sigorta kararı' });
   expect(
     within(panel).getByText('Sigorta 50 fiş. Krupiye blackjack yaparsa 2:1 öder.'),
   ).toBeTruthy();
@@ -127,7 +129,7 @@ it('opens the insurance panel exactly as legalActions allow it', () => {
   first.unmount();
 
   render(<BlackjackTable {...ui(scene('insurance-decline-only'))} />);
-  const short = screen.getByRole('group', { name: 'Sigorta' });
+  const short = screen.getByRole('group', { name: 'Sigorta kararı' });
   const take = within(short).getByRole<HTMLButtonElement>('button', { name: 'Sigorta al' });
   expect(take.disabled).toBe(true);
   expect(take.title).toBe('Fişin sigortaya yetmiyor');
@@ -139,6 +141,7 @@ it('opens the insurance panel exactly as legalActions allow it', () => {
   render(<BlackjackTable {...ui(scene('insurance-other'))} />);
   const waiting = screen.getByRole('group', { name: 'Sigorta' });
   expect(within(waiting).queryByRole('button')).toBeNull();
+  expect(screen.queryByRole('group', { name: 'Sigorta kararı' })).toBeNull();
   expect(within(waiting).getByText('Sigorta soruluyor · Ali (demo)')).toBeTruthy();
 });
 
@@ -250,4 +253,13 @@ it('sends the table switches as game.create options the server parses', () => {
   const rows = blackjackGame.ruleRows(scene('your-turn'));
   expect(rows.find(([label]) => label === 'Sigorta')?.[1]).toContain('Açık');
   expect(rows.find(([label]) => label === 'Teslim')?.[1]).toBe('Kapalı');
+});
+
+it('keeps fixed rules off the felt and the controls in one docked region', () => {
+  render(<BlackjackTable {...ui(scene('your-turn'))} />);
+  // Decks, S17, 3:2, insurance and surrender are in the rules popover (ruleRows).
+  expect(document.querySelector('.rx-badges')!.textContent).toBe('El 1');
+  // Outside the shell TableDock renders in place; the moves sit in the "Hamle" region.
+  const dock = screen.getByRole('region', { name: 'Hamle' });
+  expect(within(dock).getByRole('button', { name: 'Kart al' })).toBeTruthy();
 });

@@ -30,9 +30,21 @@ export function ScreenShareGallery({
   const active = tracks.find((track) => track.id === selected) ?? tracks[0];
   const participant = people.find((p) => p.id === active?.participantId);
   const watched = active && !active.local ? active.participantId : null;
+  const notifyRef = useRef(notify);
   useEffect(() => {
-    onWatch?.(watched);
-    return () => onWatch?.(null);
+    notifyRef.current = notify;
+  }, [notify]);
+  useEffect(() => {
+    // A provider without watch control (or a failed announce) must not take the whole view down.
+    const watch = (id: string | null) => {
+      try {
+        onWatch?.(id);
+      } catch (e) {
+        notifyRef.current(uiError(e));
+      }
+    };
+    watch(watched);
+    return () => watch(null);
   }, [watched, onWatch]);
   const name = (track: MediaTrack) => {
     const person = people.find((p) => p.id === track.participantId)?.name ?? t('Katılımcı');
