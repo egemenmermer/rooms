@@ -248,6 +248,15 @@ export const shell: Catalog = {
   'Giriş yap sekmesine geç': 'Go to the Sign in tab',
   'Giriş yap ve devam et': 'Sign in and continue',
   'Giriş yap ve katıl': 'Sign in and join',
+  'E-posta veya parola hatalı. Bilgilerini kontrol edip yeniden dene.':
+    'The email or password is not correct. Check them and try again.',
+  'Çok fazla başarısız giriş denemesi yapıldı. Birkaç dakika bekleyip yeniden dene.':
+    'Too many failed sign-in attempts. Wait a few minutes and try again.',
+  'Bu davet geçersiz ya da daha önce kullanılmış. Seni davet eden kişiden yenisini iste.':
+    'This invitation is invalid or has already been used. Ask the person who invited you for a new one.',
+  'Parola çok kısa. Daha uzun bir parola seç.': 'The password is too short. Choose a longer one.',
+  'Bu parola bilinen veri sızıntılarında geçiyor. Başka bir parola seç.':
+    'This password appears in known data leaks. Choose another one.',
   'Giriş yapmadan önce e-posta adresini doğrula.': 'Verify your email address before signing in.',
   'Giriş yaptıktan sonra davet edildiğin topluluğa katılacaksın.':
     'After you sign in, you’ll join the community you were invited to.',
