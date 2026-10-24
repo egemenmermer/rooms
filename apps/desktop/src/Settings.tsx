@@ -392,6 +392,23 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
   );
 }
 /** The connection states in words, as the sign-in pane shows them. */
+/**
+ * Focus the open category without letting the browser re-center the list: the first group
+ * stays at the top unless the selected item would be hidden, then it scrolls just into view.
+ */
+function focusSelectedCategory(nav: HTMLElement | null) {
+  const selected = nav?.querySelector<HTMLButtonElement>('button.selected');
+  if (!selected) return;
+  selected.focus({ preventScroll: true });
+  const list = selected.closest<HTMLElement>('.ref-settings-nav-scroll');
+  if (!list) return;
+  const bottom =
+    selected.getBoundingClientRect().bottom -
+    list.getBoundingClientRect().top +
+    list.scrollTop;
+  if (bottom <= list.clientHeight) list.scrollTop = 0;
+  else selected.scrollIntoView({ block: 'nearest' });
+}
 function connectionLabel(status: string) {
   return status === 'connected'
     ? tr('Connected')
@@ -656,7 +673,7 @@ export default function Settings({
   }, []);
   useEffect(() => {
     if (!navigationOpen) return;
-    navigationRef.current?.querySelector<HTMLButtonElement>('button.selected')?.focus();
+    focusSelectedCategory(navigationRef.current);
     const key = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
@@ -688,9 +705,9 @@ export default function Settings({
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const timer = requestAnimationFrame(() =>
-      document
-        .querySelector<HTMLElement>('.settings-reference-surface .settings-tabs button.selected')
-        ?.focus(),
+      focusSelectedCategory(
+        document.querySelector<HTMLElement>('.settings-reference-surface .settings-tabs'),
+      ),
     );
     return () => {
       cancelAnimationFrame(timer);

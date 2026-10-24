@@ -547,7 +547,7 @@ export const games: Catalog = {
   '{seated} / {capacity} oyuncu': '{seated} / {capacity} players',
   'Masaya geç': 'Go to table',
   'Odada {activity} açık. Masa açınca o etkinlik herkes için kapanır; bunu etkinliğin hostu yapabilir.':
-    '{activity} is open in the room. Opening a table closes it for everyone; the activity’s host can do this.',
+    'Already open in the room: {activity}. Opening a table closes it for everyone; the activity’s host can do this.',
   'Bu oyuna geç': 'Switch to this game',
   Pişti: 'Pisti',
   '2 veya 4 oyuncu': '2 or 4 players',

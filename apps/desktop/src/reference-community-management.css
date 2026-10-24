@@ -374,6 +374,17 @@
   background: #282d37;
   border-radius: 15px;
 }
+.rcm-modal .modal-heading {
+  display: flex;
+  align-items: center;
+  min-height: 74px;
+  padding: 20px 26px;
+  margin: 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.rcm-modal .modal-heading h2 {
+  margin: 0;
+}
 .rcm-modal-body {
   padding: 25px 26px;
 }

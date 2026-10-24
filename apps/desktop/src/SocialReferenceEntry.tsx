@@ -88,7 +88,7 @@ export function SocialReferenceOverlay({ onClose }: { onClose(): void }) {
       ? {
           name: fixture.ui.draft.name,
           description: fixture.ui.draft.topic ?? '',
-          category: fixture.ui.initialType === 'voice' ? t('SES ODALARI') : t('SOHBET'),
+          category: fixture.ui.initialType === 'voice' ? t('Ses odaları') : t('Sohbet'),
           choices: [
             ...(fixture.publicState.user
               ? [
@@ -120,7 +120,7 @@ export function SocialReferenceOverlay({ onClose }: { onClose(): void }) {
         initialType={fixture.ui.initialType}
         referenceDraftName={fixture.ui.draft.name}
         referenceDraftDescription={fixture.ui.draft.topic ?? ''}
-        referenceDraftCategory={fixture.ui.initialType === 'voice' ? t('SES ODALARI') : t('SOHBET')}
+        referenceDraftCategory={fixture.ui.initialType === 'voice' ? t('Ses odaları') : t('Sohbet')}
         referencePrivate={privateReference}
         canManage={false}
         onClose={dismiss}

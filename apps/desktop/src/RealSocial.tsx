@@ -267,8 +267,12 @@ export function CommunityChat({
   const voice = useRealtime();
   const activity = useActivityRoom(c.user ? (voice.channelId ?? c.activeChannelId) : null);
   // Inside the hall the screen is already on the page; no banner pointing back to it.
+  // A leftover old-Cinema session is not an error to pin on every chat: its details live
+  // in the activity launcher and the room list.
   const primary =
-    activity.status === 'connected' && activity.room?.primary?.activity !== 'hall'
+    activity.status === 'connected' &&
+    activity.room?.primary?.activity !== 'hall' &&
+    !(activity.room?.primary && retiredActivity(activity.room.primary.activity))
       ? activity.room?.primary
       : null;
   const [nameColors, setNameColors] = useState<Record<string, string>>({});
@@ -672,12 +676,10 @@ export function CommunityChat({
           <div>
             <strong>{primary.title}</strong>
             <small>
-              {retiredActivity(primary.activity)
-                ? t('Eski Sinema oturumu · bu sürümde açılmıyor')
-                : activity.room?.participants
-                    .filter((p) => p.userId !== c.user?.id)
-                    .map((p) => p.displayName)
-                    .join(', ')}
+              {activity.room?.participants
+                .filter((p) => p.userId !== c.user?.id)
+                .map((p) => p.displayName)
+                .join(', ')}
             </small>
           </div>
           <button
@@ -685,7 +687,7 @@ export function CommunityChat({
             onClick={() => openActivity(primary.activity, navigate)}
           >
             <ArrowRight size={17} />
-            {retiredActivity(primary.activity) ? t('Ayrıntılar') : t('Etkinliğe dön')}
+            {t('Etkinliğe dön')}
           </button>
         </div>
       )}
