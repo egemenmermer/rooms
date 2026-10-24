@@ -47,6 +47,44 @@
   margin-left: auto;
   display: flex;
 }
+.ss-header > .voice-photo {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+}
+.ss-dm-error {
+  margin: var(--space-8) var(--space-24) var(--space-16);
+}
+/* Friends heading: the own name#1234 tag a friend needs, copied on click. */
+.ss-own-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  max-width: 100%;
+  margin-top: var(--space-4);
+  padding: var(--space-4) var(--space-12);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  background: var(--color-background-raised);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-metadata);
+  font-family: inherit;
+  cursor: pointer;
+}
+.ss-own-tag > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.ss-own-tag:hover {
+  background: var(--color-background-hover);
+  color: var(--color-text-primary);
+}
+.ss-own-tag:focus-visible {
+  outline: 2px solid var(--color-action-focus);
+  outline-offset: 2px;
+}
 .ss-dm-intro {
   display: flex;
   align-items: center;
@@ -99,7 +137,7 @@
 }
 .ss-dm-inspector h6,
 .ss-profile h6 {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 1.1px;
   font-weight: 650;
   color: #9197a7;
@@ -341,7 +379,7 @@
 .ss-search-filters > span {
   background: #373b47;
   color: #c1c5d1;
-  font-size: 10px;
+  font-size: 11px;
   border: 0;
   border-radius: 5px;
   padding: 5px 7px;
@@ -378,7 +416,7 @@
   font-size: 12px;
 }
 .ss-search-result small {
-  font-size: 10px;
+  font-size: 11px;
   color: #949bab;
   margin-left: 10px;
 }
@@ -428,7 +466,7 @@
 }
 .ss-search-file small {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   color: #949bab;
   margin-top: 5px;
 }
@@ -573,7 +611,7 @@
   overflow-wrap: anywhere;
 }
 .ss-file-tile p {
-  font-size: 10px;
+  font-size: 11px;
   color: #a1aabc;
   line-height: 1.5;
   margin: 0 0 12px;
@@ -737,7 +775,7 @@
 .ss-profile-name > span {
   background: #40375d;
   color: #bcb1fc;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
   padding: 5px 8px;
   border-radius: 4px;
@@ -757,7 +795,7 @@
   background: #383e49;
   padding: 4px 7px;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 11px;
   color: #bac1cf;
 }
 .ss-about {
@@ -769,12 +807,6 @@
   color: #9aa1b0;
   line-height: 1.6;
   white-space: pre-line;
-}
-.ss-details-button {
-  font-size: 11px;
-  padding: 10px 0 0;
-  background: none;
-  color: #b7afff;
 }
 .ss-status-options {
   display: flex;
@@ -923,7 +955,7 @@
   margin: 30px 0 0;
 }
 .ss-search-demo {
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.5;
   color: #989faf;
   margin: 12px 0 0;

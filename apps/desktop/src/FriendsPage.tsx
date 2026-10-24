@@ -1,14 +1,80 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryClient } from './query-client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { IconButton, Modal } from '@rooms/design';
+import { EmptyState, IconButton, LoadingView, Modal, Notice } from '@rooms/design';
 import type { SocialFriend } from '@rooms/social';
+import { Copy } from 'lucide-react';
 import { useCommunity } from './community';
+import { dmCallFailure, dmCallUnavailable, startDmCall, useDmCall } from './dm-call';
 import { VoiceAvatar } from './VoiceAvatar';
 import { ReferenceIcon } from './ReferenceIcon';
 import { t, uiError } from './i18n';
 import './reference-home.css';
+import './reference-social.css';
+
+/** WAI-ARIA tabs with automatic activation and a roving tabindex (the StartTabs pattern). */
+export function RovingTabs({
+  tabs,
+  active,
+  onSelect,
+  label,
+  idPrefix,
+  className,
+}: {
+  tabs: [key: string, label: string][];
+  active: string;
+  onSelect(key: string): void;
+  label: string;
+  idPrefix: string;
+  className: string;
+}) {
+  const buttons = useRef<(HTMLButtonElement | null)[]>([]);
+  return (
+    <div className={className} role="tablist" aria-label={label}>
+      {tabs.map(([key, text], index) => (
+        <button
+          key={key}
+          ref={(element) => {
+            buttons.current[index] = element;
+          }}
+          id={`${idPrefix}-tab-${key}`}
+          type="button"
+          role="tab"
+          aria-selected={active === key}
+          aria-controls={`${idPrefix}-panel`}
+          tabIndex={active === key ? 0 : -1}
+          onClick={() => onSelect(key)}
+          onKeyDown={(e) => {
+            const target =
+              e.key === 'ArrowRight'
+                ? index + 1
+                : e.key === 'ArrowLeft'
+                  ? index - 1
+                  : e.key === 'Home'
+                    ? 0
+                    : e.key === 'End'
+                      ? tabs.length - 1
+                      : null;
+            if (target === null) return;
+            e.preventDefault();
+            const next = (target + tabs.length) % tabs.length;
+            buttons.current[next]?.focus();
+            onSelect(tabs[next]![0]);
+          }}
+        >
+          {text}
+        </button>
+      ))}
+    </div>
+  );
+}
+/** The panel a RovingTabs list controls. */
+export const tabPanelProps = (idPrefix: string, active: string) => ({
+  id: `${idPrefix}-panel`,
+  role: 'tabpanel',
+  'aria-labelledby': `${idPrefix}-tab-${active}`,
+});
 
 export function useFriendList() {
   const userId = useCommunity((s) => s.user?.id),
@@ -72,6 +138,7 @@ export function FriendsPage({ notify }: { notify(message: string): void }) {
   const c = useCommunity(),
     navigate = useNavigate(),
     list = useFriendList();
+  useDmCall(); // re-render when the call state changes callReason below
   const [params, setParams] = useSearchParams();
   const selected = params.get('tab') ?? 'online';
   const tab = ['online', 'all', 'requests', 'blocked'].includes(selected) ? selected : 'online';
@@ -144,53 +211,74 @@ export function FriendsPage({ notify }: { notify(message: string): void }) {
       notify(uiError(failure));
     }
   };
+  /* Opens (or creates) the DM, then rings from it; the DM is found by recipient, never by focus. */
+  const callReason = dmCallUnavailable();
+  const call = async (f: SocialFriend) => {
+    try {
+      native();
+      const session = { user: c.user?.id, server: c.serverUrl };
+      await c.createDM(f.user.id);
+      const state = useCommunity.getState();
+      const dm = state.dms.find(
+        (item) => item.type === 1 && item.recipients?.some((u) => u.id === f.user.id),
+      );
+      if (!dm || state.user?.id !== session.user || state.serverUrl !== session.server) return;
+      await startDmCall(dm.id, 'audio');
+      navigate('/dm-call');
+    } catch (failure) {
+      notify(dmCallFailure(failure));
+    }
+  };
+  const ownTag = c.user
+    ? `${c.user.username}${c.user.discriminator ? '#' + c.user.discriminator : ''}`
+    : '';
   return (
     <section className="reference-friends">
       <div className="reference-page-heading">
         <div>
           <h1>{t('Arkadaşlar')}</h1>
-          <button
-            className="text-button"
-            onClick={() => {
-              const own = c.user;
-              if (own)
+          {ownTag && (
+            <button
+              className="ss-own-tag"
+              title={t('Arkadaşların seni bu etiketle ekler.')}
+              aria-label={t('Kullanıcı etiketini kopyala: {tag}', { tag: ownTag })}
+              onClick={() =>
                 void navigator.clipboard
-                  .writeText(`${own.username}${own.discriminator ? '#' + own.discriminator : ''}`)
+                  .writeText(ownTag)
                   .then(() => notify(t('Kullanıcı adı kopyalandı.')))
-                  .catch(() => notify(t('Kullanıcı adı kopyalanamadı.')));
-            }}
-          >
-            {t('Kullanıcı adımı kopyala')}
-          </button>
+                  .catch(() => notify(t('Kullanıcı adı kopyalanamadı.')))
+              }
+            >
+              <span>{ownTag}</span>
+              <Copy size={14} aria-hidden="true" />
+            </button>
+          )}
         </div>
         <button className="button primary" onClick={() => setAdding(true)}>
           <ReferenceIcon name="plus" size={18} />
           {t('Arkadaş ekle')}
         </button>
       </div>
-      <div className="reference-friend-tabs" role="tablist" aria-label={t('Arkadaş listesi')}>
-        {[
+      <RovingTabs
+        className="reference-friend-tabs"
+        label={t('Arkadaş listesi')}
+        idPrefix="friends"
+        active={tab}
+        tabs={[
           ['online', t('Çevrimiçi · {count}', { count: online.length })],
           ['all', t('Tümü · {count}', { count: accepted.length })],
           ['requests', t('İstekler · {count}', { count: requests.length })],
           ['blocked', t('Engellenenler')],
-        ].map(([key, label]) => (
-          <button
-            key={key}
-            role="tab"
-            aria-selected={tab === key}
-            onClick={() => {
-              const next = new URLSearchParams(params);
-              next.set('tab', key!);
-              setParams(next);
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+        ]}
+        onSelect={(key) => {
+          const next = new URLSearchParams(params);
+          next.set('tab', key);
+          setParams(next);
+        }}
+      />
+      <div {...tabPanelProps('friends', tab)}>
       {list.loading ? (
-        <p role="status">{t('Arkadaşlar yükleniyor…')}</p>
+        <LoadingView size="inline" label={t('Arkadaşlar yükleniyor…')} />
       ) : shown.length ? (
         <div className="reference-friends-table">
           {shown.map((f, index) => (
@@ -258,13 +346,15 @@ export function FriendsPage({ notify }: { notify(message: string): void }) {
                     >
                       <ReferenceIcon name="message" size={20} />
                     </IconButton>
-                    <IconButton
-                      label={t('Sesli ara')}
-                      disabled
-                      title={t('Özel mesaj aramaları için sunucu bağlantısı henüz eklenmedi.')}
-                    >
-                      <ReferenceIcon name="phone" size={20} />
-                    </IconButton>
+                    {window.rooms?.dmCalls && (
+                      <IconButton
+                        label={callReason ?? t('{name} ile sesli ara', { name: f.user.displayName })}
+                        disabled={!!callReason}
+                        onClick={() => void call(f)}
+                      >
+                        <ReferenceIcon name="phone" size={20} />
+                      </IconButton>
+                    )}
                     <IconButton
                       label={t('{name} seçenekleri', { name: f.user.displayName })}
                       onClick={() => {
@@ -281,35 +371,35 @@ export function FriendsPage({ notify }: { notify(message: string): void }) {
           ))}
         </div>
       ) : (
-        <div className="reference-social-empty">
-          <span>
-            <ReferenceIcon name="users" size={38} />
-          </span>
-          <h2>
-            {tab === 'blocked'
+        <EmptyState
+          icon={<ReferenceIcon name="users" size={38} />}
+          title={
+            tab === 'blocked'
               ? t('Engellenen kimse yok.')
               : tab === 'requests'
                 ? t('Bekleyen istek yok.')
                 : accepted.length
                   ? t('Çevrimiçi arkadaş yok.')
-                  : t('İlk arkadaşını ekle.')}
-          </h2>
-          <p>
-            {tab === 'blocked'
-              ? t('Engellediğin kişiler bu listede görünür.')
-              : tab === 'requests'
-                ? t('Yeni istekler burada görünür.')
-                : t('Kullanıcı adıyla arkadaş ekleyebilirsin.')}
-          </p>
-          <button className="button primary" onClick={() => setAdding(true)}>
-            {t('Arkadaş ekle')}
-          </button>
-        </div>
+                  : t('İlk arkadaşını ekle.')
+          }
+          action={
+            <button className="button primary" onClick={() => setAdding(true)}>
+              {t('Arkadaş ekle')}
+            </button>
+          }
+        >
+          {tab === 'blocked'
+            ? t('Engellediğin kişiler bu listede görünür.')
+            : tab === 'requests'
+              ? t('Yeni istekler burada görünür.')
+              : t('Kullanıcı adıyla arkadaş ekleyebilirsin.')}
+        </EmptyState>
       )}
+      </div>
       {(error || list.error) && !adding && !menu && (
-        <p role="alert" className="friends-error">
+        <Notice kind="error" className="friends-error">
           {error || list.error}
-        </p>
+        </Notice>
       )}
       {adding && (
         <Modal title={t('Arkadaş ekle')} onClose={closeAdd} className="reference-add-friend">

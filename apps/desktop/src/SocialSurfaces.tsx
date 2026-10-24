@@ -1,10 +1,11 @@
 import { FriendRequestButton } from './FriendRequestButton';
+import { RovingTabs, tabPanelProps } from './FriendsPage';
 import './reference-social.css';
 import { dmCallUnavailable, startDmCall, useDmCall } from './dm-call';
 import { useRealtime } from './realtime';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal, IconButton } from '@rooms/design';
+import { EmptyState, IconButton, Modal, Notice } from '@rooms/design';
 import type { SocialUser, SocialFriend, SocialAttachment } from '@rooms/social';
 import {
   FileText,
@@ -23,7 +24,6 @@ import {
   MessageCircle,
   AlertCircle,
   Bell,
-  Pin,
   Users,
   X,
   Gamepad2,
@@ -215,6 +215,10 @@ function FileLink({ file }: { file: SocialAttachment }) {
   );
 }
 
+/** Settings › Bildirimler with this conversation preselected in the per-channel mute row. */
+export const dmNotificationsRoute = (channelId: string) =>
+  `/settings?tab=desktop&channel=${encodeURIComponent(channelId)}`;
+
 export function DirectMessageSurface({ notify }: { notify(message: string): void }) {
   const c = useCommunity(),
     detail = useSocialDetailFixture('S12');
@@ -338,7 +342,7 @@ function DirectMessageScope({
     >
       <section className="ss-dm-main">
         <header className="ss-header">
-          <Hash size={23} />
+          <VoiceAvatar id={peer.id} name={nameOf(peer)} />
           <button onClick={() => setProfile(true)}>{nameOf(peer)}</button>
           <span>{statusLabel(c.presence[peer.id])}</span>
           <div>
@@ -357,13 +361,10 @@ function DirectMessageScope({
               <Video size={19} />
             </IconButton>
             <IconButton
-              label={t('Bildirim ayarları')}
-              onClick={() => navigate(preserveReferenceFixtureRoute('/settings?tab=desktop'))}
+              label={t('Bu konuşmanın bildirimleri')}
+              onClick={() => navigate(preserveReferenceFixtureRoute(dmNotificationsRoute(channel.id)))}
             >
               <Bell size={19} />
-            </IconButton>
-            <IconButton disabled label={t('Sabitlenen mesajlar bu bağlantıda sunulmuyor.')}>
-              <Pin size={19} />
             </IconButton>
             <IconButton
               label={inspectorVisible ? t('Üye panelini kapat') : t('Üye panelini aç')}
@@ -439,9 +440,9 @@ function DirectMessageScope({
           </div>
         )}
         {error && (
-          <p className="ss-error" role="alert">
+          <Notice kind="error" className="ss-dm-error">
             {error}
-          </p>
+          </Notice>
         )}
       </section>
       {inspectorVisible && (
@@ -1021,29 +1022,13 @@ function SharedFilesScope({
           {t('Dosya yükle')}
         </button>
       </header>
-      {intent?.initialUploadState === 'unavailable' && !scope.blocked && (
-        <div className="ss-upload" role="status">
-          <AlertCircle size={26} />
-          <div>
-            <strong>{t('Yükleme durumu sağlanmıyor')}</strong>
-            <small>{intent.initialError}</small>
-          </div>
-          <button disabled title={t('Sunucu yükleme iptali sağlamıyor')}>
-            {t('İptal')}
-          </button>
-        </div>
-      )}
-      {busy && (
+      {(busy || (intent?.initialUploadState === 'unavailable' && !scope.blocked)) && (
         <div className="ss-upload" role="status">
           <FileText size={26} />
           <div>
-            <strong>{t('Dosya seçiliyor veya yükleniyor…')}</strong>
+            <strong>{t('Dosya yükleniyor…')}</strong>
             <progress aria-label={t('Dosya yüklemesi')} />
-            <small>{t('Sunucu yükleme yüzdesi sağlamıyor.')}</small>
           </div>
-          <button disabled title={t('Yerel yükleme iptali henüz uygulanmadı')}>
-            {t('İptal')}
-          </button>
         </div>
       )}
       {error && (
@@ -1065,17 +1050,19 @@ function SharedFilesScope({
           </button>
         </div>
       )}
-      <div className="ss-tabs" role="tablist" aria-label={t('Dosya türü')}>
-        {[
+      <RovingTabs
+        className="ss-tabs"
+        label={t('Dosya türü')}
+        idPrefix="ss-files"
+        active={tab}
+        tabs={[
           ['all', t('Tümü')],
           ['images', t('Görseller')],
           ['documents', t('Belgeler')],
-        ].map(([key, label]) => (
-          <button key={key} role="tab" aria-selected={tab === key} onClick={() => setTab(key)}>
-            {label}
-          </button>
-        ))}
-      </div>
+        ]}
+        onSelect={setTab}
+      />
+      <div {...tabPanelProps('ss-files', tab)}>
       <div className="ss-file-grid">
         {files.map(({ file, message }) => {
           const image = imageUrl(file),
@@ -1166,12 +1153,11 @@ function SharedFilesScope({
         })}
       </div>
       {!files.length && (
-        <div className="ss-empty">
-          <FileText size={42} />
-          <h2>{t('Dosya yok')}</h2>
-          <p>{t('Seçili kanalda yüklenen mesajlarda bu türde dosya bulunamadı.')}</p>
-        </div>
+        <EmptyState icon={<FileText size={42} />} title={t('Dosya yok')}>
+          {t('Seçili kanalda yüklenen mesajlarda bu türde dosya bulunamadı.')}
+        </EmptyState>
       )}
+      </div>
       {c.hasOlder && (
         <button
           className="button secondary"
@@ -1255,7 +1241,26 @@ function UserProfileScope({
     own = person?.id === c.user?.id;
   const [view, setView] = useState(initialView),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState('');
+    [error, setError] = useState(''),
+    [stored, setStored] = useState<{ bio: string; statusText: string } | null>(null);
+  /* Only the own profile has a read API; other people show what presence already provides. */
+  useEffect(() => {
+    if (!own || fixtureMode || fixtureOnly() || scope.blocked) return;
+    const request = scope.capture();
+    let active = true;
+    void request.bridge
+      ?.ownProfile?.()
+      .then((profile) => {
+        if (active && request.sameAccount())
+          setStored({ bio: profile.bio.trim(), statusText: profile.statusText.trim() });
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [own, fixtureMode, scope.blocked]);
+  const about = fixtureDetails?.about ?? stored?.bio,
+    statusText = fixtureDetails?.statusText ?? stored?.statusText;
   if (scope.blocked)
     return (
       <Modal title={t('Profil')} className="ss-modal ss-profile" onClose={onClose}>
@@ -1370,9 +1375,7 @@ function UserProfileScope({
               </div>
               {own && <span>{t('SEN')}</span>}
             </div>
-            {fixtureDetails?.statusText && (
-              <p className="ss-profile-status">{fixtureDetails.statusText}</p>
-            )}
+            {statusText && <p className="ss-profile-status">{statusText}</p>}
             {own && c.spaces.length > 0 && (
               <>
                 <h6>{t('BİRLİKTE OLDUĞUN YER')}</h6>
@@ -1385,30 +1388,15 @@ function UserProfileScope({
                 ))}
               </>
             )}
-            {view === 'expanded' && (
+            {about && (
               <div className="ss-about">
                 <h6>{t('HAKKINDA')}</h6>
-                <p>
-                  {fixtureDetails?.about ??
-                    t('Profil ayrıntıları ve katılma tarihi bu bağlantıdan henüz alınamıyor.')}
-                </p>
+                <p>{about}</p>
               </div>
-            )}
-            {!fixtureMode && (
-              <button
-                className="ss-details-button"
-                onClick={() => setView(view === 'expanded' ? 'profile' : 'expanded')}
-              >
-                {view === 'expanded' ? t('Daha az göster') : t('Ayrıntıları göster')}
-              </button>
             )}
           </>
         )}
-        {error && (
-          <p className="ss-error" role="alert">
-            {error}
-          </p>
-        )}
+        {error && <Notice kind="error">{error}</Notice>}
       </div>
       <footer className="ss-modal-footer">
         {!own && !fixtureMode && <FriendRequestButton key={person.id} user={person} />}{' '}
@@ -1428,7 +1416,9 @@ function UserProfileScope({
             </button>
           </>
         ) : (
-          <button onClick={onClose}>{t('Kapat')}</button>
+          <button className="button secondary" onClick={onClose}>
+            {t('Kapat')}
+          </button>
         )}
       </footer>
     </Modal>
