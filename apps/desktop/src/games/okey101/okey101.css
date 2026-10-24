@@ -741,6 +741,10 @@ button.o1-meld:hover,
   .o1-mini-rack {
     display: none;
   }
+  /* The rack shows its own tiles; keep the turn line on one row. */
+  .o1-rack-count {
+    display: none;
+  }
 }
 
 /* Short windows: smaller face-up tiles on the felt so the docked rack keeps its room. */

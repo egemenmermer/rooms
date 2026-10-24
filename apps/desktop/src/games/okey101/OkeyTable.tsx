@@ -513,7 +513,11 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
             </div>
             <div className="o1-tools">
               <small>
-                {round} · {t('Istakan · {count} taş', { count: tiles.length })}
+                {round}
+                <span className="o1-rack-count">
+                  {' · '}
+                  {t('Istakan · {count} taş', { count: tiles.length })}
+                </span>
               </small>
               <button
                 type="button"

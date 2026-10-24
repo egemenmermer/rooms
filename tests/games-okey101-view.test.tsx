@@ -278,7 +278,7 @@ describe('101 Okey table layout', () => {
     expect(within(docked).getByRole('group', { name: 'Istaka' })).toBeTruthy();
     expect(within(docked).getByRole('button', { name: 'Seçili taşı at' })).toBeTruthy();
     expect(within(docked).getByRole('button', { name: 'Seri aç' })).toBeTruthy();
-    expect(within(docked).getByText(/^El 1 · Istakan · /)).toBeTruthy();
+    expect(within(docked).getByText(/^El 1/)).toBeTruthy();
     // The felt keeps only the table; the static rule chips live in the rules popover.
     expect(container.querySelector('.o1-rack')).toBeNull();
     expect(container.querySelector('.rx-badges')).toBeNull();
