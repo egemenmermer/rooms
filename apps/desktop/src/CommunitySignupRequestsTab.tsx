@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, RefreshCw, UserPlus, X } from 'lucide-react';
+import { Check, RefreshCw, UserPlus, X, XCircle } from 'lucide-react';
 import { Modal } from '@rooms/design';
 import type {
   SocialCommunityManagement,
@@ -40,6 +40,9 @@ export function CommunitySignupRequestsTab({
   const [error, setError] = useState('');
   const [deciding, setDeciding] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<SocialSignupRequest | null>(null);
+  /** The waiting requests the admin was looking at when asking to reject them all. */
+  const [bulk, setBulk] = useState<SocialSignupRequest[] | null>(null);
+  const [bulkProgress, setBulkProgress] = useState(0);
   const request = useRef(0);
   const bridgeRef = useRef(bridge);
   bridgeRef.current = bridge;
@@ -79,6 +82,37 @@ export function CommunitySignupRequestsTab({
       setDeciding(null);
     }
   };
+  // Rejects one by one (the service has no bulk call and rate-limits writes), always the list
+  // that was confirmed, so requests arriving meanwhile are never rejected unseen.
+  const rejectAll = async () => {
+    if (deciding || !bridge || !bulk) return;
+    const items = bulk;
+    setDeciding('*');
+    setBulkProgress(0);
+    setError('');
+    let failed = 0;
+    let lastFailure: unknown = null;
+    for (const item of items) {
+      try {
+        await bridge.decideSignupRequest(spaceId, item.id, 'reject');
+      } catch (failure) {
+        failed++;
+        lastFailure = failure;
+      }
+      setBulkProgress((done) => done + 1);
+    }
+    setBulk(null);
+    setDeciding(null);
+    await load();
+    if (failed)
+      setError(
+        t('{count} istek reddedilemedi: {reason}', {
+          count: failed,
+          reason: uiError(lastFailure),
+        }),
+      );
+  };
+  const waiting = value?.requests.filter((item) => item.state === 'pending') ?? [];
   if (!supported)
     return (
       <div className="rcm-invites">
@@ -101,21 +135,33 @@ export function CommunitySignupRequestsTab({
     <div className="rcm-invites">
       <div className="rcm-invites-heading">
         <h2>{t('Kayıt istekleri')}</h2>
-        <button
-          className="rcm-refresh"
-          aria-label={t('Kayıt isteklerini yenile')}
-          disabled={loading}
-          onClick={() => void load()}
-        >
-          <RefreshCw size={16} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {waiting.length > 1 && (
+            <button
+              className="button secondary"
+              disabled={!!deciding}
+              onClick={() => setBulk(waiting)}
+            >
+              <XCircle size={15} />
+              {t('Hepsini reddet')}
+            </button>
+          )}
+          <button
+            className="rcm-refresh"
+            aria-label={t('Kayıt isteklerini yenile')}
+            disabled={loading}
+            onClick={() => void load()}
+          >
+            <RefreshCw size={16} />
+          </button>
+        </div>
       </div>
       <p className="rcm-invites-note">
         {t(
           'Davet bağlantısı olmadan kayıt isteği gönderenler burada bekler; henüz hesapları yok. Onayladığın kişiye tek kullanımlık bir kayıt bağlantısı verilir (Davetler listesinde görünür); hesabı o zaman oluşur ve topluluğa katılır. Reddettiğin kişiye bu söylenir.',
         )}
       </p>
-      {error && !confirm && (
+      {error && !confirm && !bulk && (
         <p className="rcm-invites-error" role="alert">
           {error}
         </p>
@@ -207,6 +253,38 @@ export function CommunitySignupRequestsTab({
               {error}
             </p>
           )}
+        </Modal>
+      )}
+      {bulk && (
+        <Modal
+          title={t('{count} bekleyen istek reddedilsin mi?', { count: bulk.length })}
+          onClose={() => {
+            if (!deciding) setBulk(null);
+          }}
+        >
+          <p className="modal-description">
+            {t(
+              'Hiçbiri için hesap oluşturulmaz ve kişiler isteklerinin reddedildiğini görür. Onayladıkların bundan etkilenmez. Sahte ya da istenmeyen istekleri toplu temizlemek için kullan.',
+            )}
+          </p>
+          <div className="rcm-invite-actions">
+            <button
+              className="button secondary"
+              disabled={!!deciding}
+              onClick={() => setBulk(null)}
+            >
+              {t('Vazgeç')}
+            </button>
+            <button
+              className="button primary"
+              disabled={!!deciding}
+              onClick={() => void rejectAll()}
+            >
+              {deciding
+                ? t('Reddediliyor… {done}/{count}', { done: bulkProgress, count: bulk.length })
+                : t('Hepsini reddet')}
+            </button>
+          </div>
         </Modal>
       )}
     </div>
