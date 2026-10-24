@@ -231,7 +231,7 @@ function startRejoin(channelId: string, roomName: string) {
 // A full drop (LiveKit gave up on its own reconnect) of the room this person is in: go back.
 // User leaves, room switches and private calls go through leaveVoice/joinVoice first, which
 // clear activeChannel or mark the context busy, so they never look like a drop here.
-let heardStatus = mediaProvider().snapshot().status;
+let heardStatus: string | undefined;
 mediaProvider().subscribeState(() => {
   const { status, error } = mediaProvider().snapshot();
   const previous = heardStatus;
