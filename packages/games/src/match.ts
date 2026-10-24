@@ -39,7 +39,7 @@ const MAX_ROUNDS = 100;
 export function asMatch<Round, Command, View, Options>(
   game: GameModule<Round, Command, View, Options>,
   rules: MatchRules<Round, Options>,
-): GameModule<MatchState<Round, Options>, Command, View & { match: MatchView<View> }, Options> {
+): GameModule<MatchState<Round, Options>, Command, View & { series: MatchView<View> }, Options> {
   const roundOptions = (options: Options, totals: number[]) =>
     rules.roundOptions ? rules.roundOptions(options, totals) : options;
   return {
@@ -90,7 +90,8 @@ export function asMatch<Round, Command, View, Options>(
     view(state, viewerSeat) {
       return {
         ...game.view(state.round, viewerSeat),
-        match: {
+        // `series`, not `match`: Tavla's own view already has a `match` field (matchTo, scores).
+        series: {
           totals: [...state.totals],
           rounds: structuredClone(state.rounds),
           winners: state.winners && [...state.winners],

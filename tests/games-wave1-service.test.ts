@@ -20,6 +20,8 @@ import { TURN_DURATION_MS } from '../packages/games/src/seats';
 // Wave 1 integration: every registered game is reachable through the activity service, and a table full
 // of bots (plus the owner, whose turns time out) plays it to the end without a stuck or throwing bot.
 const owner = { userId: 'alice', displayName: 'Alice', canCreate: true };
+// The service deals with crypto randomness, so each game is played many times to catch a bot that throws.
+const REPEAT = Array.from({ length: 25 }, (_, run) => run);
 type Create = Extract<ActivityCommand, { type: 'game.create' }>;
 
 function botTable(create: Omit<Create, 'type'>, seats: number) {
@@ -44,13 +46,16 @@ function playOut(table: GameTable, start = 0, limit = 30_000) {
 }
 
 describe('wave 1 games through the activity service', () => {
-  it.each([2, 4])('plays a full %i-seat Pişti match to the target', (seats) => {
+  it.each([2, 4])('plays full %i-seat Pişti matches to the target', (seats) => {
+    REPEAT.forEach(() => playPisti(seats));
+  });
+  function playPisti(seats: number) {
     const table = botTable({ game: 'rooms-pisti-v1', options: { target: 101 } }, seats);
     const view = gameView(table, 'alice');
     expect(view.view).toMatchObject({
       seats,
       target: 101,
-      match: { totals: Array(seats).fill(0) },
+      series: { totals: Array(seats).fill(0) },
     });
     expect((view.view as { hand: Card[] }).hand).toHaveLength(4);
     expect(view.view.legalActions).toEqual(view.turn === 0 ? ['play'] : []);
@@ -71,7 +76,7 @@ describe('wave 1 games through the activity service', () => {
       expect(result.rounds.reduce((sum, round) => sum + round.points[seat], 0)).toBe(total);
     if (seats === 4) expect(result.totals[0]).toBe(result.totals[2]);
     expect(Object.values(table.statistics).every((stats) => stats.hands === 1)).toBe(true);
-  });
+  }
 
   it('rejects Pişti options outside the published targets', () => {
     expect(() =>
@@ -79,7 +84,7 @@ describe('wave 1 games through the activity service', () => {
     ).toThrow('GAME_OPTIONS_UNSUPPORTED');
   });
 
-  it('plays a full classic Okey round with four seats', () => {
+  it.each(REPEAT)('plays a full classic Okey round with four seats (run %i)', () => {
     const table = botTable({ game: 'rooms-okey-v1' }, 4);
     const view = gameView(table, 'alice').view as { seats: unknown[] };
     expect(view.seats).toHaveLength(4);
@@ -91,44 +96,53 @@ describe('wave 1 games through the activity service', () => {
     expect(JSON.stringify(result)).not.toContain('"stock"');
   });
 
-  it('plays a full Tavla match to three points', () => {
+  it.each(REPEAT)('plays a full Tavla match to three points (run %i)', () => {
     const table = botTable({ game: 'rooms-tavla-v1', options: { matchTo: 3 } }, 2);
+    // The match wrapper keeps Tavla's own `match` field and adds `series`.
+    expect(gameView(table, 'alice').view).toMatchObject({
+      match: { matchTo: 3, scores: [0, 0] },
+      series: { totals: [0, 0], winners: null },
+    });
     playOut(table);
     const result = table.history.at(-1)!.result as { totals: number[]; winners: number[] };
     expect(result.winners).toHaveLength(1);
     expect(result.totals[result.winners[0]]).toBeGreaterThanOrEqual(3);
   });
 
-  it('plays v2 101 to the end, including a timed-out side pick that cannot be undone', () => {
+  it.each(REPEAT)('plays v2 101 rounds to the end with bots (run %i)', () => {
     const table = botTable({ game: '101', options: { islekPenalty: true } }, 4);
-    expect(table.okey!.rules).toMatchObject({
-      id: 'rooms-101-v2',
-      options: { pickupUndo: false },
-    });
-    let now = 0;
-    // Run until Alice must draw while her left neighbour's discard is available, then take it.
-    for (let i = 0; i < 400 && table.status === 'playing'; i++) {
-      const round = table.okey as OkeyRound;
-      if (round.turn === 0 && round.stage === 'draw' && round.discards[3].length) break;
-      now += TURN_DURATION_MS + 1;
-      advanceGameBots(table, now);
-    }
-    if (table.status === 'playing') {
-      gameCommand(table, { type: 'game.action', action: 'draw', cardId: 'discard' }, owner, now);
-      const legal = gameView(table, 'alice').view.legalActions;
-      expect(legal).not.toContain('draw');
-      expect(() => gameCommand(table, { type: 'game.action', action: 'draw' }, owner, now)).toThrow(
-        'PICKUP_UNDO_DISABLED',
-      );
-      // Her timer runs out: the bot must play on instead of trying Çek.
-      advanceGameBots(table, now + TURN_DURATION_MS + 1);
-      now += TURN_DURATION_MS + 1;
-    }
-    playOut(table, now);
+    expect(table.okey!.rules).toMatchObject({ id: 'rooms-101-v2', options: { pickupUndo: false } });
+    playOut(table);
     expect(table.history.at(-1)!.result).toHaveProperty('penaltyLog');
   });
 
-  it('plays Batak and Blackjack with table rules from game.create options', () => {
+  it('lets a timed-out 101 seat play on after a side pick that cannot be undone', () => {
+    const table = botTable({ game: '101' }, 4);
+    const round = table.okey as OkeyRound;
+    // Seat 0 deals first and is in its discard stage; hand it a "picked" side discard.
+    expect(round).toMatchObject({ turn: 0, stage: 'discard' });
+    const picked = round.hands[3].pop()!;
+    round.hands[0].push(picked);
+    round.pickedDiscard = picked.id;
+    expect(gameView(table, 'alice').view.legalActions).not.toContain('draw');
+    expect(() => gameCommand(table, { type: 'game.action', action: 'draw' }, owner, 0)).toThrow(
+      'PICKUP_UNDO_DISABLED',
+    );
+    let now = 0;
+    // Her timer runs out (a gösterge, if she holds one, keeps the turn): the bot must play on, not try Çek.
+    for (let i = 0; i < 4 && table.okey!.turn === 0; i++) {
+      now += TURN_DURATION_MS + 1;
+      advanceGameBots(table, now);
+    }
+    expect(table.okey!.turn).not.toBe(0);
+    const after = table.okey as OkeyRound;
+    expect(
+      after.penaltyLog!.some((entry) => entry.seat === 0 && entry.reason === 'pickup') ||
+        after.melds.some((meld) => meld.tiles.some((tile) => tile.id === picked.id)),
+    ).toBe(true);
+  });
+
+  it.each(REPEAT)('plays Batak and Blackjack with table rules from options (run %i)', () => {
     const batak = botTable(
       { game: 'batak', variant: 'ihaleli', options: { writeContract: true } },
       4,
