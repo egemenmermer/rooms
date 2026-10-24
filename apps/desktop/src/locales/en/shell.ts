@@ -336,6 +336,7 @@ export const shell: Catalog = {
   Kütüphane: 'Library',
   KİŞİSEL: 'PERSONAL',
   Kıraathane: 'Kıraathane',
+  'Sinema salonu': 'Cinema hall',
   'Kısa sürede çok fazla işlem yapıldı. Biraz bekleyip yeniden dene.':
     'Too many actions in a short time. Wait a moment and try again.',
   'Lisansları aç': 'Open licenses',
@@ -584,7 +585,11 @@ export const shell: Catalog = {
   'sen@ornek.com': 'you@example.com',
   'ssh root@SUNUCU_IP': 'ssh root@SERVER_IP',
   'whiteboard çizim tahta': 'whiteboard drawing board',
-  'yayın pencere stremio iptv instagram reels': 'stream window stremio iptv instagram reels',
+  'yayın pencere instagram reels': 'stream window instagram reels',
+  'sinema film dizi kanal iptv stremio youtube canlı tv':
+    'cinema movie film series show channel iptv stremio youtube live tv',
+  'Topluluğun salonunda canlı kanal, film, dizi ve YouTube.':
+    'Live channels, movies, shows and YouTube in your community’s hall.',
   'yeniden bağlanıyor': 'reconnecting',
   '{channel} kanalına davetlisin.': 'You’re invited to {channel}.',
   '{channel} kanalında etiketlendin': 'You were mentioned in {channel}',
