@@ -54,8 +54,10 @@
 }
 .rg-seat-clock {
   position: absolute;
-  right: -10px;
-  bottom: -6px;
+  /* Centred under the avatar, so it never covers the name or count text beside it. */
+  left: 50%;
+  bottom: -8px;
+  transform: translateX(-50%);
   min-width: 20px;
   padding: 1px 5px;
   border-radius: var(--radius-pill);
