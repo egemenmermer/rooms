@@ -34,7 +34,9 @@ import { pokerCategory } from '../holdem/poker-labels';
 import { ReferenceCreateGame } from './CreateGame';
 import { useGameFixtureMetadata } from './fixture';
 import { GameRecovery } from './GameRecovery';
-import { array, names, object, tableTitle, type Card, type GameKind } from './model';
+import { catalogEntry, offeredGames } from '../catalog';
+import { gameDefinition, type GameSetupValues } from '../registry';
+import { array, names, object, tableTitle, type Card } from './model';
 import { PlayingCard } from './PlayingCard';
 
 export function ReferenceGames({
@@ -43,24 +45,17 @@ export function ReferenceGames({
   game,
   onCreate,
   create,
-  variant,
-  setVariant,
-  folding,
-  setFolding,
-  teams,
-  setTeams,
+  setup,
+  onSetup,
 }: {
   activity: ReturnType<typeof useActivityRoom>;
   roomId: string | null;
   game: GamePublicState | null;
-  onCreate(value: GameKind | null): void;
-  create: GameKind | null;
-  variant: 'ihaleli' | 'esli' | 'koz-maca' | 'gommeli';
-  setVariant(value: 'ihaleli' | 'esli' | 'koz-maca' | 'gommeli'): void;
-  folding: boolean;
-  setFolding(value: boolean): void;
-  teams: boolean;
-  setTeams(value: boolean): void;
+  onCreate(value: string | null): void;
+  create: string | null;
+  /** Choices for the game's setup page (see `GameCreateDefinition`). */
+  setup: GameSetupValues;
+  onSetup(patch: GameSetupValues): void;
 }) {
   const c = useCommunity(),
     navigate = useNavigate(),
@@ -94,7 +89,8 @@ export function ReferenceGames({
     playing = game?.status === 'playing',
     waiting = game?.status === 'waiting';
   const own = game?.seats.find((seat) => seat.userId === c.user?.id),
-    owner = game?.ownerId === c.user?.id;
+    owner = game?.ownerId === c.user?.id,
+    definition = game ? gameDefinition(game.kind) : undefined;
   const access = !!own || view.watching === true;
   const projected = array<Record<string, unknown>>(view.seats),
     mine = projected.find((seat) => seat.userId === c.user?.id);
@@ -103,9 +99,7 @@ export function ReferenceGames({
     Math.max(
       1,
       Number(
-        view.rules?.capacity ??
-          view.capacity ??
-          (game?.kind === 'blackjack' ? 7 : game?.kind === 'holdem' ? 9 : 4),
+        view.rules?.capacity ?? view.capacity ?? catalogEntry(game?.kind)?.fallbackCapacity ?? 4,
       ),
     ),
   );
@@ -175,7 +169,7 @@ export function ReferenceGames({
     !activity.busy &&
     legal.includes(action) &&
     (action === 'start'
-      ? !!owner && !!own
+      ? !!own
       : myTurn &&
         !own?.pendingNextHand &&
         own?.connected === true &&
@@ -237,20 +231,13 @@ export function ReferenceGames({
   }, [fixture, playing, myTurn, legal.join(',')]);
   const startReason = !own
     ? t('Oyunu başlatmak için önce otur')
-    : !owner
+    : !owner && !legal.includes('start')
       ? t('Oyunu yalnızca masa sahibi başlatabilir')
       : !ready
         ? t('Etkinlik bağlantısı bekleniyor')
-        : !game ||
-            game.seats.length <
-              (game.kind === 'holdem' ? 2 : game.kind === 'blackjack' ? 1 : capacity)
+        : !game || game.seats.length < (definition?.minSeats ?? capacity)
           ? t('Başlamak için koltukları doldurun')
-          : game.kind === 'holdem' &&
-              game.seats.some(
-                (seat) => seat.chips < Number(view.rules?.bigBlind ?? view.bigBlind ?? 20),
-              )
-            ? t('Bir oyuncunun fişi blind için yetersiz')
-            : '';
+          : (definition?.startBlocker?.(game) ?? '');
   const roomName = c.channels.find((channel) => channel.id === roomId)?.name ?? t('Oda');
   const title =
     view.tableName ??
@@ -345,23 +332,7 @@ export function ReferenceGames({
   const ruleRows: [string, string][] = [
     [t('Oyun'), game ? names[game.kind] : create ? names[create] : '—'],
     [t('Koltuk'), String(capacity)],
-    ...(game?.kind === 'holdem'
-      ? [
-          [
-            'Blind',
-            t('{small} / {big} sanal fiş', {
-              small: nativeRules?.smallBlind ?? '—',
-              big: nativeRules?.bigBlind ?? String(view.bigBlind ?? '—'),
-            }),
-          ] as [string, string],
-        ]
-      : []),
-    ...(game?.kind === 'holdem'
-      ? ([
-          [t('Giriş'), `${nativeRules?.minBuyIn ?? '—'} – ${nativeRules?.maxBuyIn ?? '—'}`],
-          [t('İzleyici'), nativeRules?.spectatorsAllowed ? t('Açık') : t('Kapalı')],
-        ] as [string, string][])
-      : []),
+    ...(game ? (definition?.lobbyRuleRows?.(game) ?? []) : []),
   ];
   useEffect(() => {
     if (!fixtureMetadata) return;
@@ -374,16 +345,14 @@ export function ReferenceGames({
     setBuyIn(ui.modal === 'buy-in' ? ui.buyInSeat : null);
     setRules(ui.modal === 'rules');
   }, [fixtureMetadata]);
-  if (create === 'batak' || create === '101')
+  const createSetup = create ? gameDefinition(create).create : undefined;
+  if (create && createSetup)
     return (
       <ReferenceCreateGame
         kind={create}
-        variant={variant}
-        setVariant={setVariant}
-        folding={folding}
-        setFolding={setFolding}
-        teams={teams}
-        setTeams={setTeams}
+        definition={createSetup}
+        setup={setup}
+        onSetup={onSetup}
         participants={activity.room?.participants ?? []}
         busy={activity.busy}
         disabled={fixture || !ready || createConflict}
@@ -418,7 +387,7 @@ export function ReferenceGames({
           void createTable({
             type: 'game.create',
             game: create,
-            ...(create === 'batak' ? { variant } : { folding, teams }),
+            ...createSetup.command({ ...createSetup.defaults, ...setup }),
             ...(canReplace && replacementMatches ? { replacePrimary: replaceConsent } : {}),
           })
         }
@@ -507,41 +476,14 @@ export function ReferenceGames({
       {!game ? (
         <>
           <div className="rg-catalog">
-            {(['holdem', 'blackjack', 'batak', '101'] as const).map((kind) => (
+            {offeredGames.map(({ kind, name, lobbyDetail, LobbyArt }) => (
               <article className={`rg-catalog-card ${kind}`} key={kind}>
                 <div className="rg-catalog-art" aria-hidden="true">
-                  {kind === '101' ? (
-                    <div className="rg-art-tiles">
-                      {[10, 11, 12].map((number) => (
-                        <span key={number}>
-                          {number}
-                          <small>•</small>
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="rg-art-cards">
-                      {(kind === 'batak' ? ['A', 'K', 'Q'] : ['A', 'K']).map((rank, index) => (
-                        <span key={rank} className={index === 1 && kind !== 'batak' ? 'red' : ''}>
-                          {rank}
-                          <b>{index === 1 && kind !== 'batak' ? '♥' : '♠'}</b>
-                        </span>
-                      ))}
-                      {kind === 'holdem' && <i>100</i>}
-                    </div>
-                  )}
+                  <LobbyArt />
                 </div>
                 <div>
-                  <h3>{names[kind]}</h3>
-                  <p>
-                    {kind === 'holdem'
-                      ? t('2–9 oyuncu · Sanal fiş')
-                      : kind === 'blackjack'
-                        ? t('Otomatik krupiye · Sanal fiş')
-                        : kind === 'batak'
-                          ? t('4 tür · 3 veya 4 oyuncu')
-                          : t('4 oyuncu · Tekli veya eşli')}
-                  </p>
+                  <h3>{name}</h3>
+                  <p>{lobbyDetail}</p>
                   <button className="button secondary" onClick={() => onCreate(kind)}>
                     <Plus size={16} />
                     {t('Masa oluştur')}
@@ -660,7 +602,7 @@ export function ReferenceGames({
                       fixture ||
                       !ready ||
                       activity.busy ||
-                      (game?.kind === 'holdem' && view.rules?.spectatorsAllowed === false)
+                      view.rules?.spectatorsAllowed === false
                     }
                     onClick={() =>
                       void send({ type: 'game.watch', watching: view.watching !== true })
@@ -703,7 +645,7 @@ export function ReferenceGames({
               <h3>{game.seats.length === capacity ? t('Masa dolu') : t('Oyuncular bekleniyor')}</h3>
               <p>{startReason || t('Yeni el başlayabilir.')}</p>
             </div>
-            {game.kind === 'blackjack' && own && (
+            {definition?.betweenHandActions?.includes('bet') && own && (
               <label className="rg-lobby-bet">
                 {t('Sanal bahis')}
                 <input
@@ -747,7 +689,7 @@ export function ReferenceGames({
           <Eye size={32} />
           <h2>{t('Masayı izle')}</h2>
           <p>
-            {game?.kind === 'holdem' && view.rules?.spectatorsAllowed === false
+            {view.rules?.spectatorsAllowed === false
               ? t('Bu masada izleyici erişimi kapalı.')
               : t('Masaya izleyici olarak katıl.')}
           </p>
@@ -757,7 +699,7 @@ export function ReferenceGames({
               fixture ||
               !ready ||
               activity.busy ||
-              (game?.kind === 'holdem' && view.rules?.spectatorsAllowed === false)
+              view.rules?.spectatorsAllowed === false
             }
             onClick={() => void send({ type: 'game.watch', watching: true })}
           >

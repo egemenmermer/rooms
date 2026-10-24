@@ -2,90 +2,26 @@ import './kiraathane.css';
 import { ArrowRight, History, Info, LoaderCircle, Users } from 'lucide-react';
 import type { GamePublicState } from '../../../packages/activity-protocol/src';
 import { locale, t } from './i18n';
+import { catalogEntry, gameNames, offeredGames } from './games/catalog';
 
-type Kind = GamePublicState['kind'];
-export const gameNames: Record<Kind, string> = {
-  holdem: 'Texas Hold’em',
-  blackjack: 'Blackjack',
-  batak: 'Batak',
-  '101': '101 Okey',
-};
-export const gameCatalog: { kind: Kind; players: string; detail: string }[] = [
-  { kind: 'holdem', players: t('2–9 oyuncu'), detail: t('Blind, flop ve showdown. Sanal fişle.') },
-  {
-    kind: 'blackjack',
-    players: t('1–7 oyuncu'),
-    detail: t('Krupiyeye karşı 21. Herkes kendi elini oynar.'),
-  },
-  { kind: 'batak', players: t('3–4 oyuncu'), detail: t('İhaleli, eşli, koz maça ya da gömmeli.') },
-  {
-    kind: '101',
-    players: t('4 oyuncu'),
-    detail: t('Tekli ya da eşli. Botlar boş yerleri doldurur.'),
-  },
-];
+export { gameNames };
+/** Games people can open a table for (the light half of `games/registry.ts`). */
+export const gameCatalog = offeredGames;
 
 export function tableCapacity(game: GamePublicState): number {
   const value = Number(
     game.view.rules?.capacity ??
       game.view.capacity ??
-      (game.kind === 'blackjack' ? 7 : game.kind === 'holdem' ? 9 : 4),
+      catalogEntry(game.kind)?.fallbackCapacity ??
+      4,
   );
   return Number.isInteger(value) && value >= 1 && value <= 9 ? value : 4;
 }
 
 /** Small drawn table pieces; no photos, so the lobby keeps the app's own look. */
-export function GameArt({ kind }: { kind: Kind }) {
-  if (kind === '101')
-    return (
-      <span className="kh-art okey" aria-hidden="true">
-        {[
-          ['7', 'red'],
-          ['8', 'black'],
-          ['9', 'blue'],
-          ['★', 'joker'],
-        ].map(([value, tone]) => (
-          <i key={value} className={`kh-tile ${tone}`}>
-            {value}
-          </i>
-        ))}
-      </span>
-    );
-  const cards: [string, string][] =
-    kind === 'holdem'
-      ? [
-          ['A', '♠'],
-          ['K', '♥'],
-        ]
-      : kind === 'blackjack'
-        ? [
-            ['A', '♣'],
-            ['10', '♦'],
-          ]
-        : [
-            ['A', '♠'],
-            ['Q', '♠'],
-            ['10', '♥'],
-            ['7', '♣'],
-          ];
-  return (
-    <span className={`kh-art ${kind}`} aria-hidden="true">
-      {cards.map(([rank, suit]) => (
-        <i key={rank + suit} className={`kh-card ${'♥♦'.includes(suit) ? 'red' : ''}`}>
-          <b>{rank}</b>
-          {suit}
-        </i>
-      ))}
-      {kind === 'holdem' && (
-        <span className="kh-chips">
-          <i />
-          <i />
-          <i />
-        </span>
-      )}
-      {kind === 'blackjack' && <span className="kh-badge">21</span>}
-    </span>
-  );
+export function GameArt({ kind }: { kind: string }) {
+  const Art = catalogEntry(kind)?.Art;
+  return Art ? <Art /> : <span className="kh-art" aria-hidden="true" />;
 }
 
 export function Kiraathane({
@@ -108,7 +44,7 @@ export function Kiraathane({
   busy: boolean;
   /** A non-game activity (cinema, YouTube…) that a new table would replace. */
   otherActivity: string | null;
-  onCreate(kind: Kind): void;
+  onCreate(kind: string): void;
   onOpen(): void;
   onHistory(): void;
   onRetry(): void;
@@ -206,7 +142,7 @@ export function Kiraathane({
                 <div className="kh-tags">
                   <span>{item.players}</span>
                   <span>
-                    {item.kind === '101' || item.kind === 'batak' ? t('Puan') : t('Sanal fiş')}
+                    {item.scoring === 'points' ? t('Puan') : t('Sanal fiş')}
                   </span>
                 </div>
               </div>

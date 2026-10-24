@@ -10,7 +10,9 @@ import { useCommunity } from '../community';
 import { useGameFixtureMetadata } from './shared/fixture';
 import { ReferenceGameHistory } from './shared/History';
 import { ReferenceGames } from './shared/Lobby';
-import { names, tableTitle, type GameKind } from './shared/model';
+import { isOfferedGame } from './catalog';
+import { gameDefinition, type GameSetupValues } from './registry';
+import { tableTitle } from './shared/model';
 import { ReferenceOtherGame } from './shared/TableShell';
 
 export default function Games() {
@@ -20,10 +22,8 @@ export default function Games() {
     navigate = useNavigate(),
     community = useCommunity(),
     fixtureMetadata = useGameFixtureMetadata();
-  const [create, setCreate] = useState<GameKind | null>(null),
-    [variant, setVariant] = useState<'ihaleli' | 'esli' | 'koz-maca' | 'gommeli'>('ihaleli'),
-    [folding, setFolding] = useState(false),
-    [teams, setTeams] = useState(false);
+  const [create, setCreate] = useState<string | null>(null),
+    [setup, setSetup] = useState<GameSetupValues>({});
   const game =
     activity.room?.primary?.activity === activity.room?.game?.kind
       ? (activity.room?.game ?? null)
@@ -32,14 +32,13 @@ export default function Games() {
   // The app directory opens a game's table setup directly: /games?create=holdem.
   const requested = params.get('create');
   useEffect(() => {
-    if (requested && Object.hasOwn(names, requested)) setCreate(requested as GameKind);
+    if (requested && isOfferedGame(requested)) setCreate(requested);
   }, [requested]);
   useEffect(() => {
     if (fixtureMetadata) {
-      setCreate(fixtureMetadata.ui.create);
-      setVariant(fixtureMetadata.ui.variant);
-      setFolding(fixtureMetadata.ui.folding);
-      setTeams(fixtureMetadata.ui.teams);
+      const ui = fixtureMetadata.ui;
+      setCreate(ui.create);
+      setSetup({ variant: ui.variant, folding: ui.folding, teams: ui.teams });
     }
   }, [fixtureMetadata]);
   if (params.get('tab') === 'history')
@@ -72,7 +71,7 @@ export default function Games() {
         onRetry={() => void activity.refresh()}
       />
     );
-  if (game && game.status !== 'waiting' && game.kind !== 'holdem')
+  if (game && game.status !== 'waiting' && !gameDefinition(game.kind).tableInLobby)
     return (
       <>
         <button className="coffeehouse-return" onClick={() => navigate('/games')}>
@@ -102,12 +101,8 @@ export default function Games() {
         game={game ?? null}
         onCreate={setCreate}
         create={create}
-        variant={variant}
-        setVariant={setVariant}
-        folding={folding}
-        setFolding={setFolding}
-        teams={teams}
-        setTeams={setTeams}
+        setup={setup}
+        onSetup={(patch) => setSetup((value) => ({ ...value, ...patch }))}
       />
     </>
   );

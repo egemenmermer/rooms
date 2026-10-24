@@ -1,4 +1,4 @@
-import { gameNames } from '../../Kiraathane';
+import { gameNames } from '../catalog';
 import { t } from '../../i18n';
 import type { GamePublicState } from '../../../../../packages/activity-protocol/src';
 
@@ -16,7 +16,7 @@ export type Tile = {
 };
 export const names = gameNames;
 /** Older servers titled tables with the raw game id ("blackjack"); show the real name instead. */
-export const tableTitle = (title: string | undefined, kind: GameKind | undefined) =>
+export const tableTitle = (title: string | undefined, kind: string | undefined) =>
   !title || (kind && (title === kind || title === `${kind}`))
     ? kind
       ? names[kind]
@@ -50,3 +50,12 @@ export const tileColors: Record<string, string> = {
 export const array = <T>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 export const object = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+/** A chip game's net for `userId` on a history row, when the server recorded one. */
+export const chipNet = (result: Record<string, unknown>, userId?: string) => {
+  const player = array<Record<string, unknown>>(result.players).find(
+    (item) => item.userId === userId,
+  );
+  return player && typeof player.net === 'number'
+    ? t('{net} fiş', { net: `${player.net > 0 ? '+' : ''}${player.net}` })
+    : null;
+};

@@ -6,12 +6,14 @@ import { IconButton, Modal } from '@rooms/design';
 import { useActivityRoom } from '../../activity';
 import { useCommunity } from '../../community';
 import type { GamePublicState } from '../../../../../packages/activity-protocol/src';
-import { HistoryDetails } from '../card-history/CardHistory';
+import { scoreHistoryResult } from '../card-history/CardHistory';
+import { isOfferedGame, offeredGames } from '../catalog';
+import { gameDefinition } from '../registry';
 import { useGameFixtureMetadata } from './fixture';
-import { array, names, object, type GameKind } from './model';
+import { array, names, object } from './model';
 
 type HistoryTable = {
-  kind: GameKind;
+  kind: string;
   history: GamePublicState['history'];
   statistics: Record<string, unknown>;
   seats: GamePublicState['seats'];
@@ -27,7 +29,7 @@ export function ReferenceGameHistory({
   const fixtureMetadata = useGameFixtureMetadata(),
     navigate = useNavigate(),
     community = useCommunity();
-  const [filter, setFilter] = useState<'all' | GameKind>('all'),
+  const [filter, setFilter] = useState<string>('all'),
     [detail, setDetail] = useState<{
       table: HistoryTable;
       hand: GamePublicState['history'][number];
@@ -46,13 +48,13 @@ export function ReferenceGameHistory({
             label: game.view.tableName ?? names[game.kind],
           },
           ...array<Record<string, unknown>>(game.view.previousTables)
-            .filter((table) => ['holdem', 'blackjack', 'batak', '101'].includes(String(table.kind)))
+            .filter((table) => isOfferedGame(String(table.kind)))
             .map((table) => ({
-              kind: table.kind as GameKind,
+              kind: String(table.kind),
               history: array<GamePublicState['history'][number]>(table.history),
               statistics: object(table.statistics),
               seats: [],
-              label: names[table.kind as GameKind],
+              label: names[String(table.kind)] ?? String(table.kind),
             })),
         ]
       : [];
@@ -74,44 +76,12 @@ export function ReferenceGameHistory({
     table: HistoryTable,
     result: Record<string, unknown>,
     entry: GamePublicState['history'][number],
-  ) => {
-    const player = array<Record<string, unknown>>(result.players).find(
-      (item) => item.userId === community.user?.id,
+  ) =>
+    (gameDefinition(table.kind).historyResult ?? scoreHistoryResult)(
+      result,
+      entry,
+      community.user?.id,
     );
-    if (player && ['holdem', 'blackjack'].includes(table.kind) && typeof player.net === 'number')
-      return t('{net} fiş', { net: `${player.net > 0 ? '+' : ''}${player.net}` });
-    if (table.kind === 'holdem') {
-      const paid = object(result.payouts)[community.user?.id ?? ''];
-      return paid !== undefined
-        ? t('{amount} fiş ödendi', { amount: Number(paid) })
-        : t('Ödeme yok');
-    }
-    if (table.kind === 'blackjack') {
-      const own = array<Record<string, unknown>>(result.results).filter(
-        (item) => item.userId === community.user?.id,
-      );
-      return own.length
-        ? own
-            .map(
-              (item) =>
-                (
-                  ({
-                    win: t('Kazandı'),
-                    lose: t('Kaybetti'),
-                    push: t('Berabere'),
-                    blackjack: 'Blackjack',
-                  }) as Record<string, string>
-                )[String(item.outcome)] ?? t('Sonuç'),
-            )
-            .join(' · ')
-        : '—';
-    }
-    const own = entry.seats?.find((seat) => seat.userId === community.user?.id);
-    const scores = array<number>(result.scores);
-    return own && scores[own.position] !== undefined
-      ? t('{score} puan', { score: scores[own.position] })
-      : t('Koltuk puanları');
-  };
   useEffect(() => setDetail(null), [activity.room?.roomId, community.user?.id]);
   useEffect(() => {
     const kind = fixtureMetadata?.ui.historyKind;
@@ -161,7 +131,7 @@ export function ReferenceGameHistory({
               onChange={(event) => setFilter(event.target.value as typeof filter)}
             >
               <option value="all">{t('Tüm oyunlar')}</option>
-              {Object.entries(names).map(([kind, name]) => (
+              {offeredGames.map(({ kind, name }) => (
                 <option value={kind} key={kind}>
                   {name}
                 </option>
@@ -250,7 +220,7 @@ export function ReferenceGameHistory({
         >
           <div className="rg-modal-body">
             <p>{new Date(detail.hand.endedAt).toLocaleString(locale)}</p>
-            <HistoryDetails kind={detail.table.kind} entry={detail.hand} />
+            <HistoryDetail kind={detail.table.kind} entry={detail.hand} />
           </div>
           <footer className="rg-modal-footer">
             <button className="button secondary" onClick={() => setDetail(null)}>
@@ -261,4 +231,15 @@ export function ReferenceGameHistory({
       )}
     </div>
   );
+}
+
+function HistoryDetail({
+  kind,
+  entry,
+}: {
+  kind: string;
+  entry: GamePublicState['history'][number];
+}) {
+  const Detail = gameDefinition(kind).HistoryDetail;
+  return <Detail entry={entry} />;
 }

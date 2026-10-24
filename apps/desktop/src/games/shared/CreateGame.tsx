@@ -3,16 +3,15 @@ import { useEffect, useState } from 'react';
 import { X, ShieldCheck } from 'lucide-react';
 import { Avatar, Modal } from '@rooms/design';
 import { useGameFixtureMetadata } from './fixture';
+import type { GameCreateDefinition, GameSetupValues } from '../registry';
 import { names } from './model';
 
+/** The setup page before `game.create`; the game's registry entry supplies the choices and rows. */
 export function ReferenceCreateGame({
   kind,
-  variant,
-  setVariant,
-  folding,
-  setFolding,
-  teams,
-  setTeams,
+  definition,
+  setup,
+  onSetup,
   participants,
   busy,
   disabled,
@@ -22,13 +21,11 @@ export function ReferenceCreateGame({
   onCancel,
   onSubmit,
 }: {
-  kind: 'batak' | '101';
-  variant: 'ihaleli' | 'esli' | 'koz-maca' | 'gommeli';
-  setVariant(value: 'ihaleli' | 'esli' | 'koz-maca' | 'gommeli'): void;
-  folding: boolean;
-  setFolding(value: boolean): void;
-  teams: boolean;
-  setTeams(value: boolean): void;
+  kind: string;
+  definition: GameCreateDefinition;
+  /** The route's choices; the definition's defaults fill what is missing. */
+  setup: GameSetupValues;
+  onSetup(patch: GameSetupValues): void;
   participants: { userId: string; displayName: string }[];
   busy: boolean;
   disabled: boolean;
@@ -44,19 +41,14 @@ export function ReferenceCreateGame({
   useEffect(() => {
     if (fixtureMetadata) setRulesOpen(fixtureMetadata.ui.modal === 'rules');
   }, [fixtureMetadata]);
-  const count = kind === 'batak' && variant === 'gommeli' ? 3 : 4;
-  const modes = [
-    ['ihaleli', t('İhaleli'), '♣', t('4 oyuncu · Tekli')],
-    ['esli', t('Eşli'), '♠', t('4 oyuncu · 2 + 2')],
-    ['koz-maca', t('Koz Maça'), '♠', t('4 oyuncu · Sabit koz')],
-    ['gommeli', t('Gömmeli'), '♦', t('3 oyuncu · 4 kart gömme')],
-  ] as const;
+  const value = { ...definition.defaults, ...setup };
+  const Options = definition.Options;
   return (
     <div className="rg-page rx-create">
       <header className="rg-heading">
         <div>
-          <h1>{kind === 'batak' ? t('Hangi Batak?') : t('101 Okey masası')}</h1>
-          <p>{kind === 'batak' ? t('Batak türünü seç.') : t('Masa kurallarını seç.')}</p>
+          <h1>{definition.title}</h1>
+          <p>{definition.subtitle}</p>
         </div>
         <div>
           <button onClick={() => setRulesOpen(true)}>
@@ -69,48 +61,7 @@ export function ReferenceCreateGame({
           </button>
         </div>
       </header>
-      {kind === 'batak' ? (
-        <div className="rx-create-options">
-          {modes.map(([id, label, symbol, detail]) => (
-            <button
-              key={id}
-              className={variant === id ? 'selected' : ''}
-              onClick={() => setVariant(id)}
-            >
-              <span>{symbol}</span>
-              <strong>{label}</strong>
-              <small>{detail}</small>
-            </button>
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="rx-create-options two">
-            {([false, true] as const).map((value) => (
-              <button
-                className={folding === value ? 'selected' : ''}
-                key={String(value)}
-                onClick={() => setFolding(value)}
-              >
-                <strong>{value ? t('Katlamalı') : t('Katlamasız')}</strong>
-                <small>{value ? t('Önceki açılış toplamını geç') : t('Açılış en az 101')}</small>
-              </button>
-            ))}
-          </div>
-          <div className="rx-create-options two">
-            {([false, true] as const).map((value) => (
-              <button
-                className={teams === value ? 'selected' : ''}
-                key={String(value)}
-                onClick={() => setTeams(value)}
-              >
-                <strong>{value ? t('Eşli') : t('Tekli')}</strong>
-                <small>{value ? t('2 + 2 oyuncu') : t('4 oyuncu')}</small>
-              </button>
-            ))}
-          </div>
-        </>
-      )}
+      <Options value={value} onChange={onSetup} />
       <div className="rx-create-body">
         <section>
           <h3>{t('Odadaki kişiler')}</h3>
@@ -132,43 +83,12 @@ export function ReferenceCreateGame({
             <span>{t('Oyun')}</span>
             <strong>{names[kind]}</strong>
           </div>
-          <div>
-            <span>{t('Oyuncu')}</span>
-            <strong>{count}</strong>
-          </div>
-          {kind === 'batak' ? (
-            <>
-              <div>
-                <span>{t('Tür')}</span>
-                <strong>{modes.find((mode) => mode[0] === variant)?.[1]}</strong>
-              </div>
-              <div>
-                <span>{t('Akış')}</span>
-                <strong>
-                  {variant === 'gommeli'
-                    ? t('İhale · Koz · Gömme · Oyun')
-                    : variant === 'koz-maca'
-                      ? t('Tahmin · Oyun')
-                      : t('İhale · Koz · Oyun')}
-                </strong>
-              </div>
-            </>
-          ) : (
-            <>
-              <div>
-                <span>{t('Açılış')}</span>
-                <strong>{t('101 · 5 çift')}</strong>
-              </div>
-              <div>
-                <span>{t('Katlamalı')}</span>
-                <strong>{folding ? t('Açık') : t('Kapalı')}</strong>
-              </div>
-              <div>
-                <span>{t('Eşli')}</span>
-                <strong>{teams ? t('Açık') : t('Kapalı')}</strong>
-              </div>
-            </>
-          )}
+          {definition.summary(value).map(([label, text]) => (
+            <div key={label}>
+              <span>{label}</span>
+              <strong>{text}</strong>
+            </div>
+          ))}
           <div>
             <span>{t('Puan')}</span>
             <strong>{t('Yalnızca sanal')}</strong>
@@ -212,38 +132,10 @@ export function ReferenceCreateGame({
       {rulesOpen && (
         <Modal title={t('Masa kuralları')} className="rg-modal" onClose={() => setRulesOpen(false)}>
           <div className="rg-modal-body rg-rules">
-            {(kind === 'batak'
-              ? [
-                  [t('Oyuncu'), String(count)],
-                  [
-                    t('İhale'),
-                    variant === 'koz-maca'
-                      ? t('Her oyuncu 1–13 tahmin verir')
-                      : variant === 'esli' || variant === 'gommeli'
-                        ? t('En az 8')
-                        : t('En az 5'),
-                  ],
-                  [t('Renge uyma'), t('Zorunlu · Mümkünse yükselt')],
-                  [t('Gömmeli'), t('Koz seçimi sonrası 4 kart gömülür')],
-                  [t('Puan'), t('Sunucunun mevcut Batak puan profili')],
-                ]
-              : [
-                  [t('Oyuncu'), t('4 · Eşler karşılıklı')],
-                  [t('Dağıtım'), t('Başlayan 22, diğerleri 21 taş')],
-                  [
-                    t('Açılış'),
-                    folding ? t('Son açıştan en az 1 fazla · İlk 101') : t('En az 101'),
-                  ],
-                  [t('Çift'), t('En az 5 çift')],
-                  [t('Açma türü'), t('Seri ve çift aynı oyuncuda karıştırılmaz')],
-                  ['Okey', t('Göstergenin bir üstü')],
-                  [t('Bitirme'), t('Son taş atılır')],
-                  [t('Puan'), t('Kazanan −101 · Açmayan 202 · Okey bitişi iki kat')],
-                ]
-            ).map(([label, value]) => (
+            {definition.rules(value).map(([label, text]) => (
               <div key={label}>
                 <span>{label}</span>
-                <strong>{value}</strong>
+                <strong>{text}</strong>
               </div>
             ))}
           </div>

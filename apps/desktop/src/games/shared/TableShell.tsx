@@ -9,13 +9,11 @@ import type {
   ActivityCommand,
   GamePublicState,
 } from '../../../../../packages/activity-protocol/src';
-import { ReferenceBatak } from '../batak/BatakTable';
-import { ReferenceBlackjack } from '../blackjack/BlackjackTable';
-import { ReferenceOkey } from '../okey101/OkeyTable';
+import { gameDefinition } from '../registry';
 import { useGameFixtureMetadata } from './fixture';
 import { GameRecovery } from './GameRecovery';
 import { GameResults } from './GameResults';
-import { array, names, object, suits } from './model';
+import { array, names } from './model';
 import type { TableUI } from './table-ui';
 
 export function ReferenceOtherGame({
@@ -29,7 +27,9 @@ export function ReferenceOtherGame({
     navigate = useNavigate(),
     c = useCommunity(),
     own = game.seats.find((seat) => seat.userId === c.user?.id),
-    owner = game.ownerId === c.user?.id;
+    owner = game.ownerId === c.user?.id,
+    definition = gameDefinition(game.kind),
+    Table = definition.Table;
   const fixture = import.meta.env.DEV && new URLSearchParams(location.search).has('fixture');
   const [rules, setRules] = useState(false),
     [history, setHistory] = useState(false),
@@ -45,14 +45,17 @@ export function ReferenceOtherGame({
     legal = array<string>(view.legalActions),
     busy = activity.busy || pending;
   const access = !!own || view.watching === true;
+  // The server's legalActions decide who may deal ('start' for the owner, or for any present
+  // player while the owner is away) and which moves are open on the viewer's turn.
+  const betweenHands = (name: string) =>
+    game.status !== 'playing' && definition.betweenHandActions?.includes(name) === true;
   const can = (name: string) =>
     !fixture &&
     ready &&
     !busy &&
     !!own &&
-    (legal.includes(name) ||
-      (name === 'bet' && game.kind === 'blackjack' && game.status !== 'playing')) &&
-    (name === 'start' || name === 'bet' ? name === 'bet' || owner : own.seat === game.turn);
+    (legal.includes(name) || betweenHands(name)) &&
+    (name === 'start' || definition.betweenHandActions?.includes(name) || own.seat === game.turn);
   const send = async (command: ActivityCommand) => {
     if (fixture || !ready || activity.busy || lock.current) return false;
     lock.current = true;
@@ -92,31 +95,7 @@ export function ReferenceOtherGame({
   const ui: TableUI = { game, userId: c.user?.id, can, action, timer, busy };
   const roomName =
     c.channels.find((channel) => channel.id === activity.room?.roomId)?.name ?? t('Oda');
-  const ruleRows: [string, string][] =
-    game.kind === 'blackjack'
-      ? [
-          [t('Deste'), '6'],
-          [t('Krupiye'), t('Soft 17’de durur (S17)')],
-          ['Blackjack', '3:2'],
-          ['Insurance', t('Kapalı')],
-          ['Double', t('İlk iki kartta')],
-          ['Split', t('Aynı puan değeri · En fazla 4 el')],
-          [t('Split As'), t('Tek kart · yeniden ayırma kapalı')],
-        ]
-      : game.kind === 'batak'
-        ? [
-            [t('Tür'), String(view.variant ?? '—')],
-            [t('Koz'), suits[String(view.trump)] ?? '—'],
-            [t('Oyuncu'), String(game.seats.length)],
-            [t('Gömmeli akışı'), t('İhale → koz → 4 kart gömme → oyun')],
-          ]
-        : [
-            [t('Açılış'), '101'],
-            [t('Çift açılışı'), t('5 çift')],
-            [t('Katlamalı'), object(view.rules).folding ? t('Açık') : t('Kapalı')],
-            [t('Eşli'), object(view.rules).teams ? t('Açık') : t('Kapalı')],
-            [t('Bitirme'), t('Son taş atılır')],
-          ];
+  const ruleRows = definition.ruleRows(game);
   return (
     <div className={`rg-page rx-game rx-${game.kind}`}>
       <header className="rg-heading">
@@ -127,7 +106,7 @@ export function ReferenceOtherGame({
           </div>
           <p>
             {roomName} · {names[game.kind]} ·{' '}
-            {game.kind === 'blackjack' ? t('Sanal fiş') : t('Sanal puan')}
+            {definition.catalog.scoring === 'chips' ? t('Sanal fiş') : t('Sanal puan')}
           </p>
         </div>
         <div>
@@ -174,7 +153,7 @@ export function ReferenceOtherGame({
           <Eye size={32} />
           <h2>{t('Masayı izle')}</h2>
           <p>
-            {game.kind === 'holdem' && view.rules?.spectatorsAllowed === false
+            {view.rules?.spectatorsAllowed === false
               ? t('Bu masada izleyici erişimi kapalı.')
               : t('Masaya izleyici olarak katıl.')}
           </p>
@@ -184,12 +163,12 @@ export function ReferenceOtherGame({
               fixture ||
               !ready ||
               busy ||
-              (game?.kind === 'holdem' && view.rules?.spectatorsAllowed === false)
+              view.rules?.spectatorsAllowed === false
             }
             title={
               fixture
                 ? t('Yerel örnekte hesap işlemleri kapalı')
-                : game?.kind === 'holdem' && view.rules?.spectatorsAllowed === false
+                : view.rules?.spectatorsAllowed === false
                   ? t('Masa izleyici kabul etmiyor')
                   : undefined
             }
@@ -212,13 +191,7 @@ export function ReferenceOtherGame({
               </button>
             </div>
           )}
-          {game.kind === 'blackjack' ? (
-            <ReferenceBlackjack {...ui} />
-          ) : game.kind === 'batak' ? (
-            <ReferenceBatak {...ui} />
-          ) : (
-            <ReferenceOkey {...ui} />
-          )}
+          {Table && <Table {...ui} />}
         </>
       )}
 
@@ -229,7 +202,9 @@ export function ReferenceOtherGame({
               <Trophy size={19} />
               {t('El tamamlandı')}
             </h3>
-            <p>{owner ? t('Yeni el başlatabilirsin.') : t('Masa sahibi bekleniyor.')}</p>
+            <p>
+              {legal.includes('start') ? t('Yeni el başlatabilirsin.') : t('Masa sahibi bekleniyor.')}
+            </p>
           </div>
           <button
             className="button primary"
