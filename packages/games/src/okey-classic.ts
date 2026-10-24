@@ -697,10 +697,10 @@ export const okeyClassicModule = {
     if (seatCount !== SEATS) throw new Error('OKEY_NEEDS_FOUR_SEATS');
     return startOkeyClassic(options, first, rng);
   },
-  action: (state, seat, command) => okeyClassicAction(state, seat, command),
+  action: (state, seat, command, _rng) => okeyClassicAction(state, seat, command),
   view: okeyClassicView,
   turn: (state) => (state.stage === 'ended' ? null : state.turn),
-  botCommand: (state, seat) => okeyClassicBotCommand(state, seat),
+  botCommand: (state, seat, _rng, _context) => okeyClassicBotCommand(state, seat),
   settle: settleOkeyClassic,
   parseOptions: (input) => resolveOkeyClassicOptions(input),
   legalActions: okeyClassicLegalActions,
