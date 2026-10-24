@@ -292,10 +292,11 @@ describe('table lifecycle', () => {
     addBot(table, 1);
     act(table, bob, { type: 'game.sit', seat: 2 });
     const carol = { userId: 'carol', displayName: 'Carol', canCreate: true, roomHost: true };
-    const viewers = [alice, bob, carol, { userId: 'stranger', displayName: 'S', canCreate: true }];
+    const stranger = { userId: 'stranger', displayName: 'S', canCreate: true };
+    const viewers: (typeof alice & { roomHost?: boolean })[] = [alice, bob, carol, stranger];
     const removable = (viewer: (typeof viewers)[number], now: number) =>
       gameView(table, viewer.userId, {
-        roomHost: 'roomHost' in viewer && viewer.roomHost,
+        roomHost: viewer.roomHost,
         now,
       }).seats.map((seat) => [seat.seat, seat.removable]);
     // Bob is present: only the permanent bot (seat 1) can be freed, and only by the owner or the host.
@@ -314,7 +315,7 @@ describe('table lifecycle', () => {
       [1, false],
       [2, false],
     ]);
-    expect(removable(viewers[3], 0)).toEqual([
+    expect(removable(stranger, 0)).toEqual([
       [0, false],
       [1, false],
       [2, false],

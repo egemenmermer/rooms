@@ -184,7 +184,7 @@ describe('101 Okey table', () => {
   });
 
   it('uses the server fake flag: a marked tile is a sahte okey whatever its face', () => {
-    show('your-turn', (game) => {
+    show('discard', (game) => {
       const hands = game.view.hands as { seat: number; tiles: Record<string, unknown>[] }[];
       const own = hands.find((hand) => hand.seat === 0)!;
       own.tiles.push({ id: 'false-joker-1', color: 'red', value: 12, fake: true });
