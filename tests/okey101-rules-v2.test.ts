@@ -436,6 +436,8 @@ describe('101 v2 rules: O6 12-13-1', () => {
     expect(() => validate101Meld([tile('a', 12), tile('b', 13), tile('c', 1)])).toThrow(
       'INVALID_MELD',
     );
+    // The client passes validate101Meld straight to forEach, so the index argument must not matter.
+    expect(() => [run('red', 3, 5)].forEach(validate101Meld)).not.toThrow();
     expect(() =>
       okey101Action(round([hand, [], [], []], {}, { opened: ['runs', null, null, null] }), 0, {
         action: 'open',
