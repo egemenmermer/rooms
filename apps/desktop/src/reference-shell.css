@@ -233,8 +233,13 @@
 /*
  * The one Button. <button class="button primary|secondary|ghost|subtle|danger [small|full]">.
  * Heights: 36px default, 30px small. Disabled comes from the global button:disabled rule; set
- * aria-busy="true" while an action runs. Focus ring: interaction-quality.css. Hover rules use
- * :where(:not(:disabled)) so they keep the specificity surfaces already override.
+ * aria-busy="true" while an action runs. Focus ring: interaction-quality.css.
+ *
+ * This file loads after every surface stylesheet (main.tsx imports it after App), so specificity
+ * decides who wins. Colour variants (primary, secondary, danger) stay (0,2,0), and primary's
+ * hover/active stay (0,3,0), as before this file became the one definition. The modifiers that used
+ * to live early in styles.css (small, full, ghost, subtle, the secondary and danger states) go
+ * through :where() so a surface's `.ctx .button` (0,2,0) or `.button.x` override still wins.
  */
 .button {
   display: inline-flex;
@@ -249,7 +254,6 @@
   line-height: var(--line-height-ui);
   font-weight: var(--font-weight-medium);
   white-space: nowrap;
-  box-shadow: none;
 }
 .button.primary {
   background: var(--color-action-primary);
@@ -257,11 +261,11 @@
   font-weight: var(--font-weight-semibold);
   border: 1px solid var(--color-action-primary);
 }
-.button.primary:hover:where(:not(:disabled)) {
+.button.primary:hover:where(:not(:disabled, .danger)) {
   background: var(--color-action-primaryHover);
   border-color: var(--color-action-primaryHover);
 }
-.button.primary:active:where(:not(:disabled)) {
+.button.primary:active:where(:not(:disabled, .danger)) {
   background: var(--color-action-primaryActive);
   border-color: var(--color-action-primaryActive);
 }
@@ -270,23 +274,9 @@
   border: 1px solid var(--color-action-secondaryBorder);
   color: var(--color-text-primary);
 }
-.button.secondary:hover:where(:not(:disabled)) {
+.button.secondary:where(:hover:not(:disabled)) {
   background: var(--color-action-secondaryHover);
   border-color: var(--color-border-interactive);
-}
-.button.ghost,
-.button.subtle {
-  background: transparent;
-  border-color: transparent;
-  color: var(--color-text-secondary);
-}
-.button.subtle {
-  padding: 7px 8px;
-}
-.button.ghost:hover:where(:not(:disabled)),
-.button.subtle:hover:where(:not(:disabled)) {
-  background: var(--color-background-hover);
-  color: var(--color-text-primary);
 }
 /* After primary so `button primary danger` renders as danger. */
 .button.danger {
@@ -294,18 +284,36 @@
   border: 1px solid var(--color-action-danger);
   color: var(--color-text-onDanger);
 }
-.button.danger:hover:where(:not(:disabled)) {
+.button.danger:where(:hover:not(:disabled)) {
   background: var(--color-action-dangerHover);
   border-color: var(--color-action-dangerHover);
 }
-.button.small {
+.button.danger:where(:active:not(:disabled)) {
+  background: var(--color-action-dangerActive);
+  border-color: var(--color-action-dangerActive);
+}
+.button:where(.small) {
   min-height: 30px;
   padding: 4px 10px;
   font-size: var(--font-size-metadata);
 }
-.button.full {
+.button:where(.full) {
   width: 100%;
   margin-top: 12px;
+}
+.button:where(.ghost, .subtle) {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-text-secondary);
+}
+.button:where(.subtle) {
+  padding-inline: 8px;
+}
+.button:where(.ghost, .subtle):where(:hover:not(:disabled)) {
+  background: var(--color-background-hover);
+}
+.button:where(.ghost):where(:hover:not(:disabled)) {
+  color: var(--color-text-primary);
 }
 .button[aria-busy='true'] {
   cursor: progress;

@@ -52,6 +52,20 @@ describe('design tokens', () => {
     expect(focusRules).toHaveLength(1);
   });
 
+  it('defines .button once, with modifiers surfaces can still override', () => {
+    // reference-shell.css loads after every surface stylesheet, so the modifiers that used to live
+    // early in styles.css must stay at (0,1,0) or they would beat each surface's `.ctx .button`.
+    expect(read('styles.css')).not.toMatch(/^\.button[.:\s{]/m);
+    const shell = read('reference-shell.css');
+    for (const modifier of ['small', 'full', 'ghost', 'subtle'])
+      expect(shell, modifier).not.toMatch(new RegExp(`^\\.button\\.${modifier}\\b`, 'm'));
+    expect(shell).toMatch(/^\.button:where\(\.small\) \{/m);
+    // `button primary danger` must not flash the accent on hover or press.
+    expect(shell).toMatch(/^\.button\.primary:hover:where\(:not\(:disabled, \.danger\)\)/m);
+    expect(shell).toMatch(/^\.button\.primary:active:where\(:not\(:disabled, \.danger\)\)/m);
+    expect(shell.indexOf('.button.danger {')).toBeGreaterThan(shell.indexOf('.button.primary {'));
+  });
+
   it('defines the radius, type, z-index and floor scales', () => {
     for (const token of [
       '--radius-4',

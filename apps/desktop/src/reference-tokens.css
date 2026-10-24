@@ -21,9 +21,11 @@
  *   radius  --radius-4 / 8 / 12 / 16 / 24 / --radius-pill
  *   type    --font-size-micro 11 (the floor; nothing smaller) / metadata 12 / ui 13 / body 15 /
  *           h2 20 / h1 26 / display 32, each with a matching --line-height-*
- *   z-index --z-raised < --z-dock < --z-sticky < --z-drawer < --z-panel < --z-modal
- *           < --z-dropdown = --z-toast < --z-popover. Values match the numbers surfaces still hard-code
- *           (110, 150-180, 500, 1000, 2000), so adopting a token never reorders layers.
+ *   z-index --z-raised 1 < --z-dock 15 < --z-sticky 20 < --z-drawer 30 < --z-panel 40 < --z-modal 60
+ *           < --z-dropdown 100 = --z-toast 100 < --z-popover 1600. Each value is the literal it replaced,
+ *           so swapping an equal literal for its token never reorders layers. Surfaces still hard-code
+ *           70-95, 110-180, 500 and 1000-2000 (all above --z-modal); do not swap those for a token
+ *           with a different number without checking what they must sit above or below.
  *   shadow  --shadow-1 (menus, raised cards) / --shadow-2 (modals, toasts)
  *   focus   --focus-ring-width / --focus-ring-offset / --focus-ring-color
  *   space   --space-4 … --space-64      motion  --motion-quick / --motion-modal / --motion-ease-*
@@ -88,6 +90,7 @@
   --color-action-secondaryBorder: #484e5d;
   --color-action-danger: #743e42;
   --color-action-dangerHover: #84474c;
+  --color-action-dangerActive: #643538;
 
   --color-status-success: #53c793;
   --color-status-warning: #f2bb67;
