@@ -2,7 +2,6 @@ import type { GameCatalogEntry } from '../catalog';
 import { t } from '../../i18n';
 import { KhCards, LobbyCards } from '../shared/catalog-art';
 
-/** Not offered until the Pişti table view ships (track NG-pisti UI replaces `entry.tsx`). */
 export const pistiCatalog: GameCatalogEntry = {
   kind: 'rooms-pisti-v1',
   name: t('Pişti'),
@@ -12,7 +11,7 @@ export const pistiCatalog: GameCatalogEntry = {
   scoring: 'points',
   section: 'cards',
   fallbackCapacity: 4,
-  offered: false,
+  offered: true,
   Art: () => (
     <KhCards
       kind="rooms-pisti-v1"

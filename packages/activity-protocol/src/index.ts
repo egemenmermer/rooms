@@ -56,7 +56,14 @@ export const holdemTableRulesSchema = z
   });
 export type HoldemTableRules = z.infer<typeof holdemTableRulesSchema>;
 /** Game kinds every current client knows. The server accepts any kind in its game registry. */
-export const builtInGameKinds = ['holdem', 'blackjack', 'batak', '101'] as const;
+export const builtInGameKinds = [
+  'holdem',
+  'blackjack',
+  'batak',
+  '101',
+  'rooms-pisti-v1',
+  'rooms-okey-v1',
+] as const;
 export type BuiltInGameKind = (typeof builtInGameKinds)[number];
 /** A table game's protocol id (`packages/games/src/registry.ts`); built-in kinds keep their literal types. */
 export type GameKind = BuiltInGameKind | (string & {});
