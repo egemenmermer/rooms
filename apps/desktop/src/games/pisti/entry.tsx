@@ -28,5 +28,7 @@ export const pistiGame: GameDefinition = {
   create: pistiCreate,
   minSeats: 2,
   startBlocker: (game) =>
-    game.seats.length === 3 ? t('Pişti 2 ya da 4 kişiyle oynanır: bir oyuncu daha otursun ya da biri kalksın.') : '',
+    game.seats.length === 3
+      ? t('Pişti 2 ya da 4 kişiyle oynanır: bir oyuncu daha otursun ya da biri kalksın.')
+      : '',
 };

@@ -187,7 +187,9 @@ function PistiBoard({
             type="button"
             className="pp-badge-button"
             aria-expanded={showPrevious || events.summaryOpen}
-            onClick={() => (events.summaryOpen ? events.closeSummary() : setShowPrevious((v) => !v))}
+            onClick={() =>
+              events.summaryOpen ? events.closeSummary() : setShowPrevious((v) => !v)
+            }
           >
             {t('Önceki el özeti')}
           </button>
@@ -205,7 +207,10 @@ function PistiBoard({
               count = deal.handCounts[round] ?? 0,
               own = round === deal.viewerSeat,
               partner =
-                deal.teams && deal.viewerSeat !== null && !own && sideOf(deal, round) === viewerSide;
+                deal.teams &&
+                deal.viewerSeat !== null &&
+                !own &&
+                sideOf(deal, round) === viewerSide;
             return (
               <article
                 key={seat.userId}
@@ -358,7 +363,9 @@ function PistiBoard({
                   : t('{name} pişti yaptı · +10', { name: events.moment.name })
               }
             >
-              <strong>{events.moment.kind === 'jack-pisti' ? t('VALE PİŞTİ!') : t('PİŞTİ!')}</strong>
+              <strong>
+                {events.moment.kind === 'jack-pisti' ? t('VALE PİŞTİ!') : t('PİŞTİ!')}
+              </strong>
               <span>
                 {events.moment.name} · {events.moment.kind === 'jack-pisti' ? '+20' : '+10'}
               </span>
@@ -524,7 +531,7 @@ function DealSummary({
     <table className="pp-summary">
       <thead>
         <tr>
-          <th scope="col">{t('Puan')}</th>
+          <th scope="col">{t('Puan dökümü')}</th>
           {rows.map((side) => (
             <th scope="col" key={side.side} title={sideName(game, deal, side.side)}>
               {sideName(game, deal, side.side)}
@@ -543,9 +550,7 @@ function DealSummary({
         )}
         {line(t('As, vale, ♣2, ♦10'), (side) => `+${side.cardPoints}`)}
       </tbody>
-      <tfoot>
-        {line(t('Bu el'), (side) => String(side.total))}
-      </tfoot>
+      <tfoot>{line(t('Bu el'), (side) => String(side.total))}</tfoot>
     </table>
   );
 }

@@ -1,8 +1,16 @@
 /* Pişti table (games/pisti). Tokens only; every motion is off under prefers-reduced-motion. */
 .pp-table {
   --pp-felt: color-mix(in srgb, var(--color-status-success) 22%, var(--color-background-canvas));
-  --pp-felt-edge: color-mix(in srgb, var(--color-status-success) 10%, var(--color-background-raised));
-  --pp-card-back: color-mix(in srgb, var(--color-action-primary) 45%, var(--color-background-raised));
+  --pp-felt-edge: color-mix(
+    in srgb,
+    var(--color-status-success) 10%,
+    var(--color-background-raised)
+  );
+  --pp-card-back: color-mix(
+    in srgb,
+    var(--color-action-primary) 45%,
+    var(--color-background-raised)
+  );
   --pp-card-edge: var(--color-text-secondary);
   display: grid;
   gap: 12px;
@@ -566,4 +574,19 @@
   .pp-ghost {
     display: none;
   }
+}
+
+/* The app's own "Hareketi azalt" setting (appearance-preferences.ts) as well as the system one. */
+:root[data-motion='reduce'] .pp-seat,
+:root[data-motion='reduce'] .pp-clock .pp-clock-left,
+:root[data-motion='reduce'] .pp-hand-card .playing-card {
+  transition: none;
+}
+:root[data-motion='reduce'] .pp-top,
+:root[data-motion='reduce'] .pp-moment,
+:root[data-motion='reduce'] .pp-hand-card {
+  animation: none;
+}
+:root[data-motion='reduce'] .pp-ghost {
+  display: none;
 }

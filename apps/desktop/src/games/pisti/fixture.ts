@@ -6,13 +6,7 @@ import type { Card } from '../shared/model';
  * test and the dev fixture page. Names are labelled examples, never production data.
  */
 export type PistiScene =
-  | 'your-turn'
-  | 'opponent-turn'
-  | 'pisti'
-  | 'deal-end'
-  | 'match-end'
-  | 'spectator'
-  | 'partners';
+  'your-turn' | 'opponent-turn' | 'pisti' | 'deal-end' | 'match-end' | 'spectator' | 'partners';
 
 const card = (suit: string, rank: number): Card => ({ id: `${suit}-${rank}-0`, suit, rank });
 const people = [
@@ -24,7 +18,8 @@ const people = [
 
 function base(count: number, viewer: number | null): GamePublicState {
   return {
-    kind: 'rooms-pisti-v1',
+    // `builtInGameKinds` in activity-protocol does not list the registry games yet.
+    kind: 'rooms-pisti-v1' as GamePublicState['kind'],
     ownerId: 'self',
     status: 'playing',
     seats: people.slice(0, count).map((person, seat) => ({
