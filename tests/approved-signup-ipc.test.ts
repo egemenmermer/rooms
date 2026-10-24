@@ -51,15 +51,15 @@ vi.mock('@rooms/stoat', async () => ({
     cancelSignup() {
       return Promise.resolve();
     }
-    register(input: unknown) {
-      mock.register(input);
+    async register(input: unknown) {
+      await mock.register(input);
       this.token = 'fixture-private-session';
-      return Promise.resolve({
+      return {
         id: 'NEWUSER',
         username: 'friend',
         displayName: 'friend',
         avatar: null,
-      });
+      };
     }
     login() {
       this.token = 'fixture-private-session';
@@ -174,6 +174,39 @@ describe('approved sign-up IPC (mocked Stoat/Electron, no remote calls)', () => 
     expect(result.session).toMatchObject({ user: { id: 'NEWUSER' } });
     expect(JSON.stringify(result)).not.toContain('fixture-private-session');
     expect(await invoke('rooms:social-signup-pending')).toBeNull();
+  });
+
+  it('forgets a spent request and says the account exists when a newer sign-in wins', async () => {
+    await invoke('rooms:social-signup-request', form);
+    mock.status = { ...mock.status, status: 'approved', inviteCode: 'f'.repeat(64) };
+    let created!: () => void;
+    mock.register.mockImplementationOnce(
+      () =>
+        new Promise<void>((done) => {
+          created = done;
+        }),
+    );
+    const checking = invoke('rooms:social-signup-check');
+    await vi.waitFor(() => expect(mock.register).toHaveBeenCalledOnce());
+    await invoke('rooms:social-login', {
+      serverUrl: 'https://friends.example',
+      email: 'admin@example.com',
+      password: 'admin-password',
+    });
+    created();
+    await expect(checking).rejects.toThrow(/Hesabın oluştu.*friend@example\.com/);
+    expect(await invoke('rooms:social-signup-pending')).toBeNull();
+    expect(await invoke('rooms:social-session')).toMatchObject({ user: { id: 'ADMIN' } });
+    await expect(invoke('rooms:social-signup-check')).resolves.toMatchObject({ session: null });
+    expect(mock.register).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the request when registration itself fails', async () => {
+    await invoke('rooms:social-signup-request', form);
+    mock.status = { ...mock.status, status: 'approved', inviteCode: 'f'.repeat(64) };
+    mock.register.mockRejectedValueOnce(new Error('network'));
+    await expect(invoke('rooms:social-signup-check')).resolves.toMatchObject({ session: null });
+    expect(await invoke('rooms:social-signup-pending')).toMatchObject({ status: 'approved' });
   });
 
   it('accepts only approve or reject decisions on valid request ids', async () => {
