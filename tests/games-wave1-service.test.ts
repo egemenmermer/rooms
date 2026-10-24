@@ -29,7 +29,8 @@ function botTable(create: Omit<Create, 'type'>, seats: number) {
   for (let seat = 1; seat < seats; seat++)
     gameCommand(table, { type: 'game.bot.add', seat }, owner, 0);
   gameCommand(table, { type: 'game.action', action: 'start' }, owner, 0);
-  expect(table.status).toBe('playing');
+  // A Blackjack deal can settle at once (dealer natural without an ace up).
+  expect(table.status).toBe(create.game === 'blackjack' ? table.status : 'playing');
   return table;
 }
 /** Lets bots (and the owner's timeouts) play until the round is settled. */
