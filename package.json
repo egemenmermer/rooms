@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:web": "vite --host 127.0.0.1",
+    "qa:shots": "node scripts/fixture-shots.mjs",
     "typecheck": "tsc --noEmit",
     "build": "pnpm typecheck && vite build && node scripts/build-notices.mjs && node scripts/build-electron.mjs",
     "test": "vitest run --config vitest.config.ts",
