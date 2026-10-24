@@ -25,7 +25,7 @@
 import type { OkeyTile, TileColor } from './okey101';
 import type { GameModule } from './module';
 
-// The deck/dealing code in okey101-table.ts is not exported and uses node:crypto randomInt, so it cannot be
+// The deck/dealing code in okey101-table.ts is not exported, so it cannot be
 // reused under the seeded-rng contract; this file builds the same physical deck with the caller's rng.
 
 export const OKEY_CLASSIC_KIND = 'rooms-okey-v1';

@@ -1,5 +1,5 @@
 import type { DesktopBridge } from '@rooms/contracts';
-export const notificationVariants = ['default', 'muted', 'system_permission', 'tray'] as const;
+export const notificationVariants = ['default', 'muted', 'system_permission'] as const;
 export function createNotificationFixture(variant: string) {
   if (!import.meta.env.DEV) throw new Error('Notification fixtures are unavailable in production.');
   if (!notificationVariants.includes(variant as (typeof notificationVariants)[number]))

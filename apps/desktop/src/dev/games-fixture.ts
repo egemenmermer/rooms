@@ -7,6 +7,14 @@ import type {
   BoardElement,
 } from '@rooms/activity-protocol';
 import { installDevelopmentRuntime, mediaBridge, mediaProvider } from '../runtime-sources';
+import { batakFixture, type BatakScene } from '../games/batak/fixture';
+import { BATAK_RULE_DEFAULTS } from '../games/batak/model';
+import { blackjackFixture, type BlackjackScene } from '../games/blackjack/fixture';
+import { holdemFixture, type HoldemScene } from '../games/holdem/fixture';
+import { okeyFixture, type OkeyScene } from '../games/okey/fixture';
+import { okey101Fixture, type Okey101Scene } from '../games/okey101/fixture';
+import { pistiFixture, type PistiScene } from '../games/pisti/fixture';
+import { tavlaFixtureGame, tavlaScenes, type TavlaScene } from '../games/tavla/fixture';
 import { installMediaFixture } from './media-fixture';
 import { sample, people as crew } from './sample';
 
@@ -24,6 +32,75 @@ const people = [
   { userId: 'demo-zeynep', name: crew.zeynep },
   { userId: 'demo-mert', name: crew.mert },
 ];
+/**
+ * Scenes from each game's own `games/<game>/fixture.ts` (the views its table tests use), listed
+ * below as `scene_<name>` variants: dashes and camelCase become underscores (`scene_trick_complete`,
+ * `scene_opening_tie`). S73 Pişti, S74 classic Okey and S75 Tavla are built from those scenes only.
+ */
+const knownScenes = {
+  holdem: ['your-turn', 'opponent-turn', 'showdown', 'spectator'] satisfies HoldemScene[],
+  blackjack: [
+    'your-turn',
+    'opponent-turn',
+    'opponent-hit',
+    'insurance',
+    'insurance-decline-only',
+    'insurance-other',
+    'round-end',
+    'spectator',
+  ] satisfies BlackjackScene[],
+  batak: [
+    'bidding',
+    'trump',
+    'your-turn',
+    'opponent-turn',
+    'trick-complete',
+    'round-end',
+    'spectator',
+    'gommeli',
+  ] satisfies BatakScene[],
+  okey101: ['draw', 'discard', 'opponent', 'finished', 'spectator'] satisfies Okey101Scene[],
+  pisti: [
+    'your-turn',
+    'opponent-turn',
+    'pisti',
+    'deal-end',
+    'match-end',
+    'spectator',
+    'partners',
+  ] satisfies PistiScene[],
+  okey: ['draw', 'discard', 'opponent', 'finished', 'spectator'] satisfies OkeyScene[],
+  tavla: Object.keys(tavlaScenes) as TavlaScene[],
+};
+const sceneGames: Partial<Record<string, keyof typeof knownScenes>> = {
+  S42: 'holdem',
+  S43: 'holdem',
+  S44: 'blackjack',
+  S46: 'batak',
+  S47: 'batak',
+  S49: 'okey101',
+  S50: 'okey101',
+  S73: 'pisti',
+  S74: 'okey',
+  S75: 'tavla',
+};
+/** The game scene behind a `scene_*` variant (or a scene-only screen's `default`), if any. */
+function sceneOf(screen: string, variant: string): string | null {
+  const game = sceneGames[screen];
+  if (!game) return null;
+  const scenes: string[] = knownScenes[game];
+  if (variant === 'default' && ['S73', 'S74', 'S75'].includes(screen))
+    return game === 'tavla' ? 'yourMove' : scenes[0];
+  if (!variant.startsWith('scene_')) return null;
+  const name = variant.slice('scene_'.length),
+    scene =
+      game === 'tavla'
+        ? name.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())
+        : name.replace(/_/g, '-');
+  if (!scenes.includes(scene)) throw new Error(`Unknown ${game} fixture scene: ${variant}`);
+  return scene;
+}
+
 /** Exact inventory keys. Responsive keys describe viewport evidence, not a game command. */
 export const gameFixtureVariants = {
   S40: ['default', 'empty', 'error', 'loading', 'offline'],
@@ -46,6 +123,9 @@ export const gameFixtureVariants = {
     '1280x800',
     '900x700',
     '1920x1080',
+    'scene_your_turn',
+    'scene_opponent_turn',
+    'scene_spectator',
   ],
   S43: [
     'default',
@@ -59,6 +139,7 @@ export const gameFixtureVariants = {
     'showdown',
     'sidepot',
     'split',
+    'scene_showdown',
   ],
   S44: [
     'default',
@@ -83,6 +164,14 @@ export const gameFixtureVariants = {
     'split_second_resolved_hit',
     'split_second_resolved_stand',
     'stand',
+    'scene_your_turn',
+    'scene_opponent_turn',
+    'scene_opponent_hit',
+    'scene_insurance',
+    'scene_insurance_decline_only',
+    'scene_insurance_other',
+    'scene_round_end',
+    'scene_spectator',
   ],
   S45: ['default', 'buried', 'pairs', 'rules', 'spades'],
   S46: [
@@ -94,6 +183,9 @@ export const gameFixtureVariants = {
     'pairs_trump',
     'spades',
     'trump',
+    'scene_bidding',
+    'scene_trump',
+    'scene_gommeli',
   ],
   S47: [
     'default',
@@ -106,6 +198,11 @@ export const gameFixtureVariants = {
     'played',
     'round_end',
     'spades',
+    'scene_your_turn',
+    'scene_opponent_turn',
+    'scene_trick_complete',
+    'scene_round_end',
+    'scene_spectator',
   ],
   S48: ['default', 'folded', 'folded_pairs', 'pairs', 'rules'],
   S49: [
@@ -120,6 +217,10 @@ export const gameFixtureVariants = {
     '1280x800',
     '900x700',
     '1920x1080',
+    'scene_draw',
+    'scene_discard',
+    'scene_opponent',
+    'scene_spectator',
   ],
   S50: [
     'default',
@@ -134,6 +235,7 @@ export const gameFixtureVariants = {
     'opened',
     'penalty',
     'result',
+    'scene_finished',
   ],
   S51: ['default', 'batak', 'blackjack', 'empty', 'error', 'holdem', 'loading', 'okey'],
   S52: ['default', 'bot', 'offline', 'reclaimed', 'return', 'timeout'],
@@ -150,6 +252,39 @@ export const gameFixtureVariants = {
     'voted_batak',
   ],
   S54: ['default', 'empty', 'export', 'read_only', 'reconnect', 'saved', 'undo'],
+  S73: [
+    'default',
+    'scene_your_turn',
+    'scene_opponent_turn',
+    'scene_pisti',
+    'scene_deal_end',
+    'scene_match_end',
+    'scene_spectator',
+    'scene_partners',
+  ],
+  S74: [
+    'default',
+    'scene_draw',
+    'scene_discard',
+    'scene_opponent',
+    'scene_finished',
+    'scene_spectator',
+  ],
+  S75: [
+    'default',
+    'scene_opening',
+    'scene_opening_tie',
+    'scene_your_move',
+    'scene_your_move_partial',
+    'scene_your_confirm',
+    'scene_opponent_last',
+    'scene_opponent_moving',
+    'scene_bar',
+    'scene_passed',
+    'scene_bear_off',
+    'scene_round_end',
+    'scene_match_end',
+  ],
 } as const;
 export type GameFixtureId = keyof typeof gameFixtureVariants;
 export interface GamesFixtureMetadata {
@@ -608,7 +743,56 @@ function holdem(v: string): GamePublicState {
     ];
     view.statistics = { [self]: { hands: 1, wins: 1, score: 0 } };
   }
+  view.log = demoHoldemLog(game);
   return game;
+}
+/**
+ * The public betting log (`view.log`) the table derives bubbles, blinds and the hand log from:
+ * blinds and calls preflop, then the flop bets that lead to each seat's `streetBet`.
+ */
+function demoHoldemLog(game: GamePublicState) {
+  const seats =
+      (game.view.seats as
+        { userId: string; streetBet: number; folded: boolean; chips: number }[] | undefined) ?? [],
+    count = seats.length,
+    button = Number(game.view.button ?? 0);
+  if (count < 2) return [];
+  // Heads-up the button posts the small blind; otherwise the two seats after it.
+  const order = Array.from(
+    { length: count },
+    (_, i) => seats[(button + (count === 2 ? i : i + 1)) % count],
+  );
+  const entry = (
+    street: 'preflop' | 'flop',
+    seat: (typeof seats)[number],
+    action: 'smallBlind' | 'bigBlind' | 'fold' | 'check' | 'call' | 'raise',
+    amount: number,
+    to: number,
+  ) => ({
+    street,
+    userId: seat.userId,
+    action,
+    amount,
+    to,
+    allIn: action !== 'fold' && seat.chips === 0,
+  });
+  const log = [
+    entry('preflop', order[0], 'smallBlind', 10, 10),
+    entry('preflop', order[1], 'bigBlind', 20, 20),
+    ...order.slice(2).map((seat) => entry('preflop', seat, 'call', 20, 20)),
+    entry('preflop', order[0], 'call', 10, 20),
+    entry('preflop', order[1], 'check', 0, 20),
+  ];
+  let high = 0;
+  for (const seat of order) {
+    if (seat.folded) log.push(entry('flop', seat, 'fold', 0, seat.streetBet));
+    else if (seat.streetBet > high) {
+      log.push(entry('flop', seat, 'raise', seat.streetBet, seat.streetBet));
+      high = seat.streetBet;
+    } else if (seat.streetBet > 0)
+      log.push(entry('flop', seat, 'call', seat.streetBet, seat.streetBet));
+  }
+  return log;
 }
 function blackjack(v: string): GamePublicState {
   const game = baseGame('blackjack', 3),
@@ -764,14 +948,41 @@ function batak(screen: GameFixtureId, v: string): GamePublicState {
     scores = ended ? [70, 20, 10, ...(count === 4 ? [30] : [])] : [];
   game.status = ended ? 'finished' : 'playing';
   game.turn = ended ? null : v === 'ece_bid' || played ? 1 : 0;
+  const kozMaca = variant === 'koz-maca',
+    contract = variant === 'esli' || buried ? 8 : 7,
+    others = Array.from({ length: count - 1 }, (_, i) => i + 1);
+  // The auction so far: during bidding the others spoke and it is the viewer's turn; afterwards
+  // the viewer (round seat 0) won it. Koz Maça players say a trick count instead.
+  type BidEntry = { seat: number; action: 'bid' | 'pass'; amount?: number };
+  const say = (seat: number, amount?: number): BidEntry =>
+    amount === undefined ? { seat, action: 'pass' } : { seat, action: 'bid', amount };
+  const bidLog: BidEntry[] = kozMaca
+    ? others.map((seat) => say(seat, [3, 4, 2][seat - 1]))
+    : bidding
+      ? others.map((seat) => say(seat, seat === 2 ? undefined : 4 + seat))
+      : [say(1, 5), ...others.slice(1).map((seat) => say(seat)), say(0, contract), say(1)];
+  const highest = bidLog.reduce(
+    (best, item) => ((item.amount ?? 0) > (best.amount ?? 0) ? item : best),
+    bidLog[0],
+  );
   game.view = {
     ...game.view,
     variant,
+    turn: game.turn,
+    rules: { ...BATAK_RULE_DEFAULTS },
+    bidLog,
+    passed: bidding ? (kozMaca ? [] : [2]) : others,
+    trumpBroken: ended,
     stage: ended ? 'ended' : bidding ? 'bidding' : bury ? 'bury' : trump ? 'trump' : 'playing',
-    bid: bidding ? 0 : variant === 'esli' || buried ? 8 : 7,
-    bids: bidding ? Array(count).fill(0) : [7, 0, 0, ...(count === 4 ? [0] : [])],
-    bidder: 0,
-    trump: 'spades',
+    bid: bidding ? (kozMaca ? 0 : (highest.amount ?? 0)) : contract,
+    bids: kozMaca
+      ? [0, 3, 4, 2].slice(0, count)
+      : bidding
+        ? Array(count).fill(0)
+        : [contract, 0, 0, ...(count === 4 ? [0] : [])],
+    bidder: bidding && !kozMaca ? highest.seat : 0,
+    // No trump before the bidder names it (Gömmeli buries after naming it); Koz Maça plays spades.
+    trump: kozMaca ? 'spades' : bidding || trump ? null : 'spades',
     tricks: ended ? [7, 2, 1, ...(count === 4 ? [3] : [])] : [1, 1, 1, ...(count === 4 ? [0] : [])],
     trick:
       ended || bidding || bury || trump
@@ -1065,6 +1276,53 @@ function board(v: string): BoardElement[] {
     },
   ];
 }
+/** Every occurrence of an id (string values and object keys), so a scene's viewer becomes the demo user. */
+function rebind<T>(value: T, ids: Record<string, string>): T {
+  if (typeof value === 'string') return (ids[value] ?? value) as T;
+  if (Array.isArray(value)) return value.map((item) => rebind(item, ids)) as T;
+  if (value && typeof value === 'object')
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [ids[key] ?? key, rebind(item, ids)]),
+    ) as T;
+  return value;
+}
+/** A game fixture whose viewer `from` is shown as the demo user (`self`), with the demo user's name. */
+function asDemoViewer(game: GamePublicState, from: string): GamePublicState {
+  // A scene that already seats `self` (Batak's spectator scene) keeps that seat apart from the viewer.
+  const next = rebind(game, { [from]: self, ...(from === self ? {} : { [self]: 'demo-mert' }) });
+  next.seats = next.seats.map((seat) =>
+    seat.userId === self ? { ...seat, name: crew.deniz } : seat,
+  );
+  return next;
+}
+/** The table of one game scene (`knownScenes`), from that game's own fixture module. */
+function sceneGame(screen: GameFixtureId, scene: string): GamePublicState | null {
+  switch (screen) {
+    case 'S42':
+    case 'S43':
+      return asDemoViewer(holdemFixture(scene as HoldemScene), 'self');
+    case 'S44':
+      return asDemoViewer(blackjackFixture(scene as BlackjackScene), 'self');
+    case 'S46':
+    case 'S47':
+      return asDemoViewer(batakFixture(scene as BatakScene), 'self');
+    case 'S49':
+    case 'S50':
+      // The spectator scene has no viewer seat: the seated Ece stays Ece.
+      return scene === 'spectator'
+        ? okey101Fixture('spectator')
+        : asDemoViewer(okey101Fixture(scene as Okey101Scene, 'ece'), 'ece');
+    case 'S73':
+      return asDemoViewer(pistiFixture(scene as PistiScene), 'self');
+    case 'S74':
+      // The classic Okey fixture seats its `viewerId` at round seat 0; a spectator leaves Ece there.
+      return okeyFixture(scene as OkeyScene, scene === 'spectator' ? 'ece' : self);
+    case 'S75':
+      return asDemoViewer(tavlaFixtureGame(scene as TavlaScene, 'ece'), 'ece');
+    default:
+      return null;
+  }
+}
 /** Public visual projection, not a simulated production game engine or account. */
 export function createGamesFixtureProjection(
   id: string,
@@ -1076,7 +1334,9 @@ export function createGamesFixtureProjection(
   if (metadata.unsupportedReason)
     throw new Error(`Unsupported ${screen}/${v}: ${metadata.unsupportedReason}`);
   let game: GamePublicState | null = null;
-  if (screen === 'S41') {
+  const scene = sceneOf(screen, v);
+  if (scene) game = sceneGame(screen, scene);
+  else if (screen === 'S41') {
     if (v !== 'activity_conflict') {
       game = baseGame(
         v === 'blackjack' ? 'blackjack' : 'holdem',
@@ -1103,7 +1363,11 @@ export function createGamesFixtureProjection(
           name: 'Bot 1',
           bot: true,
         };
-      if (v === 'not_owner') game.ownerId = 'demo-ece';
+      if (v === 'not_owner') {
+        // The owner is seated and present, so the server offers 'start' only to them.
+        game.ownerId = 'demo-ece';
+        game.view.legalActions = [];
+      }
       if (!game.seats.some((seat) => seat.userId === self)) game.view.ownRecovery = null;
       if (v === 'spectator') {
         game.view.watching = true;
@@ -1118,7 +1382,13 @@ export function createGamesFixtureProjection(
   else if (screen === 'S49' || screen === 'S50') game = okey(screen, v);
   else if (screen === 'S51') {
     game = holdem('showdown');
-    const others = [blackjack('result'), batak('S47', 'round_end'), okey('S50', 'result')];
+    // Blackjack from its own fixture so the hand detail shows every player's hands.
+    const others = [
+      asDemoViewer(blackjackFixture('round-end'), 'self'),
+      batak('S47', 'round_end'),
+      okey('S50', 'result'),
+    ];
+    for (const item of others) attachDemoHistoryContext(item);
     game.view.previousTables = others.map((item) => ({
       kind: item.kind,
       history: item.history,
@@ -1387,7 +1657,7 @@ function attachDemoHistoryContext(game: GamePublicState) {
       });
     } else if (game.kind === 'blackjack') {
       result.dealer = view.dealer;
-      result.dealerTotal = 17;
+      result.dealerTotal = demoTotal((view.dealer as DemoCard[] | undefined) ?? []);
       result.players = ((view.players as Record<string, unknown>[] | undefined) ?? []).map(
         (player) => ({
           userId: player.userId,
@@ -1425,7 +1695,7 @@ function attachDemoHistoryContext(game: GamePublicState) {
             : null,
         completedTricks: view.completedTricks,
       });
-    else
+    else if (game.kind === '101')
       Object.assign(result, {
         rules: view.rules,
         opened: view.opened,

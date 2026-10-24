@@ -96,7 +96,7 @@ async function bootstrap() {
       appearance.installAppearanceFixture(params.get('variant') || 'default');
     } else if (/^S(59|60|61|62|63)$/.test(fixture)) {
       await installReferenceFixture('S19', 'default');
-    } else if (/^S(4[0-9]|5[0-4])$/.test(fixture)) {
+    } else if (/^S(4[0-9]|5[0-4]|7[3-5])$/.test(fixture)) {
       const games = await import('./dev/games-fixture');
       games.getGamesFixtureMetadata(fixture, params.get('variant') || 'default');
       await installReferenceFixture('S19', 'default');

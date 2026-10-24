@@ -1,0 +1,134 @@
+.rx-tile {
+  height: 56px;
+  width: 37px;
+  flex: 0 0 37px;
+  border: 1px solid #d9d0b5;
+  border-radius: 5px;
+  background: linear-gradient(#fffdf3, #eee6cc);
+  box-shadow: 0 3px 0 #d7caa5;
+  color: #252938;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  line-height: 1;
+  opacity: 1 !important;
+}
+.rx-tile strong {
+  font-size: 22px;
+  font-weight: 750;
+}
+.rx-tile > span {
+  font-size: 11px;
+  margin-top: 5px;
+}
+.rx-tile.red {
+  color: #c25260;
+}
+.rx-tile.blue {
+  color: #4274b9;
+}
+.rx-tile.yellow {
+  color: #be9226;
+}
+.rx-tile.small {
+  width: 26px;
+  flex-basis: 26px;
+  height: 36px;
+  font-size: 17px;
+  box-shadow: 0 2px 0 #d7caa5;
+}
+.rx-tile.small strong {
+  font-size: 17px;
+}
+.rx-tile.small > span {
+  font-size: 7px;
+  margin-top: 2px;
+}
+.rx-tile.selected {
+  outline: 2px solid #c2a7ff;
+  transform: translateY(-6px);
+}
+.rx-meld-editor {
+  border: 1px solid #303241;
+  background: #151620;
+  border-radius: 12px;
+  padding: 17px 19px;
+  margin: 15px 0;
+}
+.rx-meld-editor h3 {
+  font-size: 13px;
+  margin: 0;
+}
+.rx-meld-editor header > div {
+  display: flex;
+  gap: 5px;
+}
+.rx-meld-editor header button {
+  border: 1px solid #353647;
+  background: #1c1e2b;
+  border-radius: 6px;
+  padding: 6px 11px;
+  font-size: 11px;
+  color: #aeb1c7;
+}
+.rx-meld-editor header button.selected {
+  color: #c6aff8;
+  border-color: #9d80df;
+}
+.rx-draft-groups {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 15px 0;
+}
+.rx-draft-groups article {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  border: 1px solid #484257;
+  border-radius: 8px;
+  padding: 8px;
+  background: #23212d;
+}
+.rx-draft-groups article > button:last-child {
+  background: none;
+  border: 0;
+  color: #aaa0bd;
+}
+.rx-meld-editor footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.rx-meld-editor footer > span {
+  flex: 1;
+  font-size: 11px;
+  color: #a5a8bf;
+}
+.rx-meld-editor footer > span.invalid {
+  color: #e297a5;
+}
+.rx-process {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 15px;
+  border-top: 1px solid #303241;
+}
+.rx-process label {
+  display: flex;
+  gap: 6px;
+  flex-direction: column;
+  color: #a1a4ba;
+  font-size: 11px;
+}
+.rx-process select {
+  padding: 8px;
+  background: #20222f;
+  border: 1px solid #3b3d50;
+  border-radius: 7px;
+  color: #ddd;
+}

@@ -100,7 +100,7 @@ try {
       'S72',
     ].includes(id) ||
     /^S1[2-8]$/.test(id) ||
-    /^S(4[0-9]|5[0-4])$/.test(id)
+    /^S(4[0-9]|5[0-4]|7[3-5])$/.test(id)
       ? id
       : null;
   const personalFixture =
@@ -213,7 +213,7 @@ try {
       }
     }
   }
-  if (/^S(4[0-9]|5[0-2])$/.test(id)) await page.locator('.rg-page').waitFor();
+  if (/^S(4[0-9]|5[0-2]|7[3-5])$/.test(id)) await page.locator('.rg-page').waitFor();
   if (id === 'S53' || id === 'S54') await page.locator('.rt-page').waitFor();
   if (id === 'S53' && variant === 'create')
     await page.getByRole('dialog', { name: 'Odaya bir soru sor' }).waitFor();
