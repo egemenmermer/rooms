@@ -664,13 +664,9 @@
   border-radius: var(--radius-8);
   color: #e2e5ed;
   padding: 12px 14px;
-<<<<<<< HEAD
-  font: var(--font-size-metadata)/1.5 var(--font-ui);
-=======
   font-family: var(--font-family);
   font-size: var(--font-size-metadata);
   line-height: 1.5;
->>>>>>> games/sv-followups
   width: 100%;
   box-sizing: border-box;
 }
@@ -885,13 +881,9 @@
   border-radius: var(--radius-8);
   color: #e5e8f0;
   padding: 11px 12px;
-<<<<<<< HEAD
-  font: var(--font-size-metadata)/1.5 var(--font-ui);
-=======
   font-family: var(--font-family);
   font-size: var(--font-size-metadata);
   line-height: 1.5;
->>>>>>> games/sv-followups
   min-width: 0;
 }
 .s59-profile-fields {
