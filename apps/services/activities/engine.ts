@@ -12,14 +12,19 @@ import {
   playbackPosition,
 } from '../../../packages/activity-protocol/src/index';
 import type { StoredRoom } from './repository';
-import { advanceGameBots, createGame, disconnectGame, gameCommand, gameView } from './games';
+import { isGameKind } from '../../../packages/games/src/registry';
+import {
+  advanceGameBots,
+  createGame,
+  disconnectGame,
+  gameCommand,
+  gameTitle,
+  gameView,
+} from './games';
 
-const gameTitles = {
-  holdem: 'Texas Hold’em',
-  blackjack: 'Blackjack',
-  batak: 'Batak',
-  '101': '101 Okey',
-} as const;
+/** Earlier tables kept per room (S4); each keeps at most the game's own history limit. */
+export const GAME_ARCHIVE_LIMIT = 10;
+
 /** Queue media each shared player accepts. The hall plays catalog items and YouTube. */
 function acceptsMedia(activity: string, kind: SharedMedia['kind']) {
   if (activity === 'cinema') return kind === 'independent-source';
@@ -255,8 +260,7 @@ export function applyCommand(
     case 'start':
       if (!identity.canCreate) fail(403, 'ACTIVITY_CREATE_DENIED');
       if (state.primary) fail(409, 'PRIMARY_ACTIVITY_ACTIVE');
-      if (['holdem', 'blackjack', 'batak', '101'].includes(command.activity))
-        fail(409, 'GAME_SERVICE_NOT_CONNECTED');
+      if (isGameKind(command.activity)) fail(409, 'GAME_SERVICE_NOT_CONNECTED');
       state.primary = {
         activity: command.activity,
         title: command.title,
@@ -534,6 +538,7 @@ export function applyCommand(
           history: structuredClone(room.game.history),
           statistics: structuredClone(room.game.statistics),
         });
+        room.gameArchives = room.gameArchives.slice(-GAME_ARCHIVE_LIMIT);
       }
       if (command.replacePrimary) {
         state.timeline = {
@@ -548,7 +553,7 @@ export function applyCommand(
       room.game = next;
       state.primary = {
         activity: command.game,
-        title: next.holdemRules?.name ?? gameTitles[command.game],
+        title: next.holdemRules?.name ?? gameTitle(command.game),
         hostUserId: identity.userId,
         startedAt: now,
         state: 'live',
@@ -559,6 +564,7 @@ export function applyCommand(
     case 'game.watch':
     case 'game.sit':
     case 'game.bot.add':
+    case 'game.seat.remove':
     case 'game.leave':
     case 'game.action': {
       const adopting =
@@ -571,7 +577,12 @@ export function applyCommand(
       const next = structuredClone(room.game);
       if (adopting) next.ownerId = identity.userId;
       try {
-        gameCommand(next, command, identity, now);
+        gameCommand(
+          next,
+          command,
+          { ...identity, roomHost: state.primary?.hostUserId === identity.userId },
+          now,
+        );
       } catch (error) {
         fail(409, error instanceof Error ? error.message : 'INVALID_GAME_ACTION');
       }
@@ -579,7 +590,7 @@ export function applyCommand(
       if (adopting)
         state.primary = {
           activity: next.kind,
-          title: next.holdemRules?.name ?? gameTitles[next.kind],
+          title: next.holdemRules?.name ?? gameTitle(next.kind),
           hostUserId: identity.userId,
           startedAt: now,
           state: 'live',

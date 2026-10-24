@@ -2115,20 +2115,29 @@ function ReferenceBlackjack({ game, userId, can, action, timer }: TableUI) {
                   ['stand', t('Dur')],
                   ['double', t('İkiye katla')],
                   ['split', t('Ayır')],
+                  ['insurance', t('Sigorta al')],
+                  ['decline-insurance', t('Sigorta alma')],
+                  ['surrender', t('Teslim ol')],
                 ] as const
-              ).map(([name, label]) => (
-                <button
-                  className={`button ${name === 'hit' ? 'primary' : 'secondary'}`}
-                  key={name}
-                  disabled={!can(name)}
-                  title={
-                    !can(name) ? t('Bu hamle şu anda sunucu tarafından izinli değil') : undefined
-                  }
-                  onClick={() => void action(name)}
-                >
-                  {label}
-                </button>
-              ))}
+              )
+                // Insurance (dealer shows an ace) and surrender (table rule) appear only when the server offers them.
+                .filter(
+                  ([name]) =>
+                    !['insurance', 'decline-insurance', 'surrender'].includes(name) || can(name),
+                )
+                .map(([name, label]) => (
+                  <button
+                    className={`button ${name === 'hit' ? 'primary' : 'secondary'}`}
+                    key={name}
+                    disabled={!can(name)}
+                    title={
+                      !can(name) ? t('Bu hamle şu anda sunucu tarafından izinli değil') : undefined
+                    }
+                    onClick={() => void action(name)}
+                  >
+                    {label}
+                  </button>
+                ))}
             </div>
           ) : (
             <label className="rg-lobby-bet">

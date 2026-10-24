@@ -55,18 +55,41 @@ export const holdemTableRulesSchema = z
       context.addIssue({ code: z.ZodIssueCode.custom, message: 'Inconsistent Holdem table rules' });
   });
 export type HoldemTableRules = z.infer<typeof holdemTableRulesSchema>;
+/** Game kinds every current client knows. The server accepts any kind in its game registry. */
+export const builtInGameKinds = ['holdem', 'blackjack', 'batak', '101'] as const;
+export type BuiltInGameKind = (typeof builtInGameKinds)[number];
+/** A table game's protocol id (`packages/games/src/registry.ts`); built-in kinds keep their literal types. */
+export type GameKind = BuiltInGameKind | (string & {});
+// Clients validate shape only, so a game added on the server needs no protocol change; the
+// service rejects kinds and actions its registry does not know.
+export const GAME_KIND_PATTERN = /^[a-z0-9][a-z0-9-]{0,39}$/;
+export const GAME_ACTION_PATTERN = /^[a-z][a-z0-9-]{0,31}$/;
+export const MAX_GAME_SEATS = 12;
+const MAX_GAME_PAYLOAD_BYTES = 8192;
+const sharedActivities = ['cinema', 'youtube', 'hall', 'screen'] as const;
+const gameKind = z.string().regex(GAME_KIND_PATTERN);
+const gameSeat = z
+  .number()
+  .int()
+  .min(0)
+  .max(MAX_GAME_SEATS - 1);
+/** Per-game `game.action` data, checked by the game module's `parseCommand`. */
+const gamePayload = z
+  .json()
+  .refine(
+    (value) => JSON.stringify(value).length <= MAX_GAME_PAYLOAD_BYTES,
+    'Game payload too large',
+  );
+/** Flat `game.create` options for registry games, checked by the module's `parseOptions`. */
+const gameOptions = z
+  .record(
+    z.string().regex(/^[a-zA-Z][a-zA-Z0-9]{0,31}$/),
+    z.union([z.string().max(64), z.number().finite(), z.boolean()]),
+  )
+  .refine((value) => Object.keys(value).length <= 16, 'Too many game options');
 const replacePrimarySchema = z
   .object({
-    activity: z.enum([
-      'cinema',
-      'youtube',
-      'hall',
-      'screen',
-      'holdem',
-      'blackjack',
-      'batak',
-      '101',
-    ]),
+    activity: z.union([z.enum(sharedActivities), gameKind]),
     startedAt: z.number().int().nonnegative(),
   })
   .strict();
@@ -211,11 +234,13 @@ export const commandSchema = z
       z
         .object({
           type: z.literal('game.create'),
-          game: z.enum(['holdem', 'blackjack', 'batak', '101']),
+          game: gameKind,
+          // Built-in table options; registry games take `options` instead.
           variant: z.enum(['ihaleli', 'esli', 'koz-maca', 'gommeli']).optional(),
           folding: z.boolean().optional(),
           teams: z.boolean().optional(),
           holdem: holdemTableRulesSchema.optional(),
+          options: gameOptions.optional(),
           replacePrimary: replacePrimarySchema.optional(),
         })
         .strict(),
@@ -224,41 +249,31 @@ export const commandSchema = z
       z
         .object({
           type: z.literal('game.sit'),
-          seat: z.number().int().min(0).max(8),
+          seat: gameSeat,
           buyIn: z.number().int().min(1).max(1000000).optional(),
         })
         .strict(),
-      z.object({ type: z.literal('game.bot.add'), seat: z.number().int().min(0).max(8) }).strict(),
+      z.object({ type: z.literal('game.bot.add'), seat: gameSeat }).strict(),
+      // The table owner or room host frees a bot's seat or an away player's seat.
+      z.object({ type: z.literal('game.seat.remove'), seat: gameSeat }).strict(),
       z.object({ type: z.literal('game.leave') }).strict(),
       z
         .object({
           type: z.literal('game.action'),
-          action: z.enum([
-            'start',
-            'fold',
-            'check',
-            'call',
-            'raise',
-            'bet',
-            'hit',
-            'stand',
-            'double',
-            'split',
-            'bid',
-            'pass',
-            'bury',
-            'trump',
-            'play',
-            'draw',
-            'discard',
-            'open',
-            'open-pairs',
-            'process',
-          ]),
+          // `start` (and Blackjack's between-hands `bet`) are table commands; every other name
+          // belongs to the table's game module, e.g. fold/hit/play/discard for the built-in games.
+          action: z.string().regex(GAME_ACTION_PATTERN),
+          payload: gamePayload.optional(),
+          // Flat fields of the built-in games; registry games put their data in `payload`.
           amount: z.number().int().min(0).max(1000000).optional(),
           cardId: opaqueId.optional(),
           tileIds: z.array(opaqueId).max(30).optional(),
           melds: z.array(z.array(opaqueId).max(13)).max(10).optional(),
+          // 101: per-meld reading of an opening whose okeys allow a run or a group (null = server picks).
+          meldKinds: z
+            .array(z.enum(['run', 'group']).nullable())
+            .max(10)
+            .optional(),
           trump: z.enum(['clubs', 'diamonds', 'hearts', 'spades']).optional(),
         })
         .strict(),
@@ -327,7 +342,7 @@ export interface RoomSnapshot {
   participants: Participant[];
   primary: null | {
     /** `hall`: the permanent community cinema, keyed by its hall channel. */
-    activity: 'cinema' | 'youtube' | 'hall' | 'screen' | 'holdem' | 'blackjack' | 'batak' | '101';
+    activity: (typeof sharedActivities)[number] | GameKind;
     title: string;
     hostUserId: string;
     startedAt: number;
@@ -393,7 +408,11 @@ export interface GameRecoveryEvent {
   toCall?: number;
 }
 export interface GamePublicState {
-  kind: 'holdem' | 'blackjack' | 'batak' | '101';
+  /**
+   * Typed as the kinds the current clients render, so their views stay exhaustive. The service may
+   * send any registered kind; add it to `builtInGameKinds` when its client view ships.
+   */
+  kind: BuiltInGameKind;
   ownerId: string;
   status: 'waiting' | 'playing' | 'finished';
   seats: {

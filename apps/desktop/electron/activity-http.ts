@@ -11,7 +11,7 @@ export async function postActivityCommand(
   assertSession: () => void = () => {},
 ): Promise<ActivityResponse> {
   let envelope = commandSchema.parse(input);
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 5; attempt++) {
     assertSession();
     const response = await fetcher(url + '/commands', {
       method: 'POST',
@@ -32,7 +32,7 @@ export async function postActivityCommand(
         throw new StoatError(502, 'INVALID_ACTIVITY_RESPONSE');
       return value as ActivityResponse;
     }
-    if (response.status === 409 && value?.error === 'REVISION_CONFLICT' && attempt < 2) {
+    if (response.status === 409 && value?.error === 'REVISION_CONFLICT' && attempt < 4) {
       assertSession();
       const latest = await fetcher(url, {
         headers: { Authorization: `Bearer ${token}` },

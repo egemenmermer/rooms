@@ -27,6 +27,23 @@ export interface HoldemSettlement {
   reason: 'uncontested' | 'showdown';
   pots: HoldemPotResult[];
   hands: Record<string, EvaluatedHoldemHand>;
+  /** Showdown players who kept their cards hidden (only with the `muckLosers` option). */
+  mucked?: string[];
+}
+/** One public betting action. Blinds are logged as actions so a hand history can be rebuilt. */
+export interface HoldemLogEntry {
+  street: 'preflop' | 'flop' | 'turn' | 'river';
+  userId: string;
+  action: 'smallBlind' | 'bigBlind' | 'fold' | 'check' | 'call' | 'raise';
+  /** Chips actually moved by this action (a short stack pays less than asked). */
+  amount: number;
+  /** The player's total bet on this street after the action. */
+  to: number;
+  allIn: boolean;
+}
+export interface HoldemOptions {
+  /** Players who win no pot may keep their cards hidden, unless someone is all-in. */
+  muckLosers?: boolean;
 }
 export interface HoldemHand {
   revision: number;
@@ -42,8 +59,30 @@ export interface HoldemHand {
   payouts: Record<string, number>;
   winners: string[];
   settlement?: HoldemSettlement;
+  /** Public action log; absent on hands stored before it existed. */
+  log?: HoldemLogEntry[];
+  /** Stage whose betting was the last one before the board was dealt out with nobody to act. */
+  runoutFrom?: 'preflop' | 'flop' | 'turn' | 'river';
+  muckLosers?: boolean;
 }
 export type HoldemAction = { type: 'fold' | 'check' | 'call' } | { type: 'raise'; to: number };
+/** A seat can only be dealt in with chips; a stack below the big blind posts all-in for less. */
+export const isHoldemDealable = (chips: number) => Number.isSafeInteger(chips) && chips > 0;
+/**
+ * Stack a player gets when sitting down again: the stack they stood up with, capped at the
+ * maximum buy-in; a fresh buy-in for a first visit or a busted player; a stack below the
+ * minimum buy-in is topped up with the requested buy-in (same as a seated rebuy).
+ */
+export function holdemRestoredStack(
+  saved: number | undefined,
+  maxBuyIn: number,
+  requested: number,
+  minBuyIn = 0,
+): number {
+  if (saved === undefined || !(saved > 0)) return Math.min(maxBuyIn, requested);
+  // Below the minimum the usual rebuy rule applies: the buy-in tops the stack up.
+  return saved < minBuyIn ? Math.min(maxBuyIn, saved + requested) : Math.min(saved, maxBuyIn);
+}
 const next = (state: HoldemHand, seat: number, predicate: (seat: HoldemSeat) => boolean) => {
   for (let offset = 1; offset <= state.seats.length; offset++) {
     const index = (seat + offset) % state.seats.length;
@@ -56,6 +95,23 @@ function pay(seat: HoldemSeat, amount: number) {
   seat.chips -= paid;
   seat.streetBet += paid;
   seat.contribution += paid;
+  return paid;
+}
+function record(
+  state: HoldemHand,
+  seat: HoldemSeat,
+  action: HoldemLogEntry['action'],
+  amount: number,
+) {
+  if (state.stage === 'ended') return;
+  (state.log ??= []).push({
+    street: state.stage,
+    userId: seat.userId,
+    action,
+    amount,
+    to: seat.streetBet,
+    allIn: seat.chips === 0,
+  });
 }
 function draw(state: HoldemHand): Card {
   const card = state.deck.shift();
@@ -86,7 +142,11 @@ function showdown(state: HoldemHand) {
     reason: remaining.length === 1 ? 'uncontested' : 'showdown',
     pots: [],
     hands: {},
+    mucked: [],
   };
+  // An all-in player puts everyone's cards on the table, so nobody may muck then.
+  const anyAllIn = remaining.some((s) => s.chips === 0);
+  const contested = new Set<string>();
   if (remaining.length === 1) {
     const amount = state.seats.reduce((sum, s) => sum + s.contribution, 0),
       winners = [remaining[0].userId];
@@ -121,10 +181,24 @@ function showdown(state: HoldemHand) {
         awards: award(state, winners, pot.amount),
         split: winners.length > 1,
       });
+      if (pot.eligible.length > 1) for (const userId of winners) contested.add(userId);
     }
   }
   state.settlement = settlement;
-  state.winners = Object.keys(state.payouts).filter((userId) => state.payouts[userId] > 0);
+  // A winner took a pot someone else could also win, or ended up ahead of their own money. Getting
+  // back only an uncalled bet is not a win.
+  state.winners = Object.keys(state.payouts).filter((userId) => {
+    if (!(state.payouts[userId] > 0)) return false;
+    if (settlement.reason === 'uncontested' || contested.has(userId)) return true;
+    return state.payouts[userId] > state.seats.find((s) => s.userId === userId)!.contribution;
+  });
+  if (state.muckLosers && settlement.reason === 'showdown' && !anyAllIn) {
+    settlement.mucked = remaining
+      .filter((s) => !state.winners.includes(s.userId))
+      .map((s) => s.userId);
+    // The evaluation names the best five cards, i.e. the hole cards, so it goes with the muck.
+    for (const userId of settlement.mucked) delete settlement.hands[userId];
+  }
   state.stage = 'ended';
   state.turn = null;
 }
@@ -138,8 +212,11 @@ function progress(state: HoldemHand, previousTurn: number) {
   const bettingComplete = acting.every(
     (s) => s.actedAt !== null && s.streetBet === state.maximumBet,
   );
+  // With one or no player able to act, betting is over once nobody has put in more than that
+  // player. (A blind posted all-in for less than the big blind never has to be out-called.)
   const noFurtherBetting =
-    acting.length <= 1 && acting.every((s) => s.streetBet >= state.maximumBet);
+    acting.length <= 1 &&
+    acting.every((s) => live.every((other) => other === s || other.streetBet <= s.streetBet));
   if (!bettingComplete && !noFurtherBetting) {
     state.turn = next(
       state,
@@ -152,6 +229,7 @@ function progress(state: HoldemHand, previousTurn: number) {
     showdown(state);
     return;
   }
+  if (acting.length <= 1 && state.stage !== 'ended') state.runoutFrom ??= state.stage;
   // Burn one card before each community street, as in a physical friends' table.
   draw(state);
   if (state.stage === 'preflop') {
@@ -179,12 +257,13 @@ export function startHoldem(
   smallBlind: number,
   bigBlind: number,
   deck = shuffledDeck(),
+  options: HoldemOptions = {},
 ): HoldemHand {
   if (
     players.length < 2 ||
     players.length > 9 ||
     new Set(players.map((p) => p.userId)).size !== players.length ||
-    players.some((p) => !p.userId || !Number.isSafeInteger(p.chips) || p.chips < bigBlind) ||
+    players.some((p) => !p.userId || !isHoldemDealable(p.chips)) ||
     !Number.isInteger(button) ||
     button < 0 ||
     button >= players.length ||
@@ -216,15 +295,28 @@ export function startHoldem(
     bigBlind,
     payouts: {},
     winners: [],
+    log: [],
+    ...(options.muckLosers ? { muckLosers: true } : {}),
   };
   for (let round = 0; round < 2; round++)
     for (let offset = 1; offset <= players.length; offset++)
       state.seats[(button + offset) % players.length].cards.push(draw(state));
   const small = players.length === 2 ? button : (button + 1) % players.length,
     big = (small + 1) % players.length;
-  pay(state.seats[small], smallBlind);
-  pay(state.seats[big], bigBlind);
+  // A short stack posts what it has, all-in; the others still owe the full big blind.
+  record(state, state.seats[small], 'smallBlind', pay(state.seats[small], smallBlind));
+  record(state, state.seats[big], 'bigBlind', pay(state.seats[big], bigBlind));
   state.turn = next(state, big, (seat) => seat.chips > 0);
+  // Blinds can leave nobody (or only a player who is already covered) with a decision.
+  const acting = state.seats.filter((s) => s.chips > 0);
+  if (
+    state.turn === null ||
+    (acting.length <= 1 &&
+      acting.every((s) => state.seats.every((o) => o === s || o.streetBet <= s.streetBet)))
+  ) {
+    state.turn = null;
+    progress(state, big);
+  }
   return state;
 }
 export function holdemAction(
@@ -242,12 +334,14 @@ export function holdemAction(
   switch (action.type) {
     case 'fold':
       seat.folded = true;
+      record(state, seat, 'fold', 0);
       break;
     case 'check':
       if (seat.streetBet !== state.maximumBet) throw new Error('CHECK_UNAVAILABLE');
+      record(state, seat, 'check', 0);
       break;
     case 'call':
-      pay(seat, state.maximumBet - seat.streetBet);
+      record(state, seat, 'call', pay(seat, state.maximumBet - seat.streetBet));
       break;
     case 'raise': {
       if (
@@ -261,7 +355,7 @@ export function holdemAction(
       const increment = action.to - state.maximumBet,
         allIn = action.to === seat.streetBet + seat.chips;
       if (increment < state.minimumRaise && !allIn) throw new Error('RAISE_TOO_SMALL');
-      pay(seat, action.to - seat.streetBet);
+      record(state, seat, 'raise', pay(seat, action.to - seat.streetBet));
       if (increment >= state.minimumRaise) {
         state.minimumRaise = increment;
         state.seats.forEach((s) => {
@@ -290,8 +384,20 @@ function livePots(pots: { amount: number; eligible: string[] }[]) {
   }
   return merged;
 }
+/** Showdown hands every viewer may see: all remaining hands except the ones that were mucked. */
+export function publicShowdownHands(state: HoldemHand): Record<string, EvaluatedHoldemHand> | null {
+  const settlement = state.settlement;
+  if (state.stage !== 'ended' || settlement?.reason !== 'showdown') return null;
+  const mucked = settlement.mucked ?? [];
+  return Object.fromEntries(
+    Object.entries(settlement.hands).filter(([id]) => !mucked.includes(id)),
+  );
+}
 export function holdemView(state: HoldemHand, userId: string) {
   const reveal = state.stage === 'ended' && state.seats.filter((s) => !s.folded).length > 1;
+  const mucked = state.settlement?.mucked ?? [];
+  const shown = (seat: { userId: string; folded: boolean }) =>
+    reveal && !seat.folded && !mucked.includes(seat.userId);
   const own = state.seats.find((seat) => seat.userId === userId);
   const ownHand =
     own && own.cards.length + state.board.length >= 5
@@ -299,7 +405,10 @@ export function holdemView(state: HoldemHand, userId: string) {
       : null;
   return {
     ownHand,
-    showdown: reveal ? (state.settlement?.hands ?? null) : null,
+    showdown: reveal ? publicShowdownHands(state) : null,
+    mucked,
+    log: state.log ?? [],
+    runoutFrom: state.runoutFrom ?? null,
     settlementReason: state.settlement?.reason ?? null,
     pots:
       state.settlement?.pots ??
@@ -329,8 +438,8 @@ export function holdemView(state: HoldemHand, userId: string) {
     winners: state.winners,
     seats: state.seats.map(({ cards, actedAt: _actedAt, ...seat }) => ({
       ...seat,
-      cards: seat.userId === userId || (reveal && !seat.folded) ? cards : [],
-      hiddenCardCount: seat.userId === userId || (reveal && !seat.folded) ? 0 : cards.length,
+      cards: seat.userId === userId || shown(seat) ? cards : [],
+      hiddenCardCount: seat.userId === userId || shown(seat) ? 0 : cards.length,
     })),
   };
 }
