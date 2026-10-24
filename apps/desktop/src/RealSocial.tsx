@@ -498,10 +498,7 @@ export function CommunityChat({
         if (!/^@agent(?:\s|$)/i.test(text)) return;
         const capabilities =
           (await window.rooms?.agent.status().catch(() => null))?.capabilities ?? [];
-        if (
-          !capabilities.includes('stoat-mentions') &&
-          text.replace(/^@agent\s*/i, '').trim()
-        )
+        if (!capabilities.includes('stoat-mentions') && text.replace(/^@agent\s*/i, '').trim())
           setAgentPrompt(text.replace(/^@agent\s*/i, '').trim());
       }),
       notify,
@@ -1396,15 +1393,15 @@ export function CommunityChat({
                 {t('Hatırlat')}
               </button>
               {assistant && (
-              <button
-                onClick={() => {
-                  saveMemory(options);
-                  closeOptions();
-                }}
-              >
-                <BookmarkPlus size={16} />
-                {t('Oda hafızasına kaydet')}
-              </button>
+                <button
+                  onClick={() => {
+                    saveMemory(options);
+                    closeOptions();
+                  }}
+                >
+                  <BookmarkPlus size={16} />
+                  {t('Oda hafızasına kaydet')}
+                </button>
               )}
             </div>
           </div>
@@ -1417,24 +1414,24 @@ export function CommunityChat({
           onClose={closeDelete}
           footer={
             <>
-            <button className="button secondary" disabled={actionBusy} onClick={closeDelete}>
-              {t('Vazgeç')}
-            </button>
-            <button
-              className="button danger"
-              disabled={actionBusy}
-              onClick={() => {
-                setActionBusy(true);
-                setActionError('');
-                void c
-                  .deleteMessage(deleting)
-                  .then(closeDelete)
-                  .catch((error) => setActionError(uiError(error)))
-                  .finally(() => setActionBusy(false));
-              }}
-            >
-              {t('Mesajı sil')}
-            </button>
+              <button className="button secondary" disabled={actionBusy} onClick={closeDelete}>
+                {t('Vazgeç')}
+              </button>
+              <button
+                className="button danger"
+                disabled={actionBusy}
+                onClick={() => {
+                  setActionBusy(true);
+                  setActionError('');
+                  void c
+                    .deleteMessage(deleting)
+                    .then(closeDelete)
+                    .catch((error) => setActionError(uiError(error)))
+                    .finally(() => setActionBusy(false));
+                }}
+              >
+                {t('Mesajı sil')}
+              </button>
             </>
           }
         >
