@@ -245,6 +245,35 @@ it('renders the table in English', async () => {
   expect(document.body.textContent).not.toMatch(/[çğıöşüİ]/);
 });
 
+it('shows what the server offers even while clicks are locked, and keeps the table compact', () => {
+  // `can` is false while a move is in flight (and in the local fixtures): the look must not change.
+  const locked = (game: GamePublicState): TableUI => ({ ...ui(game), can: () => false });
+  render(<ReferenceBatak {...locked(scene('your-turn'))} />);
+  expect(document.querySelectorAll('.bt-hand-card.legal')).toHaveLength(1);
+  expect(document.querySelectorAll('.bt-hand-card.illegal')).toHaveLength(11);
+  expect(handCards().every((item) => item.disabled)).toBe(true);
+  // The hand sits in the dock region; no empty "no moves yet" panel, no static variant chip.
+  expect(screen.getByRole('region', { name: 'Elin' }).querySelector('.bt-hand')).toBeTruthy();
+  expect(screen.queryByText('Henüz hamle yok.')).toBeNull();
+  expect(document.querySelector('.bt-side')).toBeNull();
+  expect(document.querySelector('.rx-badges')?.textContent).not.toContain('İhaleli');
+  cleanup();
+  // The bid controls stay in the dock (disabled), the felt keeps the bid log.
+  render(<ReferenceBatak {...locked(scene('bidding'))} />);
+  const dock = screen.getByRole('region', { name: 'Elin' });
+  expect(within(dock).getByRole('group', { name: 'İhale miktarı' })).toBeTruthy();
+  expect((within(dock).getByRole('button', { name: 'Pas' }) as HTMLButtonElement).disabled).toBe(
+    true,
+  );
+  expect(screen.queryByText(/düşünüyor/)).toBeNull();
+  cleanup();
+  // End of hand: the result card is on the felt, the score sheet beside it, no hand.
+  render(<ReferenceBatak {...locked(scene('round-end'))} />);
+  expect(document.querySelector('.bt-felt .bt-summary')).toBeTruthy();
+  expect(document.querySelector('.bt-side .bt-sheet')).toBeTruthy();
+  expect(screen.queryByRole('region', { name: 'Elin' })).toBeNull();
+});
+
 it('creates a table with house rules the protocol and the Batak module accept', () => {
   const command = {
     type: 'game.create',

@@ -1377,6 +1377,7 @@ export const games: Catalog = {
   'Gömdüğün kartları yalnızca sen görürsün.': 'Only you can see the cards you buried.',
   'Gömeceğin 4 kartı seç': 'Pick the 4 cards to bury',
   '{name} kart gömüyor': '{name} is burying cards',
+  Elin: 'Your hand',
   'Elin · ihale sürüyor': 'Your hand · bidding in progress',
   'Kaç el alacaksın?': 'How many tricks will you take?',
   'Koz maça · herkes tahmin söyler': 'Spades are trump · everyone calls their tricks',
