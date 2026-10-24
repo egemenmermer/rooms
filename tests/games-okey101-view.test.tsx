@@ -55,6 +55,9 @@ describe('101 Okey table', () => {
     expect(document.querySelector('.o1-seat.right')!.textContent).toContain('Osman');
     expect(document.querySelector('.o1-seat.top')!.textContent).toContain('Ayşe');
     expect(document.querySelector('.o1-seat.left')!.textContent).toContain('Can');
+    // Every seat uses the shared SeatAvatar; the turn ring sits on the own (bottom) seat.
+    expect(document.querySelectorAll('.o1-seat .rg-seat-avatar')).toHaveLength(4);
+    expect(document.querySelector('.o1-seat.bottom .rg-seat-avatar.turn')).toBeTruthy();
     expect(document.querySelector('.o1-pile.bottom-left')!.textContent).toContain('Can');
     fireEvent.click(screen.getByRole('button', { name: 'Kapalı taş çek · 38 taş' }));
     expect(action).toHaveBeenLastCalledWith('draw', undefined);

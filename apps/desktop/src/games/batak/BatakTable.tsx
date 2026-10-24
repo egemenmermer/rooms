@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Spade } from 'lucide-react';
-import { Avatar, EmptyState } from '@rooms/design';
+import { EmptyState } from '@rooms/design';
 import type { GamePublicState } from '../../../../../packages/activity-protocol/src';
 import { t } from '../../i18n';
 import { rankNames, suitNames, suits, type Card } from '../shared/model';
@@ -22,11 +22,10 @@ import {
   type BatakState,
   type TrickPlay,
 } from './model';
-import { playBatakCue } from './sounds';
+import { SeatAvatar } from '../shared/SeatAvatar';
+import { playGameCue, useGameSounds } from '../shared/sounds';
 import './batak.css';
 
-/** Seconds a turn lasts on the server (`TURN_DURATION_MS`); only scales the seat clock ring. */
-const TURN_SECONDS = 45;
 /** How long a completed trick stays on the felt before it sweeps to the winner. */
 export const TRICK_HOLD_MS = 1200;
 export const TRICK_SWEEP_MS = 350;
@@ -60,7 +59,6 @@ function useTableEvents(game: GamePublicState, state: BatakState) {
     played: state.trick.length,
     bids: state.bidLog.length,
     trump: state.trump,
-    turn: `${done}:${state.stage}:${state.turn}`,
   });
   const [baseline] = useState(() => new Set(state.trick.map((play) => play.card.id)));
   const [held, setHeld] = useState<HeldTrick | null>(null);
@@ -96,11 +94,11 @@ function useTableEvents(game: GamePublicState, state: BatakState) {
         ...last,
         sweeping: state.trick.length > 0,
       });
-      playBatakCue('take');
+      playGameCue('capture');
     }
     const from = !fresh && done === before.done ? before.played : 0;
     for (const play of state.trick.slice(from)) lines.push(playLine(game, play));
-    if (state.trick.length > from && !(done > before.done && !fresh)) playBatakCue('play');
+    if (state.trick.length > from && !(done > before.done && !fresh)) playGameCue('play');
     if (lines.length) setLog((current) => [...lines.reverse(), ...current].slice(0, LOG_LENGTH));
     seen.current = {
       ...before,
@@ -125,16 +123,13 @@ function useTableEvents(game: GamePublicState, state: BatakState) {
     if (held && !held.sweeping && state.trick.length > 0)
       setHeld((value) => value && { ...value, sweeping: true });
   }, [state.trick.length]);
-  const turnKey = `${done}:${state.stage}:${state.turn}`;
-  useEffect(() => {
-    if (seen.current.turn === turnKey) return;
-    seen.current = { ...seen.current, turn: turnKey };
-    if (state.viewerSeat !== null && state.turn === state.viewerSeat) playBatakCue('turn');
-  }, [turnKey]);
   return { held, log, animate: (id: string) => !baseline.has(id) };
 }
 
 export function ReferenceBatak(ui: TableUI) {
+  // Deal, your-turn and end-of-hand cues; card and trick cues come from the table events, so the
+  // empty signals keep the hook from adding a second move cue.
+  useGameSounds(ui.game, { signals: () => ({}) });
   const state = readBatak(ui.game, ui.userId);
   if (!state)
     return (
@@ -229,10 +224,7 @@ function BatakBoard({ game, can, action, timer, state }: TableUI & { state: Bata
                     : t('{name} · {count} kart', { name: seat.name, count })
                 }
               >
-                <span className="bt-avatar">
-                  <Avatar name={seat.name} />
-                  {turn && timer !== null && <SeatClock seconds={timer} />}
-                </span>
+                <SeatAvatar seat={seat} game={game} timer={timer} />
                 <span className="bt-seat-text">
                   <strong title={seat.name}>{seat.name}</strong>
                   <small>
@@ -652,27 +644,5 @@ function ScoreSheet({ game, state }: { game: GamePublicState; state: BatakState 
         </tfoot>
       </table>
     </section>
-  );
-}
-
-function SeatClock({ seconds }: { seconds: number }) {
-  const fraction = Math.max(0, Math.min(1, seconds / TURN_SECONDS)),
-    circumference = 2 * Math.PI * 21;
-  return (
-    <svg
-      className={`bt-clock ${seconds <= 10 ? 'late' : ''}`}
-      viewBox="0 0 46 46"
-      aria-hidden="true"
-    >
-      <circle cx="23" cy="23" r="21" />
-      <circle
-        cx="23"
-        cy="23"
-        r="21"
-        className="bt-clock-left"
-        strokeDasharray={circumference}
-        strokeDashoffset={circumference * (1 - fraction)}
-      />
-    </svg>
   );
 }

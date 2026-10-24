@@ -12,6 +12,8 @@ import { useGameFixtureMetadata } from '../shared/fixture';
 import { array, object, type Tile } from '../shared/model';
 import type { TableUI } from '../shared/table-ui';
 import { TurnClock } from '../shared/TurnClock';
+import { SeatAvatar } from '../shared/SeatAvatar';
+import { useGameSounds } from '../shared/sounds';
 import { arrangePairs, arrangeRuns, rackBlocks } from './arrange';
 import { describeMoves } from './moves';
 import { OkeyRoundSummary } from './OkeyRoundSummary';
@@ -38,6 +40,7 @@ type Draft = { ids: string[]; kind: MeldKind | null };
 export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
   const fixtureMetadata = useGameFixtureMetadata();
   const view = game.view;
+  useGameSounds(game, { move: 'tile' });
   const order = useMemo(() => [...game.seats].sort((a, b) => a.seat - b.seat), [game.seats]);
   const nameOf = (seat: number) =>
     order.find((item) => item.seat === seat)?.name ?? t('Koltuk {number}', { number: seat + 1 });
@@ -365,14 +368,19 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
           const seat = (base + offset) % 4,
             count = Number(hands.find((hand) => hand.seat === seat)?.count ?? 0),
             playing = turn === seat,
-            state = openedList[seat];
+            state = openedList[seat],
+            seatInfo = order.find((item) => item.seat === seat);
           return (
             <article
               key={`seat-${seat}`}
               className={`o1-seat ${PLACES[offset]} ${playing ? 'turn' : ''}`}
               aria-label={playing ? t('{name} · Sırada', { name: nameOf(seat) }) : nameOf(seat)}
             >
-              <Avatar name={nameOf(seat)} />
+              {seatInfo ? (
+                <SeatAvatar seat={seatInfo} game={game} timer={timer} />
+              ) : (
+                <Avatar name={nameOf(seat)} />
+              )}
               <div>
                 <strong title={nameOf(seat)}>{nameOf(seat)}</strong>
                 <small>
@@ -389,7 +397,6 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
                   ))}
                 </span>
               )}
-              {playing && <TurnClock timer={timer} />}
             </article>
           );
         })}

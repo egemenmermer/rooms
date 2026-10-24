@@ -14,7 +14,10 @@ import { readBatak, relativePosition, sortHand } from '../apps/desktop/src/games
 import type { TableUI } from '../apps/desktop/src/games/shared/table-ui';
 
 const cues = vi.hoisted(() => vi.fn());
-vi.mock('../apps/desktop/src/games/batak/sounds', () => ({ playBatakCue: cues }));
+vi.mock('../apps/desktop/src/games/shared/sounds', async (original) => ({
+  ...(await original<typeof import('../apps/desktop/src/games/shared/sounds')>()),
+  playGameCue: cues,
+}));
 
 afterEach(() => {
   cleanup();
@@ -109,6 +112,9 @@ it('shows the opponent on turn with the last card and keeps the hand closed', ()
   expect(document.querySelectorAll('.bt-hand-card.illegal')).toHaveLength(0);
   // The bidder carries the contract badge with the trump and tricks against the contract.
   expect(screen.getByLabelText('1 / 7 el')).toBeTruthy();
+  // The shared SeatAvatar carries the turn ring on the player whose turn it is.
+  expect(document.querySelectorAll('.bt-seat .rg-seat-avatar')).toHaveLength(4);
+  expect(document.querySelectorAll('.bt-seat .rg-seat-avatar.turn')).toHaveLength(1);
 });
 
 it('keeps a completed trick on the felt, then sweeps it to the winner and clears it', () => {
@@ -121,7 +127,7 @@ it('keeps a completed trick on the felt, then sweeps it to the winner and clears
   expect(document.querySelector('.bt-played.winner')?.getAttribute('aria-label')).toBe(
     'Can (demo): Maça 2',
   );
-  expect(cues).toHaveBeenCalledWith('take');
+  expect(cues).toHaveBeenCalledWith('capture');
   act(() => void vi.advanceTimersByTime(TRICK_HOLD_MS - 100));
   expect(document.querySelectorAll('.bt-trick .bt-played')).toHaveLength(4);
   act(() => void vi.advanceTimersByTime(150));

@@ -127,32 +127,6 @@
 .bt-seat.turn.pos-top-right {
   transform: scale(1.04);
 }
-.bt-avatar {
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  flex: none;
-}
-.bt-clock {
-  position: absolute;
-  inset: -6px;
-  width: calc(100% + 12px);
-  height: calc(100% + 12px);
-  transform: rotate(-90deg);
-  pointer-events: none;
-}
-.bt-clock circle {
-  fill: none;
-  stroke: var(--color-border-subtle);
-  stroke-width: 3;
-}
-.bt-clock .bt-clock-left {
-  stroke: var(--color-action-primary);
-  transition: stroke-dashoffset 250ms linear;
-}
-.bt-clock.late .bt-clock-left {
-  stroke: var(--color-status-error);
-}
 .bt-seat-text {
   display: grid;
   min-width: 0;
@@ -621,7 +595,6 @@
 @media (prefers-reduced-motion: reduce) {
   .bt-seat,
   .bt-played,
-  .bt-clock .bt-clock-left,
   .bt-hand-card,
   .bt-hand-card .playing-card {
     transition: none;
@@ -635,7 +608,6 @@
 /* The app's own "Hareketi azalt" setting (appearance-preferences.ts) as well as the system one. */
 :root[data-motion='reduce'] .bt-seat,
 :root[data-motion='reduce'] .bt-played,
-:root[data-motion='reduce'] .bt-clock .bt-clock-left,
 :root[data-motion='reduce'] .bt-hand-card,
 :root[data-motion='reduce'] .bt-hand-card .playing-card {
   transition: none;
