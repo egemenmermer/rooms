@@ -3,15 +3,17 @@
 .tv-table {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
+  /* The board row takes what the shell's table area leaves (TableShell docks the controls). */
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   grid-template-areas:
     'score score'
     'top log'
     'board log'
-    'bottom log'
-    'controls log';
+    'bottom log';
   gap: var(--space-8) var(--space-16);
   align-items: start;
-  margin-top: var(--space-12);
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .tv-score {
   grid-area: score;
@@ -124,7 +126,10 @@
   position: relative;
   display: flex;
   justify-content: center;
+  align-self: stretch;
   min-width: 0;
+  /* Below this the table area scrolls rather than shrinking the board further. */
+  min-height: 220px;
 }
 .tv-board {
   --tv-wood: #6b4226;
@@ -140,8 +145,8 @@
   --tv-pip: #24170f;
   display: block;
   width: 100%;
-  height: auto;
-  max-height: min(62vh, 560px);
+  height: 100%;
+  max-height: 560px;
   user-select: none;
   touch-action: none;
 }
@@ -316,7 +321,6 @@
   font-size: var(--font-size-micro);
 }
 .tv-controls {
-  grid-area: controls;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -404,10 +408,20 @@
 @media (max-width: 1100px) {
   .tv-table {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: 'score' 'top' 'board' 'bottom' 'controls' 'log';
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas: 'score' 'top' 'board' 'bottom' 'log';
   }
-  .tv-board {
-    max-height: min(52vh, 480px);
+  /* One line: the latest turn only; the board's trail shows the opponent's moves. */
+  .tv-log {
+    padding: var(--space-4) var(--space-12);
+  }
+  .tv-log li {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tv-log li:not(:first-child) {
+    display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {

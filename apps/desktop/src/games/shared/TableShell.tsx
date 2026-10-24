@@ -1,7 +1,18 @@
 import { locale, t } from '../../i18n';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Coins, Eye, History, RefreshCw, ShieldCheck, Trophy } from 'lucide-react';
+import {
+  ArrowLeft,
+  Coins,
+  Eye,
+  History,
+  LogOut,
+  MoreHorizontal,
+  Power,
+  RefreshCw,
+  ShieldCheck,
+  Trophy,
+} from 'lucide-react';
 import { IconButton, Modal } from '@rooms/design';
 import { useActivityRoom } from '../../activity';
 import { useCommunity } from '../../community';
@@ -15,11 +26,91 @@ import { GameRecovery } from './GameRecovery';
 import { GameResults } from './GameResults';
 import { array } from './model';
 import { SeatControlsContext, seatRemovable, type SeatControls } from './SeatAvatar';
+import { TableDockContext } from './TableDock';
 import type { TableUI } from './table-ui';
 
 /** Blackjack: a stack below the smallest bet (2) may buy back up to the 1000 cap. */
 const REBUY_BELOW = 2,
   REBUY_STACK = 1000;
+
+/**
+ * Local copy of `guardTimer` from VP-clock (`shared/TurnClock.tsx`); at merge keep that one and
+ * import it here. Hides a clock that cannot be a real turn time (far-future deadline, NaN).
+ */
+const MAX_TURN_SECONDS = 600;
+function guardTimer(timer: number | null | undefined): number | null {
+  if (timer === null || timer === undefined || Number.isNaN(timer)) return null;
+  if (timer > MAX_TURN_SECONDS) return null;
+  return Math.max(0, Math.floor(timer));
+}
+
+type PopoverTrigger = {
+  'aria-expanded': boolean;
+  'aria-haspopup': 'dialog' | 'menu';
+  onClick(): void;
+};
+
+/**
+ * A small panel under a header button (rules, table actions). Escape or a press outside closes
+ * it; Escape returns focus to the button.
+ */
+function Popover({
+  open,
+  onOpenChange,
+  label,
+  className,
+  role = 'dialog',
+  trigger,
+  children,
+}: {
+  open: boolean;
+  onOpenChange(open: boolean): void;
+  label: string;
+  className: string;
+  role?: 'dialog' | 'menu';
+  trigger(props: PopoverTrigger): ReactNode;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const change = useRef(onOpenChange);
+  change.current = onOpenChange;
+  useEffect(() => {
+    if (!open) return;
+    const outside = (event: PointerEvent) => {
+      if (!ref.current?.contains(event.target as Node)) change.current(false);
+    };
+    const key = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      change.current(false);
+      ref.current?.querySelector<HTMLButtonElement>('button[aria-expanded]')?.focus();
+    };
+    document.addEventListener('pointerdown', outside, true);
+    window.addEventListener('keydown', key, true);
+    return () => {
+      document.removeEventListener('pointerdown', outside, true);
+      window.removeEventListener('keydown', key, true);
+    };
+  }, [open]);
+  useEffect(() => {
+    if (open && role === 'menu')
+      ref.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')?.focus();
+  }, [open, role]);
+  return (
+    <div className="rx-pop" ref={ref}>
+      {trigger({
+        'aria-expanded': open,
+        'aria-haspopup': role,
+        onClick: () => onOpenChange(!open),
+      })}
+      {open && (
+        <div className={`rx-pop-panel ${className}`} role={role} aria-label={label}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ReferenceOtherGame({
   activity,
@@ -38,7 +129,9 @@ export function ReferenceOtherGame({
   const fixture = import.meta.env.DEV && new URLSearchParams(location.search).has('fixture');
   const [rules, setRules] = useState(false),
     [history, setHistory] = useState(false),
-    [end, setEnd] = useState(false),
+    [more, setMore] = useState(false),
+    [confirm, setConfirm] = useState<'leave' | 'end' | null>(null),
+    [dock, setDock] = useState<HTMLElement | null>(null),
     [now, setNow] = useState(Date.now()),
     [pending, setPending] = useState(false);
   const lock = useRef(false),
@@ -88,15 +181,17 @@ export function ReferenceOtherGame({
   useEffect(() => {
     setRules(false);
     setHistory(false);
-    setEnd(false);
+    setMore(false);
+    setConfirm(null);
   }, [scope]);
   useEffect(() => {
     if (fixtureMetadata) setRules(fixtureMetadata.ui.modal === 'rules');
   }, [fixtureMetadata]);
-  const timer =
+  const timer = guardTimer(
     deadline > 0 && game.status === 'playing'
       ? Math.max(0, Math.ceil((deadline - now - activity.serverOffsetMs) / 1000))
-      : null;
+      : null,
+  );
   const roomHostId = activity.room?.primary?.hostUserId;
   const seatControls: SeatControls = {
     canRemove: (seat) => seatRemovable(game, seat, c.user?.id, roomHostId),
@@ -132,46 +227,107 @@ export function ReferenceOtherGame({
     c.channels.find((channel) => channel.id === activity.room?.roomId)?.name ?? t('Oda');
   const ruleRows = definition.ruleRows(game);
   const finish = (game.status === 'finished' && definition.finishLabels?.(game)) || null;
+  const playing = game.status === 'playing';
+  const menu = !!own || owner;
   return (
     <div className={`rg-page rx-game rx-${game.kind}`}>
-      <header className="rg-heading">
-        <div>
-          <div className="rg-title">
-            <h1>
-              {game.status === 'finished'
-                ? (finish?.title ?? t('El tamamlandı'))
-                : definition.catalog.name}
-            </h1>
-            <span>{t('Kurallar kilitli')}</span>
-          </div>
-          <p>
-            {roomName} · {definition.catalog.name} ·{' '}
-            {definition.catalog.scoring === 'chips' ? t('Sanal fiş') : t('Sanal puan')}
-          </p>
+      <header className="rx-head">
+        <IconButton
+          className="rx-back"
+          label={t('Kıraathaneye dön')}
+          onClick={() => navigate('/games')}
+        >
+          <ArrowLeft size={17} />
+        </IconButton>
+        <div className="rx-head-title">
+          <h1>
+            {game.status === 'finished'
+              ? (finish?.title ?? t('El tamamlandı'))
+              : definition.catalog.name}
+          </h1>
+          <small>
+            {roomName} · {definition.catalog.scoring === 'chips' ? t('Sanal fiş') : t('Sanal puan')}
+          </small>
         </div>
-        <div>
-          <button onClick={() => setRules(true)}>
-            <ShieldCheck size={16} />
-            {t('Masa kuralları')}
-          </button>
+        <div className="rx-head-actions">
+          <Popover
+            open={rules}
+            onOpenChange={setRules}
+            className="rx-rules"
+            label={t('Masa kuralları')}
+            trigger={(props) => (
+              <button {...props} className="rx-chip">
+                <ShieldCheck size={15} />
+                {t('Masa kuralları')}
+              </button>
+            )}
+          >
+            <h2>{t('Masa kuralları')}</h2>
+            <p>{t('Kurallar kilitli')}</p>
+            <div className="rg-rules">
+              {ruleRows.map(([label, value]) => (
+                <div key={label}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </div>
+              ))}
+            </div>
+          </Popover>
           <button
+            className="rx-chip"
             disabled={!access}
-            title={!access ? t('Geçmiş için izleyici olarak katıl') : undefined}
+            // The label hides below 1100 px; keep the name for screen readers and a tooltip.
+            aria-label={t('Geçmiş')}
+            title={!access ? t('Geçmiş için izleyici olarak katıl') : t('Geçmiş')}
             onClick={() => navigate('/games?tab=history')}
           >
-            <History size={16} />
-            {t('Geçmiş')}
+            <History size={15} />
+            <span>{t('Geçmiş')}</span>
           </button>
           <IconButton label={t('Masayı yenile')} onClick={() => void activity.refresh()}>
             <RefreshCw size={16} />
           </IconButton>
-          {own && (
-            <button
-              disabled={fixture || !ready || busy}
-              onClick={() => void send({ type: 'game.leave' })}
+          {menu && (
+            <Popover
+              open={more}
+              onOpenChange={setMore}
+              className="rx-menu"
+              role="menu"
+              label={t('Masa işlemleri')}
+              trigger={(props) => (
+                <IconButton {...props} label={t('Masa işlemleri')}>
+                  <MoreHorizontal size={17} />
+                </IconButton>
+              )}
             >
-              {t('Masadan kalk')}
-            </button>
+              {own && (
+                <button
+                  role="menuitem"
+                  disabled={fixture || !ready || busy}
+                  onClick={() => {
+                    setMore(false);
+                    setConfirm('leave');
+                  }}
+                >
+                  <LogOut size={15} />
+                  {t('Masadan kalk')}
+                </button>
+              )}
+              {owner && (
+                <button
+                  role="menuitem"
+                  className="danger"
+                  disabled={fixture || busy || !ready}
+                  onClick={() => {
+                    setMore(false);
+                    setConfirm('end');
+                  }}
+                >
+                  <Power size={15} />
+                  {t('Masayı kapat')}
+                </button>
+              )}
+            </Popover>
           )}
         </div>
       </header>
@@ -227,65 +383,80 @@ export function ReferenceOtherGame({
             </div>
           )}
           {Table && (
-            <SeatControlsContext.Provider value={seatControls}>
-              <Table {...ui} />
-            </SeatControlsContext.Provider>
+            <div className="rx-stage">
+              <SeatControlsContext.Provider value={seatControls}>
+                <TableDockContext.Provider value={dock}>
+                  <Table {...ui} />
+                </TableDockContext.Provider>
+              </SeatControlsContext.Provider>
+            </div>
           )}
         </>
       )}
-
-      {game.status === 'finished' && own && (
-        <div className="rg-hand-strip result">
-          <div>
-            <h3>
-              <Trophy size={19} />
-              {finish?.title ?? t('El tamamlandı')}
-            </h3>
-            <p>
-              {legal.includes('start')
-                ? (finish?.hint ?? t('Yeni el başlatabilirsin.'))
-                : t('Masa sahibi bekleniyor.')}
-            </p>
-          </div>
-          {rebuyable && (
+      {/* The docked bottom region: games portal their own controls in here (`TableDock`); the
+          shell's end-of-hand strip sits under them, so "Sonraki el" never scrolls away. */}
+      <div className="rx-dock">
+        <div className="rx-dock-slot" ref={setDock} />
+        {game.status === 'finished' && own && (
+          <div className="rg-hand-strip result">
+            <div>
+              <h3>
+                <Trophy size={19} />
+                {finish?.title ?? t('El tamamlandı')}
+              </h3>
+              <p>
+                {legal.includes('start')
+                  ? (finish?.hint ?? t('Yeni el başlatabilirsin.'))
+                  : t('Masa sahibi bekleniyor.')}
+              </p>
+            </div>
+            {rebuyable && (
+              <button
+                className="button secondary"
+                disabled={!ui.canRebuy}
+                title={t('Fişin en küçük bahsi karşılamıyor.')}
+                onClick={() => void rebuy()}
+              >
+                <Coins size={16} />
+                {t('Para al')}
+              </button>
+            )}
             <button
-              className="button secondary"
-              disabled={!ui.canRebuy}
-              title={t('Fişin en küçük bahsi karşılamıyor.')}
-              onClick={() => void rebuy()}
+              className="button primary"
+              disabled={!can('start')}
+              onClick={() => void action('start')}
             >
-              <Coins size={16} />
-              {t('Para al')}
+              {finish?.next ?? t('Sonraki el')}
             </button>
-          )}
-          <button
-            className="button primary"
-            disabled={!can('start')}
-            onClick={() => void action('start')}
-          >
-            {finish?.next ?? t('Sonraki el')}
-          </button>
-        </div>
-      )}
-      {owner && (
-        <button
-          className="rg-end"
-          disabled={fixture || busy || !ready}
-          onClick={() => setEnd(true)}
-        >
-          {t('Masayı kapat')}
-        </button>
-      )}
-      {rules && (
-        <Modal title={t('Masa kuralları')} className="rg-modal" onClose={() => setRules(false)}>
-          <div className="rg-modal-body rg-rules">
-            {ruleRows.map(([label, value]) => (
-              <div key={label}>
-                <span>{label}</span>
-                <strong>{value}</strong>
-              </div>
-            ))}
           </div>
+        )}
+      </div>
+      {confirm === 'leave' && (
+        <Modal title={t('Masadan kalk?')} className="rg-modal" onClose={() => setConfirm(null)}>
+          <div className="rg-modal-body">
+            <p>
+              {playing
+                ? t('El sürerken kalkarsan elini bot bitirir, sonra koltuğun boşalır.')
+                : t('Koltuğun boşalır; başka biri oturabilir.')}
+            </p>
+            {activity.error && <p role="alert">{activity.error}</p>}
+          </div>
+          <footer className="rg-modal-footer">
+            <button className="button secondary" onClick={() => setConfirm(null)}>
+              {t('Vazgeç')}
+            </button>
+            <button
+              className="button danger"
+              disabled={fixture || !ready || busy}
+              onClick={() =>
+                void send({ type: 'game.leave' }).then((ok) => {
+                  if (ok) setConfirm(null);
+                })
+              }
+            >
+              {t('Masadan kalk')}
+            </button>
+          </footer>
         </Modal>
       )}
       {history && access && (
@@ -306,14 +477,14 @@ export function ReferenceOtherGame({
           </div>
         </Modal>
       )}
-      {end && (
-        <Modal title={t('Masayı kapat?')} className="rg-modal" onClose={() => setEnd(false)}>
+      {confirm === 'end' && (
+        <Modal title={t('Masayı kapat?')} className="rg-modal" onClose={() => setConfirm(null)}>
           <div className="rg-modal-body">
             <p>{t('Oyun etkinliği biter. Ses bağlantısı açık kalır.')}</p>
             {activity.error && <p role="alert">{activity.error}</p>}
           </div>
           <footer className="rg-modal-footer">
-            <button className="button secondary" onClick={() => setEnd(false)}>
+            <button className="button secondary" onClick={() => setConfirm(null)}>
               {t('Vazgeç')}
             </button>
             <button
@@ -321,7 +492,7 @@ export function ReferenceOtherGame({
               disabled={fixture || !ready || busy}
               onClick={() =>
                 void send({ type: 'end' }).then((ok) => {
-                  if (ok) setEnd(false);
+                  if (ok) setConfirm(null);
                 })
               }
             >

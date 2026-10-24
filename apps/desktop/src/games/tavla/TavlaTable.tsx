@@ -4,6 +4,7 @@ import { Avatar, LoadingView } from '@rooms/design';
 import { Dices, Trophy, Undo2, Check } from 'lucide-react';
 import type { TavlaTurnRecord } from '../../../../../packages/games/src/tavla';
 import { SeatAvatar } from '../shared/SeatAvatar';
+import { TableDock } from '../shared/TableDock';
 import { playGameCue, useGameSounds } from '../shared/sounds';
 import type { TableUI } from '../shared/table-ui';
 import {
@@ -263,49 +264,55 @@ function TavlaRound({ game, userId, can, action, timer }: TableUI) {
         )}
       </div>
       {seatPanel(bottom, 'bottom')}
-      <div className="tv-controls">
-        <p className="tv-status" role="status">
-          {status}
-        </p>
-        {passed && (
-          <p className="tv-passed" role="status">
-            {t('Oynayacak hamle yok')} ·{' '}
-            {t('{name} {dice} attı, sıra geçti.', {
-              name: name(passed.seat),
-              dice: diceText(passed.dice),
-            })}
-          </p>
-        )}
-        {own && you !== null && (
-          <div className="tv-actions">
-            <button
-              className="button primary"
-              disabled={!can('roll')}
-              onClick={() => void action('roll')}
-              title={can('roll') ? t('Kısayol: Boşluk') : undefined}
-            >
-              <Dices size={16} aria-hidden="true" />
-              {view.phase === 'opening' ? t('Açılış zarını at') : t('Zar at')}
-            </button>
-            <button
-              className="button secondary"
-              disabled={!can('undo')}
-              onClick={() => void action('undo')}
-            >
-              <Undo2 size={16} aria-hidden="true" />
-              {t('Geri al')}
-            </button>
-            <button
-              className="button primary"
-              disabled={!can('confirm')}
-              onClick={() => void action('confirm')}
-            >
-              <Check size={16} aria-hidden="true" />
-              {t('Onayla')}
-            </button>
+      {/* The reference `TableDock` user: status and Roll/Undo/Confirm stay on screen. A finished
+          table hands the dock to the shell's result strip ("Rövanş"), and the board keeps the room. */}
+      {game.status !== 'finished' && (
+        <TableDock label={t('Hamle')} className="tv-dock">
+          <div className="tv-controls">
+            <p className="tv-status" role="status">
+              {status}
+            </p>
+            {passed && (
+              <p className="tv-passed" role="status">
+                {t('Oynayacak hamle yok')} ·{' '}
+                {t('{name} {dice} attı, sıra geçti.', {
+                  name: name(passed.seat),
+                  dice: diceText(passed.dice),
+                })}
+              </p>
+            )}
+            {own && you !== null && (
+              <div className="tv-actions">
+                <button
+                  className="button primary"
+                  disabled={!can('roll')}
+                  onClick={() => void action('roll')}
+                  title={can('roll') ? t('Kısayol: Boşluk') : undefined}
+                >
+                  <Dices size={16} aria-hidden="true" />
+                  {view.phase === 'opening' ? t('Açılış zarını at') : t('Zar at')}
+                </button>
+                <button
+                  className="button secondary"
+                  disabled={!can('undo')}
+                  onClick={() => void action('undo')}
+                >
+                  <Undo2 size={16} aria-hidden="true" />
+                  {t('Geri al')}
+                </button>
+                <button
+                  className="button primary"
+                  disabled={!can('confirm')}
+                  onClick={() => void action('confirm')}
+                >
+                  <Check size={16} aria-hidden="true" />
+                  {t('Onayla')}
+                </button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </TableDock>
+      )}
       {log.length > 0 && (
         <ol className="tv-log" aria-label={t('Son hamleler')}>
           {log.map((turn, i) => (

@@ -140,6 +140,13 @@ export const games: Catalog = {
   'Yalnızca sunucunun açtığı eller görünür. Katlanmış eller diğer oyunculara gösterilmez.':
     'Only hands opened by the server are shown. Folded hands aren’t shown to other players.',
   'Masayı kapat': 'Close table',
+  'Kıraathaneye dön': 'Back to Kıraathane',
+  'Masa işlemleri': 'Table actions',
+  'Masadan kalk?': 'Leave the table?',
+  'El sürerken kalkarsan elini bot bitirir, sonra koltuğun boşalır.':
+    'If you leave during a hand, a bot finishes it for you, then your seat is freed.',
+  'Koltuğun boşalır; başka biri oturabilir.': 'Your seat is freed; someone else can take it.',
+  Hamle: 'Move',
   'El {hand}': 'Hand {hand}',
   '{seatName} · {chips} fiş': '{seatName} · {chips} chips',
   'Tamamlanmış el yok.': 'No completed hands.',

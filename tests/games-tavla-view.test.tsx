@@ -187,8 +187,8 @@ it('match end: winner named, no move controls', () => {
   expect(game.status).toBe('finished');
   expect(screen.getByText(/Maçı Ece kazandı/)).toBeTruthy();
   expect(screen.getByLabelText('Maç skoru').textContent).toContain('3 – 0');
-  for (const name of ['Zar at', 'Geri al', 'Onayla'])
-    expect(button(name)).toHaveProperty('disabled', true);
+  // The shell's result strip takes the dock; no dead move buttons stay under it.
+  expect(screen.queryByRole('button', { name: /Zar at|Geri al|Onayla/ })).toBeNull();
 });
 
 it('spectator: board and score, no controls and no highlights', () => {

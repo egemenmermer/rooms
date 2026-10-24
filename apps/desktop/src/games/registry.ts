@@ -90,7 +90,11 @@ export interface BuyInDefinition {
 export interface GameDefinition {
   /** Name, art, players, description; also loaded on its own by the main bundle (`catalog.ts`). */
   catalog: GameCatalogEntry;
-  /** The playing table, rendered by `shared/TableShell.tsx` under the shared header and banners. */
+  /**
+   * The playing table, rendered by `shared/TableShell.tsx` under the shared header and banners, in a
+   * table area that fills the space above the dock. Put the player's own hand/rack/action bar in
+   * `<TableDock>` (`shared/TableDock.tsx`) so it stays on screen; size the felt to the area.
+   */
   Table?: ComponentType<TableUI>;
   /** The playing table stays on the lobby page (Hold'em: late seating and buy-ins); set with `LobbyTable`. */
   tableInLobby?: boolean;
