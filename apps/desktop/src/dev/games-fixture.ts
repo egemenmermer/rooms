@@ -1295,8 +1295,18 @@ function asDemoViewer(game: GamePublicState, from: string): GamePublicState {
   );
   return next;
 }
-/** The table of one game scene (`knownScenes`), from that game's own fixture module. */
+/**
+ * The table of one game scene (`knownScenes`), from that game's own fixture module. Those modules
+ * set the clock as `Date.now() + N s`; the table counts against the server clock, which the demo
+ * room pins to `epoch`, so the deadline moves there with its N seconds kept.
+ */
 function sceneGame(screen: GameFixtureId, scene: string): GamePublicState | null {
+  const game = sceneTable(screen, scene),
+    deadline = Number(game?.view.turnDeadline ?? 0);
+  if (!game || !(deadline > 0)) return game;
+  return { ...game, view: { ...game.view, turnDeadline: epoch + (deadline - Date.now()) } };
+}
+function sceneTable(screen: GameFixtureId, scene: string): GamePublicState | null {
   switch (screen) {
     case 'S42':
     case 'S43':

@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import { CircleAlert, CircleCheck, Info, TriangleAlert, X } from 'lucide-react';
-import { t } from '@rooms/i18n';
+import { getLocale, t } from '@rooms/i18n';
 export function IconButton({
   label,
   children,
@@ -26,6 +26,33 @@ export function IconButton({
   );
 }
 const avatarSegmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+// Bracketed parts such as "(demo)" or "[BOT]" never count towards the initials.
+const AVATAR_BRACKETED = /[([{<][^)\]}>]*[)\]}>]?/gu;
+const AVATAR_MARK = /^[\p{L}\p{N}\p{Extended_Pictographic}\p{Regional_Indicator}]/u;
+const TURKISH_LETTERS = /[ğüşıöçİĞÜŞÖÇ]/u;
+/** First letter, digit or emoji of a word, whole (never half an emoji); punctuation is skipped. */
+function firstMark(word: string) {
+  for (const { segment } of avatarSegmenter.segment(word))
+    if (AVATAR_MARK.test(segment)) return segment;
+  return '';
+}
+/**
+ * Up to two initials: the first letter (or emoji) of the first two words, bracketed parts and
+ * punctuation skipped. Dotted/dotless I follow Turkish rules in the Turkish UI or when the name
+ * itself has Turkish letters ("ilker" gives "İ", not "I").
+ */
+function avatarInitials(name: string | null | undefined) {
+  const label = (name ?? '').trim();
+  const strip = (value: string) => value.replace(AVATAR_BRACKETED, ' ');
+  const pick = (value: string) => value.split(/\s+/).map(firstMark).filter(Boolean).slice(0, 2);
+  // A name that is only bracketed text still gets initials from what is inside.
+  const marks = pick(strip(label));
+  const turkish = getLocale() === 'tr' || TURKISH_LETTERS.test(label);
+  return (
+    (marks.length ? marks : pick(label)).join('').toLocaleUpperCase(turkish ? 'tr-TR' : 'en-US') ||
+    '?'
+  );
+}
 export function Avatar({
   name,
   size = 'normal',
@@ -37,13 +64,7 @@ export function Avatar({
   tone?: string;
 }) {
   const label = (name ?? '').trim();
-  const words = label.split(/\s+/).filter(Boolean);
-  const initials =
-    words
-      .slice(0, 2)
-      .map((word) => avatarSegmenter.segment(word)[Symbol.iterator]().next().value?.segment ?? '')
-      .join('')
-      .toLocaleUpperCase() || '?';
+  const initials = avatarInitials(label);
   const tones = ['sand', 'lavender', 'sage', 'blue'];
   const color = tone ?? tones[(label.codePointAt(0) ?? 0) % tones.length];
   return (
