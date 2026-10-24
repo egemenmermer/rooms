@@ -4,7 +4,7 @@
   min-height: 100%;
   background: #22252c;
   color: #e8eaf1;
-  font-family: var(--font-ui, Inter, sans-serif);
+  font-family: var(--font-family);
 }
 .rat-main {
   padding: 28px 32px;

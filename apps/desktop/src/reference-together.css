@@ -1,7 +1,7 @@
 .rt-page {
   padding: 30px 34px;
   color: var(--text-primary, #edf0fa);
-  font-family: var(--font-ui);
+  font-family: var(--font-family);
   max-width: 1500px;
   margin: auto;
 }
