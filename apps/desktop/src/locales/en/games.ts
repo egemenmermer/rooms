@@ -1099,6 +1099,7 @@ export const games: Catalog = {
   açık: 'light',
   koyu: 'dark',
   'Tavla tahtası': 'Backgammon board',
+  'Tavla tahtası hazırlanıyor…': 'Setting up the board…',
   '{number}. hane': 'Point {number}',
   '{count} {color} pul': '{count} {color} checkers',
   boş: 'empty',

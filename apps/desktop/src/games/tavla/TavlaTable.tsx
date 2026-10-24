@@ -1,6 +1,6 @@
 import { t } from '../../i18n';
 import { useEffect, useRef, useState } from 'react';
-import { Avatar } from '@rooms/design';
+import { Avatar, LoadingView } from '@rooms/design';
 import { Clock3, Dices, Trophy, Undo2, Check } from 'lucide-react';
 import type { TavlaTurnRecord } from '../../../../../packages/games/src/tavla';
 import type { TableUI } from '../shared/table-ui';
@@ -30,7 +30,15 @@ export function stepText(step: TavlaStep, seat: number) {
 
 const diceText = (dice: number[]) => dice.join('-');
 
-export function TavlaTable({ game, userId, can, action, timer }: TableUI) {
+export function TavlaTable(ui: TableUI) {
+  const view = ui.game.view as Partial<TavlaTableView>;
+  // A table whose first round view has not arrived yet (or an older server) has no board to draw.
+  if (!Array.isArray(view.points) || view.points.length !== 24 || !view.match)
+    return <LoadingView size="inline" label={t('Tavla tahtası hazırlanıyor…')} />;
+  return <TavlaRound {...ui} />;
+}
+
+function TavlaRound({ game, userId, can, action, timer }: TableUI) {
   const view = game.view as unknown as TavlaTableView,
     own = game.seats.find((seat) => seat.userId === userId),
     you = view.you,
@@ -47,7 +55,7 @@ export function TavlaTable({ game, userId, can, action, timer }: TableUI) {
     legal = myMove ? view.legalMoves : [],
     sources = movableSources(legal);
   const [picked, setPicked] = useState<TavlaFrom | null>(null);
-  const grabbed = useRef(false);
+  const grabbed = useRef<TavlaFrom | null>(null);
   const selected =
     picked !== null && sources.includes(picked) ? picked : sources.length === 1 ? sources[0] : null;
   const targets = selected === null ? [] : targetsFrom(legal, selected);
@@ -88,11 +96,13 @@ export function TavlaTable({ game, userId, can, action, timer }: TableUI) {
 
   const move = (from: TavlaFrom, to: TavlaTo) => {
     setPicked(null);
+    grabbed.current = null;
     void action('move', { payload: { from, to } });
   };
   const choose = (from: TavlaFrom) => {
-    if (grabbed.current) {
-      grabbed.current = false;
+    // The click that ends a press on the checker just grabbed keeps it selected.
+    if (grabbed.current === from) {
+      grabbed.current = null;
       return;
     }
     setPicked(selected === from ? null : from);
@@ -116,9 +126,10 @@ export function TavlaTable({ game, userId, can, action, timer }: TableUI) {
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  // The last round's result stays up until someone rolls the next round's opening die.
   const finished = view.result
     ? view
-    : view.phase === 'opening'
+    : view.phase === 'opening' && view.opening.every((die) => die === null) && !view.openingTie
       ? (series?.previous ?? null)
       : null;
   const roundResult = finished?.result ?? null;
@@ -208,7 +219,7 @@ export function TavlaTable({ game, userId, can, action, timer }: TableUI) {
           onPoint={onPoint}
           onGrab={(from) => {
             if (selected === from) return;
-            grabbed.current = true;
+            grabbed.current = from;
             setPicked(from);
           }}
           onBar={() => choose('bar')}

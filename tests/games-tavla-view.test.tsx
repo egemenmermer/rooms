@@ -204,3 +204,11 @@ it('table rules and history follow the match options', () => {
   };
   expect(tavlaGame.historyResult?.(entry.result, entry, 'ece')).toBe('3 puan');
 });
+
+it('shows a loading state until the round view arrives', () => {
+  const game = { ...tavlaFixtureGame('opening'), view: { legalActions: [] } } as GamePublicState;
+  render(
+    <Table game={game} userId="ece" can={() => false} action={vi.fn()} timer={null} busy={false} />,
+  );
+  expect(screen.getByRole('status').textContent).toContain('Tavla tahtası hazırlanıyor…');
+});
