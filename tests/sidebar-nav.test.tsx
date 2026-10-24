@@ -244,7 +244,7 @@ it('shows nothing extra for rooms the directory lists, even when empty', async (
 it('explains an empty, loading or failed channel list', async () => {
   useCommunity.setState({ channels: [], loadingMessages: true });
   await mount();
-  expect(screen.getByRole('status').textContent).toBe('Kanallar yükleniyor…');
+  expect(screen.getByText('Kanallar yükleniyor…').getAttribute('role')).toBe('status');
   cleanup();
   useCommunity.setState({ loadingMessages: false });
   await mount();
@@ -253,10 +253,9 @@ it('explains an empty, loading or failed channel list', async () => {
   cleanup();
   useCommunity.setState({ error: 'x' });
   await mount();
-  expect(screen.getByRole('alert').textContent).toContain('Kanallar alınamadı.');
-  expect(
-    within(screen.getByRole('alert')).getByRole('button', { name: 'Yeniden dene' }),
-  ).toBeTruthy();
+  const failed = screen.getByText('Kanallar alınamadı.').closest<HTMLElement>('[role="alert"]')!;
+  expect(failed).not.toBeNull();
+  expect(within(failed).getByRole('button', { name: 'Yeniden dene' })).toBeTruthy();
   cleanup();
   useCommunity.setState({
     error: null,

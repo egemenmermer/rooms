@@ -83,11 +83,9 @@ test.describe('channel management', () => {
     await expect(owner.nav.getByRole('button', { name: renamed, exact: true })).toHaveCount(0);
   });
 
-  test('members are told why channel management is unavailable', async ({ guest }) => {
-    await guest.nav.getByRole('button', { name: 'Sohbet kanalı oluştur' }).click();
-    const dialog = guest.page.getByRole('dialog', { name: 'Kanal oluştur' });
-    await dialog.getByRole('textbox', { name: 'Ad' }).fill('yetkisiz');
-    await expect(dialog.getByText('Kanal yönetimi için yetkili olman gerekiyor.')).toBeVisible();
-    await expect(dialog.getByRole('button', { name: 'Oluştur', exact: true })).toBeDisabled();
+  test('members without channel management get no create controls', async ({ guest }) => {
+    await expect(guest.nav.getByRole('group', { name: 'Sohbetler' })).toBeVisible();
+    await expect(guest.nav.getByRole('button', { name: 'Sohbet kanalı oluştur' })).toHaveCount(0);
+    await expect(guest.nav.getByRole('button', { name: 'Ses odası oluştur' })).toHaveCount(0);
   });
 });
