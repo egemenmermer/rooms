@@ -167,9 +167,7 @@ export function AppDirectory({
   const [query, setQuery] = useState('');
   const items = useMemo(
     () =>
-      directoryItems.filter(
-        (item) => (apps || !item.bot) && (hasCinema || item.id !== 'cinema'),
-      ),
+      directoryItems.filter((item) => (apps || !item.bot) && (hasCinema || item.id !== 'cinema')),
     [apps, hasCinema],
   );
   const highlights = useMemo(
