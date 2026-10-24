@@ -33,6 +33,17 @@ import type { TableUI } from './table-ui';
 const REBUY_BELOW = 2,
   REBUY_STACK = 1000;
 
+/**
+ * Local copy of `guardTimer` from VP-clock (`shared/TurnClock.tsx`); at merge keep that one and
+ * import it here. Hides a clock that cannot be a real turn time (far-future deadline, NaN).
+ */
+const MAX_TURN_SECONDS = 600;
+function guardTimer(timer: number | null | undefined): number | null {
+  if (timer === null || timer === undefined || Number.isNaN(timer)) return null;
+  if (timer > MAX_TURN_SECONDS) return null;
+  return Math.max(0, Math.floor(timer));
+}
+
 type PopoverTrigger = {
   'aria-expanded': boolean;
   'aria-haspopup': 'dialog' | 'menu';
@@ -176,10 +187,11 @@ export function ReferenceOtherGame({
   useEffect(() => {
     if (fixtureMetadata) setRules(fixtureMetadata.ui.modal === 'rules');
   }, [fixtureMetadata]);
-  const timer =
+  const timer = guardTimer(
     deadline > 0 && game.status === 'playing'
       ? Math.max(0, Math.ceil((deadline - now - activity.serverOffsetMs) / 1000))
-      : null;
+      : null,
+  );
   const roomHostId = activity.room?.primary?.hostUserId;
   const seatControls: SeatControls = {
     canRemove: (seat) => seatRemovable(game, seat, c.user?.id, roomHostId),

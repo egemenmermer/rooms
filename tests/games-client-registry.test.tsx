@@ -16,6 +16,7 @@ vi.mock('../apps/desktop/src/activity', () => ({ useActivityRoom: vi.fn() }));
 // A game that exists only in this test: one folder's worth of views, injected as a registry entry.
 vi.mock('../apps/desktop/src/games/registry', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../apps/desktop/src/games/registry')>();
+  const { TableDock } = await import('../apps/desktop/src/games/shared/TableDock');
   const dummy: GameDefinition = {
     catalog: {
       kind: 'test-dice-v1',
@@ -30,12 +31,15 @@ vi.mock('../apps/desktop/src/games/registry', async (importOriginal) => {
       Art: () => null,
       LobbyArt: () => null,
     },
-    Table: ({ game, can, action }) => (
+    Table: ({ game, can, action, timer }) => (
       <section>
         <p>Zar masası · sıra {String(game.turn)}</p>
-        <button disabled={!can('roll')} onClick={() => void action('roll')}>
-          Zar at
-        </button>
+        <p>süre {String(timer)}</p>
+        <TableDock label="Hamle">
+          <button disabled={!can('roll')} onClick={() => void action('roll')}>
+            Zar at
+          </button>
+        </TableDock>
       </section>
     ),
     ruleRows: () => [['Zar', '2']],
@@ -157,4 +161,51 @@ it('has one registry entry per catalog entry and offers only finished views', ()
     'Okey',
     'Tavla',
   ]);
+});
+
+it('docks the table controls under the table area and keeps the header to one row', () => {
+  shell(table('test-dice-v1', {}, { legalActions: ['roll'] }));
+  const roll = screen.getByRole('button', { name: 'Zar at' });
+  expect(roll.closest('.rx-dock')).toBeTruthy();
+  expect(roll.closest('.rx-stage')).toBeNull();
+  expect(screen.getByText('Zar masası · sıra 0').closest('.rx-stage')).toBeTruthy();
+  // The rules chip opens a popover; Escape closes it.
+  const rules = screen.getByRole('button', { name: /Masa kuralları/ });
+  fireEvent.click(rules);
+  expect(rules.getAttribute('aria-expanded')).toBe('true');
+  expect(screen.getByRole('dialog', { name: 'Masa kuralları' }).textContent).toContain('Zar');
+  fireEvent.keyDown(window, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: 'Masa kuralları' })).toBeNull();
+});
+
+it('hides a turn clock that cannot be a real turn time', () => {
+  shell(table('test-dice-v1', {}, { turnDeadline: 4_000_000_000_000 }));
+  expect(screen.getByText('süre null')).toBeTruthy();
+});
+
+it('leaves and closes the table from the actions menu, each after a confirm', () => {
+  const activity = shell(table('test-dice-v1', { ownerId: 'ece' }));
+  expect(screen.queryByText('Masayı kapat')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Masa işlemleri' }));
+  const menu = screen.getByRole('menu', { name: 'Masa işlemleri' });
+  expect([...menu.querySelectorAll('[role="menuitem"]')].map((item) => item.textContent)).toEqual([
+    'Masadan kalk',
+    'Masayı kapat',
+  ]);
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Masadan kalk' }));
+  expect(activity.send).not.toHaveBeenCalled();
+  expect(screen.getByText(/elini bot bitirir/)).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Vazgeç' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Masa işlemleri' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Masadan kalk' }));
+  const leave = screen
+    .getAllByRole('button', { name: 'Masadan kalk' })
+    .find((button) => button.classList.contains('danger'))!;
+  fireEvent.click(leave);
+  expect(activity.send).toHaveBeenCalledWith({ type: 'game.leave' });
+  cleanup();
+  // A seated player who does not own the table only gets "Masadan kalk".
+  shell(table('test-dice-v1'));
+  fireEvent.click(screen.getByRole('button', { name: 'Masa işlemleri' }));
+  expect(screen.queryByRole('menuitem', { name: 'Masayı kapat' })).toBeNull();
 });
