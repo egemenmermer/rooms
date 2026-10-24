@@ -43,6 +43,12 @@ beforeEach(async () => {
   directory = await mkdtemp(join(tmpdir(), 'rooms-signup-broker-'));
   poll = { status: 'pending', inviteCode: null, createdAt: null, expiresAt: null };
   vi.clearAllMocks();
+  // Tests below override these per case; start each one from the plain behaviour.
+  client.signupStatus.mockReset().mockImplementation(async () => poll);
+  client.requestSignup
+    .mockReset()
+    .mockImplementation(async () => ({ requestId: id, pollSecret: secret }));
+  client.cancelSignup.mockReset().mockImplementation(async () => {});
 });
 afterEach(async () => {
   await rm(directory, { recursive: true, force: true });
