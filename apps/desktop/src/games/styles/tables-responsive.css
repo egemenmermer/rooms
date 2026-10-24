@@ -5,6 +5,20 @@
   .rx-create-options {
     grid-template-columns: repeat(2, 1fr);
   }
+  /* Narrow page: one column, the table summary right after the options so it stays above the fold. */
+  .rx-create-body {
+    grid-template-columns: 1fr;
+  }
+  .rx-create-main {
+    display: contents;
+  }
+  .rx-create-body > aside {
+    position: static;
+    order: 1;
+  }
+  .rx-create-body > .rx-create-main > section {
+    order: 2;
+  }
 }
 @media (max-width: 800px) {
   .rx-game {

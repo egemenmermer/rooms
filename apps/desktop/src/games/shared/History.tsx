@@ -10,7 +10,7 @@ import { scoreHistoryResult } from '../card-history/CardHistory';
 import { isOfferedGame, offeredGames } from '../catalog';
 import { gameDefinition } from '../registry';
 import { useGameFixtureMetadata } from './fixture';
-import { array, names, object } from './model';
+import { array, names, object, tableTitle } from './model';
 import { ActionLog } from '../card-history/ActionLog';
 
 type HistoryTable = {
@@ -20,6 +20,16 @@ type HistoryTable = {
   seats: GamePublicState['seats'];
   label: string;
 };
+const MISSING_NAME = /^(undefined|null|nan|\[object object\])$/i;
+/**
+ * The table name for a history row. A hand can carry no name (older servers, partial records) or a
+ * stringified "undefined"; fall back to the catalog title, then to the raw kind, never to nothing.
+ */
+export function historyTableName(name: unknown, kind: string): string {
+  const raw = typeof name === 'string' ? name.trim() : '';
+  const clean = raw && !MISSING_NAME.test(raw) ? raw : undefined;
+  return tableTitle(clean, kind) || names[kind] || kind;
+}
 export function ReferenceGameHistory({
   activity,
   game,
@@ -46,7 +56,7 @@ export function ReferenceGameHistory({
             history: game.history,
             statistics: object(game.view.statistics),
             seats: game.seats,
-            label: game.view.tableName ?? names[game.kind],
+            label: historyTableName(game.view.tableName, game.kind),
           },
           ...array<Record<string, unknown>>(game.view.previousTables)
             .filter((table) => isOfferedGame(String(table.kind)))
@@ -55,7 +65,7 @@ export function ReferenceGameHistory({
               history: array<GamePublicState['history'][number]>(table.history),
               statistics: object(table.statistics),
               seats: [],
-              label: names[String(table.kind)] ?? String(table.kind),
+              label: historyTableName(undefined, String(table.kind)),
             })),
         ]
       : [];
@@ -72,6 +82,8 @@ export function ReferenceGameHistory({
   const stats = filtered.map((table) => object(table.statistics[community.user?.id ?? ''])),
     hands = stats.reduce((sum, item) => sum + Number(item.hands ?? 0), 0),
     wins = stats.reduce((sum, item) => sum + Number(item.wins ?? 0), 0);
+
+  const stale = !!activity.error && activity.status !== 'loading';
 
   const ownResult = (
     table: HistoryTable,
@@ -108,7 +120,8 @@ export function ReferenceGameHistory({
           </IconButton>
         </div>
       </header>
-      <div className="rh-stats">
+      {/* Stale numbers next to "could not load" would contradict the error; show dashes instead. */}
+      <div className={`rh-stats${stale ? ' stale' : ''}`}>
         {[
           [t('Oynanan el'), String(hands)],
           [t('Kazanılan el'), String(wins)],
@@ -117,7 +130,7 @@ export function ReferenceGameHistory({
         ].map(([label, value]) => (
           <article key={label}>
             <small>{label}</small>
-            <strong>{value}</strong>
+            <strong>{stale ? '—' : value}</strong>
           </article>
         ))}
       </div>
@@ -181,8 +194,8 @@ export function ReferenceGameHistory({
               {rows.map(({ table, hand, key }) => (
                 <tr key={key}>
                   <td>
-                    <strong>{hand.tableName ?? names[table.kind]}</strong>
-                    <small>{names[table.kind]}</small>
+                    <strong>{historyTableName(hand.tableName, table.kind)}</strong>
+                    <small>{historyTableName(undefined, table.kind)}</small>
                   </td>
                   <td>{hand.hand}</td>
                   <td>{new Date(hand.endedAt).toLocaleString(locale)}</td>
@@ -213,7 +226,7 @@ export function ReferenceGameHistory({
       {detail && (
         <Modal
           title={t('{game} · El {hand}', {
-            game: names[detail.table.kind],
+            game: historyTableName(undefined, detail.table.kind),
             hand: detail.hand.hand,
           })}
           className="rg-modal rh-detail"
