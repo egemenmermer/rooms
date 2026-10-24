@@ -1,11 +1,18 @@
 import { FriendRequestButton } from './FriendRequestButton';
+import { RovingTabs, tabPanelProps } from './FriendsPage';
 import './reference-social.css';
 import { dmCallUnavailable, startDmCall, useDmCall } from './dm-call';
 import { useRealtime } from './realtime';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal, IconButton } from '@rooms/design';
-import type { SocialUser, SocialFriend, SocialAttachment } from '@rooms/social';
+import { EmptyState, IconButton, Modal, Notice } from '@rooms/design';
+import type {
+  SocialUser,
+  SocialFriend,
+  SocialAttachment,
+  SocialChannel,
+  SocialMessage,
+} from '@rooms/social';
 import {
   FileText,
   Search,
@@ -23,7 +30,6 @@ import {
   MessageCircle,
   AlertCircle,
   Bell,
-  Pin,
   Users,
   X,
   Gamepad2,
@@ -215,6 +221,151 @@ function FileLink({ file }: { file: SocialAttachment }) {
   );
 }
 
+const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+/** Stoat ids are ULIDs whose first ten characters are the creation time; other ids give no time. */
+export function ulidTime(id?: string | null) {
+  if (!id || !/^[0-9A-HJKMNP-TV-Z]{26}$/.test(id)) return undefined;
+  let ms = 0;
+  for (const char of id.slice(0, 10)) ms = ms * 32 + CROCKFORD.indexOf(char);
+  return ms;
+}
+/** Newest first; ULIDs sort as strings, numeric ids by length first. */
+const newestFirst = (a: SocialChannel, b: SocialChannel) => {
+  const x = a.lastMessageId ?? '',
+    y = b.lastMessageId ?? '';
+  return y.length - x.length || (y > x ? 1 : y < x ? -1 : 0);
+};
+const listTime = (ms: number) => {
+  const date = new Date(ms);
+  return date.toDateString() === new Date().toDateString()
+    ? date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+    : date.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+};
+const previewOf = (message: SocialMessage, own: boolean) => {
+  const text =
+    message.content.trim().split('\n')[0] ||
+    (message.attachments?.length ? t('Dosya: {name}', { name: message.attachments[0]!.name }) : '');
+  return own && text ? t('Sen: {text}', { text }) : text;
+};
+/**
+ * Conversations with avatar, the last message (from the local conversation cache, no network
+ * request), its time and the unread mark. Rows open the conversation in place.
+ */
+export function DirectMessageList({ onOpen }: { onOpen(channelId: string): void }) {
+  const c = useCommunity(),
+    navigate = useNavigate();
+  const [cached, setCached] = useState<{ key: string; last: Record<string, SocialMessage> }>({
+    key: '',
+    last: {},
+  });
+  /* Only conversations with another person open from here (saved notes have no peer). */
+  const dms = useMemo(
+    () =>
+      c.dms.filter((dm) => dm.recipients?.some((user) => user.id !== c.user?.id)).sort(newestFirst),
+    [c.dms, c.user?.id],
+  );
+  const key = `${c.serverUrl}:${c.user?.id ?? ''}:${dms.map((dm) => `${dm.id}=${dm.lastMessageId ?? ''}`).join(',')}`;
+  useEffect(() => {
+    const bridge = window.rooms?.social;
+    if (fixtureOnly() || !bridge?.cachedMessages || !c.user) return;
+    const owner = { user: c.user.id, server: c.serverUrl };
+    let active = true;
+    void Promise.all(
+      dms.map((dm) =>
+        bridge
+          .cachedMessages(dm.id)
+          .then((messages) => [dm.id, messages.at(-1)] as const)
+          .catch(() => [dm.id, undefined] as const),
+      ),
+    ).then((entries) => {
+      const now = useCommunity.getState();
+      if (!active || now.user?.id !== owner.user || now.serverUrl !== owner.server) return;
+      const last: Record<string, SocialMessage> = {};
+      for (const [id, message] of entries) if (message) last[id] = message;
+      setCached({ key, last });
+    });
+    return () => {
+      active = false;
+    };
+  }, [key]);
+  if (!dms.length)
+    return (
+      <EmptyState
+        icon={<MessageCircle size={36} />}
+        title={t('Henüz özel konuşma yok')}
+        action={
+          <button
+            className="button primary"
+            onClick={() => navigate(preserveReferenceFixtureRoute('/friends'))}
+          >
+            {t('Arkadaşlarını aç')}
+          </button>
+        }
+      >
+        {t('Bir arkadaşının yanındaki mesaj simgesiyle konuşma başlat.')}
+      </EmptyState>
+    );
+  return (
+    <nav className="ss-dm-list" aria-label={t('Özel mesajlar')}>
+      <h1>{t('Özel mesajlar')}</h1>
+      <ul>
+        {dms.map((dm) => {
+          const peer = dm.recipients?.find((user) => user.id !== c.user?.id),
+            name = peer ? nameOf(peer) : dm.name || t('Özel mesaj'),
+            loaded = c.messages.filter((message) => message.channelId === dm.id).at(-1),
+            candidate = loaded ?? (cached.key === key ? cached.last[dm.id] : undefined),
+            last =
+              candidate && (!dm.lastMessageId || candidate.id === dm.lastMessageId)
+                ? candidate
+                : undefined,
+            unread = !!c.unread[dm.id],
+            time = last ? Date.parse(last.timestamp) : ulidTime(dm.lastMessageId),
+            preview = last
+              ? previewOf(last, last.author.id === c.user?.id)
+              : dm.lastMessageId
+                ? unread
+                  ? t('Yeni mesaj')
+                  : ''
+                : t('Henüz mesaj yok');
+          return (
+            <li key={dm.id}>
+              <button
+                className={`ss-dm-row ${unread ? 'unread' : ''}`}
+                aria-current={c.activeChannelId === dm.id ? 'true' : undefined}
+                onClick={() => onOpen(dm.id)}
+              >
+                <span className="ss-dm-row-avatar">
+                  {peer ? (
+                    <VoiceAvatar id={peer.id} name={name} />
+                  ) : (
+                    <MessageCircle size={22} aria-hidden="true" />
+                  )}
+                  {peer && <i className={`ss-dm-presence ${c.presence[peer.id] ?? 'offline'}`} />}
+                </span>
+                <span className="ss-dm-row-text">
+                  <strong>{name}</strong>
+                  {preview && <small>{preview}</small>}
+                </span>
+                <span className="ss-dm-row-meta">
+                  {time !== undefined && !Number.isNaN(time) && (
+                    <time dateTime={new Date(time).toISOString()}>{listTime(time)}</time>
+                  )}
+                  {unread && (
+                    <i className="ss-dm-unread" role="img" aria-label={t('Okunmamış mesaj var')} />
+                  )}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+/** Settings › Bildirimler with this conversation preselected in the per-channel mute row. */
+export const dmNotificationsRoute = (channelId: string) =>
+  `/settings?tab=desktop&channel=${encodeURIComponent(channelId)}`;
+
 export function DirectMessageSurface({ notify }: { notify(message: string): void }) {
   const c = useCommunity(),
     detail = useSocialDetailFixture('S12');
@@ -318,10 +469,10 @@ function DirectMessageScope({
   };
   if (!channel || !peer)
     return (
-      <div className="ss-empty">
-        <MessageCircle size={42} />
-        <h2>{t('Özel konuşma seç')}</h2>
-        <p>{t('Arkadaşlarından veya üyelerden bir konuşma aç.')}</p>
+      <div className="ss-dm-home">
+        <DirectMessageList
+          onOpen={(id) => void c.openChannel(id).catch((e) => notify(uiError(e)))}
+        />
       </div>
     );
   const files = c.messages
@@ -338,7 +489,9 @@ function DirectMessageScope({
     >
       <section className="ss-dm-main">
         <header className="ss-header">
-          <Hash size={23} />
+          <span className="ss-header-avatar" aria-hidden="true">
+            <VoiceAvatar id={peer.id} name={nameOf(peer)} />
+          </span>
           <button onClick={() => setProfile(true)}>{nameOf(peer)}</button>
           <span>{statusLabel(c.presence[peer.id])}</span>
           <div>
@@ -357,13 +510,12 @@ function DirectMessageScope({
               <Video size={19} />
             </IconButton>
             <IconButton
-              label={t('Bildirim ayarları')}
-              onClick={() => navigate(preserveReferenceFixtureRoute('/settings?tab=desktop'))}
+              label={t('Bu konuşmanın bildirimleri')}
+              onClick={() =>
+                navigate(preserveReferenceFixtureRoute(dmNotificationsRoute(channel.id)))
+              }
             >
               <Bell size={19} />
-            </IconButton>
-            <IconButton disabled label={t('Sabitlenen mesajlar bu bağlantıda sunulmuyor.')}>
-              <Pin size={19} />
             </IconButton>
             <IconButton
               label={inspectorVisible ? t('Üye panelini kapat') : t('Üye panelini aç')}
@@ -439,9 +591,9 @@ function DirectMessageScope({
           </div>
         )}
         {error && (
-          <p className="ss-error" role="alert">
+          <Notice kind="error" className="ss-dm-error">
             {error}
-          </p>
+          </Notice>
         )}
       </section>
       {inspectorVisible && (
@@ -1021,29 +1173,13 @@ function SharedFilesScope({
           {t('Dosya yükle')}
         </button>
       </header>
-      {intent?.initialUploadState === 'unavailable' && !scope.blocked && (
-        <div className="ss-upload" role="status">
-          <AlertCircle size={26} />
-          <div>
-            <strong>{t('Yükleme durumu sağlanmıyor')}</strong>
-            <small>{intent.initialError}</small>
-          </div>
-          <button disabled title={t('Sunucu yükleme iptali sağlamıyor')}>
-            {t('İptal')}
-          </button>
-        </div>
-      )}
-      {busy && (
+      {(busy || (intent?.initialUploadState === 'unavailable' && !scope.blocked)) && (
         <div className="ss-upload" role="status">
           <FileText size={26} />
           <div>
-            <strong>{t('Dosya seçiliyor veya yükleniyor…')}</strong>
+            <strong>{t('Dosya yükleniyor…')}</strong>
             <progress aria-label={t('Dosya yüklemesi')} />
-            <small>{t('Sunucu yükleme yüzdesi sağlamıyor.')}</small>
           </div>
-          <button disabled title={t('Yerel yükleme iptali henüz uygulanmadı')}>
-            {t('İptal')}
-          </button>
         </div>
       )}
       {error && (
@@ -1065,113 +1201,114 @@ function SharedFilesScope({
           </button>
         </div>
       )}
-      <div className="ss-tabs" role="tablist" aria-label={t('Dosya türü')}>
-        {[
+      <RovingTabs
+        className="ss-tabs"
+        label={t('Dosya türü')}
+        idPrefix="ss-files"
+        active={tab}
+        tabs={[
           ['all', t('Tümü')],
           ['images', t('Görseller')],
           ['documents', t('Belgeler')],
-        ].map(([key, label]) => (
-          <button key={key} role="tab" aria-selected={tab === key} onClick={() => setTab(key)}>
-            {label}
-          </button>
-        ))}
-      </div>
-      <div className="ss-file-grid">
-        {files.map(({ file, message }) => {
-          const image = imageUrl(file),
-            boardReference =
-              !!fixture && fixture.metadata.id === 'S14' && file.id === 'demo-sunday-plan-png';
-          return (
-            <article className="ss-file-tile" key={`${message.id}-${file.id}`}>
-              <button
-                className={`ss-file-preview ${image ? 'image' : ''} ${boardReference ? 'board' : ''}`}
-                disabled={!image}
-                title={
-                  !image
-                    ? boardReference
-                      ? t('Örnek PNG içeriği sağlanmadı.')
-                      : t('İzinli görsel önizleme kaynağı sağlanmadı')
-                    : undefined
-                }
-                onClick={() => setPreview(file)}
-                aria-label={t('{name} önizle', { name: file.name })}
-              >
-                {image ? (
-                  <img src={image} alt={file.name} loading="lazy" />
-                ) : boardReference ? (
-                  <ReferenceBoardIcon />
-                ) : file.mime === 'application/pdf' ? (
-                  <ReferencePdfIcon />
-                ) : (
-                  <FileText size={58} />
-                )}
-              </button>
-              <footer>
-                <h4>{file.name}</h4>
-                <p>
-                  {nameOf(message.author)} ·{' '}
-                  {fixture?.metadata.id === 'S14'
-                    ? message.id === 'demo-detail-board-file'
-                      ? t('Dün 19.15')
-                      : t('Bugün 20.45')
-                    : dateOf(message.timestamp)}{' '}
-                  · {sizeOf(file.size)}
-                </p>
-                {boardReference ? (
-                  <button
-                    onClick={() => navigate(preserveReferenceFixtureRoute('/together?tab=board'))}
-                    title={t(
-                      'Uygulamadaki ortak Whiteboard alanını açar; örnek PNG içeriği dahil değildir.',
-                    )}
-                  >
-                    <ArrowRight size={17} />
-                    {t('Tahtayı aç')}
-                  </button>
-                ) : message.delivery === 'failed' ? (
-                  <button
-                    disabled={fixtureOnly()}
-                    title={fixtureOnly() ? fixtureReason : undefined}
-                    onClick={() => void scopedAction(() => c.retryMessage(message.id))}
-                  >
-                    {t('Gönderimi yeniden dene')}
-                  </button>
-                ) : message.delivery === 'pending' ? (
-                  <span role="status">{t('Gönderiliyor…')}</span>
-                ) : image ? (
-                  <button onClick={() => setPreview(file)}>
-                    <Image size={17} />
-                    {t('Önizle')}
-                  </button>
-                ) : (
-                  <FileLink file={file} />
-                )}{' '}
-                {onOpenMessage && !fixture && (
-                  <button
-                    disabled={fixtureOnly() || scope.blocked}
-                    title={
-                      fixtureOnly()
-                        ? fixtureReason
-                        : scope.blocked
-                          ? t('Kanal erişimi yeniden doğrulanmalı.')
-                          : undefined
-                    }
-                    onClick={() => openContext(message.channelId, message.id)}
-                  >
-                    {t('Bağlamı aç')}
-                  </button>
-                )}
-              </footer>
-            </article>
-          );
-        })}
-      </div>
-      {!files.length && (
-        <div className="ss-empty">
-          <FileText size={42} />
-          <h2>{t('Dosya yok')}</h2>
-          <p>{t('Seçili kanalda yüklenen mesajlarda bu türde dosya bulunamadı.')}</p>
+        ]}
+        onSelect={setTab}
+      />
+      <div {...tabPanelProps('ss-files', tab)}>
+        <div className="ss-file-grid">
+          {files.map(({ file, message }) => {
+            const image = imageUrl(file),
+              boardReference =
+                !!fixture && fixture.metadata.id === 'S14' && file.id === 'demo-sunday-plan-png';
+            return (
+              <article className="ss-file-tile" key={`${message.id}-${file.id}`}>
+                <button
+                  className={`ss-file-preview ${image ? 'image' : ''} ${boardReference ? 'board' : ''}`}
+                  disabled={!image}
+                  title={
+                    !image
+                      ? boardReference
+                        ? t('Örnek PNG içeriği sağlanmadı.')
+                        : t('İzinli görsel önizleme kaynağı sağlanmadı')
+                      : undefined
+                  }
+                  onClick={() => setPreview(file)}
+                  aria-label={t('{name} önizle', { name: file.name })}
+                >
+                  {image ? (
+                    <img src={image} alt={file.name} loading="lazy" />
+                  ) : boardReference ? (
+                    <ReferenceBoardIcon />
+                  ) : file.mime === 'application/pdf' ? (
+                    <ReferencePdfIcon />
+                  ) : (
+                    <FileText size={58} />
+                  )}
+                </button>
+                <footer>
+                  <h4>{file.name}</h4>
+                  <p>
+                    {nameOf(message.author)} ·{' '}
+                    {fixture?.metadata.id === 'S14'
+                      ? message.id === 'demo-detail-board-file'
+                        ? t('Dün 19.15')
+                        : t('Bugün 20.45')
+                      : dateOf(message.timestamp)}{' '}
+                    · {sizeOf(file.size)}
+                  </p>
+                  {boardReference ? (
+                    <button
+                      onClick={() => navigate(preserveReferenceFixtureRoute('/together?tab=board'))}
+                      title={t(
+                        'Uygulamadaki ortak Whiteboard alanını açar; örnek PNG içeriği dahil değildir.',
+                      )}
+                    >
+                      <ArrowRight size={17} />
+                      {t('Tahtayı aç')}
+                    </button>
+                  ) : message.delivery === 'failed' ? (
+                    <button
+                      disabled={fixtureOnly()}
+                      title={fixtureOnly() ? fixtureReason : undefined}
+                      onClick={() => void scopedAction(() => c.retryMessage(message.id))}
+                    >
+                      {t('Gönderimi yeniden dene')}
+                    </button>
+                  ) : message.delivery === 'pending' ? (
+                    <span role="status">{t('Gönderiliyor…')}</span>
+                  ) : image ? (
+                    <button onClick={() => setPreview(file)}>
+                      <Image size={17} />
+                      {t('Önizle')}
+                    </button>
+                  ) : (
+                    <FileLink file={file} />
+                  )}{' '}
+                  {onOpenMessage && !fixture && (
+                    <button
+                      disabled={fixtureOnly() || scope.blocked}
+                      title={
+                        fixtureOnly()
+                          ? fixtureReason
+                          : scope.blocked
+                            ? t('Kanal erişimi yeniden doğrulanmalı.')
+                            : undefined
+                      }
+                      onClick={() => openContext(message.channelId, message.id)}
+                    >
+                      {t('Bağlamı aç')}
+                    </button>
+                  )}
+                </footer>
+              </article>
+            );
+          })}
         </div>
-      )}
+        {!files.length && (
+          <EmptyState icon={<FileText size={42} />} title={t('Dosya yok')}>
+            {t('Seçili kanalda yüklenen mesajlarda bu türde dosya bulunamadı.')}
+          </EmptyState>
+        )}
+      </div>
       {c.hasOlder && (
         <button
           className="button secondary"
@@ -1255,7 +1392,26 @@ function UserProfileScope({
     own = person?.id === c.user?.id;
   const [view, setView] = useState(initialView),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState('');
+    [error, setError] = useState(''),
+    [stored, setStored] = useState<{ bio: string; statusText: string } | null>(null);
+  /* Only the own profile has a read API; other people show what presence already provides. */
+  useEffect(() => {
+    if (!own || fixtureMode || fixtureOnly() || scope.blocked) return;
+    const request = scope.capture();
+    let active = true;
+    void request.bridge
+      ?.ownProfile?.()
+      .then((profile) => {
+        if (active && request.sameAccount())
+          setStored({ bio: profile.bio.trim(), statusText: profile.statusText.trim() });
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [own, fixtureMode, scope.blocked]);
+  const about = fixtureDetails?.about ?? stored?.bio,
+    statusText = fixtureDetails?.statusText ?? stored?.statusText;
   if (scope.blocked)
     return (
       <Modal title={t('Profil')} className="ss-modal ss-profile" onClose={onClose}>
@@ -1370,9 +1526,7 @@ function UserProfileScope({
               </div>
               {own && <span>{t('SEN')}</span>}
             </div>
-            {fixtureDetails?.statusText && (
-              <p className="ss-profile-status">{fixtureDetails.statusText}</p>
-            )}
+            {statusText && <p className="ss-profile-status">{statusText}</p>}
             {own && c.spaces.length > 0 && (
               <>
                 <h6>{t('BİRLİKTE OLDUĞUN YER')}</h6>
@@ -1385,30 +1539,15 @@ function UserProfileScope({
                 ))}
               </>
             )}
-            {view === 'expanded' && (
+            {about && (
               <div className="ss-about">
                 <h6>{t('HAKKINDA')}</h6>
-                <p>
-                  {fixtureDetails?.about ??
-                    t('Profil ayrıntıları ve katılma tarihi bu bağlantıdan henüz alınamıyor.')}
-                </p>
+                <p>{about}</p>
               </div>
-            )}
-            {!fixtureMode && (
-              <button
-                className="ss-details-button"
-                onClick={() => setView(view === 'expanded' ? 'profile' : 'expanded')}
-              >
-                {view === 'expanded' ? t('Daha az göster') : t('Ayrıntıları göster')}
-              </button>
             )}
           </>
         )}
-        {error && (
-          <p className="ss-error" role="alert">
-            {error}
-          </p>
-        )}
+        {error && <Notice kind="error">{error}</Notice>}
       </div>
       <footer className="ss-modal-footer">
         {!own && !fixtureMode && <FriendRequestButton key={person.id} user={person} />}{' '}
@@ -1428,7 +1567,9 @@ function UserProfileScope({
             </button>
           </>
         ) : (
-          <button onClick={onClose}>{t('Kapat')}</button>
+          <button className="button secondary" onClick={onClose}>
+            {t('Kapat')}
+          </button>
         )}
       </footer>
     </Modal>

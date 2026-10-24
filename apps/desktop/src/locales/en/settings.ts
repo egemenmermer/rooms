@@ -17,8 +17,6 @@ export const settings: Catalog = {
   'KULLANICI AYARLARI': 'USER SETTINGS',
   'Profil değişikliklerin sunucuda kaydedildi.': 'Your profile changes were saved on the server.',
   'Görünen ad': 'Display name',
-  'E-posta': 'Email',
-  'Hesap bağlantısı e-postayı paylaşmıyor': 'Your account link doesn’t share your email',
   'Durum mesajı': 'Status message',
   'Yeni durum mesajı': 'New status message',
   Hakkında: 'About',
@@ -34,14 +32,6 @@ export const settings: Catalog = {
   'Avatarı değiştir': 'Change avatar',
   'Görünmez · yalnızca sen görürsün': 'Invisible · only you can see this',
   'Görünürlük durumu alınamadı': 'Couldn’t load your visibility status',
-  Gizlilik: 'Privacy',
-  'Topluluk üyelerinden özel mesaj al': 'Get direct messages from community members',
-  'Topluluk bağlantısı bu tercihi desteklemiyor.':
-    'This community connection doesn’t support this setting.',
-  'Etkinliğimi arkadaşlarıma göster': 'Show my activity to my friends',
-  'Etkinlik görünürlüğü bağlantısı henüz uygulanmadı.':
-    'The activity visibility connection isn’t implemented yet.',
-  'Arkadaşlık isteklerine izin ver': 'Allow friend requests',
   'Bu cihaz · {platform}': 'This device · {platform}',
   Tarayıcı: 'Browser',
   'Oturumu kapat': 'Sign out',
@@ -61,7 +51,6 @@ export const settings: Catalog = {
     'The noise filter stopped. Restart the microphone test.',
   'Ses çalınıyor.': 'Playing sound.',
   'Ayarları kapat': 'Close settings',
-  'Diğer ayarlar': 'More settings',
   Ayarlar: 'Settings',
   TOPLULUK: 'COMMUNITY',
   'Ayar menüsünü kapat': 'Close settings menu',
@@ -93,10 +82,13 @@ export const settings: Catalog = {
   'Odaklı düğme': 'Focused button',
   'Odak çevre çizgisiyle gösterilir.': 'Focus is shown with an outline.',
   Vurgu: 'Accent',
-  'İnci vurgusu': 'Pearl accent',
   'Adaçayı vurgusu': 'Sage accent',
-  'Arkadaşlar paneli': 'Friends panel',
-  'Arkadaşlar panelini göster': 'Show friends panel',
+  Lila: 'Lilac',
+  'Lila vurgusu': 'Lilac accent',
+  Adaçayı: 'Sage',
+  'Üye paneli': 'Members panel',
+  'Üye panelini göster': 'Show members panel',
+  'Sohbetin yanında topluluk üyelerini gösterir.': 'Shows community members next to the chat.',
   'Koyu tema': 'Dark theme',
   'Mikrofon veya kamera bulunamadı. Cihaz bağladıktan sonra listeyi yenile.':
     'No microphone or camera found. Refresh the list after you connect a device.',
@@ -133,7 +125,6 @@ export const settings: Catalog = {
   'Bas konuş tuşu': 'Push-to-talk key',
   'Basılı tuttuğun sürece mikrofonun açık kalır.':
     'Your microphone stays on while you hold it down.',
-  'Girişte mikrofonumu sessize al': 'Mute my microphone when joining',
   'Ses odalarına katılırken mikrofon her zaman kapalı başlar.':
     'Your microphone always starts off when you join voice rooms.',
   'Gürültü azaltma': 'Noise suppression',
@@ -156,9 +147,6 @@ export const settings: Catalog = {
   'Kamerayı dene': 'Test camera',
   'Yerel kamera önizlemesi': 'Local camera preview',
   'Kamera kapalı': 'Camera off',
-  'Ekran paylaşımında sistem sesi': 'System audio when screen sharing',
-  'Bu sistem ve paylaşım yöntemi için destek doğrulanmadı.':
-    'Support isn’t confirmed for this system and sharing method.',
   'Cihaz listesini yenile': 'Refresh device list',
   '{roomName} · Ses bağlı': '{roomName} · Voice connected',
   'Ses odasına bağlı değil': 'Not connected to a voice room',
@@ -176,27 +164,17 @@ export const settings: Catalog = {
     'System notifications aren’t available in this environment.',
   'Bildirim sesleri': 'Notification sounds',
   'Sistem bildirim sesini kullanır.': 'Uses the system notification sound.',
-  'Mesaj önizlemesini göster': 'Show message preview',
-  'Mesaj içerikleri masaüstü bildirimlerine eklenmez.':
-    'Message content isn’t included in desktop notifications.',
   'Görüşmedeyken bildirimleri duraklat': 'Pause notifications during calls',
   'Ses bağlantısı sürerken masaüstü bildirimlerini göstermez.':
     'Doesn’t show desktop notifications while a voice connection is active.',
   'BİLDİRİM BİÇİMİ': 'NOTIFICATION STYLE',
   'Mesaj içeriği gizli.': 'Message content hidden.',
   MASAÜSTÜ: 'DESKTOP',
-  'Menü seçenekleri': 'Menu options',
-  'Menü çubuğu': 'Menu bar',
-  'Sistem menüsündeki komutlar.': 'Commands in the system menu.',
   'Tayfa’yı aç': 'Open Tayfa',
-  Çıkış: 'Quit',
-  'Çıkış, ses bağlantısını da sonlandırır.': 'Quit also ends your voice connection.',
-  'Mikrofon ve ses odası komutları sistem menüsünde henüz sunulmuyor.':
-    'Microphone and voice room commands aren’t in the system menu yet.',
-  'Tercihlere dön': 'Back to preferences',
   'Masaüstü davranışı': 'Desktop behavior',
   'Oturum açınca başlat': 'Start at login',
-  'Paketlenmiş macOS uygulamasında kullanılabilir.': 'Available in the packaged macOS app.',
+  'Paketlenmiş {platform} uygulamasında kullanılabilir.':
+    'Available in the packaged {platform} app.',
   'Bu tercih masaüstü uygulamasını gerektirir.': 'This setting requires the desktop app.',
   'Geliştirme uygulamasında başlangıç kaydı kullanılamıyor.':
     'Start at login isn’t available in the development app.',
@@ -233,32 +211,27 @@ export const settings: Catalog = {
     'Asks for confirmation before you close the window and leave the voice connection.',
   'Yerel görsel örnekte gerçek hesap işlemi kapalı.':
     'Real account actions are off in the local visual sample.',
-  'Topluluk oluşturma ve ad düzenleme bağlantısı henüz uygulanmadı.':
-    'Community creation and renaming aren’t connected yet.',
   'Topluluk düzenleme yetkisi gerekli.': 'You need permission to edit the community.',
-  'Odan hazır. · Yerel referans': 'Your room is ready. · Local reference',
-  'Odan hazır.': 'Your room is ready.',
+  'Topluluk oluşturmak ve düzenlemek için önce sunucuna bağlan.':
+    'Connect to your server first to create or edit a community.',
+  'Topluluğun hazır · Yerel referans': 'Your community is ready · Local reference',
+  'Topluluğun hazır': 'Your community is ready',
+  'Topluluk oluştur': 'Create community',
+  'Davet oluşturuluyor…': 'Creating invite…',
   '{name}’yı düzenle': 'Edit {name}',
   'Topluluğu düzenle': 'Edit community',
-  'Kendi odanı kur.': 'Set up your own room.',
   '{name} · Yerel oluşturuldu görünümü. Gerçek topluluk oluşturulmadı.':
     '{name} · Local created view. No real community was created.',
   '{name} oluşturuldu.': '{name} was created.',
   'Arkadaşlarınla buluşacağın özel topluluğun.':
     'Your private community for meeting up with friends.',
-  'Topluluk ikonu için güvenli yerel yükleme arayüzü henüz uygulanmadı.':
-    'A secure local upload for the community icon isn’t implemented yet.',
-  'İkon değiştir': 'Change icon',
   'Topluluk adı': 'Community name',
   'Kısa açıklama': 'Short description',
-  'Açıklama düzenleme henüz uygulanmadı': 'Editing the description isn’t implemented yet',
   'Yalnızca davetle': 'Invite only',
   'Yerel referans politikası; sunucu ayarı uygulanmadı.':
     'Local reference policy; the server setting wasn’t applied.',
   'Davet gerekliliği bağlantıdan alındı.': 'The invite requirement came from the connection.',
   'Davet dışı erişim açık.': 'Access without an invite is open.',
-  'Görünürlük politikası bu bağlantıda henüz alınamıyor.':
-    'The visibility policy can’t be read on this connection yet.',
   Bitti: 'Done',
   'Topluluğu oluştur': 'Create community',
   SOHBET: 'CHAT',

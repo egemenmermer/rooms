@@ -79,7 +79,12 @@ export function response(
   userId = '',
 ): ActivityResponse {
   const snapshot = structuredClone(room.snapshot);
-  snapshot.game = room.game ? gameView(room.game, userId) : null;
+  snapshot.game = room.game
+    ? gameView(room.game, userId, {
+        roomHost: !!userId && room.snapshot.primary?.hostUserId === userId,
+        now,
+      })
+    : null;
   if (snapshot.game?.view.spectatorAccess)
     snapshot.game.view.previousTables = structuredClone(room.gameArchives ?? []);
   return {

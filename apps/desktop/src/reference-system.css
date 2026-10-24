@@ -19,7 +19,7 @@
   font-weight: 650;
 }
 .reference-system > p {
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   line-height: 1.65;
   color: #b1b5c2;
   margin: 0;
@@ -87,13 +87,13 @@
   flex-wrap: wrap;
 }
 .system-actions .button {
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   min-height: 36px;
   padding: 8px 14px;
   border-radius: 7px;
 }
 .reference-system > small {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #969daf;
   margin-top: 27px;
 }
@@ -109,13 +109,13 @@
   box-sizing: border-box;
 }
 .system-detail strong {
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   display: flex;
   align-items: center;
   gap: 10px;
 }
 .system-detail p {
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   margin: 7px 0 0;
   color: #b1b5c2;
   line-height: 1.65;
@@ -133,7 +133,7 @@
   align-items: center;
   justify-content: space-between;
   margin: 16px 0;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   color: #b1b5c2;
 }
 .system-audio button {
@@ -204,12 +204,12 @@
   margin-bottom: 28px;
 }
 .reference-splash h1 {
-  font-size: 20px;
+  font-size: var(--font-size-h2);
   font-weight: 550;
   margin: 0 0 10px;
 }
 .reference-splash p {
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   color: #b1b5c2;
 }
 .reference-splash progress {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 const f = vi.hoisted(() => ({
   voice: {
@@ -40,6 +40,7 @@ vi.mock('../apps/desktop/src/realtime', () => ({
 }));
 vi.mock('../apps/desktop/src/activity', () => ({ useActivityRoom: () => f.activity }));
 vi.mock('../apps/desktop/src/MusicDJ', () => ({
+  openMusicDJ: vi.fn(),
   openRoomActivity: (path: string, navigate: (path: string) => void) => navigate(path),
 }));
 vi.mock('../apps/desktop/src/voice-directory', () => ({ useVoiceDirectory: () => ({}) }));
@@ -161,11 +162,12 @@ it('keeps ending the shared player for the host only', () => {
   expect(f.activity.send).toHaveBeenCalledWith({ type: 'end' });
 });
 
-it('does not offer the DJ as an activity; it already has its own button', () => {
+it('offers the DJ as something the room can start, but not the assistant page', () => {
   f.activity.room = { ...running([]), primary: null };
   launcher();
   expect(screen.getAllByRole('button', { name: /Texas Hold’em/ }).length).toBeGreaterThan(0);
-  expect(screen.queryByRole('button', { name: /DJ Recep/ })).toBeNull();
+  expect(screen.getByRole('button', { name: /DJ Recep/ })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: /Asistan/ })).toBeNull();
 });
 
 it('explains an old-cinema session from an older client instead of opening a removed page', () => {
@@ -206,27 +208,50 @@ it('opens the launcher, not a removed page, from an old-cinema session in the si
   expect(activityRoute('cinema')).toBeNull();
 });
 
-it('no longer offers the old room cinema; the Sinema hall stays in the sidebar', () => {
+it('starts the Sinema hall from the launcher when the community has one', () => {
   f.activity.room = { ...running([]), primary: null };
-  launcher();
+  const closed = vi.fn();
+  const mountLauncher = () =>
+    render(
+      <MemoryRouter initialEntries={['/voice']}>
+        <ActivityLauncher onClose={closed} />
+        <Route />
+      </MemoryRouter>,
+    );
+  // No cinema bridge or hall: nothing to start, and the highlights still fill the grid.
+  mountLauncher();
   expect(screen.queryByRole('button', { name: /Sinema/ })).toBeNull();
   expect(screen.queryByText(/YouTube videolarını birlikte izle/)).toBeNull();
-  // Watching together still offers screen sharing, and the highlights keep a full grid.
-  expect(screen.getByRole('heading', { name: 'Birlikte izle' })).toBeTruthy();
   expect(screen.getByRole('button', { name: /Ekran paylaş/ })).toBeTruthy();
   expect(
     [...document.querySelectorAll('.appdir-featured .appdir-card strong')].map(
       (n) => n.textContent,
     ),
   ).toEqual(['Texas Hold’em', '101 Okey', 'Beyaz tahta', 'Anket']);
-  const search = screen.getByRole('textbox', { name: 'Uygulama ve etkinlik ara' });
-  fireEvent.change(search, { target: { value: 'sinema' } });
-  expect(screen.getByText('“sinema” için bir şey bulunamadı.')).toBeTruthy();
-  fireEvent.keyDown(search, { key: 'Enter' });
-  expect(screen.getByTestId('route').textContent).toBe('/voice');
   cleanup();
 
   f.cinema = { available: true, status: { isOwner: false }, hallId: 'hall' };
+  mountLauncher();
+  expect(
+    [...document.querySelectorAll('.appdir-featured .appdir-card strong')].map(
+      (n) => n.textContent,
+    ),
+  ).toEqual(['Sinema salonu', 'Texas Hold’em', '101 Okey', 'Beyaz tahta']);
+  const watch = screen.getByRole('heading', { name: 'Birlikte izle' }).closest('section')!;
+  fireEvent.click(within(watch as HTMLElement).getByRole('button', { name: /Sinema salonu/ }));
+  expect(screen.getByTestId('route').textContent).toBe('/cinema');
+  expect(closed).toHaveBeenCalledOnce();
+  cleanup();
+
+  // Searching finds it first, so Enter opens the hall.
+  closed.mockClear();
+  mountLauncher();
+  const search = screen.getByRole('textbox', { name: 'Uygulama ve etkinlik ara' });
+  fireEvent.change(search, { target: { value: 'sinema' } });
+  fireEvent.keyDown(search, { key: 'Enter' });
+  expect(screen.getByTestId('route').textContent).toBe('/cinema');
+  cleanup();
+
   sidebar();
   fireEvent.click(screen.getByRole('button', { name: 'Sinema salonu' }));
   expect(screen.getByTestId('route').textContent).toBe('/cinema');

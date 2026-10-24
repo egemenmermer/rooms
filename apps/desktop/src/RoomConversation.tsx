@@ -9,15 +9,9 @@ import { ChannelAccessState } from './CommunitySettings';
 export function RoomConversation({
   notify,
   openLauncher,
-  toggleMembers,
-  membersVisible,
-  search,
 }: {
   notify(message: string): void;
   openLauncher(): void;
-  toggleMembers(): void;
-  membersVisible: boolean;
-  search(): void;
 }) {
   const c = useCommunity(),
     r = useRealtime(),
@@ -72,12 +66,7 @@ export function RoomConversation({
           )}
         </div>
       )}
-      <CommunityChat
-        notify={notify}
-        membersVisible={membersVisible}
-        onToggleMembers={toggleMembers}
-        onSearch={search}
-      />
+      <CommunityChat notify={notify} />
     </div>
   );
 }

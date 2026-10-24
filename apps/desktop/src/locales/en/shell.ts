@@ -2,6 +2,9 @@ import type { Catalog } from '@rooms/i18n';
 
 /** English for the shell group. Keys are the Turkish source text exactly as written in the code. */
 export const shell: Catalog = {
+  '{count} bahsetme': { one: '{count} mention', other: '{count} mentions' },
+  '{count} kişi seste': { one: '{count} person in voice', other: '{count} people in voice' },
+  '{count} okunmamış': '{count} unread',
   '%{progress}': '{progress}%',
   'Adım {step} / {total}': 'Step {step} of {total}',
   'Adım {step} / {total}: {title}': 'Step {step} of {total}: {title}',
@@ -15,8 +18,15 @@ export const shell: Catalog = {
   'Anketi kapatma iznin yok.': 'You don’t have permission to close the poll.',
   Ara: 'Search',
   Araçlar: 'Tools',
+  'Arkadaş ekleyince kimin çevrimiçi olduğunu burada görürsün.':
+    'Add friends to see who is online here.',
   'Arkadaş listesini aç': 'Open friends list',
+  'Arkadaşından aldığın davet bağlantısıyla onların topluluğuna katıl ya da kendi topluluğunu kur.':
+    'Join your friends’ community with the invite link they sent you, or set up your own.',
+  'Arkadaşını davet et': 'Invite a friend',
   Arkadaşlar: 'Friends',
+  'Arkadaşlarını çağır ya da bir odaya gir; kim nerede, burada görünür.':
+    'Invite your friends or hop into a room; who is where shows up here.',
   'Arkadaşlarınla aynı yerde.': 'Together with your friends.',
   'Arkadaşlık isteğin henüz kabul edilmedi. Kabul edilince özel mesaj gönderebilirsin.':
     'Your friend request hasn’t been accepted yet. You can send a direct message once it is.',
@@ -29,7 +39,6 @@ export const shell: Catalog = {
   Asistan: 'Assistant',
   'Avatar seç': 'Choose avatar',
   Ayarlar: 'Settings',
-  'Ayarlar bu görünümde henüz bağlanmadı.': 'Settings aren’t wired up in this view yet.',
   'Aynı yere dönmek güzel.': 'Nice to be back.',
   'Ayrıntılı kurulum rehberi': 'Detailed setup guide',
   Aç: 'Open',
@@ -47,18 +56,20 @@ export const shell: Catalog = {
   Bağlanıyor: 'Connecting',
   'Bağlanıyor…': 'Connecting…',
   Bağlısın: 'You’re connected',
+  'Bakılıyor…': 'Checking…',
   'Başka bir davet bağlantısı kullan': 'Use a different invite link',
   Başlangıç: 'Start',
-  'Beni hatırla': 'Remember me',
   'Beyaz tahta': 'Whiteboard',
   Bildirimler: 'Notifications',
   'Bir el zaten devam ediyor. Tamamlanmasını bekle.':
     'A hand is already in progress. Wait for it to finish.',
+  'Bir ses odasına katıl': 'Join a voice room',
   'Bir şeye geç…': 'Jump to…',
-  Birlikte: 'Together',
+  'Bir yönetici kanal açınca burada görünür.': 'Channels show up here once an admin creates them.',
   'Birlikte izle': 'Watch together',
   'Birlikte çiz, birlikte karar ver': 'Draw together, decide together',
   'Birlikte çiz, yaz; imleçler canlı görünür.': 'Draw and write together; cursors show live.',
+  Boş: 'Empty',
   'Bu alan için iznin yok': 'You don’t have permission for this area',
   'Bu alana ilk mesajı veya dosyayı ekleyerek birlikte başlayabilirsiniz.':
     'You can get started together by adding the first message or file here.',
@@ -136,12 +147,11 @@ export const shell: Catalog = {
     'This server doesn’t support expiring or single-use invites. Ask your server administrator for an invite.',
   'Bu sunucuda yalnızca OpenRouter API bağlantısı kullanılabiliyor. Codex ve Claude CLI bağlantıları etkin değil.':
     'This server only supports the OpenRouter API connection. Codex and Claude CLI connections are not enabled.',
-  'Bu sürümde oturum, sistemin güvenli deposunda saklanır.':
-    'In this version your session is kept in the system’s secure storage.',
   'Bu toplulukta davet oluşturma iznin yok. Topluluk sahibinden izin iste.':
     'You don’t have permission to create invites in this community. Ask the community owner for permission.',
   'Bu toplulukta çok fazla etkin davet bağlantısı var. Topluluk yönetimi → Davetler bölümünden birini iptal et.':
     'This community has too many active invite links. Cancel one under Community management → Invites.',
+  'Bu toplulukta henüz kanal yok': 'This community has no channels yet',
   'Bu topluluktaki rol sınırına ulaşıldı. Kullanılmayan bir rolü kaldırıp yeniden dene.':
     'This community has reached its role limit. Remove an unused role and try again.',
   'Bu turda yeniden artırma hakkın yok.': 'You can’t raise again this round.',
@@ -153,6 +163,8 @@ export const shell: Catalog = {
   BİRLİKTE: 'TOGETHER',
   'Canlı kanallar': 'Live channels',
   Cihazlar: 'Devices',
+  'Çevrimiçi arkadaşlar': 'Friends online',
+  'Davet et': 'Invite',
   'DEMO · Yerel örnek': 'DEMO · Local sample',
   'DEMO · Yerel örnek durum.': 'DEMO · Local sample state.',
   'DJ için önce giriş yap.': 'Sign in first to use DJ.',
@@ -228,7 +240,6 @@ export const shell: Catalog = {
     'Enter a valid HTTPS server address. HTTP can be used for a server on this computer.',
   'Geçerli bir rol rengi seç.': 'Pick a valid role color.',
   Giriş: 'Sign in',
-  'Giriş cihazı': 'Input device',
   'Giriş ekranına dön': 'Back to sign in',
   'Giriş ekranından sunucu adresini seç.': 'Choose the server address on the sign-in screen.',
   'Giriş yap': 'Sign in',
@@ -263,6 +274,7 @@ export const shell: Catalog = {
   'Güncellemeleri denetle': 'Check for updates',
   'Güncellemeleri kontrol et': 'Check for updates',
   'Güncellemeyi indir': 'Download update',
+  'Henüz bir topluluğun yok': 'You’re not in a community yet',
   'Henüz bir topluluğun yok.': 'You don’t have a community yet.',
   'Henüz burada bir şey yok': 'Nothing here yet',
   'Henüz kanal yok': 'No channels yet',
@@ -304,7 +316,6 @@ export const shell: Catalog = {
     'The saved server can’t be reached. Reconnect from Settings.',
   'Kendi sunucunu kur': 'Set up your own server',
   'Kişi bilgisi': 'Contact info',
-  'Kişisel medyam': 'My personal media',
   'Kişisel oynatıcı': 'Personal player',
   'Klavye kısayolları': 'Keyboard shortcuts',
   'Kontrol edilebilir': 'Ready to check',
@@ -332,10 +343,10 @@ export const shell: Catalog = {
   'Kurtarma işleminin süresi doldu. Bağlantıyı yeniden aktar.':
     'The recovery session expired. Import the link again.',
   'Kurulum komutu': 'Install command',
-  'Kurulum: {step}. adım': 'Setup: step {step}',
   Kütüphane: 'Library',
   KİŞİSEL: 'PERSONAL',
   Kıraathane: 'Kıraathane',
+  'Sinema salonu': 'Cinema hall',
   'Kısa sürede çok fazla işlem yapıldı. Biraz bekleyip yeniden dene.':
     'Too many actions in a short time. Wait a moment and try again.',
   'Lisansları aç': 'Open licenses',
@@ -358,8 +369,6 @@ export const shell: Catalog = {
     'Checking the latest messages and room activity. No new actions start until the connection is back.',
   'Metin kanalı oluştur': 'Create text channel',
   Mikrofon: 'Microphone',
-  'Mikrofon izni kapalı. Ses ve video ayarlarından sistem izinlerini açabilirsin.':
-    'Microphone permission is off. You can turn on system permissions from the audio and video settings.',
   'Mikrofon kapalı': 'Mic off',
   'Mikrofonu aç': 'Turn mic on',
   'Mikrofonu dene': 'Test microphone',
@@ -370,14 +379,15 @@ export const shell: Catalog = {
     'The room was updated by another member. The latest state was loaded; try again.',
   'Oda işlemleri': 'Room actions',
   'Oda sesini aç': 'Turn room sound on',
-  'Oda veya komut ara…': 'Search rooms or commands…',
   'Oda üyelerine ulaşılamıyor.': 'Can’t reach the room members.',
   'Odada başka bir etkinlik açık. Önce mevcut etkinliği bitirin.':
     'Another activity is open in the room. Finish the current activity first.',
+  'Odada: {title}': 'In the room: {title}',
   Odalar: 'Rooms',
   'Odalar ve gezinme': 'Rooms and navigation',
   'Odan hazırlanıyor': 'Getting your room ready',
   'Odan hazırlanıyor.': 'Getting your room ready.',
+  'Odaya dön': 'Back to room',
   'Odaya müzik aç: YouTube, Spotify listeleri ve sıra.':
     'Play music in the room: YouTube, Spotify playlists and a queue.',
   'Odaya soru sor, oyları canlı gör.': 'Ask the room a question and watch votes come in live.',
@@ -390,7 +400,6 @@ export const shell: Catalog = {
   'Ortak odada birlikte karar ver': 'Decide together in a shared room',
   'Ortak sıra dolu. Yeni içerik eklemek için bir öğeyi kaldır.':
     'The shared queue is full. Remove an item to add new content.',
-  'Ortak tahta ve anketler': 'Shared whiteboard and polls',
   'Oturum değişti. Davet iptali doğrulanamadı.':
     'Your session changed. The invite cancellation couldn’t be confirmed.',
   'Oturum değişti. Davet listesi gösterilmedi.':
@@ -426,13 +435,16 @@ export const shell: Catalog = {
     'The profile can only be saved in the desktop app.',
   'Profilini hazırlamak için önce hesabına giriş yap.':
     'Sign in to your account first to set up your profile.',
-  'Rapor gönderimi henüz yapılandırılmadı.': 'Report sending isn’t configured yet.',
   'Rol adı 1–32 karakter olmalı.': 'Role names must be 1–32 characters long.',
   'Rol değişikliği kaydedildi ama güncel liste alınamadı. Tekrar rol oluşturmadan önce listeyi yenile.':
     'The role change was saved, but the updated list couldn’t be loaded. Refresh the list before creating another role.',
   'SANA ÖZEL': 'JUST FOR YOU',
   'SES ODALARI': 'VOICE ROOMS',
   'Seçenekler için Shift+F10': 'Shift+F10 for options',
+  'Ses odalarında kimin olduğu şu an alınamadı.':
+    'Couldn’t load who is in the voice rooms right now.',
+  'Sinemada şimdi': 'Now in the cinema',
+  'Sinemaya git': 'Go to the cinema',
   SOHBET: 'CHAT',
   'Sahip olmadığın bir yetkiyi değiştiremez veya başka bir role veremezsin.':
     'You can’t change or grant a permission you don’t have.',
@@ -449,7 +461,6 @@ export const shell: Catalog = {
   'Ses odası oluştur': 'Create voice room',
   'Ses odası yok.': 'No voice rooms.',
   'Ses odası: {status}': 'Voice room: {status}',
-  'Ses ve video ayarlarından seç': 'Choose in the audio and video settings',
   'Sesi aç': 'Turn sound on',
   'Sesini kapattın, yalnızca sende': 'You muted them, only for you',
   'Sesli konuşmak için': 'For talking in voice',
@@ -459,7 +470,6 @@ export const shell: Catalog = {
   'Seçtiğin taşlar bu seriye işlenemiyor. Renk ve sırayı kontrol et.':
     'The tiles you picked can’t be added to this run. Check the color and order.',
   Sinema: 'Cinema',
-  'Sistem izinleri macOS tarafından gösterilir.': 'System permissions are shown by macOS.',
   'Sistem izni vermek, desteklenmeyen bir özelliği etkinleştirmez.':
     'Granting a system permission doesn’t enable an unsupported feature.',
   'Sistem sesi': 'System audio',
@@ -467,12 +477,11 @@ export const shell: Catalog = {
   'Sistem sesi kullanılamıyor': 'System audio unavailable',
   'Sohbet kanalı oluştur': 'Create text channel',
   'Sohbete dön': 'Back to chat',
+  'Sohbete katıl': 'Join the chat',
   Sohbetler: 'Chats',
-  'Soldan bir topluluk seç.': 'Pick a community on the left.',
   'Son geçerlilik: {date}': 'Valid until: {date}',
   'Son kontrol: {date}': 'Last checked: {date}',
   'Son kullanım: {date}': 'Expires: {date}',
-  Sonra: 'Later',
   'Soru sor, özet çıkar, görev ver.': 'Ask questions, get summaries, assign tasks.',
   Sunucu: 'Server',
   'Sunucu adresi': 'Server address',
@@ -500,11 +509,13 @@ export const shell: Catalog = {
     'Couldn’t reach the server. Check your network connection and the server address.',
   'Sürüm {version}': 'Version {version}',
   'Sırada başka video yok.': 'There are no more videos in the queue.',
+  'Şu an çevrimiçi arkadaşın yok.': 'None of your friends are online right now.',
   'Tayfa {version}': 'Tayfa {version}',
   'Tayfa {version} hazır, güncellemek için tıkla': 'Tayfa {version} is ready, click to update',
   'Tayfa {version} hazır.': 'Tayfa {version} is ready.',
   'Tayfa’yı güncel tut ve destek bilgilerini yönet.':
     'Keep Tayfa up to date and manage support info.',
+  'Tayfana hoş geldin': 'Welcome to your crew',
   'Tekrar dene': 'Try again',
   Topluluk: 'Community',
   'Topluluk bağlantısı açık.': 'Your community connection is open.',
@@ -584,7 +595,11 @@ export const shell: Catalog = {
   'sen@ornek.com': 'you@example.com',
   'ssh root@SUNUCU_IP': 'ssh root@SERVER_IP',
   'whiteboard çizim tahta': 'whiteboard drawing board',
-  'yayın pencere stremio iptv instagram reels': 'stream window stremio iptv instagram reels',
+  'yayın pencere instagram reels': 'stream window instagram reels',
+  'sinema film dizi kanal iptv stremio youtube canlı tv':
+    'cinema movie film series show channel iptv stremio youtube live tv',
+  'Topluluğun salonunda canlı kanal, film, dizi ve YouTube.':
+    'Live channels, movies, shows and YouTube in your community’s hall.',
   'yeniden bağlanıyor': 'reconnecting',
   '{channel} kanalına davetlisin.': 'You’re invited to {channel}.',
   '{channel} kanalında etiketlendin': 'You were mentioned in {channel}',
@@ -619,8 +634,6 @@ export const shell: Catalog = {
     'A pair group can’t be extended. Pick a run to add to.',
   'Çok fazla işlem yapıldı. Biraz bekleyip yeniden dene.':
     'Too many actions. Wait a moment and try again.',
-  'Çökme raporları: gönderim yapılandırılmadı': 'Crash reports: sending isn’t configured',
-  'Çökme raporlarını paylaş': 'Share crash reports',
   'Çıkış yap': 'Sign out',
   'Çıkış yap ve davetle devam et': 'Sign out and continue with the invite',
   'ÖZEL MESAJLAR': 'DIRECT MESSAGES',
@@ -640,7 +653,6 @@ export const shell: Catalog = {
     'You need to be friends before you can send a direct message.',
   'Özel sunucuna bağlanmak için masaüstü uygulamasını aç.':
     'Open the desktop app to connect to your private server.',
-  'Özel topluluk': 'Private community',
   'Özel topluluk daveti': 'Private community invite',
   'Özel topluluğuna devam etmek için hesabınla tekrar giriş yap.':
     'Sign in to your account again to continue to your private community.',
@@ -804,4 +816,33 @@ export const shell: Catalog = {
     'Create a channel in the community before approving requests.',
   'Bu e-posta adresiyle zaten bir hesap var. O hesapla giriş yap veya farklı bir e-posta adresi kullan.':
     'This email address already has an account. Sign in with it, or use a different email address.',
+  'Oturumun bu cihazda güvenle saklanır.': 'Your session is stored securely on this device.',
+  '{step}/2 · Profil': '{step}/2 · Profile',
+  '{step}/2 · Cihazlar': '{step}/2 · Devices',
+  'Mikrofon izni kapalı. Sistem ayarlarının gizlilik bölümünden Tayfa’ya mikrofon izni ver.':
+    'Microphone permission is off. Allow Tayfa to use the microphone in the privacy section of your system settings.',
+  'Seçili mikrofon kullanılamıyor. Başka bir mikrofon seç.':
+    'The selected microphone isn’t available. Choose another microphone.',
+  'Konuş; çubuklar sesinle birlikte hareket etmeli.':
+    'Speak; the bars should move with your voice.',
+  'Ses yalnızca bu cihazda ölçülür, kimseye gönderilmez.':
+    'Sound is only measured on this device and isn’t sent to anyone.',
+  'Sistem izinleri {os} tarafından gösterilir.': 'System permissions are shown by {os}.',
+  Anketler: 'Polls',
+  'Arkadaşlarınla özel konuşmalar': 'Private conversations with your friends',
+  'Arkadaş ekle, istekleri gör': 'Add friends, see requests',
+  'Senden bahsedilen mesajlar': 'Messages that mention you',
+  'Bir odaya katıl, sesli konuş': 'Join a room and talk',
+  'Sohbetlerde paylaşılan dosyalar': 'Files shared in conversations',
+  'Kart ve masa oyunları': 'Card and table games',
+  'Sayfa veya komut ara': 'Search pages or commands',
+  'Sayfa veya komut ara…': 'Search pages or commands…',
+  Sonuçlar: 'Results',
+  'Sonuç bulunamadı': 'No results',
+  'Başka bir sözcükle dene.': 'Try another word.',
+  '↑ ↓ ile seç · Enter ile aç · Esc ile kapat': '↑ ↓ to choose · Enter to open · Esc to close',
+  'Mikrofon değiştirilemedi. Ses ayarlarını kontrol edip yeniden dene.':
+    'Couldn’t change the microphone. Check your voice settings and try again.',
+  'Bu mesajın kanalı açılamadı. Kanal listesinden yeniden dene.':
+    'Couldn’t open this message’s channel. Try again from the channel list.',
 };

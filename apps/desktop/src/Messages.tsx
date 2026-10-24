@@ -1,51 +1,45 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal } from '@rooms/design';
+import { UserPlus } from 'lucide-react';
+import { EmptyState, LoadingView, Modal, Notice } from '@rooms/design';
 import type { SocialUser } from '@rooms/social';
 import { useCommunity } from './community';
+import { DirectMessageList } from './SocialSurfaces';
 import { VoiceAvatar } from './VoiceAvatar';
 import { locale, t, uiError } from './i18n';
 import { directMessageFailed } from './FriendRequiredDialog';
+import './reference-home.css';
+/**
+ * The direct message inbox: the shared conversation list (avatar, last message, time, unread)
+ * with the "new message" person picker above it.
+ */
 export function Messages({ notify }: { notify(message: string): void }) {
   const c = useCommunity(),
     navigate = useNavigate(),
     [creating, setCreating] = useState(false);
+  const unavailable = !c.user
+    ? t('Önce giriş yap.')
+    : !window.rooms
+      ? t('Masaüstü uygulamasını aç.')
+      : undefined;
   return (
-    <div className="minimal-messages">
-      <button
-        className="text-button"
-        disabled={!c.user || !window.rooms}
-        title={
-          !c.user
-            ? t('Önce giriş yap.')
-            : !window.rooms
-              ? t('Masaüstü uygulamasını aç.')
-              : undefined
-        }
-        onClick={() => setCreating(true)}
-      >
-        {t('Yeni özel mesaj')}
-      </button>
-      {c.dms.map((dm) => {
-        const p = dm.recipients?.find((u) => u.id !== c.user?.id);
-        return (
-          <button
-            key={dm.id}
-            onClick={() => {
-              navigate('/chat');
-              void c.openChannel(dm.id).catch((e) => notify(uiError(e)));
-            }}
-          >
-            {p && <VoiceAvatar id={p.id} name={p.displayName} />}
-            <span>{p?.displayName ?? dm.name}</span>
-            {c.unread[dm.id] && <i className="nav-dot" />}
-          </button>
-        );
-      })}
-      {!c.dms.length && <p>{t('Henüz konuşma yok.')}</p>}
-      <button className="text-button" onClick={() => navigate('/friends')}>
-        {t('Arkadaşlar')}
-      </button>
+    <div className="home-messages">
+      <div className="home-messages-actions">
+        <button
+          className="button primary small"
+          disabled={!!unavailable}
+          title={unavailable}
+          onClick={() => setCreating(true)}
+        >
+          {t('Yeni özel mesaj')}
+        </button>
+      </div>
+      <DirectMessageList
+        onOpen={(id) => {
+          navigate('/chat');
+          void c.openChannel(id).catch((e) => notify(uiError(e)));
+        }}
+      />
       {creating && (
         <NewMessage
           key={`${c.serverUrl}:${c.user?.id}:${c.activeSpaceId}`}
@@ -104,6 +98,10 @@ function NewMessage({ onClose, notify }: { onClose(): void; notify(message: stri
       alive = false;
     };
   }, [c.activeSpaceId, c.user?.id]);
+  const needle = query.toLocaleLowerCase(locale),
+    shown = people.filter((u) =>
+      `${u.displayName} ${u.username}`.toLocaleLowerCase(locale).includes(needle),
+    );
   const select = async (user: SocialUser) => {
     if (busy) return;
     setBusy(true);
@@ -153,23 +151,42 @@ function NewMessage({ onClose, notify }: { onClose(): void; notify(message: stri
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      <div className="minimal-messages">
-        {people
-          .filter((u) =>
-            `${u.displayName} ${u.username}`
-              .toLocaleLowerCase(locale)
-              .includes(query.toLocaleLowerCase(locale)),
-          )
-          .map((u) => (
-            <button key={u.id} disabled={busy} onClick={() => void select(u)}>
-              <VoiceAvatar id={u.id} name={u.displayName} />
-              <span>{u.displayName}</span>
-            </button>
+      {loading ? (
+        <LoadingView size="inline" label={t('Kişiler yükleniyor…')} />
+      ) : people.length ? (
+        <ul className="home-people-picker">
+          {shown.map((u) => (
+            <li key={u.id}>
+              <button disabled={busy} onClick={() => void select(u)}>
+                <VoiceAvatar id={u.id} name={u.displayName} />
+                <span>{u.displayName}</span>
+                <small>@{u.username}</small>
+              </button>
+            </li>
           ))}
-      </div>
-      {loading && <p role="status">{t('Kişiler yükleniyor…')}</p>}
-      {!loading && !people.length && <p>{t('Mesajlaşmak için bir arkadaş ekle.')}</p>}
-      {error && <p role="alert">{error}</p>}
+          {!shown.length && <li className="home-muted">{t('Eşleşen kişi yok.')}</li>}
+        </ul>
+      ) : (
+        !error && (
+          <EmptyState
+            size="inline"
+            icon={<UserPlus size={28} />}
+            title={t('Mesajlaşmak için bir arkadaş ekle.')}
+            action={
+              <button
+                className="button secondary"
+                onClick={() => {
+                  onClose();
+                  navigate('/friends');
+                }}
+              >
+                {t('Arkadaşlarını aç')}
+              </button>
+            }
+          />
+        )
+      )}
+      {error && <Notice kind="error">{error}</Notice>}
     </Modal>
   );
 }

@@ -42,6 +42,8 @@ export interface PistiState {
   seats: number;
   teams: boolean;
   target: number;
+  /** Whether an opening jack was shuffled back; absent in states stored before the view exposed it (= true). */
+  reshuffleJackTop?: boolean;
   /** Undealt cards (hidden). */
   deck: Card[];
   hands: Card[][];
@@ -59,12 +61,34 @@ export interface PistiState {
   lastCapture: PistiCapture | null;
 }
 
+/** How one side's deal points add up (`cards` is the pile size; `mostCards` the 3-point bonus). */
+export interface PistiBreakdown {
+  aces: number;
+  jacks: number;
+  clubsTwo: number;
+  diamondsTen: number;
+  cards: number;
+  mostCards: boolean;
+  pisti: number;
+  jackPisti: number;
+}
+
+export interface PistiResult {
+  /** Per seat; partners of a team share their side's points. */
+  points: number[];
+  winners: number[];
+  /** Per side (see `PistiState.captured`). */
+  breakdown: PistiBreakdown[];
+}
+
 export type PistiCommand = { type: 'play'; cardId: string };
 
 export interface PistiView {
   seats: number;
   teams: boolean;
   target: number;
+  /** The table's house rules as dealt. */
+  rules: { target: number; reshuffleJackTop: boolean };
   viewerSeat: number | null;
   turn: number | null;
   /** The viewer's own hand; null for spectators. */
@@ -81,7 +105,7 @@ export interface PistiView {
   lastPlay: PistiPlay | null;
   lastCapture: PistiCapture | null;
   /** Set once the deal is over. */
-  result: { points: number[]; winners: number[] } | null;
+  result: PistiResult | null;
 }
 
 export function pistiSideCount(seats: number): number {
@@ -142,6 +166,7 @@ export function startPisti(
     seats: seatCount,
     teams: seatCount === 4,
     target: opts.target,
+    reshuffleJackTop: opts.reshuffleJackTop,
     deck,
     hands,
     table,
@@ -245,7 +270,24 @@ export function pistiSidePoints(state: PistiState): number[] {
   });
 }
 
-export function settlePisti(state: PistiState): { points: number[]; winners: number[] } | null {
+/** Per side: the card-point split, pile size, most-cards bonus and pişti counts of this deal. */
+export function pistiSideBreakdown(state: PistiState): PistiBreakdown[] {
+  const counts = state.captured.map((pile) => pile.length),
+    most = Math.max(...counts),
+    leaders = counts.filter((n) => n === most).length;
+  return state.captured.map((pile, side) => ({
+    aces: pile.filter((c) => c.rank === 14).length,
+    jacks: pile.filter((c) => c.rank === PISTI_JACK).length,
+    clubsTwo: pile.filter((c) => c.rank === 2 && c.suit === 'clubs').length,
+    diamondsTen: pile.filter((c) => c.rank === 10 && c.suit === 'diamonds').length,
+    cards: pile.length,
+    mostCards: counts[side] === most && leaders === 1,
+    pisti: state.pisti[side] ?? 0,
+    jackPisti: state.jackPisti[side] ?? 0,
+  }));
+}
+
+export function settlePisti(state: PistiState): PistiResult | null {
   if (state.turn !== null) return null;
   const sidePoints = pistiSidePoints(state),
     // In a team game both partners carry their team's points.
@@ -254,6 +296,7 @@ export function settlePisti(state: PistiState): { points: number[]; winners: num
   return {
     points,
     winners: points.flatMap((p, seat) => (p === best ? [seat] : [])),
+    breakdown: pistiSideBreakdown(state),
   };
 }
 
@@ -272,6 +315,7 @@ export function viewPisti(state: PistiState, viewerSeat: number | null): PistiVi
     seats: state.seats,
     teams: state.teams,
     target: state.target,
+    rules: { target: state.target, reshuffleJackTop: state.reshuffleJackTop !== false },
     viewerSeat: seated ? viewerSeat : null,
     turn: state.turn,
     hand: seated ? state.hands[viewerSeat].map((c) => ({ ...c })) : null,

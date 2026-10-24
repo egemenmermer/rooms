@@ -19,6 +19,19 @@ const stateNames: Record<UpdateStatus['state'], string> = {
   error: t('Güncelleme başarısız'),
 };
 
+/** The operating system's product name for a Node `process.platform` value. */
+export function platformName(platform: string | undefined) {
+  return platform === 'darwin'
+    ? 'macOS'
+    : platform === 'win32'
+      ? 'Windows'
+      : platform === 'linux'
+        ? 'Linux'
+        : (platform ?? '—');
+}
+/** States in which `status.version` names a newer build than the one running. */
+const newerStates: UpdateStatus['state'][] = ['available', 'downloading', 'verifying', 'ready'];
+
 /** Update actions remain native, opt-in and signature-gated; fixtures never invoke them. */
 export function About({ notify }: { notify(message: string): void }) {
   const [status, setStatus] = useState<UpdateStatus | null>(null),
@@ -154,24 +167,21 @@ export function About({ notify }: { notify(message: string): void }) {
     }
   };
   const working = busy || ['checking', 'downloading', 'verifying'].includes(status?.state ?? '');
-  const platform =
-    info?.platform === 'darwin'
-      ? 'macOS'
-      : info?.platform === 'win32'
-        ? 'Windows'
-        : (info?.platform ?? '—');
+  const platform = platformName(info?.platform);
+  // The updater keeps the last offered version through later checks and errors.
+  const newVersion = status?.version && newerStates.includes(status.state) ? status.version : null;
   return (
     <div className="reference-about">
       <div className="ref-settings-heading">
         <span>{t('UYGULAMA')}</span>
         <h1>{t('Güncelleme ve hakkında')}</h1>
-        {fixture && <p>{t('Tayfa’yı güncel tut ve destek bilgilerini yönet.')}</p>}
+        <p>{t('Tayfa’yı güncel tut ve destek bilgilerini yönet.')}</p>
       </div>
       <div className="about-hero">
         <img src="./reference-brand/app-icons/app-icon-128.png" alt="" />
         <div>
           <h1>Tayfa</h1>
-          {fixture && <p>{t('Arkadaşlarınla aynı yerde.')}</p>}
+          <p>{t('Arkadaşlarınla aynı yerde.')}</p>
           <small>
             {t('Sürüm {version}', { version: info?.version ?? '—' })} · {platform}
             {info?.arch ? ` · ${info.arch === 'arm64' ? 'Apple Silicon' : info.arch}` : ''}
@@ -184,11 +194,11 @@ export function About({ notify }: { notify(message: string): void }) {
       <section className="about-update">
         <div className="about-section-title">
           <h2>
-            {status?.version
-              ? t('Tayfa {version}', { version: status.version })
+            {newVersion
+              ? t('Tayfa {version}', { version: newVersion })
               : t('Uygulama güncellemeleri')}
           </h2>
-          {status?.version && <small>{t('Yeni sürüm')}</small>}
+          {newVersion && <small>{t('Yeni sürüm')}</small>}
         </div>
         {!!status?.releaseNotes?.length && (
           <ul className="about-changelog">
@@ -299,18 +309,6 @@ export function About({ notify }: { notify(message: string): void }) {
         <h2>{t('Destek ve gizlilik')}</h2>
         <div className="about-setting">
           <div>
-            <strong>{t('Çökme raporlarını paylaş')}</strong>
-            <p>{t('Rapor gönderimi henüz yapılandırılmadı.')}</p>
-          </div>
-          <Toggle
-            label={t('Çökme raporları: gönderim yapılandırılmadı')}
-            value={false}
-            disabled
-            onChange={() => {}}
-          />
-        </div>
-        <div className="about-setting">
-          <div>
             <strong>{t('Destek kaydı')}</strong>
             <p>
               {t('Mesaj içerikleri, hesap anahtarları ve kişisel dosya yolları dahil edilmez.')}
@@ -339,7 +337,7 @@ export function About({ notify }: { notify(message: string): void }) {
       )}
       <footer>
         <img src="./reference-brand/brand/logo-symbol-lilac.svg" alt="" />
-        Tayfa{fixture && ` · ${t('Özel arkadaş toplulukları için')}`}
+        Tayfa · {t('Özel arkadaş toplulukları için')}
       </footer>
       {modal && (
         <Modal

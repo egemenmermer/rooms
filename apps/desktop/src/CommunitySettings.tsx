@@ -9,7 +9,6 @@ import {
   Copy,
   Hash,
   Home,
-  Image,
   Link,
   Lock,
   MoreHorizontal,
@@ -31,7 +30,8 @@ import type {
   SocialUser,
 } from '@rooms/social';
 import { VoiceAvatar } from './VoiceAvatar';
-import { inviteLinkFor } from './InviteLinkCard';
+import { InviteLinkCard, inviteLinkFor } from './InviteLinkCard';
+import { useCommunity } from './community';
 import { locale, t, uiError } from './i18n';
 
 /** These components receive authorized projections and operations from the native adapter owner. */
@@ -133,7 +133,7 @@ export function CommunityEditor(props: CommunityEditorProps) {
   const reason = op.blocked
     ? fixtureReason
     : !onSave
-      ? t('Topluluk oluşturma ve ad düzenleme bağlantısı henüz uygulanmadı.')
+      ? t('Topluluk oluşturmak ve düzenlemek için önce sunucuna bağlan.')
       : mode === 'edit' && !props.canEdit
         ? t('Topluluk düzenleme yetkisi gerekli.')
         : '';
@@ -152,14 +152,14 @@ export function CommunityEditor(props: CommunityEditorProps) {
     <Modal
       title={
         referenceCreated
-          ? t('Odan hazır. · Yerel referans')
+          ? t('Topluluğun hazır · Yerel referans')
           : created
-            ? t('Odan hazır.')
+            ? t('Topluluğun hazır')
             : mode === 'edit'
               ? space?.name
                 ? t('{name}’yı düzenle', { name: space.name })
                 : t('Topluluğu düzenle')
-              : t('Kendi odanı kur.')
+              : t('Topluluk oluştur')
       }
       className={`rcs-modal rcs-community-editor ${referenceCreated ? 'rcs-local-reference' : ''}`}
       onClose={() => {
@@ -190,20 +190,6 @@ export function CommunityEditor(props: CommunityEditorProps) {
             </Notice>
           )}
           <p className="rcs-description">{t('Arkadaşlarınla buluşacağın özel topluluğun.')}</p>
-          <div className="rcs-icon-picker">
-            <span>
-              <Home size={33} />
-            </span>
-            <button
-              type="button"
-              className="button secondary"
-              disabled
-              title={t('Topluluk ikonu için güvenli yerel yükleme arayüzü henüz uygulanmadı.')}
-            >
-              <Image size={17} />
-              {t('İkon değiştir')}
-            </button>
-          </div>
           <label className="rcs-field">
             {t('Topluluk adı')}
             <input
@@ -215,36 +201,37 @@ export function CommunityEditor(props: CommunityEditorProps) {
               onChange={(event) => setName(event.target.value)}
             />
           </label>
-          <label className="rcs-field">
-            {t('Kısa açıklama')}
-            <input
-              value={description ?? ''}
-              disabled
-              placeholder={t('Açıklama düzenleme henüz uygulanmadı')}
-            />
-          </label>
-          <div
-            className={`rcs-option ${inviteOnly === true || referenceCreated ? 'selected' : ''}`}
-          >
-            <Lock size={23} />
-            <div>
-              <strong>
-                {inviteOnly === true || referenceCreated
-                  ? t('Yalnızca davetle')
-                  : t('Topluluk görünürlüğü')}
-              </strong>
-              <small>
-                {referenceCreated
-                  ? t('Yerel referans politikası; sunucu ayarı uygulanmadı.')
-                  : inviteOnly === true
-                    ? t('Davet gerekliliği bağlantıdan alındı.')
-                    : inviteOnly === false
-                      ? t('Davet dışı erişim açık.')
-                      : t('Görünürlük politikası bu bağlantıda henüz alınamıyor.')}
-              </small>
+          {/* The connection reports neither a description nor a visibility policy yet; each block
+              shows only when its value is known, never as a disabled placeholder. */}
+          {description && (
+            <div className="rcs-field">
+              {t('Kısa açıklama')}
+              <p className="rcs-readonly">{description}</p>
             </div>
-            {(inviteOnly === true || referenceCreated) && <Check size={20} />}
-          </div>
+          )}
+          {(inviteOnly !== undefined || referenceCreated) && (
+            <div
+              className={`rcs-option ${inviteOnly === true || referenceCreated ? 'selected' : ''}`}
+            >
+              <Lock size={23} />
+              <div>
+                <strong>
+                  {inviteOnly === true || referenceCreated
+                    ? t('Yalnızca davetle')
+                    : t('Topluluk görünürlüğü')}
+                </strong>
+                <small>
+                  {referenceCreated
+                    ? t('Yerel referans politikası; sunucu ayarı uygulanmadı.')
+                    : inviteOnly === true
+                      ? t('Davet gerekliliği bağlantıdan alındı.')
+                      : t('Davet dışı erişim açık.')}
+                </small>
+              </div>
+              {(inviteOnly === true || referenceCreated) && <Check size={20} />}
+            </div>
+          )}
+          {created && <CreatedCommunityInvite space={created} />}
           {reason && !created && !referenceCreated && <p className="rcs-hint">{reason}</p>}
           <ErrorNotice error={op.error} />
         </div>
@@ -268,6 +255,45 @@ export function CommunityEditor(props: CommunityEditorProps) {
         </footer>
       </form>
     </Modal>
+  );
+}
+
+/**
+ * Right after creating a community: its first invitation, so friends can join at once. The
+ * button shows only once a text channel of this very community has loaded, so the link can
+ * never point at the community that was open before.
+ */
+function CreatedCommunityInvite({ space }: { space: SocialSpace }) {
+  const serverUrl = useCommunity((s) => s.serverUrl),
+    createInvite = useCommunity((s) => s.createInvite),
+    channelId = useCommunity(
+      (s) => s.channels.find((ch) => ch.spaceId === space.id && ch.type === 0)?.id,
+    );
+  const [invite, setInvite] = useState<SocialInvite | null>(null),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState('');
+  if (invite) return <InviteLinkCard serverUrl={serverUrl} invite={invite} autoFocus />;
+  if (!channelId) return null;
+  return (
+    <>
+      <button
+        type="button"
+        className="button primary full"
+        disabled={busy}
+        onClick={() => {
+          setBusy(true);
+          setError('');
+          void createInvite(channelId)
+            .then(setInvite)
+            .catch((failure) => setError(uiError(failure)))
+            .finally(() => setBusy(false));
+        }}
+      >
+        <Link size={16} />
+        {busy ? t('Davet oluşturuluyor…') : t('Davet oluştur')}
+      </button>
+      <ErrorNotice error={error} />
+    </>
   );
 }
 

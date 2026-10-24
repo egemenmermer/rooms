@@ -3,8 +3,8 @@ import { ScoreHistory } from '../card-history/CardHistory';
 import type { GameHistoryEntry } from '../registry';
 import { array, type Tile } from '../shared/model';
 import type { PenaltyEntry } from './moves';
-import { endingLine, PenaltyList, type Okey101Ending } from './OkeyRoundSummary';
-import { OkeyTileView } from './OkeyTile';
+import { endingLine, IndicatorLine, PenaltyList, type Okey101Ending } from './OkeyRoundSummary';
+import { isFakeOkey, okeyFace, OkeyTileView } from './OkeyTile';
 
 export function OkeyHistory({ entry }: { entry: GameHistoryEntry }) {
   const result = entry.result;
@@ -13,7 +13,9 @@ export function OkeyHistory({ entry }: { entry: GameHistoryEntry }) {
     t('Koltuk {number}', { number: seat + 1 });
   const winner = typeof result.winner === 'number' ? result.winner : null,
     ending = (result.ending as Okey101Ending | null | undefined) ?? null,
-    log = array<PenaltyEntry>(result.penaltyLog);
+    log = array<PenaltyEntry>(result.penaltyLog),
+    indicator = (result.indicator as Tile | undefined) ?? null,
+    okey = indicator ? okeyFace(indicator) : null;
   return (
     <ScoreHistory
       entry={entry}
@@ -27,10 +29,15 @@ export function OkeyHistory({ entry }: { entry: GameHistoryEntry }) {
                 : ''}
             </p>
           )}
+          <IndicatorLine indicator={result.indicator} />
           {!!result.lastDiscard && (
             <div className="rh-last-discard">
               <span>{t('Son atılan taş')}</span>
-              <OkeyTileView tile={result.lastDiscard as Tile} small />
+              <OkeyTileView
+                tile={result.lastDiscard as Tile}
+                fake={isFakeOkey(result.lastDiscard as Tile, okey)}
+                small
+              />
             </div>
           )}
           <PenaltyList log={log} nameOf={nameOf} />

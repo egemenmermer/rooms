@@ -23,6 +23,7 @@ vi.mock('../apps/desktop/src/community', () => ({
 vi.mock('../apps/desktop/src/activity', () => ({ useActivityRoom: vi.fn() }));
 
 import { offeredGames } from '../apps/desktop/src/games/catalog';
+import { holdemGame } from '../apps/desktop/src/games/holdem/entry';
 import { holdemFixture } from '../apps/desktop/src/games/holdem/fixture';
 import { ReferenceGames } from '../apps/desktop/src/games/shared/Lobby';
 
@@ -137,6 +138,18 @@ it('lets the Hold’em owner edit the rules and asks a new player for a buy-in',
   fireEvent.change(screen.getByLabelText('Giriş miktarı'), { target: { value: '500' } });
   fireEvent.click(button('Katıl'));
   expect(next.send).toHaveBeenCalledWith({ type: 'game.sit', seat: 1, buyIn: 500 });
+});
+
+it('shows the published muckLosers house rule in the rule rows, and nothing on older servers', () => {
+  const game = holdemFixture('your-turn');
+  const rows = (muckLosers?: boolean) =>
+    holdemGame.ruleRows({
+      ...game,
+      view: { ...game.view, rules: { ...game.view.rules, muckLosers } },
+    });
+  expect(rows(true)).toContainEqual(['Kaybeden kartını açmasın', 'Açık']);
+  expect(rows(false)).toContainEqual(['Kaybeden kartını açmasın', 'Kapalı']);
+  expect(rows(undefined).map(([label]) => label)).not.toContain('Kaybeden kartını açmasın');
 });
 
 it('mounts the Hold’em table from the registry with the lobby’s own command path', () => {

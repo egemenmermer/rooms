@@ -461,10 +461,11 @@ export function ConnectionPane({
               {!registration && (
                 <>
                   <div className="ref-auth-options">
-                    <label title={t('Bu sürümde oturum, sistemin güvenli deposunda saklanır.')}>
-                      <input type="checkbox" checked disabled />
-                      {t('Beni hatırla')}
-                    </label>
+                    {/* The session always stays in the system's secure store; there is no
+                        "don't remember" mode to toggle, so this is a note, not a checkbox. */}
+                    <span className="ref-auth-remembered">
+                      {t('Oturumun bu cihazda güvenle saklanır.')}
+                    </span>
                     <button
                       type="button"
                       onClick={() => {

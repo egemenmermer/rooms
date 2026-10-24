@@ -57,8 +57,13 @@ try {
   }
   await page.evaluate(() => (location.hash = '/home'));
   await page.waitForSelector('.hero');
-  await page.getByRole('button', { name: 'Etkinlik başlat', exact: true }).click();
-  await page.waitForSelector('.launcher-modal');
+  // Home has no voice dock; the toolbar's "Etkinlikler" opens the same launcher.
+  await page
+    .locator('.minimal-toolbar')
+    .getByRole('button', { name: 'Etkinlikler', exact: true })
+    .click();
+  // Nothing running opens the catalogue (appdir); a running activity opens the launcher.
+  await page.waitForSelector('.appdir-modal, .launcher-modal');
   await page.screenshot({ path: 'docs/screenshots/tr/launcher-1440.png' });
   await page.keyboard.press('Escape');
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1280, 800));

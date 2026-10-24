@@ -238,6 +238,13 @@
   align-items: center;
   gap: var(--space-4);
 }
+.o1-round-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  font-size: var(--font-size-metadata);
+  color: var(--color-text-secondary);
+}
 .o1-indicator small,
 .o1-middle-hint {
   font-size: var(--font-size-micro);

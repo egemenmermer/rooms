@@ -35,13 +35,7 @@ function show(path: string) {
   });
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <RoomConversation
-        notify={() => {}}
-        openLauncher={() => {}}
-        toggleMembers={() => {}}
-        membersVisible={false}
-        search={() => {}}
-      />
+      <RoomConversation notify={() => {}} openLauncher={() => {}} />
     </MemoryRouter>,
   );
 }

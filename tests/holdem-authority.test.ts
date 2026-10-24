@@ -47,11 +47,26 @@ const deckWith = (cards: [number, Card['suit']][]) => {
   return [...picked, ...deck.filter((card) => !picked.includes(card))];
 };
 describe('authoritative Holdem configuration and join rules', () => {
+  it('publishes the muckLosers house rule in view.rules, also for tables stored without options', () => {
+    const house = createGame(
+      { type: 'game.create', game: 'holdem', options: { muckLosers: true } },
+      owner,
+    );
+    expect(gameView(house, 'owner').view.rules).toMatchObject({ muckLosers: true, capacity: 9 });
+    // Viewers outside the table see the same published rule.
+    expect(gameView(house, 'stranger').view.rules).toMatchObject({ muckLosers: true });
+    const stored = createGame({ type: 'game.create', game: 'holdem' }, owner);
+    delete stored.options;
+    expect(gameView(stored, 'owner').view.rules).toMatchObject({ muckLosers: false });
+  });
   it('preserves legacy defaults and validates consistent bounded rules before mutation', () => {
     const legacy = createGame({ type: 'game.create', game: 'holdem' }, owner);
     expect(legacy.capacity).toBe(9);
     expect(legacy.seats[0].chips).toBe(1000);
-    expect(gameView(legacy, 'owner').view.rules).toEqual(defaultHoldemRules());
+    expect(gameView(legacy, 'owner').view.rules).toEqual({
+      ...defaultHoldemRules(),
+      muckLosers: false,
+    });
     expect(
       commandSchema.safeParse(
         envelope({ type: 'game.create', game: 'holdem', holdem: { ...rules, minBuyIn: 10 } }),

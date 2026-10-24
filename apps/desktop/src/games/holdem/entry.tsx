@@ -21,6 +21,12 @@ const holdemRules = (game: Parameters<GameDefinition['ruleRows']>[0]): RuleRow[]
     ],
     [t('Giriş'), `${nativeRules?.minBuyIn ?? '—'} – ${nativeRules?.maxBuyIn ?? '—'}`],
     [t('İzleyici'), nativeRules?.spectatorsAllowed ? t('Açık') : t('Kapalı')],
+    // Only a server that publishes the house rule can tell; an older one shows no row rather than "Kapalı".
+    ...(typeof nativeRules?.muckLosers === 'boolean'
+      ? ([
+          [t('Kaybeden kartını açmasın'), nativeRules.muckLosers ? t('Açık') : t('Kapalı')],
+        ] as RuleRow[])
+      : []),
   ];
 };
 

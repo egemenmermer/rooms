@@ -9,21 +9,16 @@ import './minimal-room.css';
 import { ParticipantAudioMenu } from './ParticipantAudioMenu';
 import { MusicDJ, MusicDJEntry, openMusicDJ } from './MusicDJ';
 import { applyAppearancePreferences } from './appearance-preferences';
-import { usePersonalPlayback } from './personal-playback';
 import { t, tr, uiError } from './i18n';
-import { VoiceSidebar } from './VoiceSidebar';
 import {
   DirectMessageSurface,
   SocialSearchDialog,
   SharedFilesSurface,
   UserProfileDialog,
 } from './SocialSurfaces';
-import { VoiceContext } from './VoiceContext';
-import { ReferenceIcon } from './ReferenceIcon';
 import { RoomMembers } from './RoomMembers';
 import { FriendsPage } from './FriendsPage';
 import { FriendRequiredDialog } from './FriendRequiredDialog';
-import { PersonalSidebar } from './PersonalSidebar';
 import DmCallRuntime from './DmCallRuntime';
 import ConnectionStatusSurface, { StartupSplash, SystemState } from './SystemState';
 import { useChannelAccess } from './channel-access';
@@ -35,58 +30,21 @@ import {
   defaultStartTab,
   type ReferenceOnboardingMode,
 } from './ReferenceOnboarding';
-import { FriendsPanel } from './People';
 import { InviteLanding } from './Invite';
 import { SignupPendingScreen } from './SignupPending';
 import { signupScreenVisible, useSignup } from './signup-state';
+import { CommandPalette } from './CommandPalette';
+import { friendlyActionError, shortcutRoutes } from './shell-commands';
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft,
-  ArrowRight,
-  AudioLines,
-  Bot,
-  Gamepad2,
-  Bell,
-  ChevronDown,
-  ChevronRight,
-  CircleHelp,
-  Film,
-  Hash,
-  Headphones,
-  Home as HomeIcon,
-  LayoutGrid,
-  MessageCircle,
-  Menu,
-  Mic,
-  MicOff,
-  Moon,
-  MoreHorizontal,
-  Music2,
-  PanelRightClose,
-  PanelRightOpen,
-  PhoneOff,
-  Plus,
-  Rocket,
-  Search,
-  Settings as SettingsIcon,
-  Sparkles,
-  Users,
-  X,
-} from 'lucide-react';
-import { Avatar, IconButton, Modal } from '@rooms/design';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, LayoutGrid, Menu, Music2, Search, Users, X } from 'lucide-react';
+import { IconButton, LoadingView, Modal } from '@rooms/design';
 import { useRooms } from './store';
 import { badgeCount, useCommunity, initializeCommunity } from './community';
 import { useModerationRights } from './VoiceModeration';
-import { useRealtime, joinVoice, toggleMic } from './realtime';
+import { useRealtime, toggleMic } from './realtime';
 import { PushToTalk } from './PushToTalk';
-import {
-  CommunityChat,
-  CommunitySpaces,
-  CommunityVoice,
-  CommunityInvite,
-  RealVoiceDock,
-} from './RealSocial';
+import { CommunitySpaces, CommunityInvite, RealVoiceDock } from './RealSocial';
 import { Home } from './Home';
 import { ConnectionPane } from './ConnectionPane';
 import { ActivityLauncher } from './Activities';
@@ -161,25 +119,7 @@ export default function App() {
       void bridge.setVoiceActive(false).catch(() => {});
     };
   }, [realtime.status]);
-  const spaces = community.spaces.map((s) => ({
-    id: s.id,
-    name: s.name,
-    initials: s.name.slice(0, 1),
-    tone: 'blue',
-    description: 'Tayfa',
-  }));
   const activeSpace = community.activeSpaceId;
-  const [communityIcons, setCommunityIcons] = useState<Record<string, string>>({});
-  useEffect(() => {
-    let active = true;
-    if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('fixture'))
-      void import('./dev/reference-fixtures').then((f) => {
-        if (active) setCommunityIcons(f.getReferenceCommunityIcons());
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
   const channelAccess = useChannelAccess((state) =>
     community.activeChannelId ? state.checks[community.activeChannelId] : undefined,
   );
@@ -187,14 +127,6 @@ export default function App() {
     community.channels.find((c) => c.id === community.activeChannelId)?.name ??
     community.dms.find((c) => c.id === community.activeChannelId)?.name ??
     tr('Messages');
-  const displayName = community.user?.displayName ?? tr('You');
-  const setSpace = (id: string) => {
-    void community.openSpace(id);
-  };
-  const setChannel = (name: string) => {
-    const ch = community.channels.find((c) => c.name === name);
-    if (ch) void community.openChannel(ch.id);
-  };
   const [startupReady, setStartupReady] = useState(
     () =>
       !window.rooms ||
@@ -309,8 +241,6 @@ export default function App() {
   const localFixture = import.meta.env.DEV
     ? (document.documentElement.dataset.referenceFixture ?? '')
     : '';
-  const fixtureHidesRoomMembers =
-    localFixture.startsWith('S14/') || (localFixture === 'S19/empty' && !realtime.channelId);
   const contextVisible = contextDrawerOpen;
   useEffect(() => {
     const show = () => setOverlay('launcher');
@@ -319,7 +249,7 @@ export default function App() {
   }, []);
   const toggleContext = useCallback(() => {
     setContextDrawerOpen((value) => !value);
-  }, [fixtureHidesRoomMembers, narrowContext, p.showFriends, setPreference]);
+  }, []);
   const closeContext = useCallback(() => {
     setContextDrawerOpen(false);
     if (!narrowContext) setPreference('showFriends', false);
@@ -371,7 +301,6 @@ export default function App() {
     navigate(`/setup/register?${params}`, { replace: true });
   }, [startupReady, nativeInvite, community.user, navigate]);
   const [toast, setToast] = useState('');
-  const [search, setSearch] = useState('');
   const notify = useCallback((message: string) => setToast(message), []);
   useEffect(() => {
     // Modules without a component (voice, updates) report through this event.
@@ -382,17 +311,13 @@ export default function App() {
     window.addEventListener('rooms:toast', show);
     return () => window.removeEventListener('rooms:toast', show);
   }, []);
-  const close = useCallback(() => {
-    setOverlay(null);
-    setSearch('');
-  }, []);
+  const close = useCallback(() => setOverlay(null), []);
 
   useEffect(() => {
     const clear = () => {
       setOverlay((current) =>
         current === 'social-search' || current === 'profile' ? null : current,
       );
-      setSearch('');
     };
     window.addEventListener('rooms:channel-access-invalidated', clear);
     return () => window.removeEventListener('rooms:channel-access-invalidated', clear);
@@ -412,30 +337,7 @@ export default function App() {
   const visiblePath = settingsPage ? returnFromSettings.current.split('?')[0]! : location.pathname;
   const hallView = visiblePath === '/cinema';
   const voiceView = visiblePath === '/voice';
-  const videoView =
-    voiceView &&
-    (new URLSearchParams(location.search).get('view') === 'video' ||
-      (new URLSearchParams(location.search).get('view') !== 'share' &&
-        realtime.tracks.some(
-          (track) => track.source === 'camera' && track.kind === 'video' && !track.muted,
-        )));
-  const statusView = visiblePath === '/status';
-  const fileView = visiblePath === '/files';
   const mediaView = visiblePath === '/media';
-  const personalSession = usePersonalPlayback((state) => state.session);
-  const mediaHeader =
-    new URLSearchParams(location.search).get('player') === '1' && personalSession
-      ? personalSession.media.live
-        ? personalSession.media.name
-        : t('Kişisel oynatıcı')
-      : new URLSearchParams(location.search).get('view') === 'channels' ||
-          localFixture.startsWith('S35/')
-        ? t('Canlı kanallar')
-        : new URLSearchParams(location.search).get('view') === 'library' ||
-            localFixture.startsWith('S38/')
-          ? t('Kütüphane')
-          : t('Kişisel medyam');
-  const notificationView = visiblePath === '/notifications';
   const dmView =
     ['/chat', '/dm'].includes(visiblePath) &&
     community.dms.some((dm) => dm.id === community.activeChannelId);
@@ -453,16 +355,11 @@ export default function App() {
         '/youtube',
         '/media',
       ].includes(visiblePath));
-  const personalSidebarView =
-    !!community.user && (['/home', '/friends', '/notifications'].includes(visiblePath) || dmView);
   useLayoutEffect(() => {
     const main = document.querySelector('.main-view');
     if (main) main.scrollTop = 0;
   }, [visiblePath]);
-  const settings = ['/agent', '/together', '/games', '/youtube', '/media'].includes(visiblePath);
-  const selected = spaces.find((s) => s.id === activeSpace) ?? { name: tr('Your community') };
   const open = (value: Overlay) => {
-    setSearch('');
     setOverlay(value === 'create-room' ? 'invite' : value);
   };
   useEffect(() => {
@@ -496,7 +393,7 @@ export default function App() {
       if (!editing && (e.metaKey || e.ctrlKey) && /^[1-5]$/.test(e.key)) {
         e.preventDefault();
         close();
-        navigate(['/home', '/spaces', '/chat', '/voice', '/cinema'][Number(e.key) - 1]!);
+        navigate(shortcutRoutes[Number(e.key) - 1]!.path);
       }
       if (e.key === 'Escape' && contextDrawerOpen) {
         e.preventDefault();
@@ -518,7 +415,15 @@ export default function App() {
       }
       if (!editing && (e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'm') {
         e.preventDefault();
-        if (realtime.channelId) void toggleMic().catch((e) => notify(e.message));
+        if (realtime.channelId)
+          void toggleMic().catch((error) =>
+            notify(
+              friendlyActionError(
+                error,
+                t('Mikrofon değiştirilemedi. Ses ayarlarını kontrol edip yeniden dene.'),
+              ),
+            ),
+          );
       }
     };
     window.addEventListener('keydown', handler);
@@ -537,6 +442,15 @@ export default function App() {
     hallView,
   ]);
   useEffect(() => applyAppearancePreferences(p), [p]);
+  const visibleParams = new URLSearchParams(
+    settingsPage ? (returnFromSettings.current.split('?')[1] ?? '') : location.search,
+  );
+  // The chat heading names a channel conversation, so the toolbar does not repeat it.
+  const chatHeadingVisible =
+    !!community.user &&
+    !dmView &&
+    !channelAccess &&
+    (visiblePath === '/chat' || (voiceView && visibleParams.get('view') === 'chat'));
   const titles: Record<string, string> = {
     '/home': t('Ana sayfa'),
     '/friends': t('Arkadaşlar'),
@@ -548,12 +462,16 @@ export default function App() {
     '/cinema': t('Sinema'),
     '/settings': tr('Settings'),
     '/notifications': t('Bildirimler'),
-    '/polls': tr('Quick polls'),
-    '/agent': 'Agent',
-    '/together': t('Birlikte'),
+    '/agent': t('Asistan'),
+    '/together': visibleParams.get('tab') === 'board' ? t('Beyaz tahta') : t('Anketler'),
     '/games': t('Kıraathane'),
     '/youtube': 'DJ',
   };
+  const breadcrumb = ['/chat', '/voice'].includes(visiblePath)
+    ? voiceView
+      ? (realtime.roomName ?? channel)
+      : channel
+    : (titles[visiblePath] ?? 'Tayfa');
   const setupName = visiblePath.startsWith('/setup/') ? visiblePath.slice(7) : null;
   const setupModes: ReferenceOnboardingMode[] = [
     'welcome',
@@ -634,7 +552,7 @@ export default function App() {
             onClose={closeSettings}
             className="settings-modal"
           >
-            <Suspense fallback={<div className="loading-view">{t('Yükleniyor…')}</div>}>
+            <Suspense fallback={<LoadingView />}>
               <Settings
                 notify={notify}
                 onClose={closeSettings}
@@ -663,7 +581,7 @@ export default function App() {
       {<PushToTalk notify={notify} />}
       <div className="window-chrome">
         <div className="traffic-space">
-          {!window.rooms && !document.documentElement.dataset.referenceFixture && (
+          {import.meta.env.DEV && !window.rooms && !localFixture && (
             <span className="browser-preview">{tr('DESKTOP PREVIEW')}</span>
           )}
         </div>
@@ -680,14 +598,7 @@ export default function App() {
               {t('DEMO · Yerel örnek')}
             </span>
           </span>
-        ) : (
-          community.user && (
-            <span className="window-private">
-              <ReferenceIcon name="lock" size={10} />
-              {t('Özel topluluk')}
-            </span>
-          )
-        )}
+        ) : null}
       </div>
       <div className={`app-layout ${settingsPage ? 'settings-background' : ''}`}>
         <button
@@ -719,13 +630,7 @@ export default function App() {
         <div className="workspace">
           <header className="toolbar minimal-toolbar">
             <div className="breadcrumb">
-              <span>
-                {['/chat', '/voice'].includes(visiblePath)
-                  ? voiceView
-                    ? (realtime.roomName ?? channel)
-                    : channel
-                  : (titles[visiblePath] ?? 'Tayfa')}
-              </span>
+              {!chatHeadingVisible && <span title={breadcrumb}>{breadcrumb}</span>}
             </div>
             <div className="toolbar-actions">
               {!['/chat', '/home', '/messages'].includes(visiblePath) && (
@@ -757,7 +662,7 @@ export default function App() {
                 className="toolbar-icon"
                 onClick={() => open('launcher')}
               >
-                <Rocket size={19} />
+                <LayoutGrid size={19} />
               </IconButton>
               <IconButton
                 label={dmView ? t('Kişi bilgisi') : t('Üyeler')}
@@ -777,7 +682,6 @@ export default function App() {
               <QuietMenu label={t('Oda işlemleri')} compact>
                 <button onClick={() => navigate('/files')}>{t('Dosyalar')}</button>
                 <button onClick={() => open('invite')}>{t('Davet oluştur')}</button>
-                <button onClick={() => open('command')}>{t('Ara')}</button>
               </QuietMenu>
             </div>
           </header>
@@ -804,14 +708,7 @@ export default function App() {
           )}
           <div className="workspace-body">
             <main className="main-view">
-              <Suspense
-                fallback={
-                  <div className="loading-view">
-                    <span className="loading-ring" />
-                    {tr('Opening your room\u2026')}
-                  </div>
-                }
-              >
+              <Suspense fallback={<LoadingView label={tr('Opening your room\u2026')} />}>
                 <Routes location={settingsPage ? returnFromSettings.current : location}>
                   <Route path="/status" element={<ConnectionStatusSurface />} />
                   <Route path="/home" element={<Home open={open} notify={notify} />} />
@@ -857,13 +754,7 @@ export default function App() {
                         ) : dmView ? (
                           <DirectMessageSurface notify={notify} />
                         ) : (
-                          <RoomConversation
-                            notify={notify}
-                            membersVisible={contextVisible}
-                            toggleMembers={toggleContext}
-                            search={() => open('social-search')}
-                            openLauncher={() => open('launcher')}
-                          />
+                          <RoomConversation notify={notify} openLauncher={() => open('launcher')} />
                         )
                       ) : (
                         <ConnectionRequired />
@@ -874,13 +765,7 @@ export default function App() {
                     path="/voice"
                     element={
                       community.user ? (
-                        <RoomConversation
-                          notify={notify}
-                          membersVisible={contextVisible}
-                          toggleMembers={toggleContext}
-                          search={() => open('social-search')}
-                          openLauncher={() => open('launcher')}
-                        />
+                        <RoomConversation notify={notify} openLauncher={() => open('launcher')} />
                       ) : (
                         <ConnectionRequired />
                       )
@@ -909,7 +794,16 @@ export default function App() {
                               .then(() =>
                                 navigate(`/chat?message=${encodeURIComponent(messageId)}`),
                               )
-                              .catch((e) => notify(e.message));
+                              .catch((error) =>
+                                notify(
+                                  friendlyActionError(
+                                    error,
+                                    t(
+                                      'Bu mesajın kanalı açılamadı. Kanal listesinden yeniden dene.',
+                                    ),
+                                  ),
+                                ),
+                              );
                           }}
                         />
                       ) : (
@@ -976,7 +870,7 @@ export default function App() {
 
       {settingsPage && (
         <section className="settings-modal settings-reference-surface" aria-label={t('Ayarlar')}>
-          <Suspense fallback={<div className="loading-view">{t('Yükleniyor…')}</div>}>
+          <Suspense fallback={<LoadingView />}>
             <Settings
               notify={notify}
               onClose={closeSettings}
@@ -1036,95 +930,16 @@ export default function App() {
         />
       )}
       {overlay === 'launcher' && <ActivityLauncher onClose={close} />}
-      {overlay === 'command' && (
-        <Modal title={t('Ara')} onClose={close} className="command-modal">
-          <div className="command-input">
-            <Search size={19} />
-            <input
-              autoFocus
-              aria-label={tr('Search commands')}
-              placeholder={t('Oda veya komut ara…')}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <kbd>{tr('ESC')}</kbd>
-          </div>
-          <div className="command-list">
-            {[
-              { label: t('Ana sayfa'), detail: '', path: '/home', icon: HomeIcon },
-              {
-                label: t('Sinema'),
-                detail: t('Topluluğun sinema salonu'),
-                path: '/cinema',
-                icon: Film,
-              },
-              {
-                label: tr('Voice lounge'),
-                detail: tr('Join a private voice room'),
-                path: '/voice',
-                icon: AudioLines,
-              },
-              {
-                label: tr('Messages'),
-                detail: tr('Your private community conversations'),
-                path: '/chat',
-                icon: MessageCircle,
-              },
-              {
-                label: tr('Quick polls'),
-                detail: t('Ortak odada birlikte karar ver'),
-                path: '/polls',
-                icon: LayoutGrid,
-              },
-              {
-                label: 'Agent',
-                detail: t('Görevler, sonuçlar ve oda hafızası'),
-                path: '/agent',
-                icon: Bot,
-              },
-              {
-                label: t('Oyun masası'),
-                detail: t('Sanal puan'),
-                path: '/games',
-                icon: Gamepad2,
-              },
-              {
-                label: t('Ortak tahta ve anketler'),
-                detail: t('Birlikte çiz, birlikte karar ver'),
-                path: '/together',
-                icon: Sparkles,
-              },
-              { label: tr('Settings'), detail: '', path: '/settings', icon: SettingsIcon },
-            ]
-              .filter((item) =>
-                (item.label + item.detail).toLowerCase().includes(search.toLowerCase()),
-              )
-              .map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    close();
-                  }}
-                >
-                  <item.icon size={20} />
-                  <span>{item.label}</span>
-                  <ArrowRight size={16} />
-                </button>
-              ))}
-          </div>
-          <p className="modal-footnote">
-            {tr('Tab to choose \u00B7 Enter to open \u00B7 Escape to return')}
-          </p>
-        </Modal>
-      )}
+      {overlay === 'command' && <CommandPalette onClose={close} />}
 
       {overlay === 'help' && (
         <Modal title={t('Klavye kısayolları')} onClose={close}>
           {[
             [tr('Command palette'), '⌘ / Ctrl K'],
-            [tr('Tonight \u2192 Cinema'), '⌘ / Ctrl 1–5'],
-            [tr('Settings'), '⌘ / Ctrl ,'],
+            ...shortcutRoutes.map(
+              ({ label }, index) => [label, `⌘ / Ctrl ${index + 1}`] as [string, string],
+            ),
+            [t('Ayarlar'), '⌘ / Ctrl ,'],
             [tr('Mute your room mic'), '⌘ / Ctrl Shift M'],
             [tr('Push to talk (when enabled)'), 'Ctrl Shift Space'],
             [tr('Play / pause (Cinema)'), 'Space'],

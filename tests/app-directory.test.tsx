@@ -6,7 +6,9 @@ const f = vi.hoisted(() => ({
   voice: { status: 'connected', channelId: 'room', participants: [] } as Record<string, unknown>,
   activity: { room: null as unknown },
   dj: vi.fn(),
+  cinema: { available: false, status: null, hallId: null } as Record<string, unknown>,
 }));
+vi.mock('../apps/desktop/src/cinema/cinema-status', () => ({ useCommunityCinema: () => f.cinema }));
 vi.mock('../apps/desktop/src/realtime', () => ({ useRealtime: () => f.voice }));
 vi.mock('../apps/desktop/src/activity', () => ({ useActivityRoom: () => f.activity }));
 vi.mock('../apps/desktop/src/MusicDJ', () => ({
@@ -33,6 +35,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   f.voice = { status: 'connected', channelId: 'room', participants: [] };
   f.activity = { room: null };
+  f.cinema = { available: false, status: null, hallId: null };
   useCommunity.setState({ activeChannelId: 'room' });
 });
 
@@ -59,13 +62,14 @@ it('finds things by Turkish keywords and launches the first match with Enter', (
   expect(f.dj).toHaveBeenCalled();
 });
 
-it('keeps screen sharing unavailable until a voice room is joined, and hides bots when asked', () => {
+it('keeps screen sharing unavailable until a voice room is joined, and leaves the assistant out of the launcher', () => {
   f.voice = { status: 'idle', channelId: null, participants: [] };
   mount(false);
   const screenShare = screen.getByRole('button', { name: /Ekran paylaş/ }) as HTMLButtonElement;
   expect(screenShare.disabled).toBe(true);
   expect(screenShare.textContent).toContain('Önce bir ses odasına katıl.');
-  expect(screen.queryByRole('heading', { name: 'Uygulamalar' })).toBeNull();
+  expect(screen.getByRole('button', { name: /DJ Recep/ })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: /Asistan/ })).toBeNull();
 });
 
 it('puts what is already running in the room first', () => {
@@ -78,8 +82,8 @@ it('puts what is already running in the room first', () => {
 const highlights = () =>
   [...document.querySelectorAll('.appdir-featured .appdir-card strong')].map((n) => n.textContent);
 
-it('no longer offers the old room cinema and still fills the highlight grid', () => {
-  mount();
+it('offers the Sinema hall only where the community has one, and features it', () => {
+  mount(false);
   expect(screen.queryByRole('button', { name: /Sinema/ })).toBeNull();
   expect(highlights()).toEqual(['Texas Hold’em', '101 Okey', 'Beyaz tahta', 'Anket']);
   const search = screen.getByRole('textbox', { name: 'Uygulama ve etkinlik ara' });
@@ -88,6 +92,27 @@ it('no longer offers the old room cinema and still fills the highlight grid', ()
   fireEvent.keyDown(search, { key: 'Enter' });
   expect(screen.getByTestId('route').textContent).toBe('/chat');
   expect(onClose).not.toHaveBeenCalled();
+  cleanup();
+
+  // The owner sees it before a hall exists: the hall page is where it is set up.
+  f.cinema = { available: true, status: { isOwner: true }, hallId: null };
+  mount(false);
+  expect(highlights()).toEqual(['Sinema salonu', 'Texas Hold’em', '101 Okey', 'Beyaz tahta']);
+  fireEvent.change(screen.getByRole('textbox', { name: 'Uygulama ve etkinlik ara' }), {
+    target: { value: 'iptv' },
+  });
+  expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual([
+    expect.stringContaining('Sinema salonu'),
+  ]);
+  fireEvent.click(screen.getByRole('button', { name: /Sinema salonu/ }));
+  expect(screen.getByTestId('route').textContent).toBe('/cinema');
+  expect(onClose).toHaveBeenCalled();
+  cleanup();
+
+  // A member with no hall to watch is not offered one.
+  f.cinema = { available: true, status: { isOwner: false }, hallId: null };
+  mount(false);
+  expect(screen.queryByRole('button', { name: /Sinema/ })).toBeNull();
 });
 
 it('sends an old-cinema session from an older client to the launcher that explains it', () => {
