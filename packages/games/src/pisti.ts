@@ -9,7 +9,6 @@ import type { GameModule } from './module';
  * Ranks follow `cards.ts`: 11 = jack (vale), 14 = ace.
  */
 
-
 export const PISTI_TARGETS = [101, 151, 251] as const;
 export const PISTI_JACK = 11;
 export const PISTI_POINTS = { pisti: 10, jackPisti: 20, mostCards: 3 } as const;

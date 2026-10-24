@@ -9,7 +9,6 @@
 
 import type { GameModule } from './module';
 
-
 export const TAVLA_KIND = 'rooms-tavla-v1';
 export const TAVLA_CHECKERS = 15;
 export const TAVLA_MATCH_TARGETS = [3, 5, 7] as const;

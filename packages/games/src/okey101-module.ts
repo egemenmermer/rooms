@@ -74,7 +74,6 @@ export const okey101Module = {
   actions: ['draw', 'discard', 'open', 'open-pairs', 'process', 'gosterge'],
   // The rule function validates every field itself and reports its own error codes.
   parseCommand: (input) => input,
-  parseOptions: (input) => parseSwitches<Okey101Options>(input, ruleKeys),
   start: (_seatCount, options, first) =>
     startOkey101(options.folding, options.teams, first, options.rules),
   action: (state, seat, command) => caught(() => okey101Action(state, seat, command)),
@@ -111,7 +110,9 @@ export const okey101Module = {
       return { action: 'process', amount: extension.meld, tileIds: [extension.tileId] };
     // An işlek discard costs +101, worse than breaking up any pair or near-run (but not than an okey).
     const islek = (tile: OkeyTile) =>
-      options.islekPenalty && hand.length > 1 && !tile.joker && okey101IsIslek(state, tile) ? 50 : 0;
+      options.islekPenalty && hand.length > 1 && !tile.joker && okey101IsIslek(state, tile)
+        ? 50
+        : 0;
     const potential = (tile: OkeyTile) =>
       islek(tile) +
       (tile.joker
@@ -159,10 +160,16 @@ export const okey101Module = {
   }),
   table: {
     stateKey: 'okey',
+    parseRules: (input) => parseSwitches<Okey101Options>(input, ruleKeys),
     tableOptions: (fields) => ({
       folding: fields.folding,
       teams: fields.teams,
       ...(fields.options ? { rules: fields.options as Partial<Okey101Options> } : {}),
     }),
   },
-} satisfies GameModule<OkeyRound, GameActionInput, ReturnType<typeof okey101View>, Okey101TableOptions>;
+} satisfies GameModule<
+  OkeyRound,
+  GameActionInput,
+  ReturnType<typeof okey101View>,
+  Okey101TableOptions
+>;

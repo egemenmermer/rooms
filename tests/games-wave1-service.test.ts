@@ -8,7 +8,10 @@ import {
   type GameTable,
 } from '../apps/services/activities/games';
 import { blackjackModule } from '../packages/games/src/blackjack-module';
-import { startBlackjackTable, type BlackjackTableRound } from '../packages/games/src/blackjack-table';
+import {
+  startBlackjackTable,
+  type BlackjackTableRound,
+} from '../packages/games/src/blackjack-table';
 import type { Card } from '../packages/games/src/cards';
 import { okey101Module } from '../packages/games/src/okey101-module';
 import type { OkeyRound } from '../packages/games/src/okey101-table';
@@ -44,7 +47,11 @@ describe('wave 1 games through the activity service', () => {
   it.each([2, 4])('plays a full %i-seat Pişti match to the target', (seats) => {
     const table = botTable({ game: 'rooms-pisti-v1', options: { target: 101 } }, seats);
     const view = gameView(table, 'alice');
-    expect(view.view).toMatchObject({ seats, target: 101, match: { totals: Array(seats).fill(0) } });
+    expect(view.view).toMatchObject({
+      seats,
+      target: 101,
+      match: { totals: Array(seats).fill(0) },
+    });
     expect((view.view as { hand: Card[] }).hand).toHaveLength(4);
     expect(view.view.legalActions).toEqual(view.turn === 0 ? ['play'] : []);
     playOut(table);
@@ -110,9 +117,9 @@ describe('wave 1 games through the activity service', () => {
       gameCommand(table, { type: 'game.action', action: 'draw', cardId: 'discard' }, owner, now);
       const legal = gameView(table, 'alice').view.legalActions;
       expect(legal).not.toContain('draw');
-      expect(() =>
-        gameCommand(table, { type: 'game.action', action: 'draw' }, owner, now),
-      ).toThrow('PICKUP_UNDO_DISABLED');
+      expect(() => gameCommand(table, { type: 'game.action', action: 'draw' }, owner, now)).toThrow(
+        'PICKUP_UNDO_DISABLED',
+      );
       // Her timer runs out: the bot must play on instead of trying Çek.
       advanceGameBots(table, now + TURN_DURATION_MS + 1);
       now += TURN_DURATION_MS + 1;
@@ -122,7 +129,10 @@ describe('wave 1 games through the activity service', () => {
   });
 
   it('plays Batak and Blackjack with table rules from game.create options', () => {
-    const batak = botTable({ game: 'batak', variant: 'ihaleli', options: { writeContract: true } }, 4);
+    const batak = botTable(
+      { game: 'batak', variant: 'ihaleli', options: { writeContract: true } },
+      4,
+    );
     expect(batak.batak!.rules).toMatchObject({ writeContract: true, noTrumpLeadUntilBroken: true });
     playOut(batak);
     expect(batak.history.at(-1)!.result).toMatchObject({ rules: { writeContract: true } });
@@ -144,23 +154,23 @@ describe('blackjack insurance and surrender in the module', () => {
     const card = (rank: number): Card => ({ id: `c${n++}`, suit: 'spades', rank });
     deck.push(card(10), card(14), card(6), card(9));
     for (let i = 0; i < 40; i++) deck.push(card(2 + (i % 8)));
-    return startBlackjackTable([{ userId: 'p', credits: 1000, bet: 10 }], deck, { surrender: true });
+    return startBlackjackTable([{ userId: 'p', credits: 1000, bet: 10 }], deck, {
+      surrender: true,
+    });
   }
 
   it('opens the insurance prompt with its own timer phase and lets bots decline', () => {
     const round = aceUp();
     expect(round.insurancePending).toBe(true);
     expect(blackjackModule.legalActions(round, 0)).toEqual(['insurance', 'decline-insurance']);
-    expect(blackjackModule.botCommand(round, 0, Math.random)).toEqual({
+    expect(blackjackModule.botCommand(round, 0)).toEqual({
       action: 'decline-insurance',
     });
     expect(blackjackModule.phase(round)).toBe('insurance');
     const insured = blackjackModule.action(
       round,
       0,
-      { action: 'insurance' },
-      Math.random,
-    ) as BlackjackTableRound;
+      { action: 'insurance' }) as BlackjackTableRound;
     expect(insured.insurancePending).toBe(false);
     expect(blackjackModule.phase(insured)).toBe('play');
     expect(blackjackModule.legalActions(insured, 0)).toEqual([
@@ -173,9 +183,7 @@ describe('blackjack insurance and surrender in the module', () => {
     const done = blackjackModule.action(
       insured,
       0,
-      { action: 'surrender' },
-      Math.random,
-    ) as BlackjackTableRound;
+      { action: 'surrender' }) as BlackjackTableRound;
     expect(blackjackModule.settle(done)).toEqual({ points: [-10], winners: [] });
     expect(blackjackModule.summary(done).players[0]).toMatchObject({
       insurance: 5,
@@ -198,7 +206,7 @@ describe('101 module integration', () => {
     };
     round.hands[seat][0] = twin;
     expect(okey101Module.legalActions(round, seat)).toContain('gosterge');
-    expect(okey101Module.botCommand(round, seat, Math.random)).toMatchObject({
+    expect(okey101Module.botCommand(round, seat)).toMatchObject({
       action: 'gosterge',
     });
   });

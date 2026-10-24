@@ -268,7 +268,10 @@ export const commandSchema = z
           tileIds: z.array(opaqueId).max(30).optional(),
           melds: z.array(z.array(opaqueId).max(13)).max(10).optional(),
           // 101: per-meld reading of an opening whose okeys allow a run or a group (null = server picks).
-          meldKinds: z.array(z.enum(['run', 'group']).nullable()).max(10).optional(),
+          meldKinds: z
+            .array(z.enum(['run', 'group']).nullable())
+            .max(10)
+            .optional(),
           trump: z.enum(['clubs', 'diamonds', 'hearts', 'spades']).optional(),
         })
         .strict(),

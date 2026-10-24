@@ -236,8 +236,9 @@ export function createGame(
     teams = command.teams ?? false;
   // House rules from `game.create.options`; built-in tables combine them with their top-level fields.
   let parsed: unknown;
-  if (module.parseOptions) {
-    parsed = module.parseOptions(command.options);
+  const parse = module.table?.tableOptions ? module.table.parseRules : module.parseOptions;
+  if (parse) {
+    parsed = parse(command.options);
     if (isGameError(parsed)) throw new Error(parsed.error);
   } else if (command.options) throw new Error('GAME_OPTIONS_UNSUPPORTED');
   const options = module.table?.tableOptions

@@ -37,10 +37,7 @@ export interface GameModule<State, Command, View, Options = unknown> {
   title?: string;
   /** Seat counts for these options (e.g. Gömmeli Batak is 3-handed). Default: `seats`. */
   seatsFor?(options: Options): readonly number[];
-  /**
-   * Validates `game.create.options` (also called with `undefined` when none were sent). Default: the options
-   * are `undefined`. With `table.tableOptions`, the result reaches it as `fields.options`.
-   */
+  /** Validates `game.create.options` (also called with `undefined` when none were sent). Default: `undefined`. */
   parseOptions?(input: Record<string, GameOptionValue> | undefined): Options | GameError;
   /** Buttons for the seat whose turn it is. Default: every name in `actions`. */
   legalActions?(state: State, seat: number): readonly string[];
@@ -87,7 +84,7 @@ export interface LegacyTableFields {
   /** The table's Hold'em rules, defaults filled in. */
   holdemRules: HoldemTableRules;
   /**
-   * House rules from `game.create.options` as the module's `parseOptions` returned them; undefined for
+   * House rules from `game.create.options` as the module's `table.parseRules` returned them; undefined for
    * tables created without options (and stored before options existed), which keep the published defaults.
    */
   options?: unknown;
@@ -98,10 +95,12 @@ export interface GameTableHooks<State, Options> {
   /** Stored-table property that holds the round. Default: `round`. */
   stateKey?: 'holdem' | 'blackjack' | 'batak' | 'okey';
   /**
-   * Reads the options from the built-in top-level table fields instead of `options`. A module that also has
-   * `parseOptions` gets the parsed `game.create.options` in `fields.options`.
+   * Reads the options from the built-in top-level table fields instead of `options`; `fields.options` holds
+   * the house rules `parseRules` accepted.
    */
   tableOptions?(fields: LegacyTableFields): Options;
+  /** With `tableOptions`: validates the house rules in `game.create.options` (undefined when none were sent). */
+  parseRules?(input: Record<string, GameOptionValue> | undefined): unknown;
   /**
    * User ids in module-seat order when the round tracks its own players (Hold'em, Blackjack).
    * Default: every seated player, ordered by seat number.

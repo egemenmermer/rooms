@@ -36,6 +36,7 @@ export const tavlaMatchModule = asMatch<
   TavlaOptions
 >(tavlaModule, {
   title: 'Tavla',
-  winners: (totals, round) => totals.flatMap((total, seat) => (total >= round.options.matchTo ? [seat] : [])),
+  winners: (totals, round) =>
+    totals.flatMap((total, seat) => (total >= round.options.matchTo ? [seat] : [])),
   roundOptions: (options, totals) => ({ ...options, scores: totals }),
 });

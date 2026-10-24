@@ -2124,21 +2124,21 @@ function ReferenceBlackjack({ game, userId, can, action, timer }: TableUI) {
                 .filter(
                   ([name]) =>
                     !['insurance', 'decline-insurance', 'surrender'].includes(name) ||
-                    legal.includes(name),
+                    can(name),
                 )
                 .map(([name, label]) => (
-                <button
-                  className={`button ${name === 'hit' ? 'primary' : 'secondary'}`}
-                  key={name}
-                  disabled={!can(name)}
-                  title={
-                    !can(name) ? t('Bu hamle şu anda sunucu tarafından izinli değil') : undefined
-                  }
-                  onClick={() => void action(name)}
-                >
-                  {label}
-                </button>
-              ))}
+                  <button
+                    className={`button ${name === 'hit' ? 'primary' : 'secondary'}`}
+                    key={name}
+                    disabled={!can(name)}
+                    title={
+                      !can(name) ? t('Bu hamle şu anda sunucu tarafından izinli değil') : undefined
+                    }
+                    onClick={() => void action(name)}
+                  >
+                    {label}
+                  </button>
+                ))}
             </div>
           ) : (
             <label className="rg-lobby-bet">

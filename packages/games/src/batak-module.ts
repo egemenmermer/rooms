@@ -26,7 +26,6 @@ export const batakModule = {
   actions: ['bid', 'pass', 'trump', 'bury', 'play'],
   // The rule function validates every field itself and reports its own error codes.
   parseCommand: (input) => input,
-  parseOptions: (input) => parseSwitches<BatakRules>(input, ruleKeys),
   start: (_seatCount, { variant, rules }, first) => startBatak(variant, first, undefined, rules),
   action: (state, seat, command) => caught(() => batakAction(state, seat, command)),
   view: (state, viewerSeat) => batakView(state, viewerSeat),
@@ -95,9 +94,15 @@ export const batakModule = {
   }),
   table: {
     stateKey: 'batak',
+    parseRules: (input) => parseSwitches<BatakRules>(input, ruleKeys),
     tableOptions: (fields) => ({
       variant: fields.variant,
       ...(fields.options ? { rules: fields.options as Partial<BatakRules> } : {}),
     }),
   },
-} satisfies GameModule<BatakRound, GameActionInput, ReturnType<typeof batakView>, BatakTableOptions>;
+} satisfies GameModule<
+  BatakRound,
+  GameActionInput,
+  ReturnType<typeof batakView>,
+  BatakTableOptions
+>;
