@@ -111,7 +111,6 @@ export interface GameTableHooks<State, Options> {
 }
 
 /** Any registered module, with its type parameters erased for the dispatcher. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AnyGameModule = GameModule<any, any, any, any>;
 
 /** `{ error }` results are told apart from states by shape: an object whose only key is a string `error`. */
