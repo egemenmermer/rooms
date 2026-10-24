@@ -56,6 +56,8 @@ const schema = z
 export type RegistrationLedger = z.infer<typeof schema>;
 type Invitation = z.infer<typeof invitation>;
 export type InviteSource = Invitation['source'];
+/** How a link stands, as seen by the sign-up queue that handed it to a requester. */
+export type InviteUse = 'active' | 'used' | 'revoked' | 'expired';
 
 export const inviteDigest = (code: string) => createHash('sha256').update(code).digest('hex');
 /** Management id: a prefix of the digest, so a listed link can never be turned back into a token. */
@@ -102,6 +104,14 @@ export class InviteClaimReleased extends Error {
     super('Invitation use released');
   }
 }
+
+/**
+ * Links minted when an admin approves a sign-up request: single-use and owned by the approving
+ * admin. They are decided by an admin one by one, so they neither count toward nor are refused by
+ * the per-community cap on member-created links.
+ */
+const isApprovalLink = (item: { source: InviteSource; maxUses: number; createdBy?: string }) =>
+  item.source === 'admin' && item.maxUses === 1 && !!item.createdBy;
 
 function usage(item: Invitation, now: number) {
   let uses = 0,
@@ -333,12 +343,14 @@ export class RegistrationGate {
       !invitation.shape.createdBy.safeParse(input.createdBy).success
     )
       throw new StoatError(400, 'INVALID_INVITE');
+    const approval = isApprovalLink({ source: input.source, maxUses, createdBy: input.createdBy });
     return this.withLock(async () => {
       const { ledger, migrated } = await this.load('empty');
       const now = this.now();
-      if (input.spaceId) {
+      if (input.spaceId && !approval) {
         const active = Object.values(ledger.invites).filter((item) => {
-          if (item.spaceId !== input.spaceId || item.revokedAt) return false;
+          if (item.spaceId !== input.spaceId || item.revokedAt || isApprovalLink(item))
+            return false;
           if (Date.parse(item.expiresAt) <= now) return false;
           const { uses, pending } = usage(item, now);
           return uses + pending < item.maxUses;
@@ -364,6 +376,29 @@ export class RegistrationGate {
       await this.persist(ledger, migrated);
       return { code, id: inviteId(digest), expiresAt, maxUses };
     });
+  }
+  /**
+   * Read-only: whether each link is still usable, keyed by management id. A link counts as used
+   * once its uses are exhausted, the same rule that refuses further signups.
+   */
+  async useStates(): Promise<Map<string, InviteUse>> {
+    const { ledger } = await this.load('empty');
+    const now = this.now();
+    const states = new Map<string, InviteUse>();
+    for (const [digest, item] of Object.entries(ledger.invites)) {
+      const { uses } = usage(item, now);
+      states.set(
+        inviteId(digest),
+        uses >= item.maxUses
+          ? 'used'
+          : item.revokedAt
+            ? 'revoked'
+            : Date.parse(item.expiresAt) <= now
+              ? 'expired'
+              : 'active',
+      );
+    }
+    return states;
   }
   async list(spaceId: string): Promise<InviteSummary[]> {
     const { ledger } = await this.load('empty');

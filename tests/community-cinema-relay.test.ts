@@ -9,9 +9,12 @@ import Fastify from 'fastify';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { issueTicket, verifyTicket } from '../apps/services/cinema/tickets';
 import {
+  allowedInputFormat,
   audioLabel,
+  INPUT_FORMATS,
   pickAudio,
   playlistSegments,
+  probeArgs,
   relayArgs,
   RelayManager,
   type ProbeResult,
@@ -94,6 +97,29 @@ describe('relay arguments and playlists', () => {
       'delete_segments+independent_segments+temp_file+program_date_time+discont_start',
     );
     expect(vod[vod.indexOf('-start_number') + 1]).toBe('4');
+  });
+
+  it('opens only known media containers in ffmpeg and ffprobe', () => {
+    const allowed = INPUT_FORMATS.join(',');
+    const ffmpeg = relayArgs({
+      url: 'http://127.0.0.1:1/x',
+      live: false,
+      startSec: 0,
+      probe: { ...probe, format: 'hls' },
+      startNumber: 0,
+      vodWindowSec: 180,
+      discontinuity: false,
+    });
+    expect(ffmpeg[ffmpeg.indexOf('-format_whitelist') + 1]).toBe(allowed);
+    expect(ffmpeg.indexOf('-format_whitelist')).toBeLessThan(ffmpeg.indexOf('-i'));
+    const ffprobe = probeArgs('http://127.0.0.1:1/x');
+    expect(ffprobe[ffprobe.indexOf('-format_whitelist') + 1]).toBe(allowed);
+    expect(ffprobe.at(-1)).toBe('http://127.0.0.1:1/x');
+    expect(ffprobe.join(' ')).toContain('-protocol_whitelist http,tcp,crypto');
+    for (const format of ['hls', 'mpegts', 'mov,mp4,m4a,3gp,3g2,mj2', 'matroska,webm', 'aac'])
+      expect(allowedInputFormat(format)).toBe(true);
+    for (const format of ['dash', 'concat', 'sdp', 'rtsp', 'image2', 'flv', ''])
+      expect(allowedInputFormat(format)).toBe(false);
   });
 
   it('reads the media sequence, durations and the end marker', () => {
@@ -372,6 +398,15 @@ describe('relay manager', () => {
     await expect(
       manager.acquire({ communityId: 'C', key: 'C:l-9', source: source(), slots: 1 }),
     ).rejects.toThrow('CINEMA_CODEC_UNSUPPORTED');
+    expect(spawned).toHaveLength(0);
+    expect(manager.sessionsOf('C')).toHaveLength(0);
+  });
+
+  it('refuses containers outside the input allowlist before starting ffmpeg', async () => {
+    const { manager, spawned } = setup({ probe: { format: 'dash' } });
+    await expect(
+      manager.acquire({ communityId: 'C', key: 'C:l-8', source: source(), slots: 1 }),
+    ).rejects.toThrow('CINEMA_STREAM_FAILED');
     expect(spawned).toHaveLength(0);
     expect(manager.sessionsOf('C')).toHaveLength(0);
   });

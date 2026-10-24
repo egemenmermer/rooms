@@ -75,7 +75,12 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createAccessServer } from '../apps/services/access/server';
-import { SignupRequestStore, WindowLimiter } from '../apps/services/access/signup-requests';
+import { RegistrationGate } from '../apps/services/access/registration';
+import {
+  SignupRequestStore,
+  WindowLimiter,
+  signupClientKey,
+} from '../apps/services/access/signup-requests';
 
 let directory: string;
 let seeded: string[];
@@ -235,7 +240,7 @@ describe('approved sign-up without an invitation link', () => {
     }
   });
 
-  it('hands out a single-use code once on approval that the existing registration consumes', async () => {
+  it('hands out a single-use code on approval that the existing registration consumes', async () => {
     const server = await access();
     try {
       const item = await request(server);
@@ -251,7 +256,15 @@ describe('approved sign-up without an invitation link', () => {
       const first = (await poll(server, item)).json();
       expect(first).toMatchObject({ status: 'approved' });
       expect(first.inviteCode).toMatch(/^[a-f0-9]{64}$/);
-      // Exactly once: the broker forgets the code after handing it out.
+      // A lost reply or a restart can repeat the poll: the same code comes back until it is used.
+      expect((await poll(server, item)).json()).toMatchObject({
+        status: 'approved',
+        inviteCode: first.inviteCode,
+      });
+      const created = await register(server, first.inviteCode);
+      expect(created.statusCode).toBe(200);
+      expect(created.json()).toEqual({ token: 'new-token' });
+      // Once the registration used it, the broker reports it as issued and forgets the code.
       expect((await poll(server, item)).json()).toMatchObject({
         status: 'issued',
         inviteCode: null,
@@ -259,9 +272,6 @@ describe('approved sign-up without an invitation link', () => {
       expect(await readFile(join(directory, 'signup-requests.json'), 'utf8')).not.toContain(
         first.inviteCode,
       );
-      const created = await register(server, first.inviteCode);
-      expect(created.statusCode).toBe(200);
-      expect(created.json()).toEqual({ token: 'new-token' });
       expect(stoat.registered).toEqual([
         expect.objectContaining({ inviteCode: 'up1', accountInviteCode: seeded[0] }),
       ]);
@@ -356,6 +366,120 @@ describe('approved sign-up without an invitation link', () => {
     }
   });
 
+  it('keeps an approval retrievable until its link is used, and then frees the request', async () => {
+    const server = await access();
+    try {
+      const item = await request(server);
+      await decide(server, item.requestId, 'approve');
+      const { inviteCode } = (await poll(server, item)).json();
+      // The requester never stored the first reply: a later poll still yields the link.
+      expect((await poll(server, item)).json().inviteCode).toBe(inviteCode);
+      const list = () =>
+        server.inject({ url: '/v1/spaces/space/signup-requests', headers: bearer('owner') });
+      expect((await list()).json().requests).toEqual([
+        expect.objectContaining({ id: item.requestId, state: 'approved' }),
+      ]);
+      expect((await register(server, inviteCode)).statusCode).toBe(200);
+      // A used link no longer shows as waiting, cannot be approved again, and frees the email.
+      expect((await list()).json().requests).toEqual([]);
+      expect((await decide(server, item.requestId, 'approve')).statusCode).toBe(404);
+      expect((await ask(server, 1)).statusCode).toBe(200);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('treats an approval whose link an admin closed as rejected', async () => {
+    const server = await access();
+    try {
+      const item = await request(server);
+      await decide(server, item.requestId, 'approve');
+      const [link] = (
+        await server.inject({ url: '/v1/spaces/space/invites', headers: bearer('owner') })
+      ).json().invites as { id: string }[];
+      const revoked = await server.inject({
+        method: 'DELETE',
+        url: `/v1/spaces/space/invites/${link!.id}`,
+        headers: bearer('owner'),
+      });
+      expect(revoked.statusCode).toBe(200);
+      expect((await poll(server, item)).json()).toMatchObject({
+        status: 'rejected',
+        inviteCode: null,
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('lets approvals through while member links fill the community cap', async () => {
+    const gate = new RegistrationGate(join(directory, 'cap.json'));
+    const member = { communityInviteCode: 'c1', spaceId: 'space', source: 'app' as const };
+    const approval = {
+      communityInviteCode: 'c2',
+      spaceId: 'space',
+      source: 'admin' as const,
+      createdBy: 'owner',
+      maxUses: 1,
+    };
+    for (let i = 0; i < 2; i++) await gate.issue({ ...member, maxActivePerSpace: 2 });
+    await expect(gate.issue({ ...member, maxActivePerSpace: 2 })).rejects.toMatchObject({
+      code: 'INVITE_LIMIT_REACHED',
+    });
+    // Approvals are not refused by a full cap ...
+    for (let i = 0; i < 3; i++) await gate.issue({ ...approval, maxActivePerSpace: 2 });
+    // ... and do not use up the cap of member links.
+    const other = new RegistrationGate(join(directory, 'cap-other.json'));
+    for (let i = 0; i < 3; i++) await other.issue({ ...approval, maxActivePerSpace: 2 });
+    for (let i = 0; i < 2; i++) await other.issue({ ...member, maxActivePerSpace: 2 });
+    await expect(other.issue({ ...member, maxActivePerSpace: 2 })).rejects.toMatchObject({
+      code: 'INVITE_LIMIT_REACHED',
+    });
+  });
+
+  it('approves requests even when member links already fill the cap', async () => {
+    const server = await access();
+    try {
+      const gate = new RegistrationGate(join(directory, 'invites.json'));
+      for (let i = 0; i < 50; i++)
+        await gate.issue({ communityInviteCode: `m${i}`, spaceId: 'space', source: 'app' });
+      await expect(
+        gate.issue({ communityInviteCode: 'm-extra', spaceId: 'space', source: 'app' }),
+      ).rejects.toMatchObject({ code: 'INVITE_LIMIT_REACHED' });
+      const item = await request(server);
+      expect((await decide(server, item.requestId, 'approve')).json()).toEqual({
+        state: 'approved',
+      });
+      expect((await poll(server, item)).json().inviteCode).toMatch(/^[a-f0-9]{64}$/);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('spends the server-wide budget only on requests that are queued', async () => {
+    const server = await access({ signupLimits: { globalPerHour: 2, perIpPerHour: 50 } });
+    try {
+      expect((await ask(server, 1)).statusCode).toBe(200);
+      for (let i = 0; i < 5; i++) expect((await ask(server, 1)).statusCode).toBe(409);
+      expect((await ask(server, 2)).statusCode).toBe(200);
+      expect((await ask(server, 3)).json().error).toBe('SIGNUP_BUSY');
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('limits sign-up requests per IPv6 /64 instead of per address', async () => {
+    const server = await access();
+    try {
+      for (let n = 1; n <= 3; n++)
+        expect((await ask(server, n, {}, `2001:db8:1:2::${n}`)).statusCode).toBe(200);
+      expect((await ask(server, 4, {}, '2001:db8:1:2:aaaa:bbbb:cccc:dddd')).statusCode).toBe(429);
+      expect((await ask(server, 5, {}, '2001:db8:1:3::1')).statusCode).toBe(200);
+    } finally {
+      await server.close();
+    }
+  });
+
   it('validates the form', async () => {
     const server = await access();
     try {
@@ -372,7 +496,93 @@ describe('approved sign-up without an invitation link', () => {
   });
 });
 
+describe('signup client key', () => {
+  it('groups IPv6 addresses by /64 and leaves IPv4 alone', () => {
+    expect(signupClientKey('203.0.113.9')).toBe('203.0.113.9');
+    expect(signupClientKey('::ffff:203.0.113.9')).toBe('203.0.113.9');
+    const key = '2001:0db8:0001:0002::/64';
+    expect(signupClientKey('2001:db8:1:2::1')).toBe(key);
+    expect(signupClientKey('2001:DB8:1:2:ffff:ffff:ffff:ffff')).toBe(key);
+    expect(signupClientKey('2001:db8:1:2:3:4:5:6%eth0')).toBe(key);
+    expect(signupClientKey('2001:db8:1:3::1')).not.toBe(key);
+    expect(signupClientKey('::1')).toBe('0000:0000:0000:0000::/64');
+    expect(signupClientKey('2001:db8::5')).toBe('2001:0db8:0000:0000::/64');
+  });
+});
+
 describe('signup request store', () => {
+  const day = 86400 * 1000;
+  const approveAt = (store: SignupRequestStore, id: string, expiresAt: string) =>
+    store.approve('space', id, 'owner', { id: 'a'.repeat(16), code: 'c'.repeat(64), expiresAt });
+
+  it('stops handing out an approved link once it has expired and lets the person ask again', async () => {
+    let now = Date.parse('2026-10-01T00:00:00Z');
+    const path = join(directory, 'lapse.json');
+    const store = new SignupRequestStore(path, { now: () => now });
+    const first = await store.add({ spaceId: 'space', username: 'u1', email: 'u1@x.io' }, 9);
+    await approveAt(store, first.id, new Date(now + 7 * day).toISOString());
+    expect((await store.poll(first.id, first.pollSecret)).inviteCode).toBe('c'.repeat(64));
+    await expect(
+      store.add({ spaceId: 'space', username: 'u1', email: 'u1@x.io' }, 9),
+    ).rejects.toThrow();
+    now += 7 * day;
+    expect(await store.poll(first.id, first.pollSecret)).toMatchObject({
+      status: 'expired',
+      inviteCode: null,
+    });
+    expect(await readFile(path, 'utf8')).not.toContain('c'.repeat(64));
+    expect(await store.list('space')).toEqual([]);
+    await expect(store.find('space', first.id)).rejects.toThrow();
+    await store.add({ spaceId: 'space', username: 'u1', email: 'u1@x.io' }, 9);
+  });
+
+  it('marks a used link as delivered and a closed one as rejected from the ledger states', async () => {
+    const now = Date.parse('2026-10-01T00:00:00Z');
+    const store = new SignupRequestStore(join(directory, 'states.json'), { now: () => now });
+    const used = await store.add({ spaceId: 'space', username: 'u1', email: 'u1@x.io' }, 9);
+    const closed = await store.add({ spaceId: 'space', username: 'u2', email: 'u2@x.io' }, 9);
+    const unknown = await store.add({ spaceId: 'space', username: 'u3', email: 'u3@x.io' }, 9);
+    const expiresAt = new Date(now + 7 * day).toISOString();
+    for (const [item, id] of [
+      [used, '1'],
+      [closed, '2'],
+      [unknown, '3'],
+    ] as const)
+      await store.approve('space', item.id, 'owner', {
+        id: id.repeat(16),
+        code: id.repeat(64),
+        expiresAt,
+      });
+    const states = new Map([
+      ['1'.repeat(16), 'used' as const],
+      ['2'.repeat(16), 'revoked' as const],
+    ]);
+    expect((await store.poll(used.id, used.pollSecret, states)).status).toBe('issued');
+    expect((await store.poll(closed.id, closed.pollSecret, states)).status).toBe('rejected');
+    // A link the ledger does not know yet is left alone rather than treated as closed.
+    expect(await store.poll(unknown.id, unknown.pollSecret, states)).toMatchObject({
+      status: 'approved',
+      inviteCode: '3'.repeat(64),
+    });
+  });
+
+  it('asks for the server-wide budget only when a request would be queued', async () => {
+    const store = new SignupRequestStore(join(directory, 'admit.json'));
+    const admit = vi.fn(() => true);
+    await store.add({ spaceId: 'space', username: 'u1', email: 'u1@x.io' }, 1, { admit });
+    expect(admit).toHaveBeenCalledTimes(1);
+    await expect(
+      store.add({ spaceId: 'space', username: 'u1', email: 'U1@x.io' }, 1, { admit }),
+    ).rejects.toMatchObject({ code: 'SIGNUP_ALREADY_REQUESTED' });
+    await expect(
+      store.add({ spaceId: 'space', username: 'u2', email: 'u2@x.io' }, 1, { admit }),
+    ).rejects.toMatchObject({ code: 'SIGNUP_QUEUE_FULL' });
+    expect(admit).toHaveBeenCalledTimes(1);
+    await expect(
+      store.add({ spaceId: 'space', username: 'u2', email: 'u2@x.io' }, 5, { admit: () => false }),
+    ).rejects.toMatchObject({ code: 'SIGNUP_BUSY' });
+  });
+
   it('expires undecided requests so they free the queue and may be sent again', async () => {
     let now = Date.parse('2026-10-01T00:00:00Z');
     const store = new SignupRequestStore(join(directory, 'store.json'), { now: () => now });
