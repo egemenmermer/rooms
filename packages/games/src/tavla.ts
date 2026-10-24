@@ -14,11 +14,30 @@ type GameModuleShape<State, Command, View, Options = unknown> = {
   actions: readonly string[];
   parseCommand(input: { action: string; payload?: unknown }): Command | { error: string };
   start(seatCount: number, options: Options, first: number, rng: () => number): State;
-  action(state: State, seat: number, command: Command, rng: () => number): State | { error: string };
+  action(
+    state: State,
+    seat: number,
+    command: Command,
+    rng: () => number,
+  ): State | { error: string };
   view(state: State, viewerSeat: number | null): View;
   turn(state: State): number | null;
-  botCommand(state: State, seat: number, rng: () => number): Command;
+  botCommand(
+    state: State,
+    seat: number,
+    rng: () => number,
+    context?: { timedOut: boolean },
+  ): Command;
   settle(state: State): { points: number[]; winners: number[] } | null;
+  // G-REG optional refinements.
+  title?: string;
+  seatsFor?(options: Options): readonly number[];
+  parseOptions?(
+    input: Record<string, string | number | boolean> | undefined,
+  ): Options | { error: string };
+  legalActions?(state: State, seat: number): readonly string[];
+  summary?(state: State): Record<string, unknown>;
+  phase?(state: State): string | number | null;
 };
 
 export const TAVLA_KIND = 'rooms-tavla-v1';
@@ -87,10 +106,10 @@ export interface TavlaState extends TavlaPosition {
 }
 
 export type TavlaCommand =
-  | { type: 'roll' }
-  | { type: 'move'; from: TavlaFrom; to: TavlaTo; die?: number }
-  | { type: 'undo' }
-  | { type: 'confirm' };
+  | { action: 'roll' }
+  | { action: 'move'; from: TavlaFrom; to: TavlaTo; die?: number }
+  | { action: 'undo' }
+  | { action: 'confirm' };
 
 export interface TavlaView {
   kind: typeof TAVLA_KIND;
@@ -321,11 +340,7 @@ function normalizeOptions(options: TavlaOptions | undefined): TavlaState['option
   return { matchTo, starterRerolls: options?.starterRerolls === true, scores };
 }
 
-export function startTavla(
-  seatCount: number,
-  options: TavlaOptions = {},
-  first = 0,
-): TavlaState {
+export function startTavla(seatCount: number, options: TavlaOptions = {}, first = 0): TavlaState {
   if (seatCount !== 2) throw new Error('INVALID_SEAT_COUNT');
   const start = first === 1 ? 1 : 0;
   return {
@@ -373,7 +388,7 @@ function rollOpening(state: TavlaState, seat: number, rng: () => number) {
 function matchStep(
   legal: TavlaStep[],
   seat: number,
-  command: Extract<TavlaCommand, { type: 'move' }>,
+  command: Extract<TavlaCommand, { action: 'move' }>,
 ): TavlaStep | null {
   const matches = legal.filter(
     (step) =>
@@ -398,7 +413,7 @@ export function tavlaAction(
   if (input.phase === 'over') return { error: 'ROUND_OVER' };
   if (input.turn !== seat) return { error: 'NOT_YOUR_TURN' };
   const state = clone(input);
-  switch (command.type) {
+  switch (command.action) {
     case 'roll':
       if (state.phase === 'opening') rollOpening(state, seat, rng);
       else if (state.phase === 'roll') beginTurn(state, seat, [rollDie(rng), rollDie(rng)]);
@@ -554,9 +569,9 @@ function bestContinuation(
 }
 
 export function tavlaBotCommand(state: TavlaState, seat: number): TavlaCommand {
-  if (state.phase !== 'moving') return { type: 'roll' };
+  if (state.phase !== 'moving') return { action: 'roll' };
   const legal = tavlaLegalMoves(state);
-  if (!legal.length) return { type: 'confirm' };
+  if (!legal.length) return { action: 'confirm' };
   const pos = position(state),
     need = state.maxMoves - state.moves.length;
   let best = legal[0],
@@ -573,7 +588,7 @@ export function tavlaBotCommand(state: TavlaState, seat: number): TavlaCommand {
       bestValue = value;
     }
   }
-  return { type: 'move', from: best.from, to: best.to, die: best.die };
+  return { action: 'move', from: best.from, to: best.to, die: best.die };
 }
 
 // --- Command parsing & module ------------------------------------------------------------------------
@@ -588,18 +603,22 @@ export function parseTavlaCommand(input: {
     case 'roll':
     case 'undo':
     case 'confirm':
-      return { type: input.action };
+      return { action: input.action };
     case 'move': {
       const payload = input.payload as { from?: unknown; to?: unknown; die?: unknown } | undefined;
       if (!payload || typeof payload !== 'object') return { error: 'INVALID_MOVE' };
-      const point = (v: unknown) => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 23;
+      const point = (v: unknown) =>
+        typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 23;
       const { from, to, die } = payload;
       if (!(from === 'bar' || point(from)) || !(to === 'off' || point(to)))
         return { error: 'INVALID_MOVE' };
-      if (die !== undefined && !(typeof die === 'number' && Number.isInteger(die) && die >= 1 && die <= 6))
+      if (
+        die !== undefined &&
+        !(typeof die === 'number' && Number.isInteger(die) && die >= 1 && die <= 6)
+      )
         return { error: 'INVALID_MOVE' };
       return {
-        type: 'move',
+        action: 'move',
         from: from as TavlaFrom,
         to: to as TavlaTo,
         ...(die === undefined ? {} : { die: die as number }),
@@ -608,6 +627,39 @@ export function parseTavlaCommand(input: {
     default:
       return { error: 'UNKNOWN_ACTION' };
   }
+}
+
+/** Validates `game.create` options: `matchTo` (3/5/7) and `starterRerolls`. */
+export function parseTavlaOptions(
+  input: Record<string, string | number | boolean> | undefined,
+): TavlaOptions | { error: string } {
+  if (!input) return {};
+  const options: TavlaOptions = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (key === 'matchTo') {
+      const n = typeof value === 'string' ? Number(value) : value;
+      if (!(TAVLA_MATCH_TARGETS as readonly unknown[]).includes(n))
+        return { error: 'INVALID_OPTIONS' };
+      options.matchTo = n as number;
+    } else if (key === 'starterRerolls') {
+      if (typeof value !== 'boolean') return { error: 'INVALID_OPTIONS' };
+      options.starterRerolls = value;
+    } else return { error: 'INVALID_OPTIONS' };
+  }
+  return options;
+}
+
+/** Commands that make sense for `seat` right now (buttons on its own turn). */
+export function tavlaLegalActions(state: TavlaState, seat: number): string[] {
+  if (state.turn !== seat) return [];
+  if (state.phase === 'opening' || state.phase === 'roll') return ['roll'];
+  if (state.phase !== 'moving') return [];
+  const actions: string[] = [];
+  const legal = tavlaLegalMoves(state);
+  if (legal.length) actions.push('move');
+  if (state.moves.length) actions.push('undo');
+  if (!legal.length) actions.push('confirm');
+  return actions;
 }
 
 export const tavlaModule = {
@@ -622,4 +674,8 @@ export const tavlaModule = {
   turn: (state) => state.turn,
   botCommand: (state, seat, _rng) => tavlaBotCommand(state, seat),
   settle: tavlaSettle,
+  parseOptions: parseTavlaOptions,
+  legalActions: tavlaLegalActions,
+  // Each roll and each turn change restarts the timer; single checker steps within a turn do not.
+  phase: (state) => `${state.phase}:${state.turn}:${state.dice?.join('') ?? ''}`,
 } satisfies GameModuleShape<TavlaState, TavlaCommand, TavlaView, TavlaOptions>;

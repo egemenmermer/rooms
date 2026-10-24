@@ -46,7 +46,7 @@ function act(state: TavlaState, seat: number, command: TavlaCommand, rng = dice(
 }
 
 const move = (from: number | 'bar', to: number | 'off'): TavlaCommand => ({
-  type: 'move',
+  action: 'move',
   from,
   to,
 });
@@ -73,7 +73,7 @@ function position(
 }
 
 function rolled(state: TavlaState, a: number, b: number) {
-  return act(state, state.turn!, { type: 'roll' }, dice(a, b));
+  return act(state, state.turn!, { action: 'roll' }, dice(a, b));
 }
 
 const steps = (state: TavlaState) =>
@@ -113,10 +113,10 @@ describe('tavla start and opening roll', () => {
 
   it('lets the higher opening die start and play both opening dice', () => {
     let state = startTavla(2, {}, 0);
-    state = act(state, 0, { type: 'roll' }, dice(3));
+    state = act(state, 0, { action: 'roll' }, dice(3));
     expect(state.turn).toBe(1);
-    expect(tavlaAction(state, 0, { type: 'roll' }, dice(1))).toEqual({ error: 'NOT_YOUR_TURN' });
-    state = act(state, 1, { type: 'roll' }, dice(5));
+    expect(tavlaAction(state, 0, { action: 'roll' }, dice(1))).toEqual({ error: 'NOT_YOUR_TURN' });
+    state = act(state, 1, { action: 'roll' }, dice(5));
     expect(state.phase).toBe('moving');
     expect(state.turn).toBe(1);
     expect(state.dice).toEqual([5, 3]);
@@ -126,26 +126,26 @@ describe('tavla start and opening roll', () => {
 
   it('re-rolls a tied opening roll', () => {
     let state = startTavla(2, {}, 1);
-    state = act(state, 1, { type: 'roll' }, dice(4));
-    state = act(state, 0, { type: 'roll' }, dice(4));
+    state = act(state, 1, { action: 'roll' }, dice(4));
+    state = act(state, 0, { action: 'roll' }, dice(4));
     expect(state.phase).toBe('opening');
     expect(state.openingTie).toBe(4);
     expect(state.opening).toEqual([null, null]);
     expect(state.turn).toBe(1);
-    state = act(state, 1, { type: 'roll' }, dice(2));
-    state = act(state, 0, { type: 'roll' }, dice(6));
+    state = act(state, 1, { action: 'roll' }, dice(2));
+    state = act(state, 0, { action: 'roll' }, dice(6));
     expect(state.turn).toBe(0);
     expect(state.dice).toEqual([6, 2]);
   });
 
   it('optionally lets the starter re-roll both dice', () => {
     let state = startTavla(2, { starterRerolls: true }, 0);
-    state = act(state, 0, { type: 'roll' }, dice(6));
-    state = act(state, 1, { type: 'roll' }, dice(2));
+    state = act(state, 0, { action: 'roll' }, dice(6));
+    state = act(state, 1, { action: 'roll' }, dice(2));
     expect(state.phase).toBe('roll');
     expect(state.turn).toBe(0);
     expect(state.dice).toBeNull();
-    state = act(state, 0, { type: 'roll' }, dice(1, 1));
+    state = act(state, 0, { action: 'roll' }, dice(1, 1));
     expect(state.phase).toBe('moving');
     expect(state.dice).toEqual([1, 1]);
   });
@@ -159,13 +159,13 @@ describe('tavla movement rules', () => {
     state = act(state, 0, move(12, 9));
     state = act(state, 0, move(12, 9));
     state = act(state, 0, move(7, 4));
-    expect(tavlaAction(state, 0, { type: 'confirm' }, dice())).toEqual({
+    expect(tavlaAction(state, 0, { action: 'confirm' }, dice())).toEqual({
       error: 'MOVES_REMAINING',
     });
     state = act(state, 0, move(7, 4));
     expect(state.remaining).toEqual([]);
     expect(tavlaView(state, 0).canConfirm).toBe(true);
-    state = act(state, 0, { type: 'confirm' });
+    state = act(state, 0, { action: 'confirm' });
     expect(state.turn).toBe(1);
     expect(state.phase).toBe('roll');
     expect(state.lastTurn?.moves).toHaveLength(4);
@@ -224,13 +224,13 @@ describe('tavla movement rules', () => {
     expect(state.moves[0]).toMatchObject({ from: 12, to: 9, hit: true });
     expect(state.bar).toEqual([0, 1]);
     expect(state.points[9]).toBe(1);
-    const undone = act(state, 0, { type: 'undo' });
+    const undone = act(state, 0, { action: 'undo' });
     expect(undone.bar).toEqual([0, 0]);
     expect(undone.points[9]).toBe(-1);
     expect(undone.points[12]).toBe(15);
     expect(undone.remaining).toEqual([3, 1]);
     state = act(state, 0, move(12, 11));
-    state = act(state, 0, { type: 'confirm' });
+    state = act(state, 0, { action: 'confirm' });
     // The hit checker must enter before seat 1 moves anything else.
     state = rolled(state, 2, 4);
     expect(steps(state).every((s) => s.startsWith('bar>'))).toBe(true);
@@ -276,18 +276,18 @@ describe('tavla bearing off', () => {
     state = act(state, 0, move(0, 'off'));
     expect(tavlaModule.turn(state)).toBe(0);
     expect(tavlaSettle(state)).toBeNull();
-    state = act(state, 0, { type: 'confirm' });
+    state = act(state, 0, { action: 'confirm' });
     expect(state.phase).toBe('over');
     expect(tavlaModule.turn(state)).toBeNull();
     expect(state.result).toEqual({ winner: 0, points: 2, mars: true });
     expect(tavlaSettle(state)).toEqual({ points: [2, 0], winners: [0] });
-    expect(tavlaAction(state, 0, { type: 'roll' }, dice(1, 1))).toEqual({ error: 'ROUND_OVER' });
+    expect(tavlaAction(state, 0, { action: 'roll' }, dice(1, 1))).toEqual({ error: 'ROUND_OVER' });
   });
 
   it('scores a plain win for 1 point', () => {
     let state = rolled(position({ 22: -1, 1: 5 }, 1), 6, 5);
     state = act(state, 1, move(22, 'off'));
-    state = act(state, 1, { type: 'confirm' });
+    state = act(state, 1, { action: 'confirm' });
     expect(tavlaSettle(state)).toEqual({ points: [0, 1], winners: [1] });
     expect(state.result?.mars).toBe(false);
   });
@@ -297,47 +297,72 @@ describe('tavla turn commands', () => {
   it('enforces roll, undo and confirm legality', () => {
     let state = position({ 23: 2, 12: 5, 7: 3, 5: 5, 0: -2, 18: -13 }, 0);
     expect(tavlaAction(state, 0, move(12, 8), dice())).toEqual({ error: 'ROLL_REQUIRED' });
-    expect(tavlaAction(state, 0, { type: 'confirm' }, dice())).toEqual({ error: 'ROLL_REQUIRED' });
-    expect(tavlaAction(state, 0, { type: 'undo' }, dice())).toEqual({ error: 'ROLL_REQUIRED' });
+    expect(tavlaAction(state, 0, { action: 'confirm' }, dice())).toEqual({
+      error: 'ROLL_REQUIRED',
+    });
+    expect(tavlaAction(state, 0, { action: 'undo' }, dice())).toEqual({ error: 'ROLL_REQUIRED' });
+    expect(tavlaModule.legalActions(state, 0)).toEqual(['roll']);
+    expect(tavlaModule.legalActions(state, 1)).toEqual([]);
+    const rollPhase = tavlaModule.phase(state);
     state = rolled(state, 4, 2);
-    expect(tavlaAction(state, 0, { type: 'roll' }, dice(1, 1))).toEqual({
+    expect(tavlaModule.phase(state)).not.toBe(rollPhase);
+    expect(tavlaModule.legalActions(state, 0)).toEqual(['move']);
+    expect(tavlaAction(state, 0, { action: 'roll' }, dice(1, 1))).toEqual({
       error: 'ALREADY_ROLLED',
     });
-    expect(tavlaAction(state, 0, { type: 'undo' }, dice())).toEqual({ error: 'NOTHING_TO_UNDO' });
-    expect(tavlaAction(state, 0, { type: 'confirm' }, dice())).toEqual({
+    expect(tavlaAction(state, 0, { action: 'undo' }, dice())).toEqual({ error: 'NOTHING_TO_UNDO' });
+    expect(tavlaAction(state, 0, { action: 'confirm' }, dice())).toEqual({
       error: 'MOVES_REMAINING',
     });
     expect(tavlaAction(state, 1, move(0, 4), dice())).toEqual({ error: 'NOT_YOUR_TURN' });
     state = act(state, 0, move(12, 8));
     state = act(state, 0, move(8, 6));
     expect(tavlaView(state, 1).moves.map((m) => m.to)).toEqual([8, 6]);
-    state = act(state, 0, { type: 'undo' });
+    state = act(state, 0, { action: 'undo' });
     expect(state.remaining).toEqual([2]);
     expect(state.points[8]).toBe(1);
+    expect(tavlaModule.legalActions(state, 0)).toEqual(['move', 'undo']);
     state = act(state, 0, move(7, 5));
-    state = act(state, 0, { type: 'confirm' });
+    expect(tavlaModule.legalActions(state, 0)).toEqual(['undo', 'confirm']);
+    state = act(state, 0, { action: 'confirm' });
     expect(state.turn).toBe(1);
-    expect(tavlaAction(state, 0, { type: 'undo' }, dice())).toEqual({ error: 'NOT_YOUR_TURN' });
+    expect(tavlaAction(state, 0, { action: 'undo' }, dice())).toEqual({ error: 'NOT_YOUR_TURN' });
     expect(state.lastTurn).toMatchObject({ seat: 0, dice: [4, 2], passed: false });
   });
 
   it('parses commands and rejects malformed payloads', () => {
-    expect(parseTavlaCommand({ action: 'roll' })).toEqual({ type: 'roll' });
+    expect(parseTavlaCommand({ action: 'roll' })).toEqual({ action: 'roll' });
     expect(parseTavlaCommand({ action: 'move', payload: { from: 'bar', to: 20 } })).toEqual({
-      type: 'move',
+      action: 'move',
       from: 'bar',
       to: 20,
     });
-    expect(parseTavlaCommand({ action: 'move', payload: { from: 5, to: 'off', die: 6 } })).toEqual(
-      { type: 'move', from: 5, to: 'off', die: 6 },
-    );
-    for (const payload of [undefined, { from: 24, to: 3 }, { from: 'x', to: 3 }, { from: 2.5, to: 1 }])
+    expect(parseTavlaCommand({ action: 'move', payload: { from: 5, to: 'off', die: 6 } })).toEqual({
+      action: 'move',
+      from: 5,
+      to: 'off',
+      die: 6,
+    });
+    for (const payload of [
+      undefined,
+      { from: 24, to: 3 },
+      { from: 'x', to: 3 },
+      { from: 2.5, to: 1 },
+    ])
       expect(parseTavlaCommand({ action: 'move', payload })).toEqual({ error: 'INVALID_MOVE' });
     expect(parseTavlaCommand({ action: 'move', payload: { from: 3, to: 1, die: 9 } })).toEqual({
       error: 'INVALID_MOVE',
     });
     expect(parseTavlaCommand({ action: 'double' })).toEqual({ error: 'UNKNOWN_ACTION' });
     expect(tavlaModule.actions).toEqual(['roll', 'move', 'undo', 'confirm']);
+    expect(tavlaModule.parseOptions({ matchTo: 7, starterRerolls: true })).toEqual({
+      matchTo: 7,
+      starterRerolls: true,
+    });
+    expect(tavlaModule.parseOptions({ matchTo: '3' })).toEqual({ matchTo: 3 });
+    expect(tavlaModule.parseOptions(undefined)).toEqual({});
+    for (const bad of [{ matchTo: 4 }, { starterRerolls: 'yes' }, { cube: true }])
+      expect(tavlaModule.parseOptions(bad)).toEqual({ error: 'INVALID_OPTIONS' });
   });
 });
 
@@ -358,9 +383,16 @@ function playRound(state: TavlaState, rng: () => number, onStep?: (s: TavlaState
 describe('tavla bot and match', () => {
   it('plays a seeded round to the end with only accepted bot commands', () => {
     const rng = seeded(42);
+    let turns = 0,
+      hits = 0;
     const final = playRound(tavlaModule.start(2, {}, 0, rng), rng, (s) => {
       checkersConserved(s);
+      if (s.moves.at(-1)?.hit) hits++;
+      if (s.phase === 'roll' || s.phase === 'over') turns++;
     });
+    // 167 pips each at most 24 per non-double roll: a real game needs well over a dozen turns.
+    expect(turns).toBeGreaterThan(14);
+    expect(hits).toBeGreaterThan(0);
     const result = tavlaModule.settle(final)!;
     expect(result.winners).toHaveLength(1);
     expect(final.off[result.winners[0]]).toBe(15);
