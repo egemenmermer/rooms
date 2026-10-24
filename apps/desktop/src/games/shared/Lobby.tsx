@@ -38,6 +38,8 @@ import { catalogEntry, offeredGames } from '../catalog';
 import { gameDefinition, type GameSetupValues } from '../registry';
 import { array, names, object, tableTitle, type Card } from './model';
 import { PlayingCard } from './PlayingCard';
+import { SeatAvatar, SeatControlsContext, seatRemovable, type SeatControls } from './SeatAvatar';
+import { useGameSounds } from './sounds';
 
 export function ReferenceGames({
   activity,
@@ -92,6 +94,8 @@ export function ReferenceGames({
     owner = game?.ownerId === c.user?.id,
     definition = game ? gameDefinition(game.kind) : undefined;
   const access = !!own || view.watching === true;
+  // Hold'em's table still lives here (phase B); the other tables call useGameSounds themselves.
+  useGameSounds(definition?.tableInLobby ? game : null);
   const projected = array<Record<string, unknown>>(view.seats),
     mine = projected.find((seat) => seat.userId === c.user?.id);
   const capacity = Math.min(
@@ -323,8 +327,27 @@ export function ReferenceGames({
     minRaise,
     maxRaise,
   ]);
+  const seatTimer =
+    playing && deadline > 0
+      ? Math.max(0, Math.ceil((deadline - now - activity.serverOffsetMs) / 1000))
+      : null;
   const avatar = (seat: GamePublicState['seats'][number]) =>
-    seat.bot ? <Avatar name={seat.name} /> : <VoiceAvatar id={seat.userId} name={seat.name} />;
+    game ? (
+      <SeatAvatar seat={seat} game={game} timer={seatTimer} />
+    ) : seat.bot ? (
+      <Avatar name={seat.name} />
+    ) : (
+      <VoiceAvatar id={seat.userId} name={seat.name} />
+    );
+  const seatControls: SeatControls = {
+    canRemove: (seat) =>
+      !!game &&
+      !fixture &&
+      ready &&
+      !activity.busy &&
+      seatRemovable(game, seat, c.user?.id, activity.room?.primary?.hostUserId),
+    remove: (seat) => send({ type: 'game.seat.remove', seat }),
+  };
   useEffect(() => {
     if (buyIn !== null) setEntry(view.rules?.initialChips ?? 1000);
   }, [buyIn]);
@@ -394,6 +417,7 @@ export function ReferenceGames({
       />
     );
   return (
+    <SeatControlsContext.Provider value={seatControls}>
     <div className={`rg-page ${game && !waiting ? 'rg-playing' : ''}`}>
       <header className="rg-heading">
         <div>
@@ -1375,5 +1399,6 @@ export function ReferenceGames({
         </Modal>
       )}
     </div>
+    </SeatControlsContext.Provider>
   );
 }

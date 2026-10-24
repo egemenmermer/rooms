@@ -1,7 +1,7 @@
 import { locale, t } from '../../i18n';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, History, RefreshCw, ShieldCheck, Trophy } from 'lucide-react';
+import { Coins, Eye, History, RefreshCw, ShieldCheck, Trophy } from 'lucide-react';
 import { IconButton, Modal } from '@rooms/design';
 import { useActivityRoom } from '../../activity';
 import { useCommunity } from '../../community';
@@ -14,7 +14,12 @@ import { useGameFixtureMetadata } from './fixture';
 import { GameRecovery } from './GameRecovery';
 import { GameResults } from './GameResults';
 import { array } from './model';
+import { SeatControlsContext, seatRemovable, type SeatControls } from './SeatAvatar';
 import type { TableUI } from './table-ui';
+
+/** Blackjack: a stack below the smallest bet (2) may buy back up to the 1000 cap. */
+const REBUY_BELOW = 2,
+  REBUY_STACK = 1000;
 
 export function ReferenceOtherGame({
   activity,
@@ -92,7 +97,33 @@ export function ReferenceOtherGame({
     deadline > 0 && game.status === 'playing'
       ? Math.max(0, Math.ceil((deadline - now - activity.serverOffsetMs) / 1000))
       : null;
-  const ui: TableUI = { game, userId: c.user?.id, can, action, timer, busy };
+  const roomHostId = activity.room?.primary?.hostUserId;
+  const seatControls: SeatControls = {
+    canRemove: (seat) => !fixture && ready && !busy && seatRemovable(game, seat, c.user?.id, roomHostId),
+    remove: (seat) => send({ type: 'game.seat.remove', seat }),
+  };
+  // A chip table (Blackjack) buys back in between hands once the stack cannot cover the smallest
+  // bet; the server caps the stack at 1000.
+  const rebuyable =
+    !!own &&
+    definition.catalog.scoring === 'chips' &&
+    !definition.tableInLobby &&
+    game.status !== 'playing' &&
+    own.chips < REBUY_BELOW;
+  const rebuy = () =>
+    own ? send({ type: 'game.sit', seat: own.seat, buyIn: REBUY_STACK - own.chips }) : Promise.resolve(false);
+  const ui: TableUI = {
+    game,
+    userId: c.user?.id,
+    can,
+    action,
+    timer,
+    busy,
+    canRemoveSeat: seatControls.canRemove,
+    removeSeat: seatControls.remove,
+    canRebuy: rebuyable && !fixture && ready && !busy,
+    rebuy,
+  };
   const roomName =
     c.channels.find((channel) => channel.id === activity.room?.roomId)?.name ?? t('Oda');
   const ruleRows = definition.ruleRows(game);
@@ -186,7 +217,11 @@ export function ReferenceOtherGame({
               </button>
             </div>
           )}
-          {Table && <Table {...ui} />}
+          {Table && (
+            <SeatControlsContext.Provider value={seatControls}>
+              <Table {...ui} />
+            </SeatControlsContext.Provider>
+          )}
         </>
       )}
 
@@ -203,6 +238,17 @@ export function ReferenceOtherGame({
                 : t('Masa sahibi bekleniyor.')}
             </p>
           </div>
+          {rebuyable && (
+            <button
+              className="button secondary"
+              disabled={!ui.canRebuy}
+              title={t('Fişin en küçük bahsi karşılamıyor.')}
+              onClick={() => void rebuy()}
+            >
+              <Coins size={16} />
+              {t('Para al')}
+            </button>
+          )}
           <button
             className="button primary"
             disabled={!can('start')}
