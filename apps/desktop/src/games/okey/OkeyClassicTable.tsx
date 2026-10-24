@@ -113,7 +113,6 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
       round: game.history.length,
       lines: [line, ...(current.round === game.history.length ? current.lines : [])].slice(0, 4),
     }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- one line per new action
   }, [lastKey]);
 
   const finisher = useMemo(
