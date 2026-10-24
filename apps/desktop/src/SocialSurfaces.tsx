@@ -137,7 +137,7 @@ function fixtureImageUrl(file: SocialAttachment, fixture: SocialDetailFixture | 
   if (!import.meta.env.DEV || !fixtureOnly() || !fixture || fixture.metadata.id !== 'S14')
     return undefined;
   const path = fixture.assets.attachments[file.id];
-  return path === '/__reference/01_brand/cinema-still.svg' &&
+  return path?.startsWith('data:image/svg+xml,') &&
     file.url === path &&
     file.mime === 'image/svg+xml'
     ? path
@@ -817,11 +817,9 @@ function SocialSearchScope({
       title={
         mode === 'quick'
           ? t('Nereye gitmek istersin?')
-          : fixture?.metadata.id === 'S13'
-            ? t('Bizim Oda’da ara')
-            : t('{name} içinde ara', {
-                name: c.spaces.find((item) => item.id === c.activeSpaceId)?.name ?? t('Konuşma'),
-              })
+          : t('{name} içinde ara', {
+              name: c.spaces.find((item) => item.id === c.activeSpaceId)?.name ?? t('Konuşma'),
+            })
       }
       className={`ss-modal ss-search ${mode === 'files' ? 'ss-search-files' : ''} ${mode === 'quick' ? 'ss-search-quick' : ''} ${mode !== 'quick' && !matches.length ? 'ss-search-no-results' : ''}`}
       onClose={onClose}
