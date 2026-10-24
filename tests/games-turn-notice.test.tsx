@@ -19,7 +19,7 @@ const f = vi.hoisted(() => ({
 vi.mock('../apps/desktop/src/activity', () => ({
   useActivityRoom: (roomId: string | null) => {
     f.roomIds.push(roomId);
-    return { status: 'connected', room: f.room, serverOffsetMs: 0 };
+    return { status: 'connected', room: roomId ? f.room : null, serverOffsetMs: 0 };
   },
 }));
 vi.mock('../apps/desktop/src/games/shared/sounds', () => ({ playGameCue: f.cue }));
@@ -162,4 +162,12 @@ it('asks for the desktop notification only when unfocused and opted in', async (
   mount('/voice');
   await act(async () => {});
   expect(f.reminder).not.toHaveBeenCalled();
+});
+
+it('watches only the joined voice room, whose poll the voice sidebar already runs', () => {
+  useVoiceContext.setState({ channelId: null });
+  f.room = roomWith(game());
+  mount('/chat');
+  expect(f.roomIds.at(-1)).toBeNull();
+  expect(screen.queryByRole('status')).toBeNull();
 });

@@ -341,11 +341,9 @@ export function ReferenceGames({
     );
   const seatControls: SeatControls = {
     canRemove: (seat) =>
-      !!game &&
-      !fixture &&
-      ready &&
-      !activity.busy &&
-      seatRemovable(game, seat, c.user?.id, activity.room?.primary?.hostUserId),
+      !!game && seatRemovable(game, seat, c.user?.id, activity.room?.primary?.hostUserId),
+    disabled: fixture || !ready || activity.busy,
+    disabledReason: fixture ? fixtureReason : undefined,
     remove: (seat) => send({ type: 'game.seat.remove', seat }),
   };
   useEffect(() => {

@@ -11,7 +11,11 @@ export type GameSeat = GamePublicState['seats'][number];
 
 /** Owner/host seat controls, provided by the table shell so every seat can offer them. */
 export interface SeatControls {
+  /** Whether the button shows: the viewer may free this seat at all. */
   canRemove(seat: GameSeat): boolean;
+  /** Shown but not pressable right now (a command in flight, no connection, a local fixture). */
+  disabled: boolean;
+  disabledReason?: string;
   remove(seat: number): Promise<boolean>;
 }
 export const SeatControlsContext = createContext<SeatControls | null>(null);
@@ -112,13 +116,14 @@ export function SeatAvatar({
       <div className="rg-seat-face">
         {seat.bot ? <Avatar name={seat.name} /> : <VoiceAvatar id={seat.userId} name={seat.name} />}
         {turn && timer !== null && <SeatClock timer={timer} deadline={deadline} />}
-        {seat.bot && <span className="rg-seat-badge">{t('Bot')}</span>}
+        {seat.bot && <span className="rg-seat-badge">{'BOT'}</span>}
       </div>
       {speaking && <span className="rg-visually-hidden">{t('Konuşuyor')}</span>}
       {controls?.canRemove(seat) && (
         <button
           className="rg-seat-remove"
-          title={t('Koltuğu boşalt')}
+          disabled={controls.disabled}
+          title={controls.disabledReason ?? t('Koltuğu boşalt')}
           aria-label={t('{name} koltuğunu boşalt', { name: seat.name })}
           onClick={() => void controls.remove(seat.seat)}
         >

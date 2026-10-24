@@ -99,8 +99,9 @@ export function ReferenceOtherGame({
       : null;
   const roomHostId = activity.room?.primary?.hostUserId;
   const seatControls: SeatControls = {
-    canRemove: (seat) =>
-      !fixture && ready && !busy && seatRemovable(game, seat, c.user?.id, roomHostId),
+    canRemove: (seat) => seatRemovable(game, seat, c.user?.id, roomHostId),
+    disabled: fixture || !ready || busy,
+    disabledReason: fixture ? t('Yerel örnekte hesap işlemleri kapalı') : undefined,
     remove: (seat) => send({ type: 'game.seat.remove', seat }),
   };
   // A chip table (Blackjack) buys back in between hands once the stack cannot cover the smallest

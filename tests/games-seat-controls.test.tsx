@@ -99,10 +99,10 @@ const table = (patch: Partial<GamePublicState> = {}, kind = 'test-seats-v1') =>
     history: [],
     ...patch,
   }) as unknown as GamePublicState;
-const shell = (game: GamePublicState, hostUserId = 'mert') => {
+const shell = (game: GamePublicState, hostUserId = 'mert', busy = false) => {
   const activity = {
     status: 'connected' as const,
-    busy: false,
+    busy,
     error: null,
     serverOffsetMs: 0,
     room: { roomId: 'room-1', primary: { hostUserId } },
@@ -152,7 +152,7 @@ it('shows the speaking ring, the bot badge and the clock of whoever is playing',
   expect(osman.className).toContain('low');
   expect(screen.getByLabelText(/saniye kaldı$/).textContent).toMatch(/^[78]$/);
   expect(screen.getByTestId('seat-0').querySelector('.rg-seat-clock')).toBeNull();
-  expect(screen.getByTestId('seat-2').textContent).toContain('Bot');
+  expect(screen.getByTestId('seat-2').querySelector('.rg-seat-badge')?.textContent).toBe('BOT');
 });
 
 it('offers "Para al" between hands of a chip table once the stack cannot cover a bet', () => {
@@ -168,4 +168,10 @@ it('offers "Para al" between hands of a chip table once the stack cannot cover a
   // A points game has no chips to buy.
   shell(table({ status: 'finished', turn: null }));
   expect(screen.queryByRole('button', { name: 'Para al' })).toBeNull();
+});
+
+it('keeps the seat buttons in place but disabled while a command is in flight', () => {
+  shell(table(), 'mert', true);
+  expect(removeButtons()).toHaveLength(2);
+  expect(removeButtons().every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
 });

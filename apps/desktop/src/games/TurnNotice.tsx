@@ -25,18 +25,17 @@ export function ownTurnKey(game: GamePublicState | null | undefined, userId?: st
 }
 
 /**
- * Route independent: when it becomes the viewer's turn at the current room's table while they are
+ * Route independent: when it becomes the viewer's turn at the voice room's table while they are
  * on another page, a small notice offers the way back. With the window in the background it also
  * asks for the content-free desktop notification, only when the person opted in to notifications.
  * Mount once next to `<RoomEventSounds />`; it reuses the room's shared activity poll.
  */
 export function GameTurnNotice() {
-  // Same room as the /games route (`useCurrentRoom`), read through narrow selectors so speaking
-  // updates never re-render the shell; Agent.tsx itself is lazy and stays out of the main bundle.
+  // The joined voice room only: the voice sidebar already keeps its activity poll alive, so this
+  // adds no request. A narrow selector keeps speaking updates from re-rendering the shell.
   const userId = useCommunity((s) => s.user?.id),
-    activeChannelId = useCommunity((s) => s.activeChannelId),
     voiceChannelId = useVoiceContext((s) => s.channelId),
-    activity = useActivityRoom(userId ? (voiceChannelId ?? activeChannelId) : null),
+    activity = useActivityRoom(userId ? voiceChannelId : null),
     location = useLocation(),
     navigate = useNavigate();
   const room = activity.status === 'connected' ? activity.room : null;

@@ -1067,7 +1067,6 @@ export const games: Catalog = {
   'Masaya dön': 'Back to the table',
   'Sıra sende · {game}': 'Your turn · {game}',
   '{game} · {seconds} sn': '{game} · {seconds}s',
-  Bot: 'Bot',
   '{seconds} saniye kaldı': '{seconds} seconds left',
   'Koltuğu boşalt': 'Free the seat',
   '{name} koltuğunu boşalt': 'Free {name}’s seat',
