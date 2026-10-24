@@ -1391,6 +1391,7 @@ export const games: Catalog = {
     'Insurance costs {stake} chips. Pays 2:1 if the dealer has blackjack.',
   'Sıra sende · El {hand}': 'Your turn · Hand {hand}',
   'Sırası gelince kart alır': 'Gets its card when reached',
+  'Sonraki el için bahsini seç': 'Choose your bet for the next hand',
   Teslim: 'Surrender',
   'Teslim açık': 'Surrender on',
   'Teslim kapalı': 'No surrender',

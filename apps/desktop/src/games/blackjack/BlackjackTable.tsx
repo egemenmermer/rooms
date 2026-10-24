@@ -254,6 +254,14 @@ export function BlackjackTable({ game, userId, can, action, timer }: TableUI) {
     finished = game.status === 'finished',
     nameOf = (id: string) => game.seats.find((seat) => seat.userId === id)?.name ?? t('Oyuncu');
   const ownTurn = !!own && acting === userId;
+  // Chips back (hands and insurance) minus chips staked this round.
+  const netOf = (player: BlackjackPlayerView) =>
+    resultList
+      .filter((item) => item.userId === player.userId)
+      .reduce((sum, item) => sum + item.returned, 0) +
+    (player.insuranceReturned ?? 0) -
+    player.hands.reduce((sum, hand) => sum + hand.bet, 0) -
+    (player.insurance ?? 0);
   const lastMove = log[log.length - 1]?.move;
 
   // Bet between hands: chip buttons add even amounts, so any total stays a legal bet.
@@ -289,7 +297,7 @@ export function BlackjackTable({ game, userId, can, action, timer }: TableUI) {
   const dealerTotal = handTotal(dealer);
   const insuranceStake = mine?.hands[0] ? mine.hands[0].bet / 2 : 0;
   const status = finished
-    ? t('El tamamlandı')
+    ? t('Sonraki el için bahsini seç')
     : insurance
       ? ownTurn
         ? t('Sigorta kararı senin')
@@ -321,19 +329,22 @@ export function BlackjackTable({ game, userId, can, action, timer }: TableUI) {
           </div>
           <small>{t('KRUPİYE')}</small>
           <div className="bj-cards dealer" aria-label={t('Krupiyenin kartları')}>
-            {dealer.map((card, index) => (
+            {/* One list, so the hole card keeps its element from face down to face up and flips. */}
+            {[...dealer, ...Array.from({ length: hidden }, () => undefined)].map((card, index) => (
               <span
-                // The hole card keeps one element from face down to face up, so it can flip.
                 key={`d${index}`}
-                className={`bj-card${index === 1 && motion.revealed ? ' flip' : motion.fresh.has(`dealer:${index}:${card.id}`) ? ' enter' : ''}`}
+                className={`bj-card${
+                  !card
+                    ? ' hole'
+                    : index === 1 && motion.revealed
+                      ? ' flip'
+                      : motion.fresh.has(`dealer:${index}:${card.id}`)
+                        ? ' enter'
+                        : ''
+                }`}
                 style={{ '--bj-n': index } as CSSProperties}
               >
                 <PlayingCard card={card} />
-              </span>
-            ))}
-            {Array.from({ length: hidden }, (_, index) => (
-              <span key={`d${dealer.length + index}`} className="bj-card hole">
-                <PlayingCard />
               </span>
             ))}
           </div>
@@ -386,14 +397,7 @@ export function BlackjackTable({ game, userId, can, action, timer }: TableUI) {
           {seats.map((seat, index) => {
             const player = list.find((item) => item.userId === seat.userId),
               lift = Math.sin((Math.PI * (index + 0.5)) / seats.length);
-            const net = player
-              ? resultList
-                  .filter((item) => item.userId === seat.userId)
-                  .reduce((sum, item) => sum + item.returned, 0) +
-                (player.insuranceReturned ?? 0) -
-                player.hands.reduce((sum, hand) => sum + hand.bet, 0) -
-                (player.insurance ?? 0)
-              : 0;
+            const net = player ? netOf(player) : 0;
             return (
               <li
                 key={seat.userId}
@@ -479,6 +483,9 @@ export function BlackjackTable({ game, userId, can, action, timer }: TableUI) {
               <li key={player.userId}>
                 <strong>{nameOf(player.userId)}</strong>
                 <span>
+                  {netOf(player)
+                    ? `${netOf(player) > 0 ? '+' : ''}${t('{amount} fiş', { amount: netOf(player) })} · `
+                    : ''}
                   {player.hands
                     .map((_, index) => outcomeOf(resultList, player.userId, index))
                     .filter((outcome): outcome is string => !!outcome)

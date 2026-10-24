@@ -149,7 +149,7 @@ it('settles the round: dealer revealed, outcomes per hand, nets and the chip bet
   expect(within(dealer).queryByRole('button', { name: 'Kapalı kart' })).toBeNull();
   const summary = screen.getByRole('region', { name: 'El sonucu' });
   expect(within(summary).getByText('Krupiye 17')).toBeTruthy();
-  expect(within(summary).getByText('Kazandı · Kazandı')).toBeTruthy();
+  expect(within(summary).getByText('+200 fiş · Kazandı · Kazandı')).toBeTruthy();
   expect(within(spot('Ece (demo)')).getByText('+200')).toBeTruthy();
   expect(within(spot('Ali (demo)')).getByText('-100')).toBeTruthy();
   // Bets as chip stacks: 100 = one black chip; a win pays a matching stack.
@@ -162,6 +162,22 @@ it('settles the round: dealer revealed, outcomes per hand, nets and the chip bet
   fireEvent.click(screen.getByRole('button', { name: '10 fiş ekle' }));
   fireEvent.click(screen.getByRole('button', { name: 'Bahsi belirle' }));
   expect(action).toHaveBeenCalledWith('bet', { amount: 60 });
+});
+
+it('flips the hole card in place when the round settles, and pays winners with chips', () => {
+  const view = render(<BlackjackTable {...ui(scene('opponent-turn'))} />);
+  const hole = screen.getByLabelText('Krupiyenin kartları').children[1];
+  expect(hole.className).toContain('hole');
+  view.rerender(<BlackjackTable {...ui(scene('round-end'))} />);
+  const revealed = screen.getByLabelText('Krupiyenin kartları').children[1];
+  expect(revealed).toBe(hole);
+  expect(revealed.className).toContain('flip');
+  expect(within(revealed as HTMLElement).getByRole('button', { name: 'Sinek 8' })).toBeTruthy();
+  // Lost bets slide to the dealer, wins get a paid stack sliding in.
+  expect(within(spot('Ali (demo)')).getByRole('img', { name: '100 fiş' }).className).toContain(
+    'collect animate',
+  );
+  expect(document.querySelectorAll('.bj-chips.pay.animate')).toHaveLength(3);
 });
 
 it('gives a spectator every hand and no controls', () => {
