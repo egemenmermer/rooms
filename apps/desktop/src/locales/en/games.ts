@@ -1320,4 +1320,7 @@ export const games: Catalog = {
   '{name} {to} yaptı · all-in': '{name} raised to {to} · all-in',
   '{name} · {action}': '{name} · {action}',
   'Kartlarını göstermeyenler: {names}': 'Mucked their cards: {names}',
+  // GA-adopt: finish strip of match games.
+  'Rövanş başlatabilirsin.': 'You can start a rematch.',
+  Rövanş: 'Rematch',
 };

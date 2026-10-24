@@ -1,6 +1,6 @@
 import { t } from '../../i18n';
 import type { GameDefinition } from '../registry';
-import { object } from '../shared/model';
+import { matchFinishLabels, object } from '../shared/model';
 import { pistiCatalog } from './catalog';
 import { pistiCreate } from './create';
 import { PistiHistory, pistiHistoryResult } from './PistiHistory';
@@ -23,6 +23,7 @@ export const pistiGame: GameDefinition = {
     ];
   },
   lobbyRuleRows: () => [[t('Oyuncu'), t('2 ya da 4 · Dörtte eşler karşılıklı')]],
+  finishLabels: matchFinishLabels,
   HistoryDetail: PistiHistory,
   historyResult: pistiHistoryResult,
   create: pistiCreate,

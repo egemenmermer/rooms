@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Layers } from 'lucide-react';
-import { Avatar, EmptyState } from '@rooms/design';
+import { EmptyState } from '@rooms/design';
 import type { GamePublicState } from '../../../../../packages/activity-protocol/src';
 import { t } from '../../i18n';
 import { rankNames, suitNames, type Card } from '../shared/model';
 import { PlayingCard } from '../shared/PlayingCard';
+import { SeatAvatar } from '../shared/SeatAvatar';
+import { playGameCue, useGameSounds } from '../shared/sounds';
 import type { TableUI } from '../shared/table-ui';
 import {
   dealSummary,
@@ -21,11 +23,8 @@ import {
   type PistiSeries,
   type Position,
 } from './model';
-import { playPistiCue } from './sounds';
 import './pisti.css';
 
-/** Seconds a turn lasts on the server (`TURN_DURATION_MS`); only scales the seat clock ring. */
-const TURN_SECONDS = 45;
 const LOG_LENGTH = 5;
 
 export const cardName = (card: Card) =>
@@ -83,7 +82,7 @@ function useTableEvents(game: GamePublicState, deal: PistiDeal, series: PistiSer
   const rounds = series.rounds.length,
     key = `${rounds}:${deal.lastPlay?.seq ?? 0}`;
   const [baseline] = useState(key);
-  const seen = useRef({ key, rounds, turn: `${rounds}:${deal.turn}` });
+  const seen = useRef({ key, rounds });
   const [log, setLog] = useState<string[]>(() =>
     [captureLine(game, deal), playLine(game, deal)].filter(Boolean),
   );
@@ -113,9 +112,14 @@ function useTableEvents(game: GamePublicState, deal: PistiDeal, series: PistiSer
       });
       if (fresh.kind === 'pisti' || fresh.kind === 'jack-pisti') {
         setMoment({ key, kind: fresh.kind, name: seatName(game, fresh.seat) });
-        playPistiCue('pisti');
-      } else playPistiCue(fresh.kind === 'remainder' ? 'play' : 'capture');
-    } else playPistiCue('play');
+        // The PİŞTİ! moment rings the win cue when it is the viewer's own side, else the capture sweep.
+        playGameCue(
+          deal.viewerSeat !== null && sideOf(deal, fresh.seat) === sideOf(deal, deal.viewerSeat)
+            ? 'win'
+            : 'capture',
+        );
+      } else playGameCue(fresh.kind === 'remainder' ? 'play' : 'capture');
+    } else playGameCue('play');
     setLog((current) => [...lines.reverse(), ...current].slice(0, LOG_LENGTH));
   }, [key]);
   // Clear the transient sweep and the PİŞTİ! moment after they have played.
@@ -129,12 +133,6 @@ function useTableEvents(game: GamePublicState, deal: PistiDeal, series: PistiSer
     const timeout = setTimeout(() => setMoment(null), 1800);
     return () => clearTimeout(timeout);
   }, [moment?.key]);
-  const turnKey = `${rounds}:${deal.turn}`;
-  useEffect(() => {
-    if (seen.current.turn === turnKey) return;
-    seen.current = { ...seen.current, turn: turnKey };
-    if (deal.viewerSeat !== null && deal.turn === deal.viewerSeat) playPistiCue('turn');
-  }, [turnKey]);
   return {
     animate: key !== baseline,
     key,
@@ -147,6 +145,10 @@ function useTableEvents(game: GamePublicState, deal: PistiDeal, series: PistiSer
 }
 
 export function PistiTable(ui: TableUI) {
+  // Deal, your-turn and match-end cues come from the shared hook (outside the board, which remounts
+  // on a rematch). The empty `signals` leave every card and capture cue to `useTableEvents`, which
+  // knows the sweeps and the PİŞTİ! moment.
+  useGameSounds(ui.game, { signals: () => ({}) });
   const deal = readDeal(ui.game.view);
   if (!deal)
     return (
@@ -232,8 +234,7 @@ function PistiBoard({
                 }
               >
                 <span className="pp-avatar">
-                  <Avatar name={seat.name} />
-                  {turn && timer !== null && <SeatClock seconds={timer} />}
+                  <SeatAvatar seat={seat} game={game} timer={timer} />
                 </span>
                 <span className="pp-seat-text">
                   <strong title={seat.name}>{seat.name}</strong>
@@ -454,28 +455,6 @@ function PistiBoard({
         )
       )}
     </div>
-  );
-}
-
-function SeatClock({ seconds }: { seconds: number }) {
-  const fraction = Math.max(0, Math.min(1, seconds / TURN_SECONDS)),
-    circumference = 2 * Math.PI * 21;
-  return (
-    <svg
-      className={`pp-clock ${seconds <= 10 ? 'late' : ''}`}
-      viewBox="0 0 46 46"
-      aria-hidden="true"
-    >
-      <circle cx="23" cy="23" r="21" />
-      <circle
-        cx="23"
-        cy="23"
-        r="21"
-        className="pp-clock-left"
-        strokeDasharray={circumference}
-        strokeDashoffset={circumference * (1 - fraction)}
-      />
-    </svg>
   );
 }
 

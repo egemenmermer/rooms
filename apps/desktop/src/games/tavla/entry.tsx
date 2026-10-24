@@ -1,5 +1,6 @@
 import { t } from '../../i18n';
 import type { GameDefinition } from '../registry';
+import { matchFinishLabels } from '../shared/model';
 import { tavlaCatalog } from './catalog';
 import { tavlaCreate } from './create';
 import { type TavlaTableView } from './model';
@@ -26,6 +27,7 @@ export const tavlaGame: GameDefinition = {
       [t('Puan'), t('Normal 1 · Mars 2')],
     ];
   },
+  finishLabels: matchFinishLabels,
   HistoryDetail: TavlaHistory,
   historyResult: tavlaHistoryResult,
   create: tavlaCreate,

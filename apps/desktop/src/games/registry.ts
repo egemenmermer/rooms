@@ -54,6 +54,11 @@ export interface GameDefinition {
   lobbyRuleRows?(game: GamePublicState): RuleRow[];
   /** Body of a finished hand in the history page (`shared/History.tsx`). */
   HistoryDetail: ComponentType<{ entry: GameHistoryEntry }>;
+  /**
+   * Wording of the finish strip and heading when a table ends: default "El tamamlandı" /
+   * "Yeni el başlatabilirsin." / "Sonraki el"; return null to keep it (match games use `matchFinishLabels`).
+   */
+  finishLabels?(game: GamePublicState): { title: string; hint: string; next: string } | null;
   /** The viewer's own result on a history row; default: their seat's points. */
   historyResult?(result: Record<string, unknown>, entry: GameHistoryEntry, userId?: string): string;
   /** Setup page before `game.create`; without it the lobby's plain "Masayı kur" dialog is used. */
