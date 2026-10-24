@@ -648,7 +648,7 @@ export default function Whiteboard({
           <div className="rt-modal-body">
             <div className="rt-export-preview">
               <Image size={30} />
-              <h3>whiteboard.png</h3>
+              <h3>rooms-whiteboard.png</h3>
               <p>{t('2000 × 1240 px · Tahta içeriği')}</p>
             </div>
             <p>
