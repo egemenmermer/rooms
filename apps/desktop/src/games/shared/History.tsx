@@ -1,4 +1,4 @@
-import { locale, t, tr } from '../../i18n';
+import { locale, t } from '../../i18n';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, History, RefreshCw } from 'lucide-react';

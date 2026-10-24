@@ -1,4 +1,4 @@
-import { t, tr } from '../../i18n';
+import { t } from '../../i18n';
 import type { GamePublicState } from '../../../../../packages/activity-protocol/src';
 import { array } from './model';
 
