@@ -547,10 +547,11 @@ function removeSeat(table: GameTable, seatNumber: number, actor: GameActor, now:
   if (table.ownerId !== actor.userId && !actor.roomHost) throw new Error('TABLE_OWNER_REQUIRED');
   const target = table.seats.find((seat) => seat.seat === seatNumber);
   if (!target) throw new Error('SEAT_EMPTY');
+  // A player who pressed Otur to take their seat back is present again, even before their turn returns it.
   const away =
     target.permanentBot ||
-    target.bot ||
     target.left ||
+    (target.bot && !target.pendingReturn) ||
     (!target.connected && target.disconnectedAt !== null && now - target.disconnectedAt >= 30000);
   if (target.userId === actor.userId || !away) throw new Error('SEAT_REMOVE_NOT_ALLOWED');
   const module = moduleOf(table),

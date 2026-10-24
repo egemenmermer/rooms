@@ -266,6 +266,15 @@ describe('table lifecycle', () => {
     expect(() => act(table, alice, { type: 'game.seat.remove', seat: 3 })).toThrow('SEAT_EMPTY');
     act(table, alice, { type: 'game.seat.remove', seat: 1 });
     expect(table.seats.map((seat) => seat.seat)).toEqual([0, 2]);
+    // Taken over by a bot, then Bob presses Otur: he is coming back and keeps the seat.
+    seatOf(table, 2).bot = true;
+    act(table, bob, { type: 'game.sit', seat: 2 });
+    expect(seatOf(table, 2)).toMatchObject({ bot: true, pendingReturn: true });
+    expect(() => act(table, alice, { type: 'game.seat.remove', seat: 2 })).toThrow(
+      'SEAT_REMOVE_NOT_ALLOWED',
+    );
+    seatOf(table, 2).bot = false;
+    seatOf(table, 2).pendingReturn = false;
     // Bob lost the connection 30 s ago: the room host (not the owner) frees the chair.
     seatOf(table, 2).connected = false;
     seatOf(table, 2).disconnectedAt = 0;
