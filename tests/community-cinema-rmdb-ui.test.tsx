@@ -14,6 +14,7 @@ import type { ActivityCommand } from '../packages/activity-protocol/src';
 import type { CinemaBridge } from '../packages/community-cinema/src/bridge';
 
 vi.mock('../apps/desktop/src/realtime', () => ({
+  useVoiceRejoin: (select: (state: { rejoin: null }) => unknown) => select({ rejoin: null }),
   useRealtime: () => ({ participants: [], tracks: [], status: 'idle', channelId: null }),
 }));
 vi.mock('@rooms/media', () => ({ liveKitMediaProvider: {} }));

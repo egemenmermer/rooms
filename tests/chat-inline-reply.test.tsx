@@ -7,6 +7,7 @@ import { CommunityChat, quoteReply } from '../apps/desktop/src/RealSocial';
 import { useCommunity } from '../apps/desktop/src/community';
 vi.mock('../apps/desktop/src/VoiceAvatar', () => ({ VoiceAvatar: () => null }));
 vi.mock('../apps/desktop/src/realtime', () => ({
+  useVoiceRejoin: (select: (state: { rejoin: null }) => unknown) => select({ rejoin: null }),
   stopSoundboard: vi.fn(),
   useRealtime: () => ({ channelId: null, participants: [], status: 'not-configured' }),
 }));

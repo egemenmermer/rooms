@@ -107,6 +107,7 @@ import {
   startRoomAudio,
 } from './realtime';
 import { silencedHere } from './participant-audio';
+import { VoiceRejoinNotice } from './VoiceRejoinNotice';
 /** Who watches a screen share, from each viewer's own announcement. */
 export function viewerSummary(
   people: { id: string; name: string; local: boolean; watching?: string | null }[],
@@ -1787,6 +1788,7 @@ export function CommunityVoice({
           )}
         </div>
       </header>
+      <VoiceRejoinNotice />
       {r.channelId && !connected && (
         <div className="reference-media-notice" role="status">
           <ReferenceIcon name="alert-triangle" size={18} />

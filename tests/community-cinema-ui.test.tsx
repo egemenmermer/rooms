@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import type { ActivityCommand } from '../packages/activity-protocol/src';
 
 vi.mock('../apps/desktop/src/realtime', () => ({
+  useVoiceRejoin: (select: (state: { rejoin: null }) => unknown) => select({ rejoin: null }),
   useRealtime: () => ({ participants: [], tracks: [], status: 'idle', channelId: null }),
 }));
 vi.mock('@rooms/media', () => ({ liveKitMediaProvider: {} }));

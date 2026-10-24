@@ -9,6 +9,7 @@ vi.mock('../apps/desktop/src/RealSocial', () => ({
   CommunityChat: () => <div>Actual room chat</div>,
 }));
 vi.mock('../apps/desktop/src/realtime', () => ({
+  useVoiceRejoin: (select: (state: { rejoin: null }) => unknown) => select({ rejoin: null }),
   useRealtime: () => ({
     status: 'connected',
     channelId: 'voice',

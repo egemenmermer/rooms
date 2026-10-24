@@ -50,6 +50,7 @@ const f = vi.hoisted(() => {
   };
 });
 vi.mock('../apps/desktop/src/realtime', () => ({
+  useVoiceRejoin: (select: (state: { rejoin: null }) => unknown) => select({ rejoin: null }),
   useRealtime: () => f.snapshot,
   useVoiceContext: (selector: (state: { channelId: string }) => unknown) =>
     selector({ channelId: 'room' }),
