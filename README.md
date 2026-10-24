@@ -8,8 +8,8 @@
 
 [![Latest release](https://img.shields.io/github/v/release/egemenmermer/rooms?style=flat-square&label=latest&color=8B5CF6)](https://github.com/egemenmermer/rooms/releases/latest)
 [![MIT license](https://img.shields.io/badge/license-MIT-64748B?style=flat-square)](LICENSE)
-[![Download for macOS](https://img.shields.io/badge/macOS-download-18181B?style=flat-square&logo=apple&logoColor=white)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-arm64.dmg)
-[![Download for Windows](https://img.shields.io/badge/Windows-download-2563EB?style=flat-square)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-windows-x64-setup.exe)
+[![Download for macOS](https://img.shields.io/badge/macOS-download-18181B?style=flat-square&logo=apple&logoColor=white)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.33/ROOMS-0.1.18-rc.33-arm64.dmg)
+[![Download for Windows](https://img.shields.io/badge/Windows-download-2563EB?style=flat-square)](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.33/ROOMS-0.1.18-rc.33-windows-x64-setup.exe)
 
 Voice rooms, screen sharing, chat, music and shared activities — in one desktop app.
 
@@ -33,12 +33,12 @@ The client uses Electron, React and TypeScript. Accounts and chat run on an unmo
 
 ## Get started
 
-| You want to | Start here | You need |
-| --- | --- | --- |
-| Join an existing community | [User guide](docs/USER_GUIDE.md) (Turkish) | The app and an invite link, or an account on that server |
-| Host your own community | [One-command install](docs/SELF_HOSTING.md#quick-install-one-command) | A Linux server (VPS) and a domain; the installer does the rest |
-| Work on the app | [Development guide](docs/DEVELOPMENT.md) (Turkish) | Git, Node.js, pnpm and the source code |
-| Change your community's DJ artwork | [Customization guide](docs/CUSTOMIZATION.md) (Turkish) | Control over your server's public image files |
+| You want to                        | Start here                                                            | You need                                                       |
+| ---------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Join an existing community         | [User guide](docs/USER_GUIDE.md) (Turkish)                            | The app and an invite link, or an account on that server       |
+| Host your own community            | [One-command install](docs/SELF_HOSTING.md#quick-install-one-command) | A Linux server (VPS) and a domain; the installer does the rest |
+| Work on the app                    | [Development guide](docs/DEVELOPMENT.md) (Turkish)                    | Git, Node.js, pnpm and the source code                         |
+| Change your community's DJ artwork | [Customization guide](docs/CUSTOMIZATION.md) (Turkish)                | Control over your server's public image files                  |
 
 **Does everyone need to run a server?** No. One admin sets up the community's server; everyone else opens the desktop app and connects to it.
 
@@ -46,10 +46,10 @@ The client uses Electron, React and TypeScript. Accounts and chat run on an unmo
 
 Current builds are on the [GitHub releases](https://github.com/egemenmermer/rooms/releases/latest) page. The latest friends-test build is **RC32**:
 
-| Platform | Package | Status |
-| --- | --- | --- |
-| macOS 14+ / Apple Silicon | [Download RC32 DMG](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-arm64.dmg) | Signed and notarized by Apple |
-| Windows x64 | [Download RC32 EXE](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-windows-x64-setup.exe) | Unsigned friends-test build; Windows may show a warning |
+| Platform                  | Package                                                                                                                             | Status                                                  |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| macOS 14+ / Apple Silicon | [Download RC33 DMG](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.33/ROOMS-0.1.18-rc.33-arm64.dmg)             | Signed and notarized by Apple                           |
+| Windows x64               | [Download RC33 EXE](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.33/ROOMS-0.1.18-rc.33-windows-x64-setup.exe) | Unsigned friends-test build; Windows may show a warning |
 
 1. Download the package for your platform and install the app.
 2. Get an invite link (`https://<server>/davet/…`) from your community admin.
@@ -84,17 +84,17 @@ These screenshots come from the real interface with sample community data. They 
 
 ## What can you do?
 
-| Area | What it does | Needs |
-| --- | --- | --- |
-| Community and chat | Accounts, channels, messages, friends, profiles and roles | A compatible Stoat install and channel/role permissions |
-| Voice and screen share | Talking, camera and sharing a chosen screen or window | LiveKit, the access service, open media ports and OS permissions |
-| Remote control with consent | Mouse and keyboard control with the sharer's approval | Native input component, session authorization and platform permissions; real-device acceptance is separate |
-| Shared activities | Shared tools and server-run game state | Activities service and persistent storage |
-| Music | Community DJ, queue and shared playlists | Optional music service, supported sources and admin setup |
-| Cinema | A community hall that watches the same stream together | Optional cinema service and the owner's own legal source |
-| Personal media | Media connections you configure for yourself | A supported provider/source and your own authorized access |
-| Server management | Status and admin work for authorized people | HostOps setup and separate admin permissions |
-| Agent | Optional tasks, progress and results | Isolated Agent setup, a model connection and explicitly granted permissions |
+| Area                        | What it does                                              | Needs                                                                                                      |
+| --------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Community and chat          | Accounts, channels, messages, friends, profiles and roles | A compatible Stoat install and channel/role permissions                                                    |
+| Voice and screen share      | Talking, camera and sharing a chosen screen or window     | LiveKit, the access service, open media ports and OS permissions                                           |
+| Remote control with consent | Mouse and keyboard control with the sharer's approval     | Native input component, session authorization and platform permissions; real-device acceptance is separate |
+| Shared activities           | Shared tools and server-run game state                    | Activities service and persistent storage                                                                  |
+| Music                       | Community DJ, queue and shared playlists                  | Optional music service, supported sources and admin setup                                                  |
+| Cinema                      | A community hall that watches the same stream together    | Optional cinema service and the owner's own legal source                                                   |
+| Personal media              | Media connections you configure for yourself              | A supported provider/source and your own authorized access                                                 |
+| Server management           | Status and admin work for authorized people               | HostOps setup and separate admin permissions                                                               |
+| Agent                       | Optional tasks, progress and results                      | Isolated Agent setup, a model connection and explicitly granted permissions                                |
 
 Seeing a screen does not set up its service or provider account. Get chat and voice working first, then add optional services. Provider limits and platform differences apply.
 
@@ -177,24 +177,24 @@ The open client ships an original static DJ illustration. Each community can ser
 
 Most guides are in Turkish for now: [all documents and reading order](docs/README.md) · [RC32 release and verification record](docs/RC32_RELEASE.md)
 
-| Guide | Covers |
-| --- | --- |
-| [Usage](docs/USER_GUIDE.md) | Joining, accounts, chat, voice, screen sharing and daily use |
-| [Self-hosting](docs/SELF_HOSTING.md) | Quick install (English and Turkish), services, networking, data, backups |
-| [Development](docs/DEVELOPMENT.md) | Toolchain, commands, source layout and verification levels |
-| [Architecture](docs/ARCHITECTURE.md) | Processes, trust boundaries, storage and extension points |
-| [Interface languages](docs/I18N.md) | How Turkish and English work, glossary and style (English) |
-| [Troubleshooting and FAQ](docs/TROUBLESHOOTING.md) | Install, connection, media and update problems |
-| [Community roles](docs/COMMUNITY_ROLES.md) | Custom roles, colors, permissions and limits |
-| [Remote control](docs/REMOTE_CONTROL.md) | Request/approval flow, native input and acceptance limits |
-| [Server operations](docs/SERVER_OPERATIONS.md) | Monitoring, terminal, HostOps and operator permissions |
-| [Customization](docs/CUSTOMIZATION.md) | Community-specific DJ artwork and name |
-| [Releasing](docs/RELEASING.md) | Development packages, signing, update feed and release checks |
-| [Backend integration](infra/stoat/README.md) | Adapter, registration and upstream acceptance notes |
-| [Media transport](docs/MEDIA_TRANSPORT.md) | Design and past verification records |
-| [Agent deployment](docs/AGENT_DEPLOYMENT.md) | Optional isolated Agent infrastructure |
-| [Asset register](docs/ASSETS.md) | Where images and fonts come from |
-| [Third-party notices](docs/THIRD_PARTY_NOTICES.md) | Dependency and upstream licenses |
+| Guide                                              | Covers                                                                   |
+| -------------------------------------------------- | ------------------------------------------------------------------------ |
+| [Usage](docs/USER_GUIDE.md)                        | Joining, accounts, chat, voice, screen sharing and daily use             |
+| [Self-hosting](docs/SELF_HOSTING.md)               | Quick install (English and Turkish), services, networking, data, backups |
+| [Development](docs/DEVELOPMENT.md)                 | Toolchain, commands, source layout and verification levels               |
+| [Architecture](docs/ARCHITECTURE.md)               | Processes, trust boundaries, storage and extension points                |
+| [Interface languages](docs/I18N.md)                | How Turkish and English work, glossary and style (English)               |
+| [Troubleshooting and FAQ](docs/TROUBLESHOOTING.md) | Install, connection, media and update problems                           |
+| [Community roles](docs/COMMUNITY_ROLES.md)         | Custom roles, colors, permissions and limits                             |
+| [Remote control](docs/REMOTE_CONTROL.md)           | Request/approval flow, native input and acceptance limits                |
+| [Server operations](docs/SERVER_OPERATIONS.md)     | Monitoring, terminal, HostOps and operator permissions                   |
+| [Customization](docs/CUSTOMIZATION.md)             | Community-specific DJ artwork and name                                   |
+| [Releasing](docs/RELEASING.md)                     | Development packages, signing, update feed and release checks            |
+| [Backend integration](infra/stoat/README.md)       | Adapter, registration and upstream acceptance notes                      |
+| [Media transport](docs/MEDIA_TRANSPORT.md)         | Design and past verification records                                     |
+| [Agent deployment](docs/AGENT_DEPLOYMENT.md)       | Optional isolated Agent infrastructure                                   |
+| [Asset register](docs/ASSETS.md)                   | Where images and fonts come from                                         |
+| [Third-party notices](docs/THIRD_PARTY_NOTICES.md) | Dependency and upstream licenses                                         |
 
 ## Contributing
 
@@ -242,12 +242,12 @@ Tayfa, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında 
 
 ### Başlangıç
 
-| İstediğin | Başlangıç noktası | Gerekenler |
-| --- | --- | --- |
-| Var olan topluluğa katılmak | [Kullanım rehberi](docs/USER_GUIDE.md) | Uyumlu uygulama ve davet bağlantısı veya o sunucuda mevcut hesap |
-| Kendi topluluğunu kurmak | [Tek komutla kurulum](docs/SELF_HOSTING.md#hızlı-kurulum-tek-komut) | Linux sunucu (VPS) ve alan adı; gerisini kurulum betiği yapar |
-| Uygulamayı geliştirmek | [Geliştirme rehberi](docs/DEVELOPMENT.md) | Git, Node.js, pnpm ve kaynak kod |
-| Topluluğun DJ görselini değiştirmek | [Özelleştirme rehberi](docs/CUSTOMIZATION.md) | Kendi sunucunun herkese açık görsel dosyalarını yönetebilmek |
+| İstediğin                           | Başlangıç noktası                                                   | Gerekenler                                                       |
+| ----------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Var olan topluluğa katılmak         | [Kullanım rehberi](docs/USER_GUIDE.md)                              | Uyumlu uygulama ve davet bağlantısı veya o sunucuda mevcut hesap |
+| Kendi topluluğunu kurmak            | [Tek komutla kurulum](docs/SELF_HOSTING.md#hızlı-kurulum-tek-komut) | Linux sunucu (VPS) ve alan adı; gerisini kurulum betiği yapar    |
+| Uygulamayı geliştirmek              | [Geliştirme rehberi](docs/DEVELOPMENT.md)                           | Git, Node.js, pnpm ve kaynak kod                                 |
+| Topluluğun DJ görselini değiştirmek | [Özelleştirme rehberi](docs/CUSTOMIZATION.md)                       | Kendi sunucunun herkese açık görsel dosyalarını yönetebilmek     |
 
 **Herkesin sunucu kurması gerekiyor mu?** Hayır. Bir yönetici topluluğun sunucusunu kurar; diğer üyeler masaüstü uygulamasını açıp o sunucuya bağlanır.
 
@@ -255,10 +255,10 @@ Tayfa, küçük bir topluluğun masaüstündeki buluşma yeridir. Ses odasında 
 
 Güncel paketler [GitHub sürümleri](https://github.com/egemenmermer/rooms/releases/latest) sayfasındadır. Son yayımlanan arkadaş test sürümü **RC32**:
 
-| Platform | Paket | Durum |
-| --- | --- | --- |
-| macOS 14+ / Apple Silicon | [RC32 DMG indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-arm64.dmg) | Apple imzalı ve noter onaylı |
-| Windows x64 | [RC32 EXE indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.32/ROOMS-0.1.18-rc.32-windows-x64-setup.exe) | İmzasız arkadaş test paketi; sistem uyarısı gösterebilir |
+| Platform                  | Paket                                                                                                                            | Durum                                                    |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| macOS 14+ / Apple Silicon | [RC33 DMG indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.33/ROOMS-0.1.18-rc.33-arm64.dmg)             | Apple imzalı ve noter onaylı                             |
+| Windows x64               | [RC33 EXE indir](https://github.com/egemenmermer/rooms/releases/download/v0.1.18-rc.33/ROOMS-0.1.18-rc.33-windows-x64-setup.exe) | İmzasız arkadaş test paketi; sistem uyarısı gösterebilir |
 
 1. Platformuna uygun paketi indirip uygulamayı kur.
 2. Topluluk yöneticisinden davet bağlantısını (`https://<sunucu>/davet/…`) al.
@@ -293,16 +293,16 @@ Bu görüntüler, uygulamanın gerçek arayüzünden örnek topluluk verileriyle
 
 ### Neler yapabilirsin?
 
-| Alan | Ne işe yarar? | Gereken altyapı |
-| --- | --- | --- |
-| Topluluk ve sohbet | Hesap, kanal, mesaj, arkadaşlık, profil ve rol yönetimi | Uyumlu Stoat kurulumu ve kanal/rol izinleri |
-| Ses ve ekran paylaşımı | Konuşma, kamera ve seçilen ekran/pencere yayını | LiveKit, erişim servisi, açık medya portları ve işletim sistemi izinleri |
-| İzinli uzaktan kontrol | Yayıncının onayıyla fare ve klavye kontrolü | Yerel giriş bileşeni, oturum yetkisi ve platform izinleri; gerçek cihaz kabulü ayrıca gerekir |
-| Ortak etkinlikler | Paylaşılan araçlar ve sunucunun yönettiği oyun durumu | Activities servisi ve kalıcı depolama |
-| Müzik | Topluluk DJ'i, kuyruk ve ortak listeler | İsteğe bağlı müzik servisi, desteklenen kaynaklar ve yönetici yapılandırması |
-| Kişisel medya | Sana ait yapılandırılmış medya bağlantıları | Desteklenen sağlayıcı/kaynak ve kendi yetkili erişimin |
-| Sunucu yönetimi | Yetkili kişinin sunucu durumu ve yönetim işlerini izlemesi | HostOps kurulumu ve ayrı yönetici yetkileri |
-| Agent | İsteğe bağlı görevler, ilerleme ve sonuçlar | Yalıtılmış Agent kurulumu, model bağlantısı ve açıkça verilmiş yetkiler |
+| Alan                   | Ne işe yarar?                                              | Gereken altyapı                                                                               |
+| ---------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Topluluk ve sohbet     | Hesap, kanal, mesaj, arkadaşlık, profil ve rol yönetimi    | Uyumlu Stoat kurulumu ve kanal/rol izinleri                                                   |
+| Ses ve ekran paylaşımı | Konuşma, kamera ve seçilen ekran/pencere yayını            | LiveKit, erişim servisi, açık medya portları ve işletim sistemi izinleri                      |
+| İzinli uzaktan kontrol | Yayıncının onayıyla fare ve klavye kontrolü                | Yerel giriş bileşeni, oturum yetkisi ve platform izinleri; gerçek cihaz kabulü ayrıca gerekir |
+| Ortak etkinlikler      | Paylaşılan araçlar ve sunucunun yönettiği oyun durumu      | Activities servisi ve kalıcı depolama                                                         |
+| Müzik                  | Topluluk DJ'i, kuyruk ve ortak listeler                    | İsteğe bağlı müzik servisi, desteklenen kaynaklar ve yönetici yapılandırması                  |
+| Kişisel medya          | Sana ait yapılandırılmış medya bağlantıları                | Desteklenen sağlayıcı/kaynak ve kendi yetkili erişimin                                        |
+| Sunucu yönetimi        | Yetkili kişinin sunucu durumu ve yönetim işlerini izlemesi | HostOps kurulumu ve ayrı yönetici yetkileri                                                   |
+| Agent                  | İsteğe bağlı görevler, ilerleme ve sonuçlar                | Yalıtılmış Agent kurulumu, model bağlantısı ve açıkça verilmiş yetkiler                       |
 
 Bir ekranın görünmesi o servisi veya sağlayıcı hesabını kendiliğinden kurmaz. Önce temel sohbet ve sesi çalıştır; isteğe bağlı servisleri daha sonra ekle. Sağlayıcı kısıtları ve platform farkları geçerlidir.
 
@@ -385,23 +385,23 @@ Açık istemcide özgün bir statik DJ çizimi bulunur. Her topluluk kendi adın
 
 [Tüm belgeler ve okuma sırası](docs/README.md) · [RC32 yayın ve doğrulama kaydı](docs/RC32_RELEASE.md)
 
-| Rehber | İçeriği |
-| --- | --- |
-| [Kullanım](docs/USER_GUIDE.md) | Katılım, hesap, sohbet, ses, ekran paylaşımı ve günlük kullanım |
-| [Sunucu kurulumu](docs/SELF_HOSTING.md) | Servisler, yerel kurulum, dış ağ, veriler, yedek ve doğrulama |
-| [Geliştirme](docs/DEVELOPMENT.md) | Araç zinciri, komutlar, kaynak düzeni ve doğrulama seviyeleri |
-| [Mimari](docs/ARCHITECTURE.md) | Süreçler, güven sınırları, depolama ve genişletme noktaları |
-| [Sorun giderme ve sık sorulanlar](docs/TROUBLESHOOTING.md) | Kurulum, bağlantı, medya ve güncelleme sorunları |
-| [Topluluk rolleri](docs/COMMUNITY_ROLES.md) | Özel roller, renkler, izinler ve yetki sınırları |
-| [Uzaktan kontrol](docs/REMOTE_CONTROL.md) | İstek/onay akışı, yerel giriş ve kabul sınırları |
-| [Sunucu yönetimi](docs/SERVER_OPERATIONS.md) | İzleme, terminal, HostOps ve operatör yetkileri |
-| [Özelleştirme](docs/CUSTOMIZATION.md) | Topluluğa özel DJ görseli ve adı |
-| [Sürüm yayımlama](docs/RELEASING.md) | Geliştirme paketleri, imza, güncelleme beslemesi ve yayın kontrolleri |
-| [Arka uç entegrasyonu](infra/stoat/README.md) | Bağdaştırıcı, kayıt ve üst sistem kabul notları |
-| [Medya aktarımı](docs/MEDIA_TRANSPORT.md) | Tasarım ve geçmiş doğrulama kayıtları |
-| [Agent kurulumu](docs/AGENT_DEPLOYMENT.md) | İsteğe bağlı izole Agent altyapısı |
-| [Varlık kaydı](docs/ASSETS.md) | Görsellerin ve yazı tiplerinin kaynağı |
-| [Üçüncü taraf bildirimleri](docs/THIRD_PARTY_NOTICES.md) | Bağımlılık ve üst sistem lisansları |
+| Rehber                                                     | İçeriği                                                               |
+| ---------------------------------------------------------- | --------------------------------------------------------------------- |
+| [Kullanım](docs/USER_GUIDE.md)                             | Katılım, hesap, sohbet, ses, ekran paylaşımı ve günlük kullanım       |
+| [Sunucu kurulumu](docs/SELF_HOSTING.md)                    | Servisler, yerel kurulum, dış ağ, veriler, yedek ve doğrulama         |
+| [Geliştirme](docs/DEVELOPMENT.md)                          | Araç zinciri, komutlar, kaynak düzeni ve doğrulama seviyeleri         |
+| [Mimari](docs/ARCHITECTURE.md)                             | Süreçler, güven sınırları, depolama ve genişletme noktaları           |
+| [Sorun giderme ve sık sorulanlar](docs/TROUBLESHOOTING.md) | Kurulum, bağlantı, medya ve güncelleme sorunları                      |
+| [Topluluk rolleri](docs/COMMUNITY_ROLES.md)                | Özel roller, renkler, izinler ve yetki sınırları                      |
+| [Uzaktan kontrol](docs/REMOTE_CONTROL.md)                  | İstek/onay akışı, yerel giriş ve kabul sınırları                      |
+| [Sunucu yönetimi](docs/SERVER_OPERATIONS.md)               | İzleme, terminal, HostOps ve operatör yetkileri                       |
+| [Özelleştirme](docs/CUSTOMIZATION.md)                      | Topluluğa özel DJ görseli ve adı                                      |
+| [Sürüm yayımlama](docs/RELEASING.md)                       | Geliştirme paketleri, imza, güncelleme beslemesi ve yayın kontrolleri |
+| [Arka uç entegrasyonu](infra/stoat/README.md)              | Bağdaştırıcı, kayıt ve üst sistem kabul notları                       |
+| [Medya aktarımı](docs/MEDIA_TRANSPORT.md)                  | Tasarım ve geçmiş doğrulama kayıtları                                 |
+| [Agent kurulumu](docs/AGENT_DEPLOYMENT.md)                 | İsteğe bağlı izole Agent altyapısı                                    |
+| [Varlık kaydı](docs/ASSETS.md)                             | Görsellerin ve yazı tiplerinin kaynağı                                |
+| [Üçüncü taraf bildirimleri](docs/THIRD_PARTY_NOTICES.md)   | Bağımlılık ve üst sistem lisansları                                   |
 
 ### Katkıda bulunma
 
