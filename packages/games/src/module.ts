@@ -55,6 +55,11 @@ export interface GameError {
 }
 export interface BotContext {
   timedOut: boolean;
+  /**
+   * The seat's human left the table or lost the connection and a bot plays for them. Like `timedOut`, a module
+   * should not put the absent player's stake at risk (Hold'em folds instead of calling).
+   */
+  absent?: boolean;
 }
 export type GameOptionValue = string | number | boolean;
 
@@ -112,6 +117,11 @@ export interface GameTableHooks<State, Options> {
   chips?: {
     /** Replaces `start()` so the round gets every player's stack and bet. */
     start(players: ChipPlayer[], options: Options, first: number): State;
+    /**
+     * Whether a seated player can be dealt into the next round, and with which bet (Blackjack lowers a bet the
+     * player can no longer cover). Null leaves the seat out of this round. Default: everyone is dealt in.
+     */
+    dealable?(player: ChipPlayer, options: Options): ChipPlayer | null;
     /** Stacks to write back to the seats once the round is settled. */
     finalChips(state: State): readonly { userId: string; chips: number }[];
     /** Players set a per-round `bet` between rounds (Blackjack). */

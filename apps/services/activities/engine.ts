@@ -22,6 +22,9 @@ import {
   gameView,
 } from './games';
 
+/** Earlier tables kept per room (S4); each keeps at most the game's own history limit. */
+export const GAME_ARCHIVE_LIMIT = 10;
+
 /** Queue media each shared player accepts. The hall plays catalog items and YouTube. */
 function acceptsMedia(activity: string, kind: SharedMedia['kind']) {
   if (activity === 'cinema') return kind === 'independent-source';
@@ -535,6 +538,7 @@ export function applyCommand(
           history: structuredClone(room.game.history),
           statistics: structuredClone(room.game.statistics),
         });
+        room.gameArchives = room.gameArchives.slice(-GAME_ARCHIVE_LIMIT);
       }
       if (command.replacePrimary) {
         state.timeline = {
@@ -560,6 +564,7 @@ export function applyCommand(
     case 'game.watch':
     case 'game.sit':
     case 'game.bot.add':
+    case 'game.seat.remove':
     case 'game.leave':
     case 'game.action': {
       const adopting =
@@ -572,7 +577,12 @@ export function applyCommand(
       const next = structuredClone(room.game);
       if (adopting) next.ownerId = identity.userId;
       try {
-        gameCommand(next, command, identity, now);
+        gameCommand(
+          next,
+          command,
+          { ...identity, roomHost: state.primary?.hostUserId === identity.userId },
+          now,
+        );
       } catch (error) {
         fail(409, error instanceof Error ? error.message : 'INVALID_GAME_ACTION');
       }

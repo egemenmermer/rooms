@@ -79,9 +79,14 @@ export const okey101Module = {
   action: (state, seat, command) => caught(() => okey101Action(state, seat, command)),
   view: (state, viewerSeat) => okey101View(state, viewerSeat),
   turn: (state) => state.turn,
-  botCommand(state, index) {
+  // Showing the gösterge keeps the turn; it is a decision of its own, so the clock starts again after it.
+  phase: (state) => (state.gostergeShown ?? []).filter(Boolean).length,
+  botCommand(state, index, _rng, context) {
     const hand = state.hands[index],
       options = okey101Options(state.rules);
+    // A timed-out human is only kept in the game: draw and discard. Opening is irreversible (and with
+    // katlamalı raises everyone's threshold), so it stays the player's own decision.
+    const keepOnly = Boolean(context?.timedOut);
     // Showing the indicator's twin on the first turn is free points (−101) and keeps the turn.
     const gosterge = okey101GostergeTile(state, index);
     if (gosterge) return { action: 'gosterge', cardId: gosterge };
@@ -91,6 +96,7 @@ export const okey101Module = {
     const melds = botMelds(hand),
       points = melds.flat().reduce((sum, tile) => sum + tile.value, 0);
     if (
+      !keepOnly &&
       melds.length &&
       (state.opened[index] === 'runs' ||
         (!state.opened[index] &&
@@ -99,7 +105,7 @@ export const okey101Module = {
     )
       return { action: 'open', melds: melds.map((meld) => meld.map((tile) => tile.id)) };
     let extension: { meld: number; tileId: string } | null = null;
-    if (state.opened[index] === 'runs' && hand.length > 1)
+    if (!keepOnly && state.opened[index] === 'runs' && hand.length > 1)
       for (const [meldIndex, meld] of state.melds.entries()) {
         if (meld.pairs) continue;
         for (const tile of hand.filter((t) => !t.joker))

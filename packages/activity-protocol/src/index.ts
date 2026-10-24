@@ -254,6 +254,8 @@ export const commandSchema = z
         })
         .strict(),
       z.object({ type: z.literal('game.bot.add'), seat: gameSeat }).strict(),
+      // The table owner or room host frees a bot's seat or an away player's seat.
+      z.object({ type: z.literal('game.seat.remove'), seat: gameSeat }).strict(),
       z.object({ type: z.literal('game.leave') }).strict(),
       z
         .object({

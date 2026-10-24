@@ -1,6 +1,13 @@
 import type { HoldemTableRules } from '../../activity-protocol/src/index';
-import { holdemAction, holdemView, startHoldem, type HoldemHand } from './holdem';
-import { caught, type GameModule } from './module';
+import {
+  holdemAction,
+  holdemView,
+  isHoldemDealable,
+  startHoldem,
+  type HoldemHand,
+  type HoldemOptions,
+} from './holdem';
+import { caught, parseSwitches, type GameModule } from './module';
 
 const holdemActions = ['fold', 'check', 'call', 'raise'] as const;
 export interface HoldemCommand {
@@ -8,6 +15,11 @@ export interface HoldemCommand {
   amount?: number;
 }
 const seatRange = (capacity: number) => Array.from({ length: capacity - 1 }, (_, i) => i + 2);
+/** The table's configurable rules plus the house rules from `game.create.options`. */
+export type HoldemModuleOptions = HoldemTableRules & HoldemOptions;
+const houseRuleKeys: (keyof HoldemOptions)[] = ['muckLosers'];
+const handOptions = (rules: HoldemModuleOptions): HoldemOptions =>
+  rules.muckLosers ? { muckLosers: true } : {};
 
 /** Texas Hold'em (`rooms-holdem-v1`) over the existing rules in `holdem.ts`. */
 export const holdemModule = {
@@ -31,6 +43,8 @@ export const holdemModule = {
       first,
       rules.smallBlind,
       rules.bigBlind,
+      undefined,
+      handOptions(rules),
     ),
   action: (state, seat, command) =>
     caught(() =>
@@ -48,12 +62,16 @@ export const holdemModule = {
   turn: (state) => state.turn,
   phase: (state) => state.stage,
   botCommand(state, seat, _rng, context) {
-    // A bot calls to stay in; a timed-out human only checks or folds.
+    // A settled hand (the blinds put everyone all-in) has no decision left; the service never asks.
+    if (state.stage === 'ended' || state.turn === null || !state.seats[seat])
+      return { action: 'check' };
+    // A permanent bot calls to stay in. A timed-out human, or one who left or lost the connection,
+    // never risks their stack: they check when they can and otherwise fold, as at a real table.
     return {
       action:
         state.seats[seat].streetBet === state.maximumBet
           ? 'check'
-          : context?.timedOut
+          : context?.timedOut || context?.absent
             ? 'fold'
             : 'call',
     };
@@ -81,6 +99,9 @@ export const holdemModule = {
     const publicHand = holdemView(hand, '');
     return {
       payouts: hand.payouts,
+      // Public betting actions (blinds included), so the hand history can be replayed.
+      actions: hand.log ?? [],
+      mucked: hand.settlement?.mucked ?? [],
       board: hand.board,
       pots: hand.settlement?.pots ?? [],
       settlementReason: hand.settlement?.reason ?? null,
@@ -102,7 +123,11 @@ export const holdemModule = {
   },
   table: {
     stateKey: 'holdem',
-    tableOptions: (fields) => fields.holdemRules,
+    parseRules: (input) => parseSwitches<Required<HoldemOptions>>(input, houseRuleKeys),
+    tableOptions: (fields) => ({
+      ...fields.holdemRules,
+      ...(fields.options as HoldemOptions | undefined),
+    }),
     roundPlayers: (state) => state.seats.map((seat) => seat.userId),
     lateSeating: true,
     chips: {
@@ -112,12 +137,22 @@ export const holdemModule = {
           first,
           rules.smallBlind,
           rules.bigBlind,
+          undefined,
+          handOptions(rules),
         ),
+      // Only a stack with chips is dealt in; a short stack posts all-in for less.
+      dealable: (player) => (isHoldemDealable(player.chips) ? player : null),
       finalChips: (state) =>
         state.seats.map((seat) => ({ userId: seat.userId, chips: seat.chips })),
     },
-    timeoutDetails: (state, seat) => ({
-      toCall: Math.max(0, state.maximumBet - state.seats[seat].streetBet),
-    }),
+    timeoutDetails: (state, seat) =>
+      state.stage === 'ended' || !state.seats[seat]
+        ? {}
+        : { toCall: Math.max(0, state.maximumBet - state.seats[seat].streetBet) },
   },
-} satisfies GameModule<HoldemHand, HoldemCommand, ReturnType<typeof holdemView>, HoldemTableRules>;
+} satisfies GameModule<
+  HoldemHand,
+  HoldemCommand,
+  ReturnType<typeof holdemView>,
+  HoldemModuleOptions
+>;

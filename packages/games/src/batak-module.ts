@@ -30,6 +30,9 @@ export const batakModule = {
   action: (state, seat, command) => caught(() => batakAction(state, seat, command)),
   view: (state, viewerSeat) => batakView(state, viewerSeat),
   turn: (state) => state.turn,
+  // Choosing trump, burying and every new trick are separate decisions, even when one seat makes them in a
+  // row (the bidder; a trick winner leading the next trick), so each gets a full turn clock.
+  phase: (state) => `${state.stage}:${state.completedTricks.length}`,
   botCommand(state, index) {
     const cards = state.hands[index];
     if (state.stage === 'bidding') return { action: 'pass' };

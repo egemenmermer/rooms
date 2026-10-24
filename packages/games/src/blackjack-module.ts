@@ -59,11 +59,14 @@ export const blackjackModule = {
   // Player cards are open at a real table; the dealer's hole card and the shoe stay hidden.
   view: (state) => blackjackTableView(state),
   turn: (state) => state.turn,
-  botCommand(state, seat) {
+  botCommand(state, seat, _rng, context) {
     // Insurance is a losing side bet for a player who cannot count cards; bots and timeouts decline it.
     if (state.insurancePending) return { action: 'decline-insurance' };
-    const player = state.players[seat];
-    return { action: blackjackTotal(player.hands[player.activeHand].cards) < 17 ? 'hit' : 'stand' };
+    const player = state.players[seat],
+      hand = player?.hands[player.activeHand];
+    // A real table stands the hand of a player who walked away or let the clock run out.
+    if (!hand || context?.timedOut || context?.absent) return { action: 'stand' };
+    return { action: blackjackTotal(hand.cards) < 17 ? 'hit' : 'stand' };
   },
   legalActions(state, seat) {
     const own = state.players[seat],
@@ -83,7 +86,11 @@ export const blackjackModule = {
     return legal;
   },
   // Answering the insurance prompt and then playing are separate decisions, each with its own timer.
-  phase: (round) => (round.insurancePending ? 'insurance' : 'play'),
+  // Every split hand is its own decision with its own timer too.
+  phase: (round) =>
+    round.insurancePending
+      ? 'insurance'
+      : `play:${round.turn === null ? '' : (round.players[round.turn]?.activeHand ?? '')}`,
   settle: (round) =>
     !round.finished
       ? null
@@ -130,6 +137,12 @@ export const blackjackModule = {
           undefined,
           rules,
         ),
+      // Bets are even (3:2 pays) and at least 2: a smaller stack sits the round out, a bet the
+      // stack no longer covers is lowered to the largest even amount it does.
+      dealable: (player) =>
+        player.chips < 2
+          ? null
+          : { ...player, bet: Math.max(2, Math.min(player.bet, player.chips - (player.chips % 2))) },
       finalChips: (round) =>
         round.players.map((player) => ({ userId: player.userId, chips: player.credits })),
       tableBets: true,
