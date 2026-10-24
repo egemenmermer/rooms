@@ -18,20 +18,34 @@ Kart açmaya kadar yalnızca kendi kapalı kartlarınız görünür. Pas geçeni
 
 ## Blackjack — `rooms-blackjack-v1`
 
-Tüm oyuncular aynı krupiyeye karşı oynar. Altı destelik ayakkabı kullanılır; krupiye yumuşak 17'de durur, doğal blackjack 3:2 öder, sigorta kapalıdır. 3:2 ödemelerinin tam sayı olması için bahisler pozitif çift tam sayı olmalıdır. Kart çekme, durma, başlangıçtaki herhangi iki kartla ikiye katlama, bölmeden sonra ikiye katlama ve en fazla dört bölünmüş el desteklenir. On değerindeki farklı kartlar bölünebilir. As, on değerli kartla bölünemez. Bölünmüş aslara yalnızca birer kart verilir; bölünmüş 21 doğal blackjack değil normal galibiyet öder. Aslar yeniden bölünmez.
+Tüm oyuncular aynı krupiyeye karşı oynar. Altı destelik ayakkabı kullanılır; krupiye yumuşak 17'de durur, doğal blackjack 3:2 öder. 3:2 ödemelerinin tam sayı olması için bahisler pozitif çift tam sayı olmalıdır. Kart çekme, durma, başlangıçtaki herhangi iki kartla ikiye katlama, bölmeden sonra ikiye katlama ve en fazla dört bölünmüş el desteklenir. On değerindeki farklı kartlar bölünebilir. As, on değerli kartla bölünemez. Bölünmüş aslara yalnızca birer kart verilir; bölünmüş 21 doğal blackjack değil normal galibiyet öder. Aslar yeniden bölünmez. Bölünen elin ikinci kartı, sıra o ele gelene kadar dağıtılmaz; masada yalnızca tek kartlı bekleyen el görünür.
 
-Krupiyenin kapalı kartı ve deste bitişe kadar açık görünümde yer almaz. Oyuncu kartları gerçek Blackjack masasındaki gibi açıktır. Botlar 17 ve üstünde durur, altında çeker. Krupiyenin doğal blackjack'i turu hemen bitirir.
+Masa seçenekleri (tur başlarken sabitlenir ve görünümde yayımlanır). Varsayılanlar:
+
+- Sigorta (`insurance`, **açık**): krupiyenin açık kartı as ise, kapalı karta bakılmadan önce her oyuncuya sırayla sigorta sorulur. Sigorta ilk elin bahsinin yarısıdır ve 2:1 öder (yatırılan yarım bahis dahil toplam 3 katı geri gelir); krupiyede doğal blackjack varsa ödenir, yoksa yarım bahis kaybolur ve oyun normal başlar. Bahis çift olduğundan yarım bahis her zaman tam sayıdır. Bakiyesi yarım bahse yetmeyen oyuncuya sorulmaz. Sigorta sorulurken kalan oyuncular beklemek zorundadır; `insurance` yanıtı dışında yalnızca "reddet" (`decline-insurance`) geçerlidir. Bot ve zaman aşımı yalnızca hit/stand bildiğinden bu iki eylem sigortayı reddetme sayılır. Açık kart on değerliyse krupiye hemen bakar ve doğal blackjack turu bitirir. "Eşit para" ayrı bir eylem değildir; doğal blackjack'li oyuncunun sigorta alması aynı sonucu verir.
+- Teslim olma (`surrender`, **kapalı**): açıksa, krupiye doğal blackjack yapmadığı bilindikten sonra (geç teslim), bölünmemiş elin ilk kararında oyuncu teslim olup bahsin yarısını geri alır. Teslim olunan el krupiyenin çekmesine sebep olmaz.
+
+Krupiyenin kapalı kartı ve deste bitişe kadar açık görünümde yer almaz. Oyuncu kartları gerçek Blackjack masasındaki gibi açıktır. Botlar 17 ve üstünde durur, altında çeker. Krupiyenin doğal blackjack'i turu hemen bitirir. Krupiye yalnızca iflas etmemiş, doğal olmayan ve teslim olunmamış bir el kaldıysa kart çeker; yalnızca doğal blackjack'ler ve iflaslar varsa ikinci kartı açılır ama çekmez.
 
 ## Batak — `rooms-batak-v1`
 
 Tüm türler jokersiz standart 52 kart kullanır. İhaleli ve Eşli'de kişiye 13, Gömmeli'de 16 kart ve dört kartlık gömü vardır. Açılan renge uymak zorunludur. Aynı renkte eli almak mümkünse üstüne çıkılmalıdır. Renk yoksa mümkün olduğunda koz, mümkünse üst koz atılmalıdır. Takım arkadaşı kazanırken de bu zorunluluklar geçerlidir; bu, yazılmamış ev kuralı istisnası değil yayımlanan Tayfa profilidir.
 
+Koz kırılmadan koz açılmaz (`noTrumpLeadUntilBroken`, **açık**): koz, başka bir rengin açılışında oynanıp kırılana kadar bir el koz ile açılamaz. Elinde yalnızca koz kalan oyuncu istisnadır. Kırılma, kozun koz olmayan bir açılışa atılmasıyla (kesme veya renksiz atış) olur ve elin sonuna kadar sürer. Kural kapalıysa her kart açılabilir.
+
 - İhaleli: artan ihale, en az 5/en fazla 13; kazanan kozu seçer ve başlar. İhaleci başarılıysa aldığı el kadar, başarısızsa eksi ihale kadar puan alır. Savunmacılar kendi ellerini yazar.
 - Eşli: karşılıklı koltuklar takım; artan ihale en az 8. İhalecinin takımı başarılıysa toplam aldığı eli, değilse eksi ihaleyi yazar; savunmacılar takım ellerini yazar.
 - Koz Maça: koz sabit maça; herkes bir kez 1–13 kişisel taahhüt verir. Pas, en az 1 anlamındadır. Kendi taahhüdüne ulaşan aldığı eli, ulaşamayan eksi taahhüdü yazar. Koz seçme ekranı yoktur.
-- Gömmeli: artan ihale, en az 8/en fazla 16. İhaleci kozu seçer, dört gömü kartını alır, sonra kendi dört kartını gizlice gömer. Gömülenler gizli kalır. İhale ve savunma puanlaması İhaleli gibidir.
+- Gömmeli: artan ihale, en az 8/en fazla 16. İhaleci kozu seçer, dört gömü kartını alır, sonra kendi dört kartını gizlice gömer. Gömülenler gizli kalır; yalnızca ihaleci gömdükten sonra kendi gömüsüne bakabilir. İhale ve savunma puanlaması İhaleli gibidir.
 
-Herkes pas geçerse son kalan ihaleci en düşük taahhüdü alır. Biten eller ve puanlar açıktır. İhale, koz, gömü, renge uyma ve üst koz sunucuda doğrulanır. Botlar pas geçer, en uzun rengini seçer, düşük koz dışı kartları gömer ve en düşük yasal kartı oynar; başka eli incelemez.
+İsteğe bağlı puanlama seçenekleri (tur başlarken sabitlenir ve görünümde yayımlanır; ikisi de **kapalı**; İhaleli, Eşli ve Gömmeli'de geçerlidir, Koz Maça'da etkisizdir):
+
+- Savunmacı batağı (`defenderBatakPenalty`): hiç el almayan savunmacı (Eşli'de hiç el almayan savunma takımı) kendi eli olan 0 yerine eksi ihale kadar puan yazar.
+- İhale kadar yaz (`writeContract`): başarılı ihaleci (Eşli'de takım) aldığı el sayısı yerine tam ihale kadar puan yazar; başarısız olursa yine eksi ihale kadardır.
+
+Herkes pas geçerse son kalan ihaleci en düşük taahhüdü alır. Biten eller ve puanlar açıktır. Koz, ihale boyunca ve koz seçilene kadar görünümde gizlidir (Koz Maça'da baştan maçadır). Pas geçenler ve ihale/pas sırası (`passed`, `bidLog`) herkese açıktır. İhale, koz, gömü, renge uyma, koz açma ve üst koz sunucuda doğrulanır. Botlar pas geçer, en uzun rengini seçer, düşük koz dışı kartları gömer ve en düşük yasal kartı oynar; başka eli incelemez.
+
+İstatistikteki "galibiyet" artık puanın sıfırdan büyük olması değildir: ihaleci ihaleyi tutturursa, savunmacılar ihaleciyi batırırsa kazanır; Eşli'de takım olarak aynı şekilde sayılır. Koz Maça'da kendi taahhüdünü tutturanlar arasında en yüksek puanı yazan (eşitlikte hepsi) kazanır, kimse tutturmadıysa kimse kazanmaz.
 
 ## 101 Okey — `rooms-101-v1`
 

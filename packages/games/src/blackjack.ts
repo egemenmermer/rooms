@@ -4,6 +4,8 @@ export interface BlackjackHand {
   bet: number;
   state: 'playing' | 'stood' | 'bust';
   split: boolean;
+  /** Late surrender: the hand is closed and half the bet comes back (table rule, off by default). */
+  surrendered?: boolean;
 }
 export interface BlackjackRound {
   revision: number;
@@ -27,18 +29,29 @@ export function blackjackTotal(cards: Card[]) {
   while (total > 21 && aces--) total -= 10;
   return total;
 }
+/** A natural is a two-card 21 on an unsplit hand. */
+export function isBlackjackNatural(hand: Pick<BlackjackHand, 'cards' | 'split'>) {
+  return !hand.split && hand.cards.length === 2 && blackjackTotal(hand.cards) === 21;
+}
+/** The dealer only plays out when a hand is still contested: not bust, not a paid natural. */
+export function hasContestedHand(hands: BlackjackHand[]) {
+  return hands.some((h) => h.state !== 'bust' && !h.surrendered && !isBlackjackNatural(h));
+}
+/** Second card of a split hand, dealt when play reaches it rather than at the split. */
+function dealPending(round: BlackjackRound, hand: BlackjackHand) {
+  if (hand.cards.length !== 1) return;
+  hand.cards.push(draw(round));
+  if (hand.cards[0].rank === 14 || blackjackTotal(hand.cards) === 21) hand.state = 'stood';
+}
 function draw(round: BlackjackRound): Card {
   const card = round.shoe.shift();
   if (!card) throw new Error('SHOE_EMPTY');
   return card;
 }
 function settle(round: BlackjackRound) {
-  if (round.hands.every((h) => h.state === 'bust')) {
-    round.finished = true;
-  } else {
+  if (hasContestedHand(round.hands))
     while (blackjackTotal(round.dealer) < 17) round.dealer.push(draw(round));
-    round.finished = true;
-  }
+  round.finished = true;
   const dealer = blackjackTotal(round.dealer),
     dealerNatural = dealer === 21 && round.dealer.length === 2;
   round.results = round.hands.map((hand, index) => {
@@ -69,8 +82,12 @@ function settle(round: BlackjackRound) {
   });
 }
 function advance(round: BlackjackRound) {
-  while (round.activeHand < round.hands.length && round.hands[round.activeHand].state !== 'playing')
+  while (round.activeHand < round.hands.length) {
+    const hand = round.hands[round.activeHand];
+    if (hand.state === 'playing') dealPending(round, hand);
+    if (hand.state === 'playing') break;
     round.activeHand++;
+  }
   if (round.activeHand >= round.hands.length) settle(round);
 }
 export function startBlackjack(
@@ -148,14 +165,13 @@ export function blackjackAction(
       hand.split = true;
       hand.cards.push(draw(round));
       const other: BlackjackHand = {
-        cards: [card, draw(round)],
+        cards: [card],
         bet: hand.bet,
         state: 'playing',
         split: true,
       };
       round.hands.splice(round.activeHand + 1, 0, other);
       if (card.rank === 14 || blackjackTotal(hand.cards) === 21) hand.state = 'stood';
-      if (card.rank === 14 || blackjackTotal(other.cards) === 21) other.state = 'stood';
       break;
     }
   }
