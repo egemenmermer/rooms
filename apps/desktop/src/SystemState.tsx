@@ -251,7 +251,7 @@ export default function ConnectionStatusSurface() {
       setBusy(false);
     }
   };
-  if (fixtureState === 'splash') return <StartupSplash referenceCopy />;
+  if (fixtureState === 'splash') return <StartupSplash />;
   return (
     <SystemState
       kind={kind}
@@ -272,12 +272,12 @@ export default function ConnectionStatusSurface() {
   );
 }
 
-export function StartupSplash({ referenceCopy = false }: { referenceCopy?: boolean } = {}) {
+export function StartupSplash() {
   return (
     <div className="reference-splash" role="status">
       <div>
         <img src="./reference-brand/brand/logo-lockup-lilac.svg" alt="Tayfa" />
-        {import.meta.env.DEV && referenceCopy && <h1>{t('Aynı yere dönmek güzel.')}</h1>}
+        <h1>{t('Aynı yere dönmek güzel.')}</h1>
         <p>{t('Odan hazırlanıyor.')}</p>
         <progress aria-label={t('Uygulama açılıyor')} />
       </div>

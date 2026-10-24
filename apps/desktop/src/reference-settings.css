@@ -25,7 +25,7 @@
 }
 .reference-settings .ref-nav-group {
   display: block;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 1.1px;
   font-weight: 650;
   color: #9197a7;
@@ -58,7 +58,7 @@
   display: block;
   margin: 28px 10px;
   color: #9197a7;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
 }
 .ref-settings-main {
   min-width: 0;
@@ -101,7 +101,7 @@
 }
 .ref-settings-heading > span {
   display: block;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-weight: 700;
   color: #c5c0ff;
   letter-spacing: 1.35px;
@@ -126,12 +126,12 @@
   min-height: 61px;
 }
 .reference-settings .settings-row h4 {
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   font-weight: 600;
   color: #f2f3f7;
 }
 .reference-settings .settings-row p {
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   line-height: 1.55;
   color: #b1b5c2;
   margin-top: 4px;
@@ -139,11 +139,11 @@
 }
 .reference-settings .settings-row > span {
   color: #b1b5c2;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
 }
 .reference-settings .button {
   border-radius: 7px;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   min-height: 36px;
   padding: 9px 14px;
 }
@@ -165,7 +165,7 @@
   color: #ffafb7;
 }
 .reference-settings .text-button {
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   color: #b1b5c2;
 }
 .reference-settings .toggle {
@@ -190,7 +190,7 @@
   transform: translateX(14px);
 }
 .reference-settings .field-label {
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   font-weight: 650;
   letter-spacing: 0;
   color: #b1b5c2;
@@ -206,7 +206,7 @@
   border: 1px solid #555b6b;
   border-radius: 7px;
   padding: 10px 12px;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   min-height: 39px;
 }
 .reference-settings .field-label textarea {
@@ -228,13 +228,13 @@
   gap: 24px;
 }
 .ref-settings-description {
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   color: #b1b5c2;
   line-height: 1.55;
 }
 .ref-settings-note {
   display: block;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   color: #9197a7;
   line-height: 1.55;
   margin-top: 9px;
@@ -251,7 +251,7 @@
   display: flex;
   align-items: center;
   gap: 11px;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .ref-settings-inline.spread {
   justify-content: space-between;
@@ -270,7 +270,7 @@
   justify-content: space-between;
   gap: 12px;
   color: #9197a7;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   margin-top: 22px;
   padding-top: 15px;
 }
@@ -287,7 +287,7 @@
 }
 .ref-preview-label {
   display: block;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #9197a7;
   letter-spacing: 1.5px;
   margin-bottom: 15px;
@@ -315,15 +315,15 @@
   gap: 8px;
 }
 .ref-profile-avatar .text-button {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
 }
 .ref-profile-body h2 {
-  font-size: 20px;
+  font-size: var(--font-size-h2);
   margin-bottom: 4px;
 }
 .ref-profile-body small,
 .ref-profile-body p {
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   color: #b1b5c2;
   line-height: 1.5;
   margin-top: 8px;
@@ -337,7 +337,7 @@
   border-radius: 8px;
   background: #8b83ff0b;
   color: #dfdcff;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   line-height: 1.6;
   padding: 14px 16px;
   margin-bottom: 20px;
@@ -368,7 +368,7 @@
   background: #22252c;
   border-radius: 8px;
   color: #b1b5c2;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   padding: 13px;
 }
 .ref-density.selected {
@@ -409,7 +409,7 @@
   align-self: start;
 }
 .ref-chat-preview p {
-  font-size: 15px;
+  font-size: var(--font-size-body);
   margin-top: 10px;
   line-height: 1.6;
 }
@@ -454,7 +454,7 @@
   background: #141518;
   border: 1px solid #444b5a;
   border-radius: 9px;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   color: #9197a7;
   margin-top: 14px;
   overflow: hidden;
@@ -478,10 +478,10 @@
   gap: 11px;
 }
 .ref-notification-preview strong {
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .ref-notification-preview p {
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   line-height: 1.5;
   color: #d3d6e0;
   margin-top: 5px;
@@ -491,7 +491,7 @@
   background: #2a2e37;
   border-radius: 9px;
   padding: 15px;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   line-height: 1.6;
 }
 .ref-desktop-summary p {
@@ -499,7 +499,7 @@
 }
 .ref-desktop-summary span {
   display: block;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   color: #9197a7;
   margin-top: 14px;
 }
@@ -512,7 +512,7 @@
 }
 .ref-settings-confirm p {
   margin: 24px 0;
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   line-height: 1.6;
   color: #b1b5c2;
 }
@@ -549,7 +549,7 @@
     grid-template-columns: 180px minmax(0, 1fr);
   }
   .settings-modal .reference-settings .settings-tabs > button {
-    font-size: 12px;
+    font-size: var(--font-size-metadata);
   }
   .ref-settings-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -648,12 +648,12 @@
   color: #a0a6b5;
 }
 .settings-connected-room strong {
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .settings-connected-room small {
   display: block;
   color: #b1b5c2;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   margin: 3px 0 8px;
 }
 .settings-connected-actions {
@@ -669,7 +669,7 @@
   background: #272b33;
   padding: 7px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   color: #b1b5c2;
 }
 .settings-nav-connection footer {
@@ -685,11 +685,11 @@
 }
 .settings-nav-connection footer strong {
   display: block;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
 }
 .settings-nav-connection footer small {
   display: block;
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   color: #b1b5c2;
 }
 .settings-nav-connection footer .icon-button {
@@ -738,51 +738,11 @@
   position: relative;
   flex-shrink: 0;
 }
-.ref-nav-title > button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 0 14px 0 0;
-  background: transparent;
-  border: 0;
-  color: inherit;
-  font: inherit;
-  height: 100%;
-}
-.ref-settings-extra {
-  position: absolute;
-  z-index: 6;
-  top: 50px;
-  left: 10px;
-  right: 10px;
-  padding: 6px;
-  border: 1px solid #4b5162;
-  border-radius: 9px;
-  background: #282d38;
-  box-shadow: 0 10px 30px #0006;
-}
-.ref-settings-extra button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  color: #d5d9e5;
-  background: transparent;
-  border: 0;
-  text-align: left;
-}
-.ref-settings-extra button:hover {
-  background: #ffffff09;
-}
 .ref-settings-community-name {
   border-left: 1px solid #3a404e;
   padding-left: 15px;
   margin-left: 3px;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   color: #9197a7;
 }
 .ref-tab-community-management .rcm-page {
@@ -796,7 +756,7 @@
   right: 12px;
   z-index: 3;
   margin: 0;
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   background: #22252c;
 }
 .rcm-avatar > .voice-photo {
@@ -807,7 +767,7 @@
 }
 @media (max-width: 959px) {
   .ref-settings-nav-group > button {
-    font-size: 12px;
+    font-size: var(--font-size-metadata);
     gap: 9px;
   }
 }
@@ -836,7 +796,7 @@
   gap: 12px;
   margin-top: 24px;
   color: #9197a7;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
 }
 .ref-font-size-control input {
   flex: 1;
@@ -934,26 +894,6 @@
   }
 }
 
-.ref-tray-preview {
-  margin-top: 12px;
-  padding: 14px;
-  border: 1px solid var(--color-border-default);
-  border-radius: 10px;
-  background: var(--color-background-raised);
-}
-.ref-tray-preview ul {
-  list-style: none;
-  margin: 12px 0;
-  padding: 0;
-  border-top: 1px solid var(--color-border-default);
-}
-.ref-tray-preview li {
-  padding: 9px 0;
-}
-.ref-tray-preview small {
-  color: var(--color-text-muted);
-}
-
 /* Keep pending changes visible outside the independently scrolling settings pane. */
 .settings-save-bar {
   display: flex;
@@ -968,12 +908,12 @@
 }
 .settings-save-bar > span {
   flex: 1;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   color: #d5d8e2;
 }
 .settings-save-bar .button {
   min-height: 36px;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .settings-reference-surface {
   left: 0 !important;
