@@ -77,6 +77,7 @@ function fakeMedia(getUserMedia?: (constraints: MediaStreamConstraints) => Promi
     getUserMedia: vi.fn(getUserMedia ?? (async () => stream)),
     enumerateDevices: vi.fn(async () => [
       { kind: 'audioinput', deviceId: 'default', label: 'Default' },
+      { kind: 'audioinput', deviceId: '', label: '' },
       { kind: 'audioinput', deviceId: 'usb-mic', label: 'USB Mic' },
       { kind: 'videoinput', deviceId: 'cam', label: 'Camera' },
     ]),

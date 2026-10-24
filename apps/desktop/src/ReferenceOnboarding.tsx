@@ -157,7 +157,10 @@ export function OnboardingMicTest({ onGranted }: { onGranted?(): void }) {
       );
     }
   };
-  const inputs = devices.filter((d) => d.kind === 'audioinput' && d.deviceId !== 'default');
+  // Before permission, Chromium may list unnamed inputs with an empty id: "System default" covers them.
+  const inputs = devices.filter(
+    (d) => d.kind === 'audioinput' && d.deviceId && d.deviceId !== 'default',
+  );
   const percent = Math.round(level);
   return (
     <div className="ref-auth-device-card">
