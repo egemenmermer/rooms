@@ -342,6 +342,28 @@ export function HoldemTable({
             ? 0
             : Math.min(2, Math.max(0, Number(details?.hiddenCardCount ?? 0)));
           const bubble = seat ? bubbles.get(seat.userId) : undefined;
+          // One status line per seat. A live bet already shows as the chip stack in front of the seat.
+          const status = !seat
+            ? ''
+            : seat.pendingNextHand
+              ? t('Sonraki el bekleniyor')
+              : details?.folded
+                ? t('Eli bıraktı')
+                : finished && Number(payouts[seat.userId]) > 0
+                  ? `${splitPot ? t('Ortak kazanan') : t('Kazanan')}${view.showdown?.[seat.userId] ? ` · ${pokerCategory(view.showdown[seat.userId].category)}` : ''}`
+                  : finished && mucked.includes(seat.userId)
+                    ? t('Kartını açmadı')
+                    : details && Number(details.chips) === 0 && playing
+                      ? 'All-in'
+                      : game.turn === index
+                        ? isOwn
+                          ? t('Sıra sende')
+                          : t('Sıra {name} kişisinde', { name: seat.name })
+                        : !seat.connected
+                          ? t('Bağlantısı kesildi')
+                          : details && Number(details.streetBet) > 0 && playing
+                            ? ''
+                            : t('Masada');
           return (
             <div
               className={`rg-table-seat p-${position} ${isOwn ? 'own' : ''} ${details?.folded ? 'folded' : ''} ${game.turn === index ? 'turn' : ''}`}
@@ -397,29 +419,7 @@ export function HoldemTable({
                       <em className="ho-blind">{blinds.big === seat.userId ? 'BB' : 'SB'}</em>
                     )}
                   </div>
-                  <small>
-                    {seat.pendingNextHand
-                      ? t('Sonraki el bekleniyor')
-                      : details?.folded
-                        ? t('Eli bıraktı')
-                        : finished && Number(payouts[seat.userId]) > 0
-                          ? `${splitPot ? t('Ortak kazanan') : t('Kazanan')}${view.showdown?.[seat.userId] ? ` · ${pokerCategory(view.showdown[seat.userId].category)}` : ''}`
-                          : finished && mucked.includes(seat.userId)
-                            ? t('Kartını açmadı')
-                            : details && Number(details.chips) === 0 && playing
-                              ? 'All-in'
-                              : game.turn === index
-                                ? isOwn
-                                  ? t('Sıra sende')
-                                  : t('Sıra {name} kişisinde', { name: seat.name })
-                                : !seat.connected
-                                  ? t('Bağlantısı kesildi')
-                                  : details && Number(details.streetBet) > 0
-                                    ? t('Bahis · {amount}', {
-                                        amount: String(details.streetBet),
-                                      })
-                                    : t('Masada')}
-                  </small>
+                  {status && <small>{status}</small>}
                 </>
               ) : (
                 <button

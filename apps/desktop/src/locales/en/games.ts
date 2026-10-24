@@ -116,7 +116,6 @@ export const games: Catalog = {
   Kazanan: 'Winner',
   'Sıra sende': 'Your turn',
   'Sıra {name} kişisinde': 'It’s {name}’s turn',
-  'Bahis · {amount}': 'Bet · {amount}',
   'Sonraki el için katıl': 'Join for the next hand',
   'Boş koltuk': 'Empty seat',
   'Pot paylaşıldı': 'Pot split',

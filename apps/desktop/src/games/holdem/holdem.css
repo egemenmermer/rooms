@@ -101,40 +101,40 @@
   --ho-y: 40%;
 }
 .rg-nine-layout .ho-at-0 {
-  --ho-x: 43%;
-  --ho-y: 31%;
+  --ho-x: 42%;
+  --ho-y: 32%;
 }
 .rg-nine-layout .ho-at-1 {
   --ho-x: 66%;
-  --ho-y: 31%;
+  --ho-y: 32%;
 }
 .rg-nine-layout .ho-at-2 {
   --ho-x: 78%;
-  --ho-y: 44%;
+  --ho-y: 48%;
 }
 .rg-nine-layout .ho-at-3 {
-  --ho-x: 74%;
-  --ho-y: 70%;
+  --ho-x: 76%;
+  --ho-y: 72%;
 }
 .rg-nine-layout .ho-at-4 {
-  --ho-x: 40%;
+  --ho-x: 59%;
   --ho-y: 80%;
 }
 .rg-nine-layout .ho-at-5 {
-  --ho-x: 30%;
-  --ho-y: 72%;
+  --ho-x: 27%;
+  --ho-y: 66%;
 }
 .rg-nine-layout .ho-at-6 {
-  --ho-x: 22%;
-  --ho-y: 64%;
+  --ho-x: 20%;
+  --ho-y: 62%;
 }
 .rg-nine-layout .ho-at-7 {
   --ho-x: 22%;
-  --ho-y: 44%;
+  --ho-y: 48%;
 }
 .rg-nine-layout .ho-at-8 {
   --ho-x: 34%;
-  --ho-y: 31%;
+  --ho-y: 32%;
 }
 .ho-bet {
   position: absolute;
