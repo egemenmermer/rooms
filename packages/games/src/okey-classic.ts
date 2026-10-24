@@ -700,7 +700,7 @@ export const okeyClassicModule = {
   action: (state, seat, command, _rng) => okeyClassicAction(state, seat, command),
   view: okeyClassicView,
   turn: (state) => (state.stage === 'ended' ? null : state.turn),
-  botCommand: (state, seat, _rng, _context) => okeyClassicBotCommand(state, seat),
+  botCommand: (state, seat, _rng, _context?) => okeyClassicBotCommand(state, seat),
   settle: settleOkeyClassic,
   parseOptions: (input) => resolveOkeyClassicOptions(input),
   legalActions: okeyClassicLegalActions,
