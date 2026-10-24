@@ -37,11 +37,11 @@
   white-space: nowrap;
 }
 .cinema-reminder strong {
-  font: 650 13.5px / 18px var(--font-family);
+  font: 650 var(--font-size-ui) / 18px var(--font-family);
 }
 .cinema-reminder small {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .cinema-reminder-close {
   display: grid;
@@ -50,7 +50,7 @@
   width: 26px;
   height: 26px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   background: none;
   color: var(--color-text-muted);
   cursor: pointer;

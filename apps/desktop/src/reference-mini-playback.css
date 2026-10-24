@@ -4,7 +4,7 @@
   z-index: 8;
   pointer-events: none;
   color: #eef0f8;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .mini-playback-chrome button {
   pointer-events: auto;
@@ -12,7 +12,7 @@
   display: grid;
   place-items: center;
   background: #1b2135cc;
-  border-radius: 7px;
+  border-radius: var(--radius-8);
   color: inherit;
   flex-shrink: 0;
 }
@@ -20,7 +20,7 @@
   background: #343951;
 }
 .mini-playback-chrome button:focus-visible {
-  outline: 2px solid #b6aaff;
+  outline: 2px solid var(--color-action-focus);
   outline-offset: 2px;
 }
 .mini-playback-chrome button:disabled {
@@ -52,7 +52,7 @@
   background: transparent;
 }
 .mini-playback-title strong {
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   line-height: 1.4;
   font-weight: 600;
   overflow: hidden;
@@ -75,7 +75,7 @@
   background: #202638cc;
 }
 .mini-playback-time {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-variant-numeric: tabular-nums;
   color: #e1e2f2;
   line-height: 1.5;
@@ -90,7 +90,7 @@
   padding: 5px 9px;
   margin-left: auto;
   color: #c8cedb;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   white-space: nowrap;
 }
 .mini-playback-badge.connected {
@@ -117,7 +117,7 @@
 .mini-playback-chrome.compact .mini-playback-time {
   white-space: normal;
   max-width: 76px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
 }
 .mini-playback-chrome .mini-playback-expand {
   position: absolute;

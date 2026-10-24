@@ -25,13 +25,13 @@
   overflow-wrap: anywhere;
 }
 .rat-heading p {
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   color: #b1b5c2;
   margin: 0;
 }
 .rat-kicker {
-  font-size: 10px;
-  color: #bab3ff;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-accent);
   font-weight: 700;
   letter-spacing: 1.5px;
 }
@@ -41,7 +41,7 @@
   gap: 8px;
   align-items: center;
   align-self: start;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   border: 0;
   background: transparent;
   color: #b1b5c2;
@@ -52,7 +52,7 @@
 .rat-stop {
   background: #ee6f7910;
   border: 1px solid #ee6f7944;
-  border-radius: 7px;
+  border-radius: var(--radius-8);
   color: #f197a0;
 }
 .rat-status {
@@ -68,38 +68,38 @@
   gap: 10px;
 }
 .rat-status svg {
-  color: #b5abff;
+  color: var(--color-text-accent);
 }
 .rat-status strong {
-  font-size: 15px;
+  font-size: var(--font-size-body);
 }
 .rat-status span {
   margin-left: auto;
   color: #a6adbc;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
 }
 .rat-status-line {
   height: 4px;
   background: #414657;
   margin: 18px 0 8px;
-  border-radius: 5px;
+  border-radius: var(--radius-4);
 }
 .rat-status small {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #a6adbc;
 }
 .rat-label {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #969daf;
   letter-spacing: 1.1px;
 }
 .rat-prompt {
   background: #1b1e24;
   border: 1px solid #353a47;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   padding: 17px;
   margin: 12px 0 20px;
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -133,19 +133,19 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  color: #c2b8ff;
-  background: #8b83ff18;
+  color: var(--color-text-accent);
+  background: var(--color-action-primarySubtle);
 }
 .rat-timeline p {
   margin: 1px 0;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .rat-muted {
   color: #a5acba;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   line-height: 1.6;
 }
 .rat-callout {
@@ -153,9 +153,9 @@
   border: 1px solid #b98b434d;
   background: #f2bb6709;
   color: #f2cc96;
-  border-radius: 7px;
+  border-radius: var(--radius-8);
   padding: 13px 15px;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   line-height: 1.6;
   margin: 18px 0;
 }
@@ -165,8 +165,8 @@
   background: #ee6f7909;
 }
 .rat-demo {
-  font-size: 10px;
-  color: #c1b9ff;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-accent);
   margin: 0 0 14px;
 }
 .rat-file {
@@ -174,7 +174,7 @@
   gap: 13px;
   align-items: center;
   border: 1px solid #424a5b;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   padding: 15px;
   max-width: 470px;
   margin: 14px 0;
@@ -184,12 +184,12 @@
   min-width: 0;
 }
 .rat-file strong {
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   overflow-wrap: anywhere;
 }
 .rat-file small {
   display: block;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #969daf;
   margin-top: 5px;
 }
@@ -197,7 +197,7 @@
   border: 0;
   background: transparent;
   color: #bcc2d0;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -213,14 +213,14 @@
   border-left: 1px solid #343945;
   background: #1b1e24;
   padding: 25px 20px;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .rat-rail h2 {
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   margin: 0 0 25px;
 }
 .rat-rail dt {
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   color: #a6adbc;
   margin: 0 0 7px;
 }
@@ -256,13 +256,13 @@
   background: none;
   padding: 0 0 14px;
   color: #aab1c0;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   cursor: pointer;
   border-bottom: 2px solid transparent;
 }
 .rat-tabs button[aria-selected='true'] {
   color: #e8eaf1;
-  border-bottom-color: #aa9bff;
+  border-bottom-color: var(--color-action-primaryHover);
 }
 .rat-artifacts {
   display: flex;
@@ -274,7 +274,7 @@
   display: flex;
   gap: 7px;
   align-items: center;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   background: #252934;
   border: 1px solid #434b5c;
   color: #aab1c0;
@@ -283,12 +283,12 @@
   cursor: pointer;
 }
 .rat-artifacts button[aria-pressed='true'] {
-  border-color: #ab9dff;
+  border-color: var(--color-action-primaryHover);
   color: #e8eaf1;
 }
 .rat-document {
   border: 1px solid #414959;
-  border-radius: 9px;
+  border-radius: var(--radius-8);
   overflow: hidden;
 }
 .rat-document header {
@@ -296,7 +296,7 @@
   align-items: center;
   gap: 10px;
   padding: 13px 17px;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   color: #b4bbc8;
   background: #272b33;
 }
@@ -308,7 +308,7 @@
   color: #252a35;
   padding: 35px 38px;
   margin: 0;
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   line-height: 1.8;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -326,7 +326,7 @@
   margin: 20px 0 12px;
 }
 .rat-empty p {
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   line-height: 1.7;
   margin: 0 0 20px;
 }
@@ -335,18 +335,18 @@
   align-items: center;
   justify-content: space-between;
   margin-top: 22px;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   color: #aab1c0;
 }
 .rat-modal {
   width: min(590px, calc(100vw - 40px)) !important;
   background: #272b34 !important;
   border: 1px solid #495163;
-  border-radius: 15px;
+  border-radius: var(--radius-16);
 }
 .rat-modal-body {
   padding: 24px;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   line-height: 1.7;
 }
 .rat-modal-body > p:first-child {
@@ -355,7 +355,7 @@
 }
 .rat-scope {
   border: 1px solid #424959;
-  border-radius: 7px;
+  border-radius: var(--radius-8);
   margin: 18px 0;
   overflow: hidden;
 }
@@ -381,11 +381,11 @@
   border: 1px solid #395d4f;
   background: #192b24;
   color: #b1ddc9;
-  border-radius: 7px;
+  border-radius: var(--radius-8);
   padding: 15px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   line-height: 1.75;
 }
 .rat-modal footer {
@@ -398,7 +398,7 @@
 .rat-field {
   display: block;
   margin: 15px 0;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
 }
 .rat-field textarea {
   display: block;
@@ -409,7 +409,7 @@
   background: #1b1e24;
   color: #e8eaf1;
   border: 1px solid #4b5465;
-  border-radius: 7px;
+  border-radius: var(--radius-8);
   box-sizing: border-box;
 }
 .rat-confirm {
@@ -417,14 +417,14 @@
   gap: 8px;
   margin: 18px 0;
   align-items: start;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
 }
 .rat-layout button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 .rat-layout :focus-visible {
-  outline: 2px solid #b9aaff;
+  outline: 2px solid var(--color-action-focus);
   outline-offset: 3px;
 }
 @media (max-width: 1280px) {
@@ -460,10 +460,10 @@
   z-index: 3;
   margin: 0;
   padding: 6px 9px;
-  border: 1px solid #c1b9ff35;
-  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--color-text-accent) 21%, transparent);
+  border-radius: var(--radius-4);
   background: #22252c;
-  font-size: 9px;
+  font-size: var(--font-size-micro);
 }
 .rat-view-result .rat-heading {
   margin-bottom: 27px;
@@ -476,7 +476,7 @@
 }
 .rat-view-result .rat-document pre {
   font-family: Inter, sans-serif;
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   line-height: 1.7;
 }
 .rat-main {

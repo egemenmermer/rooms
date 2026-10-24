@@ -6,8 +6,8 @@
   --cinema-line-strong: rgb(255 255 255 / 0.1);
   --cinema-fill: rgb(255 255 255 / 0.04);
   --cinema-fill-hover: rgb(255 255 255 / 0.065);
-  --cinema-accent-soft: rgb(139 131 255 / 0.14);
-  --cinema-accent-cell: rgb(139 131 255 / 0.22);
+  --cinema-accent-soft: color-mix(in srgb, var(--color-action-primary) 14%, transparent);
+  --cinema-accent-cell: color-mix(in srgb, var(--color-action-primary) 22%, transparent);
   --cinema-live: #ff4f60;
   --cinema-live-soft: rgb(255 79 96 / 0.16);
   --cinema-scrim: rgb(8 8 12 / 0.72);
@@ -38,14 +38,14 @@
 .hall .button.small {
   min-height: 30px;
   padding: 5px 11px;
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
 }
 .hall kbd {
   padding: 1px 5px;
   border: 1px solid var(--cinema-line-strong);
-  border-radius: 5px;
+  border-radius: var(--radius-4);
   color: var(--color-text-muted);
-  font: 500 11px/16px var(--font-family);
+  font: 500 var(--font-size-micro)/16px var(--font-family);
   background: none;
 }
 .hall .button.primary kbd {
@@ -121,7 +121,7 @@ html[data-input='keyboard'] .hall-tabs button::after {
   border-radius: var(--radius-8);
   background: var(--cinema-fill);
   color: var(--color-text-muted);
-  font: 13px / 20px var(--font-family);
+  font: var(--font-size-ui) / 20px var(--font-family);
   cursor: pointer;
 }
 .hall-open span {
@@ -188,7 +188,7 @@ html[data-input='keyboard'] .hall-tabs button::after {
 }
 .hall-screen-host.mini {
   z-index: 20;
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   box-shadow:
     0 22px 50px -12px rgb(0 0 0 / 0.75),
     0 0 0 1px rgb(255 255 255 / 0.09);
@@ -279,7 +279,7 @@ html[data-input='keyboard'] .hall-tabs button::after {
   border-radius: 6px;
   background: var(--cinema-live);
   color: var(--cinema-on-video);
-  font: 700 11px / 1 var(--font-family);
+  font: 700 var(--font-size-micro) / 1 var(--font-family);
   letter-spacing: 0.07em;
 }
 .hall-live-pill i {
@@ -299,10 +299,10 @@ html[data-input='keyboard'] .hall-tabs button::after {
   gap: 6px;
   height: 26px;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgb(0 0 0 / 0.45);
   backdrop-filter: blur(10px);
-  font: 600 12.5px / 1 var(--font-family);
+  font: 600 var(--font-size-metadata) / 1 var(--font-family);
   font-variant-numeric: tabular-nums;
 }
 .hall-osd {
@@ -324,7 +324,7 @@ html[data-input='keyboard'] .hall-tabs button::after {
 }
 .hall-osd > strong {
   padding: 4px 6px;
-  font: 600 15px / 20px var(--font-family);
+  font: 600 var(--font-size-body) / 20px var(--font-family);
 }
 .hall-osd-number {
   display: grid;
@@ -350,7 +350,7 @@ html[data-input='keyboard'] .hall-tabs button::after {
 }
 .hall-osd small {
   color: rgb(255 255 255 / 0.72);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -373,7 +373,7 @@ html[data-input='keyboard'] .hall-tabs button::after {
   align-items: center;
   gap: 10px;
   padding: 9px 16px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgb(0 0 0 / 0.55);
   backdrop-filter: blur(10px);
   font-size: var(--font-size-ui);
@@ -399,7 +399,7 @@ html[data-input='keyboard'] .hall-tabs button::after {
   z-index: 7;
   width: min(380px, calc(100% - 40px));
   padding: 22px 22px 18px;
-  border-radius: 16px;
+  border-radius: var(--radius-16);
   background: rgb(20 21 26 / 0.94);
   box-shadow: 0 0 0 1px var(--cinema-line-strong);
   text-align: center;
@@ -427,10 +427,10 @@ html[data-input='keyboard'] .hall-tabs button::after {
   height: 30px;
   padding: 0 12px;
   border: 1px solid var(--cinema-live);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgb(0 0 0 / 0.5);
   color: var(--cinema-on-video);
-  font: 600 12.5px / 1 var(--font-family);
+  font: 600 var(--font-size-metadata) / 1 var(--font-family);
   cursor: pointer;
 }
 .hall-golive:hover {
@@ -447,7 +447,7 @@ html[data-input='keyboard'] .hall-tabs button::after {
   gap: 6px;
   width: auto;
   padding: 0 10px;
-  font: 600 12px / 1 var(--font-family);
+  font: 600 var(--font-size-metadata) / 1 var(--font-family);
 }
 .hall-audio-list {
   position: absolute;
@@ -458,7 +458,7 @@ html[data-input='keyboard'] .hall-tabs button::after {
   flex-direction: column;
   min-width: 200px;
   padding: 6px;
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   background: rgb(23 24 29 / 0.96);
   box-shadow:
     0 18px 40px -16px rgb(0 0 0 / 0.8),
@@ -467,7 +467,7 @@ html[data-input='keyboard'] .hall-tabs button::after {
 .hall-audio-list small {
   padding: 4px 8px 6px;
   color: var(--color-text-muted);
-  font-size: 11.5px;
+  font-size: var(--font-size-micro);
 }
 .hall-audio-list button {
   display: flex;
@@ -475,10 +475,10 @@ html[data-input='keyboard'] .hall-tabs button::after {
   gap: 8px;
   padding: 7px 8px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   background: none;
   color: var(--cinema-on-video);
-  font: 13px / 18px var(--font-family);
+  font: var(--font-size-ui) / 18px var(--font-family);
   text-align: left;
   cursor: pointer;
 }
@@ -511,7 +511,7 @@ html[data-input='keyboard'] .hall-tabs button::after {
   padding: 6px 8px 2px;
   border-top: 1px solid var(--cinema-line-strong);
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .hall-subtitle-timing > span {
   flex: 1;
@@ -561,10 +561,10 @@ html[data-input='keyboard'] .hall-tabs button::after {
   bottom: 8px;
 }
 .hall-screen.mini .hall-subtitle span {
-  font-size: 11px;
+  font-size: var(--font-size-micro);
 }
 .hall-control.hall-audio-trigger[data-active] svg {
-  color: rgb(139 131 255);
+  color: var(--color-action-primary);
 }
 
 /* Controls fade after a short idle, cursor included. */
@@ -593,7 +593,7 @@ html[data-input='keyboard'] .hall-tabs button::after {
   width: 36px;
   height: 36px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--radius-8);
   background: transparent;
   color: var(--cinema-on-video);
   cursor: pointer;
@@ -626,7 +626,7 @@ html[data-input='pointer'][data-motion='full'] .hall-control:active:not(:disable
   min-width: 0;
   overflow: hidden;
   color: rgb(255 255 255 / 0.72);
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -645,7 +645,7 @@ html[data-input='pointer'][data-motion='full'] .hall-control:active:not(:disable
 .hall-time {
   min-width: 46px;
   color: rgb(255 255 255 / 0.8);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   font-variant-numeric: tabular-nums;
 }
 .hall-time:last-child {
@@ -698,7 +698,7 @@ html[data-input='pointer'][data-motion='full'] .hall-control:active:not(:disable
   border: 0;
   background: linear-gradient(to top, rgb(0 0 0 / 0.75), transparent);
   color: var(--cinema-on-video);
-  font: 600 12.5px / 1 var(--font-family);
+  font: 600 var(--font-size-metadata) / 1 var(--font-family);
   text-align: left;
   cursor: pointer;
 }
@@ -747,7 +747,7 @@ html[data-input='pointer'][data-motion='full'] .hall-control:active:not(:disable
   width: 40px;
   height: 60px;
   margin: 0 6px;
-  border-radius: 7px;
+  border-radius: var(--radius-8);
 }
 .hall-nowbar.idle {
   display: block;
@@ -777,7 +777,7 @@ html[data-input='pointer'][data-motion='full'] .hall-control:active:not(:disable
   margin: 2px 0 7px;
   overflow: hidden;
   color: var(--color-text-muted);
-  font-size: 13.5px;
+  font-size: var(--font-size-ui);
   white-space: nowrap;
 }
 .hall-nowbar p strong {
@@ -803,7 +803,7 @@ html[data-input='pointer'][data-motion='full'] .hall-control:active:not(:disable
   border: 0;
   background: none;
   color: var(--color-text-secondary);
-  font: 13px / 18px var(--font-family);
+  font: var(--font-size-ui) / 18px var(--font-family);
   text-align: right;
 }
 button.hall-next {
@@ -814,7 +814,7 @@ button.hall-next:hover span {
 }
 .hall-next small {
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -837,7 +837,7 @@ button.hall-next:hover span {
   border-radius: 50%;
   object-fit: cover;
   box-shadow: 0 0 0 2px var(--cinema-ground);
-  font-size: 10px;
+  font-size: var(--font-size-micro);
 }
 .hall-viewers > :first-child,
 .hall-nav-viewers > :first-child {
@@ -846,7 +846,7 @@ button.hall-next:hover span {
 .hall-viewers small {
   margin-left: 6px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 
 /* Shared atoms. */
@@ -865,7 +865,7 @@ button.hall-next:hover span {
 .hall-art.logo {
   width: 52px;
   height: 52px;
-  border-radius: 12px;
+  border-radius: var(--radius-12);
 }
 .hall-art.logo img {
   object-fit: contain;
@@ -878,7 +878,7 @@ button.hall-next:hover span {
 .hall-art.wide {
   aspect-ratio: 16 / 9;
   width: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
 }
 .hall-art-fallback {
   color: var(--color-text-muted);
@@ -894,9 +894,9 @@ button.hall-next:hover span {
   height: 18px;
   padding: 0 5px;
   border: 1px solid var(--color-border-default);
-  border-radius: 5px;
+  border-radius: var(--radius-4);
   color: var(--color-text-secondary);
-  font: 650 10px / 16px var(--font-family);
+  font: 650 var(--font-size-micro) / 16px var(--font-family);
   letter-spacing: 0.05em;
 }
 .hall-live-dot {
@@ -930,7 +930,7 @@ button.hall-next:hover span {
 }
 .hall-eyebrow {
   color: var(--color-text-muted);
-  font: 650 11px / 16px var(--font-family);
+  font: 650 var(--font-size-micro) / 16px var(--font-family);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -963,7 +963,7 @@ button.hall-next:hover span {
   width: 30px;
   height: 30px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   background: none;
   color: var(--color-text-muted);
   cursor: pointer;
@@ -989,7 +989,7 @@ button.hall-next:hover span {
 .hall-versions span {
   margin-right: 4px;
   color: var(--color-text-muted);
-  font: 650 11px / 16px var(--font-family);
+  font: 650 var(--font-size-micro) / 16px var(--font-family);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -997,10 +997,10 @@ button.hall-next:hover span {
   height: 26px;
   padding: 0 10px;
   border: 1px solid var(--cinema-line-strong);
-  border-radius: 7px;
+  border-radius: var(--radius-8);
   background: var(--cinema-fill);
   color: var(--color-text-secondary);
-  font: 600 12px / 1 var(--font-family);
+  font: 600 var(--font-size-metadata) / 1 var(--font-family);
   cursor: pointer;
 }
 .hall-versions button:hover {
@@ -1020,7 +1020,7 @@ button.hall-next:hover span {
 .hall-detail-note {
   margin: 10px 0 0;
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
   line-height: 1.5;
 }
 .hall-skeleton {
@@ -1042,7 +1042,7 @@ button.hall-next:hover span {
 .hall-skeleton.row {
   height: 62px;
   margin-bottom: 8px;
-  border-radius: 12px;
+  border-radius: var(--radius-12);
 }
 .hall-skeleton.poster {
   aspect-ratio: 2 / 3;
@@ -1051,7 +1051,7 @@ button.hall-next:hover span {
 .hall-skeleton.hero {
   height: 320px;
   margin-bottom: 28px;
-  border-radius: 16px;
+  border-radius: var(--radius-16);
 }
 .hall-skeleton.screen {
   aspect-ratio: 16 / 9;
@@ -1107,7 +1107,11 @@ button.hall-next:hover span {
   place-items: center;
   overflow: auto;
   background:
-    radial-gradient(90% 70% at 50% 0%, rgb(139 131 255 / 0.1), transparent 65%),
+    radial-gradient(
+      90% 70% at 50% 0%,
+      color-mix(in srgb, var(--color-action-primary) 10%, transparent),
+      transparent 65%
+    ),
     var(--cinema-screen);
 }
 .hall-screen.mini .hall-screen-welcome {
@@ -1156,7 +1160,7 @@ button.hall-next:hover span {
   min-width: 0;
   padding: 9px;
   border: 1px solid var(--cinema-line);
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   background: var(--cinema-fill);
   color: inherit;
   text-align: left;
@@ -1179,12 +1183,12 @@ button.hall-next:hover span {
   min-width: 0;
 }
 .hall-now-card strong {
-  font-size: 13px;
+  font-size: var(--font-size-ui);
 }
 .hall-now-card small {
   overflow: hidden;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1234,7 +1238,7 @@ button.hall-next:hover span {
   border-radius: var(--radius-8);
   background: none;
   color: var(--color-text-secondary);
-  font: 13.5px / 20px var(--font-family);
+  font: var(--font-size-ui) / 20px var(--font-family);
   text-align: left;
   cursor: pointer;
 }
@@ -1254,11 +1258,11 @@ button.hall-next:hover span {
   display: grid;
   place-items: center;
   color: var(--color-text-muted);
-  font-size: 15px;
+  font-size: var(--font-size-body);
 }
 .hall-categories small {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   font-variant-numeric: tabular-nums;
 }
 .hall-channels {
@@ -1290,7 +1294,7 @@ button.hall-next:hover span {
   outline: none;
   background: none;
   color: var(--color-text-primary);
-  font: 13.5px / 20px var(--font-family);
+  font: var(--font-size-ui) / 20px var(--font-family);
 }
 .hall-channels-head {
   display: flex;
@@ -1331,7 +1335,7 @@ button.hall-next:hover span {
   padding: 10px 10px 8px;
   overflow: hidden;
   border: 1px solid var(--cinema-line);
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   background: var(--cinema-fill);
   cursor: pointer;
   transition:
@@ -1342,30 +1346,30 @@ button.hall-next:hover span {
   background: var(--cinema-fill-hover);
 }
 .hall-tile.selected {
-  border-color: rgb(139 131 255 / 0.45);
+  border-color: color-mix(in srgb, var(--color-action-primary) 45%, transparent);
 }
 .hall-channel-scroll:focus-visible .hall-tile.selected {
   border-color: var(--color-action-focus);
 }
 .hall-tile.playing {
-  border-color: rgb(139 131 255 / 0.7);
+  border-color: color-mix(in srgb, var(--color-action-primary) 70%, transparent);
   background: var(--cinema-accent-soft);
   cursor: default;
 }
 .hall-tile .hall-art.logo {
   width: 72px;
   height: 44px;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   background: none;
 }
 .hall-tile .hall-art-fallback {
-  font-size: 15px;
+  font-size: var(--font-size-body);
 }
 .hall-tile strong {
   max-width: 100%;
   overflow: hidden;
   color: var(--color-text-primary);
-  font: 600 13px / 18px var(--font-family);
+  font: 600 var(--font-size-ui) / 18px var(--font-family);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1375,7 +1379,7 @@ button.hall-next:hover span {
   gap: 6px;
   height: 18px;
   color: var(--color-text-muted);
-  font-size: 11.5px;
+  font-size: var(--font-size-micro);
   font-variant-numeric: tabular-nums;
 }
 .hall-tile-action {
@@ -1388,7 +1392,7 @@ button.hall-next:hover span {
   height: 30px;
   background: var(--color-action-primary);
   color: var(--cinema-on-video);
-  font: 600 12px / 1 var(--font-family);
+  font: 600 var(--font-size-metadata) / 1 var(--font-family);
   opacity: 0;
   transform: translateY(100%);
   transition:
@@ -1401,7 +1405,7 @@ button.hall-next:hover span {
 }
 .hall-channel-number {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -1485,7 +1489,7 @@ button.hall-next:hover span {
   gap: 6px 12px;
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
 }
 .hall-rating {
   display: inline-flex;
@@ -1511,7 +1515,7 @@ button.hall-next:hover span {
 .hall-grid-head h2 small {
   margin-left: 8px;
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   font-weight: 500;
 }
 .hall-row-track {
@@ -1560,13 +1564,13 @@ button.hall-next:hover span {
 }
 .hall-poster strong {
   overflow: hidden;
-  font: 600 13.5px / 18px var(--font-family);
+  font: 600 var(--font-size-ui) / 18px var(--font-family);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .hall-poster small {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .hall-new-badge {
   position: absolute;
@@ -1576,7 +1580,7 @@ button.hall-next:hover span {
   border-radius: 6px;
   background: var(--color-action-primary);
   color: var(--color-text-onAccent);
-  font: 700 10.5px / 16px var(--font-family);
+  font: 700 var(--font-size-micro) / 16px var(--font-family);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -1596,7 +1600,7 @@ button.hall-next:hover span {
   align-items: center;
   gap: 8px;
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
 }
 .hall-sort select,
 .cs-select,
@@ -1607,7 +1611,7 @@ button.hall-next:hover span {
   border-radius: var(--radius-8);
   background: var(--color-background-sidebar);
   color: var(--color-text-primary);
-  font: 13px / 20px var(--font-family);
+  font: var(--font-size-ui) / 20px var(--font-family);
 }
 .hall-poster-grid {
   display: grid;
@@ -1642,7 +1646,7 @@ button.hall-next:hover span {
   grid-template-columns: auto 1fr;
   gap: 4px 14px;
   margin: 0 0 6px;
-  font-size: 13px;
+  font-size: var(--font-size-ui);
 }
 .hall-credits dt {
   color: var(--color-text-muted);
@@ -1717,10 +1721,10 @@ button.hall-next:hover span {
   right: 6px;
   bottom: 6px;
   padding: 1px 6px;
-  border-radius: 5px;
+  border-radius: var(--radius-4);
   background: rgb(0 0 0 / 0.6);
   color: var(--cinema-on-video);
-  font: 600 10.5px / 16px var(--font-family);
+  font: 600 var(--font-size-micro) / 16px var(--font-family);
 }
 .hall-episode-play {
   position: absolute;
@@ -1759,7 +1763,7 @@ button.hall-next:hover span {
   display: -webkit-box;
   overflow: hidden;
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   line-height: 1.5;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -1780,7 +1784,7 @@ button.hall-next:hover span {
   border-radius: var(--radius-8);
   background: var(--cinema-fill);
   color: var(--color-text-primary);
-  font: 13.5px / 20px var(--font-family);
+  font: var(--font-size-ui) / 20px var(--font-family);
 }
 .hall-youtube-form input:focus {
   border-color: var(--color-action-primary);
@@ -1796,7 +1800,7 @@ button.hall-next:hover span {
   gap: 24px;
   margin-bottom: 32px;
   padding: 16px;
-  border-radius: 16px;
+  border-radius: var(--radius-16);
   background: var(--cinema-fill);
   box-shadow: inset 0 0 0 1px var(--cinema-line);
 }
@@ -1814,19 +1818,19 @@ button.hall-next:hover span {
 .hall-youtube-feature p {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
 }
 .hall-youtube-section {
   margin-bottom: 32px;
 }
 .hall-youtube-section h3 {
   margin: 0 0 14px;
-  font: 650 15px / 20px var(--font-family);
+  font: 650 var(--font-size-body) / 20px var(--font-family);
 }
 .hall-youtube-section h3 small {
   margin-left: 6px;
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
   font-weight: 500;
 }
 .hall-poster-grid.youtube {
@@ -1854,14 +1858,14 @@ button.hall-next:hover span {
 }
 .hall-youtube-empty p {
   margin: 0;
-  font-size: 13.5px;
+  font-size: var(--font-size-ui);
   line-height: 1.5;
 }
 .hall-form-error,
 .cs-error {
   margin: 10px 0 0;
   color: var(--color-status-error);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
 }
 
 /* ⌘K palette: opens and closes instantly. */
@@ -1880,7 +1884,7 @@ button.hall-next:hover span {
   width: min(640px, calc(100vw - 32px));
   max-height: 70vh;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--radius-16);
   background: var(--color-background-sidebar);
   box-shadow:
     0 40px 90px -20px rgb(0 0 0 / 0.85),
@@ -1912,9 +1916,9 @@ button.hall-next:hover span {
 .hall-palette-input kbd {
   padding: 1px 5px;
   border: 1px solid var(--cinema-line-strong);
-  border-radius: 5px;
+  border-radius: var(--radius-4);
   color: var(--color-text-muted);
-  font: 500 11px / 16px var(--font-family);
+  font: 500 var(--font-size-micro) / 16px var(--font-family);
 }
 .hall-palette-results {
   min-height: 0;
@@ -1925,7 +1929,7 @@ button.hall-next:hover span {
   margin: 0;
   padding: 18px 10px;
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   line-height: 1.5;
 }
 .hall-palette-hint.error {
@@ -1935,7 +1939,7 @@ button.hall-next:hover span {
   display: block;
   padding: 12px 10px 5px;
   color: var(--color-text-muted);
-  font: 650 11px / 14px var(--font-family);
+  font: 650 var(--font-size-micro) / 14px var(--font-family);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1961,7 +1965,7 @@ button.hall-next:hover span {
   width: 40px;
   height: 40px;
   aspect-ratio: auto;
-  border-radius: 9px;
+  border-radius: var(--radius-8);
 }
 .hall-palette-text {
   display: flex;
@@ -1984,7 +1988,7 @@ button.hall-next:hover span {
 .hall-palette-text small {
   overflow: hidden;
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1993,7 +1997,7 @@ button.hall-next:hover span {
   align-items: center;
   gap: 6px;
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 
 /* Side panel. */
@@ -2046,7 +2050,7 @@ button.hall-next:hover span {
 }
 .hall-panel-tabs small {
   color: var(--color-text-muted);
-  font-size: 11.5px;
+  font-size: var(--font-size-micro);
   font-variant-numeric: tabular-nums;
 }
 .hall-panel-body {
@@ -2065,7 +2069,7 @@ button.hall-next:hover span {
   flex: 1;
   padding: var(--space-32) var(--space-24);
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   line-height: 1.5;
   text-align: center;
 }
@@ -2101,7 +2105,7 @@ button.hall-next:hover span {
 }
 /* Beside a film the chat stays small and quiet: one compact row per message. */
 .hall-chat .reference-chat {
-  --chat-font-size: 13px;
+  --chat-font-size: var(--font-size-ui);
 }
 .hall-chat .reference-chat .chat-transcript {
   gap: 8px;
@@ -2114,7 +2118,7 @@ button.hall-next:hover span {
   width: 24px;
   min-width: 24px;
   height: 24px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
 }
 .hall-chat .reference-chat .message-byline {
   gap: 6px;
@@ -2122,7 +2126,7 @@ button.hall-next:hover span {
   margin: 0 0 1px;
 }
 .hall-chat .reference-chat .message-author {
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .hall-chat .reference-chat .message-body > p {
   line-height: 1.4;
@@ -2133,7 +2137,7 @@ button.hall-next:hover span {
   justify-content: space-between;
   padding: 10px 16px 0;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .hall-queue-head .hall-text-button.danger {
   color: var(--color-status-error);
@@ -2148,7 +2152,7 @@ button.hall-next:hover span {
 }
 .hall-queue li {
   position: relative;
-  border-radius: 12px;
+  border-radius: var(--radius-12);
 }
 .hall-queue li.playing {
   background: var(--cinema-accent-soft);
@@ -2164,7 +2168,7 @@ button.hall-next:hover span {
   width: 100%;
   padding: 8px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   background: none;
   color: inherit;
   text-align: left;
@@ -2187,7 +2191,7 @@ button.hall-next:hover span {
   place-items: center;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-radius: 7px;
+  border-radius: var(--radius-8);
   background: var(--color-background-raised);
   color: var(--color-text-muted);
 }
@@ -2203,13 +2207,13 @@ button.hall-next:hover span {
 }
 .hall-queue-text strong {
   overflow: hidden;
-  font: 600 13px / 18px var(--font-family);
+  font: 600 var(--font-size-ui) / 18px var(--font-family);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .hall-queue-text small {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .hall-now-label {
   display: inline-flex;
@@ -2231,7 +2235,7 @@ button.hall-next:hover span {
   display: none;
   gap: 2px;
   padding: 2px;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   background: var(--color-background-raised);
   transform: translateY(-50%);
 }
@@ -2276,10 +2280,10 @@ button.hall-next:hover span {
   gap: 6px;
   height: 30px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   background: none;
   color: var(--color-text-secondary);
-  font: var(--font-weight-medium) 12.5px / 1 var(--font-family);
+  font: var(--font-weight-medium) var(--font-size-metadata) / 1 var(--font-family);
   cursor: pointer;
 }
 .hall-control-mode button.selected,
@@ -2296,7 +2300,7 @@ button.hall-next:hover span {
 .hall-people-note {
   margin: 10px 4px 14px;
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
   line-height: 1.5;
 }
 .hall-people ul {
@@ -2323,7 +2327,7 @@ button.hall-next:hover span {
 }
 .hall-person-text strong {
   overflow: hidden;
-  font: 600 13px / 18px var(--font-family);
+  font: 600 var(--font-size-ui) / 18px var(--font-family);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2332,7 +2336,7 @@ button.hall-next:hover span {
   align-items: center;
   gap: 4px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .hall-person-menu {
   position: relative;
@@ -2346,7 +2350,7 @@ button.hall-next:hover span {
   flex-direction: column;
   min-width: 210px;
   padding: 5px;
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   background: var(--color-background-raised);
   box-shadow:
     0 20px 40px -12px rgb(0 0 0 / 0.7),
@@ -2370,10 +2374,10 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
   gap: 9px;
   padding: 8px 10px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   background: none;
   color: var(--color-text-primary);
-  font: 13px / 18px var(--font-family);
+  font: var(--font-size-ui) / 18px var(--font-family);
   text-align: left;
   cursor: pointer;
 }
@@ -2425,7 +2429,7 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
 }
 .hall-nav-text small {
   color: var(--color-text-muted);
-  font-size: 11.5px;
+  font-size: var(--font-size-micro);
   line-height: 15px;
 }
 .hall-nav.selected .hall-nav-text small {
@@ -2434,7 +2438,7 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
 }
 .hall-nav-hint {
   color: var(--color-text-muted);
-  font-size: 11.5px;
+  font-size: var(--font-size-micro);
 }
 .minimal-nav.hall-nav > .hall-nav-viewers {
   display: flex;
@@ -2448,12 +2452,12 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
   height: 18px;
   margin-left: 3px;
   box-shadow: none;
-  font-size: 8px;
+  font-size: var(--font-size-micro);
 }
 .hall-nav-viewers small {
   margin-left: 4px;
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: var(--font-size-micro);
 }
 
 /* Settings → Sinema. */
@@ -2469,7 +2473,7 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
 .cs-section > p {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   line-height: 1.55;
 }
 .cinema-settings hr {
@@ -2482,7 +2486,7 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
 }
 .cs-section h2 {
   margin: 0 0 6px;
-  font-size: 15px;
+  font-size: var(--font-size-body);
 }
 .cs-select {
   min-width: 280px;
@@ -2498,9 +2502,9 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
 .cs-note.inline {
   margin: 16px 0 0;
   padding: 10px 12px;
-  border-radius: 9px;
+  border-radius: var(--radius-8);
   background: var(--cinema-fill);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
 }
 .cs-segment {
   display: inline-grid;
@@ -2526,7 +2530,7 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
   flex-direction: column;
   gap: 7px;
   width: 100%;
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   font-weight: 600;
 }
 .cs-field small {
@@ -2538,10 +2542,10 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
   height: 40px;
   padding: 0 12px;
   border: 1px solid var(--cinema-line-strong);
-  border-radius: 9px;
+  border-radius: var(--radius-8);
   background: var(--color-background-canvas);
   color: var(--color-text-primary);
-  font: 400 13.5px / 20px var(--font-family);
+  font: 400 var(--font-size-ui) / 20px var(--font-family);
   box-sizing: border-box;
 }
 .cs-field input:focus,
@@ -2574,7 +2578,7 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
   width: 30px;
   height: 30px;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--radius-8);
   background: none;
   color: var(--color-text-muted);
   cursor: pointer;
@@ -2592,7 +2596,7 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
 .cs-guide legend {
   margin-bottom: 8px;
   padding: 0;
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   font-weight: 600;
 }
 .cs-radio {
@@ -2600,7 +2604,7 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
   align-items: center;
   gap: 7px;
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
 }
 .cs-guide .cs-input {
   flex-basis: 100%;
@@ -2621,7 +2625,7 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
 .cs-card-head code {
   margin-left: auto;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .cs-state {
   display: inline-flex;
@@ -2629,8 +2633,8 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
   gap: 6px;
   height: 22px;
   padding: 0 9px;
-  border-radius: 999px;
-  font: 650 11.5px / 1 var(--font-family);
+  border-radius: var(--radius-pill);
+  font: 650 var(--font-size-micro) / 1 var(--font-family);
 }
 .cs-state.connected {
   background: rgb(83 199 147 / 0.14);
@@ -2650,11 +2654,11 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
 }
 .cs-facts dt {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .cs-facts dd {
   margin: 2px 0 0;
-  font-size: 13.5px;
+  font-size: var(--font-size-ui);
 }
 .cs-import {
   display: flex;
@@ -2664,7 +2668,7 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
   padding: 10px 12px;
   border-radius: 10px;
   background: var(--cinema-accent-soft);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
 }
 .cs-actions {
   display: flex;
@@ -2679,12 +2683,12 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
   display: block;
   margin-top: 14px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .cs-confirm p {
   margin: 0 0 12px;
   color: var(--color-text-secondary);
-  font-size: 13.5px;
+  font-size: var(--font-size-ui);
   line-height: 1.55;
 }
 .cs-confirm .cs-warning {
@@ -2754,7 +2758,7 @@ html[data-input='pointer'][data-motion='full'] .hall-menu {
   left: 18px;
   top: 50px;
   color: rgb(255 255 255 / 0.55);
-  font: 600 11px / 1 var(--font-family);
+  font: 600 var(--font-size-micro) / 1 var(--font-family);
   letter-spacing: 0.05em;
 }
 
@@ -2828,7 +2832,7 @@ html[data-motion='reduce'] .hall-screen-host {
 .rmdb-head p {
   margin: 2px 0 0;
   color: var(--color-text-secondary);
-  font-size: 13.5px;
+  font-size: var(--font-size-ui);
 }
 .rmdb-head p span {
   color: var(--color-text-muted);
@@ -2837,9 +2841,9 @@ html[data-motion='reduce'] .hall-screen-host {
   margin: 0;
   padding: 16px 18px;
   border: 1px dashed var(--cinema-line-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   line-height: 1.5;
 }
 .rmdb-empty {
@@ -2879,7 +2883,7 @@ html[data-motion='reduce'] .hall-screen-host {
   place-items: center;
   width: 24px;
   height: 24px;
-  border-radius: 7px;
+  border-radius: var(--radius-8);
   background: var(--cinema-scrim);
   color: var(--cinema-on-video);
 }
@@ -2966,11 +2970,11 @@ html[data-motion='reduce'] .hall-screen-host {
 }
 .rmdb-half.left {
   left: 0;
-  border-radius: 4px 0 0 4px;
+  border-radius: var(--radius-4) 0 0 var(--radius-4);
 }
 .rmdb-half.right {
   right: 0;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-4) var(--radius-4) 0;
 }
 .rmdb-half:focus-visible {
   outline: 2px solid var(--color-action-focus);
@@ -3039,7 +3043,7 @@ html[data-motion='reduce'] .hall-screen-host {
 }
 .rmdb-progress-note small {
   color: var(--color-text-secondary);
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -3055,7 +3059,7 @@ html[data-motion='reduce'] .hall-screen-host {
   align-items: center;
   gap: 6px;
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
   line-height: 1.5;
 }
 .rmdb .hall-text-button.danger {
@@ -3067,7 +3071,7 @@ html[data-motion='reduce'] .hall-screen-host {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   background: var(--cinema-fill);
   box-shadow: inset 0 0 0 1px var(--cinema-line);
 }
@@ -3076,7 +3080,7 @@ html[data-motion='reduce'] .hall-screen-host {
   align-items: center;
   gap: 8px;
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
 }
 .rmdb-log input {
   height: 32px;
@@ -3085,7 +3089,7 @@ html[data-motion='reduce'] .hall-screen-host {
   border-radius: var(--radius-8);
   background: var(--color-background-sidebar);
   color: var(--color-text-primary);
-  font: 13px / 20px var(--font-family);
+  font: var(--font-size-ui) / 20px var(--font-family);
   color-scheme: dark;
 }
 .rmdb-log .hall-form-error {
@@ -3113,13 +3117,13 @@ html[data-motion='reduce'] .hall-screen-host {
 .rmdb-card h3,
 .rmdb-section h3 {
   margin: 0 0 12px;
-  font: 650 15px / 22px var(--font-family);
+  font: 650 var(--font-size-body) / 22px var(--font-family);
 }
 .rmdb-card h3 small,
 .rmdb-section h3 small {
   margin-left: 6px;
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
   font-weight: 500;
 }
 .rmdb-card-head {
@@ -3134,7 +3138,7 @@ html[data-motion='reduce'] .hall-screen-host {
 .rmdb-muted {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   line-height: 1.5;
 }
 .rmdb-sr {
@@ -3179,7 +3183,7 @@ html[data-motion='reduce'] .hall-screen-host {
   align-items: center;
   gap: 7px;
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   cursor: pointer;
 }
 .rmdb-check input {
@@ -3191,7 +3195,7 @@ html[data-motion='reduce'] .hall-screen-host {
 }
 .rmdb-counter {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   font-variant-numeric: tabular-nums;
 }
 .rmdb-counter.low {
@@ -3205,7 +3209,7 @@ html[data-motion='reduce'] .hall-screen-host {
   align-items: center;
   gap: 5px;
   color: var(--color-status-success);
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
 }
 
 /* Reviews. */
@@ -3226,7 +3230,7 @@ html[data-motion='reduce'] .hall-screen-host {
   border-top: 1px solid var(--cinema-line);
 }
 .rmdb-review.own {
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   background: var(--cinema-accent-soft);
 }
 .rmdb-review.own + .rmdb-review {
@@ -3248,19 +3252,19 @@ html[data-motion='reduce'] .hall-screen-host {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 10px;
-  font-size: 13px;
+  font-size: var(--font-size-ui);
 }
 .rmdb-review-head strong {
   font-weight: 650;
 }
 .rmdb-review-head time {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .rmdb-review-remove {
   margin-left: auto;
   padding: 0 2px;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .rmdb-liked {
   display: inline-grid;
@@ -3272,10 +3276,10 @@ html[data-motion='reduce'] .hall-screen-host {
   gap: 4px;
   height: 18px;
   padding: 0 6px;
-  border-radius: 5px;
+  border-radius: var(--radius-4);
   background: rgb(255 255 255 / 0.07);
   color: var(--color-text-secondary);
-  font: 650 10.5px / 18px var(--font-family);
+  font: 650 var(--font-size-micro) / 18px var(--font-family);
   letter-spacing: 0.03em;
 }
 .rmdb-tag.spoiler {
@@ -3311,11 +3315,11 @@ html[data-motion='reduce'] .hall-screen-host {
   height: 30px;
   padding: 0 12px;
   border: 1px solid var(--cinema-line-strong);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-background-raised);
   box-shadow: 0 8px 24px -10px rgb(0 0 0 / 0.7);
   color: var(--color-text-primary);
-  font: var(--font-weight-medium) 12.5px / 1 var(--font-family);
+  font: var(--font-weight-medium) var(--font-size-metadata) / 1 var(--font-family);
   white-space: nowrap;
   cursor: pointer;
   transform: translate(-50%, -50%);
@@ -3350,7 +3354,7 @@ html[data-motion='reduce'] .hall-screen-host {
   gap: 8px;
   margin-top: 14px;
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: var(--font-size-micro);
 }
 .rmdb-histogram ol {
   display: grid;
@@ -3372,7 +3376,7 @@ html[data-motion='reduce'] .hall-screen-host {
   display: block;
   width: 100%;
   height: max(2px, calc(var(--share, 0) * 100%));
-  border-radius: 3px 3px 1px 1px;
+  border-radius: var(--radius-4) var(--radius-4) 1px 1px;
   background: rgb(255 255 255 / 0.16);
 }
 .rmdb-histogram li.mine .rmdb-bar {
@@ -3386,7 +3390,7 @@ html[data-motion='reduce'] .hall-screen-host {
 .rmdb-season h4 {
   margin: 0 0 8px;
   color: var(--color-text-muted);
-  font: 650 11px / 16px var(--font-family);
+  font: 650 var(--font-size-micro) / 16px var(--font-family);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -3403,7 +3407,7 @@ html[data-motion='reduce'] .hall-screen-host {
   grid-template-columns: 20px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
+  font-size: var(--font-size-ui);
 }
 .rmdb-episode-no {
   color: var(--color-text-muted);
@@ -3426,7 +3430,7 @@ html[data-motion='reduce'] .hall-screen-host {
   align-items: center;
   gap: 4px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -3453,7 +3457,7 @@ html[data-motion='reduce'] .hall-screen-host {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--font-size-ui);
 }
 .rmdb-diary-when {
   display: flex;
@@ -3468,13 +3472,13 @@ html[data-motion='reduce'] .hall-screen-host {
 }
 .rmdb-diary-top time small {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   font-weight: 400;
 }
 .rmdb-diary-remove {
   flex-shrink: 0;
   padding: 1px 2px;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 /* Removal stays out of the way until the row is pointed at or focused. */
 @media (hover: hover) and (pointer: fine) {
@@ -3489,7 +3493,7 @@ html[data-motion='reduce'] .hall-screen-host {
 }
 .rmdb-diary-episode {
   color: var(--color-text-secondary);
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
 }
 .rmdb-diary-people {
   display: flex;
@@ -3502,7 +3506,7 @@ html[data-motion='reduce'] .hall-screen-host {
   min-width: 0;
   overflow: hidden;
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3517,7 +3521,7 @@ html[data-motion='reduce'] .hall-screen-host {
   margin-left: -6px;
   border-radius: 50%;
   box-shadow: 0 0 0 2px var(--cinema-ground);
-  font-size: 8px;
+  font-size: var(--font-size-micro);
   object-fit: cover;
 }
 .rmdb-avatars > :first-child {
@@ -3528,7 +3532,7 @@ html[data-motion='reduce'] .hall-screen-host {
   align-items: center;
   gap: 4px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   white-space: nowrap;
 }
 .rmdb-diary-state.done {
@@ -3550,10 +3554,10 @@ html[data-motion='reduce'] .hall-screen-host {
   height: 26px;
   padding: 0 12px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   background: none;
   color: var(--color-text-secondary);
-  font: var(--font-weight-medium) 12.5px / 1 var(--font-family);
+  font: var(--font-weight-medium) var(--font-size-metadata) / 1 var(--font-family);
   cursor: pointer;
 }
 .rmdb-segment button.selected {
@@ -3630,7 +3634,7 @@ html[data-motion='reduce'] .hall-screen-host {
 .hall-continue-card small {
   overflow: hidden;
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3667,7 +3671,7 @@ html[data-motion='reduce'] .hall-screen-host {
   background: rgb(0 0 0 / 0.68);
   box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14);
   color: var(--cinema-on-video);
-  font: 650 11px / 17px var(--font-family);
+  font: 650 var(--font-size-micro) / 17px var(--font-family);
   backdrop-filter: blur(6px);
 }
 .hall-continue-progress {
@@ -3696,7 +3700,7 @@ html[data-motion='reduce'] .hall-screen-host {
   gap: 2px;
   min-width: 210px;
   padding: 6px;
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   background: rgb(23 24 29 / 0.97);
   box-shadow:
     0 18px 40px -16px rgb(0 0 0 / 0.8),
@@ -3709,10 +3713,10 @@ html[data-motion='reduce'] .hall-screen-host {
   min-height: 34px;
   padding: 0 10px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   background: none;
   color: var(--cinema-on-video);
-  font: 13px / 18px var(--font-family);
+  font: var(--font-size-ui) / 18px var(--font-family);
   text-align: left;
   white-space: nowrap;
   cursor: pointer;
@@ -3754,7 +3758,7 @@ html[data-motion='reduce'] .hall-screen-host {
 }
 .hall-episode-thumb {
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
 }
 .hall-episode-mark {
   display: grid;
@@ -3818,7 +3822,7 @@ html[data-motion='reduce'] .hall-screen-host {
 }
 .hall-next-episode small {
   color: rgb(0 0 0 / 0.55);
-  font: 600 11px / 14px var(--font-family);
+  font: 600 var(--font-size-micro) / 14px var(--font-family);
 }
 .hall-next-episode:hover {
   background: #fff;
@@ -3861,8 +3865,8 @@ html[data-motion='reduce'] .hall-screen-host {
   height: 20px;
   padding: 0 7px;
   border: 0;
-  border-radius: 4px;
-  font: 800 11px / 1 var(--font-family);
+  border-radius: var(--radius-4);
+  font: 800 var(--font-size-micro) / 1 var(--font-family);
   letter-spacing: -0.01em;
   cursor: pointer;
 }
@@ -3912,11 +3916,11 @@ html[data-motion='reduce'] .hall-screen-host {
 }
 .hall-stream-facts span {
   padding: 2px 7px;
-  border-radius: 5px;
+  border-radius: var(--radius-4);
   background: rgb(0 0 0 / 0.55);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.16);
   color: var(--cinema-on-video);
-  font: 600 11px / 16px var(--font-family);
+  font: 600 var(--font-size-micro) / 16px var(--font-family);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -3949,11 +3953,11 @@ html[data-motion='reduce'] .hall-screen-host {
   gap: 2px;
 }
 .cs-choice strong {
-  font: 600 13.5px / 18px var(--font-family);
+  font: 600 var(--font-size-ui) / 18px var(--font-family);
 }
 .cs-choice small {
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
 }
 
 /* `?`: the hall's keys. */
@@ -3970,7 +3974,7 @@ html[data-motion='reduce'] .hall-screen-host {
   max-height: calc(100vh - 48px);
   overflow-y: auto;
   padding: 18px 20px;
-  border-radius: 16px;
+  border-radius: var(--radius-16);
   background: rgb(23 24 29 / 0.98);
   box-shadow:
     0 24px 60px -20px rgb(0 0 0 / 0.85),
@@ -4001,7 +4005,7 @@ html[data-motion='reduce'] .hall-screen-host {
   border-bottom: 1px solid var(--cinema-line);
 }
 .hall-keys-card dt {
-  font-size: 13px;
+  font-size: var(--font-size-ui);
 }
 .hall-keys-card dd {
   margin: 0;
@@ -4009,11 +4013,11 @@ html[data-motion='reduce'] .hall-screen-host {
 .hall-keys-card p {
   margin: 12px 0 0;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 
 .cs-choices-title {
-  font: 600 13px / 18px var(--font-family);
+  font: 600 var(--font-size-ui) / 18px var(--font-family);
 }
 .cs-check {
   margin-top: 14px;
@@ -4023,7 +4027,7 @@ html[data-motion='reduce'] .hall-screen-host {
 }
 .hall-key-settings > p {
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
 }
 .hall-key-edit {
   display: inline-flex;
@@ -4035,10 +4039,10 @@ html[data-motion='reduce'] .hall-screen-host {
   min-height: 28px;
   padding: 0 8px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   background: none;
   color: inherit;
-  font: 12.5px / 1 var(--font-family);
+  font: var(--font-size-metadata) / 1 var(--font-family);
   cursor: pointer;
 }
 .hall-key-button:hover,
@@ -4065,7 +4069,7 @@ html[data-motion='reduce'] .hall-screen-host {
 .hall-key-note {
   margin: 10px 0;
   color: var(--color-text-muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-metadata);
 }
 
 /* Favourite channels and programme reminders. */
@@ -4081,7 +4085,7 @@ html[data-motion='reduce'] .hall-screen-host {
   width: 26px;
   height: 26px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   background: rgb(0 0 0 / 0.35);
   color: var(--color-text-muted);
   opacity: 0;
@@ -4221,7 +4225,7 @@ html[data-motion='reduce'] .hall-screen-host {
 }
 .stremio-streams h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--font-size-body);
 }
 .stremio-streams ol {
   display: flex;
@@ -4239,7 +4243,7 @@ html[data-motion='reduce'] .hall-screen-host {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--cinema-line);
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   background: var(--cinema-fill);
   color: inherit;
   text-align: left;
@@ -4254,7 +4258,7 @@ html[data-motion='reduce'] .hall-screen-host {
 }
 .stremio-stream-quality {
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   text-align: center;
 }
 .stremio-stream-text {
@@ -4269,19 +4273,19 @@ html[data-motion='reduce'] .hall-screen-host {
   text-overflow: ellipsis;
 }
 .stremio-stream-text strong {
-  font-size: 13.5px;
+  font-size: var(--font-size-ui);
   font-weight: 600;
 }
 .stremio-stream-text small {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .stremio-stream-cache {
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--cinema-fill);
   color: var(--color-text-muted);
-  font-size: 11.5px;
+  font-size: var(--font-size-micro);
   white-space: nowrap;
 }
 .stremio-stream-cache.ready {
