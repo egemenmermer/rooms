@@ -1448,9 +1448,7 @@ function UserProfileScope({
       ? t('Durumunu seç')
       : view === 'invisible' && own && status === 'invisible'
         ? t('Görünmezsin')
-        : fixtureDetails?.about
-          ? t('Deniz’in profili')
-          : t('{name} profili', { name: nameOf(person) });
+        : t('{name} profili', { name: nameOf(person) });
   const statusOptions: Array<[string, string, string]> = [
     ['online', t('Çevrimiçi'), ''],
     ['idle', t('Uzakta'), ''],

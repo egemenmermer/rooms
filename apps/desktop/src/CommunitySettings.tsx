@@ -151,15 +151,13 @@ export function CommunityEditor(props: CommunityEditorProps) {
   return (
     <Modal
       title={
-        referenceCreated
-          ? t('Topluluğun hazır · Yerel referans')
-          : created
-            ? t('Topluluğun hazır')
-            : mode === 'edit'
-              ? space?.name
-                ? t('{name}’yı düzenle', { name: space.name })
-                : t('Topluluğu düzenle')
-              : t('Topluluk oluştur')
+        referenceCreated || created
+          ? t('Topluluğun hazır')
+          : mode === 'edit'
+            ? space?.name
+              ? t('{name}’yı düzenle', { name: space.name })
+              : t('Topluluğu düzenle')
+            : t('Topluluk oluştur')
       }
       className={`rcs-modal rcs-community-editor ${referenceCreated ? 'rcs-local-reference' : ''}`}
       onClose={() => {
@@ -332,7 +330,7 @@ export function ChannelEditor(props: ChannelEditorProps) {
       ? {
           name: props.referenceDraftName ?? '',
           description: props.referenceDraftDescription ?? '',
-          category: props.referenceDraftCategory ?? t('SOHBET'),
+          category: props.referenceDraftCategory ?? t('Sohbet'),
         }
       : undefined;
   const [referencePrivateEnabled, setReferencePrivateEnabled] = useState(true),

@@ -95,6 +95,16 @@ const inviteErrors: Record<string, string> = {
   SIGNUP_CHANNEL_REQUIRED: 'Create a channel in this community before approving requests.',
   INVITE_PERMISSION_REQUIRED: 'You do not have permission to invite people to this community.',
 };
+/** Sign-in and sign-up failures that would otherwise read as an expired session or a generic rejection. */
+const accountErrors: Record<string, string> = {
+  InvalidCredentials: 'The email or password is not correct.',
+  LockedOut: 'Too many failed sign-in attempts. Wait a few minutes and try again.',
+  InvalidInvite: 'This invitation is invalid or has already been used.',
+  ShortPassword: 'The password is too short. Choose a longer one.',
+  CompromisedPassword: 'This password appears in known data leaks. Choose another one.',
+  NETWORK_UNAVAILABLE:
+    'The server could not be reached. Check your network connection and the server address.',
+};
 const ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
 /** Video types the desktop chat plays inline; QuickTime covers Mac recordings and iPhone videos. */
 export const INLINE_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
@@ -107,6 +117,7 @@ export class StoatError extends Error {
       roleErrorMessages[code] ??
         directMessageErrors[code] ??
         inviteErrors[code] ??
+        accountErrors[code] ??
         (code === 'REGISTRATION_REQUIRES_SIGN_IN'
           ? 'This email address already has an account. Sign in with it, or use a different email address.'
           : code === 'REGISTRATION_UNCERTAIN'

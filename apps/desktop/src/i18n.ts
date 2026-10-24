@@ -852,6 +852,17 @@ export const errorMessages: Record<string, string> = {
   'Verify your email before signing in.': 'Giriş yapmadan önce e-posta adresini doğrula.',
   'This account needs additional authentication. Complete the official Stoat sign-in flow.':
     'Bu hesap ek doğrulama istiyor. Sunucunun web uygulamasında girişini tamamla.',
+  'The email or password is not correct.':
+    'E-posta veya parola hatalı. Bilgilerini kontrol edip yeniden dene.',
+  'Too many failed sign-in attempts. Wait a few minutes and try again.':
+    'Çok fazla başarısız giriş denemesi yapıldı. Birkaç dakika bekleyip yeniden dene.',
+  'This invitation is invalid or has already been used.':
+    'Bu davet geçersiz ya da daha önce kullanılmış. Seni davet eden kişiden yenisini iste.',
+  'The password is too short. Choose a longer one.': 'Parola çok kısa. Daha uzun bir parola seç.',
+  'This password appears in known data leaks. Choose another one.':
+    'Bu parola bilinen veri sızıntılarında geçiyor. Başka bir parola seç.',
+  'The server could not be reached. Check your network connection and the server address.':
+    'Sunucuya ulaşılamadı. Ağ bağlantısını ve sunucu adresini kontrol et.',
   'Your session expired. Sign in again.':
     'Oturumun doğrulanamadı. Hesap bilgilerini kontrol edip yeniden giriş yap.',
   'You do not have permission for this action.': 'Bu işlem için hesabının gerekli izni yok.',

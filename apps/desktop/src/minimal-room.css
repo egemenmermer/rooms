@@ -567,11 +567,19 @@
   font-size: 14px;
 }
 .minimal-room-ui.voice-mode .familiar-room .reference-participant {
-  background: #5c484e;
+  background: linear-gradient(
+    160deg,
+    var(--color-background-hover),
+    var(--color-background-raised) 70%
+  );
 }
 .minimal-room-ui.voice-mode .familiar-room .reference-participant:hover,
 .minimal-room-ui.voice-mode .familiar-room .reference-participant.speaking {
-  background: #5c484e;
+  background: linear-gradient(
+    160deg,
+    var(--color-background-hover),
+    var(--color-background-raised) 70%
+  );
 }
 .minimal-room-ui.voice-mode .familiar-room .reference-participant-name {
   font-size: 15px;
