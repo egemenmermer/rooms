@@ -153,7 +153,8 @@ export function parseSwitches<T extends { [K in keyof T]: boolean }>(
   if (!input) return undefined;
   const switches: Record<string, boolean> = {};
   for (const [key, value] of Object.entries(input)) {
-    if (!keys.includes(key) || typeof value !== 'boolean') return { error: 'GAME_OPTIONS_UNSUPPORTED' };
+    if (!(keys as readonly string[]).includes(key) || typeof value !== 'boolean')
+      return { error: 'GAME_OPTIONS_UNSUPPORTED' };
     switches[key] = value;
   }
   return switches as Partial<T>;
