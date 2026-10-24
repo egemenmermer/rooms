@@ -109,7 +109,7 @@
   white-space: nowrap;
 }
 .rg-seat-info small {
-  font-size: 10px;
+  font-size: 11px;
   color: #b1b5c2;
   display: block;
 }
@@ -134,7 +134,7 @@
   opacity: 0.58;
 }
 .rg-table-seat > small {
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.4;
   color: #9baabd;
   white-space: nowrap;
