@@ -77,8 +77,8 @@
 
 /* Seat spots on the felt (bets, pushed pots), as % of the board: between a seat and the center. */
 .ho-at-0 {
-  --ho-x: 40%;
-  --ho-y: 30%;
+  --ho-x: 37%;
+  --ho-y: 25%;
 }
 .ho-at-1 {
   --ho-x: 77%;
@@ -303,6 +303,9 @@
 }
 .ho-hole-cards .playing-card > b {
   font-size: 24px;
+}
+.ho-hole-cards.settled .playing-card:not(.winning) {
+  opacity: 0.55;
 }
 .ho-dock .playing-card.winning {
   outline: 2px solid #bda1f2;

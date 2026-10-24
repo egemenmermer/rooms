@@ -464,7 +464,10 @@ export function HoldemTable({
       <TableDock label={t('Elin')} className="ho-dock">
         <div className={`rg-hand-strip ${finished ? 'result' : ''}`}>
           {holeCards.length > 0 && (
-            <div className="ho-hole-cards" aria-label={t('Kartların')}>
+            <div
+              className={`ho-hole-cards${winningCards.size ? ' settled' : ''}`}
+              aria-label={t('Kartların')}
+            >
               {holeCards.map((card) => (
                 <PlayingCard key={card.id} card={card} winning={winningCards.has(card.id)} />
               ))}

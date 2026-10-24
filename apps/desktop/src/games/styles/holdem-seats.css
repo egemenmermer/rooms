@@ -17,7 +17,7 @@
 /* The top row keeps room for the last-move bubble above the cards. */
 .rg-table-seat.p-0 {
   left: 50%;
-  top: 12px;
+  top: 10px;
   transform: translateX(-50%);
 }
 .rg-table-seat.p-1 {
@@ -115,11 +115,11 @@
 }
 .rg-table-seat .rg-seat-badge {
   position: absolute;
-  top: auto;
-  left: auto;
-  right: -12px;
-  bottom: -6px;
-  transform: none;
+  top: -10px;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translateX(-50%);
   padding: 0 3px;
 }
 .rg-table-seat .rg-seat-remove {
