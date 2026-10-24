@@ -21,8 +21,7 @@ function rig(button: number, hole: [Spec, Spec][], board: Spec[]): Card[] {
   const n = hole.length;
   const top: Card[] = [];
   for (let round = 0; round < 2; round++)
-    for (let offset = 1; offset <= n; offset++)
-      top.push(find(hole[(button + offset) % n][round]));
+    for (let offset = 1; offset <= n; offset++) top.push(find(hole[(button + offset) % n][round]));
   const [f1, f2, f3, t, r] = board.map(find);
   const spare = deck.filter((c) => ![...top, f1, f2, f3, t, r].includes(c));
   const stack = [...top, spare[0], f1, f2, f3, spare[1], t, spare[2], r];
@@ -255,13 +254,24 @@ describe('H5: an uncalled bet coming back is not a win', () => {
       0,
       20,
       40,
-      rig(0, [sevenTwo, [[8, 'hearts'], [4, 'clubs']], aceKing], [
-        [14, 'hearts'],
-        [13, 'clubs'],
-        [3, 'diamonds'],
-        [9, 'clubs'],
-        [10, 'spades'],
-      ]),
+      rig(
+        0,
+        [
+          sevenTwo,
+          [
+            [8, 'hearts'],
+            [4, 'clubs'],
+          ],
+          aceKing,
+        ],
+        [
+          [14, 'hearts'],
+          [13, 'clubs'],
+          [3, 'diamonds'],
+          [9, 'clubs'],
+          [10, 'spades'],
+        ],
+      ),
     );
     hand = holdemAction(hand, 'a', 1, { type: 'raise', to: 300 });
     hand = holdemAction(hand, 'b', 2, { type: 'call' });

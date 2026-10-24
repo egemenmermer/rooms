@@ -216,9 +216,7 @@ function progress(state: HoldemHand, previousTurn: number) {
   // player. (A blind posted all-in for less than the big blind never has to be out-called.)
   const noFurtherBetting =
     acting.length <= 1 &&
-    acting.every((s) =>
-      live.every((other) => other === s || other.streetBet <= s.streetBet),
-    );
+    acting.every((s) => live.every((other) => other === s || other.streetBet <= s.streetBet));
   if (!bettingComplete && !noFurtherBetting) {
     state.turn = next(
       state,
@@ -231,7 +229,7 @@ function progress(state: HoldemHand, previousTurn: number) {
     showdown(state);
     return;
   }
-  if (acting.length <= 1) state.runoutFrom ??= state.stage;
+  if (acting.length <= 1 && state.stage !== 'ended') state.runoutFrom ??= state.stage;
   // Burn one card before each community street, as in a physical friends' table.
   draw(state);
   if (state.stage === 'preflop') {
@@ -391,12 +389,15 @@ export function publicShowdownHands(state: HoldemHand): Record<string, Evaluated
   const settlement = state.settlement;
   if (state.stage !== 'ended' || settlement?.reason !== 'showdown') return null;
   const mucked = settlement.mucked ?? [];
-  return Object.fromEntries(Object.entries(settlement.hands).filter(([id]) => !mucked.includes(id)));
+  return Object.fromEntries(
+    Object.entries(settlement.hands).filter(([id]) => !mucked.includes(id)),
+  );
 }
 export function holdemView(state: HoldemHand, userId: string) {
   const reveal = state.stage === 'ended' && state.seats.filter((s) => !s.folded).length > 1;
   const mucked = state.settlement?.mucked ?? [];
-  const shown = (seat: HoldemSeat) => reveal && !seat.folded && !mucked.includes(seat.userId);
+  const shown = (seat: { userId: string; folded: boolean }) =>
+    reveal && !seat.folded && !mucked.includes(seat.userId);
   const own = state.seats.find((seat) => seat.userId === userId);
   const ownHand =
     own && own.cards.length + state.board.length >= 5
