@@ -233,8 +233,12 @@ export const useCommunity = create<CommunityState>((set, get) => ({
     useChannelAccess.setState({ checks: {} });
     set({ ...blank, status: 'connecting', busy: true });
     try {
-      const { leaveVoice } = await import('./realtime');
-      await leaveVoice();
+      // Leaving voice is best effort: a failed media teardown must never keep the account
+      // signed in (the main process clears the saved session and vault below).
+      try {
+        const { leaveVoice } = await import('./realtime');
+        await leaveVoice();
+      } catch {}
       await bridge().logout();
       if (request === sessionEpoch) set({ ...blank });
     } catch (error) {
@@ -735,7 +739,10 @@ function onEvent(event: GatewayEvent) {
     if (typeof channelId === 'string')
       window.dispatchEvent(new CustomEvent('rooms:open-channel', { detail: channelId }));
   } else if (event.type === 'SESSION_RESTORED') {
-    // The saved session's server answered (or refused it) after launch.
+    // The saved session's server answered (or refused it) after launch. A sign-in, sign-up or
+    // sign-out in progress decides the session itself (and re-reads it if it fails), so the
+    // restore must not orphan its result by moving the epoch.
+    if (state.busy) return;
     const request = ++sessionEpoch;
     void bridge()
       .session()

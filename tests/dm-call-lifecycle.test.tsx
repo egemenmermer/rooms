@@ -189,6 +189,23 @@ describe('private call renderer lifetime and device consent', () => {
       useVoiceContext.setState({ channelId: null });
     }
   });
+  it('connects an accepted call even when leaving the voice room rejects', async () => {
+    useCommunity.setState({ user: callee });
+    poll.mockResolvedValue({ call: ringing });
+    await refreshDmCall();
+    useVoiceContext.setState({ channelId: 'room' });
+    mock.leave.mockRejectedValueOnce(
+      new DOMException('Cannot close a closed AudioContext.', 'InvalidStateError'),
+    );
+    try {
+      await acceptDmCall(false);
+      expect(mock.leave).toHaveBeenCalledOnce();
+      expect(mock.connect).toHaveBeenCalledOnce();
+      expect(useDmCall.getState()).toMatchObject({ connected: true, error: null });
+    } finally {
+      useVoiceContext.setState({ channelId: null });
+    }
+  });
   it('outgoing video consent is honored only after acceptance; camera failure preserves connected voice', async () => {
     mock.camera.mockRejectedValueOnce(new Error('no device'));
     await startDmCall('999999', 'video');

@@ -315,6 +315,8 @@ export const main: Catalog = {
   Görüntü: 'View',
   'Bu istek için onaylı kayıt bağlantısı yok.':
     'There’s no approved sign-up link for this request.',
+  'Hesabın oluştu ama oturum açılamadı. {email} ile giriş yap.':
+    'Your account was created, but the session couldn’t start. Sign in with {email}.',
   'Bu odanın listelerine erişimin yok ya da listeleri değiştirmek için odada konuşma iznin yok.':
     'You don’t have access to this room’s playlists, or you don’t have permission to speak in the room, which changing them needs.',
   'Özel bir arama geliyor.': 'A private call is coming in.',
