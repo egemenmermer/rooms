@@ -2123,8 +2123,7 @@ function ReferenceBlackjack({ game, userId, can, action, timer }: TableUI) {
                 // Insurance (dealer shows an ace) and surrender (table rule) appear only when the server offers them.
                 .filter(
                   ([name]) =>
-                    !['insurance', 'decline-insurance', 'surrender'].includes(name) ||
-                    can(name),
+                    !['insurance', 'decline-insurance', 'surrender'].includes(name) || can(name),
                 )
                 .map(([name, label]) => (
                   <button

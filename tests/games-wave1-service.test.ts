@@ -167,10 +167,9 @@ describe('blackjack insurance and surrender in the module', () => {
       action: 'decline-insurance',
     });
     expect(blackjackModule.phase(round)).toBe('insurance');
-    const insured = blackjackModule.action(
-      round,
-      0,
-      { action: 'insurance' }) as BlackjackTableRound;
+    const insured = blackjackModule.action(round, 0, {
+      action: 'insurance',
+    }) as BlackjackTableRound;
     expect(insured.insurancePending).toBe(false);
     expect(blackjackModule.phase(insured)).toBe('play');
     expect(blackjackModule.legalActions(insured, 0)).toEqual([
@@ -180,10 +179,7 @@ describe('blackjack insurance and surrender in the module', () => {
       'double',
     ]);
     // Surrender: half the bet back, and the lost insurance stake counts in the net.
-    const done = blackjackModule.action(
-      insured,
-      0,
-      { action: 'surrender' }) as BlackjackTableRound;
+    const done = blackjackModule.action(insured, 0, { action: 'surrender' }) as BlackjackTableRound;
     expect(blackjackModule.settle(done)).toEqual({ points: [-10], winners: [] });
     expect(blackjackModule.summary(done).players[0]).toMatchObject({
       insurance: 5,
