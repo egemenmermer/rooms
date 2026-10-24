@@ -4,7 +4,7 @@ import {
   okeyRuleProfile,
   remaining101Penalty,
   required101Pairs,
-  validate101Meld,
+  validate101MeldWith,
   validate101Opening,
   validate101Pairs,
   type Okey101Options,
@@ -162,7 +162,7 @@ function assignedMeld(
   ].filter((r): r is { kind: Okey101MeldKind; tiles: OkeyTile[] } => !!r.tiles);
   const valid = readings.filter((r) => {
     try {
-      validate101Meld(r.tiles, { wrapAround: options.wrapAround });
+      validate101MeldWith(r.tiles, { wrapAround: options.wrapAround });
       return true;
     } catch {
       return false;
@@ -226,7 +226,7 @@ export function extend101Meld(
       const candidate = placeAround(meld, order.slice(0, k), order.slice(k), wrapAround);
       if (!candidate) continue;
       try {
-        validate101Meld(candidate, { wrapAround });
+        validate101MeldWith(candidate, { wrapAround });
         return candidate;
       } catch {
         /* Try the next split. */
@@ -425,7 +425,7 @@ export function okey101Action(
           )
         )
           throw new Error('PAIR_REQUIRED');
-      } else melds.forEach((meld) => validate101Meld(meld, { wrapAround: options.wrapAround }));
+      } else melds.forEach((meld) => validate101MeldWith(meld, { wrapAround: options.wrapAround }));
     }
     state.opened[seat] = pairs ? 'pairs' : 'runs';
     state.melds.push(...melds.map((tiles) => ({ owner: seat, tiles, pairs })));

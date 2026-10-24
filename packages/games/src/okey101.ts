@@ -85,8 +85,15 @@ function highOne(tiles: OkeyTile[], wrapAround: boolean): boolean {
     tiles[tiles.length - 2].value === 13
   );
 }
-/** Validate explicit joker substitutions before counting opening points. Runs do not wrap 13→1 unless allowed. */
-export function validate101Meld(tiles: OkeyTile[], options: Okey101MeldOptions = {}): number {
+/**
+ * Validate explicit joker substitutions before counting opening points. Runs do not wrap 13→1.
+ * Kept one-argument so callers may pass it to `forEach`/`map`; use `validate101MeldWith` for table options.
+ */
+export function validate101Meld(tiles: OkeyTile[]): number {
+  return validate101MeldWith(tiles, {});
+}
+/** `validate101Meld` with table options: `wrapAround` allows 12-13-1 with the high 1 worth 11. */
+export function validate101MeldWith(tiles: OkeyTile[], options: Okey101MeldOptions): number {
   if (
     tiles.length < 3 ||
     tiles.length > 13 ||
@@ -128,7 +135,7 @@ export function validate101Opening(
   )
     throw new Error('TILES_NOT_IN_HAND');
   const { wrapAround } = okey101Options(rules);
-  const total = melds.reduce((sum, meld) => sum + validate101Meld(meld, { wrapAround }), 0);
+  const total = melds.reduce((sum, meld) => sum + validate101MeldWith(meld, { wrapAround }), 0);
   if (total < rules.openingMinimum || (rules.folding && total <= currentHighestOpening))
     throw new Error('OPENING_TOO_LOW');
   return total;

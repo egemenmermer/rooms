@@ -11,6 +11,7 @@ import {
 import {
   okeyRuleProfile,
   validate101Meld,
+  validate101MeldWith,
   validate101Opening,
   type Okey101Options,
   type OkeyTile,
@@ -38,7 +39,7 @@ function round(
   state.stock = Array.from({ length: 20 }, (_, i) => tile(`stock${i}`, (i % 13) + 1, 'yellow'));
   return Object.assign(state, setup);
 }
-const run = (color: OkeyTile['color'], from: number, to: number, prefix = color) =>
+const run = (color: OkeyTile['color'], from: number, to: number, prefix: string = color) =>
   Array.from({ length: to - from + 1 }, (_, i) => tile(`${prefix}${from + i}`, from + i, color));
 const ids = (tiles: OkeyTile[]) => tiles.map((t) => t.id);
 /** 101+ opening: red 10-13, black 10-13 and yellow 10-13 = 138. */
@@ -445,18 +446,18 @@ describe('101 v2 rules: O6 12-13-1', () => {
 
   it('allows a high 1 worth 11 when enabled, never 13-1-2', () => {
     expect(
-      validate101Meld([tile('a', 12), tile('b', 13), tile('c', 1)], { wrapAround: true }),
+      validate101MeldWith([tile('a', 12), tile('b', 13), tile('c', 1)], { wrapAround: true }),
     ).toBe(36);
     expect(
-      validate101Meld([tile('a', 11), tile('b', 12), tile('c', 13), tile('d', 1)], {
+      validate101MeldWith([tile('a', 11), tile('b', 12), tile('c', 13), tile('d', 1)], {
         wrapAround: true,
       }),
     ).toBe(47);
     expect(() =>
-      validate101Meld([tile('a', 13), tile('b', 1), tile('c', 2)], { wrapAround: true }),
+      validate101MeldWith([tile('a', 13), tile('b', 1), tile('c', 2)], { wrapAround: true }),
     ).toThrow('INVALID_MELD');
     expect(() =>
-      validate101Meld([tile('a', 12), tile('b', 13), tile('c', 1), tile('d', 2)], {
+      validate101MeldWith([tile('a', 12), tile('b', 13), tile('c', 1), tile('d', 2)], {
         wrapAround: true,
       }),
     ).toThrow('INVALID_MELD');
@@ -483,7 +484,7 @@ describe('101 v2 rules: O6 12-13-1', () => {
     expect(state.melds[0].tiles.map((t) => t.value)).toEqual([12, 13, 1]);
     const natural = extend101Meld(run('red', 11, 13), [tile('r1', 1)], wrapRules);
     expect(natural?.map((t) => t.value)).toEqual([11, 12, 13, 1]);
-    expect(validate101Meld(natural!, { wrapAround: true })).toBe(47);
+    expect(validate101MeldWith(natural!, { wrapAround: true })).toBe(47);
     expect(
       extend101Meld(run('red', 11, 13), [tile('r1', 1)], okeyRuleProfile(false, false)),
     ).toBeNull();
