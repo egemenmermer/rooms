@@ -54,7 +54,9 @@
 
 ## Paketler ve doğrulama
 
-Mac paketi imzalanıp noter onayı alır, Windows paketi aynı commit'ten derlenir. Sunucuda access, activities, cinema, agent ve claude-bot servisleri güncellenir.
+Mac paketi imzalanıp noter onayı alır, Windows paketi aynı commit'ten derlenir. Sunucuda access, activities, cinema ve agent servisleri güncellenir.
+
+**Güncelleme önemli:** Pişti, Okey ve Tavla masalarını görmek için herkesin RC33'e geçmesi gerekir; eski sürümler bu masaları doğru çizemez.
 
 Otomatik testler (yaklaşık 2500 masaüstü, 460 iPhone testi) ve her oyunun ekran görüntüsü kontrolü geçti.
 
