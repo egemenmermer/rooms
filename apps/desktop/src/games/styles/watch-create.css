@@ -25,6 +25,11 @@
   --rx-create-pad-y: 26px;
   padding: var(--rx-create-pad-y) var(--rx-create-pad-x);
 }
+.coffeehouse-return + .rg-page.rx-create,
+.coffeehouse-return + .rg-page.rh-history {
+  /* The back link above is a block sibling: without this the 100%-high page ends below the window edge. */
+  height: calc(100% - 42px);
+}
 .rx-create-options {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -105,6 +110,7 @@
 }
 .rx-create footer {
   position: sticky;
+  /* Sticky offsets are measured inside the scroller's padding, so reach back over it. */
   bottom: calc(-1 * var(--rx-create-pad-y, 26px));
   z-index: 3;
   display: flex;
@@ -123,6 +129,7 @@
 }
 .rx-create-notes .rg-banner {
   margin: 0;
+  padding: 8px 12px;
 }
 .rx-create-actions {
   display: flex;

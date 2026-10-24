@@ -195,7 +195,10 @@ export function ReferenceGameHistory({
                 <tr key={key}>
                   <td>
                     <strong>{historyTableName(hand.tableName, table.kind)}</strong>
-                    <small>{historyTableName(undefined, table.kind)}</small>
+                    {historyTableName(hand.tableName, table.kind) !==
+                      historyTableName(undefined, table.kind) && (
+                      <small>{historyTableName(undefined, table.kind)}</small>
+                    )}
                   </td>
                   <td>{hand.hand}</td>
                   <td>{new Date(hand.endedAt).toLocaleString(locale)}</td>
