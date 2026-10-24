@@ -1,16 +1,35 @@
 import {
+  BLACKJACK_DEFAULT_RULES,
   blackjackTableAction,
   blackjackTableView,
   startBlackjackTable,
+  type BlackjackPlayer,
+  type BlackjackRules,
   type BlackjackTableRound,
 } from './blackjack-table';
 import { blackjackTotal } from './blackjack';
-import { caught, type GameModule } from './module';
+import { caught, parseSwitches, type GameModule } from './module';
 
-const blackjackActions = ['hit', 'stand', 'double', 'split'] as const;
+const blackjackActions = [
+  'hit',
+  'stand',
+  'double',
+  'split',
+  'surrender',
+  'insurance',
+  'decline-insurance',
+] as const;
 export interface BlackjackCommand {
   action: (typeof blackjackActions)[number];
 }
+const ruleKeys = Object.keys(BLACKJACK_DEFAULT_RULES) as (keyof BlackjackRules)[];
+/** Chips the player put in this round (hands and insurance) and got back, for the round's net. */
+const staked = (player: BlackjackPlayer) =>
+  player.hands.reduce((sum, hand) => sum + hand.bet, 0) + (player.insurance ?? 0);
+const returned = (round: BlackjackTableRound, player: BlackjackPlayer) =>
+  round.results
+    .filter((result) => result.userId === player.userId)
+    .reduce((sum, result) => sum + result.returned, 0) + (player.insuranceReturned ?? 0);
 
 /** Blackjack (`rooms-blackjack-v1`) over the existing rules in `blackjack-table.ts`. */
 export const blackjackModule = {
@@ -23,14 +42,17 @@ export const blackjackModule = {
       return { error: 'INVALID_BLACKJACK_ACTION' };
     return { action: input.action as BlackjackCommand['action'] };
   },
+  parseOptions: (input) => parseSwitches<BlackjackRules>(input, ruleKeys),
   // The service always deals through `table.chips.start`; this fallback seats default stacks.
-  start: (seatCount) =>
+  start: (seatCount, rules) =>
     startBlackjackTable(
       Array.from({ length: seatCount }, (_, i) => ({
         userId: `seat-${i}`,
         credits: 1000,
         bet: 10,
       })),
+      undefined,
+      rules,
     ),
   action: (state, seat, command) =>
     caught(() => blackjackTableAction(state, state.players[seat].userId, command.action)),
@@ -38,13 +60,20 @@ export const blackjackModule = {
   view: (state) => blackjackTableView(state),
   turn: (state) => state.turn,
   botCommand(state, seat) {
+    // Insurance is a losing side bet for a player who cannot count cards; bots and timeouts decline it.
+    if (state.insurancePending) return { action: 'decline-insurance' };
     const player = state.players[seat];
     return { action: blackjackTotal(player.hands[player.activeHand].cards) < 17 ? 'hit' : 'stand' };
   },
   legalActions(state, seat) {
     const own = state.players[seat],
       hand = own.hands[own.activeHand];
+    if (state.insurancePending)
+      return own.credits >= own.hands[0].bet / 2
+        ? ['insurance', 'decline-insurance']
+        : ['decline-insurance'];
     const legal: string[] = ['hit', 'stand'];
+    if (state.rules?.surrender && hand.cards.length === 2 && !hand.split) legal.push('surrender');
     if (hand.cards.length === 2 && hand.bet <= own.credits) {
       legal.push('double');
       const point = (rank: number) => (rank === 14 ? 11 : Math.min(rank, 10));
@@ -53,17 +82,13 @@ export const blackjackModule = {
     }
     return legal;
   },
+  // Answering the insurance prompt and then playing are separate decisions, each with its own timer.
+  phase: (round) => (round.insurancePending ? 'insurance' : 'play'),
   settle: (round) =>
     !round.finished
       ? null
       : {
-          points: round.players.map(
-            (player) =>
-              round.results
-                .filter((result) => result.userId === player.userId)
-                .reduce((sum, result) => sum + result.returned, 0) -
-              player.hands.reduce((sum, hand) => sum + hand.bet, 0),
-          ),
+          points: round.players.map((player) => returned(round, player) - staked(player)),
           winners: round.players.flatMap((player, index) =>
             round.results.some(
               (r) => r.userId === player.userId && ['win', 'blackjack'].includes(r.outcome),
@@ -76,9 +101,12 @@ export const blackjackModule = {
     results: round.results,
     dealer: round.dealer,
     dealerTotal: blackjackTotal(round.dealer),
+    rules: round.rules ?? BLACKJACK_DEFAULT_RULES,
     players: round.players.map((player) => ({
       userId: player.userId,
       finalChips: player.credits,
+      insurance: player.insurance ?? 0,
+      insuranceReturned: player.insuranceReturned ?? 0,
       hands: player.hands.map((hand, index) => ({
         hand: index,
         cards: hand.cards,
@@ -89,20 +117,18 @@ export const blackjackModule = {
           round.results.find((result) => result.userId === player.userId && result.hand === index)
             ?.outcome ?? null,
       })),
-      net:
-        round.results
-          .filter((result) => result.userId === player.userId)
-          .reduce((sum, result) => sum + result.returned, 0) -
-        player.hands.reduce((sum, hand) => sum + hand.bet, 0),
+      net: returned(round, player) - staked(player),
     })),
   }),
   table: {
     stateKey: 'blackjack',
     roundPlayers: (state) => state.players.map((player) => player.userId),
     chips: {
-      start: (players) =>
+      start: (players, rules) =>
         startBlackjackTable(
           players.map((p) => ({ userId: p.userId, credits: p.chips, bet: p.bet })),
+          undefined,
+          rules,
         ),
       finalChips: (round) =>
         round.players.map((player) => ({ userId: player.userId, chips: player.credits })),
@@ -113,5 +139,5 @@ export const blackjackModule = {
   BlackjackTableRound,
   BlackjackCommand,
   ReturnType<typeof blackjackTableView>,
-  undefined
+  Partial<BlackjackRules> | undefined
 >;

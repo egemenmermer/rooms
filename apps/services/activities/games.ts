@@ -97,6 +97,7 @@ function optionsOf(table: GameTable, module: AnyGameModule): unknown {
         folding: table.folding,
         teams: table.teams,
         holdemRules: rulesOf(table),
+        options: table.options,
       })
     : table.options;
 }
@@ -233,19 +234,21 @@ export function createGame(
   const variant = command.variant ?? 'ihaleli',
     folding = command.folding ?? false,
     teams = command.teams ?? false;
-  let options: unknown;
-  if (module.table?.tableOptions) {
-    if (command.options) throw new Error('GAME_OPTIONS_UNSUPPORTED');
-    options = module.table.tableOptions({
-      variant,
-      folding,
-      teams,
-      holdemRules: rules ?? defaultHoldemRules(),
-    });
-  } else if (module.parseOptions) {
-    options = module.parseOptions(command.options);
-    if (isGameError(options)) throw new Error(options.error);
+  // House rules from `game.create.options`; built-in tables combine them with their top-level fields.
+  let parsed: unknown;
+  if (module.parseOptions) {
+    parsed = module.parseOptions(command.options);
+    if (isGameError(parsed)) throw new Error(parsed.error);
   } else if (command.options) throw new Error('GAME_OPTIONS_UNSUPPORTED');
+  const options = module.table?.tableOptions
+    ? module.table.tableOptions({
+        variant,
+        folding,
+        teams,
+        holdemRules: rules ?? defaultHoldemRules(),
+        options: parsed,
+      })
+    : parsed;
   const capacity = Math.max(...seatCounts(module, options));
   return {
     kind: command.game,
@@ -273,7 +276,7 @@ export function createGame(
     variant,
     folding,
     teams,
-    ...(module.table?.tableOptions || options === undefined ? {} : { options }),
+    ...(parsed === undefined ? {} : { options: parsed }),
     history: [],
     statistics: {},
   };

@@ -37,7 +37,10 @@ export interface GameModule<State, Command, View, Options = unknown> {
   title?: string;
   /** Seat counts for these options (e.g. Gömmeli Batak is 3-handed). Default: `seats`. */
   seatsFor?(options: Options): readonly number[];
-  /** Validates `game.create.options`. Default: the options are `undefined`. */
+  /**
+   * Validates `game.create.options` (also called with `undefined` when none were sent). Default: the options
+   * are `undefined`. With `table.tableOptions`, the result reaches it as `fields.options`.
+   */
   parseOptions?(input: Record<string, GameOptionValue> | undefined): Options | GameError;
   /** Buttons for the seat whose turn it is. Default: every name in `actions`. */
   legalActions?(state: State, seat: number): readonly string[];
@@ -66,6 +69,7 @@ export interface GameActionInput {
   cardId?: string;
   tileIds?: string[];
   melds?: string[][];
+  meldKinds?: ('run' | 'group' | null)[];
   trump?: 'clubs' | 'diamonds' | 'hearts' | 'spades';
 }
 
@@ -82,13 +86,21 @@ export interface LegacyTableFields {
   teams: boolean;
   /** The table's Hold'em rules, defaults filled in. */
   holdemRules: HoldemTableRules;
+  /**
+   * House rules from `game.create.options` as the module's `parseOptions` returned them; undefined for
+   * tables created without options (and stored before options existed), which keep the published defaults.
+   */
+  options?: unknown;
 }
 
 /** Hooks for the built-in Hold'em, Blackjack, Batak and 101 tables, kept so stored tables and clients stay compatible. */
 export interface GameTableHooks<State, Options> {
   /** Stored-table property that holds the round. Default: `round`. */
   stateKey?: 'holdem' | 'blackjack' | 'batak' | 'okey';
-  /** Reads the options from the built-in top-level table fields instead of `options`. */
+  /**
+   * Reads the options from the built-in top-level table fields instead of `options`. A module that also has
+   * `parseOptions` gets the parsed `game.create.options` in `fields.options`.
+   */
   tableOptions?(fields: LegacyTableFields): Options;
   /**
    * User ids in module-seat order when the round tracks its own players (Hold'em, Blackjack).
@@ -129,4 +141,20 @@ export function caught<T>(run: () => T): T | GameError {
   } catch (error) {
     return { error: error instanceof Error ? error.message : String(error) };
   }
+}
+/**
+ * Parses flat on/off house rules from `game.create.options`: every key must be one of `keys` and every value a
+ * boolean. Returns undefined when no options were sent, so tables keep their published defaults.
+ */
+export function parseSwitches<T extends { [K in keyof T]: boolean }>(
+  input: Record<string, GameOptionValue> | undefined,
+  keys: readonly (keyof T & string)[],
+): Partial<T> | GameError | undefined {
+  if (!input) return undefined;
+  const switches: Record<string, boolean> = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (!keys.includes(key) || typeof value !== 'boolean') return { error: 'GAME_OPTIONS_UNSUPPORTED' };
+    switches[key] = value;
+  }
+  return switches as Partial<T>;
 }
