@@ -1,24 +1,32 @@
+/*
+ * Hold'em seats around the felt, placed in % of the board (a size container, holdem-board.css).
+ * One seat chip per player: avatar, name and stack on one line each, dealer/blind tags on the
+ * chip; your own cards live in the dock, so your seat is just the chip and its status line.
+ */
 .rg-table-seat {
   position: absolute;
-  width: 176px;
+  width: max-content;
+  min-width: 120px;
+  max-width: 180px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   z-index: 2;
 }
+/* The top row keeps room for the last-move bubble above the cards. */
 .rg-table-seat.p-0 {
   left: 50%;
-  top: 2px;
+  top: 12px;
   transform: translateX(-50%);
 }
 .rg-table-seat.p-1 {
-  right: 2%;
-  top: 106px;
+  right: 1%;
+  top: 22%;
 }
 .rg-table-seat.p-2 {
-  right: 6%;
-  bottom: 37px;
+  right: 4%;
+  bottom: 4%;
 }
 .rg-table-seat.p-3 {
   left: 50%;
@@ -26,12 +34,12 @@
   transform: translateX(-50%);
 }
 .rg-table-seat.p-4 {
-  left: 6%;
-  bottom: 37px;
+  left: 4%;
+  bottom: 4%;
 }
 .rg-table-seat.p-5 {
-  left: 2%;
-  top: 106px;
+  left: 1%;
+  top: 22%;
 }
 .rg-table-seat .rg-seat-cards {
   display: flex;
@@ -42,11 +50,12 @@
   width: 27px;
   height: 39px;
   min-width: 27px;
+  flex-basis: 27px;
   border-radius: 3px;
   padding: 3px;
 }
 .rg-seat-cards .playing-card > span {
-  font-size: 10px;
+  font-size: 11px;
 }
 .rg-seat-cards .playing-card > b {
   font-size: 17px;
@@ -62,36 +71,21 @@
   inset: 3px;
   border-width: 1px;
 }
-.rg-table-seat.own .rg-seat-cards {
-  min-height: 94px;
-}
-.rg-table-seat.own .playing-card {
-  width: 66px;
-  height: 94px;
-  min-width: 66px;
-  padding: 8px;
-  border-radius: 7px;
-}
-.rg-table-seat.own .playing-card > span {
-  font-size: 24px;
-}
-.rg-table-seat.own .playing-card > b {
-  font-size: 39px;
-}
 .rg-seat-info {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 7px;
   background: #252830;
   border: 1px solid #41464f;
   border-radius: 10px;
-  min-width: 134px;
+  min-width: 120px;
   max-width: 100%;
-  padding: 7px 9px;
+  padding: 6px 9px;
   box-shadow: 0 5px 9px #0002;
 }
-.rg-seat-info > .avatar,
-.rg-seat-info > .voice-photo {
+.rg-seat-info .avatar,
+.rg-seat-info .voice-photo {
   width: 28px;
   height: 28px;
   min-width: 28px;
@@ -112,19 +106,36 @@
   font-size: 11px;
   color: #b1b5c2;
   display: block;
+  white-space: nowrap;
 }
-.rg-seat-info > b {
-  background: #e6d9b6;
-  color: #2a2722;
-  font-weight: 800;
-  font-size: 9px;
-  width: 19px;
-  height: 19px;
-  flex-shrink: 0;
-  border-radius: 50%;
+/* Shared seat avatar inside the chip: BOT on the avatar's corner, "Koltuğu boşalt" an icon. */
+.rg-table-seat .rg-seat-avatar {
+  position: relative;
+  display: block;
+}
+.rg-table-seat .rg-seat-badge {
+  position: absolute;
+  top: -6px;
+  left: -8px;
+  right: auto;
+  bottom: auto;
+  transform: none;
+}
+.rg-table-seat .rg-seat-remove {
+  position: absolute;
+  bottom: -8px;
+  left: -8px;
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  padding: 0;
   display: grid;
   place-items: center;
-  margin-left: auto;
+  border-radius: 50%;
+  z-index: 3;
+}
+.rg-table-seat .rg-seat-remove > span {
+  display: none;
 }
 .rg-table-seat.turn .rg-seat-info {
   border-color: #9e94ff;
@@ -142,31 +153,50 @@
 .rg-table-seat.turn > small {
   color: #c4bdff;
 }
-.rg-empty-seat {
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
-  align-items: center;
-  justify-content: center;
-  min-height: 67px;
-  width: 125px;
-  border: 1px dashed #3c424e;
-  border-radius: 12px;
-  background: #1e2229;
-  color: #9eacc2;
-  font-size: 12px;
+/* An empty seat is a small dashed circle on the rail, not a box that competes with players. */
+.rg-table-seat:has(> .rg-empty-seat) {
+  min-width: 0;
 }
+.rg-empty-seat {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: #9eacc2;
+}
+.rg-empty-seat > span {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px dashed #4a5160;
+  border-radius: 50%;
+  background: #1e2229;
+}
+.rg-empty-seat > small {
+  font-size: 11px;
+}
+.rg-empty-seat:not(:disabled):hover > span {
+  border-color: #8b83ff;
+  color: #c8bcff;
+}
+.rg-empty-seat:disabled {
+  opacity: 0.6;
+}
+/* Nine seats: three across the top, one per side, four along the bottom (yours in the middle). */
 .rg-board.rg-nine-layout .p-1 {
-  right: 22%;
-  top: 0;
+  right: 20%;
+  top: 12px;
 }
 .rg-board.rg-nine-layout .p-2 {
-  right: 2%;
-  top: 106px;
+  right: 1%;
+  top: 30%;
 }
 .rg-board.rg-nine-layout .p-3 {
-  right: 6%;
-  bottom: 37px;
+  right: 5%;
+  bottom: 3%;
   left: auto;
   transform: none;
 }
@@ -176,25 +206,34 @@
   transform: translateX(-50%);
 }
 .rg-board.rg-nine-layout .p-5 {
-  left: 22%;
+  left: 24%;
   top: auto;
   bottom: 0;
 }
 .rg-board.rg-nine-layout .p-6 {
-  left: 6%;
-  bottom: 37px;
+  left: 3%;
+  bottom: 9%;
 }
 .rg-board.rg-nine-layout .p-7 {
-  left: 2%;
-  top: 106px;
+  left: 1%;
+  top: 30%;
 }
 .rg-board.rg-nine-layout .p-8 {
-  left: 22%;
-  top: 0;
+  left: 20%;
+  top: 12px;
 }
-.rg-board.rg-nine-layout .p-5 .rg-seat-info,
-.rg-board.rg-nine-layout .p-8 .rg-seat-info,
-.rg-board.rg-nine-layout .p-1 .rg-seat-info {
-  min-width: 110px;
+.rg-board.rg-nine-layout .rg-table-seat {
+  min-width: 112px;
+  max-width: 150px;
+}
+.rg-board.rg-nine-layout .rg-seat-info {
+  min-width: 112px;
   padding: 5px 7px;
+  gap: 6px;
+}
+.rg-board.rg-nine-layout .rg-seat-info .avatar,
+.rg-board.rg-nine-layout .rg-seat-info .voice-photo {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
 }

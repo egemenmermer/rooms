@@ -16,17 +16,18 @@
 .rg-holdem-form input[type='checkbox'] {
   width: auto;
 }
+/* Main and side pots: one line each, stacked under the board, never cut. */
 .rg-pot-details {
   display: flex;
-  gap: 6px;
-  justify-content: center;
-  margin-top: 10px !important;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
 }
 .rg-pot-details > span {
   font-size: 11px;
   color: #b8c4b6;
   border: 1px solid #466342;
-  padding: 4px 7px;
+  padding: 2px 7px;
   border-radius: 6px;
+  white-space: nowrap;
 }
