@@ -164,6 +164,9 @@ it('a private call taking over through leaveVoice never triggers a rejoin', asyn
 
 it('backs off between failed attempts and gives up with a message after the limit', async () => {
   f.grant.mockRejectedValue(new Error('Access unavailable'));
+  const toasts: string[] = [];
+  const toast = (event: Event) => toasts.push((event as CustomEvent<string>).detail);
+  window.addEventListener('rooms:toast', toast);
   drop();
   await vi.advanceTimersByTimeAsync(VOICE_REJOIN_DELAYS_MS[0]);
   expect(f.grant).toHaveBeenCalledTimes(1);
@@ -181,8 +184,10 @@ it('backs off between failed attempts and gives up with a message after the limi
   // The room is left properly so the member list stops showing this person.
   expect(useVoiceContext.getState().channelId).toBeNull();
   expect(f.leave).toHaveBeenCalledWith('one');
+  expect(toasts).toEqual(['One odasına yeniden bağlanılamadı. Tekrar katılmak için odayı seç.']);
   await vi.advanceTimersByTimeAsync(120_000);
   expect(f.grant).toHaveBeenCalledTimes(VOICE_REJOIN_DELAYS_MS.length);
+  window.removeEventListener('rooms:toast', toast);
 });
 
 it('a connection that keeps dropping right after rejoining ends at the limit', async () => {

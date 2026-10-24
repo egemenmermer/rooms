@@ -217,6 +217,14 @@ function giveUpRejoin(channelId: string, roomName: string) {
   useVoiceRejoin.setState({
     rejoin: { channelId, roomName, attempt: max, maxAttempts: max, phase: 'failed' },
   });
+  // The room leaves the dock with the leave; the toast says why wherever the person is.
+  window.dispatchEvent(
+    new CustomEvent('rooms:toast', {
+      detail: t('{room} odasına yeniden bağlanılamadı. Tekrar katılmak için odayı seç.', {
+        room: roomName,
+      }),
+    }),
+  );
 }
 function startRejoin(channelId: string, roomName: string) {
   // Never unmute on its own: the automatic return (and a manual one) joins muted.

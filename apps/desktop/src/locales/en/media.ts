@@ -742,6 +742,8 @@ export const media: Catalog = {
     },
   'Yeniden bağlanılıyor…': 'Reconnecting…',
   'Vazgeç ve ayrıl': 'Stop and leave',
+  '{room} odasına yeniden bağlanılamadı. Tekrar katılmak için odayı seç.':
+    'Couldn’t reconnect to {room}. Select the room to join it again.',
   '{room} odasıyla bağlantı koptu. Deneme {attempt}/{max}. Mikrofonun kapalı kalır.':
     'Lost the connection to {room}. Attempt {attempt}/{max}. Your microphone stays off.',
 };
