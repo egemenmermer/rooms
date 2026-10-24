@@ -319,4 +319,8 @@ export const main: Catalog = {
     'You don’t have access to this room’s playlists, or you don’t have permission to speak in the room, which changing them needs.',
   'Özel bir arama geliyor.': 'A private call is coming in.',
   'Tayfa · Sunucu uyarısı': 'Tayfa · Server alert',
+  '{count} uyarı daha. Ayrıntılar için Sunucu makinesi sayfasını aç.': {
+    one: '{count} more alert. Open the Host machine page for details.',
+    other: '{count} more alerts. Open the Host machine page for details.',
+  },
 };

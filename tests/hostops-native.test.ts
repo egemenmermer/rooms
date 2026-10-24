@@ -140,3 +140,64 @@ it('notifies an owner-equivalent admin of new server alerts once, and nobody els
   expect(acked).toEqual(['11111111-1111-4111-8111-111111111111']);
   bridge.dispose();
 });
+it('never acknowledges a server alert it did not show: a burst is summarised, not dropped', async () => {
+  const ids = Array.from({ length: 5 }, (_, i) => `1111111${i}-1111-4111-8111-111111111111`);
+  const alerts = ids.map((id, i) => ({
+    id,
+    hostId: 'core',
+    kind: 'disk',
+    message: `Uyarı ${i}`,
+    createdAt: 1,
+    updatedAt: 1,
+    resolvedAt: null,
+    delivery: 'pending',
+  }));
+  const host = {
+    id: 'core',
+    label: 'Tayfa sunucusu',
+    physicalHostId: 'primary',
+    mode: 'shared',
+    owner: true,
+    permissions: ['monitor'],
+    terminalAvailable: true,
+    agentAvailable: false,
+    reason: null,
+  };
+  const acked: string[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: URL, init?: RequestInit) => {
+      if (url.pathname.endsWith('/hosts')) return Response.json({ hosts: [host] });
+      if (url.pathname.endsWith('/alerts/ack')) {
+        acked.push(...JSON.parse(String(init?.body)).ids);
+        return Response.json({ ok: true });
+      }
+      if (url.pathname.endsWith('/snapshot'))
+        return Response.json({
+          host,
+          sample: null,
+          stale: false,
+          thresholds: { cpuPercent: 85, cpuSeconds: 60, diskFreePercent: 15, backupHours: 24 },
+          alerts,
+        });
+      return new Response('{}', { status: 404 });
+    }),
+  );
+  const shown: string[] = [];
+  const bridge = setupHostOps(
+    () => ({ instanceUrl: 'https://qa.invalid', getToken: () => 'token' }),
+    () => null,
+    () => {},
+    (message) => shown.push(message),
+  );
+  await bridge.checkAlerts();
+  expect(shown).toHaveLength(4);
+  expect(shown.slice(0, 3)).toEqual([
+    'Tayfa sunucusu: Uyarı 0',
+    'Tayfa sunucusu: Uyarı 1',
+    'Tayfa sunucusu: Uyarı 2',
+  ]);
+  expect(shown[3]).toContain('2 uyarı daha');
+  expect(acked).toEqual(ids);
+  bridge.dispose();
+});

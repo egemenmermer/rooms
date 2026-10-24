@@ -136,6 +136,13 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
   const stored = useRef({ bio: '', statusText: '' });
   useEffect(() => {
     let active = true;
+    // A new account must never start from the previous one's profile: if the read below fails,
+    // saving an emptied field would otherwise clear a bio this account never had loaded.
+    stored.current = { bio: '', statusText: '' };
+    setName(c.user?.displayName ?? '');
+    setBio('');
+    setStatus('');
+    setPresence('');
     void window.rooms?.social
       ?.ownProfile?.()
       .then((profile) => {
@@ -454,6 +461,23 @@ export default function Settings({
     useModerationRights(community.activeSpaceId).communityAdmin ||
     community.spaces.find((space) => space.id === community.activeSpaceId)?.ownerId ===
       community.user?.id;
+  // A member the owner delegated monitor/terminal access to is not an admin, but the host list
+  // answers only for hosts they may use, so a non-empty list is what shows them the tab.
+  const [delegatedHosts, setDelegatedHosts] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setDelegatedHosts(false);
+    if (communityAdmin || !community.user?.id) return;
+    void window.rooms?.hostOps
+      ?.hosts?.()
+      .then((hosts) => {
+        if (active) setDelegatedHosts(hosts.length > 0);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [communityAdmin, community.user?.id, community.serverUrl]);
   const realtime = useRealtime();
   const [params, setParams] = useSearchParams();
   const tab = tabs.some((entry) => entry.id === params.get('tab'))
@@ -1026,8 +1050,9 @@ export default function Settings({
                   'channel-permissions',
                   'assistant-permissions',
                   'automation',
-                  // The machine behind the server is the owner's (and admins') concern, not every member's.
-                  ...(communityAdmin ? ['hostops'] : []),
+                  // The machine behind the server is for the owner, admins and delegated operators,
+                  // not every member.
+                  ...(communityAdmin || delegatedHosts ? ['hostops'] : []),
                 ],
               },
               { label: 'Tayfa', ids: ['about'] },
