@@ -804,3 +804,24 @@ button.o1-meld:hover,
     transition: none;
   }
 }
+
+/* End of round: the result card lies on the felt (the table stays visible around it) so the
+   summary and the shell's "next hand" strip fit without scrolling. */
+.o1-table.ended {
+  position: relative;
+}
+.o1-table.ended > .o1-summary {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(720px, calc(100% - 32px));
+  max-height: calc(100% - 16px);
+  overflow: auto;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 12px 32px #0008;
+}
+.o1-scores.rx-results th,
+.o1-scores.rx-results td {
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-4);
+}
