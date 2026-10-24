@@ -1,0 +1,628 @@
+/* 101 Okey table. Felt and wood are table materials (local custom properties); chrome uses tokens. */
+.o1-table {
+  --o1-felt-light: #1d4d3a;
+  --o1-felt-dark: #0c271d;
+  --o1-felt-line: #2f5a48;
+  --o1-wood-light: #9a6a43;
+  --o1-wood-dark: #6e4528;
+  --o1-wood-edge: #4a2c18;
+  --o1-tile-back: #e8dcbc;
+  --o1-tile-back-edge: #b4a27a;
+  --o1-okey-glow: #f2c84b;
+  --o1-fake: #2e7d4f;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+/* Felt: seats on the four sides, discard piles in the corners, middle stack in the centre. */
+.o1-felt {
+  display: grid;
+  grid-template-columns: minmax(118px, 1fr) minmax(0, 1.6fr) minmax(118px, 1fr);
+  grid-template-rows: auto minmax(110px, 1fr) auto;
+  grid-template-areas:
+    'top-left top top-right'
+    'left middle right'
+    'bottom-left bottom bottom-right';
+  gap: var(--space-12);
+  padding: var(--space-16);
+  border: 1px solid var(--o1-felt-line);
+  border-radius: var(--radius-16);
+  background: radial-gradient(ellipse at 50% 40%, var(--o1-felt-light), var(--o1-felt-dark));
+  min-width: 0;
+}
+.o1-seat {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  align-content: center;
+  gap: var(--space-4) var(--space-8);
+  padding: var(--space-8) var(--space-12);
+  min-width: 0;
+  border: 1px solid var(--o1-felt-line);
+  border-radius: var(--radius-12);
+  background: color-mix(in srgb, var(--o1-felt-dark) 80%, transparent);
+  color: var(--color-text-primary);
+  transition:
+    border-color 200ms var(--motion-ease-out),
+    box-shadow 200ms var(--motion-ease-out),
+    transform 200ms var(--motion-ease-out);
+}
+.o1-seat.top {
+  grid-area: top;
+  justify-self: center;
+}
+.o1-seat.left {
+  grid-area: left;
+  align-self: center;
+}
+.o1-seat.right {
+  grid-area: right;
+  align-self: center;
+}
+.o1-seat.bottom {
+  grid-area: bottom;
+  justify-self: center;
+}
+.o1-seat .avatar {
+  width: 30px;
+  height: 30px;
+}
+.o1-seat > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.o1-seat strong {
+  font-size: var(--font-size-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.o1-seat small {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-secondary);
+}
+.o1-seat.turn {
+  border-color: var(--color-action-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-action-primary) 35%, transparent);
+  transform: scale(1.03);
+}
+.o1-seat .rg-timer {
+  grid-column: 1 / -1;
+  justify-self: start;
+  font-size: var(--font-size-micro);
+}
+.o1-mini-rack {
+  grid-column: 1 / -1;
+  display: flex;
+  padding-left: var(--space-4);
+}
+.o1-back {
+  display: inline-block;
+  width: 26px;
+  height: 36px;
+  flex: 0 0 auto;
+  border: 1px solid var(--o1-tile-back-edge);
+  border-radius: var(--radius-4);
+  background: linear-gradient(
+    var(--o1-tile-back),
+    color-mix(in srgb, var(--o1-tile-back) 80%, black)
+  );
+  box-shadow: 0 2px 0 var(--o1-tile-back-edge);
+}
+.o1-back.small {
+  width: 9px;
+  height: 14px;
+  margin-left: -3px;
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+/* Corner discard piles: only the top tile is visible, a back hints at the tiles under it. */
+.o1-pile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-8);
+  border: 1px dashed transparent;
+  border-radius: var(--radius-12);
+  transition: border-color 150ms var(--motion-ease-out);
+}
+.o1-pile.top-left {
+  grid-area: top-left;
+}
+.o1-pile.top-right {
+  grid-area: top-right;
+}
+.o1-pile.bottom-left {
+  grid-area: bottom-left;
+}
+.o1-pile.bottom-right {
+  grid-area: bottom-right;
+}
+.o1-pile > small {
+  max-width: 100%;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.o1-pile > em {
+  font-style: normal;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-accent);
+}
+.o1-pile-top {
+  position: relative;
+  display: inline-flex;
+}
+.o1-pile-top > .o1-back {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+}
+.o1-pile-top > .o1-tile {
+  position: relative;
+}
+.o1-pile-top.last .rx-tile {
+  box-shadow:
+    0 3px 0 #d7caa5,
+    0 0 0 2px var(--color-action-primary);
+  animation: o1-drop-in 220ms var(--motion-ease-out);
+}
+.o1-pile-empty {
+  display: grid;
+  place-items: center;
+  width: 37px;
+  height: 56px;
+  border: 1px dashed var(--o1-felt-line);
+  border-radius: var(--radius-4);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-micro);
+  text-align: center;
+}
+.o1-drop-target {
+  border-color: var(--color-action-primary);
+  background: color-mix(in srgb, var(--color-action-primary) 12%, transparent);
+}
+
+/* Middle: face-down stack with its count, the gösterge face up next to it. */
+.o1-middle {
+  grid-area: middle;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-24);
+  position: relative;
+  border: 1px dashed transparent;
+  border-radius: var(--radius-16);
+  transition: border-color 150ms var(--motion-ease-out);
+}
+.o1-stock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-8);
+  border: 1px solid transparent;
+  border-radius: var(--radius-8);
+  background: none;
+  color: var(--color-text-primary);
+}
+.o1-stock .o1-back {
+  width: 37px;
+  height: 56px;
+  box-shadow:
+    0 2px 0 var(--o1-tile-back-edge),
+    3px 5px 0 var(--o1-tile-back-edge);
+}
+.o1-stock b {
+  font-size: var(--font-size-h2);
+}
+.o1-stock:not(:disabled) {
+  cursor: pointer;
+  border-color: var(--color-action-primary);
+}
+.o1-stock:not(:disabled):hover {
+  background: color-mix(in srgb, var(--color-action-primary) 12%, transparent);
+}
+.o1-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+.o1-indicator small,
+.o1-middle-hint {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-secondary);
+  font-style: normal;
+}
+.o1-middle-hint {
+  position: absolute;
+  bottom: var(--space-4);
+}
+
+/* Tiles: the 101 tile plus the okey mark and the ★ sahte okey. */
+.o1-tile {
+  display: inline-flex;
+}
+.rx-tile.o1-okey {
+  position: relative;
+}
+.o1-okey-mark {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--o1-okey-glow);
+  box-shadow: 0 0 6px var(--o1-okey-glow);
+}
+.rx-tile.o1-fake {
+  color: var(--o1-fake);
+}
+.o1-table .rx-tile {
+  transition: transform 180ms var(--motion-ease-out);
+}
+.o1-pile .rx-tile:not(:disabled),
+.o1-pile .rx-tile:not(:disabled):hover {
+  cursor: pointer;
+}
+
+/* Log of the latest moves. */
+.o1-log {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-secondary);
+}
+.o1-log li:first-child {
+  color: var(--color-text-primary);
+}
+
+/* Own rack: a wooden ıstaka with two shelves of 15 fixed cells; it never wraps. */
+.o1-rack-section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  margin-bottom: var(--space-8);
+  font-size: var(--font-size-metadata);
+}
+.o1-rack-section > header > div {
+  display: flex;
+  gap: var(--space-8);
+}
+.o1-rack {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: repeat(15, minmax(0, 1fr));
+  gap: 14px 4px;
+  padding: 10px 12px 14px;
+  border-radius: var(--radius-8);
+  border-bottom: 8px solid var(--o1-wood-edge);
+  background:
+    linear-gradient(
+      to bottom,
+      transparent calc(50% - 5px),
+      var(--o1-wood-edge) calc(50% - 5px),
+      var(--o1-wood-edge) calc(50% + 1px),
+      transparent calc(50% + 1px)
+    ),
+    linear-gradient(var(--o1-wood-light), var(--o1-wood-dark));
+  box-shadow: 0 6px 14px #0005;
+}
+.o1-cell {
+  display: flex;
+  min-width: 0;
+  aspect-ratio: 37 / 56;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-4);
+  background: none;
+}
+.o1-cell.empty {
+  background: #0000000f;
+}
+button.o1-cell.empty {
+  outline: 1px dashed #ffffff40;
+  outline-offset: -2px;
+  cursor: pointer;
+}
+.o1-cell[draggable='true'] {
+  cursor: grab;
+}
+.o1-cell.dragging {
+  opacity: 0.4;
+}
+.o1-cell .o1-tile,
+.o1-cell .rx-tile {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+}
+.o1-cell .rx-tile strong {
+  font-size: clamp(13px, 3.2cqi, 22px);
+}
+.o1-cell.fresh .rx-tile {
+  animation: o1-drop-in 240ms var(--motion-ease-out);
+}
+@keyframes o1-drop-in {
+  from {
+    transform: translateY(-14px);
+    opacity: 0;
+  }
+}
+
+/* End of round: the open winning rack and the score line. */
+.o1-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-16);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-12);
+  background: var(--color-background-raised);
+}
+.o1-summary h3 {
+  margin: 0;
+  font-size: var(--font-size-body);
+}
+.o1-summary p {
+  margin: var(--space-4) 0 0;
+  font-size: var(--font-size-metadata);
+  color: var(--color-text-secondary);
+}
+.o1-open-rack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+}
+.o1-meld {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: var(--space-4);
+  border-radius: var(--radius-8);
+  background: linear-gradient(var(--o1-wood-light), var(--o1-wood-dark));
+}
+.o1-meld.finishing {
+  flex-direction: column;
+  background: none;
+}
+.o1-meld small {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-secondary);
+}
+.o1-scores tr.winner td {
+  color: var(--color-text-accent);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* 101: the middle holds the stack and gösterge, then each player's opened melds on their side. */
+.o1-middle {
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: var(--space-12);
+  min-width: 0;
+}
+.o1-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-24);
+}
+.o1-melds {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    'top top'
+    'left right'
+    'bottom bottom';
+  gap: var(--space-8);
+  width: 100%;
+  min-width: 0;
+}
+.o1-melds > p {
+  grid-column: 1 / -1;
+  margin: 0;
+  text-align: center;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-secondary);
+}
+.o1-meld-zone.top {
+  grid-area: top;
+}
+.o1-meld-zone.left {
+  grid-area: left;
+}
+.o1-meld-zone.right {
+  grid-area: right;
+}
+.o1-meld-zone.bottom {
+  grid-area: bottom;
+}
+.o1-meld-zone:empty {
+  display: none;
+}
+.o1-meld-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.o1-meld-row > small {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.o1-meld-row > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+.o1-meld {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-8);
+  background: color-mix(in srgb, var(--o1-felt-dark) 70%, transparent);
+  transition: border-color 150ms var(--motion-ease-out);
+}
+.o1-meld:not(:disabled) {
+  cursor: pointer;
+}
+.o1-meld:not(:disabled):hover,
+.o1-meld.selected {
+  border-color: var(--color-action-primary);
+}
+.o1-meld .rx-tile {
+  pointer-events: none;
+}
+.o1-meld-tile {
+  display: inline-flex;
+}
+.rx-tile.o1-highlight {
+  box-shadow:
+    0 3px 0 #d7caa5,
+    0 0 0 2px var(--color-action-primary);
+}
+.o1-cell.picked .rx-tile {
+  box-shadow:
+    0 3px 0 #d7caa5,
+    0 0 0 2px var(--color-status-warning, var(--o1-okey-glow));
+}
+.o1-cell.drafted {
+  opacity: 0.55;
+}
+.o1-back.small {
+  width: 7px;
+}
+.o1-kind {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: var(--space-4);
+}
+.o1-kind button {
+  padding: 2px var(--space-8);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-micro);
+}
+.o1-kind button.selected {
+  border-color: var(--color-action-primary);
+  color: var(--color-text-primary);
+}
+.o1-actions .rg-actions {
+  flex-wrap: wrap;
+}
+
+/* Round summary: ending, multiplier, penalties. */
+.o1-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-16);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-12);
+  background: var(--color-background-raised);
+}
+.o1-summary > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+.o1-summary h3 {
+  margin: 0;
+  font-size: var(--font-size-body);
+}
+.o1-summary p {
+  margin: 0;
+  font-size: var(--font-size-metadata);
+  color: var(--color-text-secondary);
+}
+.o1-multiplier {
+  padding: 2px var(--space-8);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-action-primary) 18%, transparent);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-semibold);
+}
+.o1-scores tr.winner td {
+  color: var(--color-text-accent);
+  font-weight: var(--font-weight-semibold);
+}
+.o1-penalties {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-metadata);
+}
+.o1-penalties li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  gap: var(--space-8);
+}
+.o1-penalties li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.o1-penalties li.bonus b {
+  color: var(--color-text-accent);
+}
+
+@media (max-width: 960px) {
+  .o1-felt {
+    grid-template-columns: minmax(96px, 1fr) minmax(0, 1.3fr) minmax(96px, 1fr);
+    padding: var(--space-12);
+    gap: var(--space-8);
+  }
+  .o1-mini-rack {
+    display: none;
+  }
+  .o1-rack {
+    gap: 12px 3px;
+    padding: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .o1-seat,
+  .o1-pile,
+  .o1-middle,
+  .o1-table .rx-tile {
+    transition: none;
+  }
+  .o1-seat.turn {
+    transform: none;
+  }
+  .o1-pile-top.last .rx-tile,
+  .o1-cell.fresh .rx-tile {
+    animation: none;
+  }
+  .o1-meld {
+    transition: none;
+  }
+}
