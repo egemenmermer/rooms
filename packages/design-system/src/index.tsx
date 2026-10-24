@@ -32,7 +32,8 @@ const AVATAR_MARK = /^[\p{L}\p{N}\p{Extended_Pictographic}\p{Regional_Indicator}
 const TURKISH_LETTERS = /[ğüşıöçİĞÜŞÖÇ]/u;
 /** First letter, digit or emoji of a word, whole (never half an emoji); punctuation is skipped. */
 function firstMark(word: string) {
-  for (const { segment } of avatarSegmenter.segment(word)) if (AVATAR_MARK.test(segment)) return segment;
+  for (const { segment } of avatarSegmenter.segment(word))
+    if (AVATAR_MARK.test(segment)) return segment;
   return '';
 }
 /**
@@ -43,12 +44,7 @@ function firstMark(word: string) {
 function avatarInitials(name: string | null | undefined) {
   const label = (name ?? '').trim();
   const strip = (value: string) => value.replace(AVATAR_BRACKETED, ' ');
-  const pick = (value: string) =>
-    value
-      .split(/\s+/)
-      .map(firstMark)
-      .filter(Boolean)
-      .slice(0, 2);
+  const pick = (value: string) => value.split(/\s+/).map(firstMark).filter(Boolean).slice(0, 2);
   // A name that is only bracketed text still gets initials from what is inside.
   const marks = pick(strip(label));
   const turkish = getLocale() === 'tr' || TURKISH_LETTERS.test(label);

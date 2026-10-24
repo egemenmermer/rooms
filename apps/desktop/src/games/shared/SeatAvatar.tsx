@@ -97,10 +97,7 @@ function SeatClock({ timer, deadline }: { timer: number | null; deadline: number
           <Hourglass size={12} aria-hidden />
         </span>
       ) : (
-        <span
-          className="rg-seat-clock"
-          aria-label={t('{seconds} saniye kaldı', { seconds })}
-        >
+        <span className="rg-seat-clock" aria-label={t('{seconds} saniye kaldı', { seconds })}>
           {seconds}
         </span>
       )}
