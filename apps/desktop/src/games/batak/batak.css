@@ -1,0 +1,636 @@
+/* Batak table (games/batak). Tokens only; every motion is off under prefers-reduced-motion. */
+.bt-table {
+  --bt-felt: color-mix(in srgb, var(--color-action-primary) 18%, var(--color-background-canvas));
+  --bt-felt-edge: color-mix(in srgb, var(--color-action-primary) 8%, var(--color-background-raised));
+  --bt-card-back: color-mix(in srgb, var(--color-action-primary) 45%, var(--color-background-raised));
+  --bt-team-0: var(--color-status-success);
+  --bt-team-1: var(--color-status-warning);
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.bt-badge-button {
+  border: 1px solid var(--color-border-interactive);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-accent);
+  font-size: var(--font-size-metadata);
+  padding: 2px 10px;
+  cursor: pointer;
+}
+.bt-badge-button[aria-pressed='true'] {
+  background: var(--color-action-primarySubtle);
+}
+.bt-badge-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.rx-badges .bt-broken {
+  color: var(--color-text-secondary);
+}
+.rx-badges .bt-broken.open {
+  color: var(--color-status-warning);
+}
+.bt-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 270px);
+  gap: 14px;
+  align-items: start;
+}
+
+/* Felt and seats. Turn order runs counter-clockwise: the next player sits on the right. */
+.bt-felt {
+  position: relative;
+  height: clamp(360px, 54vh, 460px);
+  min-width: 0;
+  border-radius: 46% / 40%;
+  border: 7px solid var(--bt-felt-edge);
+  background: radial-gradient(ellipse at center, var(--bt-felt), var(--color-background-canvas));
+  box-shadow: inset 0 0 0 1px var(--color-border-subtle);
+  overflow: hidden;
+}
+.bt-seat {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 210px;
+  padding: 6px 10px;
+  border-radius: var(--radius-12);
+  background: var(--color-background-raised);
+  border: 1px solid var(--color-border-subtle);
+  transition:
+    box-shadow 200ms ease,
+    border-color 200ms ease,
+    transform 200ms ease;
+  z-index: 2;
+}
+.bt-seat.turn {
+  border-color: var(--color-action-primary);
+  box-shadow: 0 0 0 3px var(--color-action-primarySubtle);
+}
+.bt-seat.team-0 {
+  border-left: 3px solid var(--bt-team-0);
+}
+.bt-seat.team-1 {
+  border-left: 3px solid var(--bt-team-1);
+}
+.bt-seat.pos-bottom {
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.bt-seat.pos-top {
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.bt-seat.pos-left,
+.bt-seat.pos-right {
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: column;
+  text-align: center;
+  max-width: 150px;
+}
+.bt-seat.pos-left {
+  left: 12px;
+}
+.bt-seat.pos-right {
+  right: 12px;
+}
+.bt-seat.pos-top-left {
+  top: 14px;
+  left: 7%;
+}
+.bt-seat.pos-top-right {
+  top: 14px;
+  right: 7%;
+}
+.bt-seat.turn.pos-bottom,
+.bt-seat.turn.pos-top {
+  transform: translateX(-50%) scale(1.04);
+}
+.bt-seat.turn.pos-left,
+.bt-seat.turn.pos-right {
+  transform: translateY(-50%) scale(1.04);
+}
+.bt-seat.turn.pos-top-left,
+.bt-seat.turn.pos-top-right {
+  transform: scale(1.04);
+}
+.bt-avatar {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+}
+.bt-clock {
+  position: absolute;
+  inset: -6px;
+  width: calc(100% + 12px);
+  height: calc(100% + 12px);
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+.bt-clock circle {
+  fill: none;
+  stroke: var(--color-border-subtle);
+  stroke-width: 3;
+}
+.bt-clock .bt-clock-left {
+  stroke: var(--color-action-primary);
+  transition: stroke-dashoffset 250ms linear;
+}
+.bt-clock.late .bt-clock-left {
+  stroke: var(--color-status-error);
+}
+.bt-seat-text {
+  display: grid;
+  min-width: 0;
+}
+.bt-seat-text strong {
+  font-size: var(--font-size-ui);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+.bt-seat-text small {
+  font-size: var(--font-size-metadata);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.bt-tricks {
+  min-width: 30px;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-background-canvas);
+  border: 1px solid var(--color-border-default);
+  font-size: var(--font-size-metadata);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-align: center;
+}
+.bt-tricks.made {
+  border-color: var(--color-status-success);
+  color: var(--color-status-success);
+}
+.bt-bidder {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-action-primary);
+  color: var(--color-text-onAccent);
+  font-size: var(--font-size-metadata);
+  font-weight: 700;
+}
+.bt-bubble {
+  position: absolute;
+  top: -14px;
+  right: -10px;
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--color-text-primary);
+  color: var(--color-background-canvas);
+  font-size: var(--font-size-metadata);
+  font-weight: 700;
+  animation: bt-pop 200ms ease-out;
+}
+.bt-backs {
+  display: inline-flex;
+}
+.bt-backs i {
+  width: 13px;
+  height: 19px;
+  margin-left: -6px;
+  border-radius: var(--radius-4);
+  background: var(--bt-card-back);
+  border: 1px solid var(--color-text-secondary);
+}
+.bt-backs i:first-child {
+  margin-left: 0;
+}
+
+/* The trick: every card lies in front of the seat that played it. */
+.bt-trick {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  z-index: 1;
+}
+.bt-played {
+  position: absolute;
+  left: -29px;
+  top: -41px;
+  display: block;
+  transition:
+    transform 300ms ease-in,
+    opacity 300ms ease-in;
+}
+.bt-played .playing-card {
+  pointer-events: none;
+}
+.bt-played.at-bottom {
+  transform: translate(0, 46px);
+}
+.bt-played.at-top {
+  transform: translate(0, -46px);
+}
+.bt-played.at-left {
+  transform: translate(-62px, 0) rotate(-6deg);
+}
+.bt-played.at-right {
+  transform: translate(62px, 0) rotate(6deg);
+}
+.bt-played.at-top-left {
+  transform: translate(-44px, -30px) rotate(-6deg);
+}
+.bt-played.at-top-right {
+  transform: translate(44px, -30px) rotate(6deg);
+}
+.bt-played.winner .playing-card {
+  box-shadow: 0 0 0 2px var(--color-status-success);
+}
+.bt-played[class*='sweep-'] {
+  opacity: 0;
+}
+.bt-played.sweep-bottom {
+  transform: translate(0, 170px) scale(0.6);
+}
+.bt-played.sweep-top {
+  transform: translate(0, -170px) scale(0.6);
+}
+.bt-played.sweep-left,
+.bt-played.sweep-top-left {
+  transform: translate(-240px, -40px) scale(0.6);
+}
+.bt-played.sweep-right,
+.bt-played.sweep-top-right {
+  transform: translate(240px, -40px) scale(0.6);
+}
+.bt-fly-bottom {
+  animation: bt-fly-bottom 240ms ease-out;
+}
+.bt-fly-top {
+  animation: bt-fly-top 240ms ease-out;
+}
+.bt-fly-left,
+.bt-fly-top-left {
+  animation: bt-fly-left 240ms ease-out;
+}
+.bt-fly-right,
+.bt-fly-top-right {
+  animation: bt-fly-right 240ms ease-out;
+}
+@keyframes bt-fly-bottom {
+  from {
+    transform: translate(0, 170px) rotate(-8deg);
+  }
+}
+@keyframes bt-fly-top {
+  from {
+    transform: translate(0, -170px) rotate(8deg);
+  }
+}
+@keyframes bt-fly-left {
+  from {
+    transform: translate(-240px, -20px) rotate(-12deg);
+  }
+}
+@keyframes bt-fly-right {
+  from {
+    transform: translate(240px, -20px) rotate(12deg);
+  }
+}
+@keyframes bt-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+.bt-trick-empty {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font-size: var(--font-size-metadata);
+  color: var(--color-text-secondary);
+}
+.bt-trick-winner {
+  position: absolute;
+  top: 98px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-background-raised);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-metadata);
+}
+
+/* Auction: a layer on the felt, the seats and their bid bubbles stay visible around it. */
+.bt-auction {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  width: min(360px, 56%);
+  max-height: 64%;
+  overflow: auto;
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--radius-16);
+  background: var(--color-background-overlay);
+  border: 1px solid var(--color-border-default);
+}
+.bt-auction header {
+  display: grid;
+  gap: 2px;
+}
+.bt-auction h2 {
+  margin: 0;
+  font-size: var(--font-size-ui);
+  color: var(--color-text-primary);
+}
+.bt-auction header span,
+.bt-wait {
+  margin: 0;
+  font-size: var(--font-size-metadata);
+  color: var(--color-text-secondary);
+}
+.bt-bidlog {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bt-bidlog li {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-background-raised);
+  font-size: var(--font-size-metadata);
+  color: var(--color-text-secondary);
+}
+.bt-bidlog li span {
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bt-bidlog li b {
+  color: var(--color-text-primary);
+}
+.bt-bidlog li.pass b {
+  color: var(--color-text-muted);
+}
+.bt-bid-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+  gap: 4px;
+}
+.bt-bid-grid button,
+.bt-trump-pick button {
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-8);
+  background: var(--color-background-raised);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-ui);
+  padding: 5px 0;
+  cursor: pointer;
+}
+.bt-bid-grid button.selected,
+.bt-trump-pick button.selected {
+  border-color: var(--color-action-primary);
+  box-shadow: 0 0 0 2px var(--color-action-primarySubtle);
+}
+.bt-trump-pick {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.bt-trump-pick button {
+  display: grid;
+  font-size: var(--font-size-h2);
+}
+.bt-trump-pick button.red,
+.bt-bidder b.hearts,
+.bt-bidder b.diamonds {
+  color: var(--color-status-error);
+}
+.bt-trump-pick small {
+  font-size: var(--font-size-metadata);
+  color: var(--color-text-secondary);
+}
+.bt-auction footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-metadata);
+  color: var(--color-text-secondary);
+}
+.bt-auction footer span {
+  margin-right: auto;
+}
+
+/* Side panels */
+.bt-side {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.bt-panel {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-12);
+  background: var(--color-background-raised);
+  padding: 12px 14px;
+  min-width: 0;
+}
+.bt-panel h3 {
+  margin: 0 0 8px;
+  font-size: var(--font-size-ui);
+  color: var(--color-text-primary);
+}
+.bt-panel p,
+.bt-log p {
+  margin: 6px 0 0;
+  font-size: var(--font-size-metadata);
+  color: var(--color-text-muted);
+}
+.bt-log ol {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: var(--font-size-metadata);
+  color: var(--color-text-secondary);
+}
+.bt-log li:first-child {
+  color: var(--color-text-primary);
+}
+.bt-gomu div {
+  display: flex;
+  gap: 4px;
+}
+.bt-gomu .playing-card {
+  width: 38px;
+  height: 54px;
+  min-width: 38px;
+  padding: 4px;
+}
+.bt-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-metadata);
+  table-layout: fixed;
+}
+.bt-grid th,
+.bt-grid td {
+  padding: 4px 6px;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.bt-grid th[scope='row'] {
+  text-align: left;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+.bt-grid tfoot td,
+.bt-grid tfoot th {
+  font-weight: 700;
+  color: var(--color-text-primary);
+  border-bottom: 0;
+}
+.bt-grid td.minus {
+  color: var(--color-status-error);
+}
+.bt-grid td.lead {
+  color: var(--color-status-success);
+}
+.bt-mark {
+  margin-left: 6px;
+  font-style: normal;
+  font-weight: 700;
+}
+.bt-mark.made {
+  color: var(--color-status-success);
+}
+.bt-mark.set,
+.bt-mark.batak {
+  color: var(--color-status-error);
+}
+
+/* Own hand: sorted, overlapped fan; legal cards lift, illegal ones dim. */
+.bt-hand {
+  display: flex;
+  justify-content: center;
+  padding: 22px 10px 14px;
+  background: var(--color-background-raised);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-12);
+  min-height: 112px;
+  overflow: hidden;
+}
+.bt-hand-card {
+  display: inline-block;
+  margin-left: -20px;
+  transform: rotate(calc((var(--i) - (var(--count) - 1) / 2) * 1.6deg))
+    translateY(calc(max(var(--i) - (var(--count) - 1) / 2, (var(--count) - 1) / 2 - var(--i)) * 1px));
+  transform-origin: 50% 160%;
+  transition: transform 150ms ease;
+}
+.bt-hand-card:first-child {
+  margin-left: 0;
+}
+.bt-hand-card .playing-card {
+  transition:
+    transform 150ms ease,
+    opacity 150ms ease;
+}
+.bt-hand-card .playing-card:disabled {
+  opacity: 1;
+}
+.bt-hand-card.legal .playing-card {
+  transform: translateY(-6px);
+  cursor: pointer;
+}
+.bt-hand-card.legal .playing-card:hover,
+.bt-hand-card.legal .playing-card:focus-visible {
+  transform: translateY(-14px);
+}
+.bt-hand-card.illegal .playing-card {
+  opacity: 0.55;
+}
+.bt-hand-card .playing-card.selected {
+  transform: translateY(-14px);
+  box-shadow: 0 0 0 2px var(--color-action-primary);
+}
+.bt-hand-card.trump .playing-card {
+  box-shadow: inset 0 -3px 0 var(--color-action-primary);
+}
+
+@media (max-width: 1100px) {
+  .bt-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bt-side {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+@media (max-width: 960px) {
+  .bt-seat {
+    max-width: 150px;
+    padding: 5px 8px;
+  }
+  .bt-seat-text strong {
+    max-width: 90px;
+  }
+  .bt-hand-card {
+    margin-left: -28px;
+  }
+  .bt-auction {
+    width: min(320px, 62%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bt-seat,
+  .bt-played,
+  .bt-clock .bt-clock-left,
+  .bt-hand-card,
+  .bt-hand-card .playing-card {
+    transition: none;
+  }
+  .bt-played,
+  .bt-bubble {
+    animation: none;
+  }
+}
+
+/* The app's own "Hareketi azalt" setting (appearance-preferences.ts) as well as the system one. */
+:root[data-motion='reduce'] .bt-seat,
+:root[data-motion='reduce'] .bt-played,
+:root[data-motion='reduce'] .bt-clock .bt-clock-left,
+:root[data-motion='reduce'] .bt-hand-card,
+:root[data-motion='reduce'] .bt-hand-card .playing-card {
+  transition: none;
+}
+:root[data-motion='reduce'] .bt-played,
+:root[data-motion='reduce'] .bt-bubble {
+  animation: none;
+}
