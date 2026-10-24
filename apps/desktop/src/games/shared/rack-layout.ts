@@ -1,6 +1,7 @@
 /**
  * The player's own ıstaka: two rows of 15 cells, each holding a tile id or nothing. The order is local only
  * (the server keeps an unordered hand); it is kept per round in sessionStorage so a reload keeps the rack.
+ * Shared by classic Okey and 101 Okey.
  */
 export const RACK_COLUMNS = 15;
 export const RACK_CELLS = RACK_COLUMNS * 2;

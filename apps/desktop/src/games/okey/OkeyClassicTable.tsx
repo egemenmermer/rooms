@@ -19,7 +19,7 @@ import {
   reconcileLayout,
   saveLayout,
   type RackLayout,
-} from './rack-layout';
+} from '../shared/rack-layout';
 
 export type OkeyTableView = Partial<OkeyClassicView> & {
   statistics?: Record<string, { hands: number; wins: number; score: number }>;

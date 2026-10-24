@@ -13,15 +13,14 @@
 @import './holdem-modals.css'; /* Hold'em raise and buy-in modals */
 @import './history-row.css'; /* in-table hand history rows, focus rings */
 @import './lobby-responsive.css'; /* @media for catalog, lobby and Hold'em */
-@import './shell.css'; /* Blackjack/Batak/101 table shell and badges */
-@import './blackjack.css'; /* Blackjack table */
+@import './shell.css'; /* table shell and badges (Blackjack, Batak, 101, ...) */
 @import './shell-results.css'; /* hand results table */
-@import './batak.css'; /* Batak table */
-@import './okey101.css'; /* 101 Okey table */
+@import './batak.css'; /* shared hand rack and card rack (Batak, Pişti) */
+@import './okey101.css'; /* okey tiles, 101 meld editor and processing */
 @import './watch-create.css'; /* watch prompt and Batak/101 table setup */
 @import './holdem-form.css'; /* Hold'em rules form and pot details */
 @import './shell-focus.css'; /* spectator button, shell focus rings */
-@import './tables-responsive.css'; /* @media for Blackjack, Batak, 101 and table setup */
+@import './tables-responsive.css'; /* @media for the table shell, tiles, 101 editor and table setup */
 @import './history.css'; /* history page and hand details */
 @import './holdem-settlement.css'; /* Hold'em winning cards, raise status, pot details */
 @import './misc.css'; /* invite copy, activity replacement consent */

@@ -9,7 +9,7 @@ import {
   moveTile,
   RACK_COLUMNS,
   reconcileLayout,
-} from '../apps/desktop/src/games/okey101/rack-layout';
+} from '../apps/desktop/src/games/shared/rack-layout';
 import type { Tile } from '../apps/desktop/src/games/shared/model';
 
 const tile = (color: string, value: number, copy = 0): Tile => ({

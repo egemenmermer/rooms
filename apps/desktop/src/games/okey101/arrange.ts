@@ -4,7 +4,7 @@
  * ordinary tile here. Runs end at 13 unless the table allows 12-13-1 (`wrapAround`).
  */
 import type { Tile } from '../shared/model';
-import { layoutFromBlocks, type RackLayout } from './rack-layout';
+import { layoutFromBlocks, type RackLayout } from '../shared/rack-layout';
 
 type Face = { id: string; color: string; value: number; wild: boolean };
 

@@ -27,7 +27,7 @@ import {
   reconcileLayout,
   saveLayout,
   type RackLayout,
-} from './rack-layout';
+} from '../shared/rack-layout';
 
 /** Seat places around the felt, counted from the viewer: the next player sits on the right. */
 const PLACES = ['bottom', 'right', 'top', 'left'] as const;

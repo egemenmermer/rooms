@@ -8,7 +8,7 @@ import {
   okeyClassicArrangement,
   type ClassicTile,
 } from '../../../../../packages/games/src/okey-classic';
-import { layoutFromBlocks, type RackLayout } from './rack-layout';
+import { layoutFromBlocks, type RackLayout } from '../shared/rack-layout';
 
 type Face = { id: string; color: string; value: number; wild: boolean };
 export type OkeyFace = { color: string; value: number };

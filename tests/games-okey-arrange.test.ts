@@ -12,7 +12,7 @@ import {
   RACK_CELLS,
   reconcileLayout,
   type RackLayout,
-} from '../apps/desktop/src/games/okey/rack-layout';
+} from '../apps/desktop/src/games/shared/rack-layout';
 
 const tile = (color: ClassicTile['color'], value: number, copy = 0): ClassicTile => ({
   id: `${color}-${value}-${copy}`,
