@@ -26,7 +26,7 @@ export function ReferenceCreateGame({
   /** The route's choices; the definition's defaults fill what is missing. */
   setup: GameSetupValues;
   onSetup(patch: GameSetupValues): void;
-  participants: { userId: string; displayName: string }[];
+  participants: { userId: string; displayName?: string }[];
   busy: boolean;
   disabled: boolean;
   reason: string;
@@ -66,12 +66,16 @@ export function ReferenceCreateGame({
         <section>
           <h3>{t('Odadaki kişiler')}</h3>
           {participants.length ? (
-            participants.map((person) => (
-              <div className="rx-create-participant" key={person.userId}>
-                <Avatar name={person.displayName} />
-                <strong>{person.displayName}</strong>
-              </div>
-            ))
+            participants.map((person) => {
+              // A cached or partial room snapshot can lack the name; never render a blank row.
+              const name = person.displayName?.trim() || t('Kullanıcı');
+              return (
+                <div className="rx-create-participant" key={person.userId}>
+                  <Avatar name={name} />
+                  <strong>{name}</strong>
+                </div>
+              );
+            })
           ) : (
             <p>{t('Katılımcı bilgisi henüz alınmadı.')}</p>
           )}

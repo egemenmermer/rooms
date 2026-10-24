@@ -91,4 +91,9 @@ describe('avatar fallback', () => {
     expect(container.querySelector('.avatar > span')?.textContent).toBe(initials);
     expect(container.querySelector('.avatar')?.className).not.toContain('undefined');
   });
+  it('tolerates a missing name from a partial snapshot', () => {
+    const { container } = render(<Avatar name={undefined} />);
+    expect(container.querySelector('.avatar > span')?.textContent).toBe('?');
+    expect(container.querySelector('.avatar')?.getAttribute('aria-label')).toBe('Kullanıcı');
+  });
 });

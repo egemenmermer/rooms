@@ -1478,4 +1478,5 @@ export const games: Catalog = {
   'Herkes bıraktı, kartlar açılmadı': 'Everyone folded, no cards shown',
   'Bu elin hamleleri · {count}': 'Moves this hand · {count}',
   'En az iki oyuncunun fişi olmalı': 'At least two players need chips',
+  Kullanıcı: 'User',
 };

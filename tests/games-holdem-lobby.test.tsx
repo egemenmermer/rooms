@@ -37,7 +37,7 @@ const activityRoom = () => ({
   room: {
     roomId: 'room-1',
     primary: null,
-    participants: [{ userId: 'self', canCreate: true, canControl: true }],
+    participants: [{ userId: 'self', displayName: 'Ege', canCreate: true, canControl: true }],
   },
   send: vi.fn(async () => undefined),
   refresh: vi.fn(async () => undefined),
@@ -79,11 +79,16 @@ it('still lists every offered game in the table catalog', () => {
   expect(screen.getAllByRole('button', { name: 'Masa oluştur' })).toHaveLength(offeredGames.length);
 });
 
-it('creates a Blackjack table with the plain dialog and no Hold’em rules', () => {
+it('creates a Blackjack table from its setup page with the table options and no Hold’em rules', () => {
   const activity = lobby(null, 'blackjack');
   expect(screen.queryByLabelText('Masa adı')).toBeNull();
+  expect(screen.getByText('Ege')).toBeTruthy();
   fireEvent.click(button('Masayı kur'));
-  expect(activity.send).toHaveBeenCalledWith({ type: 'game.create', game: 'blackjack' });
+  expect(activity.send).toHaveBeenCalledWith({
+    type: 'game.create',
+    game: 'blackjack',
+    options: { insurance: true, surrender: false },
+  });
 });
 
 it('sends the Hold’em rules and the muck option from the create dialog', () => {
