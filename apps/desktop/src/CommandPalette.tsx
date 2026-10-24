@@ -95,12 +95,10 @@ export function CommandPalette({ onClose }: { onClose(): void }) {
   );
   const current = results.length ? Math.min(active, results.length - 1) : -1;
   const optionId = (index: number) => `${id}-option-${index}`;
+  const activeId = current >= 0 ? optionId(current) : undefined;
   useEffect(() => {
-    if (current >= 0)
-      document.getElementById(optionId(current))?.scrollIntoView?.({ block: 'nearest' });
-    // optionId only depends on the stable useId value.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current]);
+    if (activeId) document.getElementById(activeId)?.scrollIntoView?.({ block: 'nearest' });
+  }, [activeId]);
   const run = (item: Command) => {
     onClose();
     navigate(item.path);
@@ -127,7 +125,7 @@ export function CommandPalette({ onClose }: { onClose(): void }) {
           aria-expanded={results.length > 0}
           aria-controls={`${id}-list`}
           aria-autocomplete="list"
-          aria-activedescendant={current >= 0 ? optionId(current) : undefined}
+          aria-activedescendant={activeId}
           placeholder={t('Sayfa veya komut ara…')}
           value={query}
           onChange={(event) => {

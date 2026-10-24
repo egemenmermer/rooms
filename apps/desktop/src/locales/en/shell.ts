@@ -56,6 +56,7 @@ export const shell: Catalog = {
     'A hand is already in progress. Wait for it to finish.',
   'Bir şeye geç…': 'Jump to…',
   'Birlikte izle': 'Watch together',
+  'Birlikte çiz, birlikte karar ver': 'Draw together, decide together',
   'Birlikte çiz, yaz; imleçler canlı görünür.': 'Draw and write together; cursors show live.',
   'Bu alan için iznin yok': 'You don’t have permission for this area',
   'Bu alana ilk mesajı veya dosyayı ekleyerek birlikte başlayabilirsiniz.':
@@ -302,7 +303,6 @@ export const shell: Catalog = {
     'The saved server can’t be reached. Reconnect from Settings.',
   'Kendi sunucunu kur': 'Set up your own server',
   'Kişi bilgisi': 'Contact info',
-  'Kişisel medyam': 'My personal media',
   'Kişisel oynatıcı': 'Personal player',
   'Klavye kısayolları': 'Keyboard shortcuts',
   'Kontrol edilebilir': 'Ready to check',
