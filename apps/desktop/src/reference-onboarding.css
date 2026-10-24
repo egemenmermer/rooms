@@ -84,7 +84,7 @@
   z-index: 1;
 }
 .ref-auth-art > small {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #b1a9c7;
   margin-top: auto;
   display: flex;
@@ -138,7 +138,7 @@
 }
 .ref-auth-eyebrow {
   display: block;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 1.4px;
   color: #a7a0bc;
   font-weight: 600;
@@ -287,7 +287,7 @@
   line-height: 1.7;
 }
 .ref-auth-form > p.ref-auth-footer {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   margin: 20px 0 0;
   color: #858c9c;
 }
@@ -399,8 +399,15 @@
 }
 .ref-auth-steps {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: var(--space-12);
   margin-bottom: 30px;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-secondary, #a6abb8);
+}
+.ref-auth-steps > span[aria-hidden] {
+  display: flex;
+  gap: 8px;
 }
 .ref-auth-steps i {
   width: 34px;
@@ -449,13 +456,13 @@
   font-weight: 550;
 }
 .ref-auth-permission p {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #858c9c;
   margin: 5px 0 0;
   line-height: 1.5;
 }
 .ref-auth-permission > span {
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   background: #242832;
   color: #969eaf;
   border: 1px solid #353b47;
@@ -463,29 +470,55 @@
   padding: 3px 8px;
 }
 .ref-auth-permission .button {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   min-height: 30px;
   padding: 0 12px;
   border-radius: 6px;
 }
 .ref-auth-device-card {
   background: #22252c;
-  border: 1px solid #393e4b;
+  border: 1px solid var(--color-border-default, #393e4b);
   border-radius: 10px;
-  padding: 17px;
-  margin: 22px 0;
-  font-size: 11px;
+  padding: var(--space-16);
+  margin: var(--space-20) 0;
+  font-size: var(--font-size-micro);
 }
-.ref-auth-device-card > span {
-  color: #a6abb8;
-  display: block;
+.ref-auth-device-card select {
+  width: 100%;
 }
-.ref-auth-device-card > strong {
+.ref-auth-device-card .ref-auth-help {
+  margin: 0 0 var(--space-12);
+  color: var(--color-text-muted, #858c9c);
+}
+.ref-auth-device-card .ref-auth-notice {
+  margin: var(--space-12) 0 0;
+}
+/* Same bar meter as Settings > Ses ve video, sized for the narrow onboarding card. */
+.ref-auth-meter {
+  display: flex;
+  gap: 3px;
+  align-items: end;
+  height: 20px;
+  margin: var(--space-12) 0 var(--space-8);
+}
+.ref-auth-meter i {
   display: block;
-  font-size: 11px;
-  margin: 10px 0 15px;
-  font-weight: 450;
-  color: #858c9c;
+  flex: 1;
+  height: 8px;
+  border-radius: 2px;
+  background: #454c5b;
+}
+.ref-auth-meter i:nth-child(3n) {
+  height: 13px;
+}
+.ref-auth-meter i:nth-child(4n) {
+  height: 18px;
+}
+.ref-auth-meter i.on {
+  background: var(--color-status-success, #75d7ac);
+}
+.ref-auth-remembered {
+  color: var(--color-text-muted, #858c9c);
 }
 @media (max-width: 1200px) {
   .ref-auth-art h1 {
@@ -497,25 +530,9 @@
     right: 10px;
   }
 }
+/* Below 1000px (the window minimum is 900px) the art column would squeeze the form, and the
+   longer English copy with it, so the form gets the whole width. */
 @media (max-width: 1000px) {
-  .ref-auth-content {
-    padding: 15px 25px 25px;
-    grid-template-columns: 1fr 1fr;
-  }
-  .ref-auth-art {
-    padding: 29px;
-  }
-  .ref-auth-art h1 {
-    font-size: 40px;
-  }
-  .ref-auth-art > p {
-    font-size: 13px;
-  }
-  .ref-auth-form {
-    width: 340px;
-  }
-}
-@media (max-width: 760px) {
   .ref-auth-art {
     display: none;
   }
@@ -523,6 +540,7 @@
     display: flex;
     justify-content: center;
     padding: 25px;
+    overflow: visible;
   }
   .ref-auth-panel {
     width: 440px;
@@ -531,11 +549,10 @@
   .ref-auth-form {
     width: 390px;
   }
+}
+@media (max-width: 760px) {
   .ref-onboarding {
     min-height: 600px;
-  }
-  .ref-auth-content {
-    overflow: visible;
   }
 }
 @media (prefers-reduced-motion: reduce) {
