@@ -1410,4 +1410,25 @@ export const games: Catalog = {
   'Batak türü': 'Batak variant',
   'Koz Maça her oyuncunun kendi tahminiyle yazılır.': 'Spades trump scores each player’s own call.',
   'Koz Maça’da geçerli değil': 'Not used in Spades trump',
+  // Hold'em table (GF-holdem)
+  'Kaybedenin kartı kuralı masa kurulurken seçilir.':
+    'The losing-hands rule is chosen when the table is set up.',
+  'Kaybeden kartını açmasın': 'Losers may muck their cards',
+  'Showdown’da pot alamayan oyuncunun kartları kapalı kalır. Biri all-in ise bütün eller açılır.':
+    'At showdown, a player who wins no pot keeps their cards hidden. If anyone is all-in, every hand is shown.',
+  'All-in {amount}': 'All-in {amount}',
+  'Küçük kör {amount}': 'Small blind {amount}',
+  'Büyük kör {amount}': 'Big blind {amount}',
+  Kontrol: 'Check',
+  'Gör {amount}': 'Call {amount}',
+  'Artır {amount}': 'Raise {amount}',
+  Min: 'Min',
+  '½ pot': '½ pot',
+  Pot: 'Pot',
+  'All-in, kalan kartlar açıldı': 'All-in, the rest of the board was dealt',
+  'Krupiye: {name}': 'Dealer: {name}',
+  'Kartını açmadı': 'Mucked',
+  'Herkes bıraktı, kartlar açılmadı': 'Everyone folded, no cards shown',
+  'Bu elin hamleleri · {count}': 'Moves this hand · {count}',
+  'En az iki oyuncunun fişi olmalı': 'At least two players need chips',
 };

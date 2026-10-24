@@ -7,9 +7,7 @@ export const holdemBuyIn: BuyInDefinition = {
   initial: (game) => game.view.rules?.initialChips ?? 1000,
   valid: (game, value) => {
     const rules = game.view.rules;
-    return (
-      !!rules && Number.isInteger(value) && value >= rules.minBuyIn && value <= rules.maxBuyIn
-    );
+    return !!rules && Number.isInteger(value) && value >= rules.minBuyIn && value <= rules.maxBuyIn;
   },
   Field: ({ game, value, onChange }) => {
     const rules = game.view.rules;

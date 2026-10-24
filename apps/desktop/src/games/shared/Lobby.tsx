@@ -22,7 +22,10 @@ import { Avatar, IconButton, Modal } from '@rooms/design';
 import { useActivityRoom } from '../../activity';
 import { retiredActivity } from '../../activity-route';
 import { useCommunity } from '../../community';
-import type { ActivityCommand, GamePublicState } from '../../../../../packages/activity-protocol/src';
+import type {
+  ActivityCommand,
+  GamePublicState,
+} from '../../../../../packages/activity-protocol/src';
 import { endsActivity } from '../../../../../packages/activity-protocol/src';
 import { ReferenceCreateGame } from './CreateGame';
 import { useGameFixtureMetadata } from './fixture';

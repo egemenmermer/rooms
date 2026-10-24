@@ -99,8 +99,7 @@ export function HoldemTable({
   // A new turn starts the raise input at the server's minimum.
   const turnKey = `${game.history.length}:${String(view.stage)}:${game.turn}:${maximumBet}`;
   useEffect(() => {
-    if (!fixtureMetadata || fixtureMetadata.ui.modal !== 'raise')
-      setAmount(raiseFloor(range));
+    if (!fixtureMetadata || fixtureMetadata.ui.modal !== 'raise') setAmount(raiseFloor(range));
   }, [turnKey]);
   useEffect(() => {
     if (fixtureMetadata?.ui.modal === 'raise' && fixtureMetadata.ui.amount !== null)
@@ -151,7 +150,8 @@ export function HoldemTable({
 
   const action = (value: 'fold' | 'check' | 'call') =>
     void send({ type: 'game.action', action: value });
-  const raiseTo = (total: number) => void send({ type: 'game.action', action: 'raise', amount: total });
+  const raiseTo = (total: number) =>
+    void send({ type: 'game.action', action: 'raise', amount: total });
   const raiseValid =
     Number.isInteger(amount) && amount >= raiseFloor(range) && amount <= range.maxRaise;
   useEffect(() => {
@@ -277,10 +277,8 @@ export function HoldemTable({
             <div className="rg-pot-details">
               {view.pots.map((item, index) => (
                 <span key={index} className={item.kind === 'side' ? 'ho-side-pot' : undefined}>
-                  {item.kind === 'main'
-                    ? t('Ana pot')
-                    : t('Yan pot {number}', { number: index })}{' '}
-                  · {item.amount.toLocaleString(locale)}
+                  {item.kind === 'main' ? t('Ana pot') : t('Yan pot {number}', { number: index })} ·{' '}
+                  {item.amount.toLocaleString(locale)}
                   {item.split ? t(' · Paylaşıldı') : ''}
                   {item.winners.length
                     ? ` · ${item.winners.map((id) => `${seatName(id)}${Number.isFinite(item.awards[id]) ? ` +${item.awards[id].toLocaleString(locale)}` : ''}`).join(', ')}`
@@ -372,10 +370,9 @@ export function HoldemTable({
                         {seat.bot ? ' · BOT' : ''}
                       </small>
                     </div>
-                    {(blinds.small === seat.userId || blinds.big === seat.userId) &&
-                      !finished && (
-                        <em className="ho-blind">{blinds.big === seat.userId ? 'BB' : 'SB'}</em>
-                      )}
+                    {(blinds.small === seat.userId || blinds.big === seat.userId) && !finished && (
+                      <em className="ho-blind">{blinds.big === seat.userId ? 'BB' : 'SB'}</em>
+                    )}
                   </div>
                   <small>
                     {seat.pendingNextHand
@@ -605,7 +602,9 @@ export function HoldemTable({
         </details>
       )}
       <p className="rg-footer-note">
-        {t('Yalnızca sunucunun açtığı eller görünür. Katlanmış eller diğer oyunculara gösterilmez.')}
+        {t(
+          'Yalnızca sunucunun açtığı eller görünür. Katlanmış eller diğer oyunculara gösterilmez.',
+        )}
       </p>
     </>
   );
