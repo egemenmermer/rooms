@@ -32,8 +32,8 @@
   min-height: 0;
   height: 100%;
   border: 1px solid var(--bj-line);
-  border-radius: var(--radius-24) var(--radius-24) 50% 50% / var(--radius-24) var(--radius-24) 34%
-    34%;
+  border-radius: var(--radius-24) var(--radius-24) 40% 40% / var(--radius-24) var(--radius-24) 20%
+    20%;
   background: radial-gradient(ellipse at 50% 18%, var(--bj-felt), var(--bj-felt-deep) 78%);
   padding: var(--space-12) var(--space-20) var(--space-24);
   box-shadow: inset 0 0 60px color-mix(in srgb, var(--color-background-canvas) 55%, transparent);
@@ -187,20 +187,26 @@
   color: var(--color-status-warning);
 }
 
-/* Insurance: the felt names who is asked; the answer itself is in the dock. */
+/* Insurance and the settled hand: a card in the felt's top-left corner, across from the shoe,
+   so they never push the spots off the felt. The insurance answer itself is in the dock. */
+.bj-insurance,
+.bj-summary {
+  position: absolute;
+  top: var(--space-12);
+  left: 4%;
+  width: max-content;
+  max-width: min(280px, 34%);
+  max-height: calc(100% - 2 * var(--space-12));
+  overflow: auto;
+}
 .bj-insurance {
-  justify-self: center;
-  align-self: center;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-8);
+  display: grid;
+  gap: 2px;
   font-size: var(--font-size-metadata);
-  max-width: min(560px, 100%);
   border: 1px solid var(--color-status-warning);
   border-radius: var(--radius-12);
   background: color-mix(in srgb, var(--color-background-raised) 92%, transparent);
-  padding: var(--space-12) var(--space-16);
+  padding: var(--space-8) var(--space-12);
   box-shadow: var(--shadow-2);
   z-index: var(--z-raised);
 }
@@ -450,18 +456,14 @@
   font-weight: var(--font-weight-semibold);
 }
 .bj-summary {
-  align-self: center;
-  justify-self: center;
-  width: min(420px, 100%);
-  max-height: 100%;
-  overflow: auto;
+  z-index: var(--z-raised);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-12);
-  background: var(--color-background-raised);
-  padding: var(--space-12) var(--space-16);
+  background: color-mix(in srgb, var(--color-background-raised) 92%, transparent);
+  padding: var(--space-8) var(--space-12);
 }
 .bj-summary h3 {
-  margin: 0 0 var(--space-8);
+  margin: 0 0 var(--space-4);
   font-size: var(--font-size-ui);
 }
 .bj-summary ul {
