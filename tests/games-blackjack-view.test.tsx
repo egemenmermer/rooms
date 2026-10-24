@@ -254,3 +254,12 @@ it('sends the table switches as game.create options the server parses', () => {
   expect(rows.find(([label]) => label === 'Sigorta')?.[1]).toContain('Açık');
   expect(rows.find(([label]) => label === 'Teslim')?.[1]).toBe('Kapalı');
 });
+
+it('keeps fixed rules off the felt and the controls in one docked region', () => {
+  render(<BlackjackTable {...ui(scene('your-turn'))} />);
+  // Decks, S17, 3:2, insurance and surrender are in the rules popover (ruleRows).
+  expect(document.querySelector('.rx-badges')!.textContent).toBe('El 1');
+  // Outside the shell TableDock renders in place; the moves sit in the "Hamle" region.
+  const dock = screen.getByRole('region', { name: 'Hamle' });
+  expect(within(dock).getByRole('button', { name: 'Kart al' })).toBeTruthy();
+});
