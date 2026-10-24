@@ -599,10 +599,7 @@ export function ReferenceGames({
                 {!own && (
                   <button
                     disabled={
-                      fixture ||
-                      !ready ||
-                      activity.busy ||
-                      view.rules?.spectatorsAllowed === false
+                      fixture || !ready || activity.busy || view.rules?.spectatorsAllowed === false
                     }
                     onClick={() =>
                       void send({ type: 'game.watch', watching: view.watching !== true })
@@ -695,12 +692,7 @@ export function ReferenceGames({
           </p>
           <button
             className="button primary"
-            disabled={
-              fixture ||
-              !ready ||
-              activity.busy ||
-              view.rules?.spectatorsAllowed === false
-            }
+            disabled={fixture || !ready || activity.busy || view.rules?.spectatorsAllowed === false}
             onClick={() => void send({ type: 'game.watch', watching: true })}
           >
             {t('İzle')}

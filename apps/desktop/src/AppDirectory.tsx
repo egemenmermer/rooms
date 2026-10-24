@@ -115,11 +115,7 @@ function Tile({ item, large = false }: { item: DirectoryItem; large?: boolean })
       style={{ '--tile': item.tint } as CSSProperties}
       aria-hidden="true"
     >
-      {item.icon === 'game' ? (
-        <GameArt kind={item.id} />
-      ) : (
-        <item.icon size={large ? 40 : 20} />
-      )}
+      {item.icon === 'game' ? <GameArt kind={item.id} /> : <item.icon size={large ? 40 : 20} />}
     </span>
   );
 }

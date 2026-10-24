@@ -159,12 +159,7 @@ export function ReferenceOtherGame({
           </p>
           <button
             className="button primary"
-            disabled={
-              fixture ||
-              !ready ||
-              busy ||
-              view.rules?.spectatorsAllowed === false
-            }
+            disabled={fixture || !ready || busy || view.rules?.spectatorsAllowed === false}
             title={
               fixture
                 ? t('Yerel örnekte hesap işlemleri kapalı')
@@ -203,7 +198,9 @@ export function ReferenceOtherGame({
               {t('El tamamlandı')}
             </h3>
             <p>
-              {legal.includes('start') ? t('Yeni el başlatabilirsin.') : t('Masa sahibi bekleniyor.')}
+              {legal.includes('start')
+                ? t('Yeni el başlatabilirsin.')
+                : t('Masa sahibi bekleniyor.')}
             </p>
           </div>
           <button

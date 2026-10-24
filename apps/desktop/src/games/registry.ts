@@ -1,8 +1,5 @@
 import type { ComponentType } from 'react';
-import type {
-  ActivityCommand,
-  GamePublicState,
-} from '../../../../packages/activity-protocol/src';
+import type { ActivityCommand, GamePublicState } from '../../../../packages/activity-protocol/src';
 import { batakGame } from './batak/entry';
 import { blackjackGame } from './blackjack/entry';
 import type { GameCatalogEntry } from './catalog';

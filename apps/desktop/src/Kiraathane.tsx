@@ -141,9 +141,7 @@ export function Kiraathane({
                 <p>{item.detail}</p>
                 <div className="kh-tags">
                   <span>{item.players}</span>
-                  <span>
-                    {item.scoring === 'points' ? t('Puan') : t('Sanal fiş')}
-                  </span>
+                  <span>{item.scoring === 'points' ? t('Puan') : t('Sanal fiş')}</span>
                 </div>
               </div>
               <button

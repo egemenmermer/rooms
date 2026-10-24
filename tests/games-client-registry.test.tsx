@@ -122,9 +122,9 @@ it('lets whoever the server allows deal the next hand, not only the owner', () =
   expect(activity.send).toHaveBeenCalledWith({ type: 'game.action', action: 'start' });
   cleanup();
   shell(table('batak', { status: 'finished', ownerId: 'ece' }, { legalActions: [] }));
-  expect(
-    (screen.getByRole('button', { name: 'Sonraki el' }) as HTMLButtonElement).disabled,
-  ).toBe(true);
+  expect((screen.getByRole('button', { name: 'Sonraki el' }) as HTMLButtonElement).disabled).toBe(
+    true,
+  );
   expect(screen.getByText('Masa sahibi bekleniyor.')).toBeTruthy();
 });
 
