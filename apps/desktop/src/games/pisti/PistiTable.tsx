@@ -6,6 +6,7 @@ import { t } from '../../i18n';
 import { rankNames, suitNames, type Card } from '../shared/model';
 import { PlayingCard } from '../shared/PlayingCard';
 import { SeatAvatar } from '../shared/SeatAvatar';
+import { TableDock } from '../shared/TableDock';
 import { playGameCue, useGameSounds } from '../shared/sounds';
 import type { TableUI } from '../shared/table-ui';
 import {
@@ -188,12 +189,14 @@ function PistiBoard({
     yourTurn = deal.viewerSeat !== null && deal.turn === deal.viewerSeat && !finished;
   const turnName = deal.turn === null ? '' : seatName(game, deal.turn);
   const previousPoints = series.rounds.at(-1)?.points ?? [];
+  // Real tables keep a side's won cards in front of one player: the first seat of each side.
+  const pileSeat = (side: number) =>
+    seats.findIndex((_, round) => round < deal.seats && sideOf(deal, round) === side);
   return (
     <div className="pp-table">
+      {/* Only the live state stays above the felt; the static rules live in the rules popover. */}
       <div className="rx-badges">
-        <span>{t('Maç {target} puan', { target: deal.target })}</span>
         <span>{t('El {hand}', { hand: series.rounds.length + (finished ? 0 : 1) })}</span>
-        {deal.teams && <span>{t('Eşli · karşılıklı')}</span>}
         {series.previous && !finished && (
           <button
             type="button"
@@ -208,181 +211,165 @@ function PistiBoard({
         )}
       </div>
       <div className="pp-layout">
-        <section
-          className={`pp-felt seats-${deal.seats}`}
-          aria-label={t('Pişti masası')}
-          data-turn={deal.turn ?? undefined}
-        >
-          {seats.slice(0, deal.seats).map((seat, round) => {
-            const position = relativePosition(deal, round),
-              turn = deal.turn === round && !finished,
-              count = deal.handCounts[round] ?? 0,
-              own = round === deal.viewerSeat,
-              partner =
-                deal.teams &&
-                deal.viewerSeat !== null &&
-                !own &&
-                sideOf(deal, round) === viewerSide;
-            return (
-              <article
-                key={seat.userId}
-                className={`pp-seat pos-${position} ${turn ? 'turn' : ''} ${own ? 'own' : ''}`}
+        <div className="pp-felt-wrap">
+          <section
+            className={`pp-felt seats-${deal.seats}`}
+            aria-label={t('Pişti masası')}
+            data-turn={deal.turn ?? undefined}
+          >
+            {seats.slice(0, deal.seats).map((seat, round) => {
+              const position = relativePosition(deal, round),
+                turn = deal.turn === round && !finished,
+                count = deal.handCounts[round] ?? 0,
+                own = round === deal.viewerSeat,
+                side = sideOf(deal, round),
+                partner = deal.teams && deal.viewerSeat !== null && !own && side === viewerSide;
+              return (
+                <article
+                  key={seat.userId}
+                  className={`pp-seat pos-${position} ${turn ? 'turn' : ''} ${own ? 'own' : ''}`}
+                  aria-label={
+                    turn
+                      ? t('{name} · sırası · {count} kart', { name: seat.name, count })
+                      : t('{name} · {count} kart', { name: seat.name, count })
+                  }
+                >
+                  <div className="pp-chip">
+                    <span className="pp-avatar">
+                      <SeatAvatar seat={seat} game={game} timer={timer} />
+                    </span>
+                    <span className="pp-seat-text">
+                      <strong title={seat.name}>{seat.name}</strong>
+                      <small>
+                        {partner
+                          ? t('Eşin')
+                          : seat.bot
+                            ? t('Bot')
+                            : deal.teams
+                              ? t('Takım {number}', { number: side + 1 })
+                              : t('{count} kart', { count })}
+                      </small>
+                    </span>
+                  </div>
+                  {/* Beside the chip, never inside it: the hand's backs and the side's won pile. */}
+                  {((!own && count > 0) || pileSeat(side) === round) && (
+                    <div className="pp-seat-side">
+                      {!own && count > 0 && (
+                        <span className="pp-backs" aria-hidden="true">
+                          {Array.from({ length: Math.min(count, 4) }, (_, index) => (
+                            <i key={index} />
+                          ))}
+                        </span>
+                      )}
+                      {pileSeat(side) === round && (
+                        <CapturedPile game={game} deal={deal} side={side} />
+                      )}
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+
+            <div className="pp-center">
+              <div
+                className="pp-deck"
+                aria-label={t('Destede {count} kart', { count: deal.deckCount })}
+              >
+                {deal.deckCount > 0 ? (
+                  <>
+                    <span className="pp-deck-stack" aria-hidden="true">
+                      {Array.from(
+                        { length: Math.min(5, Math.ceil(deal.deckCount / 8)) },
+                        (_, i) => (
+                          <i key={i} style={{ '--i': i } as CSSProperties} />
+                        ),
+                      )}
+                    </span>
+                    <small>{t('Deste {count}', { count: deal.deckCount })}</small>
+                  </>
+                ) : (
+                  <small>{t('Deste bitti')}</small>
+                )}
+              </div>
+              <div
+                className="pp-pile"
                 aria-label={
-                  turn
-                    ? t('{name} · sırası · {count} kart', { name: seat.name, count })
-                    : t('{name} · {count} kart', { name: seat.name, count })
+                  deal.tableTop
+                    ? t('Yerde {count} kart · üstte {card}', {
+                        count: deal.tableCount,
+                        card: cardName(deal.tableTop),
+                      })
+                    : t('Yer boş')
                 }
               >
-                <span className="pp-avatar">
-                  <SeatAvatar seat={seat} game={game} timer={timer} />
-                </span>
-                <span className="pp-seat-text">
-                  <strong title={seat.name}>{seat.name}</strong>
-                  <small>
-                    {partner
-                      ? t('Eşin')
-                      : seat.bot
-                        ? t('Bot')
-                        : deal.teams
-                          ? t('Takım {number}', { number: sideOf(deal, round) + 1 })
-                          : t('{count} kart', { count })}
-                    {turn && timer !== null && ` · ${t('{seconds} sn', { seconds: timer })}`}
+                {/* A loose fan of up to three cards under the top one, as the pile lies on a table. */}
+                {deal.tableCount > 1 &&
+                  Array.from({ length: Math.min(deal.tableCount - 1, 3) }, (_, index) => (
+                    <i
+                      key={index}
+                      className="pp-pile-layer"
+                      style={{ '--i': index } as CSSProperties}
+                      aria-hidden="true"
+                    />
+                  ))}
+                {deal.tableTop ? (
+                  <span
+                    key={events.key}
+                    className={`pp-top ${events.animate && flyFrom ? `fly-from-${flyFrom}` : ''}`}
+                  >
+                    <PlayingCard card={deal.tableTop} />
+                  </span>
+                ) : (
+                  <span className="pp-empty-pile">{t('Yer boş')}</span>
+                )}
+                {deal.tableCount > 0 && (
+                  <small className="pp-pile-count">
+                    {t('Yerde {count} kart', { count: deal.tableCount })}
                   </small>
-                </span>
-                {!own && count > 0 && (
-                  <span className="pp-backs" aria-hidden="true">
-                    {Array.from({ length: Math.min(count, 4) }, (_, index) => (
-                      <i key={index} />
-                    ))}
-                  </span>
                 )}
-              </article>
-            );
-          })}
-
-          {Array.from({ length: sideCount(deal) }, (_, side) => (
-            <div
-              key={side}
-              className={`pp-captured ${side === homeSide ? 'home' : 'away'}`}
-              aria-label={t('{name} · {count} kart aldı', {
-                name: sideName(game, deal, side),
-                count: deal.capturedCounts[side] ?? 0,
-              })}
-            >
-              <span className="pp-captured-stack" aria-hidden="true">
-                {Array.from(
-                  { length: Math.min(6, Math.ceil((deal.capturedCounts[side] ?? 0) / 4)) },
-                  (_, index) => (
-                    <i key={index} style={{ '--i': index } as CSSProperties} />
-                  ),
-                )}
-              </span>
-              <span>
-                <b>{t('{count} kart', { count: deal.capturedCounts[side] ?? 0 })}</b>
-                {(deal.pisti[side] ?? 0) + (deal.jackPisti[side] ?? 0) > 0 && (
-                  <em>
-                    {' · '}
-                    {t('{count} pişti', {
-                      count: (deal.pisti[side] ?? 0) + (deal.jackPisti[side] ?? 0),
-                    })}
-                  </em>
-                )}
-              </span>
-            </div>
-          ))}
-
-          <div className="pp-center">
-            <div
-              className="pp-deck"
-              aria-label={t('Destede {count} kart', { count: deal.deckCount })}
-            >
-              {deal.deckCount > 0 ? (
-                <>
-                  <span className="pp-deck-stack" aria-hidden="true">
-                    {Array.from({ length: Math.min(5, Math.ceil(deal.deckCount / 8)) }, (_, i) => (
-                      <i key={i} style={{ '--i': i } as CSSProperties} />
-                    ))}
-                  </span>
-                  <small>{t('Deste {count}', { count: deal.deckCount })}</small>
-                </>
-              ) : (
-                <small>{t('Deste bitti')}</small>
-              )}
-            </div>
-            <div
-              className="pp-pile"
-              aria-label={
-                deal.tableTop
-                  ? t('Yerde {count} kart · üstte {card}', {
-                      count: deal.tableCount,
-                      card: cardName(deal.tableTop),
-                    })
-                  : t('Yer boş')
-              }
-            >
-              {deal.tableCount > 1 &&
-                Array.from({ length: Math.min(deal.tableCount - 1, 10) }, (_, index) => (
-                  <i
-                    key={index}
-                    className="pp-pile-layer"
-                    style={{ '--i': index } as CSSProperties}
+                {events.ghost && (
+                  <span
+                    key={events.ghost.key}
+                    className={`pp-ghost sweep-${events.ghost.toward}`}
                     aria-hidden="true"
-                  />
-                ))}
-              {deal.tableTop ? (
-                <span
-                  key={events.key}
-                  className={`pp-top ${events.animate && flyFrom ? `fly-from-${flyFrom}` : ''}`}
-                  style={{ '--layers': Math.min(deal.tableCount - 1, 10) } as CSSProperties}
-                >
-                  <PlayingCard card={deal.tableTop} />
-                </span>
-              ) : (
-                <span className="pp-empty-pile">{t('Yer boş')}</span>
-              )}
-              {deal.tableCount > 0 && (
-                <small className="pp-pile-count">
-                  {t('Yerde {count} kart', { count: deal.tableCount })}
-                </small>
-              )}
-              {events.ghost && (
-                <span
-                  key={events.ghost.key}
-                  className={`pp-ghost sweep-${events.ghost.toward}`}
-                  aria-hidden="true"
-                >
-                  {events.ghost.top ? <PlayingCard card={events.ghost.top} /> : <PlayingCard />}
-                  <b>{events.ghost.count}</b>
-                </span>
-              )}
+                  >
+                    {events.ghost.top ? <PlayingCard card={events.ghost.top} /> : <PlayingCard />}
+                    <b>{events.ghost.count}</b>
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
 
-          <p className="pp-last" role="status">
-            {[captureLine(game, deal), playLine(game, deal)].filter(Boolean).join(' · ') ||
-              (deal.turn !== null ? t('{name} açıyor', { name: turnName }) : '')}
-          </p>
+            {!finished && (
+              <p className="pp-last" role="status">
+                {[captureLine(game, deal), playLine(game, deal)].filter(Boolean).join(' · ') ||
+                  (deal.turn !== null ? t('{name} açıyor', { name: turnName }) : '')}
+              </p>
+            )}
 
-          {events.moment && (
-            <div
-              key={events.moment.key}
-              className={`pp-moment ${events.moment.kind}`}
-              role="alert"
-              aria-label={
-                events.moment.kind === 'jack-pisti'
-                  ? t('{name} vale pişti yaptı · +20', { name: events.moment.name })
-                  : t('{name} pişti yaptı · +10', { name: events.moment.name })
-              }
-            >
-              <strong>
-                {events.moment.kind === 'jack-pisti' ? t('VALE PİŞTİ!') : t('PİŞTİ!')}
-              </strong>
-              <span>
-                {events.moment.name} · {events.moment.kind === 'jack-pisti' ? '+20' : '+10'}
-              </span>
-            </div>
-          )}
-        </section>
+            {events.moment && (
+              <div
+                key={events.moment.key}
+                className={`pp-moment ${events.moment.kind}`}
+                role="alert"
+                aria-label={
+                  events.moment.kind === 'jack-pisti'
+                    ? t('{name} vale pişti yaptı · +20', { name: events.moment.name })
+                    : t('{name} pişti yaptı · +10', { name: events.moment.name })
+                }
+              >
+                <strong>
+                  {events.moment.kind === 'jack-pisti' ? t('VALE PİŞTİ!') : t('PİŞTİ!')}
+                </strong>
+                <span>
+                  {events.moment.name} · {events.moment.kind === 'jack-pisti' ? '+20' : '+10'}
+                </span>
+              </div>
+            )}
+          </section>
+          {/* The match result sits on the felt; "Rövanş" is in the shell's dock strip below. */}
+          {finished && <MatchEnd game={game} deal={deal} series={series} />}
+        </div>
 
         <aside className="pp-side">
           <MatchScore game={game} deal={deal} series={series} viewerSide={viewerSide} />
@@ -404,28 +391,25 @@ function PistiBoard({
               <DealSummary game={game} deal={series.previous} points={previousPoints} />
             </section>
           )}
-          <section className="pp-panel pp-log">
-            <h3>{t('Son hamleler')}</h3>
-            {events.log.length ? (
+          {/* No empty "no moves yet" box: the panel appears with the first move. */}
+          {events.log.length > 0 && (
+            <section className="pp-panel pp-log">
+              <h3>{t('Son hamleler')}</h3>
               <ol aria-live="polite">
                 {events.log.map((line, index) => (
                   <li key={`${index}:${line}`}>{line}</li>
                 ))}
               </ol>
-            ) : (
-              <p>{t('Henüz hamle yok.')}</p>
-            )}
-          </section>
+            </section>
+          )}
         </aside>
       </div>
 
-      {finished ? (
-        <MatchEnd game={game} deal={deal} series={series} />
-      ) : (
-        hand && (
+      {!finished && hand && (
+        <TableDock label={t('Elin')} className="pp-dock">
           <section className="rx-rack pp-rack">
             <header>
-              <strong>
+              <strong role="status">
                 {yourTurn
                   ? t('Sıra sende · bir kart at')
                   : t('{name} oynuyor', { name: turnName || t('Oyuncu') })}
@@ -452,9 +436,43 @@ function PistiBoard({
               )}
             </div>
           </section>
-        )
+        </TableDock>
       )}
     </div>
+  );
+}
+
+/** One side's won cards as a small stack with the count and pişti tally. */
+function CapturedPile({
+  game,
+  deal,
+  side,
+}: {
+  game: GamePublicState;
+  deal: PistiDeal;
+  side: number;
+}) {
+  const count = deal.capturedCounts[side] ?? 0,
+    pisti = (deal.pisti[side] ?? 0) + (deal.jackPisti[side] ?? 0);
+  return (
+    <span
+      className="pp-captured"
+      aria-label={t('{name} · {count} kart aldı', { name: sideName(game, deal, side), count })}
+    >
+      <span className="pp-captured-stack" aria-hidden="true">
+        {Array.from({ length: Math.max(1, Math.min(4, Math.ceil(count / 6))) }, (_, index) => (
+          <i
+            key={index}
+            className={count ? '' : 'empty'}
+            style={{ '--i': index } as CSSProperties}
+          />
+        ))}
+      </span>
+      <span>
+        <b>{t('{count} kart', { count })}</b>
+        {pisti > 0 && <em>{t('{count} pişti', { count: pisti })}</em>}
+      </span>
+    </span>
   );
 }
 

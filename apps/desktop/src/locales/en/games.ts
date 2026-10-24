@@ -147,6 +147,7 @@ export const games: Catalog = {
     'If you leave during a hand, a bot finishes it for you, then your seat is freed.',
   'Koltuğun boşalır; başka biri oturabilir.': 'Your seat is freed; someone else can take it.',
   Hamle: 'Move',
+  Elin: 'Your hand',
   'El {hand}': 'Hand {hand}',
   '{seatName} · {chips} fiş': '{seatName} · {chips} chips',
   'Tamamlanmış el yok.': 'No completed hands.',
@@ -1178,8 +1179,6 @@ export const games: Catalog = {
   },
   'Kartlar dağıtılıyor': 'Dealing the cards',
   'Masanın durumu birazdan gelir.': 'The table will show up in a moment.',
-  'Maç {target} puan': 'Match to {target}',
-  'Eşli · karşılıklı': 'Partners · across',
   'Önceki el özeti': 'Last hand summary',
   'Pişti masası': 'Pisti table',
   '{name} · sırası · {count} kart': {

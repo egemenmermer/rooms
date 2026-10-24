@@ -509,7 +509,7 @@ function baseGame(kind: GamePublicState['kind'], count = 4): GamePublicState {
         kind === 'holdem'
           ? sample('Akşam eli', 'Evening hand')
           : kind === '101'
-            ? 'Son bir el'
+            ? sample('Son bir el', 'One last hand')
             : kind === 'batak'
               ? sample('Salon Batak', 'Lounge Batak')
               : sample('Bir el daha', 'One more hand'),

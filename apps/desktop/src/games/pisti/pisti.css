@@ -12,9 +12,15 @@
     var(--color-background-raised)
   );
   --pp-card-edge: var(--color-text-secondary);
+  /* Fills the shell's table area; the felt row takes what the badges leave. */
   display: grid;
-  gap: 12px;
+  grid-template-rows: auto minmax(0, 1fr);
+  flex: 1 1 auto;
+  min-height: 0;
   min-width: 0;
+}
+.pp-table > .rx-badges {
+  margin: 0;
 }
 .pp-badge-button {
   border: 1px solid var(--color-border-interactive);
@@ -27,15 +33,25 @@
 }
 .pp-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 270px);
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 260px);
   gap: 14px;
-  align-items: start;
+  align-items: stretch;
+  min-height: 0;
+}
+.pp-felt-wrap {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  min-width: 0;
 }
 
 /* Felt */
 .pp-felt {
   position: relative;
-  height: clamp(340px, 52vh, 440px);
+  height: 100%;
+  min-height: 300px;
+  max-height: 480px;
+  align-self: center;
   min-width: 0;
   border-radius: 46% / 40%;
   border: 7px solid var(--pp-felt-edge);
@@ -43,11 +59,20 @@
   box-shadow: inset 0 0 0 1px var(--color-border-subtle);
   overflow: hidden;
 }
+/* A seat: the chip (avatar + name) and, beside it, the hand's backs and the side's won pile. */
 .pp-seat {
   position: absolute;
   display: flex;
   align-items: center;
+  gap: 10px;
+  transition: transform 200ms ease;
+  z-index: 2;
+}
+.pp-chip {
+  display: flex;
+  align-items: center;
   gap: 8px;
+  min-width: 0;
   max-width: 200px;
   padding: 6px 10px;
   border-radius: var(--radius-12);
@@ -55,13 +80,16 @@
   border: 1px solid var(--color-border-subtle);
   transition:
     box-shadow 200ms ease,
-    border-color 200ms ease,
-    transform 200ms ease;
-  z-index: 2;
+    border-color 200ms ease;
 }
-.pp-seat.turn {
+.pp-seat.turn .pp-chip {
   border-color: var(--color-action-primary);
   box-shadow: 0 0 0 3px var(--color-action-primarySubtle);
+}
+.pp-seat-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .pp-seat.pos-bottom {
   bottom: 10px;
@@ -86,6 +114,16 @@
   transform: translateY(-50%);
   flex-direction: column;
   text-align: center;
+}
+.pp-seat.pos-left .pp-chip,
+.pp-seat.pos-right .pp-chip {
+  flex-direction: column;
+  max-width: 150px;
+}
+.pp-seat.pos-left .pp-seat-side,
+.pp-seat.pos-right .pp-seat-side {
+  flex-direction: column;
+  gap: 4px;
 }
 .pp-seat.turn.pos-bottom,
 .pp-seat.turn.pos-top {
@@ -144,24 +182,24 @@
 .pp-backs i + i {
   margin-left: -11px;
 }
+.pp-captured-stack i.empty {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--color-border-default);
+}
 
-/* Captured stacks: own side bottom-left, the other side top-right. */
+/* A side's won cards, beside the chip of the side's first seat. */
 .pp-captured {
-  position: absolute;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: var(--font-size-metadata);
   color: var(--color-text-secondary);
-  z-index: 1;
+  white-space: nowrap;
 }
-.pp-captured.home {
-  left: 9%;
-  bottom: 16%;
-}
-.pp-captured.away {
-  right: 9%;
-  top: 16%;
+.pp-captured > span:last-child {
+  display: grid;
+  line-height: 1.2;
 }
 .pp-captured b {
   color: var(--color-text-primary);
@@ -215,11 +253,12 @@
 }
 .pp-pile-layer {
   position: absolute;
-  left: calc(8px - var(--i) * 0.6px);
-  top: calc(10px + var(--i) * 1.4px);
+  left: 9px;
+  top: 11px;
   width: 57px;
   height: 81px;
   border-radius: var(--radius-8);
+  transform: rotate(calc(-14deg + var(--i) * 9deg)) translateX(calc(var(--i) * 3px - 4px));
 }
 .pp-top {
   position: relative;
@@ -335,7 +374,7 @@
 .pp-last {
   position: absolute;
   left: 50%;
-  bottom: 74px;
+  bottom: 70px;
   transform: translateX(-50%);
   max-width: 70%;
   margin: 0;
@@ -383,11 +422,14 @@
   }
 }
 
-/* Side column */
+/* Side column: scrolls on its own when a deal summary is open, the felt never moves. */
 .pp-side {
   display: grid;
+  align-content: start;
   gap: 10px;
   min-width: 0;
+  min-height: 0;
+  overflow: auto;
 }
 .pp-panel {
   border: 1px solid var(--color-border-subtle);
@@ -477,6 +519,18 @@
 .pp-history {
   margin: 10px 0;
 }
+/* Match end: a result card over the felt, scrolling inside itself if the tables are long. */
+.pp-match-end {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  width: min(640px, calc(100% - 32px));
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  border-color: var(--color-border-default);
+  box-shadow: var(--shadow-2);
+}
 .pp-match-end h2 {
   margin: 0 0 12px;
   font-size: var(--font-size-h2);
@@ -487,7 +541,16 @@
   gap: 16px;
 }
 
-/* Own hand */
+/* Own hand, docked by the shell (TableDock). */
+.pp-dock .pp-rack {
+  margin: 0;
+}
+.pp-dock .pp-rack header {
+  margin-bottom: 6px;
+}
+.pp-dock .pp-hand {
+  padding: 10px;
+}
 .pp-rack header small {
   font-size: var(--font-size-metadata);
   color: var(--color-text-secondary);
@@ -495,6 +558,7 @@
 .pp-hand {
   justify-content: center;
   min-height: 96px;
+  flex-wrap: nowrap;
 }
 .pp-hand p {
   margin: 0;
@@ -527,29 +591,25 @@
 
 @media (max-width: 1100px) {
   .pp-layout {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 190px;
+    gap: 10px;
   }
-  .pp-side {
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  .pp-panel {
+    padding: 10px 12px;
   }
 }
 @media (max-width: 960px) {
-  .pp-seat {
+  .pp-chip {
     max-width: 150px;
     padding: 5px 8px;
   }
   .pp-seat-text strong {
     max-width: 90px;
   }
-  .pp-captured.home {
-    left: 4%;
-  }
-  .pp-captured.away {
-    right: 4%;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .pp-seat,
+  .pp-chip,
   .pp-hand-card .playing-card {
     transition: none;
   }
@@ -566,6 +626,7 @@
 
 /* The app's own "Hareketi azalt" setting (appearance-preferences.ts) as well as the system one. */
 :root[data-motion='reduce'] .pp-seat,
+:root[data-motion='reduce'] .pp-chip,
 :root[data-motion='reduce'] .pp-hand-card .playing-card {
   transition: none;
 }
