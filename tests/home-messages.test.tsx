@@ -105,6 +105,7 @@ it('shows who is in a voice room and joins it on the voice page, like the sideba
     { channelId: 'salon', participants: [{ id: 'p', name: 'Ayşe', muted: false }] },
   ];
   f.friends.friends = [{ user: peer, relationship: 'friend', status: 'online' }];
+  (window.rooms!.media as { directory?: unknown }).directory = vi.fn();
   await mount('home');
   const voice = within(screen.getByRole('region', { name: 'Ses odaları' }));
   expect(voice.getByText('1 kişi')).toBeTruthy();
@@ -117,6 +118,28 @@ it('shows who is in a voice room and joins it on the voice page, like the sideba
   expect(
     within(screen.getByRole('region', { name: 'Çevrimiçi arkadaşlar' })).getByText('Test Friend'),
   ).toBeTruthy();
+});
+
+it('never shows a voice room as pending when presence cannot be read', async () => {
+  // The hook stays "loading" without a directory bridge; the card must not wait forever.
+  f.directory = { rooms: [], loading: true, error: false };
+  await mount('home');
+  const voice = within(screen.getByRole('region', { name: 'Ses odaları' }));
+  expect(voice.queryByText('Bakılıyor…')).toBeNull();
+  expect(voice.queryByText('Boş')).toBeNull();
+  expect(screen.getByText('Tayfana hoş geldin')).toBeTruthy();
+});
+
+it('welcomes a new member of a text-only community into the chat', async () => {
+  f.directory = { rooms: [], loading: true, error: false };
+  useCommunity.setState({
+    channels: [{ id: 'general', spaceId: 'server', name: 'genel', type: 0, topic: null }],
+  });
+  await mount('home');
+  expect(screen.queryByRole('region', { name: 'Ses odaları' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Sohbete katıl' }));
+  expect(path()).toBe('/chat');
+  expect(openChannel).toHaveBeenCalledWith('general');
 });
 
 it('lists unread chats first and opens them on the chat page', async () => {

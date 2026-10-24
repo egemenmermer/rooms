@@ -95,6 +95,9 @@ function Landing({ open, notify }: { open(value: Overlay): void; notify(message:
   const voices = c.channels.filter((ch) => ch.type === 2 && ch.id !== hallId),
     texts = c.channels.filter((ch) => ch.type === 0 && ch.id !== hallId);
   const directory = useVoiceDirectory(voices.map((ch) => ch.id));
+  // The directory hook never settles without voice rooms, a bridge or in fixtures; say nothing then.
+  const canSee = !!window.rooms?.media?.directory && !fixtureMode(),
+    checking = canSee && voices.length > 0 && directory.loading;
   const run = (task: Promise<unknown>) => void task.catch((e) => notify(uiError(e)));
   const joinedRoom = ['connected', 'reconnecting'].includes(r.status) ? r.channelId : null;
   // Same as the sidebar: the voice page opens at once and the room joins behind it.
@@ -129,12 +132,7 @@ function Landing({ open, notify }: { open(value: Overlay): void; notify(message:
   const online = accepted.filter((f) => ['online', 'idle', 'dnd'].includes(f.status));
   // A new member: nobody to see yet, so the page says what to do first.
   const newMember =
-    !friends.loading &&
-    !directory.loading &&
-    !accepted.length &&
-    !inVoice &&
-    !unreadCount &&
-    !joinedRoom;
+    !friends.loading && !checking && !accepted.length && !inVoice && !unreadCount && !joinedRoom;
   const date = (fixtureMode() ? new Date('2026-10-10T18:00:00Z') : new Date()).toLocaleDateString(
     locale,
     { weekday: 'long', day: 'numeric', month: 'long' },
@@ -239,13 +237,15 @@ function Landing({ open, notify }: { open(value: Overlay): void; notify(message:
                         </span>
                         <span className="home-voice-text">
                           <strong>{ch.name}</strong>
-                          <small>
-                            {directory.loading
-                              ? t('Bakılıyor…')
-                              : people.length
-                                ? t('{count} kişi', { count: people.length })
-                                : t('Boş')}
-                          </small>
+                          {canSee && (
+                            <small>
+                              {checking
+                                ? t('Bakılıyor…')
+                                : people.length
+                                  ? t('{count} kişi', { count: people.length })
+                                  : t('Boş')}
+                            </small>
+                          )}
                         </span>
                         {people.length > 0 && (
                           <span
