@@ -65,9 +65,16 @@
   grid-area: bottom;
   justify-self: center;
 }
-.ok-seat .avatar {
+.ok-seat .avatar,
+.ok-seat .voice-photo {
   width: 30px;
   height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+/* The owner's "Koltuğu boşalt" stays an icon inside the compact seat chip. */
+.ok-seat .rg-seat-remove span {
+  display: none;
 }
 .ok-seat > div {
   min-width: 0;

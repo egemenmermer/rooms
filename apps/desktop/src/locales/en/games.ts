@@ -1410,4 +1410,7 @@ export const games: Catalog = {
   'Batak türü': 'Batak variant',
   'Koz Maça her oyuncunun kendi tahminiyle yazılır.': 'Spades trump scores each player’s own call.',
   'Koz Maça’da geçerli değil': 'Not used in Spades trump',
+  // GA-adopt: finish strip of match games.
+  'Rövanş başlatabilirsin.': 'You can start a rematch.',
+  Rövanş: 'Rematch',
 };

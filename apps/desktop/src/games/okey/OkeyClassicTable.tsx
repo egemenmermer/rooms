@@ -7,7 +7,8 @@ import { t } from '../../i18n';
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { Avatar } from '@rooms/design';
 import type { TableUI } from '../shared/table-ui';
-import { TurnClock } from '../shared/TurnClock';
+import { SeatAvatar } from '../shared/SeatAvatar';
+import { useGameSounds } from '../shared/sounds';
 import { arrangePairs, arrangeRuns, canFinishWith, finishingTile } from './auto-arrange';
 import { ClassicTileView, TileBack, tileLabel } from './ClassicTile';
 import { OkeyRoundSummary } from './OkeyRoundSummary';
@@ -52,6 +53,7 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
   const view = game.view as OkeyTableView;
   const order = useMemo(() => [...game.seats].sort((a, b) => a.seat - b.seat), [game.seats]);
   const nameOf = (seat: number) => order[seat]?.name ?? t('Koltuk {number}', { number: seat + 1 });
+  useGameSounds(game, { move: 'tile' });
   const okey = view.okey ?? { color: 'red', value: 1 },
     me = typeof view.viewerSeat === 'number' ? view.viewerSeat : null,
     base = me ?? 0,
@@ -171,7 +173,11 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
               className={`ok-seat ${place} ${playing ? 'turn' : ''}`}
               aria-label={playing ? t('{name} · Sırada', { name: nameOf(seat) }) : nameOf(seat)}
             >
-              <Avatar name={nameOf(seat)} />
+              {order[seat] ? (
+                <SeatAvatar seat={order[seat]} game={game} timer={timer} />
+              ) : (
+                <Avatar name={nameOf(seat)} />
+              )}
               <div>
                 <strong title={nameOf(seat)}>{nameOf(seat)}</strong>
                 <small>
@@ -186,7 +192,6 @@ export function OkeyClassicTable({ game, userId, can, action, timer }: TableUI) 
                   ))}
                 </span>
               )}
-              {playing && <TurnClock timer={timer} />}
             </article>
           );
         })}

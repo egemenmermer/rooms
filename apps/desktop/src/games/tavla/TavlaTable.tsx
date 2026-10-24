@@ -1,8 +1,10 @@
 import { t } from '../../i18n';
 import { useEffect, useRef, useState } from 'react';
 import { Avatar, LoadingView } from '@rooms/design';
-import { Clock3, Dices, Trophy, Undo2, Check } from 'lucide-react';
+import { Dices, Trophy, Undo2, Check } from 'lucide-react';
 import type { TavlaTurnRecord } from '../../../../../packages/games/src/tavla';
+import { SeatAvatar } from '../shared/SeatAvatar';
+import { playGameCue, useGameSounds } from '../shared/sounds';
 import type { TableUI } from '../shared/table-ui';
 import {
   bottomSeat,
@@ -39,6 +41,7 @@ export function TavlaTable(ui: TableUI) {
 }
 
 function TavlaRound({ game, userId, can, action, timer }: TableUI) {
+  useGameSounds(game, { move: 'tile' });
   const view = game.view as unknown as TavlaTableView,
     own = game.seats.find((seat) => seat.userId === userId),
     you = view.you,
@@ -75,6 +78,8 @@ function TavlaRound({ game, userId, can, action, timer }: TableUI) {
   useEffect(() => {
     if (firstKey.current === rollKey) return;
     firstKey.current = '';
+    // One rattle per roll, the viewer's and the opponent's alike (the view carries both).
+    playGameCue('dice');
     setRolling(true);
     const timeout = setTimeout(() => setRolling(false), 650);
     return () => clearTimeout(timeout);
@@ -159,13 +164,18 @@ function TavlaRound({ game, userId, can, action, timer }: TableUI) {
     status = `${t('Zarlar eşit geldi ({value}): yeniden atılıyor.', { value: view.openingTie })} ${status}`;
 
   const seatPanel = (seat: number, place: 'top' | 'bottom') => {
-    const turn = view.turn === seat && view.phase !== 'over';
+    const turn = view.turn === seat && view.phase !== 'over',
+      seatInfo = game.seats.find((entry) => entry.seat === seat);
     return (
       <div
         className={`tv-seat ${place}${turn ? ' turn' : ''}`}
         aria-current={turn ? 'true' : undefined}
       >
-        <Avatar name={name(seat)} />
+        {seatInfo ? (
+          <SeatAvatar seat={seatInfo} game={game} timer={timer} />
+        ) : (
+          <Avatar name={name(seat)} />
+        )}
         <div className="tv-seat-name">
           <strong title={name(seat)}>{name(seat)}</strong>
           <small>
@@ -185,12 +195,6 @@ function TavlaRound({ game, userId, can, action, timer }: TableUI) {
             </dd>
           </div>
         </dl>
-        {turn && timer !== null && (
-          <span className={`tv-clock${timer <= 10 ? ' low' : ''}`} role="timer">
-            <Clock3 size={14} aria-hidden="true" />
-            {t('{seconds} sn', { seconds: timer })}
-          </span>
-        )}
       </div>
     );
   };

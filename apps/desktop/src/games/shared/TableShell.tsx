@@ -131,12 +131,17 @@ export function ReferenceOtherGame({
   const roomName =
     c.channels.find((channel) => channel.id === activity.room?.roomId)?.name ?? t('Oda');
   const ruleRows = definition.ruleRows(game);
+  const finish = (game.status === 'finished' && definition.finishLabels?.(game)) || null;
   return (
     <div className={`rg-page rx-game rx-${game.kind}`}>
       <header className="rg-heading">
         <div>
           <div className="rg-title">
-            <h1>{game.status === 'finished' ? t('El tamamlandı') : definition.catalog.name}</h1>
+            <h1>
+              {game.status === 'finished'
+                ? (finish?.title ?? t('El tamamlandı'))
+                : definition.catalog.name}
+            </h1>
             <span>{t('Kurallar kilitli')}</span>
           </div>
           <p>
@@ -234,11 +239,11 @@ export function ReferenceOtherGame({
           <div>
             <h3>
               <Trophy size={19} />
-              {t('El tamamlandı')}
+              {finish?.title ?? t('El tamamlandı')}
             </h3>
             <p>
               {legal.includes('start')
-                ? t('Yeni el başlatabilirsin.')
+                ? (finish?.hint ?? t('Yeni el başlatabilirsin.'))
                 : t('Masa sahibi bekleniyor.')}
             </p>
           </div>
@@ -258,7 +263,7 @@ export function ReferenceOtherGame({
             disabled={!can('start')}
             onClick={() => void action('start')}
           >
-            {t('Sonraki el')}
+            {finish?.next ?? t('Sonraki el')}
           </button>
         </div>
       )}

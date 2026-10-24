@@ -47,6 +47,20 @@ export const tileColors: Record<string, string> = {
   blue: t('Mavi'),
   yellow: t('Sarı'),
 };
+/**
+ * `GameDefinition.finishLabels` for match games (Pişti, Tavla): once `view.series.winners` names the
+ * match winners, the finish strip reads "Maç bitti" / "Rövanş" instead of the hand wording.
+ */
+export const matchFinishLabels = (game: GamePublicState) => {
+  const winners = (game.view.series as { winners?: unknown } | undefined)?.winners;
+  return Array.isArray(winners) && winners.length
+    ? {
+        title: t('Maç bitti'),
+        hint: t('Rövanş başlatabilirsin.'),
+        next: t('Rövanş'),
+      }
+    : null;
+};
 export const array = <T>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 export const object = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' ? (value as Record<string, unknown>) : {};

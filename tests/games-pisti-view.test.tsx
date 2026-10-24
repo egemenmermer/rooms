@@ -11,7 +11,10 @@ import { PistiTable } from '../apps/desktop/src/games/pisti/PistiTable';
 import type { TableUI } from '../apps/desktop/src/games/shared/table-ui';
 
 const cues = vi.hoisted(() => vi.fn());
-vi.mock('../apps/desktop/src/games/pisti/sounds', () => ({ playPistiCue: cues }));
+vi.mock('../apps/desktop/src/games/shared/sounds', async (original) => ({
+  ...(await original<typeof import('../apps/desktop/src/games/shared/sounds')>()),
+  playGameCue: cues,
+}));
 
 afterEach(() => {
   cleanup();
@@ -74,7 +77,8 @@ it('plays the PİŞTİ! moment only for a capture that happens while the table i
   const moment = screen.getByRole('alert');
   expect(moment.textContent).toContain('PİŞTİ!');
   expect(moment.textContent).toContain('+10');
-  expect(cues).toHaveBeenCalledWith('pisti');
+  // Ali's pişti is the opponent's: the capture sweep, not the viewer's win fanfare.
+  expect(cues).toHaveBeenCalledWith('capture');
   expect(document.querySelector('.pp-ghost.sweep-top')).toBeTruthy();
   expect(screen.getByText('Ali (demo) pişti yaptı · +10', { selector: 'li' })).toBeTruthy();
   act(() => void vi.advanceTimersByTime(2000));
@@ -129,7 +133,7 @@ it('reads the last play of the final deal from the view, not from series.previou
   view.rerender(<PistiTable {...ui(scene('match-end'))} />);
   // series.previous holds an older pişti: it must not replay.
   expect(screen.queryByRole('alert')).toBeNull();
-  expect(cues).not.toHaveBeenCalledWith('pisti');
+  expect(cues).not.toHaveBeenCalledWith('capture');
   expect(
     screen.getByText('Yerde kalan 3 kart son alan Ali (demo) tarafına gitti', { selector: 'li' }),
   ).toBeTruthy();
@@ -216,4 +220,20 @@ it('renders the table in English', async () => {
   expect(screen.getByRole('heading', { name: 'Hand 1 over' })).toBeTruthy();
   expect(screen.getByRole('rowheader', { name: 'Cards taken' })).toBeTruthy();
   expect(document.body.textContent).not.toMatch(/[çğıöşüİ]/);
+});
+
+it('words the finish strip for a match: "Maç bitti" / "Rövanş" once the series has winners', () => {
+  const over = pistiGame.finishLabels?.(scene('match-end'));
+  expect(over?.title).toBe('Maç bitti');
+  expect(over?.next).toBe('Rövanş');
+  expect(pistiGame.finishLabels?.(scene('your-turn'))).toBeNull();
+});
+
+it('words the match finish strip in English', async () => {
+  vi.resetModules();
+  globalThis.__roomsLocale = 'en';
+  const { pistiGame: game } = await import('../apps/desktop/src/games/pisti/entry');
+  const { pistiFixture: fixture } = await import('../apps/desktop/src/games/pisti/fixture');
+  const labels = game.finishLabels?.(fixture('match-end'));
+  expect([labels?.title, labels?.next]).toEqual(['Match over', 'Rematch']);
 });

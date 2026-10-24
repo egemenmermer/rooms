@@ -101,25 +101,14 @@
   place-items: center;
   flex: none;
 }
-.pp-clock {
-  position: absolute;
-  inset: -6px;
-  width: calc(100% + 12px);
-  height: calc(100% + 12px);
-  transform: rotate(-90deg);
-  pointer-events: none;
+.pp-avatar .voice-photo {
+  width: 33px;
+  height: 33px;
+  object-fit: cover;
 }
-.pp-clock circle {
-  fill: none;
-  stroke: var(--color-border-subtle);
-  stroke-width: 3;
-}
-.pp-clock .pp-clock-left {
-  stroke: var(--color-action-primary);
-  transition: stroke-dashoffset 250ms linear;
-}
-.pp-clock.late .pp-clock-left {
-  stroke: var(--color-status-error);
+/* The owner's "Koltuğu boşalt" stays an icon inside the compact seat chip. */
+.pp-avatar .rg-seat-remove span {
+  display: none;
 }
 .pp-seat-text {
   display: grid;
@@ -561,7 +550,6 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .pp-seat,
-  .pp-clock .pp-clock-left,
   .pp-hand-card .playing-card {
     transition: none;
   }
@@ -578,7 +566,6 @@
 
 /* The app's own "Hareketi azalt" setting (appearance-preferences.ts) as well as the system one. */
 :root[data-motion='reduce'] .pp-seat,
-:root[data-motion='reduce'] .pp-clock .pp-clock-left,
 :root[data-motion='reduce'] .pp-hand-card .playing-card {
   transition: none;
 }
