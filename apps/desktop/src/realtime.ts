@@ -127,6 +127,12 @@ const dmCallActive = () => {
   const dm = useDmCall.getState();
   return dm.busy || dm.call?.state === 'ringing' || dm.call?.state === 'accepted';
 };
+/** A deliberate leave or join starts the next drop's attempt count from zero. */
+function forgetRejoins() {
+  rejoinedAt = 0;
+  rejoinedAttempts = 0;
+  cancelRejoin();
+}
 /** Stops a pending automatic rejoin and forgets its state (a leave, another join, a move). */
 function cancelRejoin() {
   rejoinGeneration++;
@@ -263,7 +269,7 @@ export function joinVoice(channelId: string, roomName: string): Promise<void> {
   const dm = useDmCall.getState();
   if (dm.busy || dm.call?.state === 'ringing' || dm.call?.state === 'accepted')
     return Promise.reject(new Error(t('Önce özel görüşmeyi bitir.')));
-  if (!automaticJoin) cancelRejoin();
+  if (!automaticJoin) forgetRejoins();
   const context = useVoiceContext.getState(),
     snapshot = mediaProvider().snapshot();
   if (context.busy && pendingTarget === channelId && pendingPromise) return pendingPromise;
@@ -354,7 +360,7 @@ export function joinVoice(channelId: string, roomName: string): Promise<void> {
   return next;
 }
 export function leaveVoice(preserveBusy = false): Promise<void> {
-  cancelRejoin();
+  forgetRejoins();
   const context = useVoiceContext.getState();
   if (!activeChannel && mediaProvider().snapshot().status === 'connected')
     activeChannel = context.channelId;
