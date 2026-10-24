@@ -115,7 +115,8 @@ const NAMED_VARIANT_LISTS = {
   S68: ['community-management-fixture.ts', 'COMMUNITY_MANAGEMENT_FIXTURE_VARIANTS'],
   S80: ['community-cinema-fixture.ts', 'COMMUNITY_CINEMA_FIXTURE_VARIANTS'],
 };
-// main.tsx accepts only these for S30 (inline literal in mini-playback-fixture.ts).
+// main.tsx accepts only these for S30 (inline literal in mini-playback-fixture.ts); S30 has no
+// `default` variant (no variant means `personal`), so none is added for these lists.
 const INLINE_VARIANT_LISTS = { S30: ['personal', 'live'] };
 
 // The hash route that shows each fixture. Keep in step with scripts/capture-reference.mjs and the
@@ -168,7 +169,8 @@ const ROUTES = {
   S68: '/settings?tab=community-management',
   S70: '/settings?tab=assistant-permissions',
   S71: '/settings?tab=about',
-  S72: '/chat',
+  // SystemState reads the S72 projection only on the connection status page.
+  S72: '/status',
   S80: '/cinema',
 };
 // Fixtures that cannot render by design: skipped (and listed in the summary), never reported as failures.
@@ -215,7 +217,7 @@ async function discoverFixtures() {
   const fixtures = [];
   for (const [id, variants] of [...found].sort(([a], [b]) => a.localeCompare(b))) {
     const unique = [...new Set(variants)].filter((v) => !isViewportKey(v));
-    if (!unique.includes('default')) unique.unshift('default');
+    if (!unique.includes('default') && !INLINE_VARIANT_LISTS[id]) unique.unshift('default');
     for (const variant of unique) fixtures.push({ id, variant, key: `${id}/${variant}` });
   }
   return fixtures;
