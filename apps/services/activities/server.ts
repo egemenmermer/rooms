@@ -6,7 +6,11 @@ import {
 import Fastify, { type FastifyRequest } from 'fastify';
 import rateLimit from '@fastify/rate-limit';
 import { z } from 'zod';
-import { commandSchema, opaqueId, type ActivityResponse } from '../../../packages/activity-protocol/src/index';
+import {
+  commandSchema,
+  opaqueId,
+  type ActivityResponse,
+} from '../../../packages/activity-protocol/src/index';
 import {
   ActivityError,
   applyCommand,
