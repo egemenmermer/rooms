@@ -55,9 +55,7 @@ export const shell: Catalog = {
   'Bir el zaten devam ediyor. Tamamlanmasını bekle.':
     'A hand is already in progress. Wait for it to finish.',
   'Bir şeye geç…': 'Jump to…',
-  Birlikte: 'Together',
   'Birlikte izle': 'Watch together',
-  'Birlikte çiz, birlikte karar ver': 'Draw together, decide together',
   'Birlikte çiz, yaz; imleçler canlı görünür.': 'Draw and write together; cursors show live.',
   'Bu alan için iznin yok': 'You don’t have permission for this area',
   'Bu alana ilk mesajı veya dosyayı ekleyerek birlikte başlayabilirsiniz.':
@@ -370,7 +368,6 @@ export const shell: Catalog = {
     'The room was updated by another member. The latest state was loaded; try again.',
   'Oda işlemleri': 'Room actions',
   'Oda sesini aç': 'Turn room sound on',
-  'Oda veya komut ara…': 'Search rooms or commands…',
   'Oda üyelerine ulaşılamıyor.': 'Can’t reach the room members.',
   'Odada başka bir etkinlik açık. Önce mevcut etkinliği bitirin.':
     'Another activity is open in the room. Finish the current activity first.',
@@ -390,7 +387,6 @@ export const shell: Catalog = {
   'Ortak odada birlikte karar ver': 'Decide together in a shared room',
   'Ortak sıra dolu. Yeni içerik eklemek için bir öğeyi kaldır.':
     'The shared queue is full. Remove an item to add new content.',
-  'Ortak tahta ve anketler': 'Shared whiteboard and polls',
   'Oturum değişti. Davet iptali doğrulanamadı.':
     'Your session changed. The invite cancellation couldn’t be confirmed.',
   'Oturum değişti. Davet listesi gösterilmedi.':
@@ -640,7 +636,6 @@ export const shell: Catalog = {
     'You need to be friends before you can send a direct message.',
   'Özel sunucuna bağlanmak için masaüstü uygulamasını aç.':
     'Open the desktop app to connect to your private server.',
-  'Özel topluluk': 'Private community',
   'Özel topluluk daveti': 'Private community invite',
   'Özel topluluğuna devam etmek için hesabınla tekrar giriş yap.':
     'Sign in to your account again to continue to your private community.',
@@ -804,4 +799,21 @@ export const shell: Catalog = {
     'Create a channel in the community before approving requests.',
   'Bu e-posta adresiyle zaten bir hesap var. O hesapla giriş yap veya farklı bir e-posta adresi kullan.':
     'This email address already has an account. Sign in with it, or use a different email address.',
+  Anketler: 'Polls',
+  'Arkadaşlarınla özel konuşmalar': 'Private conversations with your friends',
+  'Arkadaş ekle, istekleri gör': 'Add friends, see requests',
+  'Senden bahsedilen mesajlar': 'Messages that mention you',
+  'Bir odaya katıl, sesli konuş': 'Join a room and talk',
+  'Sohbetlerde paylaşılan dosyalar': 'Files shared in conversations',
+  'Kart ve masa oyunları': 'Card and table games',
+  'Sayfa veya komut ara': 'Search pages or commands',
+  'Sayfa veya komut ara…': 'Search pages or commands…',
+  Sonuçlar: 'Results',
+  'Sonuç bulunamadı': 'No results',
+  'Başka bir sözcükle dene.': 'Try another word.',
+  '↑ ↓ ile seç · Enter ile aç · Esc ile kapat': '↑ ↓ to choose · Enter to open · Esc to close',
+  'Mikrofon değiştirilemedi. Ses ayarlarını kontrol edip yeniden dene.':
+    'Couldn’t change the microphone. Check your voice settings and try again.',
+  'Bu mesajın kanalı açılamadı. Kanal listesinden yeniden dene.':
+    'Couldn’t open this message’s channel. Try again from the channel list.',
 };

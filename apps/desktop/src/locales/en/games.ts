@@ -723,7 +723,6 @@ export const games: Catalog = {
   ESC: 'ESC',
   'Görevler, sonuçlar ve oda hafızası': 'Tasks, results and room memory',
   'Dostlar arasında, yalnızca sanal puanlarla': 'Among friends, with play points only',
-  'Birlikte çiz, birlikte karar ver': 'Draw together, decide together',
   'Odanın yardımcısına.': 'To the room’s assistant.',
   'Görev kendi modelinle ayrı sunucuda çalışır. Sonuçlarını Agent bölümünde takip edebilirsin.':
     'The task runs on a separate server with your own model. You can follow its results in the Agent section.',

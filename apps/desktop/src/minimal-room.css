@@ -162,7 +162,7 @@
   width: 22px;
   height: 22px;
   min-width: 22px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
 }
 .minimal-occupant.speaking {
   color: #dedbea;
@@ -292,6 +292,17 @@
 }
 .minimal-room-ui .toolbar .breadcrumb {
   font-size: 15px;
+  flex: 1;
+  min-width: 0;
+}
+.minimal-room-ui .toolbar .breadcrumb > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.minimal-room-ui .toolbar-actions {
+  flex-shrink: 0;
 }
 .minimal-room-ui .toolbar-actions {
   gap: 12px;
@@ -320,9 +331,28 @@
   flex: 1;
   min-height: 0;
 }
-.minimal-room-ui .chat-heading,
 .minimal-room-ui .ss-dm-header {
   display: none;
+}
+/* A channel's conversation names itself in one compact row; the toolbar above leaves the name out. */
+.minimal-room-ui .room-conversation > .reference-chat > .chat-heading {
+  display: flex;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 24px;
+  gap: 10px;
+  background: none;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.minimal-room-ui .room-conversation > .reference-chat > .chat-heading > svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.minimal-room-ui .room-conversation > .reference-chat > .chat-heading h2 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .minimal-room-ui .reference-chat {
   background: none;
@@ -780,4 +810,54 @@
 }
 .toolbar-actions .toolbar-icon:disabled {
   opacity: 0.45;
+}
+
+/* Command palette: a listbox driven from the search field (↑/↓, Enter). */
+.command-modal .command-input kbd {
+  font-size: var(--font-size-micro);
+}
+.command-modal .command-input input {
+  font-size: var(--font-size-ui);
+}
+.command-modal .command-list {
+  max-height: min(420px, 55vh);
+  overflow: auto;
+}
+.command-modal .command-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 11px;
+  border-radius: var(--radius-8);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-ui);
+  cursor: pointer;
+}
+.command-modal .command-option > span {
+  flex: 1;
+  min-width: 0;
+}
+.command-modal .command-option small {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.command-modal .command-option > svg:last-child {
+  flex: none;
+  color: var(--color-text-muted);
+  opacity: 0;
+}
+.command-modal .command-option[aria-selected='true'] {
+  background: var(--color-background-hover);
+  color: var(--color-text-primary);
+}
+.command-modal .command-option[aria-selected='true'] > svg:last-child {
+  opacity: 1;
+}
+.command-modal .command-empty {
+  margin-top: 13px;
 }
