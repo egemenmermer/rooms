@@ -1,0 +1,27 @@
+/* Hand history move list (games/card-history/ActionLog.tsx). */
+.rh-action-log {
+  display: grid;
+  gap: var(--space-8);
+  margin-top: var(--space-12);
+}
+.rh-action-log h4 {
+  margin: 0;
+  font-size: var(--font-size-ui);
+}
+.rh-action-log strong {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-metadata);
+  text-transform: uppercase;
+}
+.rh-action-log ol {
+  display: grid;
+  gap: 2px;
+  margin: var(--space-4) 0 0;
+  padding-left: var(--space-20);
+  font-size: var(--font-size-metadata);
+}
+.rh-action-log p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-metadata);
+}
