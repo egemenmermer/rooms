@@ -297,7 +297,8 @@
   box-shadow: 0 0 0 2px var(--color-action-primary);
   background: color-mix(in srgb, var(--color-action-primary) 12%, transparent);
 }
-.bj-spot.acting .bj-hand:not(.active) {
+/* Only a split being played dims its other hands (not the insurance question). */
+.bj-spot.acting:has(.bj-hand.active) .bj-hand:not(.active) {
   opacity: 0.6;
 }
 .bj-hand.pending .bj-cards::after {
