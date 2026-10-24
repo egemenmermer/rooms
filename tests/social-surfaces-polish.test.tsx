@@ -159,10 +159,14 @@ it('DM header has no dead pin and its bell opens this conversation’s notificat
 });
 
 it('DM surface without an open conversation shows the conversation list', () => {
-  useCommunity.setState({ dms: [dm('dm-ada', ada, null)] });
+  useCommunity.setState({
+    dms: [dm('dm-ada', ada, null), { ...dm('saved', ada, null), recipients: [self] }],
+  });
   inRouter(<DirectMessageSurface notify={vi.fn()} />, '/dm');
   expect(screen.getByRole('navigation', { name: 'Özel mesajlar' })).toBeTruthy();
   expect(screen.getByText('Henüz mesaj yok')).toBeTruthy();
+  // Saved notes have no peer and would only reopen this list.
+  expect(screen.getAllByRole('button')).toHaveLength(1);
 });
 
 it('profile has no dead details toggle, shows the own bio and a styled close button', async () => {
@@ -225,7 +229,11 @@ it('friend voice call is hidden without DM calls and rings the friend’s own DM
   const friend = { user: ada, relationship: 'friend', status: 'online' };
   const createDM = vi.fn(async () => {
     useCommunity.setState({
-      dms: [dm('dm-bora', bora, null), dm('dm-ada', ada, null)],
+      dms: [
+        { ...dm('group', ada, null), recipients: [self, ada, bora] },
+        dm('dm-bora', bora, null),
+        dm('dm-ada', ada, null),
+      ],
       activeChannelId: 'dm-bora',
     });
   });

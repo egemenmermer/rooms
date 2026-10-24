@@ -220,7 +220,10 @@ export function FriendsPage({ notify }: { notify(message: string): void }) {
       await c.createDM(f.user.id);
       const state = useCommunity.getState();
       const dm = state.dms.find(
-        (item) => item.type === 1 && item.recipients?.some((u) => u.id === f.user.id),
+        (item) =>
+          item.type === 1 &&
+          !!item.recipients?.some((u) => u.id === f.user.id) &&
+          item.recipients.every((u) => u.id === f.user.id || u.id === session.user),
       );
       if (!dm || state.user?.id !== session.user || state.serverUrl !== session.server) return;
       await startDmCall(dm.id, 'audio');

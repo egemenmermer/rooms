@@ -258,7 +258,12 @@ export function DirectMessageList({ onOpen }: { onOpen(channelId: string): void 
     key: '',
     last: {},
   });
-  const dms = useMemo(() => [...c.dms].sort(newestFirst), [c.dms]);
+  /* Only conversations with another person open from here (saved notes have no peer). */
+  const dms = useMemo(
+    () =>
+      c.dms.filter((dm) => dm.recipients?.some((user) => user.id !== c.user?.id)).sort(newestFirst),
+    [c.dms, c.user?.id],
+  );
   const key = `${c.serverUrl}:${c.user?.id ?? ''}:${dms.map((dm) => `${dm.id}=${dm.lastMessageId ?? ''}`).join(',')}`;
   useEffect(() => {
     const bridge = window.rooms?.social;
@@ -484,7 +489,9 @@ function DirectMessageScope({
     >
       <section className="ss-dm-main">
         <header className="ss-header">
-          <VoiceAvatar id={peer.id} name={nameOf(peer)} />
+          <span className="ss-header-avatar" aria-hidden="true">
+            <VoiceAvatar id={peer.id} name={nameOf(peer)} />
+          </span>
           <button onClick={() => setProfile(true)}>{nameOf(peer)}</button>
           <span>{statusLabel(c.presence[peer.id])}</span>
           <div>
