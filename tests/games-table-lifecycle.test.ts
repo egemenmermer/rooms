@@ -391,12 +391,14 @@ describe('table lifecycle', () => {
 
   it('stands a timed-out Blackjack hand instead of hitting', () => {
     let table = create({ game: 'blackjack' });
-    // A dealer natural or an ace up (insurance prompt) is not the decision under test: deal again.
-    for (let deal = 0; deal < 100; deal++) {
+    // A dealer natural, an ace up (insurance prompt) or a player natural (turn passes to the bot) is
+    // not the decision under test: deal again.
+    for (let deal = 0; deal < 200; deal++) {
       table = create({ game: 'blackjack' });
       addBot(table, 1);
       startHand(table);
-      if (!table.blackjack!.finished && !table.blackjack!.insurancePending) break;
+      const dealt = table.blackjack!;
+      if (!dealt.finished && !dealt.insurancePending && dealt.turn === 0) break;
     }
     const round = table.blackjack as BlackjackTableRound;
     expect(round).toMatchObject({ finished: false, turn: 0 });
