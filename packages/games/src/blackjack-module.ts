@@ -142,7 +142,10 @@ export const blackjackModule = {
       dealable: (player) =>
         player.chips < 2
           ? null
-          : { ...player, bet: Math.max(2, Math.min(player.bet, player.chips - (player.chips % 2))) },
+          : {
+              ...player,
+              bet: Math.max(2, Math.min(player.bet, player.chips - (player.chips % 2))),
+            },
       finalChips: (round) =>
         round.players.map((player) => ({ userId: player.userId, chips: player.credits })),
       tableBets: true,

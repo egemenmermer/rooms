@@ -367,10 +367,7 @@ describe('table lifecycle', () => {
     seatOf(table, 2).chips = 0;
     startHand(table);
     const round = table.blackjack as BlackjackTableRound;
-    expect(round.players.map((player) => player.userId)).toEqual([
-      'bob',
-      seatOf(table, 2).userId,
-    ]);
+    expect(round.players.map((player) => player.userId)).toEqual(['bob', seatOf(table, 2).userId]);
     expect(round.players[0].hands[0].bet).toBe(400);
     expect(seatOf(table, 1).bet).toBe(500);
     expect(seatOf(table, 2).chips).toBe(1000);
@@ -384,11 +381,16 @@ describe('table lifecycle', () => {
   });
 
   it('stands a timed-out Blackjack hand instead of hitting', () => {
-    const table = create({ game: 'blackjack' });
-    addBot(table, 1);
-    startHand(table);
+    let table = create({ game: 'blackjack' });
+    // A dealer natural or an ace up (insurance prompt) is not the decision under test: deal again.
+    for (let deal = 0; deal < 100; deal++) {
+      table = create({ game: 'blackjack' });
+      addBot(table, 1);
+      startHand(table);
+      if (!table.blackjack!.finished && !table.blackjack!.insurancePending) break;
+    }
     const round = table.blackjack as BlackjackTableRound;
-    if (round.finished || round.insurancePending) return;
+    expect(round).toMatchObject({ finished: false, turn: 0 });
     round.players[0].hands[0].cards = [card('hearts', 10), card('clubs', 2)];
     expect(blackjackModule.botCommand(round, 0)).toEqual({ action: 'hit' });
     advanceGameBots(table, TURN_DURATION_MS + 1);

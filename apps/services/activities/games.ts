@@ -664,7 +664,10 @@ export function advanceGameBots(table: GameTable, now: number): boolean {
   const module = moduleOf(table),
     state = roundOf(table, module),
     seat = roundPlayers(table, module, state).indexOf(player.userId);
-  const context = { timedOut, absent: Boolean(player.left || (player.bot && !player.permanentBot)) };
+  const context = {
+    timedOut,
+    absent: Boolean(player.left || (player.bot && !player.permanentBot)),
+  };
   let details: { toCall?: number } = {},
     action: string | undefined;
   try {
