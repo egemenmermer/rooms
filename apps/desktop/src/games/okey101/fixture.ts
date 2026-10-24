@@ -48,10 +48,10 @@ const seats = [
   { seat: 1, userId: 'osman', name: 'Osman', bot: false, chips: 0, connected: true },
   // i18n-ignore (player name)
   { seat: 2, userId: 'bot-ayse', name: 'Ayşe', bot: true, chips: 0, connected: true },
-  // i18n-ignore (player name)
   {
     seat: 3,
     userId: 'can',
+    // i18n-ignore (player name)
     name: 'Can Abdurrahmanoğlu Uzunisim',
     bot: false,
     chips: 0,
@@ -149,5 +149,5 @@ export function okey101Fixture(scene: Okey101Scene, viewer?: string): GamePublic
     turn,
     view,
     history: [],
-  } as GamePublicState;
+  } as unknown as GamePublicState;
 }
