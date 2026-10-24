@@ -174,12 +174,16 @@ it('gives a spectator every hand and no controls', () => {
   expect(spot('Can (demo)').className).toContain('acting');
 });
 
-it('renders in English', () => {
+it('renders in English', async () => {
+  vi.resetModules();
   globalThis.__roomsLocale = 'en';
-  render(<BlackjackTable {...ui(scene('your-turn'))} />);
+  const { BlackjackTable: Table } =
+    await import('../apps/desktop/src/games/blackjack/BlackjackTable');
+  render(<Table {...ui(scene('your-turn'))} />);
   expect(screen.getByRole('button', { name: 'Hit' })).toBeTruthy();
   expect(screen.getByText('Your turn · Hand 2')).toBeTruthy();
   expect(screen.getByText('DEALER')).toBeTruthy();
+  expect(document.body.textContent).not.toMatch(/[çğıöşüİ]/);
 });
 
 it('totals soft hands as low/high and breaks bets into coloured chips', () => {
@@ -214,7 +218,14 @@ it('sends the table switches as game.create options the server parses', () => {
     ...blackjackCreate.command({ ...blackjackCreate.defaults, surrender: true }),
   };
   expect(command.options).toEqual({ insurance: true, surrender: true });
-  expect(commandSchema.safeParse(command).success).toBe(true);
+  expect(
+    commandSchema.safeParse({
+      protocolVersion: 1,
+      commandId: '7c4a52a6-6f7e-4f5c-9a77-0d6f5c3f2b11',
+      expectedRevision: 0,
+      command,
+    }).success,
+  ).toBe(true);
   expect(blackjackModule.parseOptions(command.options)).toEqual({
     insurance: true,
     surrender: true,
