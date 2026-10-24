@@ -784,7 +784,16 @@ export function gameView(table: GameTable, userId: string): GamePublicState {
       ...view,
       ownRecovery,
       tableName: tableName(table),
-      ...(rules ? { rules } : {}),
+      // The published table rules plus the house rule: it is stored in `table.options` as parsed at creation.
+      ...(rules
+        ? {
+            rules: {
+              ...rules,
+              muckLosers:
+                (table.options as { muckLosers?: boolean } | undefined)?.muckLosers === true,
+            },
+          }
+        : {}),
       spectators,
       watching,
       spectatorAccess,
