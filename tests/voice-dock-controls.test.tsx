@@ -24,6 +24,7 @@ const f = vi.hoisted(() => ({
   leave: vi.fn(),
 }));
 vi.mock('../apps/desktop/src/realtime', () => ({
+  useVoiceRejoin: (select: (state: { rejoin: null }) => unknown) => select({ rejoin: null }),
   useRealtime: () => f.snapshot,
   joinVoice: vi.fn(),
   leaveVoice: f.leave,

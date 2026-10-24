@@ -33,6 +33,8 @@ const messages = (): Record<string, string> => ({
   TERMINAL_WRITER_BUSY: t('Terminali başka bir operatör kullanıyor.'),
   TERMINAL_OWNER_REQUIRED: t('Bu işlemi terminalin sahibi yapabilir.'),
 });
+/** Server alerts shown one by one in a single check; the rest are summarised in one more. */
+const MAX_ALERT_NOTIFICATIONS = 3;
 export function setupHostOps(
   getClient: () => NativeIdentity,
   getWindow: () => BrowserWindow | null,
@@ -286,7 +288,16 @@ export function setupHostOps(
         const snapshot = opsSnapshotSchema.parse(await request(host(h.id) + '/snapshot'));
         const fresh = snapshot.alerts.filter((a) => !a.resolvedAt && a.delivery === 'pending');
         if (!fresh.length) continue;
-        for (const alert of fresh.slice(0, 3)) onAlert(`${h.label}: ${alert.message}`);
+        // A burst shows the first few in full and the rest as one count, so nothing that is
+        // acknowledged below goes unseen.
+        const shown = fresh.slice(0, MAX_ALERT_NOTIFICATIONS);
+        for (const alert of shown) onAlert(`${h.label}: ${alert.message}`);
+        if (fresh.length > shown.length)
+          onAlert(
+            `${h.label}: ${t('{count} uyarı daha. Ayrıntılar için Sunucu makinesi sayfasını aç.', {
+              count: fresh.length - shown.length,
+            })}`,
+          );
         await request(host(h.id) + '/alerts/ack', 'POST', { ids: fresh.map((a) => a.id) });
       }
     } catch {

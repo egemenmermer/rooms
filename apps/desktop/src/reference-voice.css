@@ -17,17 +17,24 @@
   flex-shrink: 0;
 }
 .reference-voice-eyebrow {
-  font-size: 10px;
-  letter-spacing: 1.6px;
-  color: #a2a6b3;
-  font-weight: 650;
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+.reference-voice-heading > div:first-child {
+  min-width: 0;
 }
 .reference-voice-heading h2 {
   margin: 8px 0 7px;
   font-size: 24px;
   line-height: 1.2;
-  color: #f3f3f7;
+  color: var(--color-text-primary);
   font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .reference-voice-heading p {
   font-size: 12px;
@@ -136,7 +143,7 @@
   z-index: 1;
 }
 .reference-participant-name small {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #a9adba;
   font-weight: 400;
 }
@@ -187,7 +194,7 @@
   align-items: center;
   gap: 22px;
   color: #959bab;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   padding-bottom: 12px;
   flex-shrink: 0;
 }
@@ -260,7 +267,7 @@
 }
 .reference-voice-empty-stage > .reference-icon,
 .reference-voice-empty-stage .reference-icon {
-  color: #9b91ff;
+  color: var(--color-text-accent);
 }
 .reference-voice-empty-stage h3 {
   font-size: 21px;
@@ -275,6 +282,27 @@
   line-height: 1.7;
   margin: 0;
   color: #b1b5c2;
+}
+.reference-voice-empty-stage .voice-join-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  width: min(320px, 100%);
+  max-height: 240px;
+  margin-top: var(--space-8);
+  overflow: auto;
+}
+.reference-voice-empty-stage .voice-join-list .button {
+  justify-content: flex-start;
+  margin-top: 0;
+}
+.reference-voice-empty-stage .voice-join-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
 }
 .reference-voice-empty-stage .button {
   margin-top: 8px;
@@ -345,7 +373,7 @@
   grid-row: 1 / span 3;
 }
 .focus-grid .reference-participant:not(.focused) .reference-participant-name {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   bottom: 6px;
   left: 6px;
   padding: 5px;
@@ -381,7 +409,7 @@
 }
 .reference-share-banner .button {
   min-height: 29px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
 }
 .reference-share-handover-banner {
   display: flex;
@@ -505,7 +533,7 @@
   background: #14171fd9;
   border: 1px solid #545966;
   border-radius: 6px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #d3d6df;
 }
 .reference-voice-dock {
@@ -538,48 +566,32 @@
   border-color: #61404a;
 }
 .reference-voice-dock .dock-context {
-  min-width: 130px;
+  min-width: 0;
+  max-width: 200px;
+  flex: 0 1 auto;
   margin-right: 4px;
 }
+.reference-voice-dock .dock-context > div {
+  min-width: 0;
+}
+.reference-voice-dock .dock-context strong,
 .reference-voice-dock .dock-context small {
-  font-size: 10px;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reference-voice-dock .dock-context small {
+  font-size: var(--font-size-micro);
 }
 .reference-voice-dock .dock-context strong {
-  font-size: 11px;
+  font-size: var(--font-size-metadata);
 }
 .reference-start-activity {
   height: 40px;
   min-height: 40px;
   font-size: 11px;
   white-space: nowrap;
-}
-.reference-dock-more {
-  position: relative;
-}
-.reference-dock-menu {
-  position: absolute;
-  bottom: 50px;
-  right: 0;
-  min-width: 180px;
-  padding: 9px;
-  display: flex;
-  gap: 8px;
-  flex-direction: column;
-  border: 1px solid #434858;
-  background: #242833;
-  border-radius: 9px;
-  box-shadow: 0 10px 35px #0006;
-}
-.reference-dock-menu > button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #d5d8e2;
-  font-size: 11px;
-  background: #303543;
-  border: 1px solid #434959;
-  border-radius: 6px;
-  padding: 9px;
 }
 .reference-capture-modal {
   width: min(672px, calc(100vw - 40px)) !important;
@@ -641,7 +653,7 @@
   gap: 6px;
 }
 .reference-capture-grid small {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #9da3b3;
 }
 .reference-source-no-preview {
@@ -693,7 +705,7 @@
 }
 .reference-capture-audio small {
   display: block;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #959bac;
 }
 .reference-disabled-toggle {
@@ -822,7 +834,7 @@
   color: #b9aedc;
 }
 .reference-live-pill {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   padding: 4px 8px;
   border-radius: 20px;
   background: #383348;
@@ -848,8 +860,11 @@
   position: relative;
   top: -1px;
 }
-.reference-voice-empty-stage .button .reference-icon {
-  color: #282631;
+.reference-voice-empty-stage .button.primary .reference-icon {
+  color: var(--color-text-onAccent);
+}
+.reference-voice-empty-stage .button.secondary .reference-icon {
+  color: var(--color-text-secondary);
 }
 .reference-voice-page.is-video .reference-voice-grid-wrap.video {
   flex: 0 0 600px;
@@ -884,7 +899,7 @@
   padding: 4px 8px;
   border: 1px solid #315747;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #abe3c3;
 }
 .reference-voice-empty > p {
@@ -1049,7 +1064,7 @@
   min-height: 55px;
   padding: 0 18px;
   border-bottom: 1px solid var(--line);
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-weight: 650;
   letter-spacing: 1px;
   color: #a6adbd;
@@ -1111,7 +1126,7 @@
 }
 .voice-context-member small {
   color: #959fb2;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
 }
 .voice-context-member > .reference-icon {
   color: #b1b7c5;
@@ -1146,7 +1161,7 @@
   margin: 15px 0 8px;
 }
 .voice-context-volume p {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #a6adbd;
 }
 .voice-context-activity {
@@ -1360,9 +1375,6 @@
   min-height: 42px;
   font-size: 12px;
   border-radius: 10px;
-}
-.reference-dock-more .icon-button {
-  width: 34px !important;
 }
 
 .reference-capture-modal,
@@ -1652,7 +1664,7 @@
   border-radius: 9px;
   background: #b64151;
   color: white;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-weight: 650;
   line-height: 1;
 }
@@ -1705,7 +1717,7 @@
 .reference-launcher-modal .reference-active-activity small:first-child {
   margin: 0 0 2px;
   color: var(--color-action-focus);
-  font-size: 10.5px;
+  font-size: var(--font-size-micro);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
