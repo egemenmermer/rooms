@@ -1,4 +1,4 @@
-import { randomInt } from 'node:crypto';
+import { secureRandomInt } from './random';
 export type Suit = 'clubs' | 'diamonds' | 'hearts' | 'spades';
 export interface Card {
   id: string;
@@ -12,7 +12,7 @@ export function shuffledDeck(copies = 1): Card[] {
       for (let rank = 2; rank <= 14; rank++)
         deck.push({ id: `${copy}-${suit}-${rank}`, suit, rank });
   for (let i = deck.length - 1; i > 0; i--) {
-    const j = randomInt(i + 1);
+    const j = secureRandomInt(i + 1);
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
   return deck;
