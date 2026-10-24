@@ -1432,14 +1432,23 @@ export class LiveKitMediaProvider implements RealtimeMediaProvider {
     const transport = room
       ? room.disconnect(true).finally(() => room.removeAllListeners())
       : Promise.resolve();
+    // Local audio teardown is best effort: leaving (and signing out) must not fail because a
+    // mixer or an already closed AudioContext refuses to close again.
     const cleanup = (async () => {
       await this.soundboardWork;
       await this.microphoneWork;
-      await this.mixer?.destroy();
+      const mixer = this.mixer,
+        context = this.soundContext;
       this.mixer = null;
       this.mixerTrack = null;
-      await this.soundContext?.close();
       this.soundContext = null;
+      await Promise.resolve()
+        .then(() => mixer?.destroy())
+        .catch(() => {});
+      if (context && context.state !== 'closed')
+        await Promise.resolve()
+          .then(() => context.close())
+          .catch(() => {});
     })();
     this.disconnecting = Promise.allSettled([transport, cleanup])
       .then((results) => {
