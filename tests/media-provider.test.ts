@@ -903,3 +903,41 @@ it('never publishes raw microphone audio after a filter initialization failure',
   expect(provider.snapshot().muted).toBe(true);
   await provider.disconnect();
 });
+
+it('leaves voice even when the microphone mixer or its AudioContext refuse to close', async () => {
+  const { provider, room } = fixture();
+  await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+  await provider.mute(false);
+  const internals = provider as unknown as {
+    mixer: { destroy: ReturnType<typeof vi.fn> } | null;
+    soundContext: { state?: string; close: ReturnType<typeof vi.fn> } | null;
+  };
+  const mixer = internals.mixer!,
+    context = internals.soundContext!;
+  expect(mixer).toBeTruthy();
+  expect(context).toBeTruthy();
+  mixer.destroy.mockRejectedValueOnce(new Error('worklet gone'));
+  context.close.mockRejectedValueOnce(
+    new DOMException('Cannot close a closed AudioContext.', 'InvalidStateError'),
+  );
+  await expect(provider.disconnect()).resolves.toBeUndefined();
+  expect(context.close).toHaveBeenCalled();
+  expect(internals.mixer).toBeNull();
+  expect(internals.soundContext).toBeNull();
+  expect(provider.snapshot()).toMatchObject({ status: 'not-configured', muted: true, error: null });
+  // The next join is not blocked by the failed teardown.
+  await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+  expect(room.connect).toHaveBeenCalledTimes(2);
+  await provider.disconnect();
+});
+
+it('does not close an AudioContext that is already closed when leaving voice', async () => {
+  const { provider } = fixture();
+  await provider.connectRoom('room', 'token', 'ws://localhost:7880');
+  const close = vi.fn(async () => {
+    throw new DOMException('Cannot close a closed AudioContext.', 'InvalidStateError');
+  });
+  (provider as unknown as { soundContext: unknown }).soundContext = { state: 'closed', close };
+  await expect(provider.disconnect()).resolves.toBeUndefined();
+  expect(close).not.toHaveBeenCalled();
+});

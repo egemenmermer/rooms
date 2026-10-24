@@ -128,8 +128,9 @@ async function connectAccepted() {
   useDmCall.setState({ busy: true });
   const work = (async () => {
     // Like Discord, a private call takes over the voice connection: the room is left first.
+    // A failed teardown of the room must not block the call; the provider is reset either way.
     if (useVoiceContext.getState().channelId || mediaProvider().snapshot().roomId)
-      await leaveVoice();
+      await leaveVoice().catch(() => {});
     if (!valid()) return;
     const grant = await bridge().grant(call.id);
     if (!valid()) return;

@@ -82,6 +82,8 @@ import type { SocialSession } from '@rooms/contracts';
 import { postActivityCommand, getActivitySnapshot } from './activity-http';
 
 class SocialInputError extends Error {}
+/** Approved sign-up created the account, but its session could not start. */
+class AccountCreatedError extends SocialInputError {}
 
 export async function setupCommunity(
   getWindow: () => BrowserWindow | null,
@@ -421,6 +423,9 @@ export async function setupCommunity(
     uploadedAttachments.clear();
     remembered = false;
     if (existsSync(vault)) unlinkSync(vault);
+    // The saved session is gone with the vault; a restore still retrying must not bring it back.
+    pendingRestore = null;
+    restoreState = null;
     await closeDmCall();
     await previous?.disconnect();
     if (request !== authRequestEpoch) {
@@ -478,14 +483,27 @@ export async function setupCommunity(
     passwordReset.clear();
     const request = ++authRequestEpoch;
     const next = new StoatClient(registration.serverUrl);
+    let created: SocialUser;
     try {
-      const session = await replaceSession(next, await next.register(registration), request);
-      signups.completed();
-      return session;
+      created = await next.register(registration);
     } catch (error) {
-      if (client !== next) await next.disconnect().catch(() => {});
+      await next.disconnect().catch(() => {});
       signups.failed(error instanceof Error ? error.message : 'REGISTRATION_UNCERTAIN');
       throw error;
+    }
+    // The account exists and the single-use link is spent: forget the request (and password)
+    // now, so a failed session start below cannot leave a request that only fails again.
+    signups.completed();
+    try {
+      return await replaceSession(next, created, request);
+    } catch (error) {
+      if (client === next) throw error;
+      await next.disconnect().catch(() => {});
+      throw new AccountCreatedError(
+        t('Hesabın oluştu ama oturum açılamadı. {email} ile giriş yap.', {
+          email: registration.email,
+        }),
+      );
     }
   };
   handle('rooms:social-signup-request', async (input) =>
@@ -497,7 +515,9 @@ export async function setupCommunity(
     if (!registration) return { pending, session: null };
     try {
       return { pending: null, session: await completeSignup(registration) };
-    } catch {
+    } catch (error) {
+      // The request is gone once the account exists; say so instead of closing silently.
+      if (error instanceof AccountCreatedError) throw error;
       return { pending: signups.snapshot(), session: null };
     }
   });
@@ -2048,9 +2068,13 @@ export async function setupCommunity(
   const expiredSession = (error: unknown) =>
     error instanceof StoatError && error.status === 401 && error.code !== 'SESSION_CHANGED';
   const restoreSaved = async (stored: { url: string; token: string }) => {
+    const request = authRequestEpoch;
     const restored = new StoatClient(stored.url, stored.token);
     const me = await restored.getCurrentUser();
-    if (client || (pendingRestore && pendingRestore !== stored)) return;
+    // A sign-in, sign-up or sign-out started meanwhile owns the session, even while it has
+    // briefly cleared `client` to switch accounts.
+    if (request !== authRequestEpoch || client || (pendingRestore && pendingRestore !== stored))
+      return;
     user = me;
     conversationVault.select(restored.instanceUrl, me.id);
     bind(restored, sessionEpoch);
@@ -2063,6 +2087,8 @@ export async function setupCommunity(
       void restoreSaved(stored)
         .then(() => {
           if (client) emit({ type: 'SESSION_RESTORED', data: null });
+          // Skipped for a sign-in that then failed: the saved session still waits for its server.
+          else if (pendingRestore === stored) retryRestore(stored, delayMs);
         })
         .catch((error: unknown) => {
           if (pendingRestore !== stored) return;

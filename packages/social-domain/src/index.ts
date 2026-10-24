@@ -81,11 +81,18 @@ export interface SocialPendingSignup {
   email: string;
   username: string;
   createdAt: string | null;
-  status: SocialSignupPoll['status'] | 'unknown';
+  /** `closed`: the service no longer knows this request (pruned, cancelled elsewhere, store lost). */
+  status: SocialSignupPoll['status'] | 'unknown' | 'closed';
   /** Approved and the link is held; the account can be created now. */
   ready: boolean;
   /** The password typed for this request is still in memory (the app was not restarted). */
   passwordKnown: boolean;
+  /**
+   * The request (and an approved link) is stored encrypted on this device, so it survives a
+   * restart. False without a keychain or after a failed write: the request is then followed only
+   * while the app stays open. Absent from older builds, which are treated as stored.
+   */
+  persisted?: boolean;
   error: string | null;
 }
 /** Owner/admin view of one open request; no email or password is stored or listed. */

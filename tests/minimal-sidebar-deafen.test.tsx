@@ -65,7 +65,7 @@ it('deafen control reflects the deafened state in its icon, class and pressed st
   cleanup();
   f.snapshot.deafened = true;
   mount();
-  const active = screen.getByRole('button', { name: 'Sesi aç' });
+  const active = screen.getByRole('button', { name: 'Sağırlaştırmayı kapat' });
   expect(active.getAttribute('aria-pressed')).toBe('true');
   expect(active.className).toContain('muted-control');
   expect(active.querySelector('.lucide-headphone-off')).not.toBeNull();

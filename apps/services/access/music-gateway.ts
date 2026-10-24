@@ -1,6 +1,16 @@
 import type { FastifyInstance } from 'fastify';
 import { AccessToken, TrackSource, type RoomServiceClient } from 'livekit-server-sdk';
-import { randomUUID, timingSafeEqual, createHash } from 'node:crypto';
+import {
+  randomUUID,
+  timingSafeEqual,
+  createHash,
+  createCipheriv,
+  createDecipheriv,
+  hkdfSync,
+  randomBytes,
+} from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
+import { chmod, rename, writeFile, rm } from 'node:fs/promises';
 import { z } from 'zod';
 import {
   musicCommandSchema,
@@ -22,6 +32,75 @@ interface Lease {
 }
 /** Grace for an empty room before the DJ leaves it. */
 const EMPTY_GRACE_MS = 60_000;
+/** A lease may renew this long after it expired on disk: the time an access restart can take. */
+const RESTORE_WINDOW_MS = 5 * 60_000;
+const LEASE_TTL_MS = 35_000;
+const LEASE_FILE_VERSION = 1;
+/** Default place for the persisted leases: the access state volume, when the service has one. */
+const defaultLeaseFile = () =>
+  process.env.ROOMS_MUSIC_LEASES_FILE ||
+  (existsSync('/state') ? '/state/music-leases.json' : undefined);
+const leaseKey = (secret: string) =>
+  Buffer.from(hkdfSync('sha256', secret, 'rooms-music-leases', 'lease-file-v1', 32));
+function sealLeases(secret: string, leases: Map<string, Lease>) {
+  const iv = randomBytes(12),
+    cipher = createCipheriv('aes-256-gcm', leaseKey(secret), iv),
+    plain = JSON.stringify(
+      [...leases].map(([channelId, l]) => ({
+        channelId,
+        id: l.id,
+        token: l.token,
+        userId: l.userId,
+        expires: l.expires,
+      })),
+    );
+  const data = Buffer.concat([cipher.update(plain, 'utf8'), cipher.final()]);
+  return JSON.stringify({
+    v: LEASE_FILE_VERSION,
+    iv: iv.toString('base64'),
+    tag: cipher.getAuthTag().toString('base64'),
+    data: data.toString('base64'),
+  });
+}
+function openLeases(secret: string, raw: string, now: number) {
+  const file = z
+    .object({ v: z.literal(LEASE_FILE_VERSION), iv: z.string(), tag: z.string(), data: z.string() })
+    .parse(JSON.parse(raw));
+  const decipher = createDecipheriv(
+    'aes-256-gcm',
+    leaseKey(secret),
+    Buffer.from(file.iv, 'base64'),
+  );
+  decipher.setAuthTag(Buffer.from(file.tag, 'base64'));
+  const plain = Buffer.concat([
+    decipher.update(Buffer.from(file.data, 'base64')),
+    decipher.final(),
+  ]).toString('utf8');
+  const entries = z
+    .array(
+      z.object({
+        channelId: channel,
+        id: z.string().uuid(),
+        token: z.string().min(1),
+        userId: z.string().min(1),
+        expires: z.number(),
+      }),
+    )
+    .parse(JSON.parse(plain));
+  // Only leases that were alive moments ago come back; the sweeper and every renewal still
+  // re-validate the stored user token, so a lost right or a gone room ends the lease as before.
+  return entries
+    .filter((e) => e.expires > now - RESTORE_WINDOW_MS)
+    .map((e): [string, Lease] => [
+      e.channelId,
+      {
+        id: e.id,
+        token: e.token,
+        userId: e.userId,
+        expires: Math.max(e.expires, now + LEASE_TTL_MS),
+      },
+    ]);
+}
 /**
  * A refusal that ends the session: the commander lost the right, or the room is gone. Anything
  * else (Stoat 5xx or timeout, a LiveKit API error) is passing and must not wipe the queue.
@@ -45,6 +124,12 @@ export function registerMusicGateway(
       'getParticipant' | 'listParticipants' | 'removeParticipant' | 'updateParticipant'
     >;
     authorize(token: string, channelId: string): Promise<{ userId: string; canControl: boolean }>;
+    /**
+     * Where live leases are kept (encrypted, 0600) so an access restart does not end every DJ
+     * session. Defaults to ROOMS_MUSIC_LEASES_FILE or the /state volume; `null` keeps leases in
+     * memory only.
+     */
+    leaseFile?: string | null;
   },
 ) {
   const displayName = z
@@ -57,6 +142,40 @@ export function registerMusicGateway(
   const leases = new Map<string, Lease>();
   const room = (id: string) => `stoat-channel-${id}`;
   const configured = !!options.url && !!options.secret && options.secret.length >= 32;
+  const leaseFile = configured
+    ? options.leaseFile === undefined
+      ? defaultLeaseFile()
+      : options.leaseFile
+    : null;
+  if (leaseFile) {
+    try {
+      for (const [id, lease] of openLeases(
+        options.secret!,
+        readFileSync(leaseFile, 'utf8'),
+        Date.now(),
+      ))
+        leases.set(id, lease);
+    } catch {
+      // No file yet, another secret or damage: start empty, which is the old behavior.
+    }
+  }
+  let saving: Promise<void> = Promise.resolve();
+  const persist = () => {
+    if (!leaseFile) return saving;
+    // Serialized and best effort: a failed write only costs the restart survival.
+    saving = saving.then(async () => {
+      const temporary = `${leaseFile}.${process.pid}.tmp`;
+      try {
+        if (!leases.size) return void (await rm(leaseFile, { force: true }));
+        await writeFile(temporary, sealLeases(options.secret!, leases), { mode: 0o600 });
+        await chmod(temporary, 0o600);
+        await rename(temporary, leaseFile);
+      } catch {
+        await rm(temporary, { force: true }).catch(() => {});
+      }
+    });
+    return saving;
+  };
   async function worker(channelId: string, body?: unknown) {
     if (!configured) throw new Error('MUSIC_NOT_CONFIGURED');
     const response = await fetch(`${options.url}/v1/rooms/${encodeURIComponent(channelId)}`, {
@@ -82,6 +201,7 @@ export function registerMusicGateway(
   }
   async function revoke(channelId: string) {
     leases.delete(channelId);
+    void persist();
     await options.roomService
       .removeParticipant(room(channelId), musicIdentity(channelId))
       .catch(() => {});
@@ -99,7 +219,8 @@ export function registerMusicGateway(
   }
   async function grant(channelId: string, lease: Lease) {
     await validate(channelId, lease);
-    lease.expires = Date.now() + 35000;
+    lease.expires = Date.now() + LEASE_TTL_MS;
+    void persist();
     const access = new AccessToken(options.apiKey, options.apiSecret, {
       identity: musicIdentity(channelId),
       name: displayName,
@@ -260,7 +381,7 @@ export function registerMusicGateway(
         id: randomUUID(),
         token: credential,
         userId: access.userId,
-        expires: Date.now() + 35000,
+        expires: Date.now() + LEASE_TTL_MS,
       };
       lease.token = credential;
       lease.userId = access.userId;
@@ -297,7 +418,10 @@ export function registerMusicGateway(
   timer.unref();
   server.addHook('onClose', async () => {
     clearInterval(timer);
-    await Promise.all([...leases.keys()].map(revoke));
+    // With persisted leases a restart keeps the DJ in the room: the worker renews against the
+    // restarted service. Without them nobody could renew, so the bot leaves as before.
+    if (leaseFile) await persist();
+    else await Promise.all([...leases.keys()].map(revoke));
   });
   return {
     async webhook(channelId: string, identity: string, metadata: string) {
