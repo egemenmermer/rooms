@@ -465,7 +465,7 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
             ? sample('dağ bisikleti', 'mountain bike')
             : variant === 'files'
               ? 'pdf'
-              : 'film',
+              : sample('film', 'movie'),
       ...(variant === 'quick'
         ? {
             quickDestinations: [
