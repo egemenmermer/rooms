@@ -1132,6 +1132,7 @@ export const games: Catalog = {
   },
   'Bitirmek için bırak': 'Drop to go out',
   'Son hamleler': 'Latest moves',
+  Istakan: 'Your rack',
   'Istakan · {count} taş': { one: 'Your rack · {count} tile', other: 'Your rack · {count} tiles' },
   'Seri diz': 'Sort runs',
   'Çift diz': 'Sort pairs',
