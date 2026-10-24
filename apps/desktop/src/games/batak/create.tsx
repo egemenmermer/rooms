@@ -110,12 +110,10 @@ export const batakCreate: GameCreateDefinition = {
       ],
       [t('Renge uyma'), t('Zorunlu · Mümkünse yükselt')],
       [t('Gömmeli'), t('Koz seçimi sonrası 4 kart gömülür')],
-      ...ruleTexts().map(
-        ([key, label]): [string, string] => [
-          label,
-          variant === 'koz-maca' && scoringRule(key) ? '—' : yes(ruleOf(value, key)),
-        ],
-      ),
+      ...ruleTexts().map(([key, label]): [string, string] => [
+        label,
+        variant === 'koz-maca' && scoringRule(key) ? '—' : yes(ruleOf(value, key)),
+      ]),
     ];
   },
   command: (value) => ({

@@ -1,8 +1,16 @@
 /* Batak table (games/batak). Tokens only; every motion is off under prefers-reduced-motion. */
 .bt-table {
   --bt-felt: color-mix(in srgb, var(--color-action-primary) 18%, var(--color-background-canvas));
-  --bt-felt-edge: color-mix(in srgb, var(--color-action-primary) 8%, var(--color-background-raised));
-  --bt-card-back: color-mix(in srgb, var(--color-action-primary) 45%, var(--color-background-raised));
+  --bt-felt-edge: color-mix(
+    in srgb,
+    var(--color-action-primary) 8%,
+    var(--color-background-raised)
+  );
+  --bt-card-back: color-mix(
+    in srgb,
+    var(--color-action-primary) 45%,
+    var(--color-background-raised)
+  );
   --bt-team-0: var(--color-status-success);
   --bt-team-1: var(--color-status-warning);
   display: grid;
@@ -551,7 +559,9 @@
   display: inline-block;
   margin-left: -20px;
   transform: rotate(calc((var(--i) - (var(--count) - 1) / 2) * 1.6deg))
-    translateY(calc(max(var(--i) - (var(--count) - 1) / 2, (var(--count) - 1) / 2 - var(--i)) * 1px));
+    translateY(
+      calc(max(var(--i) - (var(--count) - 1) / 2, (var(--count) - 1) / 2 - var(--i)) * 1px)
+    );
   transform-origin: 50% 160%;
   transition: transform 150ms ease;
 }
