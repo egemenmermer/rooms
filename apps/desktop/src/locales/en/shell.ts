@@ -426,7 +426,6 @@ export const shell: Catalog = {
     'The profile can only be saved in the desktop app.',
   'Profilini hazırlamak için önce hesabına giriş yap.':
     'Sign in to your account first to set up your profile.',
-  'Rapor gönderimi henüz yapılandırılmadı.': 'Report sending isn’t configured yet.',
   'Rol adı 1–32 karakter olmalı.': 'Role names must be 1–32 characters long.',
   'Rol değişikliği kaydedildi ama güncel liste alınamadı. Tekrar rol oluşturmadan önce listeyi yenile.':
     'The role change was saved, but the updated list couldn’t be loaded. Refresh the list before creating another role.',
@@ -619,8 +618,6 @@ export const shell: Catalog = {
     'A pair group can’t be extended. Pick a run to add to.',
   'Çok fazla işlem yapıldı. Biraz bekleyip yeniden dene.':
     'Too many actions. Wait a moment and try again.',
-  'Çökme raporları: gönderim yapılandırılmadı': 'Crash reports: sending isn’t configured',
-  'Çökme raporlarını paylaş': 'Share crash reports',
   'Çıkış yap': 'Sign out',
   'Çıkış yap ve davetle devam et': 'Sign out and continue with the invite',
   'ÖZEL MESAJLAR': 'DIRECT MESSAGES',

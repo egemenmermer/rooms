@@ -11,7 +11,8 @@ import { DesktopWindowSettings } from './DesktopWindowSettings';
 import { DesktopUpdates } from './Updates';
 import { ChannelPermissionsSurface } from './ChannelPermissionsSurface';
 import { CommunityManagementEntry } from './CommunityManagementEntry';
-import { About } from './About';
+import { About, platformName } from './About';
+import { queryClient } from './query-client';
 import { LanguageSetting } from './LanguageSetting';
 import { ServerProfile } from './ServerProfile';
 import { CinemaSettings } from './cinema/CinemaSettings';
@@ -35,7 +36,6 @@ import {
   KeyRound,
   Sparkles,
   Users,
-  ChevronDown,
   Bell,
   Eye,
   LogOut,
@@ -103,21 +103,6 @@ function Heading({ title }: { title: string }) {
       <span>{t('KULLANICI AYARLARI')}</span>
       <h1>{title}</h1>
     </div>
-  );
-}
-function Unsupported({
-  title,
-  reason,
-  value = false,
-}: {
-  title: string;
-  reason: string;
-  value?: boolean;
-}) {
-  return (
-    <Row title={title} description={reason}>
-      <Toggle label={`${title}: ${reason}`} disabled value={value} onChange={() => {}} />
-    </Row>
   );
 }
 function ReferenceAccount({ notify, onClose }: { notify(message: string): void; onClose(): void }) {
@@ -224,15 +209,6 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
             </label>
           </div>
           <label className="field-label">
-            {t('E-posta')}
-            <input
-              readOnly
-              disabled
-              value=""
-              placeholder={t('Hesap bağlantısı e-postayı paylaşmıyor')}
-            />
-          </label>
-          <label className="field-label">
             {t('Durum mesajı')}
             <input
               maxLength={128}
@@ -294,6 +270,11 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
               {t('Görünmezlik yalnızca sana gösterilir.')}
             </div>
           )}
+          {error && (
+            <div className="ref-settings-callout error" role="alert">
+              {error}
+            </div>
+          )}
           <div className="button-row">
             <button className="button primary" disabled={busy || !name.trim() || !window.rooms}>
               {busy ? t('Kaydediliyor…') : t('Değişiklikleri kaydet')}
@@ -352,35 +333,17 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
           </div>
         </aside>
       </div>
-      <section className="ref-settings-section">
-        <h2>{t('Gizlilik')}</h2>
-        <Unsupported
-          title={t('Topluluk üyelerinden özel mesaj al')}
-          reason={t('Topluluk bağlantısı bu tercihi desteklemiyor.')}
-        />
-        <Unsupported
-          title={t('Etkinliğimi arkadaşlarıma göster')}
-          reason={t('Etkinlik görünürlüğü bağlantısı henüz uygulanmadı.')}
-        />
-        <Unsupported
-          title={t('Arkadaşlık isteklerine izin ver')}
-          reason={t('Topluluk bağlantısı bu tercihi desteklemiyor.')}
-        />
-      </section>
       <div className="ref-settings-bottom">
         <span>
-          {t('Bu cihaz · {platform}', { platform: window.rooms?.platform ?? t('Tarayıcı') })}
+          {t('Bu cihaz · {platform}', {
+            platform: window.rooms ? platformName(window.rooms.platform) : t('Tarayıcı'),
+          })}
         </span>
         <button className="text-button" onClick={() => setLogout(true)}>
           <LogOut size={16} />
           {t('Oturumu kapat')}
         </button>
       </div>
-      {error && (
-        <div className="ref-settings-callout error" role="alert">
-          {error}
-        </div>
-      )}
       {logout && (
         <Modal
           title={t('Tayfa’dan çıkış yap?')}
@@ -428,6 +391,18 @@ function ReferenceAccount({ notify, onClose }: { notify(message: string): void; 
     </>
   );
 }
+/** The connection states in words, as the sign-in pane shows them. */
+function connectionLabel(status: string) {
+  return status === 'connected'
+    ? tr('Connected')
+    : status === 'reconnecting'
+      ? tr('Reconnecting…')
+      : status === 'connecting'
+        ? tr('Connecting…')
+        : status === 'not-configured'
+          ? tr('Not configured')
+          : tr('Disconnected');
+}
 function Row({
   title,
   description,
@@ -447,6 +422,81 @@ function Row({
     </div>
   );
 }
+type CommunityRights = Awaited<
+  ReturnType<NonNullable<NonNullable<Window['rooms']>['social']['communityCapabilities']>>
+>;
+/**
+ * This account's rights in the active community, read through the same cache as
+ * useModerationRights. Null while unknown, offline or signed out, so admin tabs stay hidden.
+ */
+function useCommunityRights(
+  spaceId: string | null,
+  userId: string | undefined,
+  serverUrl: string | undefined,
+): CommunityRights | null {
+  const key = JSON.stringify([serverUrl, userId, spaceId]);
+  const [rights, setRights] = useState<{ key: string; value: CommunityRights } | null>(null),
+    [epoch, setEpoch] = useState(0);
+  useEffect(() => {
+    const read = window.rooms?.social?.communityCapabilities;
+    if (!spaceId || !userId || !read) return;
+    let active = true;
+    void queryClient
+      .fetchQuery({
+        queryKey: ['community-capabilities', key],
+        staleTime: 60_000,
+        queryFn: () => read(spaceId),
+      })
+      .then((value) => {
+        if (active) setRights({ key, value });
+      })
+      .catch(() => {
+        /* Unknown rights hide the admin tabs; the server still checks every action. */
+      });
+    return () => {
+      active = false;
+    };
+  }, [key, spaceId, userId, epoch]);
+  useEffect(() => {
+    // Role changes arrive as channel access invalidations; rights are read again after them.
+    const forget = () => {
+      queryClient.removeQueries({ queryKey: ['community-capabilities', key] });
+      setEpoch((n) => n + 1);
+    };
+    window.addEventListener('rooms:channel-access-invalidated', forget);
+    return () => window.removeEventListener('rooms:channel-access-invalidated', forget);
+  }, [key]);
+  return rights?.key === key ? rights.value : null;
+}
+/**
+ * Community tabs a member sees in the nav. Each surface still checks rights itself, and deep links
+ * from other screens (assistant history, channel menu) keep opening them.
+ */
+export function communityTabs(
+  rights: CommunityRights | null,
+  ownerOrAdmin: boolean,
+  hostAccess: boolean,
+) {
+  const admin = ownerOrAdmin || !!rights?.communityAdmin;
+  return [
+    ...(admin || rights?.manageServer ? ['server-profile'] : []),
+    ...(admin ? ['cinema'] : []),
+    ...(admin ||
+    rights?.manageRoles ||
+    rights?.assignRoles ||
+    rights?.kickMembers ||
+    rights?.banMembers
+      ? ['community-management']
+      : []),
+    ...(admin || rights?.manageChannels || rights?.managePermissions
+      ? ['channel-permissions']
+      : []),
+    // The assistant service lets only community admins manage grants and automation.
+    ...(admin ? ['assistant-permissions', 'automation'] : []),
+    // The machine behind the server is for the owner, admins and delegated operators.
+    ...(admin || hostAccess ? ['hostops'] : []),
+  ];
+}
 export default function Settings({
   notify,
   onClose,
@@ -457,10 +507,16 @@ export default function Settings({
   onInvite?(): void;
 }) {
   const community = useCommunity();
-  const communityAdmin =
-    useModerationRights(community.activeSpaceId).communityAdmin ||
+  const rights = useCommunityRights(
+    community.activeSpaceId,
+    community.user?.id,
+    community.serverUrl,
+  );
+  const owner =
+    !!community.user?.id &&
     community.spaces.find((space) => space.id === community.activeSpaceId)?.ownerId ===
-      community.user?.id;
+      community.user.id;
+  const communityAdmin = useModerationRights(community.activeSpaceId).communityAdmin || owner;
   // A member the owner delegated monitor/terminal access to is not an admin, but the host list
   // answers only for hosts they may use, so a non-empty list is what shows them the tab.
   const [delegatedHosts, setDelegatedHosts] = useState(false);
@@ -626,28 +682,6 @@ export default function Settings({
     window.addEventListener('keydown', key, true);
     return () => window.removeEventListener('keydown', key, true);
   }, [navigationOpen]);
-  const [extraSettings, setExtraSettings] = useState(false);
-  const extraSettingsRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!extraSettings) return;
-    const dismiss = (event: PointerEvent) => {
-      if (event.target instanceof Node && !extraSettingsRef.current?.contains(event.target))
-        setExtraSettings(false);
-    };
-    const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.stopPropagation();
-        setExtraSettings(false);
-        extraSettingsRef.current?.querySelector('button')?.focus();
-      }
-    };
-    window.addEventListener('pointerdown', dismiss);
-    window.addEventListener('keydown', key, true);
-    return () => {
-      window.removeEventListener('pointerdown', dismiss);
-      window.removeEventListener('keydown', key, true);
-    };
-  }, [extraSettings]);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [devicesLoaded, setDevicesLoaded] = useState(false);
   const micEpoch = useRef(0);
@@ -735,10 +769,6 @@ export default function Settings({
   const fixtureId = import.meta.env.DEV
     ? new URLSearchParams(location.search).get('fixture')
     : null;
-  const [trayPreview, setTrayPreview] = useState(false);
-  useEffect(() => {
-    if (notificationFixture?.variant === 'tray') setTrayPreview(true);
-  }, [notificationFixture?.variant]);
   const notificationApi =
     notificationFixture?.notifications ?? (!fixtureId ? window.rooms?.notifications : undefined);
   useEffect(() => {
@@ -992,35 +1022,8 @@ export default function Settings({
           }}
           aria-label={tr('Settings categories')}
         >
-          <div className="ref-nav-title" ref={extraSettingsRef}>
-            <button
-              aria-expanded={extraSettings}
-              aria-label={t('Diğer ayarlar')}
-              onClick={() => setExtraSettings((value) => !value)}
-            >
-              {t('Ayarlar')}
-              <ChevronDown size={17} />
-            </button>
-            {extraSettings && (
-              <div className="ref-settings-extra" role="menu">
-                {tabs
-                  .filter((item) => ['shortcuts', 'diagnostics'].includes(item.id))
-                  .map((item) => (
-                    <button
-                      role="menuitem"
-                      key={item.id}
-                      onClick={() => {
-                        setParams({ tab: item.id });
-                        setExtraSettings(false);
-                        setError('');
-                      }}
-                    >
-                      <item.icon size={17} />
-                      {item.label}
-                    </button>
-                  ))}
-              </div>
-            )}
+          <div className="ref-nav-title">
+            <strong>{t('Ayarlar')}</strong>
           </div>
           <div className="ref-settings-nav-scroll">
             {[
@@ -1043,47 +1046,39 @@ export default function Settings({
                   community.spaces
                     .find((space) => space.id === community.activeSpaceId)
                     ?.name.toLocaleUpperCase(locale) || t('TOPLULUK'),
-                ids: [
-                  'server-profile',
-                  'cinema',
-                  'community-management',
-                  'channel-permissions',
-                  'assistant-permissions',
-                  'automation',
-                  // The machine behind the server is for the owner, admins and delegated operators,
-                  // not every member.
-                  ...(communityAdmin || delegatedHosts ? ['hostops'] : []),
-                ],
+                ids: communityTabs(rights, communityAdmin, delegatedHosts),
               },
-              { label: 'Tayfa', ids: ['about'] },
-            ].map((group) => (
-              <div className="ref-settings-nav-group" key={group.label}>
-                <span className="ref-nav-group">{group.label}</span>
-                {group.ids.map((id) => {
-                  const entry = tabs.find((item) => item.id === id)!;
-                  return (
-                    <button
-                      key={entry.id}
-                      className={tab === entry.id ? 'selected' : ''}
-                      aria-current={tab === entry.id ? 'page' : undefined}
-                      onClick={() => {
-                        setParams({ tab: entry.id });
-                        setError('');
-                      }}
-                    >
-                      <entry.icon size={17} />
-                      {entry.label}
+              { label: 'Tayfa', ids: ['shortcuts', 'diagnostics', 'about'] },
+            ]
+              .filter((group) => group.ids.length)
+              .map((group) => (
+                <div className="ref-settings-nav-group" key={group.label}>
+                  <span className="ref-nav-group">{group.label}</span>
+                  {group.ids.map((id) => {
+                    const entry = tabs.find((item) => item.id === id)!;
+                    return (
+                      <button
+                        key={entry.id}
+                        className={tab === entry.id ? 'selected' : ''}
+                        aria-current={tab === entry.id ? 'page' : undefined}
+                        onClick={() => {
+                          setParams({ tab: entry.id });
+                          setError('');
+                        }}
+                      >
+                        <entry.icon size={17} />
+                        {entry.label}
+                      </button>
+                    );
+                  })}
+                  {group.label === 'Tayfa' && (
+                    <button onClick={onClose}>
+                      <ArrowLeft size={17} />
+                      {t('Sohbete dön')}
                     </button>
-                  );
-                })}
-                {group.label === 'Tayfa' && (
-                  <button onClick={onClose}>
-                    <ArrowLeft size={17} />
-                    {t('Sohbete dön')}
-                  </button>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              ))}
           </div>
           <SettingsConnection notify={notify} />
         </nav>
@@ -1244,10 +1239,14 @@ export default function Settings({
                     </span>
                   </div>
                 </section>
-                <Row title={t('Vurgu')} description="">
+                <Row
+                  title={t('Vurgu')}
+                  description={p.accent === 'sage' ? t('Adaçayı') : t('Lila')}
+                >
                   <div className="accent-options">
                     <button
-                      aria-label={t('İnci vurgusu')}
+                      aria-label={t('Lila vurgusu')}
+                      title={t('Lila')}
                       aria-pressed={p.accent === 'pearl'}
                       className={`accent pearl ${p.accent === 'pearl' ? 'chosen' : ''}`}
                       onClick={() => setPreference('accent', 'pearl')}
@@ -1256,6 +1255,7 @@ export default function Settings({
                     </button>
                     <button
                       aria-label={t('Adaçayı vurgusu')}
+                      title={t('Adaçayı')}
                       aria-pressed={p.accent === 'sage'}
                       className={`accent sage ${p.accent === 'sage' ? 'chosen' : ''}`}
                       onClick={() => setPreference('accent', 'sage')}
@@ -1264,9 +1264,12 @@ export default function Settings({
                     </button>
                   </div>
                 </Row>
-                <Row title={t('Arkadaşlar paneli')} description="">
+                <Row
+                  title={t('Üye paneli')}
+                  description={t('Sohbetin yanında topluluk üyelerini gösterir.')}
+                >
                   <Toggle
-                    label={t('Arkadaşlar panelini göster')}
+                    label={t('Üye panelini göster')}
                     value={p.showFriends}
                     onChange={(v) => setPreference('showFriends', v)}
                   />
@@ -1490,11 +1493,9 @@ export default function Settings({
                         onChange={(value) => setPreference('pushToTalkKey', value)}
                       />
                     </Row>
-                    <Unsupported
-                      title={t('Girişte mikrofonumu sessize al')}
-                      reason={t('Ses odalarına katılırken mikrofon her zaman kapalı başlar.')}
-                      value
-                    />
+                    <p className="ref-settings-note">
+                      {t('Ses odalarına katılırken mikrofon her zaman kapalı başlar.')}
+                    </p>
                     <Row
                       title={t('Gürültü azaltma')}
                       description={t('Mikrofonundan gönderilen sesi bu cihazda temizler.')}
@@ -1606,10 +1607,6 @@ export default function Settings({
                   mode={p.noiseSuppressionMode}
                   microphoneLive={!realtime.muted}
                 />
-                <Unsupported
-                  title={t('Ekran paylaşımında sistem sesi')}
-                  reason={t('Bu sistem ve paylaşım yöntemi için destek doğrulanmadı.')}
-                />
                 <div className="ref-settings-bottom">
                   <button className="text-button" onClick={() => void refreshDevices()}>
                     <RefreshCw size={14} />
@@ -1679,7 +1676,7 @@ export default function Settings({
 
             {tab === 'shortcuts' && (
               <>
-                <h3>{t('Klavye')}</h3>
+                <Heading title={t('Klavye')} />
                 {[
                   [tr('Find a room or command'), '⌘ / Ctrl K'],
                   [tr('Home / Spaces / Chat / Voice / Cinema'), '⌘ / Ctrl 1–5'],
@@ -1760,10 +1757,6 @@ export default function Settings({
                         }}
                       />
                     </Row>
-                    <Unsupported
-                      title={t('Mesaj önizlemesini göster')}
-                      reason={t('Mesaj içerikleri masaüstü bildirimlerine eklenmez.')}
-                    />
                     <Row
                       title={t('Görüşmedeyken bildirimleri duraklat')}
                       description={t('Ses bağlantısı sürerken masaüstü bildirimlerini göstermez.')}
@@ -1804,43 +1797,6 @@ export default function Settings({
                           ? t('{roomName} · Ses bağlı', { roomName: realtime.roomName ?? '' })
                           : t('Ses odasına bağlı değil')}
                       </p>
-                      <button
-                        className="text-button"
-                        aria-expanded={trayPreview}
-                        onClick={() => setTrayPreview((value) => !value)}
-                      >
-                        {t('Menü seçenekleri')}
-                      </button>
-                      {trayPreview && (
-                        <Modal
-                          title={t('Menü çubuğu')}
-                          className="ref-settings-confirm"
-                          onClose={() => setTrayPreview(false)}
-                        >
-                          <p>{t('Sistem menüsündeki komutlar.')}</p>
-                          <div className="ref-tray-preview">
-                            <strong>Tayfa</strong>
-                            <ul>
-                              <li>{t('Tayfa’yı aç')}</li>
-                              <li>{t('Çıkış')}</li>
-                            </ul>
-                            <small>{t('Çıkış, ses bağlantısını da sonlandırır.')}</small>
-                          </div>
-                          <p>
-                            {t(
-                              'Mikrofon ve ses odası komutları sistem menüsünde henüz sunulmuyor.',
-                            )}
-                          </p>
-                          <div className="button-row">
-                            <button
-                              className="button secondary"
-                              onClick={() => setTrayPreview(false)}
-                            >
-                              {t('Tercihlere dön')}
-                            </button>
-                          </div>
-                        </Modal>
-                      )}
                     </div>
                   </aside>
                 </div>
@@ -1850,7 +1806,9 @@ export default function Settings({
                     title={t('Oturum açınca başlat')}
                     description={
                       window.rooms
-                        ? t('Paketlenmiş macOS uygulamasında kullanılabilir.')
+                        ? t('Paketlenmiş {platform} uygulamasında kullanılabilir.', {
+                            platform: platformName(window.rooms.platform),
+                          })
                         : t('Bu tercih masaüstü uygulamasını gerektirir.')
                     }
                   >
@@ -1924,7 +1882,7 @@ export default function Settings({
             {tab === 'assistant-permissions' && <AssistantManagement />}
             {tab === 'diagnostics' && (
               <>
-                <h3>{t('Tanılama')}</h3>
+                <Heading title={t('Tanılama')} />
                 <div className="diagnostic-list">
                   {[
                     [
@@ -1937,9 +1895,12 @@ export default function Settings({
                       tr('Runtime'),
                       appInfo ? `Electron ${appInfo.electron}` : tr('Browser preview'),
                     ],
-                    [tr('Platform'), window.rooms?.platform ?? tr('Browser')],
-                    [tr('Social / gateway'), community.status],
-                    ['WebRTC / SFU', realtime.status],
+                    [
+                      tr('Platform'),
+                      window.rooms ? platformName(window.rooms.platform) : tr('Browser'),
+                    ],
+                    [tr('Social / gateway'), connectionLabel(community.status)],
+                    ['WebRTC / SFU', connectionLabel(realtime.status)],
                     [
                       tr('Activity service'),
                       t('Durum, seçili odanın etkinlik ekranında gösterilir'),
