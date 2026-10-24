@@ -16,9 +16,9 @@ export const games: Catalog = {
   Sarı: 'Yellow',
   'Kapalı kart': 'Face-down card',
   'Bu odada masa açma yetkin yok.': 'You don’t have permission to open tables in this room.',
-  'eski Sinema oturumu': 'old Cinema session',
-  'ekran paylaşımı': 'screen share',
-  'bir etkinlik': 'an activity',
+  'eski Sinema oturumu': 'Old Cinema session',
+  'ekran paylaşımı': 'Screen share',
+  'bir etkinlik': 'Another activity',
   '← Kıraathaneye dön': '← Back to Kıraathane',
   'Yerel görsel örnekte gerçek oyun işlemi kapalı':
     'Game actions are turned off in the local visual example',
