@@ -20,11 +20,21 @@
   max-width: 1100px;
   margin: auto;
 }
+.rg-page.rx-create {
+  --rx-create-pad-x: 29px;
+  --rx-create-pad-y: 26px;
+  padding: var(--rx-create-pad-y) var(--rx-create-pad-x);
+}
+.coffeehouse-return + .rg-page.rx-create,
+.coffeehouse-return + .rg-page.rh-history {
+  /* The back link above is a block sibling: without this the 100%-high page ends below the window edge. */
+  height: calc(100% - 42px);
+}
 .rx-create-options {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
-  margin: 25px 0;
+  margin: 0;
 }
 .rx-create-options button {
   display: flex;
@@ -53,13 +63,31 @@
   font-size: 30px;
   color: #b59bed;
 }
+/* Suit glyphs read as suits: black clubs and spades, red hearts and diamonds. */
+.rx-create-options span.suit {
+  color: var(--color-text-primary);
+}
+.rx-create-options span.suit.red {
+  color: var(--color-status-error);
+}
 .rx-create-options.two {
   grid-template-columns: repeat(2, 1fr);
 }
 .rx-create-body {
   display: grid;
-  grid-template-columns: 1.55fr 1fr;
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 20px;
+  margin-top: 25px;
+  align-items: start;
+}
+.rx-create-main {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.rx-create-body > aside {
+  position: sticky;
+  top: 0;
 }
 .rx-create-body > section,
 .rx-create-body > aside {
@@ -81,8 +109,29 @@
   border-bottom: 1px solid #303241;
 }
 .rx-create footer {
+  position: sticky;
+  /* Sticky offsets are measured inside the scroller's padding, so reach back over it. */
+  bottom: calc(-1 * var(--rx-create-pad-y, 26px));
+  z-index: 3;
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
   gap: 10px;
-  margin-top: 20px;
+  margin: 20px calc(-1 * var(--rx-create-pad-x, 29px)) calc(-1 * var(--rx-create-pad-y, 26px));
+  padding: 14px var(--rx-create-pad-x, 29px);
+  border-top: 1px solid var(--color-border-subtle);
+  background: var(--color-background-main);
+}
+.rx-create-notes {
+  align-self: stretch;
+  display: grid;
+  gap: 8px;
+}
+.rx-create-notes .rg-banner {
+  margin: 0;
+  padding: 8px 12px;
+}
+.rx-create-actions {
+  display: flex;
+  gap: 10px;
 }
