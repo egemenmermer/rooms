@@ -96,6 +96,7 @@ describe('game registry', () => {
   it('hosts the four built-in games and rejects malformed modules', () => {
     expect(gameKinds()).toEqual(['holdem', 'blackjack', 'batak', '101']);
     expect(() => registerGame({ ...pickModule, kind: 'Bad Kind' })).toThrow('kind');
+    expect(() => registerGame({ ...pickModule, kind: 'cinema' })).toThrow('kind');
     expect(() => registerGame({ ...pickModule, actions: ['start'] })).toThrow('actions');
     expect(() => registerGame({ ...pickModule, seats: [] })).toThrow('seats');
     expect(() => registerGame({ ...pickModule, kind: 'holdem' })).toThrow('already registered');

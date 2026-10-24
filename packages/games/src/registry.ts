@@ -23,11 +23,14 @@ const registeredModules: AnyGameModule[] = [
 
 /** Names the service handles at table level before a module sees a command. */
 const RESERVED_ACTIONS = new Set(['start']);
+/** Shared-player activities use the same id space as game kinds (`primary.activity`). */
+const RESERVED_KINDS = new Set(['cinema', 'youtube', 'hall', 'screen']);
 const registry = new Map<string, AnyGameModule>();
 
 function validate(module: AnyGameModule) {
   const problem = (reason: string) => new Error(`Invalid game module ${module.kind}: ${reason}`);
-  if (!GAME_KIND_PATTERN.test(module.kind)) throw problem('kind');
+  if (!GAME_KIND_PATTERN.test(module.kind) || RESERVED_KINDS.has(module.kind))
+    throw problem('kind');
   if (
     !module.seats.length ||
     module.seats.some((count) => !Number.isInteger(count) || count < 1 || count > MAX_GAME_SEATS)
