@@ -238,6 +238,65 @@ export const RELAY_ERRORS = new Set([
   'CINEMA_STREAM_FAILED',
 ]);
 
+/**
+ * Input containers ffmpeg and ffprobe may open: HLS, its segment containers (MPEG-TS,
+ * fMP4, packed audio, WebVTT) and plain VOD files. Every other demuxer is refused, so
+ * all upstream requests go through {@link UpstreamProxy}, which only rewrites HLS
+ * playlists; a container that names further URLs of its own is never opened.
+ */
+export const INPUT_FORMATS = [
+  'hls',
+  'mpegts',
+  'mov',
+  'matroska',
+  'avi',
+  'aac',
+  'mp3',
+  'ac3',
+  'eac3',
+  'webvtt',
+] as const;
+const INPUT_WHITELIST = ['-format_whitelist', INPUT_FORMATS.join(',')];
+
+/** Whether ffprobe's `format_name` (comma-separated aliases) is an allowed input container. */
+export function allowedInputFormat(format: string) {
+  return format
+    .split(',')
+    .some((name) => (INPUT_FORMATS as readonly string[]).includes(name.trim()));
+}
+
+/** ffprobe arguments for an upstream (proxied) input. */
+export function probeArgs(url: string) {
+  return [
+    '-v',
+    'error',
+    '-rw_timeout',
+    '15000000',
+    '-protocol_whitelist',
+    'http,tcp,crypto',
+    ...INPUT_WHITELIST,
+    '-http_multiple',
+    '0',
+    '-allowed_extensions',
+    'ALL',
+    '-allowed_segment_extensions',
+    'ALL',
+    '-extension_picky',
+    '0',
+    // MPEG-TS declares its codecs in the PMT; 1.5 s is plenty and keeps zapping quick
+    // (Kanal measured 3.3 s zaps with libavformat's 5 s default).
+    '-analyzeduration',
+    '1500000',
+    '-probesize',
+    '3000000',
+    '-print_format',
+    'json',
+    '-show_streams',
+    '-show_format',
+    url,
+  ];
+}
+
 /** Reads `#EXT-X-MEDIA-SEQUENCE` and segment durations, in sequence order. */
 export function playlistSegments(text: string) {
   const first = Number(/#EXT-X-MEDIA-SEQUENCE:(\d+)/.exec(text)?.[1] ?? 0);
@@ -297,6 +356,7 @@ export function relayArgs(input: {
     '15000000',
     '-protocol_whitelist',
     'http,tcp,crypto',
+    ...INPUT_WHITELIST,
     // HTTP input.
     '-reconnect',
     '1',
@@ -666,6 +726,7 @@ export class RelayManager {
       } catch {
         throw upstreamError('CINEMA_STREAM_FAILED');
       }
+      if (!allowedInputFormat(probe.format)) throw fail('CINEMA_STREAM_FAILED');
       if (probe.video && probe.video !== 'h264' && probe.video !== 'hevc')
         throw fail('CINEMA_CODEC_UNSUPPORTED');
       if (!probe.video && !probe.audio) throw fail('CINEMA_STREAM_FAILED');
@@ -857,33 +918,7 @@ export class RelayManager {
   }
 
   private async probe(url: string): Promise<ProbeResult> {
-    const out = await this.run(this.options.ffprobe ?? 'ffprobe', [
-      '-v',
-      'error',
-      '-rw_timeout',
-      '15000000',
-      '-protocol_whitelist',
-      'http,tcp,crypto',
-      '-http_multiple',
-      '0',
-      '-allowed_extensions',
-      'ALL',
-      '-allowed_segment_extensions',
-      'ALL',
-      '-extension_picky',
-      '0',
-      // MPEG-TS declares its codecs in the PMT; 1.5 s is plenty and keeps zapping quick
-      // (Kanal measured 3.3 s zaps with libavformat's 5 s default).
-      '-analyzeduration',
-      '1500000',
-      '-probesize',
-      '3000000',
-      '-print_format',
-      'json',
-      '-show_streams',
-      '-show_format',
-      url,
-    ]);
+    const out = await this.run(this.options.ffprobe ?? 'ffprobe', probeArgs(url));
     const json = JSON.parse(out) as {
       streams?: {
         codec_type?: string;

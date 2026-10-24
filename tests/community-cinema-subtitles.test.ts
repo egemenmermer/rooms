@@ -141,7 +141,7 @@ describe('relay subtitle streams', () => {
       discontinuity: false,
       subtitles: [0],
     });
-    expect(live.join(' ')).not.toContain('webvtt');
+    expect(live.join(' ')).not.toContain('-c:s webvtt');
     expect(live.at(-1)).toBe('index.m3u8');
   });
 });
@@ -257,7 +257,7 @@ describe('relay manager subtitles', () => {
       slots: 1,
     });
     expect(info.subtitleTracks).toEqual([]);
-    expect(spawned[0].args.join(' ')).not.toContain('webvtt');
+    expect(spawned[0].args.join(' ')).not.toContain('-c:s webvtt');
   });
 });
 
