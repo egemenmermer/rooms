@@ -7,7 +7,7 @@
   align-items: center;
   gap: 8px;
   border: 1px solid var(--border, #363a45);
-  border-radius: 24px;
+  border-radius: var(--radius-24);
   padding: 12px 17px;
   background: var(--surface, #22252d);
   color: var(--text, #f2f3f7);
@@ -42,7 +42,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9px;
+  border-radius: var(--radius-8);
 }
 .music-dj button:hover:not(:disabled) {
   background: #ffffff0c;
@@ -53,7 +53,7 @@
 }
 .music-dj button:focus-visible,
 .music-dj input:focus-visible {
-  outline: 2px solid var(--accent, #9384ff);
+  outline: 2px solid var(--color-action-primary);
   outline-offset: 3px;
 }
 .music-dj > header {
@@ -62,7 +62,7 @@
   justify-content: space-between;
   padding: 12px 15px 3px;
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: var(--font-size-ui);
   font-weight: 600;
   cursor: grab;
   touch-action: none;
@@ -77,7 +77,7 @@
 }
 .music-dj > header small {
   color: var(--text-secondary, #adb1bf);
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   font-weight: 400;
   max-width: 160px;
   overflow: hidden;
@@ -117,7 +117,7 @@
   border: 1px solid var(--border, #363a45);
   background: #08080d45;
   padding: 5px;
-  border-radius: 11px;
+  border-radius: var(--radius-12);
 }
 .dj-add input {
   width: 100%;
@@ -128,12 +128,12 @@
   padding: 6px !important;
   height: 29px !important;
   color: var(--text, #f2f3f7);
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
 }
 .dj-add button {
   flex-shrink: 0;
   width: 32px;
-  background: #9384ff28;
+  background: var(--color-action-primarySubtle);
 }
 .dj-track {
   display: flex;
@@ -150,7 +150,7 @@
   white-space: nowrap;
 }
 .dj-track small {
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   color: var(--text-secondary, #adb1bf);
 }
 .dj-transport {
@@ -168,14 +168,14 @@
 .dj-transport .dj-play {
   width: 48px;
   height: 48px;
-  background: var(--accent, #9384ff);
-  border: 1px solid #a599ff;
-  color: #171322;
+  background: var(--color-action-primary);
+  border: 1px solid var(--color-action-primaryHover);
+  color: var(--color-text-onAccent);
   border-radius: 50%;
   box-shadow: 0 2px 10px #0003;
 }
 .dj-transport .dj-play:hover:not(:disabled) {
-  background: #a497ff;
+  background: var(--color-action-primaryHover);
 }
 .dj-queue {
   list-style: none;
@@ -193,14 +193,14 @@
   padding: 8px 5px;
 }
 .dj-queue li > span {
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   width: 16px;
   color: var(--text-secondary, #adb1bf);
 }
 .dj-queue strong {
   flex: 1;
   min-width: 0;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   text-align: left;
   overflow: hidden;
   white-space: nowrap;
@@ -208,36 +208,36 @@
   font-weight: 500;
 }
 .dj-queue small {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: var(--text-secondary, #adb1bf);
 }
 .dj-queue li > button {
   padding: 7px;
 }
 .dj-queue li.current {
-  background: #9384ff12;
-  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-action-primary) 7%, transparent);
+  border-radius: var(--radius-8);
 }
 .dj-queue li.current strong {
-  color: #c2b8ff;
+  color: var(--color-text-accent);
 }
 .dj-error {
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   line-height: 1.45;
   padding: 9px;
   margin: 9px 0 0;
-  border-radius: 9px;
+  border-radius: var(--radius-8);
   background: #98354e26;
   color: #ffbdcf;
 }
 .dj-info {
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   line-height: 1.45;
   padding: 9px;
   margin: 9px 0 0;
-  border-radius: 9px;
+  border-radius: var(--radius-8);
   background: #ffffff12;
-  color: #d8d4f0;
+  color: var(--color-text-accent);
 }
 @media (max-width: 950px) {
   .music-dj {
@@ -270,20 +270,20 @@
 .dj-volume input {
   flex: 1;
   min-width: 0;
-  accent-color: var(--accent, #9384ff);
+  accent-color: var(--color-action-primary);
 }
 .dj-volume small {
   width: 35px;
   text-align: right;
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: var(--font-size-micro);
 }
 .dj-seek {
   display: block;
   width: 100%;
   height: 16px;
   margin: 8px 0 0;
-  accent-color: var(--accent, #9384ff);
+  accent-color: var(--color-action-primary);
 }
 .dj-search-results {
   display: flex;
@@ -314,14 +314,14 @@
 .dj-search-results span {
   flex: 1;
   min-width: 0;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .dj-search-results small,
 .dj-search-results p {
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   color: var(--text-secondary, #adb1bf);
 }
 
@@ -336,7 +336,7 @@
 .dj-visual-error {
   pointer-events: auto;
   background: #22252ded;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   padding: 5px;
   position: absolute;
   bottom: 18px;
@@ -346,7 +346,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   color: var(--text-secondary, #abb3c0);
 }
 .dj-visual-error button {
@@ -366,7 +366,7 @@
   align-items: center;
   justify-content: space-between;
   color: #aaa4b5;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   margin-top: 14px;
 }
 .dj-queue-heading button {
@@ -406,7 +406,7 @@
   width: 18px !important;
 }
 .dj-history {
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   margin-top: 12px;
 }
 .dj-history details {
@@ -447,9 +447,9 @@
   align-items: center;
   background: #ffffff09;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--radius-4);
   padding: 8px;
-  color: #d8cff7;
+  color: var(--color-text-accent);
   cursor: pointer;
 }
 .dj-history li > button {
@@ -485,7 +485,7 @@
 }
 .dj-playlists button {
   padding: 6px 8px;
-  border-radius: 5px;
+  border-radius: var(--radius-4);
 }
 .dj-playlist-choice {
   display: flex;
@@ -496,7 +496,7 @@
   background: #7970ae44;
 }
 .dj-playlists p {
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   color: var(--text-secondary, #adb1bf);
 }
 .dj-playlists ol {
@@ -524,7 +524,7 @@
 }
 .dj-lyrics > small {
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: var(--font-size-micro);
 }
 .dj-lyrics-lines {
   max-height: 200px;
@@ -540,11 +540,11 @@
   overflow-wrap: anywhere;
 }
 .dj-lyrics-lines p[aria-current='true'] {
-  color: #d1c8ff;
+  color: var(--color-text-accent);
   font-weight: 700;
 }
 .dj-volume button.dj-eq-on {
-  color: var(--accent, #9384ff);
+  color: var(--color-action-primary);
 }
 /* Personal equalizer: three compact rows under the volume. */
 .dj-equalizer {
@@ -562,16 +562,16 @@
   grid-template-columns: 42px minmax(0, 1fr) 44px;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--font-size-metadata);
   color: var(--text-secondary);
 }
 .dj-equalizer input {
   min-width: 0;
-  accent-color: var(--accent, #9384ff);
+  accent-color: var(--color-action-primary);
 }
 .dj-equalizer small {
   text-align: right;
-  font-size: 11px;
+  font-size: var(--font-size-micro);
   font-variant-numeric: tabular-nums;
 }
 .dj-equalizer p {
@@ -580,14 +580,14 @@
   justify-content: space-between;
   margin: 2px 0 0;
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: var(--font-size-micro);
 }
 .dj-equalizer p button {
   padding: 2px 6px;
   border: 0;
   background: transparent;
-  color: var(--accent, #9384ff);
-  font-size: 11px;
+  color: var(--color-action-primary);
+  font-size: var(--font-size-micro);
 }
 .dj-equalizer p button:disabled {
   color: var(--text-secondary);
