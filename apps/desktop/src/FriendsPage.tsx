@@ -277,124 +277,128 @@ export function FriendsPage({ notify }: { notify(message: string): void }) {
         }}
       />
       <div {...tabPanelProps('friends', tab)}>
-      {list.loading ? (
-        <LoadingView size="inline" label={t('Arkadaşlar yükleniyor…')} />
-      ) : shown.length ? (
-        <div className="reference-friends-table">
-          {shown.map((f, index) => (
-            <div key={f.user.id}>
-              {tab === 'requests' &&
-                (index === 0 || shown[index - 1]?.relationship !== f.relationship) && (
-                  <h3>
-                    {f.relationship === 'incoming' ? t('Gelen istekler') : t('Gönderilen istekler')}
-                  </h3>
-                )}
-              <div className="reference-friend-line">
-                <span className="reference-friend-photo">
-                  <VoiceAvatar id={f.user.id} name={f.user.displayName} />
-                  <i className={`member-presence ${f.status}`} />
-                </span>
-                <div>
-                  <strong>{f.user.displayName || f.user.username}</strong>
-                  <p>
-                    {f.relationship === 'incoming'
-                      ? t('Sana arkadaşlık isteği gönderdi.')
-                      : f.relationship === 'outgoing'
-                        ? t('Yanıt bekleniyor')
-                        : (statusLabel[f.status] ?? statusLabel.unknown)}
-                  </p>
-                </div>
-                {f.relationship === 'incoming' ? (
-                  <>
-                    <button
-                      className="button primary"
-                      disabled={busy}
-                      onClick={() => void run(() => native().addFriend(handle(f)))}
-                    >
-                      <ReferenceIcon name="check" size={17} />
-                      {t('Kabul et')}
-                    </button>
+        {list.loading ? (
+          <LoadingView size="inline" label={t('Arkadaşlar yükleniyor…')} />
+        ) : shown.length ? (
+          <div className="reference-friends-table">
+            {shown.map((f, index) => (
+              <div key={f.user.id}>
+                {tab === 'requests' &&
+                  (index === 0 || shown[index - 1]?.relationship !== f.relationship) && (
+                    <h3>
+                      {f.relationship === 'incoming'
+                        ? t('Gelen istekler')
+                        : t('Gönderilen istekler')}
+                    </h3>
+                  )}
+                <div className="reference-friend-line">
+                  <span className="reference-friend-photo">
+                    <VoiceAvatar id={f.user.id} name={f.user.displayName} />
+                    <i className={`member-presence ${f.status}`} />
+                  </span>
+                  <div>
+                    <strong>{f.user.displayName || f.user.username}</strong>
+                    <p>
+                      {f.relationship === 'incoming'
+                        ? t('Sana arkadaşlık isteği gönderdi.')
+                        : f.relationship === 'outgoing'
+                          ? t('Yanıt bekleniyor')
+                          : (statusLabel[f.status] ?? statusLabel.unknown)}
+                    </p>
+                  </div>
+                  {f.relationship === 'incoming' ? (
+                    <>
+                      <button
+                        className="button primary"
+                        disabled={busy}
+                        onClick={() => void run(() => native().addFriend(handle(f)))}
+                      >
+                        <ReferenceIcon name="check" size={17} />
+                        {t('Kabul et')}
+                      </button>
+                      <button
+                        className="button ghost"
+                        disabled={busy}
+                        onClick={() => void run(() => native().removeFriend(f.user.id))}
+                      >
+                        {t('Reddet')}
+                      </button>
+                    </>
+                  ) : f.relationship === 'outgoing' ? (
                     <button
                       className="button ghost"
                       disabled={busy}
                       onClick={() => void run(() => native().removeFriend(f.user.id))}
                     >
-                      {t('Reddet')}
+                      {t('İsteği geri çek')}
                     </button>
-                  </>
-                ) : f.relationship === 'outgoing' ? (
-                  <button
-                    className="button ghost"
-                    disabled={busy}
-                    onClick={() => void run(() => native().removeFriend(f.user.id))}
-                  >
-                    {t('İsteği geri çek')}
-                  </button>
-                ) : f.relationship === 'blocked' ? (
-                  <button
-                    className="button secondary"
-                    disabled={busy}
-                    onClick={() => void run(() => native().unblockUser(f.user.id))}
-                  >
-                    {t('Engeli kaldır')}
-                  </button>
-                ) : (
-                  <>
-                    <IconButton
-                      label={t('{name} ile sohbet aç', { name: f.user.displayName })}
-                      onClick={() => message(f)}
+                  ) : f.relationship === 'blocked' ? (
+                    <button
+                      className="button secondary"
+                      disabled={busy}
+                      onClick={() => void run(() => native().unblockUser(f.user.id))}
                     >
-                      <ReferenceIcon name="message" size={20} />
-                    </IconButton>
-                    {window.rooms?.dmCalls && (
+                      {t('Engeli kaldır')}
+                    </button>
+                  ) : (
+                    <>
                       <IconButton
-                        label={callReason ?? t('{name} ile sesli ara', { name: f.user.displayName })}
-                        disabled={!!callReason}
-                        onClick={() => void call(f)}
+                        label={t('{name} ile sohbet aç', { name: f.user.displayName })}
+                        onClick={() => message(f)}
                       >
-                        <ReferenceIcon name="phone" size={20} />
+                        <ReferenceIcon name="message" size={20} />
                       </IconButton>
-                    )}
-                    <IconButton
-                      label={t('{name} seçenekleri', { name: f.user.displayName })}
-                      onClick={() => {
-                        setMenu(f);
-                        setError('');
-                      }}
-                    >
-                      <ReferenceIcon name="more" size={20} />
-                    </IconButton>
-                  </>
-                )}
+                      {window.rooms?.dmCalls && (
+                        <IconButton
+                          label={
+                            callReason ?? t('{name} ile sesli ara', { name: f.user.displayName })
+                          }
+                          disabled={!!callReason}
+                          onClick={() => void call(f)}
+                        >
+                          <ReferenceIcon name="phone" size={20} />
+                        </IconButton>
+                      )}
+                      <IconButton
+                        label={t('{name} seçenekleri', { name: f.user.displayName })}
+                        onClick={() => {
+                          setMenu(f);
+                          setError('');
+                        }}
+                      >
+                        <ReferenceIcon name="more" size={20} />
+                      </IconButton>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <EmptyState
-          icon={<ReferenceIcon name="users" size={38} />}
-          title={
-            tab === 'blocked'
-              ? t('Engellenen kimse yok.')
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={<ReferenceIcon name="users" size={38} />}
+            title={
+              tab === 'blocked'
+                ? t('Engellenen kimse yok.')
+                : tab === 'requests'
+                  ? t('Bekleyen istek yok.')
+                  : accepted.length
+                    ? t('Çevrimiçi arkadaş yok.')
+                    : t('İlk arkadaşını ekle.')
+            }
+            action={
+              <button className="button primary" onClick={() => setAdding(true)}>
+                {t('Arkadaş ekle')}
+              </button>
+            }
+          >
+            {tab === 'blocked'
+              ? t('Engellediğin kişiler bu listede görünür.')
               : tab === 'requests'
-                ? t('Bekleyen istek yok.')
-                : accepted.length
-                  ? t('Çevrimiçi arkadaş yok.')
-                  : t('İlk arkadaşını ekle.')
-          }
-          action={
-            <button className="button primary" onClick={() => setAdding(true)}>
-              {t('Arkadaş ekle')}
-            </button>
-          }
-        >
-          {tab === 'blocked'
-            ? t('Engellediğin kişiler bu listede görünür.')
-            : tab === 'requests'
-              ? t('Yeni istekler burada görünür.')
-              : t('Kullanıcı adıyla arkadaş ekleyebilirsin.')}
-        </EmptyState>
-      )}
+                ? t('Yeni istekler burada görünür.')
+                : t('Kullanıcı adıyla arkadaş ekleyebilirsin.')}
+          </EmptyState>
+        )}
       </div>
       {(error || list.error) && !adding && !menu && (
         <Notice kind="error" className="friends-error">

@@ -1178,3 +1178,116 @@
 .ss-search-files:not(.ss-search-no-results) .ss-search-results {
   max-height: none;
 }
+/* DM list: the /dm landing when no conversation is open. */
+.ss-dm-home {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: var(--space-24) var(--space-32);
+}
+.ss-dm-list {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.ss-dm-list h1 {
+  font-size: var(--font-size-h2);
+  margin: 0 0 var(--space-16);
+  color: var(--color-text-primary);
+}
+.ss-dm-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.ss-dm-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  width: 100%;
+  min-height: 60px;
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-8);
+  background: none;
+  color: var(--color-text-secondary);
+  text-align: left;
+  font-family: inherit;
+}
+.ss-dm-row:hover,
+.ss-dm-row[aria-current='true'] {
+  background: var(--color-background-hover);
+}
+.ss-dm-row:focus-visible {
+  outline: 2px solid var(--color-action-focus);
+  outline-offset: -2px;
+}
+.ss-dm-row-avatar {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+.ss-dm-presence {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--color-background-main);
+  border-radius: 50%;
+  background: var(--color-text-muted);
+}
+.ss-dm-presence.online {
+  background: var(--color-status-success);
+}
+.ss-dm-presence.idle {
+  background: var(--color-status-warning);
+}
+.ss-dm-presence.dnd {
+  background: var(--color-status-error);
+}
+.ss-dm-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.ss-dm-row-text strong,
+.ss-dm-row-text small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ss-dm-row-text strong {
+  font-size: var(--font-size-ui);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.ss-dm-row-text small {
+  font-size: var(--font-size-metadata);
+  color: var(--color-text-muted);
+}
+.ss-dm-row.unread .ss-dm-row-text strong {
+  font-weight: 750;
+}
+.ss-dm-row.unread .ss-dm-row-text small {
+  color: var(--color-text-secondary);
+}
+.ss-dm-row-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-4);
+  flex-shrink: 0;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-muted);
+}
+.ss-dm-unread {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-action-primary);
+}
