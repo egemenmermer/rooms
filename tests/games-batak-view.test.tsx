@@ -214,11 +214,18 @@ it('shows a spectator the open table only, with no controls', () => {
   ).toHaveLength(0);
 });
 
-it('renders in English', () => {
+it('renders the table in English', async () => {
+  vi.resetModules();
   globalThis.__roomsLocale = 'en';
-  render(<ReferenceBatak {...ui(scene('your-turn'))} />);
+  const { ReferenceBatak: Table } = await import('../apps/desktop/src/games/batak/BatakTable');
+  const { batakFixture: fixture } = await import('../apps/desktop/src/games/batak/fixture');
+  const view = render(<Table {...ui(fixture('your-turn'))} />);
   expect(screen.getByText('Your turn · play a card')).toBeTruthy();
   expect(screen.getByText('Trump not broken')).toBeTruthy();
+  view.rerender(<Table {...ui(fixture('round-end'))} />);
+  expect(screen.getByRole('region', { name: 'Score sheet' })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'Ece (demo) went down' })).toBeTruthy();
+  expect(document.body.textContent).not.toMatch(/[çğıöşüİ]/);
 });
 
 it('creates a table with house rules the protocol and the Batak module accept', () => {
