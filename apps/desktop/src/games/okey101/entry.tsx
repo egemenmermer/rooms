@@ -12,7 +12,7 @@ export const okey101Game: GameDefinition = {
   catalog: okey101Catalog,
   Table: ReferenceOkey,
   ruleRows: (game) => [
-    [t('Açılış'), '101'],
+    [t('Açılış'), object(game.view.rules).folding ? t('101 · her açılış öncekini geçer') : '101'],
     [t('Çift açılışı'), t('{count} çift', { count: Number(game.view.requiredPairs ?? 5) })],
     [t('Katlamalı'), object(game.view.rules).folding ? t('Açık') : t('Kapalı')],
     [t('Eşli'), object(game.view.rules).teams ? t('Açık') : t('Kapalı')],

@@ -254,6 +254,7 @@ export const games: Catalog = {
   Katlamasız: 'Without folding',
   Tekli: 'Solo',
   'Açılış {threshold}': 'Opening {threshold}',
+  '101 · her açılış öncekini geçer': '101 · each opening must beat the last',
   '{count} taş · {state}': '{count} tiles · {state}',
   Açtı: 'Opened',
   Açmadı: 'Not opened',

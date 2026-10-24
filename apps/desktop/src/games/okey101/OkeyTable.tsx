@@ -11,6 +11,7 @@ import { Avatar } from '@rooms/design';
 import { useGameFixtureMetadata } from '../shared/fixture';
 import { array, object, type Tile } from '../shared/model';
 import type { TableUI } from '../shared/table-ui';
+import { TableDock } from '../shared/TableDock';
 import { TurnClock } from '../shared/TurnClock';
 import { SeatAvatar } from '../shared/SeatAvatar';
 import { useGameSounds } from '../shared/sounds';
@@ -303,49 +304,58 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
     if (!list.length) return null;
     return (
       <div className="o1-meld-row" aria-label={t('{name} perleri', { name: nameOf(owner) })}>
-        <small>
+        <small title={nameOf(owner)}>
           {nameOf(owner)} · {list[0].meld.pairs ? t('Çift') : t('Seri')}
         </small>
         <div>
           {list.map(({ meld, index }) => {
             const takes = canProcess && !meld.pairs;
+            const label = t('Per {number} · {tiles}', {
+              number: index + 1,
+              tiles: meld.tiles.map((tile) => tileLabel(tile, null, false)).join(', '),
+            });
+            const body = meld.tiles.map((tile) => (
+              <span key={tile.id} className="o1-meld-tile">
+                <OkeyTileView
+                  tile={tile}
+                  small
+                  still
+                  fake={false}
+                  label={
+                    tile.joker ? t('Okey · {face} yerine', { face: faceName(tile) }) : undefined
+                  }
+                />
+              </span>
+            ));
+            // An opened meld is table content, not a disabled control: only a meld the viewer can
+            // lay tiles off on is a button.
+            if (!takes)
+              return (
+                <div key={index} className="o1-meld" role="group" aria-label={label}>
+                  {body}
+                </div>
+              );
             return (
               <button
                 type="button"
                 key={index}
-                className={`o1-meld ${target === index ? 'selected' : ''} ${dragId && takes ? 'o1-drop-target' : ''}`}
-                disabled={!takes}
-                aria-label={t('Per {number} · {tiles}', {
-                  number: index + 1,
-                  tiles: meld.tiles.map((tile) => tileLabel(tile, null, false)).join(', '),
-                })}
+                className={`o1-meld ${target === index ? 'selected' : ''} ${dragId ? 'o1-drop-target' : ''}`}
+                aria-label={label}
                 onClick={() => {
                   setTarget(index);
                   setJoker('');
                 }}
                 onDragOver={(event) => {
-                  if (dragId && takes) event.preventDefault();
+                  if (dragId) event.preventDefault();
                 }}
                 onDrop={(event) => {
                   event.preventDefault();
                   const id = dragId;
                   setDragId(null);
-                  if (id && takes) process(index, [id]);
+                  if (id) process(index, [id]);
                 }}
               >
-                {meld.tiles.map((tile) => (
-                  <span key={tile.id} className="o1-meld-tile">
-                    <OkeyTileView
-                      tile={tile}
-                      small
-                      still
-                      fake={false}
-                      label={
-                        tile.joker ? t('Okey · {face} yerine', { face: faceName(tile) }) : undefined
-                      }
-                    />
-                  </span>
-                ))}
+                {body}
               </button>
             );
           })}
@@ -354,94 +364,109 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
     );
   };
 
+  const handNumber = Math.max(1, game.history.length + (ended ? 0 : 1)),
+    editing = me !== null && !ended && myTurn && stage === 'discard';
+  const moveLog = log.lines.length > 0 && (
+    <ol className="o1-log" aria-label={t('Son hamleler')} aria-live="polite">
+      {log.lines.map((line, index) => (
+        <li key={`${index}-${line}`} title={line}>
+          {line}
+        </li>
+      ))}
+    </ol>
+  );
+
   return (
-    <div className="o1-table">
-      <div className="rx-badges">
-        <span>{rules.folding ? t('Katlamalı') : t('Katlamasız')}</span>
-        <span>{rules.teams ? t('Eşli') : t('Tekli')}</span>
-        <span>{t('Açılış {threshold}', { threshold })}</span>
-        <span>{t('{count} çift', { count: requiredPairs })}</span>
-        <span>{t('El {hand}', { hand: game.history.length + (ended ? 0 : 1) })}</span>
-      </div>
+    <div className={`o1-table ${ended ? 'ended' : ''}`}>
       <section className="o1-felt" aria-label={t('101 masası')}>
         {[0, 1, 2, 3].map((offset) => {
           const seat = (base + offset) % 4,
             count = Number(hands.find((hand) => hand.seat === seat)?.count ?? 0),
             playing = turn === seat,
             state = openedList[seat],
-            seatInfo = order.find((item) => item.seat === seat);
+            seatInfo = order.find((item) => item.seat === seat),
+            zone = meldZone(seat);
           return (
-            <article
-              key={`seat-${seat}`}
-              className={`o1-seat ${PLACES[offset]} ${playing ? 'turn' : ''}`}
-              aria-label={playing ? t('{name} · Sırada', { name: nameOf(seat) }) : nameOf(seat)}
-            >
-              {seatInfo ? (
-                <SeatAvatar seat={seatInfo} game={game} timer={timer} />
-              ) : (
-                <Avatar name={nameOf(seat)} />
-              )}
-              <div>
-                <strong title={nameOf(seat)}>{nameOf(seat)}</strong>
-                <small>
-                  {t('{count} taş · {state}', {
-                    count,
-                    state: state === 'pairs' ? t('Çift açtı') : state ? t('Açtı') : t('Açmadı'),
-                  })}
-                </small>
-              </div>
-              {offset !== 0 && (
-                <span className="o1-mini-rack" aria-hidden="true">
-                  {Array.from({ length: Math.min(count, 22) }, (_, index) => (
-                    <TileBack small key={index} />
-                  ))}
-                </span>
-              )}
-            </article>
-          );
-        })}
-        {[0, 1, 2, 3].map((offset) => {
-          const seat = (base + offset) % 4,
-            top = discards[seat]?.at(-1),
-            takeable = seat === left && myTurn && stage === 'draw' && can('draw') && !!top,
-            mine = me !== null && seat === me;
-          return (
-            <div
-              key={`pile-${seat}`}
-              className={`o1-pile ${CORNERS[offset]} ${mine && dragId && canDiscard ? 'o1-drop-target' : ''}`}
-              {...(mine ? { ...pileDrop, 'data-drop': 'discard' } : {})}
-            >
-              <small>{mine ? t('Attığın taş') : t('{name} attı', { name: nameOf(seat) })}</small>
-              {top ? (
-                <span className={`o1-pile-top ${seat === lastPile ? 'last' : ''}`}>
-                  <OkeyTileView
-                    tile={top}
-                    fake={isFakeOkey(top, okey)}
-                    onClick={takeable ? () => draw(true) : undefined}
-                    highlight={takeable}
-                  />
-                </span>
-              ) : (
-                <span className="o1-pile-empty">{mine && dragId ? t('Buraya at') : '—'}</span>
-              )}
-              {takeable && <em>{t('Önceki taşı al')}</em>}
+            <div key={`seat-${seat}`} className={`o1-side ${PLACES[offset]}`}>
+              <article
+                className={`o1-seat ${PLACES[offset]} ${playing ? 'turn' : ''}`}
+                aria-label={playing ? t('{name} · Sırada', { name: nameOf(seat) }) : nameOf(seat)}
+              >
+                {seatInfo ? (
+                  <SeatAvatar seat={seatInfo} game={game} timer={timer} />
+                ) : (
+                  <Avatar name={nameOf(seat)} />
+                )}
+                <div>
+                  <strong title={nameOf(seat)}>{nameOf(seat)}</strong>
+                  <small>
+                    {t('{count} taş · {state}', {
+                      count,
+                      state: state === 'pairs' ? t('Çift açtı') : state ? t('Açtı') : t('Açmadı'),
+                    })}
+                  </small>
+                </div>
+                {offset !== 0 && !ended && (
+                  <span className="o1-mini-rack" aria-hidden="true">
+                    {Array.from({ length: Math.min(count, 22) }, (_, index) => (
+                      <TileBack small key={index} />
+                    ))}
+                  </span>
+                )}
+              </article>
+              {/* Each player's opened melds lie in front of them, in a zone of their own. */}
+              {zone && <div className="o1-meld-zone">{zone}</div>}
             </div>
           );
         })}
+        {!ended &&
+          [0, 1, 2, 3].map((offset) => {
+            const seat = (base + offset) % 4,
+              top = discards[seat]?.at(-1),
+              takeable = seat === left && myTurn && stage === 'draw' && can('draw') && !!top,
+              mine = me !== null && seat === me,
+              caption = mine ? t('Attığın taş') : t('{name} attı', { name: nameOf(seat) });
+            return (
+              <div
+                key={`pile-${seat}`}
+                className={`o1-pile ${CORNERS[offset]} ${mine && dragId && canDiscard ? 'o1-drop-target' : ''}`}
+                {...(mine ? { ...pileDrop, 'data-drop': 'discard' } : {})}
+              >
+                <small title={caption}>{caption}</small>
+                {top ? (
+                  <span className={`o1-pile-top ${seat === lastPile ? 'last' : ''}`}>
+                    <OkeyTileView
+                      tile={top}
+                      fake={isFakeOkey(top, okey)}
+                      onClick={takeable ? () => draw(true) : undefined}
+                      highlight={takeable}
+                    />
+                  </span>
+                ) : (
+                  <span className="o1-pile-empty">{mine && dragId ? t('Buraya at') : '—'}</span>
+                )}
+                {takeable && <em>{t('Önceki taşı al')}</em>}
+              </div>
+            );
+          })}
         <div className="o1-middle">
           <div className="o1-center">
-            <button
-              type="button"
-              className="o1-stock"
-              disabled={!(myTurn && stage === 'draw' && can('draw'))}
-              onClick={() => draw(false)}
-              aria-label={t('Kapalı taş çek · {count} taş', {
-                count: Number(view.remainingStock ?? 0),
-              })}
-            >
-              <TileBack />
-              <b>{String(view.remainingStock ?? '—')}</b>
-            </button>
+            {!ended && (
+              <button
+                type="button"
+                className="o1-stock"
+                disabled={!(myTurn && stage === 'draw' && can('draw'))}
+                onClick={() => draw(false)}
+                aria-label={t('Kapalı taş çek · {count} taş', {
+                  count: Number(view.remainingStock ?? 0),
+                })}
+              >
+                <span className="o1-stack" aria-hidden="true">
+                  <TileBack />
+                </span>
+                <b>{String(view.remainingStock ?? '—')}</b>
+              </button>
+            )}
             {indicator && (
               <div className="o1-indicator">
                 <OkeyTileView tile={indicator} fake={false} />
@@ -449,35 +474,44 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
               </div>
             )}
           </div>
-          <div className="o1-melds">
-            {melds.length ? (
-              [2, 3, 1, 0].map((offset) => (
-                <div key={offset} className={`o1-meld-zone ${PLACES[offset]}`}>
-                  {meldZone((base + offset) % 4)}
-                </div>
-              ))
-            ) : (
-              <p>{t('Henüz per açılmadı.')}</p>
-            )}
-          </div>
+          <small className="o1-round">
+            {t('El {hand}', { hand: handNumber })}
+            {rules.folding && !ended ? ` · ${t('Açılış {threshold}', { threshold })}` : ''}
+          </small>
+          {!melds.length && <p className="o1-no-melds">{t('Henüz per açılmadı.')}</p>}
         </div>
       </section>
 
-      {log.lines.length > 0 && (
-        <ol className="o1-log" aria-label={t('Son hamleler')} aria-live="polite">
-          {log.lines.map((line, index) => (
-            <li key={`${index}-${line}`}>{line}</li>
-          ))}
-        </ol>
-      )}
+      {(me === null || ended) && moveLog}
 
       {ended && <OkeyRoundSummary view={view} nameOf={nameOf} seats={order.map((s) => s.seat)} />}
 
       {me !== null && !ended && (
-        <section className="o1-rack-section">
-          <header>
-            <strong>{t('Istakan · {count} taş', { count: tiles.length })}</strong>
+        // The own ıstaka, the turn's actions and the opening builder stay docked on screen.
+        <TableDock label={t('Istakan')} className="o1-dock">
+          <div className="rg-hand-strip o1-actions">
             <div>
+              <h3>
+                {myTurn
+                  ? stage === 'draw'
+                    ? t('Taş çek')
+                    : t('Taş at')
+                  : t('{name} oynuyor', { name: turn === null ? '—' : nameOf(turn) })}
+              </h3>
+              <p role="status">
+                {myTurn && picked && byId.has(picked) && pickupPenalty
+                  ? t('Yandan aldığın taşı bu el kullan; kullanmazsan +101 yazılır.')
+                  : opened
+                    ? opened === 'pairs'
+                      ? t('Çift açtın')
+                      : t('Seri açtın')
+                    : myTurn && stage === 'draw'
+                      ? t('Ortadan çek ya da soldakinin attığını al.')
+                      : t('Henüz açmadın · Istakanı sürükleyerek dizebilirsin.')}
+              </p>
+            </div>
+            <div className="o1-tools">
+              <small>{t('Istakan · {count} taş', { count: tiles.length })}</small>
               <button
                 type="button"
                 className="button secondary small"
@@ -494,299 +528,289 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
               </button>
               <TurnClock timer={myTurn ? timer : null} />
             </div>
-          </header>
-          <div className="o1-rack" role="group" aria-label={t('Istaka')}>
-            {layout.slice(0, RACK_CELLS).map((id, cell) => {
-              const tile = id ? byId.get(id) : undefined;
-              const dropProps = {
-                onDragOver: (event: DragEvent) => {
-                  if (dragId) event.preventDefault();
-                },
-                onDrop: (event: DragEvent) => {
-                  event.preventDefault();
-                  if (dragId) updateLayout(moveTile(layout, dragId, cell));
-                  setDragId(null);
-                },
-              };
-              if (!tile)
-                return selected.length === 1 ? (
-                  <button
-                    type="button"
-                    key={cell}
-                    className="o1-cell empty"
-                    data-cell={cell}
-                    aria-label={t('Seçili taşı buraya taşı')}
-                    onClick={() => {
-                      updateLayout(moveTile(layout, selected[0], cell));
-                      setSelected([]);
-                    }}
-                    {...dropProps}
-                  />
-                ) : (
-                  <div key={cell} className="o1-cell empty" data-cell={cell} {...dropProps} />
-                );
-              const inDraft = used.includes(tile.id);
-              return (
-                <div
-                  key={cell}
-                  className={`o1-cell ${fresh.has(tile.id) ? 'fresh' : ''} ${dragId === tile.id ? 'dragging' : ''} ${tile.id === picked ? 'picked' : ''} ${inDraft ? 'drafted' : ''}`}
-                  data-cell={cell}
-                  data-tile={tile.id}
-                  draggable
-                  onDragStart={(event) => {
-                    event.dataTransfer?.setData('text/plain', tile.id);
-                    setDragId(tile.id);
-                  }}
-                  onDragEnd={() => setDragId(null)}
-                  {...dropProps}
-                >
-                  <OkeyTileView
-                    tile={tile}
-                    fake={isFakeOkey(tile, okey)}
-                    selected={selected.includes(tile.id) || inDraft}
-                    onClick={() => !inDraft && toggle(tile.id)}
-                    onDoubleClick={canDiscard && !inDraft ? () => discard(tile.id) : undefined}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {me !== null && !ended && myTurn && stage === 'discard' && (
-        <section className="rx-meld-editor o1-editor">
-          <header>
-            <h3>{opened ? t('Taş işle veya yeni per aç') : t('Açılış hazırla')}</h3>
-            <div>
-              <button
-                className={!pairs ? 'selected' : ''}
-                disabled={!!opened && opened !== 'runs'}
-                onClick={() => {
-                  setPairs(false);
-                  setDrafts([]);
-                  setSelected([]);
-                }}
-              >
-                {t('Seri')}
-              </button>
-              <button
-                className={pairs ? 'selected' : ''}
-                disabled={!!opened && opened !== 'pairs'}
-                onClick={() => {
-                  setPairs(true);
-                  setDrafts([]);
-                  setSelected([]);
-                }}
-              >
-                {t('Çift')}
-              </button>
-            </div>
-          </header>
-          <div className="rx-draft-groups">
-            {draftTiles.map((group, index) => {
-              const draft = drafts[index],
-                ambiguous = !pairs && isAmbiguousMeld(group, wrapAround);
-              return (
-                <article key={draft.ids.join('|')}>
-                  {group.map((tile) => (
-                    <OkeyTileView small key={tile.id} tile={tile} fake={isFakeOkey(tile, okey)} />
-                  ))}
-                  {ambiguous && (
-                    <div
-                      className="o1-kind"
-                      role="group"
-                      aria-label={t('Okey nasıl okunsun? · Per {number}', { number: index + 1 })}
-                    >
-                      {(['run', 'group'] as const).map((kind) => (
-                        <button
-                          type="button"
-                          key={kind}
-                          aria-pressed={draft.kind === kind}
-                          className={draft.kind === kind ? 'selected' : ''}
-                          onClick={() =>
-                            setDrafts((values) =>
-                              values.map((value, i) => (i === index ? { ...value, kind } : value)),
-                            )
-                          }
-                        >
-                          {kind === 'run' ? t('Sıralı') : t('Aynı sayı')}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    aria-label={t('Grup {number} kaldır', { number: index + 1 })}
-                    onClick={() => setDrafts((values) => values.filter((_, i) => i !== index))}
-                  >
-                    <X size={14} />
-                  </button>
-                </article>
-              );
-            })}
-          </div>
-          <footer>
-            <button
-              className="button secondary"
-              disabled={
-                !can(openAction) ||
-                (pairs ? selected.length !== 2 : selected.length < 3) ||
-                selected.some((id) => used.includes(id))
-              }
-              onClick={() => addDraft(selected)}
-            >
-              {pairs ? t('Seçimi çift yap') : t('Seçimi seri yap')}
-            </button>
-            <button
-              className="button secondary"
-              disabled={!can(openAction) || !blocks.length}
-              onClick={() => {
-                const next = blocks.map((ids) => {
-                  const group = ids.map((id) => byId.get(id)!);
-                  return {
-                    ids,
-                    kind: !pairs && isAmbiguousMeld(group, wrapAround) ? ('run' as const) : null,
-                  };
-                });
-                setDrafts((values) => [...values, ...next]);
-              }}
-            >
-              {t('Istakadaki dizileri al')}
-            </button>
-            <span role="status" className={validation && drafts.length ? 'invalid' : ''}>
-              {validation ||
-                (pairs
-                  ? t('{count} çift', { count: drafts.length })
-                  : t('{total} puan · Hazır', { total }))}
-            </span>
-            <button
-              className="button primary"
-              disabled={!can(openAction) || !!validation}
-              onClick={commit}
-            >
-              {pairs ? t('Çift aç') : t('Seri aç')}
-            </button>
-          </footer>
-          {target !== null && melds[target] && (
-            <div className="rx-process">
-              <label>
-                {t('Per {number}', { number: target + 1 })}
-                <select value={joker} onChange={(event) => setJoker(event.target.value)}>
-                  <option value="">{t('Uçtan işle')}</option>
-                  {melds[target].tiles
-                    .filter((tile) => tile.joker)
-                    .map((tile) => (
-                      <option key={tile.id} value={tile.id}>
-                        {t('Okeyi değiştir · {number}', { number: tile.value })}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <button
-                className="button secondary"
-                disabled={
-                  !canProcess ||
-                  !selected.length ||
-                  (selected.length >= tiles.length && !joker) ||
-                  (!!joker && selected.length !== 1)
-                }
-                onClick={() => process(target, rackOrder(selected), joker || undefined)}
-              >
-                {t('Seçili taşları işle')}
-              </button>
-              <button
-                className="text-button"
-                onClick={() => {
-                  setTarget(null);
-                  setJoker('');
-                }}
-              >
-                {t('Vazgeç')}
-              </button>
-            </div>
-          )}
-        </section>
-      )}
-
-      {me !== null && !ended && (
-        <div className="rg-hand-strip o1-actions">
-          <div>
-            <h3>
-              {myTurn
-                ? stage === 'draw'
-                  ? t('Taş çek')
-                  : t('Taş at')
-                : t('{name} oynuyor', { name: turn === null ? '—' : nameOf(turn) })}
-            </h3>
-            <p role="status">
-              {myTurn && picked && byId.has(picked) && pickupPenalty
-                ? t('Yandan aldığın taşı bu el kullan; kullanmazsan +101 yazılır.')
-                : opened
-                  ? opened === 'pairs'
-                    ? t('Çift açtın')
-                    : t('Seri açtın')
-                  : myTurn && stage === 'draw'
-                    ? t('Ortadan çek ya da soldakinin attığını al.')
-                    : t('Henüz açmadın · Istakanı sürükleyerek dizebilirsin.')}
-            </p>
-          </div>
-          <div className="rg-actions">
-            {can('gosterge') && (
-              <button
-                type="button"
-                className="button secondary"
-                onClick={() =>
-                  void action('gosterge', gostergeTile ? { cardId: gostergeTile.id } : undefined)
-                }
-              >
-                {t('Göstergeyi göster')}
-              </button>
-            )}
-            {stage === 'draw' ? (
-              <>
+            <div className="rg-actions">
+              {can('gosterge') && (
                 <button
                   type="button"
                   className="button secondary"
-                  disabled={!myTurn || !can('draw') || !leftTop}
-                  onClick={() => draw(true)}
+                  onClick={() =>
+                    void action('gosterge', gostergeTile ? { cardId: gostergeTile.id } : undefined)
+                  }
                 >
-                  {t('Önceki taşı al')}
+                  {t('Göstergeyi göster')}
                 </button>
-                <button
-                  type="button"
-                  className="button primary"
-                  disabled={!myTurn || !can('draw')}
-                  onClick={() => draw(false)}
-                >
-                  {t('Kapalı taş çek')}
-                </button>
-              </>
-            ) : (
-              <>
-                {myTurn && can('draw') && (
+              )}
+              {stage === 'draw' ? (
+                <>
                   <button
                     type="button"
                     className="button secondary"
-                    onClick={() => void action('draw')}
+                    disabled={!myTurn || !can('draw') || !leftTop}
+                    onClick={() => draw(true)}
                   >
-                    {pickupPenalty
-                      ? t('Aldığın taşı geri bırak ve kapalı çek (+101)')
-                      : t('Aldığın taşı geri bırak ve kapalı çek')}
+                    {t('Önceki taşı al')}
                   </button>
+                  <button
+                    type="button"
+                    className="button primary"
+                    disabled={!myTurn || !can('draw')}
+                    onClick={() => draw(false)}
+                  >
+                    {t('Kapalı taş çek')}
+                  </button>
+                </>
+              ) : (
+                <>
+                  {myTurn && can('draw') && (
+                    <button
+                      type="button"
+                      className="button secondary"
+                      onClick={() => void action('draw')}
+                    >
+                      {pickupPenalty
+                        ? t('Aldığın taşı geri bırak ve kapalı çek (+101)')
+                        : t('Aldığın taşı geri bırak ve kapalı çek')}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="button primary"
+                    disabled={!canDiscard || selected.length !== 1 || used.includes(selected[0])}
+                    onClick={() => discard(selected[0])}
+                  >
+                    {tiles.length === 1 ? t('Bitir · Son taşı at') : t('Seçili taşı at')}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+          <div className={`o1-dock-row ${editing || moveLog ? 'with-side' : ''}`}>
+            <div className="o1-rack" role="group" aria-label={t('Istaka')}>
+              {layout.slice(0, RACK_CELLS).map((id, cell) => {
+                const tile = id ? byId.get(id) : undefined;
+                const dropProps = {
+                  onDragOver: (event: DragEvent) => {
+                    if (dragId) event.preventDefault();
+                  },
+                  onDrop: (event: DragEvent) => {
+                    event.preventDefault();
+                    if (dragId) updateLayout(moveTile(layout, dragId, cell));
+                    setDragId(null);
+                  },
+                };
+                if (!tile)
+                  return selected.length === 1 ? (
+                    <button
+                      type="button"
+                      key={cell}
+                      className="o1-cell empty"
+                      data-cell={cell}
+                      aria-label={t('Seçili taşı buraya taşı')}
+                      onClick={() => {
+                        updateLayout(moveTile(layout, selected[0], cell));
+                        setSelected([]);
+                      }}
+                      {...dropProps}
+                    />
+                  ) : (
+                    <div key={cell} className="o1-cell empty" data-cell={cell} {...dropProps} />
+                  );
+                const inDraft = used.includes(tile.id);
+                return (
+                  <div
+                    key={cell}
+                    className={`o1-cell ${fresh.has(tile.id) ? 'fresh' : ''} ${dragId === tile.id ? 'dragging' : ''} ${tile.id === picked ? 'picked' : ''} ${inDraft ? 'drafted' : ''}`}
+                    data-cell={cell}
+                    data-tile={tile.id}
+                    draggable
+                    onDragStart={(event) => {
+                      event.dataTransfer?.setData('text/plain', tile.id);
+                      setDragId(tile.id);
+                    }}
+                    onDragEnd={() => setDragId(null)}
+                    {...dropProps}
+                  >
+                    <OkeyTileView
+                      tile={tile}
+                      fake={isFakeOkey(tile, okey)}
+                      selected={selected.includes(tile.id) || inDraft}
+                      onClick={() => !inDraft && toggle(tile.id)}
+                      onDoubleClick={canDiscard && !inDraft ? () => discard(tile.id) : undefined}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            {editing ? (
+              <section className="rx-meld-editor o1-editor">
+                <header>
+                  <h3>{opened ? t('Taş işle veya yeni per aç') : t('Açılış hazırla')}</h3>
+                  <div>
+                    <button
+                      className={!pairs ? 'selected' : ''}
+                      disabled={!!opened && opened !== 'runs'}
+                      onClick={() => {
+                        setPairs(false);
+                        setDrafts([]);
+                        setSelected([]);
+                      }}
+                    >
+                      {t('Seri')}
+                    </button>
+                    <button
+                      className={pairs ? 'selected' : ''}
+                      disabled={!!opened && opened !== 'pairs'}
+                      onClick={() => {
+                        setPairs(true);
+                        setDrafts([]);
+                        setSelected([]);
+                      }}
+                    >
+                      {t('Çift')}
+                    </button>
+                  </div>
+                </header>
+                <div className="rx-draft-groups">
+                  {draftTiles.map((group, index) => {
+                    const draft = drafts[index],
+                      ambiguous = !pairs && isAmbiguousMeld(group, wrapAround);
+                    return (
+                      <article key={draft.ids.join('|')}>
+                        {group.map((tile) => (
+                          <OkeyTileView
+                            small
+                            key={tile.id}
+                            tile={tile}
+                            fake={isFakeOkey(tile, okey)}
+                          />
+                        ))}
+                        {ambiguous && (
+                          <div
+                            className="o1-kind"
+                            role="group"
+                            aria-label={t('Okey nasıl okunsun? · Per {number}', {
+                              number: index + 1,
+                            })}
+                          >
+                            {(['run', 'group'] as const).map((kind) => (
+                              <button
+                                type="button"
+                                key={kind}
+                                aria-pressed={draft.kind === kind}
+                                className={draft.kind === kind ? 'selected' : ''}
+                                onClick={() =>
+                                  setDrafts((values) =>
+                                    values.map((value, i) =>
+                                      i === index ? { ...value, kind } : value,
+                                    ),
+                                  )
+                                }
+                              >
+                                {kind === 'run' ? t('Sıralı') : t('Aynı sayı')}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          aria-label={t('Grup {number} kaldır', { number: index + 1 })}
+                          onClick={() =>
+                            setDrafts((values) => values.filter((_, i) => i !== index))
+                          }
+                        >
+                          <X size={14} />
+                        </button>
+                      </article>
+                    );
+                  })}
+                </div>
+                <footer>
+                  <button
+                    className="button secondary"
+                    disabled={
+                      !can(openAction) ||
+                      (pairs ? selected.length !== 2 : selected.length < 3) ||
+                      selected.some((id) => used.includes(id))
+                    }
+                    onClick={() => addDraft(selected)}
+                  >
+                    {pairs ? t('Seçimi çift yap') : t('Seçimi seri yap')}
+                  </button>
+                  <button
+                    className="button secondary"
+                    disabled={!can(openAction) || !blocks.length}
+                    onClick={() => {
+                      const next = blocks.map((ids) => {
+                        const group = ids.map((id) => byId.get(id)!);
+                        return {
+                          ids,
+                          kind:
+                            !pairs && isAmbiguousMeld(group, wrapAround) ? ('run' as const) : null,
+                        };
+                      });
+                      setDrafts((values) => [...values, ...next]);
+                    }}
+                  >
+                    {t('Istakadaki dizileri al')}
+                  </button>
+                  <span role="status" className={validation && drafts.length ? 'invalid' : ''}>
+                    {validation ||
+                      (pairs
+                        ? t('{count} çift', { count: drafts.length })
+                        : t('{total} puan · Hazır', { total }))}
+                  </span>
+                  <button
+                    className="button primary"
+                    disabled={!can(openAction) || !!validation}
+                    onClick={commit}
+                  >
+                    {pairs ? t('Çift aç') : t('Seri aç')}
+                  </button>
+                </footer>
+                {target !== null && melds[target] && (
+                  <div className="rx-process">
+                    <label>
+                      {t('Per {number}', { number: target + 1 })}
+                      <select value={joker} onChange={(event) => setJoker(event.target.value)}>
+                        <option value="">{t('Uçtan işle')}</option>
+                        {melds[target].tiles
+                          .filter((tile) => tile.joker)
+                          .map((tile) => (
+                            <option key={tile.id} value={tile.id}>
+                              {t('Okeyi değiştir · {number}', { number: tile.value })}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                    <button
+                      className="button secondary"
+                      disabled={
+                        !canProcess ||
+                        !selected.length ||
+                        (selected.length >= tiles.length && !joker) ||
+                        (!!joker && selected.length !== 1)
+                      }
+                      onClick={() => process(target, rackOrder(selected), joker || undefined)}
+                    >
+                      {t('Seçili taşları işle')}
+                    </button>
+                    <button
+                      className="text-button"
+                      onClick={() => {
+                        setTarget(null);
+                        setJoker('');
+                      }}
+                    >
+                      {t('Vazgeç')}
+                    </button>
+                  </div>
                 )}
-                <button
-                  type="button"
-                  className="button primary"
-                  disabled={!canDiscard || selected.length !== 1 || used.includes(selected[0])}
-                  onClick={() => discard(selected[0])}
-                >
-                  {tiles.length === 1 ? t('Bitir · Son taşı at') : t('Seçili taşı at')}
-                </button>
-              </>
+              </section>
+            ) : (
+              moveLog
             )}
           </div>
-        </div>
+        </TableDock>
       )}
     </div>
   );
