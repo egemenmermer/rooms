@@ -1,5 +1,7 @@
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -20,6 +22,9 @@ type Action = {
   type: 'text' | 'voice';
   channel?: SocialChannel;
 };
+const ChannelManagement = createContext({ canManage: false });
+/** Whether the signed-in member may create, rename and delete channels in the active community. */
+export const useChannelManagement = () => useContext(ChannelManagement);
 export function ChannelTools({ children }: { children: ReactNode }) {
   const c = useCommunity(),
     navigate = useNavigate();
@@ -44,6 +49,9 @@ export function ChannelTools({ children }: { children: ReactNode }) {
       alive = false;
     };
   }, [c.serverUrl, c.user?.id, c.activeSpaceId]);
+  const space = c.spaces.find((item) => item.id === c.activeSpaceId);
+  // Owners can always manage; the fetched capability covers everyone else.
+  const canManage = !!space && (manageChannels || space.ownerId === c.user?.id);
   const [refreshWarning, setRefreshWarning] = useState('');
   const [action, setAction] = useState<Action | null>(null),
     [busy] = useState(false);
@@ -101,9 +109,11 @@ export function ChannelTools({ children }: { children: ReactNode }) {
       '[data-channel-id],[data-channel-type]',
     );
     if (!target) return;
-    event.preventDefault();
     const channel = c.channels.find((ch) => ch.id === target.dataset.channelId),
       rect = target.getBoundingClientRect();
+    // A section header offers only creation; without the right there is nothing to show.
+    if (!channel && !canManage) return;
+    event.preventDefault();
     origin.current = target;
     setMenu({
       channel,
@@ -174,129 +184,142 @@ export function ChannelTools({ children }: { children: ReactNode }) {
     }
   }
   return (
-    <div
-      className="channel-tools"
-      onClick={(e) => {
-        const target = (e.target as HTMLElement).closest<HTMLElement>('[data-create-type]');
-        if (target && c.activeSpaceId) {
-          origin.current = target;
-          setAction({
-            kind: 'create',
-            type: target.dataset.createType === 'voice' ? 'voice' : 'text',
-          });
-        }
-      }}
-      onContextMenu={show}
-      onKeyDown={(e) => {
-        if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)) show(e);
-      }}
-    >
-      {children}
-      {refreshWarning && (
-        <div className="channel-operation-status" role="status">
-          {refreshWarning}
-          <button
-            onClick={() => {
-              setRefreshWarning('');
-              void c.openSpace(c.activeSpaceId!);
-            }}
-          >
-            {t('Yenile')}
-          </button>
-        </div>
-      )}
-      {menu &&
-        createPortal(
-          <div
-            className="channel-context-menu"
-            ref={menuRef}
-            role="menu"
-            aria-label={t('Kanal işlemleri')}
-            style={{ left: menu.x, top: menu.y }}
-          >
-            <button role="menuitem" onClick={() => choose('create', 'text')}>
-              {t('Metin kanalı oluştur')}
+    <ChannelManagement.Provider value={{ canManage }}>
+      <div
+        className="channel-tools"
+        onClick={(e) => {
+          const target = (e.target as HTMLElement).closest<HTMLElement>('[data-create-type]');
+          if (target && c.activeSpaceId && canManage) {
+            origin.current = target;
+            setAction({
+              kind: 'create',
+              type: target.dataset.createType === 'voice' ? 'voice' : 'text',
+            });
+          }
+        }}
+        onContextMenu={show}
+        onKeyDown={(e) => {
+          if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)) show(e);
+        }}
+      >
+        {children}
+        {refreshWarning && (
+          <div className="channel-operation-status" role="status">
+            {refreshWarning}
+            <button
+              onClick={() => {
+                setRefreshWarning('');
+                void c.openSpace(c.activeSpaceId!);
+              }}
+            >
+              {t('Yenile')}
             </button>
-            <button role="menuitem" onClick={() => choose('create', 'voice')}>
-              {t('Ses odası oluştur')}
-            </button>
-            {menu.channel && (
-              <>
-                <hr />
-                {menu.channel.type !== 2 && (
+          </div>
+        )}
+        {menu &&
+          createPortal(
+            <div
+              className="channel-context-menu"
+              ref={menuRef}
+              role="menu"
+              aria-label={t('Kanal işlemleri')}
+              style={{ left: menu.x, top: menu.y }}
+            >
+              {canManage && (
+                <>
+                  <button role="menuitem" onClick={() => choose('create', 'text')}>
+                    {t('Metin kanalı oluştur')}
+                  </button>
+                  <button role="menuitem" onClick={() => choose('create', 'voice')}>
+                    {t('Ses odası oluştur')}
+                  </button>
+                </>
+              )}
+              {menu.channel && (
+                <>
+                  {canManage && <hr />}
+                  {menu.channel.type !== 2 && (
+                    <button
+                      role="menuitem"
+                      onClick={() => {
+                        const id = menu.channel!.id;
+                        dismiss();
+                        navigate(`/settings?tab=desktop&channel=${encodeURIComponent(id)}`);
+                      }}
+                    >
+                      {t('Bildirimler')}
+                    </button>
+                  )}
                   <button
                     role="menuitem"
                     onClick={() => {
                       const id = menu.channel!.id;
                       dismiss();
-                      navigate(`/settings?tab=desktop&channel=${encodeURIComponent(id)}`);
+                      navigate(
+                        `/settings?tab=channel-permissions&channel=${encodeURIComponent(id)}`,
+                      );
                     }}
                   >
-                    {t('Bildirimler')}
+                    {t('İzinler')}
                   </button>
-                )}
-                <button
-                  role="menuitem"
-                  onClick={() => {
-                    const id = menu.channel!.id;
-                    dismiss();
-                    navigate(`/settings?tab=channel-permissions&channel=${encodeURIComponent(id)}`);
-                  }}
-                >
-                  {t('İzinler')}
-                </button>
-                <button role="menuitem" onClick={() => choose('rename')}>
-                  {t('Adını değiştir')}
-                </button>
-                <button className="destructive" role="menuitem" onClick={() => choose('delete')}>
-                  {t('Kanalı sil')}
-                </button>
-              </>
-            )}
-          </div>,
-          document.body,
+                  {canManage && (
+                    <>
+                      <button role="menuitem" onClick={() => choose('rename')}>
+                        {t('Adını değiştir')}
+                      </button>
+                      <button
+                        className="destructive"
+                        role="menuitem"
+                        onClick={() => choose('delete')}
+                      >
+                        {t('Kanalı sil')}
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+            </div>,
+            document.body,
+          )}
+        {action && space && (
+          <ChannelEditor
+            mode={action.kind}
+            space={space}
+            channel={action.channel}
+            initialType={action.type}
+            canManage={canManage}
+            onClose={close}
+            onCreate={
+              window.rooms
+                ? async (spaceId, name, type) => {
+                    const channel = await window.rooms!.social.createChannel(spaceId, name, type);
+                    await refreshChannels(spaceId, channel);
+                    return channel;
+                  }
+                : undefined
+            }
+            onRename={
+              window.rooms
+                ? async (channelId, name) => {
+                    const spaceId = c.activeSpaceId!;
+                    const channel = await window.rooms!.social.renameChannel(channelId, name);
+                    await refreshChannels(spaceId, channel);
+                    return channel;
+                  }
+                : undefined
+            }
+            onDelete={
+              window.rooms
+                ? async (channelId) => {
+                    const spaceId = c.activeSpaceId!;
+                    await window.rooms!.social.deleteChannel(channelId);
+                    await refreshChannels(spaceId, null, channelId);
+                  }
+                : undefined
+            }
+          />
         )}
-      {action && c.spaces.find((space) => space.id === c.activeSpaceId) && (
-        <ChannelEditor
-          mode={action.kind}
-          space={c.spaces.find((space) => space.id === c.activeSpaceId)!}
-          channel={action.channel}
-          initialType={action.type}
-          canManage={
-            manageChannels ||
-            c.spaces.find((space) => space.id === c.activeSpaceId)?.ownerId === c.user?.id
-          }
-          onClose={close}
-          onCreate={
-            window.rooms
-              ? async (spaceId, name, type) => {
-                  const channel = await window.rooms!.social.createChannel(spaceId, name, type);
-                  await refreshChannels(spaceId, channel);
-                  return channel;
-                }
-              : undefined
-          }
-          onRename={
-            window.rooms
-              ? async (channelId, name) => {
-                  const spaceId = c.activeSpaceId!;
-                  const channel = await window.rooms!.social.renameChannel(channelId, name);
-                  await refreshChannels(spaceId, channel);
-                  return channel;
-                }
-              : undefined
-          }
-          onDelete={
-            window.rooms
-              ? async (channelId) => {
-                  const spaceId = c.activeSpaceId!;
-                  await window.rooms!.social.deleteChannel(channelId);
-                  await refreshChannels(spaceId, null, channelId);
-                }
-              : undefined
-          }
-        />
-      )}
-    </div>
+      </div>
+    </ChannelManagement.Provider>
   );
 }

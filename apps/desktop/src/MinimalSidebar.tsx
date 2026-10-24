@@ -1,6 +1,6 @@
 import { SoundboardButton } from './Soundboard';
 import { CinemaReminders } from './cinema/CinemaReminders';
-import { useState, type DragEvent } from 'react';
+import { useEffect, useId, useState, type DragEvent, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   HeadphoneOff,
@@ -9,7 +9,13 @@ import {
   MicOff,
   PhoneOff,
   Settings,
+  SlidersHorizontal,
   Plus,
+  Check,
+  Home,
+  Users,
+  Bell,
+  MessageSquare,
   Hash,
   Volume2,
   Search,
@@ -38,7 +44,7 @@ import { openActivity, retiredActivity } from './activity-route';
 import { useVoiceDirectory } from './voice-directory';
 import { VoiceAvatar } from './VoiceAvatar';
 import { QuietMenu } from './QuietMenu';
-import { ChannelTools } from './ChannelTools';
+import { ChannelTools, useChannelManagement } from './ChannelTools';
 import { UserProfileDialog } from './SocialSurfaces';
 import type { SocialUser } from '@rooms/social';
 import { t, uiError } from './i18n';
@@ -46,6 +52,7 @@ import { UpdateNotice } from './UpdateNotice';
 import { HallBackground } from './cinema/HallBackground';
 import { HallSidebarRow } from './cinema/HallSidebarRow';
 import { useCommunityCinema } from './cinema/cinema-status';
+import './sidebar-nav.css';
 import {
   VOICE_MEMBER_DRAG,
   VoiceMemberMenu,
@@ -95,6 +102,149 @@ function RoomActivityRow({
     </button>
   );
 }
+/** Incoming friend requests for the signed-in account; null until the first answer. */
+function useIncomingFriendRequests(path: string) {
+  const userId = useCommunity((s) => s.user?.id),
+    serverUrl = useCommunity((s) => s.serverUrl),
+    status = useCommunity((s) => s.status);
+  const [count, setCount] = useState<number | null>(null),
+    [revision, setRevision] = useState(0);
+  useEffect(() => {
+    const changed = () => setRevision((value) => value + 1);
+    window.addEventListener('rooms:friends-changed', changed);
+    window.addEventListener('focus', changed);
+    return () => {
+      window.removeEventListener('rooms:friends-changed', changed);
+      window.removeEventListener('focus', changed);
+    };
+  }, []);
+  // Leaving the friends page after answering requests refreshes the count too.
+  const onFriends = path === '/friends';
+  useEffect(() => {
+    let active = true;
+    const bridge = window.rooms?.social;
+    // Fixtures must not query live services with synthetic IDs.
+    const fixture =
+      import.meta.env.DEV && new URLSearchParams(window.location.search).has('fixture');
+    if (!userId || status !== 'connected' || !bridge?.friends || fixture) {
+      setCount(null);
+      return;
+    }
+    void bridge
+      .friends()
+      .then((friends) => {
+        const current = useCommunity.getState();
+        if (active && current.user?.id === userId && current.serverUrl === serverUrl)
+          setCount(friends.filter((friend) => friend.relationship === 'incoming').length);
+      })
+      .catch(() => {
+        if (active) setCount(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [userId, serverUrl, status, revision, onFriends]);
+  return count;
+}
+/** A count beside a navigation row: the number is shown, the sentence is read. */
+function NavBadge({ count, label }: { count: number | null; label: string }) {
+  if (!count) return null;
+  return (
+    <>
+      <small className="sidebar-nav-badge" aria-hidden="true">
+        {count > 99 ? '99+' : count}
+      </small>
+      <small className="sidebar-nav-sr">{label}</small>
+    </>
+  );
+}
+/**
+ * A channel group header. It is a keyboard stop only for members who can manage channels,
+ * because its context menu offers nothing else.
+ */
+function SectionHeader({
+  type,
+  label,
+  createLabel,
+}: {
+  type: 'text' | 'voice';
+  label: string;
+  createLabel: string;
+}) {
+  const { canManage } = useChannelManagement(),
+    hint = useId();
+  return (
+    <div
+      className="minimal-section"
+      data-channel-type={type}
+      role="group"
+      aria-label={label}
+      tabIndex={canManage ? 0 : undefined}
+      aria-describedby={canManage ? hint : undefined}
+    >
+      <span aria-hidden="true">{label}</span>
+      {canManage && (
+        <>
+          <small id={hint} className="sidebar-nav-sr">
+            {t('Seçenekler için Shift+F10')}
+          </small>
+          <IconButton data-create-type={type} label={createLabel}>
+            <Plus size={14} />
+          </IconButton>
+        </>
+      )}
+    </div>
+  );
+}
+/** What the channel list says when it has nothing to show. */
+function ChannelListState({ createSpace }: { createSpace(): void }) {
+  const c = useCommunity(),
+    { canManage } = useChannelManagement();
+  if (c.channels.length) return null;
+  if (c.busy || (c.activeSpaceId && c.loadingMessages))
+    return (
+      <p className="sidebar-list-state" role="status">
+        {t('Kanallar yükleniyor…')}
+      </p>
+    );
+  if (!c.activeSpaceId)
+    return (
+      <div className="sidebar-list-state">
+        <p>
+          {c.spaces.length
+            ? t('Kanalları görmek için bir topluluk seç.')
+            : t('Henüz bir topluluğun yok.')}
+        </p>
+        {!c.spaces.length && (
+          <button className="button small" onClick={createSpace}>
+            {t('Topluluk oluştur')}
+          </button>
+        )}
+      </div>
+    );
+  if (c.error)
+    return (
+      <div className="sidebar-list-state" role="alert">
+        <p>{t('Kanallar alınamadı.')}</p>
+        <button
+          className="button small"
+          onClick={() => void c.openSpace(c.activeSpaceId!).catch(() => {})}
+        >
+          {t('Yeniden dene')}
+        </button>
+      </div>
+    );
+  return (
+    <div className="sidebar-list-state">
+      <p>{t('Henüz kanal yok')}</p>
+      {canManage && (
+        <button className="button small" data-create-type="text">
+          {t('Kanal oluştur')}
+        </button>
+      )}
+    </div>
+  );
+}
 export function MinimalSidebar({
   notify,
   invite,
@@ -135,6 +285,27 @@ export function MinimalSidebar({
   const space = c.spaces.find((s) => s.id === c.activeSpaceId),
     voices = c.channels.filter((ch) => ch.type === 2 && ch.id !== hallId);
   const directory = useVoiceDirectory(voices.map((ch) => ch.id));
+  const incomingRequests = useIncomingFriendRequests(location.pathname);
+  // The same records the notifications page lists: mentions in this community and in DMs.
+  const unreadNotifications = [...c.channels, ...c.dms].reduce(
+    (sum, ch) => sum + (c.readStates[ch.id]?.mentionMessageIds?.length ?? 0),
+    0,
+  );
+  const unreadDms = c.dms.some((dm) => c.unread[dm.id]);
+  const navRow = (path: string, label: string, icon: ReactNode, extra?: ReactNode) => {
+    const selected = location.pathname === path;
+    return (
+      <button
+        className={`minimal-nav ${selected ? 'selected' : ''}`}
+        aria-current={selected ? 'page' : undefined}
+        onClick={() => navigate(path)}
+      >
+        {icon}
+        <span title={label}>{label}</span>
+        {extra}
+      </button>
+    );
+  };
   const run = (task: Promise<unknown>) => void task.catch((e) => notify(uiError(e)));
   const enter = (id: string, name: string) => {
     navigate('/voice');
@@ -144,18 +315,21 @@ export function MinimalSidebar({
   return (
     <ChannelTools>
       <aside id="rooms-navigation" className="minimal-sidebar" aria-label={t('Odalar ve gezinme')}>
-        <header>
+        <header title={space?.name}>
           <QuietMenu label={space?.name ?? 'Tayfa'}>
             {c.spaces.map((s) => (
               <button
                 key={s.id}
+                className="sidebar-space-option"
+                aria-current={s.id === space?.id ? 'true' : undefined}
+                title={s.name}
                 onClick={() => {
                   navigate('/chat');
                   run(c.openSpace(s.id));
                 }}
               >
-                {s.name}
-                {s.id === space?.id ? ' ✓' : ''}
+                <span>{s.name}</span>
+                {s.id === space?.id && <Check size={14} aria-hidden="true" />}
               </button>
             ))}
             <hr />
@@ -164,8 +338,6 @@ export function MinimalSidebar({
             <button disabled={!space} onClick={() => navigate('/settings?tab=server-profile')}>
               {t('Sunucu ayarları')}
             </button>
-            <button onClick={() => navigate('/friends')}>{t('Arkadaşlar')}</button>
-            <button onClick={() => navigate('/notifications')}>{t('Bildirimler')}</button>
             <button onClick={() => navigate('/files')}>{t('Dosyalar')}</button>
             <button onClick={() => navigate('/media')}>{t('Medyam')}</button>
             <button onClick={() => navigate('/agent?tab=schedules')}>
@@ -178,30 +350,47 @@ export function MinimalSidebar({
           </IconButton>
         </header>
         <div className="minimal-room-list">
-          <button
-            className={`minimal-nav ${location.pathname === '/messages' ? 'selected' : ''}`}
-            onClick={() => navigate('/messages')}
-          >
-            {t('Mesajlar')}
-            {Object.keys(c.unread).some(
-              (id) => c.dms.some((dm) => dm.id === id) && c.unread[id],
-            ) && <i className="nav-dot" />}
-          </button>
+          <div className="sidebar-nav" role="group" aria-label={t('Kişisel')}>
+            {navRow('/home', t('Ana sayfa'), <Home size={15} aria-hidden="true" />)}
+            {navRow(
+              '/friends',
+              t('Arkadaşlar'),
+              <Users size={15} aria-hidden="true" />,
+              <NavBadge
+                count={incomingRequests}
+                label={t('{count} yeni arkadaşlık isteği', { count: incomingRequests ?? 0 })}
+              />,
+            )}
+            {navRow(
+              '/notifications',
+              t('Bildirimler'),
+              <Bell size={15} aria-hidden="true" />,
+              <NavBadge
+                count={unreadNotifications}
+                label={t('{count} okunmamış bildirim', { count: unreadNotifications })}
+              />,
+            )}
+            {navRow(
+              '/messages',
+              t('Mesajlar'),
+              <MessageSquare size={15} aria-hidden="true" />,
+              unreadDms && (
+                <>
+                  <i className="nav-dot" aria-hidden="true" />
+                  <small className="sidebar-nav-sr">{t('Okunmamış mesaj var')}</small>
+                </>
+              ),
+            )}
+          </div>
           <HallSidebarRow
             selected={location.pathname === '/cinema'}
             onOpen={() => navigate('/cinema')}
           />
-          <div className="minimal-section" data-channel-type="text" tabIndex={0}>
-            {t('Sohbetler')}
-            <button
-              data-create-type="text"
-              aria-label={t('Sohbet kanalı oluştur')}
-              disabled={!c.activeSpaceId}
-              title={!c.activeSpaceId ? t('Önce topluluk seç.') : undefined}
-            >
-              <Plus size={14} />
-            </button>
-          </div>
+          <SectionHeader
+            type="text"
+            label={t('Sohbetler')}
+            createLabel={t('Sohbet kanalı oluştur')}
+          />
           {c.channels
             .filter((ch) => ch.type === 0 && ch.id !== hallId)
             .map((ch) => (
@@ -209,27 +398,25 @@ export function MinimalSidebar({
                 data-channel-id={ch.id}
                 key={ch.id}
                 className={`minimal-nav ${c.activeChannelId === ch.id && location.pathname === '/chat' ? 'selected' : ''}`}
+                aria-current={
+                  c.activeChannelId === ch.id && location.pathname === '/chat' ? 'page' : undefined
+                }
                 onClick={() => {
                   navigate('/chat');
                   run(c.openChannel(ch.id));
                 }}
               >
-                <Hash size={15} />
-                <span>{ch.name}</span>
+                <Hash size={15} aria-hidden="true" />
+                <span title={ch.name}>{ch.name}</span>
                 {c.unread[ch.id] && <i className="nav-dot" />}
               </button>
             ))}
-          <div className="minimal-section" data-channel-type="voice" tabIndex={0}>
-            {t('Odalar')}
-            <button
-              data-create-type="voice"
-              aria-label={t('Ses odası oluştur')}
-              disabled={!c.activeSpaceId}
-              title={!c.activeSpaceId ? t('Önce topluluk seç.') : undefined}
-            >
-              <Plus size={14} />
-            </button>
-          </div>
+          <SectionHeader type="voice" label={t('Odalar')} createLabel={t('Ses odası oluştur')} />
+          {voices.length > 0 && directory.error && (
+            <small className="occupancy-unavailable sidebar-directory-state" role="status">
+              {t('Üyeler alınamadı. Yeniden deneniyor…')}
+            </small>
+          )}
           {voices.map((ch) => {
             const occupants =
               r.channelId === ch.id && r.status === 'connected'
@@ -269,8 +456,8 @@ export function MinimalSidebar({
                   className={`minimal-nav ${(r.channelId === ch.id || c.activeChannelId === ch.id) && location.pathname === '/voice' ? 'selected' : ''}`}
                   onClick={() => enter(ch.id, ch.name)}
                 >
-                  <Volume2 size={15} />
-                  <span>{ch.name}</span>
+                  <Volume2 size={15} aria-hidden="true" />
+                  <span title={ch.name}>{ch.name}</span>
                   {r.channelId === ch.id && r.status === 'connected' && (
                     <i className="room-connected-dot" />
                   )}
@@ -328,7 +515,7 @@ export function MinimalSidebar({
                       }}
                     >
                       <VoiceAvatar id={p.id} name={p.name} />
-                      <span>{p.name}</span>
+                      <span title={p.name}>{p.name}</span>
                       {'screen' in p && p.screen === true && (
                         <MonitorUp size={13} aria-label={t('Ekran paylaşıyor')} />
                       )}
@@ -348,20 +535,18 @@ export function MinimalSidebar({
                 {r.channelId === ch.id && r.status === 'connected' && (
                   <RoomActivityRow roomId={ch.id} onOpen={(kind) => openActivity(kind, navigate)} />
                 )}
+                {/* A failed or loading directory is reported once, under the header. */}
                 {!(r.channelId === ch.id && r.status === 'connected') &&
-                  (directory.error ||
-                    directory.loading ||
-                    !directory.rooms.some((room) => room.channelId === ch.id)) && (
-                    <small className="occupancy-unavailable">
-                      {directory.loading ? t('Üyeler yükleniyor…') : t('Üyeler alınamadı')}
-                    </small>
+                  !directory.error &&
+                  !directory.loading &&
+                  directory.rooms &&
+                  !directory.rooms.some((room) => room.channelId === ch.id) && (
+                    <small className="occupancy-unavailable">{t('Üyeler alınamadı')}</small>
                   )}
               </div>
             );
           })}
-          {!c.channels.length && (
-            <p className="muted">{c.loadingMessages ? t('Odalar yükleniyor…') : t('Oda yok.')}</p>
-          )}
+          <ChannelListState createSpace={createSpace} />
         </div>
         <div className="minimal-self">
           {(r.channelId || r.busy || r.error) && (
@@ -376,52 +561,25 @@ export function MinimalSidebar({
                         ? t('Yeniden bağlanıyor…')
                         : t('Ses bağlı değil')}
                 </strong>
-                <small>{r.roomName}</small>
+                <small title={r.roomName ?? undefined}>{r.roomName}</small>
               </span>
-              <QuietMenu label={t('Ses işlemleri')} compact>
-                <button
-                  disabled={r.status !== 'connected'}
-                  onClick={() => {
-                    run(
-                      toggleCamera().then(() => {
-                        if (!r.camera) {
-                          if (r.channelId) run(c.openChannel(r.channelId));
-                          navigate('/voice?view=video');
-                        }
-                      }),
-                    );
-                  }}
-                >
-                  {r.camera ? t('Kamerayı kapat') : t('Kamerayı aç')}
-                </button>
-                <button
-                  disabled={r.status !== 'connected'}
-                  onClick={() => window.dispatchEvent(new Event('rooms:choose-capture'))}
-                >
-                  {t('Ekran paylaş')}
-                </button>
-                {r.sharing && (
-                  <button onClick={() => run(stopScreen())}>{t('Paylaşımı durdur')}</button>
-                )}
-                <button onClick={() => window.dispatchEvent(new Event('rooms:open-soundboard'))}>
-                  Soundboard
-                </button>
-                <button onClick={() => navigate('/settings?tab=audio')}>{t('Ses ayarları')}</button>
-              </QuietMenu>
+              <IconButton label={t('Ses ayarları')} onClick={() => navigate('/settings?tab=audio')}>
+                <SlidersHorizontal size={15} />
+              </IconButton>
             </div>
           )}
           {r.channelId && (
             <div className="sidebar-media-actions">
-              <button
+              <IconButton
                 disabled={r.status !== 'connected' || r.busy}
-                aria-label={r.camera ? t('Kamerayı kapat') : t('Kamerayı aç')}
+                label={r.camera ? t('Kamerayı kapat') : t('Kamerayı aç')}
                 onClick={() => run(toggleCamera().then(() => navigate('/voice')))}
               >
                 <Video size={17} />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
                 disabled={r.status !== 'connected' || r.busy}
-                aria-label={r.sharing ? t('Paylaşımı durdur') : t('Ekran paylaş')}
+                label={r.sharing ? t('Paylaşımı durdur') : t('Ekran paylaş')}
                 onClick={() =>
                   r.sharing
                     ? run(stopScreen())
@@ -429,19 +587,19 @@ export function MinimalSidebar({
                 }
               >
                 <MonitorUp size={17} />
-              </button>
-              <button
-                aria-label={t('Etkinlikler')}
+              </IconButton>
+              <IconButton
+                label={t('Etkinlikler')}
                 onClick={() => window.dispatchEvent(new Event('rooms:open-activity-launcher'))}
               >
                 <Gamepad2 size={17} />
-              </button>
-              <button
-                aria-label="Soundboard"
+              </IconButton>
+              <IconButton
+                label="Soundboard"
                 onClick={() => window.dispatchEvent(new Event('rooms:open-soundboard'))}
               >
                 <PartyPopper size={17} />
-              </button>
+              </IconButton>
             </div>
           )}
           {r.error && (
@@ -462,7 +620,7 @@ export function MinimalSidebar({
           <div className="minimal-self-row">
             <button className="minimal-profile" onClick={() => navigate('/settings?tab=profile')}>
               {c.user && <VoiceAvatar id={c.user.id} name={c.user.displayName} />}
-              <span>{c.user?.displayName ?? t('Profil')}</span>
+              <span title={c.user?.displayName}>{c.user?.displayName ?? t('Profil')}</span>
             </button>
             <UpdateNotice />
             <IconButton label={t('Ayarlar')} onClick={() => navigate('/settings')}>
@@ -482,7 +640,7 @@ export function MinimalSidebar({
                 {r.muted ? <MicOff size={17} /> : <Mic size={17} />}
               </IconButton>
               <IconButton
-                label={r.deafened ? t('Sesi aç') : t('Sağırlaştır')}
+                label={r.deafened ? t('Sağırlaştırmayı kapat') : t('Sağırlaştır')}
                 aria-pressed={r.deafened}
                 className={r.deafened ? 'muted-control' : ''}
                 disabled={r.status !== 'connected' || r.busy}

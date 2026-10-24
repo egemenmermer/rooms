@@ -263,7 +263,9 @@ export const shell: Catalog = {
   'Güncellemeleri denetle': 'Check for updates',
   'Güncellemeleri kontrol et': 'Check for updates',
   'Güncellemeyi indir': 'Download update',
+  'Henüz bir topluluğun yok.': 'You don’t have a community yet.',
   'Henüz burada bir şey yok': 'Nothing here yet',
+  'Henüz kanal yok': 'No channels yet',
   'Hesabın oluşturulup oluşturulmadığı doğrulanamadı. Yeni davet kullanmadan önce giriş yapmayı dene.':
     'Couldn’t confirm whether the account was created. Try signing in before using another invite.',
   'Hesabını oluşturunca bu topluluğa katılacaksın.':
@@ -282,6 +284,8 @@ export const shell: Catalog = {
   'Kanal erişimi yeniden doğrulanmalı.': 'Channel access needs to be verified again.',
   'Kanal listesini aç': 'Open channel list',
   'Kanal listesini kapat': 'Close channel list',
+  'Kanallar alınamadı.': 'Couldn’t load channels.',
+  'Kanalları görmek için bir topluluk seç.': 'Choose a community to see its channels.',
   Kapat: 'Close',
   'Kart oyunları': 'Card games',
   'Karşılanmamış bahis var. Gör, artır veya eli bırak.':
@@ -367,13 +371,11 @@ export const shell: Catalog = {
   'Oda işlemleri': 'Room actions',
   'Oda sesini aç': 'Turn room sound on',
   'Oda veya komut ara…': 'Search rooms or commands…',
-  'Oda yok.': 'No rooms.',
   'Oda üyelerine ulaşılamıyor.': 'Can’t reach the room members.',
   'Odada başka bir etkinlik açık. Önce mevcut etkinliği bitirin.':
     'Another activity is open in the room. Finish the current activity first.',
   Odalar: 'Rooms',
   'Odalar ve gezinme': 'Rooms and navigation',
-  'Odalar yükleniyor…': 'Loading rooms…',
   'Odan hazırlanıyor': 'Getting your room ready',
   'Odan hazırlanıyor.': 'Getting your room ready.',
   'Odaya müzik aç: YouTube, Spotify listeleri ve sıra.':
@@ -382,6 +384,7 @@ export const shell: Catalog = {
   'Odaya yeniden bağlanıyoruz': 'Reconnecting to the room',
   'Okeyi almak için temsil ettiği renk ve sayıdaki tek taşı koymalısın.':
     'To take the joker, you must place the single tile it stands for, with that color and number.',
+  'Okunmamış mesaj var': 'Unread messages',
   'Ortak etkinlikler masaüstü uygulaması ve yapılandırılmış sunucu gerektirir.':
     'Shared activities require the desktop app and a configured server.',
   'Ortak odada birlikte karar ver': 'Decide together in a shared room',
@@ -429,6 +432,7 @@ export const shell: Catalog = {
     'The role change was saved, but the updated list couldn’t be loaded. Refresh the list before creating another role.',
   'SANA ÖZEL': 'JUST FOR YOU',
   'SES ODALARI': 'VOICE ROOMS',
+  'Seçenekler için Shift+F10': 'Shift+F10 for options',
   SOHBET: 'CHAT',
   'Sahip olmadığın bir yetkiyi değiştiremez veya başka bir role veremezsin.':
     'You can’t change or grant a permission you don’t have.',
@@ -442,7 +446,6 @@ export const shell: Catalog = {
   'Ses bağlantın ve açık görüşmeler kapanacak.': 'Your voice connection and open calls will close.',
   'Ses bağlı': 'Voice connected',
   'Ses bağlı değil': 'Voice not connected',
-  'Ses işlemleri': 'Voice actions',
   'Ses odası oluştur': 'Create voice room',
   'Ses odası yok.': 'No voice rooms.',
   'Ses odası: {status}': 'Voice room: {status}',
@@ -629,7 +632,6 @@ export const shell: Catalog = {
   'Önce ortak Sinema veya YouTube etkinliğini başlat.':
     'Start a shared Cinema or YouTube activity first.',
   'Önce ortak sıradan bir medya seç.': 'Pick media from the shared queue first.',
-  'Önce topluluk seç.': 'Choose a community first.',
   'Önceki oyuncunun alabileceğin bir taşı yok.': 'The previous player has no tile you can pick up.',
   'Öne çıkanlar': 'Featured',
   'Önizle ve indir': 'Preview and download',
@@ -646,6 +648,7 @@ export const shell: Catalog = {
   'Üye panelini kapat': 'Close member panel',
   Üyeler: 'Members',
   'Üyeler alınamadı': 'Couldn’t load members',
+  'Üyeler alınamadı. Yeniden deneniyor…': 'Couldn’t load members. Retrying…',
   'Üyeler yükleniyor…': 'Loading members…',
   İleri: 'Next',
   'İlk görüntülü görüşmede seçebilirsin.': 'You can choose it on your first video call.',
