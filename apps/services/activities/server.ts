@@ -6,7 +6,11 @@ import {
 import Fastify, { type FastifyRequest } from 'fastify';
 import rateLimit from '@fastify/rate-limit';
 import { z } from 'zod';
-import { commandSchema, opaqueId } from '../../../packages/activity-protocol/src/index';
+import {
+  commandSchema,
+  opaqueId,
+  type ActivityResponse,
+} from '../../../packages/activity-protocol/src/index';
 import {
   ActivityError,
   applyCommand,
@@ -29,6 +33,21 @@ export interface ActivityServerOptions {
   sweepIntervalMs?: number;
   /** Internal test/deployment tuning; never accepts values from a client. */
   rateLimits?: { ingressPerMinute: number; identityPerMinute: number };
+}
+/** Poll and command responses carry only the newest archived tables, each with a short hand list. */
+export const POLL_PREVIOUS_TABLES = 3;
+export const POLL_PREVIOUS_HANDS = 20;
+/** Bound `previousTables` in place; `full` (explicit `?previousTables=all`) keeps every archive. */
+export function boundPreviousTables(res: ActivityResponse, full: boolean) {
+  const view = res.room.game?.view;
+  if (full || !view || !Array.isArray(view.previousTables)) return res;
+  view.previousTables = view.previousTables.slice(-POLL_PREVIOUS_TABLES).map((table) => {
+    const archive = table as { history?: unknown };
+    return Array.isArray(archive.history)
+      ? { ...archive, history: archive.history.slice(-POLL_PREVIOUS_HANDS) }
+      : table;
+  });
+  return res;
 }
 export async function createActivityServer(options: ActivityServerOptions) {
   const operationalError = activityOperationalReporter(options.onOperationalEvent);
@@ -144,7 +163,10 @@ export async function createActivityServer(options: ActivityServerOptions) {
         await options.repository.save(room);
         notify(roomId);
       }
-      return response(room, command.expectedRevision, now(), identity.userId);
+      return boundPreviousTables(
+        response(room, command.expectedRevision, now(), identity.userId),
+        false,
+      );
     });
   });
   app.get('/v1/rooms/:roomId/activity', async (request) => {
@@ -153,6 +175,7 @@ export async function createActivityServer(options: ActivityServerOptions) {
       .object({
         afterRevision: z.coerce.number().int().min(0).default(0),
         waitMs: z.coerce.number().int().min(0).max(25000).default(0),
+        previousTables: z.enum(['all']).optional(),
       })
       .strict()
       .parse(request.query);
@@ -190,7 +213,10 @@ export async function createActivityServer(options: ActivityServerOptions) {
         identity = await identityOf(request.headers.authorization, roomId);
         room = await read();
       }
-      return response(room, query.afterRevision, now(), identity.userId);
+      return boundPreviousTables(
+        response(room, query.afterRevision, now(), identity.userId),
+        query.previousTables === 'all',
+      );
     } finally {
       clearTimeout(timer);
       request.raw.off('aborted', aborted);
