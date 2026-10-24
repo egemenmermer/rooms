@@ -71,6 +71,17 @@
   background: var(--color-status-error);
   color: var(--color-text-onDanger);
 }
+/* Time is up: a quiet icon chip, so it never reads as a notification count. */
+.rg-seat-clock.expired {
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--color-status-error);
+  background: var(--color-background-raised);
+  color: var(--color-status-error);
+}
 .rg-seat-badge {
   position: absolute;
   top: -6px;

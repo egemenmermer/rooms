@@ -77,7 +77,7 @@ export function holdemFixture(scene: HoldemScene): GamePublicState {
       runoutFrom: null,
       settlementReason: null,
       log: preflop,
-      turnDeadline: 4_000_000_000_000,
+      turnDeadline: Date.now() + 30_000,
       watching: viewer === null,
       ownRecovery: viewer
         ? { disconnectedAt: null, takeoverAt: null, pendingReturn: false, takeover: false }

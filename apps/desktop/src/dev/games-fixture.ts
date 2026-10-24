@@ -514,7 +514,7 @@ function baseGame(kind: GamePublicState['kind'], count = 4): GamePublicState {
               ? sample('Salon Batak', 'Lounge Batak')
               : sample('Bir el daha', 'One more hand'),
       legalActions: [],
-      turnDeadline: epoch + 40_000,
+      turnDeadline: Date.now() + 30_000,
       statistics: { [self]: { hands: 0, wins: 0, score: 0 } },
       watching: false,
       spectatorAccess: true,

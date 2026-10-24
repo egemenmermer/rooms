@@ -1,10 +1,11 @@
 import { createContext, useContext, useRef, useSyncExternalStore } from 'react';
-import { UserMinus } from 'lucide-react';
+import { Hourglass, UserMinus } from 'lucide-react';
 import { Avatar } from '@rooms/design';
 import { t } from '../../i18n';
 import { mediaProvider } from '../../runtime-sources';
 import { VoiceAvatar } from '../../VoiceAvatar';
 import type { GamePublicState } from '../../../../../packages/activity-protocol/src';
+import { guardTimer } from './TurnClock';
 import './seat-avatar.css';
 
 export type GameSeat = GamePublicState['seats'][number];
@@ -63,18 +64,25 @@ export function useSpeaking(userId: string) {
   });
 }
 
-/** Turn time left on a ring around the avatar; red under 10 seconds. */
-function SeatClock({ timer, deadline }: { timer: number; deadline: number }) {
+/**
+ * Turn time left on a ring around the avatar; red under 10 seconds. At zero the ring stays full
+ * and red with an hourglass (not a number: a red "0" reads as an unread badge). A value that
+ * cannot be a real turn time (see `guardTimer`) draws nothing.
+ */
+function SeatClock({ timer, deadline }: { timer: number | null; deadline: number }) {
   // The ring's full length is the time left when this turn was first seen.
   const total = useRef<{ deadline: number; seconds: number } | null>(null);
+  const seconds = guardTimer(timer);
+  if (seconds === null) return null;
   if (!total.current || total.current.deadline !== deadline)
-    total.current = { deadline, seconds: Math.max(timer, 1) };
-  const fraction = Math.max(0, Math.min(1, timer / total.current.seconds)),
+    total.current = { deadline, seconds: Math.max(seconds, 1) };
+  const expired = seconds === 0,
+    fraction = expired ? 1 : Math.max(0, Math.min(1, seconds / total.current.seconds)),
     radius = 26,
     length = 2 * Math.PI * radius;
   return (
     <>
-      <svg className="rg-seat-ring" viewBox="0 0 60 60" aria-hidden>
+      <svg className={`rg-seat-ring${expired ? ' expired' : ''}`} viewBox="0 0 60 60" aria-hidden>
         <circle cx="30" cy="30" r={radius} />
         <circle
           cx="30"
@@ -84,9 +92,18 @@ function SeatClock({ timer, deadline }: { timer: number; deadline: number }) {
           strokeDashoffset={length * (1 - fraction)}
         />
       </svg>
-      <span className="rg-seat-clock" aria-label={t('{seconds} saniye kaldı', { seconds: timer })}>
-        {timer}
-      </span>
+      {expired ? (
+        <span className="rg-seat-clock expired" role="img" aria-label={t('Süre doldu')}>
+          <Hourglass size={12} aria-hidden />
+        </span>
+      ) : (
+        <span
+          className="rg-seat-clock"
+          aria-label={t('{seconds} saniye kaldı', { seconds })}
+        >
+          {seconds}
+        </span>
+      )}
     </>
   );
 }
@@ -110,14 +127,15 @@ export function SeatAvatar({
     controls = useContext(SeatControlsContext);
   const turn = game.status === 'playing' && game.turn === seat.seat,
     deadline = Number(game.view.turnDeadline ?? 0),
-    low = turn && timer !== null && timer <= 10;
+    shown = turn ? guardTimer(timer) : null,
+    low = shown !== null && shown <= 10;
   return (
     <div
       className={`rg-seat-avatar${speaking ? ' speaking' : ''}${turn ? ' turn' : ''}${low ? ' low' : ''}${seat.bot ? ' bot' : ''}${seat.connected ? '' : ' away'}`}
     >
       <div className="rg-seat-face">
         {seat.bot ? <Avatar name={seat.name} /> : <VoiceAvatar id={seat.userId} name={seat.name} />}
-        {turn && timer !== null && <SeatClock timer={timer} deadline={deadline} />}
+        {shown !== null && <SeatClock timer={shown} deadline={deadline} />}
         {seat.bot && <span className="rg-seat-badge">{'BOT'}</span>}
       </div>
       {speaking && <span className="rg-visually-hidden">{t('Konuşuyor')}</span>}

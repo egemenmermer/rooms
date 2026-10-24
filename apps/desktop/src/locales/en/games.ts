@@ -1323,6 +1323,7 @@ export const games: Catalog = {
   'Sıra sende · {game}': 'Your turn · {game}',
   '{game} · {seconds} sn': '{game} · {seconds}s',
   '{seconds} saniye kaldı': '{seconds} seconds left',
+  'Süre doldu': 'Time is up',
   'Koltuğu boşalt': 'Free the seat',
   '{name} koltuğunu boşalt': 'Free {name}’s seat',
   'Para al': 'Buy back in',
