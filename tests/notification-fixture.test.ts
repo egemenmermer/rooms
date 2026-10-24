@@ -10,7 +10,8 @@ const channel = {
 };
 describe('isolated S67 development fixtures', () => {
   it('supports exactly the inventoried states and rejects other captures', () => {
-    expect(notificationVariants).toEqual(['default', 'muted', 'system_permission', 'tray']);
+    expect(notificationVariants).toEqual(['default', 'muted', 'system_permission']);
+    expect(() => createNotificationFixture('tray')).toThrow('Unsupported S67');
     expect(() => createNotificationFixture('unknown')).toThrow('Unsupported S67');
   });
   it('shows unavailable platform capability without claiming OS permission was observed', async () => {
@@ -26,7 +27,7 @@ describe('isolated S67 development fixtures', () => {
     expect(await second.notifications.channelStatus(channel)).toEqual({ muted: false });
   });
   it('updates independent notification and desktop preferences without any native bridge', async () => {
-    const fixture = createNotificationFixture('tray');
+    const fixture = createNotificationFixture('default');
     await fixture.notifications.setSound(false);
     expect(await fixture.notifications.status()).toEqual({
       enabled: true,
