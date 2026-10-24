@@ -181,3 +181,77 @@ it('sends the muck rule as a game.create option and keeps it out of the table ru
   expect(envelope(command).success).toBe(true);
   expect(holdemTableRules.command({ ...value, muckLosers: false })).not.toHaveProperty('options');
 });
+
+it('slides every street’s bets into the pot and keeps a dealt card flipping across clock ticks', () => {
+  const start = holdemFixture('your-turn');
+  const props: LobbyTableProps = {
+    game: start,
+    userId: 'self',
+    can: () => false,
+    send: vi.fn(async () => true),
+    onSit: vi.fn(),
+    shortcuts: true,
+    ready: true,
+    busy: false,
+    timer: 30,
+    startReason: '',
+  };
+  const view = render(<HoldemTable {...props} />);
+  expect(document.querySelectorAll('.ho-dealt')).toHaveLength(0);
+  const street = (
+    game: GamePublicState,
+    stage: string,
+    log: unknown[],
+    board: unknown[],
+    bets: Record<string, number> = {},
+  ): GamePublicState => ({
+    ...game,
+    view: {
+      ...game.view,
+      stage,
+      board,
+      log,
+      seats: (game.view.seats as Record<string, unknown>[]).map((seat) => ({
+        ...seat,
+        streetBet: bets[String(seat.userId)] ?? 0,
+      })),
+    },
+  });
+  const call = (street: string, userId: string, to: number) => ({
+    street,
+    userId,
+    action: 'call',
+    amount: to,
+    to,
+    allIn: false,
+  });
+  const flopLog = [
+    ...(start.view.log as unknown[]),
+    call('flop', 'self', 40),
+    call('flop', 'demo-ali', 40),
+  ];
+  const turnCard = { id: 'diamonds-14', suit: 'diamonds', rank: 14 };
+  const turn = street(start, 'turn', flopLog, [...(start.view.board as unknown[]), turnCard]);
+  view.rerender(<HoldemTable {...props} game={turn} />);
+  // The flop's four 40-chip bets (the last call came with the street change) go to the pot.
+  expect(document.querySelectorAll('.ho-sweep')).toHaveLength(4);
+  expect(document.querySelectorAll('.ho-dealt')).toHaveLength(1);
+  // A clock tick re-renders the same view: the new card keeps flipping.
+  view.rerender(<HoldemTable {...props} game={{ ...turn }} timer={29} />);
+  expect(document.querySelectorAll('.ho-dealt')).toHaveLength(1);
+  const turnLog = [...flopLog, { ...call('turn', 'demo-zeynep', 60), action: 'raise' }];
+  const betting = street(turn, 'turn', turnLog, turn.view.board as unknown[], {
+    'demo-zeynep': 60,
+  });
+  view.rerender(<HoldemTable {...props} game={betting} />);
+  const river = street(
+    betting,
+    'river',
+    [...turnLog, call('turn', 'demo-can', 60)],
+    [...(turn.view.board as unknown[]), { id: 'clubs-2', suit: 'clubs', rank: 2 }],
+  );
+  view.rerender(<HoldemTable {...props} game={river} />);
+  expect(
+    [...document.querySelectorAll('.ho-sweep')].map((item) => item.getAttribute('class')),
+  ).toHaveLength(2);
+});

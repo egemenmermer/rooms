@@ -18,6 +18,7 @@ import {
   raiseFloor,
   raisePresets,
   seatPosition,
+  streetTotals,
 } from './model';
 import { pokerCategory } from './poker-labels';
 import './holdem.css';
@@ -108,7 +109,8 @@ export function HoldemTable({
 
   // Bets slide into the pot when a street (or the hand) ends.
   const [sweep, setSweep] = useState<Sweep | null>(null);
-  const previous = useRef<{ stage: unknown; hand: number; bets: Sweep['bets'] } | null>(null);
+  const previous = useRef<{ stage: unknown; hand: number } | null>(null),
+    lastBets = useRef<Sweep['bets']>([]);
   const liveBets = playing
     ? projected
         .filter((seat) => Number(seat.streetBet ?? 0) > 0)
@@ -122,15 +124,24 @@ export function HoldemTable({
   useEffect(() => {
     const before = previous.current,
       hand = game.history.length;
-    previous.current = { stage: view.stage, hand, bets: liveBets };
+    previous.current = { stage: view.stage, hand };
     // Same hand, next street; or the hand just ended (its history entry was appended).
-    const streetEnded =
-      !!before &&
-      before.bets.length > 0 &&
-      before.stage !== view.stage &&
-      (before.hand === hand || (finished && before.hand === hand - 1));
-    if (!streetEnded) return;
-    const next = { key: Date.now(), bets: before!.bets };
+    if (
+      !before ||
+      before.stage === view.stage ||
+      !(before.hand === hand || (finished && before.hand === hand - 1))
+    )
+      return;
+    // The street's final totals come from the public log: the last call usually moves the hand
+    // to the next street in the same update. Without a log, the bets last seen on the felt.
+    const totals = streetTotals(log, before.stage);
+    const bets = totals.size
+      ? [...totals]
+          .map(([id, amount]) => ({ userId: id, amount, position: positionOf(id) ?? -1 }))
+          .filter((bet) => bet.amount > 0 && bet.position >= 0)
+      : lastBets.current;
+    if (!bets.length) return;
+    const next = { key: Date.now(), bets };
     setSweep(next);
     const timer = setTimeout(
       () => setSweep((value) => (value?.key === next.key ? null : value)),
@@ -138,15 +149,19 @@ export function HoldemTable({
     );
     return () => clearTimeout(timer);
   }, [String(view.stage), game.history.length]);
-
-  // Community cards seen on the first render are already on the felt; later ones flip in.
-  const seenBoard = useRef<Set<string> | null>(null);
-  const board = array<Card>(view.board);
-  if (!seenBoard.current) seenBoard.current = new Set(board.map((card) => card.id));
-  const freshBoard = board.filter((card) => !seenBoard.current!.has(card.id));
+  // Declared after the sweep so the sweep reads the previous render's bets.
   useEffect(() => {
-    for (const card of board) seenBoard.current?.add(card.id);
+    lastBets.current = liveBets;
   });
+
+  // Cards on the first render (or a board that shrank: a new hand) are already on the felt. Each
+  // later card keeps its place in its deal batch, so the flip survives the lobby's clock ticks.
+  const board = array<Card>(view.board);
+  const dealt = useRef<Map<string, number> | null>(null);
+  if (!dealt.current || board.length < dealt.current.size)
+    dealt.current = new Map(board.map((card) => [card.id, -1]));
+  let batch = 0;
+  for (const card of board) if (!dealt.current.has(card.id)) dealt.current.set(card.id, batch++);
 
   const action = (value: 'fold' | 'check' | 'call') =>
     void send({ type: 'game.action', action: value });
@@ -258,7 +273,7 @@ export function HoldemTable({
           </strong>
           <div>
             {board.map((card) => {
-              const fresh = freshBoard.indexOf(card);
+              const fresh = dealt.current!.get(card.id) ?? -1;
               return (
                 <span
                   key={card.id}

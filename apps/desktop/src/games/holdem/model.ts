@@ -39,6 +39,13 @@ export function lastActions(log: HoldemLogItem[], stage: unknown) {
   return latest;
 }
 
+/** Each player's final bet total on one street, from the log (blinds and folds included). */
+export function streetTotals(log: HoldemLogItem[], street: unknown) {
+  const totals = new Map<string, number>();
+  for (const item of log) if (item.street === street) totals.set(item.userId, item.to);
+  return totals;
+}
+
 /** The bubble text: "Gör 40", "Artır 120", "Bırak". */
 export function actionLabel(item: HoldemLogItem) {
   if (item.allIn && item.action !== 'fold' && item.action !== 'check')
