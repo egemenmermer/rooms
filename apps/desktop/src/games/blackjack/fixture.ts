@@ -72,7 +72,10 @@ export function blackjackFixture(scene: BlackjackScene): GamePublicState {
         player('demo-ali', [
           hand([card('spades', 10), card('hearts', 6), card('clubs', 9)], 'bust'),
         ]),
-        player(middle, split, { credits: 800, activeHand: scene === 'your-turn' ? 1 : 2 }),
+        player(middle, split, {
+          credits: 800,
+          activeHand: scene === 'your-turn' || scene === 'spectator' ? 1 : 2,
+        }),
         player('demo-zeynep', zeynep),
       ];
   const viewTurn = finished
@@ -104,6 +107,7 @@ export function blackjackFixture(scene: BlackjackScene): GamePublicState {
         { userId: 'demo-zeynep', hand: 0, outcome: 'win', returned: 200 },
       ]
     : [];
+  // `view.rules` is typed as Hold'em's table rules; Blackjack sends its own switches there.
   return {
     kind: 'blackjack',
     ownerId: watcher ? 'demo-ali' : 'self',
@@ -140,5 +144,5 @@ export function blackjackFixture(scene: BlackjackScene): GamePublicState {
       statistics: {},
       ownRecovery: null,
     },
-  } as GamePublicState;
+  } as unknown as GamePublicState;
 }
