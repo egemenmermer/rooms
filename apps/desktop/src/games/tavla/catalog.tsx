@@ -2,7 +2,7 @@ import type { GameCatalogEntry } from '../catalog';
 import { t } from '../../i18n';
 import { LobbyCards } from '../shared/catalog-art';
 
-/** Not offered until the Tavla board view ships (track NG-tavla UI replaces `entry.tsx`). */
+/** Two-player Tavla played as a match to 3, 5 or 7 points (`entry.tsx` has the table). */
 export const tavlaCatalog: GameCatalogEntry = {
   kind: 'rooms-tavla-v1',
   name: 'Tavla',
@@ -12,7 +12,7 @@ export const tavlaCatalog: GameCatalogEntry = {
   scoring: 'points',
   section: 'tables',
   fallbackCapacity: 2,
-  offered: false,
+  offered: true,
   Art: () => (
     <span className="kh-art rooms-tavla-v1" aria-hidden="true">
       <i className="kh-card">⚄</i>

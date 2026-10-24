@@ -63,6 +63,7 @@ export const builtInGameKinds = [
   '101',
   'rooms-pisti-v1',
   'rooms-okey-v1',
+  'rooms-tavla-v1',
 ] as const;
 export type BuiltInGameKind = (typeof builtInGameKinds)[number];
 /** A table game's protocol id (`packages/games/src/registry.ts`); built-in kinds keep their literal types. */

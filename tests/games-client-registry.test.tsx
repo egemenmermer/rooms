@@ -106,7 +106,7 @@ it('keeps a move closed when the server does not list it', () => {
 });
 
 it('shows the coming-soon table for server games without a client view', () => {
-  for (const kind of ['rooms-tavla-v1', 'rooms-chess-v9']) {
+  for (const kind of ['rooms-chess-v9']) {
     shell(table(kind));
     expect(screen.getByRole('status').textContent).toContain('Bu oyunun masası yakında');
     cleanup();
@@ -155,5 +155,6 @@ it('has one registry entry per catalog entry and offers only finished views', ()
     '101 Okey',
     'Pişti',
     'Okey',
+    'Tavla',
   ]);
 });
