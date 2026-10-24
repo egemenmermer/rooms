@@ -61,7 +61,7 @@ export const holdemModule = {
     holdemView(state, viewerSeat === null ? '' : (state.seats[viewerSeat]?.userId ?? '')),
   turn: (state) => state.turn,
   phase: (state) => state.stage,
-  botCommand(state, seat, _rng, context) {
+  botCommand(state, seat, _rng?, context?) {
     // A settled hand (the blinds put everyone all-in) has no decision left; the service never asks.
     if (state.stage === 'ended' || state.turn === null || !state.seats[seat])
       return { action: 'check' };

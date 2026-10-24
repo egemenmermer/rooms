@@ -893,6 +893,10 @@ export const errorMessages: Record<string, string> = {
   NOT_YOUR_TURN: 'Şu anda sıra sende değil. Masa güncellendiğinde yeniden dene.',
   MORE_SEATS_REQUIRED: 'Bu oyunu başlatmak için daha fazla oyuncu veya bot gerekiyor.',
   SEAT_UNAVAILABLE: 'Bu koltuk artık uygun değil. Başka bir koltuk seç.',
+  SEAT_EMPTY: 'Bu koltuk zaten boş.',
+  SEAT_REMOVE_NOT_ALLOWED:
+    'Yalnızca bir botun ya da masada olmayan bir oyuncunun koltuğu boşaltılabilir.',
+  CHIP_CHANGE_NOT_ALLOWED: 'Yeniden alış ancak puanın masanın alt sınırının altına düşünce yapılır.',
   TAKE_A_SEAT_FIRST: 'Önce masada boş bir koltuğa otur.',
   GAME_TABLE_REQUIRED: 'Bu masanın etkinliği sona erdi. Yeni bir masa kur.',
   HAND_FINISHED: 'Bu el tamamlandı. Masa sahibi yeni eli başlatabilir.',

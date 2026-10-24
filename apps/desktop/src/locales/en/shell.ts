@@ -111,6 +111,7 @@ export const shell: Catalog = {
   'Bu kişi şu an sinemada değil.': 'This person isn’t in the cinema right now.',
   'Bu kişinin odada etkinlik yönetme izni yok; host yapılamaz.':
     'This person doesn’t have permission to manage activities in the room, so they can’t be made host.',
+  'Bu koltuk zaten boş.': 'This seat is already empty.',
   'Bu koltuk artık uygun değil. Başka bir koltuk seç.':
     'This seat is no longer available. Pick another seat.',
   'Bu masanın etkinliği sona erdi. Yeni bir masa kur.':
@@ -534,6 +535,8 @@ export const shell: Catalog = {
   'Uygulamalar ve etkinlikler': 'Apps and activities',
   'Yaklaşık 15 dakika sürer; sunucu ve veriler senin olur.':
     'Takes about 15 minutes; the server and the data are yours.',
+  'Yalnızca bir botun ya da masada olmayan bir oyuncunun koltuğu boşaltılabilir.':
+    'Only a bot’s seat or the seat of a player who is away can be freed.',
   'Yalnızca kendi çizimini veya notunu değiştirebilirsin.':
     'You can only change your own drawing or note.',
   'Yazı tipi, ikon ve kullanılan bileşenler.': 'Fonts, icons and the components we use.',
@@ -545,6 +548,8 @@ export const shell: Catalog = {
     'Check for new versions on demand; the publisher’s signature is verified before installing.',
   'Yeni şifre': 'New password',
   'Yeni şifreyi tekrar yaz': 'Repeat the new password',
+  'Yeniden alış ancak puanın masanın alt sınırının altına düşünce yapılır.':
+    'You can buy in again only once your stack is below the table minimum.',
   'Yeniden bağlan': 'Reconnect',
   'Yeniden bağlanıyor': 'Reconnecting',
   'Yeniden bağlanıyor…': 'Reconnecting…',
