@@ -5,7 +5,7 @@ import {
   type ButtonHTMLAttributes,
   type ReactNode,
 } from 'react';
-import { X } from 'lucide-react';
+import { CircleAlert, CircleCheck, Info, TriangleAlert, X } from 'lucide-react';
 import { t } from '@rooms/i18n';
 export function IconButton({
   label,
@@ -70,12 +70,15 @@ export function Modal({
   onClose,
   className = '',
   hideHeading = false,
+  footer,
 }: {
   title: string;
   children: ReactNode;
   onClose(): void;
   className?: string;
   hideHeading?: boolean;
+  /** Action row under the content, right-aligned: put the secondary action before the primary one. */
+  footer?: ReactNode;
 }) {
   const token = useRef(Symbol());
   const ref = useRef<HTMLDivElement>(null);
@@ -184,6 +187,7 @@ export function Modal({
           </div>
         )}
         {children}
+        {footer && <footer className="modal-footer">{footer}</footer>}
       </div>
     </div>
   );
@@ -193,18 +197,112 @@ export function EmptyState({
   title,
   children,
   action,
+  secondaryAction,
+  size = 'page',
+  className = '',
 }: {
   icon: ReactNode;
   title: string;
-  children: ReactNode;
+  children?: ReactNode;
+  /** Primary action, usually a `button primary`. */
   action?: ReactNode;
+  /** Optional second action next to the primary one, usually a `button secondary`. */
+  secondaryAction?: ReactNode;
+  /** `page` fills a whole surface; `inline` is a compact block inside a panel or list. */
+  size?: 'page' | 'inline';
+  className?: string;
 }) {
   return (
-    <div className="empty-state">
+    <div
+      className={`empty-state ${size === 'inline' ? 'ds-empty-inline' : ''} ${className}`.trim()}
+    >
       <span className="empty-icon">{icon}</span>
       <h2>{title}</h2>
-      <div className="empty-description">{children}</div>
-      {action}
+      {children != null && children !== false && (
+        <div className="empty-description">{children}</div>
+      )}
+      {secondaryAction ? (
+        <div className="ds-empty-actions">
+          {action}
+          {secondaryAction}
+        </div>
+      ) : (
+        action
+      )}
+    </div>
+  );
+}
+export type NoticeKind = 'info' | 'success' | 'warning' | 'error';
+const noticeIcons = {
+  info: Info,
+  success: CircleCheck,
+  warning: TriangleAlert,
+  error: CircleAlert,
+} as const;
+/**
+ * Inline message for a state the person should read: a failure, a caution, a confirmation or a hint.
+ * Errors are announced at once (`role="alert"`); the rest wait their turn (`role="status"`).
+ */
+export function Notice({
+  kind = 'info',
+  title,
+  children,
+  action,
+  icon,
+  role,
+  className = '',
+}: {
+  kind?: NoticeKind;
+  title?: string;
+  children?: ReactNode;
+  /** Optional trailing control, e.g. a retry button. */
+  action?: ReactNode;
+  /** Replaces the default icon for the kind; pass `null` to hide it. */
+  icon?: ReactNode;
+  role?: 'status' | 'alert';
+  className?: string;
+}) {
+  const Icon = noticeIcons[kind];
+  return (
+    <div
+      className={`ds-notice ${className}`.trim()}
+      data-kind={kind}
+      role={role ?? (kind === 'error' ? 'alert' : 'status')}
+    >
+      {icon !== null && (
+        <span className="ds-notice-icon" aria-hidden="true">
+          {icon ?? <Icon size={16} />}
+        </span>
+      )}
+      <div className="ds-notice-body">
+        {title && <strong className="ds-notice-title">{title}</strong>}
+        {children != null && children !== false && <div className="ds-notice-text">{children}</div>}
+      </div>
+      {action && <div className="ds-notice-action">{action}</div>}
+    </div>
+  );
+}
+/** Spinner with an optional visible label. Without a label the busy state is still announced. */
+export function LoadingView({
+  label,
+  size = 'page',
+  className = '',
+}: {
+  label?: string;
+  /** `page` centers in the available area; `inline` sits in the flow of a panel. */
+  size?: 'page' | 'inline';
+  className?: string;
+}) {
+  return (
+    <div
+      className={`loading-view ds-loading ${size === 'inline' ? 'ds-loading-inline' : ''} ${className}`.trim()}
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label={label ? undefined : t('Yükleniyor…')}
+    >
+      <span className="loading-ring" aria-hidden="true" />
+      {label && <span className="ds-loading-label">{label}</span>}
     </div>
   );
 }

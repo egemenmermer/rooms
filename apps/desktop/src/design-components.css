@@ -1,0 +1,126 @@
+/*
+ * Shared design-system components: Notice, EmptyState extras, LoadingView and the Modal footer.
+ * Loaded from main.tsx after reference-shell.css, so it comes after every surface stylesheet.
+ * Everything here hangs off a `ds-` class (or `.modal-footer`), so no surface rule is overridden;
+ * colours, radii, type sizes and layers come from reference-tokens.css only.
+ */
+
+/* Notice */
+.ds-notice {
+  --notice-tone: var(--color-text-accent);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid color-mix(in srgb, var(--notice-tone) 40%, transparent);
+  border-radius: var(--radius-8);
+  background: color-mix(in srgb, var(--notice-tone) 10%, var(--color-background-main));
+  color: var(--color-text-primary);
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-ui);
+  min-width: 0;
+}
+.ds-notice[data-kind='success'] {
+  --notice-tone: var(--color-status-success);
+}
+.ds-notice[data-kind='warning'] {
+  --notice-tone: var(--color-status-warning);
+}
+.ds-notice[data-kind='error'] {
+  --notice-tone: var(--color-status-error);
+}
+.ds-notice-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  /* Centre a 16px icon on the first 20px text line. */
+  padding-top: 2px;
+  color: var(--notice-tone);
+}
+.ds-notice-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ds-notice-title {
+  display: block;
+  font-weight: var(--font-weight-semibold);
+}
+.ds-notice-text {
+  color: var(--color-text-secondary);
+}
+.ds-notice-title + .ds-notice-text {
+  margin-top: var(--space-4);
+}
+.ds-notice:not(:has(.ds-notice-title)) .ds-notice-text {
+  color: var(--color-text-primary);
+}
+.ds-notice-action {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-8);
+  margin-left: auto;
+}
+
+/* EmptyState: inline size and the second action */
+.empty-state.ds-empty-inline {
+  padding: var(--space-24) var(--space-16);
+  border-radius: var(--radius-12);
+}
+.empty-state.ds-empty-inline .empty-icon {
+  margin-bottom: var(--space-8);
+}
+.empty-state.ds-empty-inline h2 {
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-body);
+  margin-bottom: var(--space-4);
+}
+.empty-state.ds-empty-inline .empty-description {
+  margin-top: 0;
+  font-size: var(--font-size-ui);
+  color: var(--color-text-secondary);
+}
+.empty-state .ds-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  margin-top: var(--space-20);
+}
+.empty-state .ds-empty-actions .button {
+  display: inline-flex;
+  margin: 0;
+  width: auto;
+}
+
+/* LoadingView */
+.loading-view.ds-loading {
+  min-height: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-ui);
+}
+.ds-loading .loading-ring {
+  flex: 0 0 auto;
+  border-color: var(--color-border-subtle);
+  border-top-color: var(--color-action-focus);
+}
+.loading-view.ds-loading-inline {
+  height: auto;
+  justify-content: flex-start;
+  padding: var(--space-12) 0;
+}
+
+/* Modal footer */
+.modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-8);
+  margin-top: var(--space-16);
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--color-border-subtle);
+}
