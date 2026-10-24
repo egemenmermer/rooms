@@ -343,8 +343,8 @@ describe('table lifecycle', () => {
         },
         now,
       );
-    send('alice', { type: 'join' });
-    send('carol', { type: 'join' });
+    send('alice', { type: 'join' }, 900);
+    send('carol', { type: 'join' }, 950);
     send('bob', { type: 'join' });
     send('alice', { type: 'game.create', game: 'holdem' });
     send('bob', { type: 'game.sit', seat: 1 });
