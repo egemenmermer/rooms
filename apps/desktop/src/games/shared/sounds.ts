@@ -22,17 +22,24 @@ function noise(seed: number) {
 }
 const tone = (frequency: number, t: number) => Math.sin(2 * Math.PI * frequency * t);
 /** Fast attack, exponential decay. */
-const pluck = (t: number, decay: number) => (t < 0 ? 0 : Math.min(1, t / 0.004) * Math.exp(-t / decay));
+const pluck = (t: number, decay: number) =>
+  t < 0 ? 0 : Math.min(1, t / 0.004) * Math.exp(-t / decay);
 /** Notes that each ring for `length` seconds, starting `step` seconds apart. */
 const notes = (t: number, frequencies: number[], step: number, length: number, gain: number) =>
   frequencies.reduce((sum, frequency, index) => {
     const local = t - index * step;
     return local < 0 || local > length
       ? sum
-      : sum + (tone(frequency, local) + 0.3 * tone(frequency * 2, local)) * pluck(local, length / 3) * gain;
+      : sum +
+          (tone(frequency, local) + 0.3 * tone(frequency * 2, local)) *
+            pluck(local, length / 3) *
+            gain;
   }, 0);
 
-const recipes: Record<GameCue, { seconds: number; sample(t: number, random: () => number): number }> = {
+const recipes: Record<
+  GameCue,
+  { seconds: number; sample(t: number, random: () => number): number }
+> = {
   // A card sliding off the deck: a short airy swish.
   deal: {
     seconds: 0.16,
@@ -52,8 +59,7 @@ const recipes: Record<GameCue, { seconds: number; sample(t: number, random: () =
   // Cards swept to a player: a rising two-note figure under a swish.
   capture: {
     seconds: 0.3,
-    sample: (t, random) =>
-      notes(t, [520, 780], 0.09, 0.2, 0.12) + random() * pluck(t, 0.05) * 0.08,
+    sample: (t, random) => notes(t, [520, 780], 0.09, 0.2, 0.12) + random() * pluck(t, 0.05) * 0.08,
   },
   // Dice rattling: three uneven knocks.
   dice: {
@@ -61,7 +67,8 @@ const recipes: Record<GameCue, { seconds: number; sample(t: number, random: () =
     sample: (t, random) =>
       [0, 0.07, 0.16].reduce(
         (sum, at, index) =>
-          sum + (random() * 0.6 + tone(900 + index * 260, t - at) * 0.4) * pluck(t - at, 0.014) * 0.36,
+          sum +
+          (random() * 0.6 + tone(900 + index * 260, t - at) * 0.4) * pluck(t - at, 0.014) * 0.36,
         0,
       ),
   },
@@ -97,7 +104,12 @@ export function gameSoundsAudible() {
   } catch {
     /* No media runtime (tests, browser build): nothing to be deafened by. */
   }
-  return prefs.roomEventSounds && prefs.soundEffectsLevel > 0 && !deafened && !!useCommunity.getState().user;
+  return (
+    prefs.roomEventSounds &&
+    prefs.soundEffectsLevel > 0 &&
+    !deafened &&
+    !!useCommunity.getState().user
+  );
 }
 
 const lastPlayed = new Map<GameCue, number>();
@@ -160,11 +172,12 @@ export function wonLatestHand(game: GamePublicState, userId?: string) {
       entry.seats?.find((seat) => seat.userId === userId)?.position ??
       game.seats.findIndex((seat) => seat.userId === userId);
   const winners = array<unknown>(result.winners);
-  if (winners.length)
-    return winners.some((winner) => winner === position || winner === userId);
+  if (winners.length) return winners.some((winner) => winner === position || winner === userId);
   if (typeof result.winner === 'number' || typeof result.winner === 'string')
     return result.winner === position || result.winner === userId;
-  const player = array<Record<string, unknown>>(result.players).find((item) => item.userId === userId);
+  const player = array<Record<string, unknown>>(result.players).find(
+    (item) => item.userId === userId,
+  );
   if (player && typeof player.net === 'number') return player.net > 0;
   return false;
 }

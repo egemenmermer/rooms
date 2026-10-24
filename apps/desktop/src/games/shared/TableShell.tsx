@@ -99,7 +99,8 @@ export function ReferenceOtherGame({
       : null;
   const roomHostId = activity.room?.primary?.hostUserId;
   const seatControls: SeatControls = {
-    canRemove: (seat) => !fixture && ready && !busy && seatRemovable(game, seat, c.user?.id, roomHostId),
+    canRemove: (seat) =>
+      !fixture && ready && !busy && seatRemovable(game, seat, c.user?.id, roomHostId),
     remove: (seat) => send({ type: 'game.seat.remove', seat }),
   };
   // A chip table (Blackjack) buys back in between hands once the stack cannot cover the smallest
@@ -111,7 +112,9 @@ export function ReferenceOtherGame({
     game.status !== 'playing' &&
     own.chips < REBUY_BELOW;
   const rebuy = () =>
-    own ? send({ type: 'game.sit', seat: own.seat, buyIn: REBUY_STACK - own.chips }) : Promise.resolve(false);
+    own
+      ? send({ type: 'game.sit', seat: own.seat, buyIn: REBUY_STACK - own.chips })
+      : Promise.resolve(false);
   const ui: TableUI = {
     game,
     userId: c.user?.id,

@@ -11,6 +11,7 @@ import { isOfferedGame, offeredGames } from '../catalog';
 import { gameDefinition } from '../registry';
 import { useGameFixtureMetadata } from './fixture';
 import { array, names, object } from './model';
+import { ActionLog } from '../card-history/ActionLog';
 
 type HistoryTable = {
   kind: string;
@@ -241,5 +242,10 @@ function HistoryDetail({
   entry: GamePublicState['history'][number];
 }) {
   const Detail = gameDefinition(kind).HistoryDetail;
-  return <Detail entry={entry} />;
+  return (
+    <>
+      <Detail entry={entry} />
+      <ActionLog entry={entry} />
+    </>
+  );
 }
