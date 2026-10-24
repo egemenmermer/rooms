@@ -276,7 +276,9 @@ export function ReferenceOtherGame({
           <button
             className="rx-chip"
             disabled={!access}
-            title={!access ? t('Geçmiş için izleyici olarak katıl') : undefined}
+            // The label hides below 1100 px; keep the name for screen readers and a tooltip.
+            aria-label={t('Geçmiş')}
+            title={!access ? t('Geçmiş için izleyici olarak katıl') : t('Geçmiş')}
             onClick={() => navigate('/games?tab=history')}
           >
             <History size={15} />
