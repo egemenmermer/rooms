@@ -18,8 +18,8 @@
  *   (a gösterge bonus still counts).
  * - Scoring (Okey Plus style): `countdown` (default) writes -2 to every other player for a normal finish, x2
  *   when the finishing discard is an okey, x2 for a çift finish; multipliers do not stack by default (same as
- *   the 101 profile). Showing the gösterge writes -1 to every other player. `winner` mode writes the same
- *   amounts as plus points to the finisher / shower instead (running table).
+ *   the 101 profile). Showing the gösterge writes -1 to every other player. `winner` mode is the flat table
+ *   (A2 findings §3.2): the finisher gets +1, nothing else is scored.
  * Not implemented on purpose: elden bitme bonus, okey-discard penalties, team play.
  */
 import type { OkeyTile, TileColor } from './okey101';
@@ -51,16 +51,23 @@ type GameModuleShape<State, Command, View, Options = unknown> = {
   /** Whose turn it is (seat index) or null when nobody must act (round over). */
   turn(state: State): number | null;
   /** A legal, reasonable command for a bot or a timed-out player in `seat`. */
-  botCommand(state: State, seat: number, rng: () => number): Command;
+  botCommand(
+    state: State,
+    seat: number,
+    rng: () => number,
+    context?: { timedOut: boolean },
+  ): Command;
   /** Final result once `turn(state) === null`: points per seat (this round) and winner seats. */
   settle(state: State): { points: number[]; winners: number[] } | null;
   // Optional G-REG refinements (coordinator/specs/game-module.md).
   title?: string;
+  seatsFor?(options: Options): readonly number[];
   parseOptions?(
     input: Record<string, string | number | boolean> | undefined,
   ): Options | { error: string };
   legalActions?(state: State, seat: number): readonly string[];
   summary?(state: State): Record<string, unknown>;
+  phase?(state: State): string | number | null;
 };
 
 export const OKEY_CLASSIC_KIND = 'rooms-okey-v1';
@@ -98,10 +105,10 @@ export const OKEY_CLASSIC_DEFAULT_OPTIONS: Readonly<OkeyClassicOptions> = Object
 });
 
 export type OkeyClassicCommand =
-  | { type: 'draw'; from: 'stock' | 'discard' }
-  | { type: 'discard'; tileId: string }
-  | { type: 'finish'; tileId: string }
-  | { type: 'show-indicator' };
+  | { action: 'draw'; from: 'stock' | 'discard' }
+  | { action: 'discard'; tileId: string }
+  | { action: 'finish'; tileId: string }
+  | { action: 'show-indicator' };
 
 export type OkeyClassicLastAction =
   | { seat: number; type: 'draw'; from: 'stock' }
@@ -427,7 +434,7 @@ export function okeyClassicAction(
   if (value.turn !== seat) return { error: 'NOT_YOUR_TURN' };
   const state = structuredClone(value);
   const hand = state.hands[seat];
-  switch (command.type) {
+  switch (command.action) {
     case 'show-indicator': {
       if (!canShowIndicator(state, seat)) return { error: 'CANNOT_SHOW_INDICATOR' };
       const tile = hand.find((t) => isIndicatorCopy(state, t))!;
@@ -457,7 +464,7 @@ export function okeyClassicAction(
       const tile = hand.find((t) => t.id === command.tileId);
       if (!tile) return { error: 'TILE_NOT_IN_HAND' };
       const rest = hand.filter((t) => t.id !== tile.id);
-      if (command.type === 'finish') {
+      if (command.action === 'finish') {
         const arrangement = okeyClassicArrangement(rest);
         if (!arrangement) return { error: 'HAND_NOT_FINISHED' };
         state.hands[seat] = rest;
@@ -489,13 +496,16 @@ export function settleOkeyClassic(
   if (state.stage !== 'ended') return null;
   const { options } = state;
   const points = Array.from({ length: SEATS }, () => 0);
+  const winners = state.finish ? [state.finish.seat] : [];
+  if (options.scoring === 'winner') {
+    // Flat table: one point per finished round, nothing else is scored.
+    if (state.finish) points[state.finish.seat] = 1;
+    return { points, winners };
+  }
   const award = (seat: number, amount: number) => {
-    if (!amount) return;
-    if (options.scoring === 'winner') points[seat] += amount;
-    else for (let other = 0; other < SEATS; other++) if (other !== seat) points[other] -= amount;
+    for (let other = 0; other < SEATS; other++) if (other !== seat) points[other] -= amount;
   };
   if (state.indicatorShown) award(state.indicatorShown.seat, options.indicatorPoints);
-  const winners: number[] = [];
   if (state.finish) {
     const multipliers = [
       state.finish.okeyDiscard ? options.okeyFinishMultiplier : 1,
@@ -505,7 +515,6 @@ export function settleOkeyClassic(
       ? multipliers[0] * multipliers[1]
       : Math.max(...multipliers);
     award(state.finish.seat, options.finishPoints * multiplier);
-    winners.push(state.finish.seat);
   }
   return { points, winners };
 }
@@ -604,22 +613,22 @@ function finishingTile(hand: ClassicTile[]): ClassicTile | null {
 
 export function okeyClassicBotCommand(state: OkeyClassicState, seat: number): OkeyClassicCommand {
   const hand = state.hands[seat] ?? [];
-  if (canShowIndicator(state, seat)) return { type: 'show-indicator' };
+  if (canShowIndicator(state, seat)) return { action: 'show-indicator' };
   if (state.stage === 'draw') {
     const top = state.discards[(seat + SEATS - 1) % SEATS].at(-1);
     if (top) {
       const withTop = [...hand, top];
-      if (finishingTile(withTop)) return { type: 'draw', from: 'discard' };
+      if (finishingTile(withTop)) return { action: 'draw', from: 'discard' };
       // Take the tile only when it strictly improves the rack after the best discard (and the discard is not it).
       const after = bestDiscard(withTop);
       if (after.tile.id !== top.id && after.score > rackScore(hand))
-        return { type: 'draw', from: 'discard' };
+        return { action: 'draw', from: 'discard' };
     }
-    return { type: 'draw', from: 'stock' };
+    return { action: 'draw', from: 'stock' };
   }
   const finisher = finishingTile(hand);
-  if (finisher) return { type: 'finish', tileId: finisher.id };
-  return { type: 'discard', tileId: bestDiscard(hand).tile.id };
+  if (finisher) return { action: 'finish', tileId: finisher.id };
+  return { action: 'discard', tileId: bestDiscard(hand).tile.id };
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -643,17 +652,17 @@ export function parseOkeyClassicCommand(input: {
         input.payload && typeof input.payload === 'object'
           ? (input.payload as { from?: unknown }).from
           : undefined;
-      if (from === undefined || from === 'stock') return { type: 'draw', from: 'stock' };
-      if (from === 'discard') return { type: 'draw', from: 'discard' };
+      if (from === undefined || from === 'stock') return { action: 'draw', from: 'stock' };
+      if (from === 'discard') return { action: 'draw', from: 'discard' };
       return { error: 'INVALID_DRAW_SOURCE' };
     }
     case 'discard':
     case 'finish': {
       const tileId = parseTileId(input.payload);
-      return typeof tileId === 'string' ? { type: input.action, tileId } : tileId;
+      return typeof tileId === 'string' ? { action: input.action, tileId } : tileId;
     }
     case 'show-indicator':
-      return { type: 'show-indicator' };
+      return { action: 'show-indicator' };
     default:
       return { error: 'INVALID_OKEY_ACTION' };
   }

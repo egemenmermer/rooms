@@ -136,37 +136,41 @@ describe('classic Okey deal', () => {
 describe('classic Okey draw and discard', () => {
   it('enforces turn order, draw-then-discard and the left discard pile', () => {
     let state = start(4, undefined, 0, seeded(3));
-    expect(err(action(state, 0, { type: 'draw', from: 'stock' }, seeded(0)))).toBe(
+    expect(err(action(state, 0, { action: 'draw', from: 'stock' }, seeded(0)))).toBe(
       'DISCARD_REQUIRED',
     );
-    expect(err(action(state, 1, { type: 'draw', from: 'stock' }, seeded(0)))).toBe('NOT_YOUR_TURN');
-    expect(err(action(state, 0, { type: 'discard', tileId: 'nope' }, seeded(0)))).toBe(
+    expect(err(action(state, 1, { action: 'draw', from: 'stock' }, seeded(0)))).toBe(
+      'NOT_YOUR_TURN',
+    );
+    expect(err(action(state, 0, { action: 'discard', tileId: 'nope' }, seeded(0)))).toBe(
       'TILE_NOT_IN_HAND',
     );
     const thrown = state.hands[0][0];
-    state = ok(action(state, 0, { type: 'discard', tileId: thrown.id }, seeded(0)));
+    state = ok(action(state, 0, { action: 'discard', tileId: thrown.id }, seeded(0)));
     expect(state.discards[0].at(-1)).toEqual(thrown);
     expect(state.hands[0]).toHaveLength(14);
     expect(turn(state)).toBe(1);
     expect(
-      err(action(state, 1, { type: 'discard', tileId: state.hands[1][0].id }, seeded(0))),
+      err(action(state, 1, { action: 'discard', tileId: state.hands[1][0].id }, seeded(0))),
     ).toBe('DRAW_REQUIRED');
-    const taken = ok(action(state, 1, { type: 'draw', from: 'discard' }, seeded(0)));
+    const taken = ok(action(state, 1, { action: 'draw', from: 'discard' }, seeded(0)));
     expect(taken.hands[1].some((t) => t.id === thrown.id)).toBe(true);
     expect(taken.discards[0]).toHaveLength(0);
     expect(taken.stock).toHaveLength(48);
-    expect(err(action(taken, 1, { type: 'draw', from: 'stock' }, seeded(0)))).toBe(
+    expect(err(action(taken, 1, { action: 'draw', from: 'stock' }, seeded(0)))).toBe(
       'DISCARD_REQUIRED',
     );
     // Seat 2's left pile (seat 1) is empty before seat 1 discards.
-    const next = ok(action(taken, 1, { type: 'discard', tileId: taken.hands[1][0].id }, seeded(0)));
-    const drawn = ok(action(next, 2, { type: 'draw', from: 'stock' }, seeded(0)));
+    const next = ok(
+      action(taken, 1, { action: 'discard', tileId: taken.hands[1][0].id }, seeded(0)),
+    );
+    const drawn = ok(action(next, 2, { action: 'draw', from: 'stock' }, seeded(0)));
     expect(drawn.stock).toHaveLength(47);
     expect(drawn.hands[2]).toHaveLength(15);
     const discarded = ok(
-      action(drawn, 2, { type: 'discard', tileId: drawn.hands[2][3].id }, seeded(0)),
+      action(drawn, 2, { action: 'discard', tileId: drawn.hands[2][3].id }, seeded(0)),
     );
-    expect(err(action(discarded, 3, { type: 'draw', from: 'discard' }, seeded(0)))).toBe(null);
+    expect(err(action(discarded, 3, { action: 'draw', from: 'discard' }, seeded(0)))).toBe(null);
     // The original state is never mutated.
     expect(state.hands[1]).toHaveLength(14);
   });
@@ -176,7 +180,7 @@ describe('classic Okey draw and discard', () => {
       [Array.from({ length: 14 }, (_, n) => r((n % 13) + 1)), [], [], []].map((h) => h),
       { turn: 0, stage: 'draw' },
     );
-    expect(err(action(state, 0, { type: 'draw', from: 'discard' }, seeded(0)))).toBe(
+    expect(err(action(state, 0, { action: 'draw', from: 'discard' }, seeded(0)))).toBe(
       'DISCARD_EMPTY',
     );
   });
@@ -186,12 +190,12 @@ describe('classic Okey draw and discard', () => {
       n % 2 ? r(n % 13 || 13) : b((n + 3) % 13 || 13),
     );
     let state = crafted([hand, [], [], []], { turn: 0, stage: 'draw', stock: [k(2)] });
-    state = ok(action(state, 0, { type: 'draw', from: 'stock' }, seeded(0)));
-    state = ok(action(state, 0, { type: 'discard', tileId: hand[0].id }, seeded(0)));
+    state = ok(action(state, 0, { action: 'draw', from: 'stock' }, seeded(0)));
+    state = ok(action(state, 0, { action: 'discard', tileId: hand[0].id }, seeded(0)));
     expect(turn(state)).toBeNull();
     expect(state.outcome).toBe('stock-exhausted');
     expect(settle(state)).toEqual({ points: [0, 0, 0, 0], winners: [] });
-    expect(err(action(state, 1, { type: 'draw', from: 'stock' }, seeded(0)))).toBe('ROUND_OVER');
+    expect(err(action(state, 1, { action: 'draw', from: 'stock' }, seeded(0)))).toBe('ROUND_OVER');
   });
 });
 
@@ -266,14 +270,14 @@ describe('classic Okey finishing and scoring', () => {
   it('finishes by discarding the 15th tile and writes -2 to the others', () => {
     const extra = k(2);
     const state = crafted([[...winningRack(), extra], [], [], []]);
-    expect(err(action(state, 0, { type: 'finish', tileId: winningRack()[0].id }, seeded(0)))).toBe(
-      'TILE_NOT_IN_HAND',
-    );
+    expect(
+      err(action(state, 0, { action: 'finish', tileId: winningRack()[0].id }, seeded(0))),
+    ).toBe('TILE_NOT_IN_HAND');
     const bad = crafted([[r(12), r(13), r(2), ...filler(11), extra], [], [], []]);
-    expect(err(action(bad, 0, { type: 'finish', tileId: extra.id }, seeded(0)))).toBe(
+    expect(err(action(bad, 0, { action: 'finish', tileId: extra.id }, seeded(0)))).toBe(
       'HAND_NOT_FINISHED',
     );
-    const done = ok(action(state, 0, { type: 'finish', tileId: extra.id }, seeded(0)));
+    const done = ok(action(state, 0, { action: 'finish', tileId: extra.id }, seeded(0)));
     expect(turn(done)).toBeNull();
     expect(done.finish).toMatchObject({
       seat: 0,
@@ -291,7 +295,7 @@ describe('classic Okey finishing and scoring', () => {
       action(
         crafted([[...winningRack(), throwOkey], [], [], []]),
         0,
-        { type: 'finish', tileId: throwOkey.id },
+        { action: 'finish', tileId: throwOkey.id },
         seeded(0),
       ),
     );
@@ -318,7 +322,7 @@ describe('classic Okey finishing and scoring', () => {
       action(
         crafted([[...pairsRack, pairOkey, lone], [], [], []]),
         0,
-        { type: 'finish', tileId: lone.id },
+        { action: 'finish', tileId: lone.id },
         seeded(0),
       ),
     );
@@ -331,7 +335,7 @@ describe('classic Okey finishing and scoring', () => {
       action(
         crafted([[...both, bothOkey], [], [], []]),
         0,
-        { type: 'finish', tileId: bothOkey.id },
+        { action: 'finish', tileId: bothOkey.id },
         seeded(0),
       ),
     );
@@ -340,24 +344,54 @@ describe('classic Okey finishing and scoring', () => {
       action(
         crafted([[...both, bothOkey], [], [], []], {}, { stackMultipliers: true }),
         0,
-        { type: 'finish', tileId: bothOkey.id },
+        { action: 'finish', tileId: bothOkey.id },
         seeded(0),
       ),
     );
     expect(settle(stacked)!.points).toEqual([0, -8, -8, -8]);
   });
 
-  it('scores the winner instead in running-table mode', () => {
+  it('scores a flat +1 for the finisher in running-table mode', () => {
     const extra = k(2);
     const done = ok(
       action(
         crafted([[...winningRack(), extra], [], [], []], {}, { scoring: 'winner' }),
         0,
-        { type: 'finish', tileId: extra.id },
+        { action: 'finish', tileId: extra.id },
         seeded(0),
       ),
     );
-    expect(settle(done)).toEqual({ points: [2, 0, 0, 0], winners: [0] });
+    expect(settle(done)).toEqual({ points: [1, 0, 0, 0], winners: [0] });
+    // Okey discard and a shown gösterge do not change the flat table.
+    const wild = okey();
+    const shown = {
+      seat: 2,
+      tile: { id: 'yellow-6-copy', color: 'yellow', value: 6 } as ClassicTile,
+    };
+    const doubled = ok(
+      action(
+        crafted(
+          [[...winningRack(), wild], [], [], []],
+          { indicatorShown: shown },
+          { scoring: 'winner' },
+        ),
+        0,
+        { action: 'finish', tileId: wild.id },
+        seeded(0),
+      ),
+    );
+    expect(doubled.finish?.okeyDiscard).toBe(true);
+    expect(settle(doubled)).toEqual({ points: [1, 0, 0, 0], winners: [0] });
+    const exhausted = ok(
+      action(
+        crafted([[...winningRack(), extra], [], [], []], { stock: [] }, { scoring: 'winner' }),
+        0,
+        { action: 'discard', tileId: extra.id },
+        seeded(0),
+      ),
+    );
+    expect(exhausted.outcome).toBe('stock-exhausted');
+    expect(settle(exhausted)).toEqual({ points: [0, 0, 0, 0], winners: [] });
   });
 
   it('lets the holder show the gösterge only during their own first turn', () => {
@@ -365,31 +399,31 @@ describe('classic Okey finishing and scoring', () => {
     const rest = Array.from({ length: 14 }, (_, n) => b((n % 13) + 1));
     const others = [0, 1, 2].map(() => Array.from({ length: 14 }, (_, n) => k((n % 13) + 1)));
     let state = crafted([[copy, ...rest], ...others]);
-    expect(err(action(state, 1, { type: 'show-indicator' }, seeded(0)))).toBe('NOT_YOUR_TURN');
+    expect(err(action(state, 1, { action: 'show-indicator' }, seeded(0)))).toBe('NOT_YOUR_TURN');
     expect(view(state, 0).canShowIndicator).toBe(true);
-    state = ok(action(state, 0, { type: 'show-indicator' }, seeded(0)));
+    state = ok(action(state, 0, { action: 'show-indicator' }, seeded(0)));
     expect(state.indicatorShown).toEqual({ seat: 0, tile: copy });
-    expect(err(action(state, 0, { type: 'show-indicator' }, seeded(0)))).toBe(
+    expect(err(action(state, 0, { action: 'show-indicator' }, seeded(0)))).toBe(
       'CANNOT_SHOW_INDICATOR',
     );
     // The bonus stands even when the middle runs out.
     state = ok(
-      action({ ...state, stock: [] }, 0, { type: 'discard', tileId: rest[0].id }, seeded(0)),
+      action({ ...state, stock: [] }, 0, { action: 'discard', tileId: rest[0].id }, seeded(0)),
     );
     expect(settle(state)).toEqual({ points: [0, -1, -1, -1], winners: [] });
 
     // Too late after the first discard, and a sahte okey or an okey is not the gösterge.
     let late = crafted([[...rest, k(1)], [copy, ...others[0].slice(1)], others[1], others[2]]);
-    late = ok(action(late, 0, { type: 'discard', tileId: rest[0].id }, seeded(0)));
-    late = ok(action(late, 1, { type: 'draw', from: 'stock' }, seeded(0)));
+    late = ok(action(late, 0, { action: 'discard', tileId: rest[0].id }, seeded(0)));
+    late = ok(action(late, 1, { action: 'draw', from: 'stock' }, seeded(0)));
     expect(view(late, 1).canShowIndicator).toBe(true);
     // Simulate a later turn of seat 1, after its first discard.
     late = { ...late, hasDiscarded: [true, true, false, false] };
-    expect(err(action(late, 1, { type: 'show-indicator' }, seeded(0)))).toBe(
+    expect(err(action(late, 1, { action: 'show-indicator' }, seeded(0)))).toBe(
       'CANNOT_SHOW_INDICATOR',
     );
     const fakeOnly = crafted([[sahte(), okey(), ...rest.slice(0, 13)], ...others]);
-    expect(err(action(fakeOnly, 0, { type: 'show-indicator' }, seeded(0)))).toBe(
+    expect(err(action(fakeOnly, 0, { action: 'show-indicator' }, seeded(0)))).toBe(
       'CANNOT_SHOW_INDICATOR',
     );
   });
@@ -406,9 +440,9 @@ describe('classic Okey bot', () => {
       const next = action(state, seat, command, rng);
       if ('error' in next)
         throw new Error(`bot made illegal ${JSON.stringify(command)}: ${next.error}`);
-      if (command.type === 'discard' || command.type === 'finish') {
+      if (command.action === 'discard' || command.action === 'finish') {
         const thrown = state.hands[seat].find((t) => t.id === command.tileId)!;
-        expect(thrown.joker && command.type === 'discard').toBeFalsy();
+        expect(thrown.joker && command.action === 'discard').toBeFalsy();
       }
       state = next;
       steps++;
@@ -463,29 +497,29 @@ describe('classic Okey bot', () => {
       stage: 'draw',
       discards: [[], [], [], [left]],
     });
-    expect(botCommand(state, 0, seeded(0))).toEqual({ type: 'draw', from: 'discard' });
+    expect(botCommand(state, 0, seeded(0))).toEqual({ action: 'draw', from: 'discard' });
     const useless = crafted([hand, [], [], []], {
       turn: 0,
       stage: 'draw',
       discards: [[], [], [], [y(12)]],
     });
-    expect(botCommand(useless, 0, seeded(0))).toEqual({ type: 'draw', from: 'stock' });
-    const after = ok(action(state, 0, { type: 'draw', from: 'discard' }, seeded(0)));
+    expect(botCommand(useless, 0, seeded(0))).toEqual({ action: 'draw', from: 'stock' });
+    const after = ok(action(state, 0, { action: 'draw', from: 'discard' }, seeded(0)));
     const discard = botCommand(after, 0, seeded(0)) as Extract<
       OkeyClassicCommand,
-      { type: 'discard' }
+      { action: 'discard' }
     >;
-    expect(discard.type).toBe('discard');
+    expect(discard.action).toBe('discard');
     expect(discard.tileId).not.toBe(keep.id);
     expect(discard.tileId).not.toBe(left.id);
 
     const extra = y(9);
     const finishing = crafted([[r(12), r(13), r(1), ...filler(11), extra], [], [], []]);
-    expect(botCommand(finishing, 0, seeded(0))).toEqual({ type: 'finish', tileId: extra.id });
+    expect(botCommand(finishing, 0, seeded(0))).toEqual({ action: 'finish', tileId: extra.id });
     // With an okey in a finished rack, the bot throws the okey for the double.
     const spare = okey();
     const doubled = crafted([[r(12), r(13), r(1), ...filler(11), spare], [], [], []]);
-    expect(botCommand(doubled, 0, seeded(0))).toEqual({ type: 'finish', tileId: spare.id });
+    expect(botCommand(doubled, 0, seeded(0))).toEqual({ action: 'finish', tileId: spare.id });
   });
 });
 
@@ -533,7 +567,7 @@ describe('classic Okey hidden information', () => {
       expect(legal).toContain(state.stage === 'draw' ? 'draw' : 'discard');
       expect(okeyClassicModule.legalActions(state, (seat + 1) % 4)).toEqual([]);
       const command = botCommand(state, seat, rng);
-      expect(legal).toContain(command.type);
+      expect(legal).toContain(command.action);
       state = ok(action(state, seat, command, rng));
       if (state.lastAction?.type === 'draw' && state.lastAction.from === 'stock')
         expect('tile' in state.lastAction).toBe(false);
@@ -558,16 +592,16 @@ describe('classic Okey hidden information', () => {
 describe('classic Okey command parsing', () => {
   it('validates action names and payloads', () => {
     expect(okeyClassicModule.actions).toEqual(['draw', 'discard', 'finish', 'show-indicator']);
-    expect(parseCommand({ action: 'draw' })).toEqual({ type: 'draw', from: 'stock' });
+    expect(parseCommand({ action: 'draw' })).toEqual({ action: 'draw', from: 'stock' });
     expect(parseCommand({ action: 'draw', payload: { from: 'discard' } })).toEqual({
-      type: 'draw',
+      action: 'draw',
       from: 'discard',
     });
     expect(parseCommand({ action: 'draw', payload: { from: 'deck' } })).toEqual({
       error: 'INVALID_DRAW_SOURCE',
     });
     expect(parseCommand({ action: 'discard', payload: { tileId: 'red-1-0' } })).toEqual({
-      type: 'discard',
+      action: 'discard',
       tileId: 'red-1-0',
     });
     expect(parseCommand({ action: 'finish', payload: { tileId: 5 } })).toEqual({
@@ -576,7 +610,7 @@ describe('classic Okey command parsing', () => {
     expect(parseCommand({ action: 'finish', payload: { tileId: 'x'.repeat(65) } })).toEqual({
       error: 'TILE_ID_REQUIRED',
     });
-    expect(parseCommand({ action: 'show-indicator' })).toEqual({ type: 'show-indicator' });
+    expect(parseCommand({ action: 'show-indicator' })).toEqual({ action: 'show-indicator' });
     expect(parseCommand({ action: 'open' })).toEqual({ error: 'INVALID_OKEY_ACTION' });
     expect(okeyClassicModule.parseOptions({ scoring: 'winner', finishPoints: 'x' })).toEqual({
       ...OKEY_CLASSIC_DEFAULT_OPTIONS,
