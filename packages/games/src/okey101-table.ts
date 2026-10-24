@@ -324,7 +324,9 @@ export function okey101Action(
   if (state.stage === 'discard' && state.pickedDiscard && action.action === 'draw') {
     const picked = hand.find((tile) => tile.id === state.pickedDiscard);
     if (!picked) throw new Error('DISCARD_ALREADY_USED');
-    // With the pickup penalty the side tile may still go back, but it costs the same +101.
+    // Without undo the side tile stays: use it, or discard and take the +101 pickup penalty.
+    if (options.pickupPenalty && !options.pickupUndo) throw new Error('PICKUP_UNDO_DISABLED');
+    // With both switches on the side tile may still go back, but it costs the same +101.
     if (options.pickupPenalty) addPenalty(state, seat, 'pickup', 101);
     state.hands[seat] = hand.filter((tile) => tile.id !== picked.id);
     state.discards[(seat + 3) % 4].push(picked);

@@ -47,7 +47,8 @@ Her el `rules.options` içinde aşağıdaki anahtarları taşır; parantezdeki d
 
 - `islekPenalty` (açık): Masadaki bir seri/gruba işlenebilecek taşı, yerdeki bir okeyi serbest bırakacak doğal taşı veya bir pere girebilecek okeyi atan oyuncu +101 ceza yazar. Bitiren son taş cezasızdır, çünkü kimse alamaz. Çift perler işlek saymaz.
 - `eldenBitme` (açık): Daha önce açmamış oyuncu aynı turda açıp biterse diğerlerinin cezası ikiye katlanır. Okey veya çift bitişiyle üst üste uygulanır, en fazla dört kat (okeyle elden bitişte diğerleri ×4, kazanan -202). Kazananın -101/-202 puanı elden bitmeyle değişmez.
-- `pickupPenalty` (açık): Yandan alınan taş, atış anında hâlâ eldeyse +101 ceza yazılır; alınan taşın kendisini geri atmak da cezalıdır. Çek ile almayı geri almak da aynı +101 cezayla mümkündür. Kapalıyken v1 davranışı geçerlidir: alınan taş eldeyken atış reddedilir ve Çek almayı cezasız geri alır.
+- `pickupPenalty` (açık): Yandan alınan taş, atış anında hâlâ eldeyse +101 ceza yazılır; alınan taşın kendisini geri atmak da cezalıdır. `pickupUndo` kapalıyken alınan taş yere geri konamaz; Çek ile geri alma reddedilir.
+- `pickupUndo` (kapalı): Açıkken Çek, alınan taşı yere geri koyup stoktan çeker; `pickupPenalty` açıksa bu da +101 yazar. `pickupPenalty` kapalıyken geri alma her zaman açıktır ve v1 davranışı geçerlidir: alınan taş eldeyken atış reddedilir ve Çek almayı cezasız geri alır.
 - `foldingPairs` (açık): Katlamalı masada çift açılış eşiği yukarıdaki gibi artar; katlamasız masada her zaman beş çifttir.
 - `gostergeBonus` (açık): Göstergenin eşini (aynı renk ve değerdeki diğer fiziksel taş) ilk turunda, ilk atışından önce gösteren oyuncu -101 yazar; her koltuk bir kez. Çekmeden önce veya sonra gösterilebilir.
 - `wrapAround` (kapalı): Açıkken bir seri 12-13-1 ile bitebilir ve bu yüksek 1 açılışta 11 sayılır. 13-1-2 hiçbir zaman geçerli değildir.

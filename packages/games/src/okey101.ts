@@ -13,6 +13,11 @@ export interface Okey101Options {
   eldenBitme: boolean;
   /** O4: a side discard still in hand when the player discards costs +101 (undo with Çek is also +101). */
   pickupPenalty: boolean;
+  /**
+   * O4: Çek may put a side discard back and draw from stock instead (costs +101 with `pickupPenalty`).
+   * Always allowed when `pickupPenalty` is off, so the player is never stuck with an unusable tile.
+   */
+  pickupUndo: boolean;
   /** O5: with folding on, each pair opening must have more pairs than the highest pair opening so far. */
   foldingPairs: boolean;
   /** O5: showing the indicator's twin on the seat's first turn gives −101. */
@@ -26,6 +31,7 @@ export const okey101DefaultOptions: Readonly<Okey101Options> = Object.freeze({
   islekPenalty: true,
   eldenBitme: true,
   pickupPenalty: true,
+  pickupUndo: false,
   foldingPairs: true,
   gostergeBonus: true,
   wrapAround: false,
@@ -36,6 +42,7 @@ const legacyOptions: Readonly<Okey101Options> = Object.freeze({
   islekPenalty: false,
   eldenBitme: false,
   pickupPenalty: false,
+  pickupUndo: true,
   foldingPairs: false,
   gostergeBonus: false,
   wrapAround: false,

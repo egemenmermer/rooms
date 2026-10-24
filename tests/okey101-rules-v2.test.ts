@@ -287,11 +287,19 @@ describe('101 v2 rules: O4 side discard', () => {
     );
   });
 
-  it('lets Çek return the tile only for the same +101', () => {
-    const undone = okey101Action(picked(), 1, { action: 'draw' });
+  it('refuses Çek undo by default: the side tile stays in hand', () => {
+    const after = picked();
+    expect(() => okey101Action(after, 1, { action: 'draw' })).toThrow('PICKUP_UNDO_DISABLED');
+    expect(after.hands[1].some((t) => t.id === 'pickup')).toBe(true);
+  });
+
+  it('lets Çek return the tile for the same +101 when undo is enabled', () => {
+    const undone = okey101Action(picked({ pickupUndo: true }), 1, { action: 'draw' });
     expect(undone.discards[0].at(-1)?.id).toBe('pickup');
     expect(undone.hands[1].some((t) => t.id === 'pickup')).toBe(false);
+    expect(undone.hands[1]).toHaveLength(7);
     expect(undone.penalties![1]).toBe(101);
+    expect(undone.penaltyLog).toEqual([{ seat: 1, reason: 'pickup', amount: 101 }]);
   });
 
   it('charges nothing once the picked tile is melded', () => {
@@ -310,8 +318,9 @@ describe('101 v2 rules: O4 side discard', () => {
     expect(okey101Action(state, 1, { action: 'discard', cardId: 'h0' }).penalties![1]).toBe(0);
   });
 
-  it('keeps the v1 refusal and free undo with the switch off', () => {
-    const after = picked({ pickupPenalty: false });
+  it('keeps the v1 refusal and free undo with the switch off, even with undo off', () => {
+    // pickupPenalty off + pickupUndo off would leave no way out, so undo stays allowed.
+    const after = picked({ pickupPenalty: false, pickupUndo: false });
     expect(() => okey101Action(after, 1, { action: 'discard', cardId: 'h0' })).toThrow(
       'PICKED_DISCARD_MUST_BE_USED',
     );
