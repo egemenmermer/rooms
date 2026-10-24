@@ -33,14 +33,13 @@ const people = [
   { userId: 'demo-mert', name: crew.mert },
 ];
 /**
- * Scenes from each game's own `games/<game>/fixture.ts` (the views its table tests use), reachable
- * here as `scene_<name>` variants (dashes and camelCase become underscores: `scene_trick_complete`).
- * S73 Pişti, S74 classic Okey and S75 Tavla are built from those scenes only.
+ * Scenes from each game's own `games/<game>/fixture.ts` (the views its table tests use), listed
+ * below as `scene_<name>` variants: dashes and camelCase become underscores (`scene_trick_complete`,
+ * `scene_opening_tie`). S73 Pişti, S74 classic Okey and S75 Tavla are built from those scenes only.
  */
-const gameScenes = {
-  S42: ['your-turn', 'opponent-turn', 'spectator'],
-  S43: ['showdown'],
-  S44: [
+const knownScenes = {
+  holdem: ['your-turn', 'opponent-turn', 'showdown', 'spectator'] satisfies HoldemScene[],
+  blackjack: [
     'your-turn',
     'opponent-turn',
     'opponent-hit',
@@ -49,36 +48,57 @@ const gameScenes = {
     'insurance-other',
     'round-end',
     'spectator',
-  ],
-  S46: ['bidding', 'trump', 'gommeli'],
-  S47: ['your-turn', 'opponent-turn', 'trick-complete', 'round-end', 'spectator'],
-  S49: ['draw', 'discard', 'opponent', 'spectator'],
-  S50: ['finished'],
-  S73: ['your-turn', 'opponent-turn', 'pisti', 'deal-end', 'match-end', 'spectator', 'partners'],
-  S74: ['draw', 'discard', 'opponent', 'finished', 'spectator'],
-  S75: Object.keys(tavlaScenes) as TavlaScene[],
-} satisfies {
-  S42: HoldemScene[];
-  S43: HoldemScene[];
-  S44: BlackjackScene[];
-  S46: BatakScene[];
-  S47: BatakScene[];
-  S49: Okey101Scene[];
-  S50: Okey101Scene[];
-  S73: PistiScene[];
-  S74: OkeyScene[];
-  S75: TavlaScene[];
+  ] satisfies BlackjackScene[],
+  batak: [
+    'bidding',
+    'trump',
+    'your-turn',
+    'opponent-turn',
+    'trick-complete',
+    'round-end',
+    'spectator',
+    'gommeli',
+  ] satisfies BatakScene[],
+  okey101: ['draw', 'discard', 'opponent', 'finished', 'spectator'] satisfies Okey101Scene[],
+  pisti: [
+    'your-turn',
+    'opponent-turn',
+    'pisti',
+    'deal-end',
+    'match-end',
+    'spectator',
+    'partners',
+  ] satisfies PistiScene[],
+  okey: ['draw', 'discard', 'opponent', 'finished', 'spectator'] satisfies OkeyScene[],
+  tavla: Object.keys(tavlaScenes) as TavlaScene[],
 };
-type SceneScreen = keyof typeof gameScenes;
-const sceneId = (scene: string) =>
-  `scene_${scene.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`).replace(/-/g, '_')}`;
-const sceneVariants = (screen: SceneScreen) => gameScenes[screen].map(sceneId);
+const sceneGames: Partial<Record<string, keyof typeof knownScenes>> = {
+  S42: 'holdem',
+  S43: 'holdem',
+  S44: 'blackjack',
+  S46: 'batak',
+  S47: 'batak',
+  S49: 'okey101',
+  S50: 'okey101',
+  S73: 'pisti',
+  S74: 'okey',
+  S75: 'tavla',
+};
 /** The game scene behind a `scene_*` variant (or a scene-only screen's `default`), if any. */
-function sceneOf(screen: GameFixtureId, variant: string): string | null {
-  if (!(screen in gameScenes)) return null;
-  const scenes: string[] = gameScenes[screen as SceneScreen];
-  if (variant === 'default' && ['S73', 'S74', 'S75'].includes(screen)) return scenes[0];
-  return scenes.find((scene) => sceneId(scene) === variant) ?? null;
+function sceneOf(screen: string, variant: string): string | null {
+  const game = sceneGames[screen];
+  if (!game) return null;
+  const scenes: string[] = knownScenes[game];
+  if (variant === 'default' && ['S73', 'S74', 'S75'].includes(screen))
+    return game === 'tavla' ? 'yourMove' : scenes[0];
+  if (!variant.startsWith('scene_')) return null;
+  const name = variant.slice('scene_'.length),
+    scene =
+      game === 'tavla'
+        ? name.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())
+        : name.replace(/_/g, '-');
+  if (!scenes.includes(scene)) throw new Error(`Unknown ${game} fixture scene: ${variant}`);
+  return scene;
 }
 
 /** Exact inventory keys. Responsive keys describe viewport evidence, not a game command. */
@@ -103,7 +123,9 @@ export const gameFixtureVariants = {
     '1280x800',
     '900x700',
     '1920x1080',
-    ...sceneVariants('S42'),
+    'scene_your_turn',
+    'scene_opponent_turn',
+    'scene_spectator',
   ],
   S43: [
     'default',
@@ -117,7 +139,7 @@ export const gameFixtureVariants = {
     'showdown',
     'sidepot',
     'split',
-    ...sceneVariants('S43'),
+    'scene_showdown',
   ],
   S44: [
     'default',
@@ -142,7 +164,14 @@ export const gameFixtureVariants = {
     'split_second_resolved_hit',
     'split_second_resolved_stand',
     'stand',
-    ...sceneVariants('S44'),
+    'scene_your_turn',
+    'scene_opponent_turn',
+    'scene_opponent_hit',
+    'scene_insurance',
+    'scene_insurance_decline_only',
+    'scene_insurance_other',
+    'scene_round_end',
+    'scene_spectator',
   ],
   S45: ['default', 'buried', 'pairs', 'rules', 'spades'],
   S46: [
@@ -154,7 +183,9 @@ export const gameFixtureVariants = {
     'pairs_trump',
     'spades',
     'trump',
-    ...sceneVariants('S46'),
+    'scene_bidding',
+    'scene_trump',
+    'scene_gommeli',
   ],
   S47: [
     'default',
@@ -167,7 +198,11 @@ export const gameFixtureVariants = {
     'played',
     'round_end',
     'spades',
-    ...sceneVariants('S47'),
+    'scene_your_turn',
+    'scene_opponent_turn',
+    'scene_trick_complete',
+    'scene_round_end',
+    'scene_spectator',
   ],
   S48: ['default', 'folded', 'folded_pairs', 'pairs', 'rules'],
   S49: [
@@ -182,7 +217,10 @@ export const gameFixtureVariants = {
     '1280x800',
     '900x700',
     '1920x1080',
-    ...sceneVariants('S49'),
+    'scene_draw',
+    'scene_discard',
+    'scene_opponent',
+    'scene_spectator',
   ],
   S50: [
     'default',
@@ -197,7 +235,7 @@ export const gameFixtureVariants = {
     'opened',
     'penalty',
     'result',
-    ...sceneVariants('S50'),
+    'scene_finished',
   ],
   S51: ['default', 'batak', 'blackjack', 'empty', 'error', 'holdem', 'loading', 'okey'],
   S52: ['default', 'bot', 'offline', 'reclaimed', 'return', 'timeout'],
@@ -214,9 +252,39 @@ export const gameFixtureVariants = {
     'voted_batak',
   ],
   S54: ['default', 'empty', 'export', 'read_only', 'reconnect', 'saved', 'undo'],
-  S73: ['default', ...sceneVariants('S73')],
-  S74: ['default', ...sceneVariants('S74')],
-  S75: ['default', ...sceneVariants('S75')],
+  S73: [
+    'default',
+    'scene_your_turn',
+    'scene_opponent_turn',
+    'scene_pisti',
+    'scene_deal_end',
+    'scene_match_end',
+    'scene_spectator',
+    'scene_partners',
+  ],
+  S74: [
+    'default',
+    'scene_draw',
+    'scene_discard',
+    'scene_opponent',
+    'scene_finished',
+    'scene_spectator',
+  ],
+  S75: [
+    'default',
+    'scene_opening',
+    'scene_opening_tie',
+    'scene_your_move',
+    'scene_your_move_partial',
+    'scene_your_confirm',
+    'scene_opponent_last',
+    'scene_opponent_moving',
+    'scene_bar',
+    'scene_passed',
+    'scene_bear_off',
+    'scene_round_end',
+    'scene_match_end',
+  ],
 } as const;
 export type GameFixtureId = keyof typeof gameFixtureVariants;
 export interface GamesFixtureMetadata {
@@ -913,8 +981,8 @@ function batak(screen: GameFixtureId, v: string): GamePublicState {
         ? Array(count).fill(0)
         : [contract, 0, 0, ...(count === 4 ? [0] : [])],
     bidder: bidding && !kozMaca ? highest.seat : 0,
-    // No trump before the bidder names it; Koz Maça plays spades from the deal.
-    trump: kozMaca ? 'spades' : bidding || bury || trump ? null : 'spades',
+    // No trump before the bidder names it (Gömmeli buries after naming it); Koz Maça plays spades.
+    trump: kozMaca ? 'spades' : bidding || trump ? null : 'spades',
     tricks: ended ? [7, 2, 1, ...(count === 4 ? [3] : [])] : [1, 1, 1, ...(count === 4 ? [0] : [])],
     trick:
       ended || bidding || bury || trump
@@ -1227,7 +1295,7 @@ function asDemoViewer(game: GamePublicState, from: string): GamePublicState {
   );
   return next;
 }
-/** The table of one game scene (`gameScenes`), from that game's own fixture module. */
+/** The table of one game scene (`knownScenes`), from that game's own fixture module. */
 function sceneGame(screen: GameFixtureId, scene: string): GamePublicState | null {
   switch (screen) {
     case 'S42':

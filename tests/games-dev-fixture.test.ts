@@ -63,6 +63,9 @@ describe('dev games fixture', () => {
     expect(view.rules).toMatchObject({ noTrumpLeadUntilBroken: true });
     expect(view.trumpBroken).toBe(false);
     expect(project('S47').game!.view.trump).toBe('spades');
+    // Gömmeli: the bidder names trump first, then buries.
+    expect(project('S46', 'buried').game!.view).toMatchObject({ stage: 'bury', trump: 'spades' });
+    expect(() => project('S47', 'scene_nope')).toThrow();
   });
 
   it('keeps every Blackjack player’s hands in the history detail', () => {
