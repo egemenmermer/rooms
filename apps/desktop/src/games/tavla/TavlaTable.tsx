@@ -155,6 +155,8 @@ function TavlaRound({ game, userId, can, action, timer }: TableUI) {
         : t('Parlayan haneye oyna ya da başka pul seç.')
       : t('Hamlen tamam: onayla ya da geri al.');
   else status = t('{name} oynuyor.', { name: name(view.turn ?? 0) });
+  if (view.phase === 'opening' && view.openingTie)
+    status = `${t('Zarlar eşit geldi ({value}): yeniden atılıyor.', { value: view.openingTie })} ${status}`;
 
   const seatPanel = (seat: number, place: 'top' | 'bottom') => {
     const turn = view.turn === seat && view.phase !== 'over';
@@ -218,14 +220,20 @@ function TavlaRound({ game, userId, can, action, timer }: TableUI) {
           rolling={rolling}
           onPoint={onPoint}
           onGrab={(from) => {
-            if (selected === from) return;
+            // Pressing a lit target (often your own point) is a move, not a new pick.
+            if (selected === from || (selected !== null && (targets as TavlaFrom[]).includes(from)))
+              return;
             grabbed.current = from;
             setPicked(from);
           }}
           onBar={() => choose('bar')}
           onOff={() => selected !== null && targets.includes('off') && move(selected, 'off')}
           onDrop={(to) => {
-            if (selected !== null && targets.includes(to)) move(selected, to);
+            // Only a press that started on another checker is a drag; plain clicks go through onClick.
+            const from = grabbed.current;
+            if (from === null || from === to) return;
+            grabbed.current = null;
+            if (targetsFrom(legal, from).includes(to)) move(from, to);
           }}
         />
         {roundResult && finished && (

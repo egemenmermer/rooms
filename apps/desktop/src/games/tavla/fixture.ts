@@ -101,6 +101,9 @@ function eceNearlyHome(): Match {
 export const tavlaScenes = {
   /** Opening roll-off: Ece rolls her single die first. */
   opening: () => start(),
+  /** Both opening dice came up 4: the roll-off starts again. */
+  openingTie: () =>
+    act(act(start(), 0, { action: 'roll' }, dice(4)), 1, { action: 'roll' }, dice(4)),
   /** Ece won the opening and plays 5-3; nothing moved yet. */
   yourMove: () => eceOpens(),
   /** One step of 5-3 played: undo open, confirm not yet. */

@@ -70,6 +70,40 @@ it('your move: a checker highlights exactly its legal targets and moves there', 
   expect(button('Onayla')).toHaveProperty('disabled', true);
 });
 
+it('a real mouse click onto your own point moves there (pointer events included)', () => {
+  const { container, view, action } = renderScene('yourMove');
+  const step = view.legalMoves.find(
+    (move) =>
+      typeof move.from === 'number' &&
+      typeof move.to === 'number' &&
+      view.points[move.to].seat === 0,
+  )!;
+  const press = (node: Element) => {
+    fireEvent.pointerDown(node);
+    fireEvent.pointerUp(node);
+    fireEvent.click(node);
+  };
+  press(point(container, step.from as number));
+  press(point(container, step.to as number));
+  expect(action).toHaveBeenCalledTimes(1);
+  expect(action).toHaveBeenCalledWith('move', { payload: { from: step.from, to: step.to } });
+});
+
+it('dragging a checker onto a lit point moves it once', () => {
+  const { container, view, action } = renderScene('yourMove');
+  const step = view.legalMoves.find((move) => typeof move.from === 'number')!;
+  fireEvent.pointerDown(point(container, step.from as number));
+  fireEvent.pointerUp(point(container, step.to as number));
+  expect(action).toHaveBeenCalledTimes(1);
+  expect(action).toHaveBeenCalledWith('move', { payload: { from: step.from, to: step.to } });
+});
+
+it('an opening tie is explained', () => {
+  renderScene('openingTie');
+  expect(screen.getByText(/Zarlar eşit geldi \(4\)/)).toBeTruthy();
+  expect(button('Açılış zarını at')).toHaveProperty('disabled', false);
+});
+
 it('undo and confirm follow legalActions', () => {
   renderScene('yourMovePartial');
   expect(button('Geri al')).toHaveProperty('disabled', false);

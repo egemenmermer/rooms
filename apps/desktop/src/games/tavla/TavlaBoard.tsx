@@ -315,7 +315,7 @@ export function TavlaBoard({
                 transform={`translate(${x} ${stackY(row, STACK - 1)})`}
                 aria-hidden="true"
               >
-                <circle r={15} />
+                <circle r={19} />
                 <text dy="0.35em">{point.count}</text>
               </g>
             )}
@@ -344,7 +344,7 @@ export function TavlaBoard({
                 transform={`translate(${BAR_X} ${barCenter(seat, view, 3).y})`}
                 aria-hidden="true"
               >
-                <circle r={15} />
+                <circle r={19} />
                 <text dy="0.35em">{count}</text>
               </g>
             )}

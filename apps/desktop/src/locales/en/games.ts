@@ -1071,6 +1071,7 @@ export const games: Catalog = {
   'Maç bitti': 'Match over',
   'Açılış zarını at: büyük atan başlar.': 'Roll your opening die: the higher roll starts.',
   '{name} açılış zarını atıyor.': '{name} is rolling the opening die.',
+  'Zarlar eşit geldi ({value}): yeniden atılıyor.': 'Tied at {value}: rolling again.',
   'Sıra sende: zar at.': 'Your turn: roll the dice.',
   '{name} zar atacak.': '{name} is about to roll.',
   'Oynayacağın pulu seç.': 'Pick a checker to move.',

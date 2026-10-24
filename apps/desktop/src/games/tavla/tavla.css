@@ -237,7 +237,8 @@
 }
 .tv-count text {
   fill: var(--color-text-primary);
-  font-size: 16px;
+  /* SVG units: the board renders at ~0.5 scale at 900x700, so this stays above the 11px floor. */
+  font-size: 24px;
   font-weight: var(--font-weight-semibold);
   text-anchor: middle;
 }
