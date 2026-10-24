@@ -1103,7 +1103,11 @@ export function createGamesFixtureProjection(
           name: 'Bot 1',
           bot: true,
         };
-      if (v === 'not_owner') game.ownerId = 'demo-ece';
+      if (v === 'not_owner') {
+        // The owner is seated and present, so the server offers 'start' only to them.
+        game.ownerId = 'demo-ece';
+        game.view.legalActions = [];
+      }
       if (!game.seats.some((seat) => seat.userId === self)) game.view.ownRecovery = null;
       if (v === 'spectator') {
         game.view.watching = true;

@@ -1,0 +1,15 @@
+/* Settlement emphasis uses only authoritative winning card IDs. */
+.rg-board .playing-card.winning {
+  outline: 2px solid #bda1f2;
+  outline-offset: 3px;
+  box-shadow:
+    0 0 0 5px #bda1f21c,
+    0 4px 12px #0003;
+}
+.rg-raise .rg-modal-body > p[role='status'] {
+  color: #e2b9ad;
+}
+.rg-pot-details > span {
+  line-height: 1.45;
+  text-align: center;
+}

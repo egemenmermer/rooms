@@ -1,0 +1,186 @@
+.rg-footer-note {
+  border-top: 1px solid #333a46;
+  padding-top: 18px;
+  margin-top: 18px;
+  font-size: 10px;
+  line-height: 1.6;
+  color: #929dad;
+}
+.rg-lobby {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(250px, 1fr);
+  gap: 20px;
+}
+.rg-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.rg-section-heading h3 {
+  font-size: 16px;
+  margin: 0;
+}
+.rg-seat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.rg-lobby-seat {
+  border: 1px solid #3b3f49;
+  border-radius: 12px;
+  background: #24272f;
+  min-height: 123px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+}
+.rg-lobby-seat > .avatar,
+.rg-lobby-seat > .voice-photo {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 50%;
+}
+.rg-lobby-seat strong {
+  font-size: 13px;
+}
+.rg-lobby-seat small,
+.rg-lobby-seat > span {
+  font-size: 12px;
+  color: #9eacc2;
+}
+.rg-lobby-seat.you {
+  border-color: #8b83ff;
+  background: #2c2a3f;
+}
+.rg-lobby-seat.empty {
+  border-style: dashed;
+  background: #1c1f25;
+  color: #9ca2b2;
+}
+.rg-lobby-seat > div {
+  display: flex;
+  gap: 10px;
+}
+.rg-lobby-seat button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  color: #b0bfd5;
+  font-size: 11px;
+  padding: 6px;
+}
+.rg-rules {
+  padding: 20px;
+  background: #2b303a;
+  border: 1px solid #303744;
+  border-radius: 13px;
+}
+.rg-rules h3 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 17px;
+  margin: 0 0 7px;
+}
+.rg-rules > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  border-bottom: 1px solid #333944;
+  min-height: 41px;
+  font-size: 12px;
+}
+.rg-rules > div > span {
+  color: #9daac0;
+}
+.rg-rules strong {
+  text-align: right;
+  font-weight: 650;
+}
+.rg-rules > p {
+  font-size: 12px;
+  color: #9daac0;
+  margin: 16px 0 0;
+}
+.rg-spectators {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding: 18px 16px;
+  border: 1px solid #303744;
+  border-radius: 13px;
+  background: #2b303a;
+}
+.rg-spectators strong {
+  font-size: 15px;
+}
+.rg-spectators p {
+  width: 100%;
+  font-size: 12px;
+  color: #9eacc2;
+  margin: 0;
+}
+.rg-hand-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #42434f;
+  border-radius: 12px;
+  padding: 17px;
+  margin-top: 18px;
+  min-height: 75px;
+}
+.rg-hand-strip > div:first-child {
+  margin-right: auto;
+}
+.rg-hand-strip h3 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+.rg-hand-strip p {
+  font-size: 12px;
+  color: #9fabc0;
+  line-height: 1.6;
+  margin: 0;
+}
+.rg-hand-strip > button:not(.button) {
+  background: none;
+  color: #acb8cb;
+  font-size: 11px;
+  padding: 8px;
+}
+.rg-hand-strip .button {
+  min-height: 36px;
+  font-size: 12px;
+}
+.rg-lobby-bet {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+.rg-lobby-bet input {
+  width: 65px;
+  background: #1d2027;
+  color: #edeff6;
+  border: 1px solid #4b5363;
+  border-radius: 5px;
+  padding: 7px;
+}
+.rg-lobby-bet button {
+  font-size: 11px;
+  background: none;
+  color: #bbb4ee;
+}

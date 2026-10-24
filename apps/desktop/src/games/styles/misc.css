@@ -1,0 +1,26 @@
+.rg-invite-copy {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.rg-replace-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-basis: 100%;
+  line-height: 1.5;
+  padding-top: 14px;
+  border-top: 1px solid #ffffff12;
+}
+.rg-replace-consent input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 2px 0 0;
+  accent-color: #8b7bf4;
+}
+.rg-replace-consent + p {
+  flex-basis: 100%;
+  margin: 0;
+}
