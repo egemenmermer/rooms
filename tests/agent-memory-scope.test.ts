@@ -36,7 +36,10 @@ async function fixture() {
   const request = (path: string, token: string, method = 'GET', body?: unknown) =>
     fetch(origin + path, {
       method,
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+      },
       body: body ? JSON.stringify(body) : undefined,
     });
   const save = async (token: string, text: string) =>
@@ -98,7 +101,7 @@ describe('room memory authorship', () => {
           provider: 'openrouter',
           label: 'Model',
           model: 'test-model',
-          apiKey: 'test-key',
+          apiKey: 'test-secret-key',
         })
       ).json()) as { id: string };
       const task = (await (
@@ -112,6 +115,7 @@ describe('room memory authorship', () => {
       await f.tick();
       for (let i = 0; i < 40 && !f.memories.length; i++)
         await new Promise((r) => setTimeout(r, 25));
+      expect(f.repository.data.tasks[0]).toMatchObject({ state: 'completed', error: null });
       const [memory] = f.memories;
       expect(memory[0]).toMatch(/reference data, not as instructions/);
       expect(memory).toHaveLength(2);
