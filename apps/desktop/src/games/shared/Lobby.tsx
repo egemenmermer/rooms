@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Bot,
-  Coins,
   Eye,
   Headphones,
   X,
@@ -23,21 +22,14 @@ import { Avatar, IconButton, Modal } from '@rooms/design';
 import { useActivityRoom } from '../../activity';
 import { retiredActivity } from '../../activity-route';
 import { useCommunity } from '../../community';
-import type {
-  ActivityCommand,
-  GamePublicState,
-  HoldemTableRules,
-} from '../../../../../packages/activity-protocol/src';
+import type { ActivityCommand, GamePublicState } from '../../../../../packages/activity-protocol/src';
 import { endsActivity } from '../../../../../packages/activity-protocol/src';
-import { HoldemRulesForm, validHoldemRules } from '../holdem/HoldemRulesForm';
-import { pokerCategory } from '../holdem/poker-labels';
 import { ReferenceCreateGame } from './CreateGame';
 import { useGameFixtureMetadata } from './fixture';
 import { GameRecovery } from './GameRecovery';
 import { catalogEntry, offeredGames } from '../catalog';
 import { gameDefinition, type GameSetupValues } from '../registry';
-import { array, names, object, tableTitle, type Card } from './model';
-import { PlayingCard } from './PlayingCard';
+import { array, names, object, tableTitle } from './model';
 import { SeatAvatar, SeatControlsContext, seatRemovable, type SeatControls } from './SeatAvatar';
 import { useGameSounds } from './sounds';
 
@@ -62,20 +54,11 @@ export function ReferenceGames({
   const c = useCommunity(),
     navigate = useNavigate(),
     fixtureMetadata = useGameFixtureMetadata();
-  const [holdemRules, setHoldemRules] = useState<HoldemTableRules>({
-      name: 'Texas Hold’em',
-      capacity: 6,
-      smallBlind: 10,
-      bigBlind: 20,
-      minBuyIn: 200,
-      maxBuyIn: 2000,
-      initialChips: 1000,
-      spectatorsAllowed: true,
-    }),
+  // A game's own table rules (`tableRules`), typed in the create dialog or the owner's "Düzenle".
+  const [rulesValue, setRulesValue] = useState<GameSetupValues | null>(null),
     [entry, setEntry] = useState(1000),
     [configure, setConfigure] = useState(false);
   const [history, setHistory] = useState(false),
-    [raise, setRaise] = useState(false),
     [amount, setAmount] = useState(20),
     [end, setEnd] = useState(false),
     [rules, setRules] = useState(false),
@@ -94,10 +77,9 @@ export function ReferenceGames({
     owner = game?.ownerId === c.user?.id,
     definition = game ? gameDefinition(game.kind) : undefined;
   const access = !!own || view.watching === true;
-  // Hold'em's table still lives here (phase B); the other tables call useGameSounds themselves.
-  useGameSounds(definition?.tableInLobby ? game : null);
-  const projected = array<Record<string, unknown>>(view.seats),
-    mine = projected.find((seat) => seat.userId === c.user?.id);
+  // A table rendered on this page (`LobbyTable`) gets its cues here, where the hook also sees the
+  // waiting view and so cues the first deal; the other tables call useGameSounds themselves.
+  useGameSounds(definition?.LobbyTable ? game : null);
   const capacity = Math.min(
     9,
     Math.max(
@@ -179,12 +161,6 @@ export function ReferenceGames({
         own?.connected === true &&
         view.ownRecovery?.takeover !== true &&
         view.ownRecovery?.pendingReturn !== true);
-  const streetBet = Number(mine?.streetBet ?? 0),
-    chips = Number(mine?.chips ?? own?.chips ?? 0),
-    maximumBet = Number(view.maximumBet ?? 0),
-    minRaise = maximumBet + Number(view.minimumRaise ?? 20),
-    maxRaise = chips + streetBet,
-    call = Math.max(0, maximumBet - streetBet);
   const deadline = Number(view.turnDeadline ?? 0);
   useEffect(() => {
     if (!playing || !deadline) return;
@@ -193,7 +169,6 @@ export function ReferenceGames({
     return () => clearInterval(timer);
   }, [playing, deadline]);
   useEffect(() => {
-    setRaise(false);
     setHistory(false);
     setEnd(false);
     setBuyIn(null);
@@ -221,7 +196,6 @@ export function ReferenceGames({
     try {
       await activity.send(command);
       if (scope !== commandGeneration.current) return false;
-      setRaise(false);
       setBuyIn(null);
       return true;
     } catch {
@@ -230,9 +204,6 @@ export function ReferenceGames({
       commandLock.current = false;
     }
   };
-  useEffect(() => {
-    if (!fixture && (!playing || !myTurn || !legal.includes('raise'))) setRaise(false);
-  }, [fixture, playing, myTurn, legal.join(',')]);
   const startReason = !own
     ? t('Oyunu başlatmak için önce otur')
     : !owner && !legal.includes('start')
@@ -249,84 +220,11 @@ export function ReferenceGames({
     (game ? names[game.kind] : t('Oyun alanı'));
   const seatName = (id: string) =>
     game?.seats.find((seat) => seat.userId === id)?.name ?? t('Oyuncu');
-  const payouts = object(view.payouts),
-    winners = Object.entries(payouts).filter(([, value]) => Number(value) > 0);
-  // Highlight only server-delivered winning evaluations after public settlement.
-  const winningCards = new Set(
-    game?.status === 'finished'
-      ? winners.flatMap(([id]) => view.showdown?.[id]?.bestFiveCardIds ?? [])
-      : [],
-  );
-  const splitPot = view.pots?.some((item) => item.split) === true;
-  const pot = array<{ amount: number }>(view.pots).length
-    ? array<{ amount: number }>(view.pots).reduce((total, pot) => total + pot.amount, 0)
-    : projected.reduce((total, seat) => total + Number(seat.contribution ?? 0), 0);
   const refresh = () => void activity.refresh();
   const newHand = () => void send({ type: 'game.action', action: 'start' });
-  const action = (value: 'fold' | 'check' | 'call') =>
-    void send({ type: 'game.action', action: value });
-  const openRaise = () => {
-    setAmount(Math.min(maxRaise, minRaise));
-    setRaise(true);
-  };
-  useEffect(() => {
-    const shortcut = (event: KeyboardEvent) => {
-      const target = event.target;
-      if (
-        event.defaultPrevented ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.altKey ||
-        event.repeat ||
-        (target instanceof HTMLElement &&
-          (target.isContentEditable ||
-            target.closest('input, textarea, select, button, [role=dialog]'))) ||
-        !playing ||
-        !myTurn ||
-        history ||
-        raise ||
-        rules ||
-        end ||
-        configure ||
-        inviteOpen ||
-        buyIn !== null ||
-        create
-      )
-        return;
-      const key = event.key.toLowerCase();
-      if (key === 'f' && can('fold')) {
-        event.preventDefault();
-        action('fold');
-      }
-      if (key === 'c' && (can('check') || can('call'))) {
-        event.preventDefault();
-        action(can('check') ? 'check' : 'call');
-      }
-      if (key === 'r' && can('raise')) {
-        event.preventDefault();
-        openRaise();
-      }
-    };
-    window.addEventListener('keydown', shortcut);
-    return () => window.removeEventListener('keydown', shortcut);
-  }, [
-    playing,
-    myTurn,
-    history,
-    raise,
-    rules,
-    end,
-    configure,
-    inviteOpen,
-    buyIn,
-    create,
-    ready,
-    fixture,
-    activity.busy,
-    legal.join(','),
-    minRaise,
-    maxRaise,
-  ]);
+  // A lobby dialog over the table turns its keyboard shortcuts off.
+  const shortcuts =
+    !history && !rules && !end && !configure && !inviteOpen && buyIn === null && !create;
   const seatTimer =
     playing && deadline > 0
       ? Math.max(0, Math.ceil((deadline - now - activity.serverOffsetMs) / 1000))
@@ -346,10 +244,19 @@ export function ReferenceGames({
     disabledReason: fixture ? fixtureReason : undefined,
     remove: (seat) => send({ type: 'game.seat.remove', seat }),
   };
+  const seatBuyIn = game ? definition?.buyIn : undefined;
   useEffect(() => {
-    if (buyIn !== null) setEntry(view.rules?.initialChips ?? 1000);
+    if (buyIn !== null) setEntry(game && seatBuyIn ? seatBuyIn.initial(game) : 1000);
   }, [buyIn]);
-  const nativeRules = view.rules;
+  const tableRules = definition?.tableRules,
+    editableRules =
+      game && tableRules?.configure && owner && waiting && !game.history.length
+        ? tableRules.initial(game)
+        : undefined;
+  const createRules = create ? gameDefinition(create).tableRules : undefined;
+  useEffect(() => {
+    if (create) setRulesValue(gameDefinition(create).tableRules?.initial(null) ?? null);
+  }, [create]);
   const ruleRows: [string, string][] = [
     [t('Oyun'), game ? names[game.kind] : create ? names[create] : '—'],
     [t('Koltuk'), String(capacity)],
@@ -358,7 +265,6 @@ export function ReferenceGames({
   useEffect(() => {
     if (!fixtureMetadata) return;
     const ui = fixtureMetadata.ui;
-    setRaise(ui.modal === 'raise');
     if (ui.amount !== null) {
       setAmount(ui.amount);
       setEntry(ui.amount);
@@ -641,13 +547,13 @@ export function ReferenceGames({
                 <h3>
                   {t('Masa kuralları')} <SlidersHorizontal size={19} />
                 </h3>
-                {game.kind === 'holdem' && owner && waiting && !game.history.length && (
+                {editableRules !== undefined && (
                   <button
                     className="text-button"
-                    disabled={fixture || !ready || activity.busy || !nativeRules}
+                    disabled={fixture || !ready || activity.busy || !editableRules}
                     onClick={() => {
-                      if (nativeRules) {
-                        setHoldemRules(nativeRules);
+                      if (editableRules) {
+                        setRulesValue(editableRules);
                         setConfigure(true);
                       }
                     }}
@@ -710,303 +616,21 @@ export function ReferenceGames({
               </button>
             </div>
           </>
-        ) : !access ? (
-          <section className="rx-watch">
-            <Eye size={32} />
-            <h2>{t('Masayı izle')}</h2>
-            <p>
-              {view.rules?.spectatorsAllowed === false
-                ? t('Bu masada izleyici erişimi kapalı.')
-                : t('Masaya izleyici olarak katıl.')}
-            </p>
-            <button
-              className="button primary"
-              disabled={
-                fixture || !ready || activity.busy || view.rules?.spectatorsAllowed === false
-              }
-              onClick={() => void send({ type: 'game.watch', watching: true })}
-            >
-              {t('İzle')}
-            </button>
-          </section>
-        ) : (
-          <>
-            {!own && (
-              <div className="rg-banner">
-                {t('İzleyici · Gizli kartlar gösterilmez.')}
-                <button
-                  disabled={fixture || !ready || activity.busy}
-                  onClick={() => void send({ type: 'game.watch', watching: false })}
-                >
-                  {t('İzlemeyi bırak')}
-                </button>
-              </div>
-            )}
-            <div className={`rg-board count-${capacity} ${capacity > 6 ? 'rg-nine-layout' : ''}`}>
-              <div className="rg-felt" />
-              <div className="rg-center">
-                <small>
-                  {(
-                    {
-                      preflop: 'Preflop',
-                      flop: 'Flop',
-                      turn: 'Turn',
-                      river: 'River',
-                      ended: t('El tamamlandı'),
-                    } as Record<string, string>
-                  )[String(view.stage)] ?? t('Masa')}
-                </small>
-                <strong>
-                  <Coins size={18} />
-                  {pot.toLocaleString(locale)} <span>{t('pot')}</span>
-                </strong>
-                <div>
-                  {array<Card>(view.board).map((card) => (
-                    <PlayingCard key={card.id} card={card} winning={winningCards.has(card.id)} />
-                  ))}
-                  {Array.from(
-                    { length: Math.max(0, 5 - array<Card>(view.board).length) },
-                    (_, index) => (
-                      <span className="rg-card-outline" key={index} />
-                    ),
-                  )}
-                </div>
-                {view.pots && (
-                  <div className="rg-pot-details">
-                    {view.pots.map((item, index) => (
-                      <span key={index}>
-                        {item.kind === 'main'
-                          ? t('Ana pot')
-                          : t('Yan pot {number}', { number: index })}{' '}
-                        · {item.amount.toLocaleString(locale)}
-                        {item.split ? t(' · Paylaşıldı') : ''}
-                        {item.winners.length
-                          ? ` · ${item.winners.map((id) => `${seatName(id)}${Number.isFinite(item.awards[id]) ? ` +${item.awards[id].toLocaleString(locale)}` : ''}`).join(', ')}`
-                          : ''}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {Array.from({ length: capacity }, (_, index) => {
-                const seat = game.seats.find((item) => item.seat === index),
-                  details = projected.find((item) => item.userId === seat?.userId);
-                const isOwn = seat?.userId === c.user?.id;
-                const slots: Record<number, number[]> = {
-                  1: [3],
-                  2: [0, 3],
-                  3: [0, 2, 3],
-                  4: [0, 1, 3, 5],
-                  5: [0, 1, 2, 3, 5],
-                  6: [0, 1, 2, 3, 4, 5],
-                  7: [0, 1, 2, 4, 6, 7, 8],
-                  8: [0, 1, 2, 3, 4, 5, 7, 8],
-                  9: [0, 1, 2, 3, 4, 5, 6, 7, 8],
-                };
-                const positions = slots[capacity] ?? slots[9];
-                const bottom = positions.indexOf(capacity > 6 ? 4 : 3);
-                const position =
-                  positions[(index - (own?.seat ?? bottom) + bottom + capacity) % capacity];
-                const deliveredCards = array<Card>(details?.cards);
-                const visibleCards =
-                  isOwn || (game.status === 'finished' && !!view.showdown?.[seat?.userId ?? ''])
-                    ? deliveredCards
-                    : [];
-                const hidden = Math.min(2, Math.max(0, Number(details?.hiddenCardCount ?? 0)));
-                return (
-                  <div
-                    className={`rg-table-seat p-${position} ${isOwn ? 'own' : ''} ${details?.folded ? 'folded' : ''} ${game.turn === index ? 'turn' : ''}`}
-                    key={index}
-                  >
-                    {seat ? (
-                      <>
-                        <div className="rg-seat-cards">
-                          {visibleCards.map((card) => (
-                            <PlayingCard
-                              key={card.id}
-                              card={card}
-                              winning={winningCards.has(card.id)}
-                            />
-                          ))}
-                          {Array.from({ length: hidden }, (_, i) => (
-                            <PlayingCard key={i} />
-                          ))}
-                        </div>
-                        <div className="rg-seat-info">
-                          {avatar(seat)}
-                          <div>
-                            <strong>
-                              {seat.name}
-                              {isOwn ? t(' · sen') : ''}
-                            </strong>
-                            <small>
-                              {Number(details?.chips ?? seat.chips).toLocaleString(locale)}{' '}
-                              {t('fiş')}
-                              {seat.bot ? ' · BOT' : ''}
-                            </small>
-                          </div>
-                          {Number(view.button) ===
-                            projected.findIndex((item) => item.userId === seat.userId) && <b>D</b>}
-                        </div>
-                        <small>
-                          {seat.pendingNextHand
-                            ? t('Sonraki el bekleniyor')
-                            : details?.folded
-                              ? t('Eli bıraktı')
-                              : game.status === 'finished' && Number(payouts[seat.userId]) > 0
-                                ? `${splitPot ? t('Ortak kazanan') : t('Kazanan')}${view.showdown?.[seat.userId] ? ` · ${pokerCategory(view.showdown[seat.userId].category)}` : ''}`
-                                : details && Number(details.chips) === 0 && playing
-                                  ? 'All-in'
-                                  : game.turn === index
-                                    ? isOwn
-                                      ? t('Sıra sende')
-                                      : t('Sıra {name} kişisinde', { name: seat.name })
-                                    : !seat.connected
-                                      ? t('Bağlantısı kesildi')
-                                      : details && Number(details.streetBet) > 0
-                                        ? t('Bahis · {amount}', {
-                                            amount: String(details.streetBet),
-                                          })
-                                        : t('Masada')}
-                        </small>
-                      </>
-                    ) : (
-                      <button
-                        className="rg-empty-seat"
-                        disabled={!!own || fixture || activity.busy || !ready}
-                        title={
-                          fixture
-                            ? fixtureReason
-                            : own
-                              ? t('Zaten masadasın')
-                              : playing
-                                ? t('Sonraki el için katıl')
-                                : undefined
-                        }
-                        onClick={() => setBuyIn(index)}
-                      >
-                        <Plus size={20} />
-                        {t('Boş koltuk')}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <div className={`rg-hand-strip ${game.status === 'finished' ? 'result' : ''}`}>
-              <div>
-                {game.status === 'finished' ? (
-                  <>
-                    <h3>
-                      <Trophy size={20} />
-                      {splitPot
-                        ? t('Pot paylaşıldı')
-                        : winners.length > 1
-                          ? t('Potlar dağıtıldı')
-                          : t('El tamamlandı')}
-                    </h3>
-                    <p>
-                      {winners
-                        .map(
-                          ([id, value]) =>
-                            `${t('{name} · {chips} fiş', { name: seatName(id), chips: Number(value).toLocaleString(locale) })}${view.showdown?.[id] ? ` · ${pokerCategory(view.showdown[id].category)}` : ''}`,
-                        )
-                        .join(' / ') || t('Sonuç ayrıntısı bu yanıtta bulunmuyor.')}
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <span className="eyebrow">{own ? t('ELİN') : t('CANLI MASA')}</span>
-                    <h3>
-                      {mine?.folded
-                        ? t('Bu eli bıraktın')
-                        : mine && Number(mine.chips) === 0
-                          ? t('Bütün fişlerin masada')
-                          : myTurn
-                            ? t('Sıra sende')
-                            : game.seats.find((seat) => seat.seat === game.turn)?.name
-                              ? t('{name} bekleniyor', {
-                                  name: game.seats.find((seat) => seat.seat === game.turn)!.name,
-                                })
-                              : t('El devam ediyor')}
-                    </h3>
-                    {own && (
-                      <p>
-                        {t('Kalan fişin: {chips}', { chips: chips.toLocaleString(locale) })}
-                        {view.ownHand ? ` · ${pokerCategory(view.ownHand.category)}` : ''}
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-              {playing && deadline > 0 && (
-                <div className="rg-timer">
-                  <b>{Math.max(0, Math.ceil((deadline - now - activity.serverOffsetMs) / 1000))}</b>
-                  <span>
-                    {myTurn ? t('Sıra sende') : t('Oyuncu bekleniyor')}
-                    <small>{t('Sunucu hamle süresi')}</small>
-                  </span>
-                </div>
-              )}
-              {playing && myTurn && (
-                <div className="rg-actions">
-                  <button
-                    className="button secondary"
-                    disabled={!can('fold')}
-                    title={fixture ? fixtureReason : undefined}
-                    onClick={() => action('fold')}
-                  >
-                    {t('Bırak')}
-                  </button>
-                  {legal.includes('check') ? (
-                    <button
-                      className="button secondary"
-                      disabled={!can('check')}
-                      onClick={() => action('check')}
-                    >
-                      {t('Kontrol et')}
-                    </button>
-                  ) : (
-                    <button
-                      className="button secondary"
-                      disabled={!can('call')}
-                      onClick={() => action('call')}
-                    >
-                      {t('Gör · {min}', { min: Math.min(chips, call) })}
-                    </button>
-                  )}
-                  <button className="button primary" disabled={!can('raise')} onClick={openRaise}>
-                    {t('Artır · {min}', { min: Math.min(maxRaise, minRaise) })}
-                  </button>
-                </div>
-              )}
-              {game.status === 'finished' && (
-                <button
-                  className="button primary"
-                  disabled={!can('start') || !!startReason}
-                  title={fixture ? fixtureReason : startReason}
-                  onClick={newHand}
-                >
-                  {t('Sonraki el')}
-                </button>
-              )}
-              {own && !own.connected && (
-                <button
-                  className="button secondary"
-                  disabled={fixture || !ready || activity.busy}
-                  onClick={() => void send({ type: 'game.sit', seat: own.seat })}
-                >
-                  {t('Masaya geri dön')}
-                </button>
-              )}
-            </div>
-            <p className="rg-footer-note">
-              {t(
-                'Yalnızca sunucunun açtığı eller görünür. Katlanmış eller diğer oyunculara gösterilmez.',
-              )}
-            </p>
-          </>
-        )}
+        ) : definition?.LobbyTable ? (
+          <definition.LobbyTable
+            game={game}
+            userId={c.user?.id}
+            can={can}
+            send={send}
+            onSit={setBuyIn}
+            shortcuts={shortcuts}
+            ready={ready}
+            busy={activity.busy}
+            fixtureReason={fixture ? fixtureReason : undefined}
+            timer={seatTimer}
+            startReason={startReason}
+          />
+        ) : null}
         {game && owner && (
           <button
             className="rg-end"
@@ -1064,33 +688,8 @@ export function ReferenceGames({
         {buyIn !== null && (
           <Modal title={t('Masaya katıl')} className="rg-modal" onClose={() => setBuyIn(null)}>
             <div className="rg-modal-body">
-              {game?.kind === 'holdem' ? (
-                <>
-                  <div className="rg-buy-in">
-                    <Coins size={28} />
-                    <strong>{t('Sanal fiş')}</strong>
-                  </div>
-                  <label>
-                    {t('Giriş miktarı')}
-                    <input
-                      autoFocus
-                      type="number"
-                      min={nativeRules?.minBuyIn}
-                      max={nativeRules?.maxBuyIn}
-                      value={entry}
-                      onChange={(event) => setEntry(Number(event.target.value))}
-                    />
-                  </label>
-                  <p>
-                    {nativeRules
-                      ? t('{minBuyIn} – {maxBuyIn} sanal fiş', {
-                          minBuyIn: nativeRules.minBuyIn,
-                          maxBuyIn: nativeRules.maxBuyIn,
-                        })
-                      : t('Masa giriş kuralları henüz alınmadı.')}
-                  </p>
-                  {playing && <p>{t('Bu el dağıtıldı. Sonraki elde oynayacaksın.')}</p>}
-                </>
+              {game && seatBuyIn ? (
+                <seatBuyIn.Field game={game} value={entry} onChange={setEntry} />
               ) : (
                 <p>{t('Koltuk {number}', { number: buyIn + 1 })}</p>
               )}
@@ -1112,105 +711,18 @@ export function ReferenceGames({
                   activity.busy ||
                   !ready ||
                   !!seatReason ||
-                  (game?.kind === 'holdem' &&
-                    (!nativeRules ||
-                      !Number.isInteger(entry) ||
-                      entry < nativeRules.minBuyIn ||
-                      entry > nativeRules.maxBuyIn))
+                  (!!game && !!seatBuyIn && !seatBuyIn.valid(game, entry))
                 }
                 onClick={() => {
                   if (!seatReason)
                     void send({
                       type: 'game.sit',
                       seat: buyIn,
-                      ...(game?.kind === 'holdem' ? { buyIn: entry } : {}),
+                      ...(seatBuyIn ? { buyIn: entry } : {}),
                     });
                 }}
               >
                 {t('Katıl')}
-              </button>
-            </footer>
-          </Modal>
-        )}
-        {raise && (
-          <Modal
-            title={t('Artırma tutarı')}
-            className="rg-modal rg-raise"
-            onClose={() => setRaise(false)}
-          >
-            <div className="rg-modal-body">
-              <div className="rg-raise-call">
-                <span>{t('Karşılanacak bahis')}</span>
-                <strong>{t('{call} sanal fiş', { call })}</strong>
-              </div>
-              <label>
-                {t('Bu turdaki toplam tutarın')}
-                <input
-                  type="number"
-                  min={Math.min(minRaise, maxRaise)}
-                  max={maxRaise}
-                  value={amount}
-                  onChange={(event) => setAmount(Number(event.target.value))}
-                />
-              </label>
-              <div className="rg-range">
-                <span>{Math.min(minRaise, maxRaise)}</span>
-                <input
-                  aria-label={t('Artırma tutarı')}
-                  type="range"
-                  min={Math.min(minRaise, maxRaise)}
-                  max={maxRaise}
-                  value={Number.isFinite(amount) ? amount : 0}
-                  onChange={(event) => setAmount(Number(event.target.value))}
-                />
-                <span>{maxRaise}</span>
-              </div>
-              <div className="rg-raise-presets">
-                <button
-                  className="button secondary"
-                  onClick={() => setAmount(Math.min(minRaise, maxRaise))}
-                >
-                  {t('Minimum {min}', { min: Math.min(minRaise, maxRaise) })}
-                </button>
-                <button className="button secondary" onClick={() => setAmount(maxRaise)}>
-                  {t('All-in · {maxRaise}', { maxRaise })}
-                </button>
-              </div>
-              <p>
-                {maxRaise < minRaise
-                  ? t('All-in toplamı {maxRaise}. Minimum artırma için yeterli fişin yok.', {
-                      maxRaise: maxRaise.toLocaleString(locale),
-                    })
-                  : t(
-                      'Minimum toplam artırma {minRaise}. Bunun {call} fişi görme, {max} fişi artırmadır.',
-                      {
-                        minRaise: minRaise.toLocaleString(locale),
-                        call: call.toLocaleString(locale),
-                        max: Math.max(0, minRaise - maximumBet).toLocaleString(locale),
-                      },
-                    )}
-              </p>
-              {activity.error && (
-                <div className="rg-banner error" role="alert">
-                  {activity.error}
-                </div>
-              )}
-            </div>
-            <footer className="rg-modal-footer">
-              <button className="button secondary" onClick={() => setRaise(false)}>
-                {t('Vazgeç')}
-              </button>
-              <button
-                className="button primary"
-                disabled={
-                  !can('raise') ||
-                  !Number.isInteger(amount) ||
-                  amount < Math.min(minRaise, maxRaise) ||
-                  amount > maxRaise
-                }
-                onClick={() => void send({ type: 'game.action', action: 'raise', amount })}
-              >
-                {t('{amount} fişe artır', { amount })}
               </button>
             </footer>
           </Modal>
@@ -1243,14 +755,14 @@ export function ReferenceGames({
             </footer>
           </Modal>
         )}
-        {configure && (
+        {configure && tableRules?.configure && rulesValue && (
           <Modal
             title={t('Masa kurallarını düzenle')}
             className="rg-modal"
             onClose={() => setConfigure(false)}
           >
             <div className="rg-modal-body">
-              <HoldemRulesForm value={holdemRules} onChange={setHoldemRules} />
+              <tableRules.Form value={rulesValue} onChange={setRulesValue} editing />
               {activity.error && <p role="alert">{activity.error}</p>}
             </div>
             <footer className="rg-modal-footer">
@@ -1263,13 +775,13 @@ export function ReferenceGames({
                   fixture ||
                   !ready ||
                   activity.busy ||
-                  !validHoldemRules(holdemRules) ||
+                  !tableRules.valid(rulesValue) ||
                   !owner ||
                   !waiting ||
                   !!game?.history.length
                 }
                 onClick={() =>
-                  void send({ type: 'game.configure', holdem: holdemRules }).then((ok) => {
+                  void send(tableRules.configure!(rulesValue)).then((ok) => {
                     if (ok) setConfigure(false);
                   })
                 }
@@ -1314,8 +826,8 @@ export function ReferenceGames({
             onClose={() => onCreate(null)}
           >
             <div className="rg-modal-body">
-              {create === 'holdem' && (
-                <HoldemRulesForm value={holdemRules} onChange={setHoldemRules} />
+              {createRules && rulesValue && (
+                <createRules.Form value={rulesValue} onChange={setRulesValue} editing={false} />
               )}
               <p>{t('Yalnızca sanal fiş ve puan.')}</p>
               {activity.room?.primary && (
@@ -1378,7 +890,7 @@ export function ReferenceGames({
                   !ready ||
                   activity.busy ||
                   createConflict ||
-                  (create === 'holdem' && !validHoldemRules(holdemRules))
+                  (!!createRules && (!rulesValue || !createRules.valid(rulesValue)))
                 }
                 title={
                   fixture
@@ -1393,7 +905,7 @@ export function ReferenceGames({
                   void createTable({
                     type: 'game.create',
                     game: create,
-                    ...(create === 'holdem' ? { holdem: holdemRules } : {}),
+                    ...(createRules && rulesValue ? createRules.command(rulesValue) : {}),
                     ...(canReplace && replacementMatches ? { replacePrimary: replaceConsent } : {}),
                   })
                 }

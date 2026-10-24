@@ -2,7 +2,10 @@ import { t } from '../../i18n';
 import type { GameDefinition, RuleRow } from '../registry';
 import { chipNet, object } from '../shared/model';
 import { holdemCatalog } from './catalog';
+import { holdemBuyIn } from './HoldemBuyIn';
 import { HoldemHistory } from './HoldemHistory';
+import { holdemTableRules } from './HoldemRulesForm';
+import { HoldemTable } from './HoldemTable';
 
 const holdemRules = (game: Parameters<GameDefinition['ruleRows']>[0]): RuleRow[] => {
   const view = game.view,
@@ -20,10 +23,22 @@ const holdemRules = (game: Parameters<GameDefinition['ruleRows']>[0]): RuleRow[]
   ];
 };
 
+/**
+ * Seats the server can deal in: any stack above zero. A stack below the big blind posts all-in
+ * for less (R-holdem H4), so it no longer blocks the deal.
+ */
+export const holdemStartBlocker: NonNullable<GameDefinition['startBlocker']> = (game) =>
+  game.seats.filter((seat) => Number.isSafeInteger(seat.chips) && seat.chips > 0).length < 2
+    ? t('En az iki oyuncunun fişi olmalı')
+    : '';
+
 export const holdemGame: GameDefinition = {
   catalog: holdemCatalog,
-  // The table, raise and buy-in dialogs still live in shared/Lobby.tsx (phase B moves them here).
+  // Late seating and buy-ins stay on the lobby page, so the lobby renders the table itself.
   tableInLobby: true,
+  LobbyTable: HoldemTable,
+  tableRules: holdemTableRules,
+  buyIn: holdemBuyIn,
   ruleRows: holdemRules,
   lobbyRuleRows: holdemRules,
   HistoryDetail: HoldemHistory,
@@ -34,10 +49,5 @@ export const holdemGame: GameDefinition = {
     return paid !== undefined ? t('{amount} fiş ödendi', { amount: Number(paid) }) : t('Ödeme yok');
   },
   minSeats: 2,
-  startBlocker: (game) =>
-    game.seats.some(
-      (seat) => seat.chips < Number(game.view.rules?.bigBlind ?? game.view.bigBlind ?? 20),
-    )
-      ? t('Bir oyuncunun fişi blind için yetersiz')
-      : '',
+  startBlocker: holdemStartBlocker,
 };

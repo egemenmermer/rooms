@@ -36,6 +36,52 @@ export interface GameCreateDefinition {
   command(value: GameSetupValues): Partial<Omit<GameCreateCommand, 'type' | 'game'>>;
 }
 
+/** What `shared/Lobby.tsx` hands a table it renders itself (`LobbyTable`, Hold'em). */
+export interface LobbyTableProps {
+  game: GamePublicState;
+  userId?: string;
+  /** The lobby's own check: legal, own turn, connected, not taken over. Not TableShell's `can`. */
+  can(action: string): boolean;
+  /** The lobby's command path: one command at a time, scoped to the room and activity. */
+  send(command: ActivityCommand): Promise<boolean>;
+  /** Opens the lobby's "Masaya katıl" dialog for an empty seat. */
+  onSit(seat: number): void;
+  /** False while a lobby dialog is open, so table shortcuts stay off. */
+  shortcuts: boolean;
+  ready: boolean;
+  busy: boolean;
+  /** A labelled local fixture: every command stays closed with this reason. */
+  fixtureReason?: string;
+  /** Turn seconds left (server clock), null when nobody is on the clock. */
+  timer: number | null;
+  /** Why the next hand cannot be dealt yet ('' = ready), from the lobby's start checks. */
+  startReason: string;
+}
+
+/** Table rules typed in the lobby's plain "Masayı kur" dialog and, by the owner, before the first hand. */
+export interface TableRulesDefinition {
+  /** Starting values: the waiting table's rules, or a new table's defaults (`game` null); null = not known yet. */
+  initial(game: GamePublicState | null): GameSetupValues | null;
+  /** `editing`: the waiting table's "Düzenle" dialog, which can only send `configure`. */
+  Form: ComponentType<{
+    value: GameSetupValues;
+    onChange(value: GameSetupValues): void;
+    editing: boolean;
+  }>;
+  valid(value: GameSetupValues): boolean;
+  /** Game-specific part of `game.create`. */
+  command(value: GameSetupValues): Partial<Omit<GameCreateCommand, 'type' | 'game'>>;
+  /** The owner's change before the first hand; without it the lobby offers no "Düzenle". */
+  configure?(value: GameSetupValues): ActivityCommand;
+}
+
+/** Chips a player brings to a seat; the lobby's "Masaya katıl" dialog shows `Field` and sends `buyIn`. */
+export interface BuyInDefinition {
+  initial(game: GamePublicState): number;
+  Field: ComponentType<{ game: GamePublicState; value: number; onChange(value: number): void }>;
+  valid(game: GamePublicState, value: number): boolean;
+}
+
 /**
  * One game's client views. A new game is one folder (`games/<game>/catalog.tsx` + `entry.tsx`) plus
  * one line here and one in `catalog.ts`; shared views (TableShell, Lobby, History, CreateGame) never
@@ -46,8 +92,14 @@ export interface GameDefinition {
   catalog: GameCatalogEntry;
   /** The playing table, rendered by `shared/TableShell.tsx` under the shared header and banners. */
   Table?: ComponentType<TableUI>;
-  /** Hold'em only, until phase B moves its table out of `shared/Lobby.tsx`. */
+  /** The playing table stays on the lobby page (Hold'em: late seating and buy-ins); set with `LobbyTable`. */
   tableInLobby?: boolean;
+  /** The table `shared/Lobby.tsx` renders while a `tableInLobby` game is playing or finished. */
+  LobbyTable?: ComponentType<LobbyTableProps>;
+  /** Rules form in the plain create dialog and the waiting lobby's "Düzenle". */
+  tableRules?: TableRulesDefinition;
+  /** Buy-in field when taking a seat. */
+  buyIn?: BuyInDefinition;
   /** "Masa kuralları" rows on the playing table. */
   ruleRows(game: GamePublicState): RuleRow[];
   /** Extra "Masa kuralları" rows in the waiting lobby, after "Oyun" and "Koltuk". */

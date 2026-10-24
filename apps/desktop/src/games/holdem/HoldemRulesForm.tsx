@@ -1,5 +1,29 @@
 import { t } from '../../i18n';
 import type { HoldemTableRules } from '../../../../../packages/activity-protocol/src';
+import type { GameSetupValues, TableRulesDefinition } from '../registry';
+
+export const holdemRuleDefaults: HoldemTableRules = {
+  name: 'Texas Hold’em',
+  capacity: 6,
+  smallBlind: 10,
+  bigBlind: 20,
+  minBuyIn: 200,
+  maxBuyIn: 2000,
+  initialChips: 1000,
+  spectatorsAllowed: true,
+};
+
+/** The form keeps the table rules plus the house rule `muckLosers` (sent in `game.create.options`). */
+export const holdemRulesOf = (value: GameSetupValues): HoldemTableRules => ({
+  name: String(value.name ?? ''),
+  capacity: Number(value.capacity),
+  smallBlind: Number(value.smallBlind),
+  bigBlind: Number(value.bigBlind),
+  minBuyIn: Number(value.minBuyIn),
+  maxBuyIn: Number(value.maxBuyIn),
+  initialChips: Number(value.initialChips),
+  spectatorsAllowed: value.spectatorsAllowed !== false,
+});
 
 export function validHoldemRules(value: HoldemTableRules) {
   return (
@@ -23,10 +47,14 @@ export function validHoldemRules(value: HoldemTableRules) {
 export function HoldemRulesForm({
   value,
   onChange,
+  editing = false,
 }: {
-  value: HoldemTableRules;
-  onChange(value: HoldemTableRules): void;
+  value: GameSetupValues;
+  onChange(value: GameSetupValues): void;
+  /** The waiting table's "Düzenle": `game.configure` cannot change house rules. */
+  editing?: boolean;
 }) {
+  const rules = holdemRulesOf(value);
   return (
     <div className="rg-holdem-form">
       <label className="wide">
@@ -34,7 +62,7 @@ export function HoldemRulesForm({
         <input
           autoFocus
           maxLength={32}
-          value={value.name}
+          value={rules.name}
           onChange={(event) => onChange({ ...value, name: event.target.value })}
         />
       </label>
@@ -54,7 +82,7 @@ export function HoldemRulesForm({
             type="number"
             min={min}
             max={max}
-            value={value[key]}
+            value={rules[key]}
             onChange={(event) => onChange({ ...value, [key]: Number(event.target.value) })}
           />
         </label>
@@ -62,12 +90,29 @@ export function HoldemRulesForm({
       <label className="wide">
         <input
           type="checkbox"
-          checked={value.spectatorsAllowed}
+          checked={rules.spectatorsAllowed}
           onChange={(event) => onChange({ ...value, spectatorsAllowed: event.target.checked })}
         />{' '}
         {t('İzleyici kabul et')}
       </label>
-      {!validHoldemRules(value) && (
+      {editing ? (
+        <p className="wide ho-form-note">{t('Kaybedenin kartı kuralı masa kurulurken seçilir.')}</p>
+      ) : (
+        <label className="wide">
+          <input
+            type="checkbox"
+            checked={value.muckLosers === true}
+            onChange={(event) => onChange({ ...value, muckLosers: event.target.checked })}
+          />{' '}
+          {t('Kaybeden kartını açmasın')}
+          <small className="ho-form-note">
+            {t(
+              'Showdown’da pot alamayan oyuncunun kartları kapalı kalır. Biri all-in ise bütün eller açılır.',
+            )}
+          </small>
+        </label>
+      )}
+      {!validHoldemRules(rules) && (
         <p className="wide" role="status">
           {t('Blind ve giriş aralıklarını kontrol et. Başlangıç fişi giriş aralığında olmalı.')}
         </p>
@@ -75,3 +120,16 @@ export function HoldemRulesForm({
     </div>
   );
 }
+
+/** Hold'em's rules in the lobby's create dialog and the owner's "Düzenle" before the first hand. */
+export const holdemTableRules: TableRulesDefinition = {
+  initial: (game) =>
+    game ? (game.view.rules ? { ...game.view.rules } : null) : { ...holdemRuleDefaults },
+  Form: HoldemRulesForm,
+  valid: (value) => validHoldemRules(holdemRulesOf(value)),
+  command: (value) => ({
+    holdem: holdemRulesOf(value),
+    ...(value.muckLosers === true ? { options: { muckLosers: true } } : {}),
+  }),
+  configure: (value) => ({ type: 'game.configure', holdem: holdemRulesOf(value) }),
+};
