@@ -1,23 +1,5 @@
 /* Approved package geometry; existing components keep their service contracts. */
-:root {
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
-  font-size: 14px;
-  line-height: 1.5;
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'tnum';
-  color: var(--color-text-primary);
-  background: var(--color-background-canvas);
-  --bg: var(--color-background-canvas);
-  --surface: var(--color-background-main);
-  --muted: var(--color-text-secondary);
-  --secondary: var(--color-text-muted);
-  --accent: var(--color-action-primary);
-  --line: var(--color-border-subtle);
-}
+/* Tokens and root typography: reference-tokens.css. */
 .app {
   background: var(--bg);
 }
@@ -248,27 +230,100 @@
 .toolbar-actions {
   gap: 9px;
 }
+/*
+ * The one Button. <button class="button primary|secondary|ghost|subtle|danger [small|full]">.
+ * Heights: 36px default, 30px small. Disabled comes from the global button:disabled rule; set
+ * aria-busy="true" while an action runs. Focus ring: interaction-quality.css. Hover rules use
+ * :where(:not(:disabled)) so they keep the specificity surfaces already override.
+ */
 .button {
-  border-radius: 7px;
-  min-height: 36px;
-  padding: 8px 14px;
-  font-size: 12px;
-  line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
+  min-height: 36px;
+  padding: 7px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-8);
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-ui);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  box-shadow: none;
 }
 .button.primary {
-  background: var(--accent);
+  background: var(--color-action-primary);
   color: var(--color-text-onAccent);
-  font-weight: 650;
-  border: 1px solid var(--accent);
+  font-weight: var(--font-weight-semibold);
+  border: 1px solid var(--color-action-primary);
 }
-.button.primary:hover {
+.button.primary:hover:where(:not(:disabled)) {
   background: var(--color-action-primaryHover);
+  border-color: var(--color-action-primaryHover);
+}
+.button.primary:active:where(:not(:disabled)) {
+  background: var(--color-action-primaryActive);
+  border-color: var(--color-action-primaryActive);
 }
 .button.secondary {
-  background: #363b47;
-  border: 1px solid #484e5d;
+  background: var(--color-action-secondary);
+  border: 1px solid var(--color-action-secondaryBorder);
   color: var(--color-text-primary);
+}
+.button.secondary:hover:where(:not(:disabled)) {
+  background: var(--color-action-secondaryHover);
+  border-color: var(--color-border-interactive);
+}
+.button.ghost,
+.button.subtle {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-text-secondary);
+}
+.button.subtle {
+  padding: 7px 8px;
+}
+.button.ghost:hover:where(:not(:disabled)),
+.button.subtle:hover:where(:not(:disabled)) {
+  background: var(--color-background-hover);
+  color: var(--color-text-primary);
+}
+/* After primary so `button primary danger` renders as danger. */
+.button.danger {
+  background: var(--color-action-danger);
+  border: 1px solid var(--color-action-danger);
+  color: var(--color-text-onDanger);
+}
+.button.danger:hover:where(:not(:disabled)) {
+  background: var(--color-action-dangerHover);
+  border-color: var(--color-action-dangerHover);
+}
+.button.small {
+  min-height: 30px;
+  padding: 4px 10px;
+  font-size: var(--font-size-metadata);
+}
+.button.full {
+  width: 100%;
+  margin-top: 12px;
+}
+.button[aria-busy='true'] {
+  cursor: progress;
+}
+.button[aria-busy='true']::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: button-busy 0.7s linear infinite;
+}
+@keyframes button-busy {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .icon-button {
   border-radius: 6px;
@@ -459,7 +514,7 @@
     height: 31px;
     border-radius: 6px;
     color: var(--muted);
-    z-index: 20;
+    z-index: var(--z-sticky);
   }
   .chat-heading,
   .toolbar {
@@ -470,7 +525,7 @@
     position: fixed;
     inset: 30px 0 0 64px;
     background: #0005;
-    z-index: 29;
+    z-index: calc(var(--z-drawer) - 1);
   }
   .channel-nav-open .sidebar,
   .channel-nav-open .voice-channel-sidebar {
@@ -479,11 +534,11 @@
     left: 64px;
     top: 30px;
     bottom: 50px;
-    z-index: 30;
+    z-index: var(--z-drawer);
     box-shadow: 12px 0 32px #0005;
   }
   .channel-nav-open .compact-nav-toggle {
-    z-index: 31;
+    z-index: calc(var(--z-drawer) + 1);
     left: 241px;
   }
 }
@@ -674,7 +729,7 @@
     position: fixed;
     inset: 30px 0 0;
     background: #0006;
-    z-index: 39;
+    z-index: calc(var(--z-panel) - 1);
   }
   .context-drawer-open .room-members-panel,
   .context-drawer-open .friends-panel {
@@ -684,7 +739,7 @@
     top: 30px;
     bottom: 0;
     width: 278px;
-    z-index: 40;
+    z-index: var(--z-panel);
     box-shadow: -16px 0 40px #0005;
   }
 }
@@ -842,7 +897,7 @@
   top: calc(100% - 3px);
   left: 8px;
   right: 8px;
-  z-index: 100;
+  z-index: var(--z-dropdown);
   padding: 6px;
   border-radius: 8px;
   background: #15171c;

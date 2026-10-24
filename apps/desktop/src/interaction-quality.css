@@ -22,9 +22,10 @@ html[data-input='pointer'][data-motion='full'] :is(.button, .icon-button):active
   transform: scale(0.97);
   transition-duration: 100ms;
 }
+/* The only focus-visible ring in the app; it follows the chosen accent. */
 :is(button, a, input, textarea, select, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-action-focus);
-  outline-offset: 3px;
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }
 .modal:focus {
   outline: none;

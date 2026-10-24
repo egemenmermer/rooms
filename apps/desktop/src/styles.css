@@ -1,18 +1,4 @@
-:root {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #f4f6f8;
-  background: #0b0d11;
-  font-synthesis: none;
-  font-size: 13px;
-  --bg: #0b0d11;
-  --surface: #151a22;
-  --muted: #8b95a4;
-  --secondary: #abb3c0;
-  --accent: #b8cdff;
-  --line: rgba(255, 255, 255, 0.075);
-  --glass: rgba(27, 32, 42, 0.78);
-  color-scheme: dark;
-}
+/* Tokens, theme and root typography live in reference-tokens.css. */
 * {
   box-sizing: border-box;
 }
@@ -49,14 +35,7 @@ textarea,
 select {
   outline: none;
 }
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-}
+/* The focus-visible ring is defined once, in interaction-quality.css. */
 a {
   color: inherit;
   text-decoration: none;
@@ -82,15 +61,21 @@ svg {
   stroke-width: 1.7;
 }
 ::selection {
-  background: #6684aa65;
+  background: color-mix(in srgb, var(--color-action-primary) 40%, transparent);
 }
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #ffffff21;
-  border-radius: 5px;
+  background: var(--color-border-default);
+  border-radius: var(--radius-pill);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-interactive);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -532,68 +517,17 @@ kbd {
 .date-pill svg {
   color: #ada990;
 }
-.button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  border-radius: 9px;
-  padding: 12px 16px;
-  font-size: 11px;
-  font-weight: 550;
-  white-space: nowrap;
-  min-height: 39px;
-}
-.button.primary {
-  background: #e7e9e6;
-  color: #1c2529;
-  box-shadow:
-    0 2px 4px #0003,
-    inset 0 1px #fff8;
-}
-.button.primary:hover {
-  background: white;
-}
-.button.secondary {
-  background: #ffffff08;
-  border: 1px solid #ffffff10;
-  color: #c5cdd8;
-}
-.button.secondary:hover {
-  background: #ffffff0e;
-}
-.button.small {
-  min-height: 30px;
-  padding: 8px 11px;
-  font-size: 10px;
-}
-.button.subtle {
-  color: #aab5c5;
-  padding: 6px 7px;
-}
-.button.subtle:hover {
-  background: #ffffff09;
-}
-.button.full {
-  width: 100%;
-  margin-top: 12px;
-}
-.button.hero-secondary {
-  background: #e5e9f00c;
-  border: 1px solid #f0f3ff30;
-  color: #e6eaf0;
-  backdrop-filter: blur(10px);
-}
+/* The .button base and its variants live in reference-shell.css (one definition). */
 .text-button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 10px;
-  color: #a6b3c7;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-secondary);
   padding: 5px 0;
 }
-.text-button:hover {
-  color: #e5eaff;
+.text-button:hover:where(:not(:disabled)) {
+  color: var(--color-text-primary);
 }
 .icon-button {
   display: inline-flex;
@@ -1231,7 +1165,7 @@ kbd {
   left: 50%;
   bottom: 16px;
   transform: translateX(-50%);
-  z-index: 15;
+  z-index: var(--z-dock);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1278,7 +1212,7 @@ kbd {
   bottom: 26px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 100;
+  z-index: var(--z-toast);
   display: flex;
   align-items: center;
   gap: 20px;
@@ -1290,8 +1224,8 @@ kbd {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 60;
-  background: #03070c8a;
+  z-index: var(--z-modal);
+  background: var(--color-background-overlay);
   backdrop-filter: blur(7px);
   display: flex;
   align-items: center;
@@ -1322,7 +1256,7 @@ kbd {
   margin-top: 8px;
 }
 .modal-heading .eyebrow {
-  font-size: 7px;
+  font-size: var(--font-size-micro);
 }
 .modal-heading .icon-button {
   margin: -6px -9px 0 0;
@@ -1334,54 +1268,92 @@ kbd {
   margin-bottom: 23px;
 }
 .modal-footnote {
-  font-size: 9px;
+  font-size: var(--font-size-micro);
   color: #778599;
   border-top: 1px solid var(--line);
   padding-top: 17px;
   margin-top: 21px;
   line-height: 1.6;
 }
+/* Base field: <label class="field-label">Label<input/><span class="field-hint|field-error"/></label>.
+   Link hints and errors with aria-describedby and mark invalid inputs with aria-invalid. */
 .field-label {
   display: block;
-  font-size: 8px;
-  font-weight: 550;
-  letter-spacing: 1.1px;
-  color: #929fb1;
+  font-size: var(--font-size-micro);
+  line-height: var(--line-height-micro);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.2px;
+  color: var(--color-text-secondary);
   margin: 18px 0 12px;
 }
 .field-label input,
-.field-label select {
-  margin-top: 10px;
+.field-label select,
+.field-label textarea {
+  margin-top: 8px;
   letter-spacing: normal;
-  font-size: 12px;
-  font-weight: 400;
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-ui);
+  font-weight: var(--font-weight-regular);
 }
 .field-label input:not([type='range']),
 input.option-input,
 .field-label select,
+.field-label textarea,
 .edit-textarea {
   display: block;
-  border: 1px solid #ffffff10;
-  background: #080d1559;
-  border-radius: 9px;
-  padding: 12px 13px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-background-field);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+  min-height: 38px;
   width: 100%;
-  color: #e4e9f1;
+  color: var(--color-text-primary);
   outline-offset: 2px;
+  transition: border-color var(--motion-quick) ease;
+}
+:is(.field-label :is(input, select, textarea), input.option-input, .edit-textarea):hover:where(
+    :not(:disabled):not(:focus)
+  ) {
+  border-color: var(--color-border-interactive);
+}
+:is(.field-label :is(input, select, textarea), input.option-input, .edit-textarea):focus {
+  border-color: var(--color-action-primary);
+}
+:is(
+  .field-label :is(input, select, textarea),
+  input.option-input,
+  .edit-textarea
+)[aria-invalid='true'] {
+  border-color: var(--color-status-error);
+}
+:is(.field-label :is(input, select, textarea), input.option-input, .edit-textarea):disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.field-hint,
+.field-error {
+  display: block;
+  margin-top: 6px;
+  font-size: var(--font-size-micro);
+  line-height: var(--line-height-micro);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: normal;
+}
+.field-hint {
+  color: var(--color-text-muted);
+}
+.field-error {
+  color: var(--color-status-error);
 }
 .field-label input::placeholder,
 input::placeholder,
 textarea::placeholder {
-  color: #68768a;
+  color: var(--color-text-muted);
 }
 .button-row {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
-}
-.button.danger {
-  background: #743e42;
-  color: #f6d6d7;
 }
 .destructive {
   color: #df969b !important;
@@ -2410,20 +2382,22 @@ textarea::placeholder {
   display: flex;
   gap: 10px;
 }
+/* Swatches draw the fixed accent tokens, so each shows exactly what choosing it applies. */
 .accent {
   height: 23px;
   width: 23px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  color: #283747;
-  background: #b8cdff;
+  color: #151324;
+  background: var(--accent-lilac);
 }
 .accent.sage {
-  background: #9ebfac;
+  color: #102018;
+  background: var(--accent-sage);
 }
 .accent.chosen {
-  outline: 1px solid #bacbdd55;
+  outline: 2px solid var(--color-text-secondary);
   outline-offset: 3px;
 }
 .settings-note {
@@ -2876,9 +2850,6 @@ input[type='range']::-webkit-slider-thumb {
 }
 .page-enter {
   animation: page-in 0.22s ease-out;
-}
-[data-accent='sage'] {
-  --accent: #afcbb8;
 }
 [data-compact='true'] .message {
   padding: 7px 4px;
@@ -6815,7 +6786,7 @@ body,
 }
 .channel-context-menu {
   position: fixed;
-  z-index: 1600;
+  z-index: var(--z-popover);
   width: 232px;
   padding: 6px;
   border: 1px solid #ffffff18;
