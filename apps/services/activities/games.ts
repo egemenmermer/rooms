@@ -543,17 +543,32 @@ export function gameCommand(
  * left, lost the connection for 30 s or was handed to a bot after timeouts. During a round the seat's bot
  * finishes it (folding where it can) and the seat is freed afterwards.
  */
+const mayTidy = (table: GameTable, actor: Pick<GameActor, 'userId' | 'roomHost'>) =>
+  table.ownerId === actor.userId || Boolean(actor.roomHost);
+/** A seat nobody plays in person: a permanent bot, a player who left, was taken over or has been gone 30 s. */
+function seatAway(seat: TableSeat, now: number) {
+  // A player who pressed Otur to take their seat back is present again, even before their turn returns it.
+  return (
+    seat.permanentBot ||
+    Boolean(seat.left) ||
+    (seat.bot && !seat.pendingReturn) ||
+    (!seat.connected && seat.disconnectedAt !== null && now - seat.disconnectedAt >= 30000)
+  );
+}
+/** The rule `game.seat.remove` enforces, as a question: may this viewer free that seat right now? */
+function seatRemovable(
+  table: GameTable,
+  target: TableSeat,
+  viewer: Pick<GameActor, 'userId' | 'roomHost'>,
+  now: number,
+) {
+  return mayTidy(table, viewer) && target.userId !== viewer.userId && seatAway(target, now);
+}
 function removeSeat(table: GameTable, seatNumber: number, actor: GameActor, now: number) {
-  if (table.ownerId !== actor.userId && !actor.roomHost) throw new Error('TABLE_OWNER_REQUIRED');
+  if (!mayTidy(table, actor)) throw new Error('TABLE_OWNER_REQUIRED');
   const target = table.seats.find((seat) => seat.seat === seatNumber);
   if (!target) throw new Error('SEAT_EMPTY');
-  // A player who pressed Otur to take their seat back is present again, even before their turn returns it.
-  const away =
-    target.permanentBot ||
-    target.left ||
-    (target.bot && !target.pendingReturn) ||
-    (!target.connected && target.disconnectedAt !== null && now - target.disconnectedAt >= 30000);
-  if (target.userId === actor.userId || !away) throw new Error('SEAT_REMOVE_NOT_ALLOWED');
+  if (!seatRemovable(table, target, actor, now)) throw new Error('SEAT_REMOVE_NOT_ALLOWED');
   const module = moduleOf(table),
     state = roundOf(table, module);
   if (table.status !== 'playing' || !roundPlayers(table, module, state).includes(target.userId)) {
@@ -735,7 +750,14 @@ function reportBotFailure(kind: string) {
     JSON.stringify({ service: 'rooms-activities', category: 'game-bot-stalled', game: kind }),
   );
 }
-export function gameView(table: GameTable, userId: string): GamePublicState {
+export function gameView(
+  table: GameTable,
+  userId: string,
+  /** `roomHost`: the viewer hosts the room (may free away seats like the owner); `now` for the 30 s rule. */
+  context: { roomHost?: boolean; now?: number } = {},
+): GamePublicState {
+  const now = context.now ?? Date.now(),
+    viewer = { userId, roomHost: context.roomHost };
   const seat = ordered(table).findIndex((s) => s.userId === userId);
   const spectators = table.spectators ?? [],
     watching = spectators.some((value) => value.userId === userId),
@@ -767,17 +789,18 @@ export function gameView(table: GameTable, userId: string): GamePublicState {
     kind: table.kind as GamePublicState['kind'],
     ownerId: table.ownerId,
     status: table.status,
-    seats: table.seats.map(({ seat, userId, name, bot, chips, connected }) => ({
-      seat,
-      userId,
-      name,
-      bot,
-      chips,
-      connected,
+    seats: table.seats.map((entry) => ({
+      seat: entry.seat,
+      userId: entry.userId,
+      name: entry.name,
+      bot: entry.bot,
+      chips: entry.chips,
+      connected: entry.connected,
+      removable: seatRemovable(table, entry, viewer, now),
       pendingNextHand:
         Boolean(module.table?.lateSeating) &&
         table.status === 'playing' &&
-        !(state != null && players.includes(userId)),
+        !(state != null && players.includes(entry.userId)),
     })),
     turn,
     view: {

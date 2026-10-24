@@ -21,9 +21,10 @@ export interface SeatControls {
 export const SeatControlsContext = createContext<SeatControls | null>(null);
 
 /**
- * Whether the owner or the room host may free this seat. The server frees a bot, a player who
- * left or was taken over, or one disconnected for 30 s; the public view only shows `bot` and
- * `connected`, so a seat that just dropped can still be refused (the shell shows that error).
+ * Whether the viewer may free this seat. The server publishes `removable` per seat by the rule
+ * `game.seat.remove` enforces (owner or room host, an away seat, never one's own). Older servers
+ * send none: the viewer then guesses from `bot` and `connected`, so a seat that just dropped can
+ * still be refused (the shell shows that error).
  */
 export function seatRemovable(
   game: GamePublicState,
@@ -31,8 +32,9 @@ export function seatRemovable(
   userId: string | undefined,
   roomHostId: string | undefined,
 ) {
+  if (!userId) return false;
+  if (typeof seat.removable === 'boolean') return seat.removable;
   return (
-    !!userId &&
     (game.ownerId === userId || roomHostId === userId) &&
     seat.userId !== userId &&
     (seat.bot || !seat.connected)

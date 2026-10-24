@@ -287,6 +287,65 @@ describe('table lifecycle', () => {
     expect(table.seats.map((seat) => seat.seat)).toEqual([0]);
   });
 
+  it('publishes per-seat `removable` by the same rule game.seat.remove enforces', () => {
+    const table = create({ game: 'batak', variant: 'ihaleli' });
+    addBot(table, 1);
+    act(table, bob, { type: 'game.sit', seat: 2 });
+    const carol = { userId: 'carol', displayName: 'Carol', canCreate: true, roomHost: true };
+    const viewers = [alice, bob, carol, { userId: 'stranger', displayName: 'S', canCreate: true }];
+    const removable = (viewer: (typeof viewers)[number], now: number) =>
+      gameView(table, viewer.userId, {
+        roomHost: 'roomHost' in viewer && viewer.roomHost,
+        now,
+      }).seats.map((seat) => [seat.seat, seat.removable]);
+    // Bob is present: only the permanent bot (seat 1) can be freed, and only by the owner or the host.
+    expect(removable(alice, 0)).toEqual([
+      [0, false],
+      [1, true],
+      [2, false],
+    ]);
+    expect(removable(carol, 0)).toEqual([
+      [0, false],
+      [1, true],
+      [2, false],
+    ]);
+    expect(removable(bob, 0)).toEqual([
+      [0, false],
+      [1, false],
+      [2, false],
+    ]);
+    expect(removable(viewers[3], 0)).toEqual([
+      [0, false],
+      [1, false],
+      [2, false],
+    ]);
+    // Bob drops: not removable before 30 s, removable after (the same moment the command allows it).
+    seatOf(table, 2).connected = false;
+    seatOf(table, 2).disconnectedAt = 1000;
+    expect(removable(alice, 30_999)[2]).toEqual([2, false]);
+    expect(removable(alice, 31_000)[2]).toEqual([2, true]);
+    // A takeover bot whose player pressed Otur is coming back: not removable.
+    seatOf(table, 2).connected = true;
+    seatOf(table, 2).disconnectedAt = null;
+    seatOf(table, 2).bot = true;
+    seatOf(table, 2).pendingReturn = true;
+    expect(removable(alice, 40_000)[2]).toEqual([2, false]);
+    // The published flag always agrees with what the command does.
+    seatOf(table, 2).pendingReturn = false;
+    for (const now of [0, 31_000])
+      for (const viewer of viewers)
+        for (const [seat, flag] of removable(viewer, now)) {
+          const copy = structuredClone(table);
+          let allowed = true;
+          try {
+            gameCommand(copy, { type: 'game.seat.remove', seat: seat as number }, viewer, now);
+          } catch {
+            allowed = false;
+          }
+          expect(flag, `${viewer.userId} seat ${seat} at ${now}`).toBe(allowed);
+        }
+  });
+
   it('lets a removed bot finish the running hand, then frees the seat', () => {
     const table = create({ game: 'holdem' });
     addBot(table, 1);
