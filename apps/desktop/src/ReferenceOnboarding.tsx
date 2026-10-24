@@ -396,11 +396,7 @@ export function ReferenceAuthFrame({
 }
 
 /** Reference geometry with real native account operations; no prototype scenario state. */
-export function ReferenceOnboarding({
-  mode,
-  onNavigate,
-  onComplete,
-}: ReferenceOnboardingProps) {
+export function ReferenceOnboarding({ mode, onNavigate, onComplete }: ReferenceOnboardingProps) {
   const c = useCommunity();
   const recoveryServer = useRooms((state) => state.preferences.serverUrl.trim() || defaultServer);
   const [recoveryView, setRecoveryView] = useState<'request' | 'reset'>('request');

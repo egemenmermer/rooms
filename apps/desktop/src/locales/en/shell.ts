@@ -462,7 +462,6 @@ export const shell: Catalog = {
   'Son geçerlilik: {date}': 'Valid until: {date}',
   'Son kontrol: {date}': 'Last checked: {date}',
   'Son kullanım: {date}': 'Expires: {date}',
-  Sonra: 'Later',
   'Soru sor, özet çıkar, görev ver.': 'Ask questions, get summaries, assign tasks.',
   Sunucu: 'Server',
   'Sunucu adresi': 'Server address',
@@ -797,9 +796,13 @@ export const shell: Catalog = {
   'Oturumun bu cihazda güvenle saklanır.': 'Your session is stored securely on this device.',
   '{step}/2 · Profil': '{step}/2 · Profile',
   '{step}/2 · Cihazlar': '{step}/2 · Devices',
-  'Mikrofon izni kapalı. Sistem ayarlarının gizlilik bölümünden Tayfa’ya mikrofon izni ver.': 'Microphone permission is off. Allow Tayfa to use the microphone in the privacy section of your system settings.',
-  'Seçili mikrofon kullanılamıyor. Başka bir mikrofon seç.': 'The selected microphone isn’t available. Choose another microphone.',
-  'Konuş; çubuklar sesinle birlikte hareket etmeli.': 'Speak; the bars should move with your voice.',
-  'Ses yalnızca bu cihazda ölçülür, kimseye gönderilmez.': 'Sound is only measured on this device and isn’t sent to anyone.',
+  'Mikrofon izni kapalı. Sistem ayarlarının gizlilik bölümünden Tayfa’ya mikrofon izni ver.':
+    'Microphone permission is off. Allow Tayfa to use the microphone in the privacy section of your system settings.',
+  'Seçili mikrofon kullanılamıyor. Başka bir mikrofon seç.':
+    'The selected microphone isn’t available. Choose another microphone.',
+  'Konuş; çubuklar sesinle birlikte hareket etmeli.':
+    'Speak; the bars should move with your voice.',
+  'Ses yalnızca bu cihazda ölçülür, kimseye gönderilmez.':
+    'Sound is only measured on this device and isn’t sent to anyone.',
   'Sistem izinleri {os} tarafından gösterilir.': 'System permissions are shown by {os}.',
 };
