@@ -255,3 +255,24 @@ it('slides every street’s bets into the pot and keeps a dealt card flipping ac
     [...document.querySelectorAll('.ho-sweep')].map((item) => item.getAttribute('class')),
   ).toHaveLength(2);
 });
+
+it('docks your cards, status and moves; the felt keeps one status line per seat and no raw clock', () => {
+  table(holdemFixture('your-turn'), { timer: 2208341980 });
+  const dock = screen.getByRole('region', { name: 'Elin' });
+  // Your hole cards are in the dock, not on your seat on the felt.
+  expect(within(dock).getByLabelText('Kartların').querySelectorAll('.playing-card')).toHaveLength(
+    2,
+  );
+  expect(seat('Ece (demo) · sen').querySelector('.rg-seat-cards')).toBeNull();
+  expect(within(dock).getByRole('button', { name: 'Bırak' })).toBeTruthy();
+  expect(within(dock).getByRole('group', { name: 'Artırma tutarı' })).toBeTruthy();
+  // A value that cannot be a turn time is never printed.
+  expect(document.body.textContent).not.toContain('2208341980');
+  expect(document.querySelector('.rg-timer')).toBeNull();
+  // The dealer button rides on its seat chip; a live bet shows as chips, not as a second line.
+  expect(within(seat('Ali (demo)')).getByLabelText('Krupiye: Ali (demo)')).toBeTruthy();
+  expect(within(seat('Can (demo)')).queryByText(/Bahis/)).toBeNull();
+  // The street sits in the pot line; the hand log starts closed over the felt.
+  expect(document.querySelector('.ho-pot')?.textContent).toMatch(/^Flop/);
+  expect((document.querySelector('.ho-hand-log') as HTMLDetailsElement).open).toBe(false);
+});

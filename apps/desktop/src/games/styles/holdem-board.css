@@ -1,17 +1,25 @@
+/*
+ * Hold'em felt and center. The board fills the table stage (`.rx-stage`, shared/Lobby.tsx) and is
+ * a size container: felt, seats and cards are placed in % / cqh of it, so the whole table fits
+ * the window above the dock at 1280x800 and 900x700 without page scroll.
+ */
 .rg-board {
   position: relative;
-  /* Room below the felt for your own seat, so your cards never cover the pot details. */
-  min-height: 548px;
+  container-type: size;
+  flex: 1 1 auto;
+  min-height: 240px;
   max-width: 1040px;
   width: 100%;
   margin: 0 auto;
+  /* Community card width: follows the table height, between a small and the full card. */
+  --ho-card: clamp(38px, 12.5cqh, 57px);
 }
 .rg-felt {
   position: absolute;
-  left: 17%;
-  right: 17%;
-  top: 81px;
-  bottom: 158px;
+  left: 13%;
+  right: 13%;
+  top: 15%;
+  bottom: 12%;
   border-radius: 47%;
   background: radial-gradient(ellipse at center, #29433d 0, #243932 58%, #20332e 100%);
   border: 7px solid #35353c;
@@ -24,7 +32,7 @@
 .rg-felt:after {
   content: 'Tayfa';
   position: absolute;
-  bottom: 27px;
+  bottom: 9%;
   left: 0;
   right: 0;
   text-align: center;
@@ -37,17 +45,21 @@
 .rg-center {
   position: absolute;
   left: 50%;
-  top: 120px;
-  transform: translateX(-50%);
+  top: 54%;
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: clamp(4px, 2cqh, 12px);
   z-index: 1;
+}
+.rg-nine-layout .rg-center {
+  top: 55%;
 }
 .rg-center > small {
   font-size: 11px;
   color: #a1b1b8;
+  white-space: nowrap;
 }
 .rg-center > strong {
   display: flex;
@@ -55,6 +67,7 @@
   gap: 7px;
   color: #ded9b1;
   font-size: 15px;
+  white-space: nowrap;
 }
 .rg-center > strong > svg {
   color: #b3a4ed;
@@ -63,7 +76,27 @@
   font-size: 12px;
   color: #b0bac4;
 }
+.rg-center > strong > .ho-street {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 600;
+  color: #a1b1b8;
+  padding-right: 7px;
+  border-right: 1px solid #ffffff22;
+}
 .rg-center > div {
   display: flex;
   gap: 7px;
+}
+.rg-center .playing-card,
+.rg-center .rg-card-outline {
+  width: var(--ho-card);
+  height: calc(var(--ho-card) * 1.44);
+  flex: 0 0 var(--ho-card);
+}
+.rg-center .playing-card > span {
+  font-size: calc(var(--ho-card) * 0.26);
+}
+.rg-center .playing-card > b {
+  font-size: calc(var(--ho-card) * 0.52);
 }

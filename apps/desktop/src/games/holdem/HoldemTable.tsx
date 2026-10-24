@@ -7,6 +7,8 @@ import { useGameFixtureMetadata } from '../shared/fixture';
 import { array, object, type Card } from '../shared/model';
 import { PlayingCard } from '../shared/PlayingCard';
 import { SeatAvatar } from '../shared/SeatAvatar';
+import { TableDock } from '../shared/TableDock';
+import { guardTimer } from '../shared/TurnClock';
 import { holdemCatalog } from './catalog';
 import { ChipStack } from './ChipStack';
 import {
@@ -30,7 +32,9 @@ type Sweep = { key: number; bets: { userId: string; amount: number; position: nu
 
 /**
  * The Hold'em table, rendered by `shared/Lobby.tsx` under its header (late seating and the
- * buy-in dialog stay there). Commands go through the lobby's own `can`/`send`.
+ * buy-in dialog stay there). Commands go through the lobby's own `can`/`send`. Your hole cards,
+ * the hand status and the action/raise bar sit in the lobby's dock (`TableDock`), the felt fills
+ * the rest of the page.
  */
 export function HoldemTable({
   game,
@@ -94,8 +98,12 @@ export function HoldemTable({
     const seat = game.seats.find((item) => item.userId === id);
     return seat ? seatPosition(capacity, seat.seat, own?.seat) : undefined;
   };
-  const buttonUser = projected[Number(view.button)]?.userId as string | undefined,
-    buttonPosition = positionOf(buttonUser);
+  const buttonUser = projected[Number(view.button)]?.userId as string | undefined;
+  const clock = guardTimer(timer);
+  const stageLabel = (
+    { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' } as Record<string, string>
+  )[String(view.stage)];
+  const holeCards = own ? array<Card>(mine?.cards) : [];
 
   // A new turn starts the raise input at the server's minimum.
   const turnKey = `${game.history.length}:${String(view.stage)}:${game.turn}:${maximumBet}`;
@@ -255,19 +263,10 @@ export function HoldemTable({
       >
         <div className="rg-felt" />
         <div className="rg-center">
-          <small>
-            {(
-              {
-                preflop: 'Preflop',
-                flop: 'Flop',
-                turn: 'Turn',
-                river: 'River',
-                ended: t('El tamamlandı'),
-              } as Record<string, string>
-            )[String(view.stage)] ?? t('Masa')}
-            {finished && view.runoutFrom ? ` · ${t('All-in, kalan kartlar açıldı')}` : ''}
-          </small>
+          {finished && view.runoutFrom ? <small>{t('All-in, kalan kartlar açıldı')}</small> : null}
+          {/* The street sits in the pot line, never as a loose label under the top seat. */}
           <strong className="ho-pot">
+            {stageLabel && !finished && <em className="ho-street">{stageLabel}</em>}
             {pot > 0 && !finished ? <ChipStack amount={pot} /> : <Coins size={18} />}
             {pot.toLocaleString(locale)} <span>{t('pot')}</span>
           </strong>
@@ -330,24 +329,41 @@ export function HoldemTable({
               />
             );
           })}
-        {buttonPosition !== undefined && (
-          <b
-            className={`ho-dealer ho-at-${buttonPosition}`}
-            aria-label={t('Krupiye: {name}', { name: seatName(buttonUser ?? '') })}
-          >
-            D
-          </b>
-        )}
         {Array.from({ length: capacity }, (_, index) => {
           const seat = game.seats.find((item) => item.seat === index),
             details = projected.find((item) => item.userId === seat?.userId);
           const isOwn = !!seat && seat.userId === userId;
           const position = seatPosition(capacity, index, own?.seat);
           const deliveredCards = array<Card>(details?.cards);
+          // Your own cards are in the dock; the felt shows the others' backs and showdowns.
           const visibleCards =
-            isOwn || (finished && !!view.showdown?.[seat?.userId ?? '']) ? deliveredCards : [];
-          const hidden = Math.min(2, Math.max(0, Number(details?.hiddenCardCount ?? 0)));
+            !isOwn && finished && !!view.showdown?.[seat?.userId ?? ''] ? deliveredCards : [];
+          const hidden = isOwn
+            ? 0
+            : Math.min(2, Math.max(0, Number(details?.hiddenCardCount ?? 0)));
           const bubble = seat ? bubbles.get(seat.userId) : undefined;
+          // One status line per seat. A live bet already shows as the chip stack in front of the seat.
+          const status = !seat
+            ? ''
+            : seat.pendingNextHand
+              ? t('Sonraki el bekleniyor')
+              : details?.folded
+                ? t('Eli bıraktı')
+                : finished && Number(payouts[seat.userId]) > 0
+                  ? `${splitPot ? t('Ortak kazanan') : t('Kazanan')}${view.showdown?.[seat.userId] ? ` · ${pokerCategory(view.showdown[seat.userId].category)}` : ''}`
+                  : finished && mucked.includes(seat.userId)
+                    ? t('Kartını açmadı')
+                    : details && Number(details.chips) === 0 && playing
+                      ? 'All-in'
+                      : game.turn === index
+                        ? isOwn
+                          ? t('Sıra sende')
+                          : t('Sıra {name} kişisinde', { name: seat.name })
+                        : !seat.connected
+                          ? t('Bağlantısı kesildi')
+                          : details && Number(details.streetBet) > 0 && playing
+                            ? ''
+                            : t('Masada');
           return (
             <div
               className={`rg-table-seat p-${position} ${isOwn ? 'own' : ''} ${details?.folded ? 'folded' : ''} ${game.turn === index ? 'turn' : ''}`}
@@ -364,14 +380,20 @@ export function HoldemTable({
                       {actionLabel(bubble)}
                     </span>
                   )}
-                  <div className="rg-seat-cards">
-                    {visibleCards.map((card) => (
-                      <PlayingCard key={card.id} card={card} winning={winningCards.has(card.id)} />
-                    ))}
-                    {Array.from({ length: hidden }, (_, i) => (
-                      <PlayingCard key={i} />
-                    ))}
-                  </div>
+                  {(visibleCards.length > 0 || hidden > 0) && (
+                    <div className="rg-seat-cards">
+                      {visibleCards.map((card) => (
+                        <PlayingCard
+                          key={card.id}
+                          card={card}
+                          winning={winningCards.has(card.id)}
+                        />
+                      ))}
+                      {Array.from({ length: hidden }, (_, i) => (
+                        <PlayingCard key={i} />
+                      ))}
+                    </div>
+                  )}
                   <div className="rg-seat-info">
                     <SeatAvatar seat={seat} game={game} timer={timer} />
                     <div>
@@ -382,40 +404,27 @@ export function HoldemTable({
                       <small>
                         <ChipStack amount={Number(details?.chips ?? seat.chips)} compact />
                         {Number(details?.chips ?? seat.chips).toLocaleString(locale)} {t('fiş')}
-                        {seat.bot ? ' · BOT' : ''}
                       </small>
                     </div>
+                    {/* Dealer button and blinds ride on the seat chip, never on the board. */}
+                    {seat.userId === buttonUser && (
+                      <b
+                        className="ho-dealer"
+                        aria-label={t('Krupiye: {name}', { name: seatName(buttonUser) })}
+                      >
+                        D
+                      </b>
+                    )}
                     {(blinds.small === seat.userId || blinds.big === seat.userId) && !finished && (
                       <em className="ho-blind">{blinds.big === seat.userId ? 'BB' : 'SB'}</em>
                     )}
                   </div>
-                  <small>
-                    {seat.pendingNextHand
-                      ? t('Sonraki el bekleniyor')
-                      : details?.folded
-                        ? t('Eli bıraktı')
-                        : finished && Number(payouts[seat.userId]) > 0
-                          ? `${splitPot ? t('Ortak kazanan') : t('Kazanan')}${view.showdown?.[seat.userId] ? ` · ${pokerCategory(view.showdown[seat.userId].category)}` : ''}`
-                          : finished && mucked.includes(seat.userId)
-                            ? t('Kartını açmadı')
-                            : details && Number(details.chips) === 0 && playing
-                              ? 'All-in'
-                              : game.turn === index
-                                ? isOwn
-                                  ? t('Sıra sende')
-                                  : t('Sıra {name} kişisinde', { name: seat.name })
-                                : !seat.connected
-                                  ? t('Bağlantısı kesildi')
-                                  : details && Number(details.streetBet) > 0
-                                    ? t('Bahis · {amount}', {
-                                        amount: String(details.streetBet),
-                                      })
-                                    : t('Masada')}
-                  </small>
+                  {status && <small>{status}</small>}
                 </>
               ) : (
                 <button
                   className="rg-empty-seat"
+                  aria-label={t('Boş koltuk')}
                   disabled={!!own || fixture || busy || !ready}
                   title={
                     fixture
@@ -428,199 +437,216 @@ export function HoldemTable({
                   }
                   onClick={() => onSit(index)}
                 >
-                  <Plus size={20} />
-                  {t('Boş koltuk')}
+                  <span aria-hidden="true">
+                    <Plus size={16} />
+                  </span>
+                  <small aria-hidden="true">{t('Boş koltuk')}</small>
                 </button>
               )}
             </div>
           );
         })}
-      </div>
-      <div className={`rg-hand-strip ${finished ? 'result' : ''}`}>
-        <div>
-          {finished ? (
-            <>
-              <h3>
-                <Trophy size={20} />
-                {splitPot
-                  ? t('Pot paylaşıldı')
-                  : winners.length > 1
-                    ? t('Potlar dağıtıldı')
-                    : t('El tamamlandı')}
-              </h3>
+        {/* The hand's moves open over the felt corner, so the page never grows. */}
+        {log.length > 0 && (
+          <details className="ho-hand-log">
+            <summary>{t('Bu elin hamleleri · {count}', { count: log.length })}</summary>
+            <div>
+              <ActionLog entry={historyEntry} />
               <p>
-                {winners
-                  .map(
-                    ([id, value]) =>
-                      `${t('{name} · {chips} fiş', { name: seatName(id), chips: Number(value).toLocaleString(locale) })}${view.showdown?.[id] ? ` · ${pokerCategory(view.showdown[id].category)}` : ''}`,
-                  )
-                  .join(' / ') || t('Sonuç ayrıntısı bu yanıtta bulunmuyor.')}
-                {view.settlementReason === 'uncontested'
-                  ? ` · ${t('Herkes bıraktı, kartlar açılmadı')}`
-                  : ''}
+                {t(
+                  'Yalnızca sunucunun açtığı eller görünür. Katlanmış eller diğer oyunculara gösterilmez.',
+                )}
               </p>
-            </>
-          ) : (
-            <>
-              <span className="eyebrow">{own ? t('ELİN') : t('CANLI MASA')}</span>
-              <h3>
-                {mine?.folded
-                  ? t('Bu eli bıraktın')
-                  : mine && Number(mine.chips) === 0
-                    ? t('Bütün fişlerin masada')
-                    : myTurn
-                      ? t('Sıra sende')
-                      : game.seats.find((seat) => seat.seat === game.turn)?.name
-                        ? t('{name} bekleniyor', {
-                            name: game.seats.find((seat) => seat.seat === game.turn)!.name,
-                          })
-                        : t('El devam ediyor')}
-              </h3>
-              {own && (
-                <p>
-                  {t('Kalan fişin: {chips}', { chips: chips.toLocaleString(locale) })}
-                  {view.ownHand ? ` · ${pokerCategory(view.ownHand.category)}` : ''}
-                </p>
-              )}
-            </>
-          )}
-        </div>
-        {playing && timer !== null && (
-          <div className="rg-timer">
-            <b>{timer}</b>
-            <span>
-              {myTurn ? t('Sıra sende') : t('Oyuncu bekleniyor')}
-              <small>{t('Sunucu hamle süresi')}</small>
-            </span>
-          </div>
+            </div>
+          </details>
         )}
-        {playing && myTurn && (
-          <div className="rg-actions">
-            <button
-              className="button secondary"
-              disabled={!can('fold')}
-              title={fixture ? fixtureReason : undefined}
-              onClick={() => action('fold')}
+      </div>
+      <TableDock label={t('Elin')} className="ho-dock">
+        <div className={`rg-hand-strip ${finished ? 'result' : ''}`}>
+          {holeCards.length > 0 && (
+            <div
+              className={`ho-hole-cards${winningCards.size ? ' settled' : ''}`}
+              aria-label={t('Kartların')}
             >
-              {t('Bırak')}
-            </button>
-            {legal.includes('check') ? (
-              <button
-                className="button secondary"
-                disabled={!can('check')}
-                onClick={() => action('check')}
-              >
-                {t('Kontrol et')}
-              </button>
+              {holeCards.map((card) => (
+                <PlayingCard key={card.id} card={card} winning={winningCards.has(card.id)} />
+              ))}
+            </div>
+          )}
+          <div className="ho-status">
+            {finished ? (
+              <>
+                <h3>
+                  <Trophy size={20} />
+                  {splitPot
+                    ? t('Pot paylaşıldı')
+                    : winners.length > 1
+                      ? t('Potlar dağıtıldı')
+                      : t('El tamamlandı')}
+                </h3>
+                <p>
+                  {winners
+                    .map(
+                      ([id, value]) =>
+                        `${t('{name} · {chips} fiş', { name: seatName(id), chips: Number(value).toLocaleString(locale) })}${view.showdown?.[id] ? ` · ${pokerCategory(view.showdown[id].category)}` : ''}`,
+                    )
+                    .join(' / ') || t('Sonuç ayrıntısı bu yanıtta bulunmuyor.')}
+                  {view.settlementReason === 'uncontested'
+                    ? ` · ${t('Herkes bıraktı, kartlar açılmadı')}`
+                    : ''}
+                </p>
+              </>
             ) : (
+              <>
+                <span className="eyebrow">{own ? t('ELİN') : t('CANLI MASA')}</span>
+                <h3>
+                  {mine?.folded
+                    ? t('Bu eli bıraktın')
+                    : mine && Number(mine.chips) === 0
+                      ? t('Bütün fişlerin masada')
+                      : myTurn
+                        ? t('Sıra sende')
+                        : game.seats.find((seat) => seat.seat === game.turn)?.name
+                          ? t('{name} bekleniyor', {
+                              name: game.seats.find((seat) => seat.seat === game.turn)!.name,
+                            })
+                          : t('El devam ediyor')}
+                </h3>
+                {own && (
+                  <p>
+                    {t('Kalan fişin: {chips}', { chips: chips.toLocaleString(locale) })}
+                    {view.ownHand ? ` · ${pokerCategory(view.ownHand.category)}` : ''}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+          {playing && clock !== null && (
+            <div className="rg-timer">
+              <b>{clock}</b>
+              <span>
+                {myTurn ? t('Sıra sende') : t('Oyuncu bekleniyor')}
+                <small>{t('Sunucu hamle süresi')}</small>
+              </span>
+            </div>
+          )}
+          {playing && myTurn && (
+            <div className="rg-actions">
               <button
                 className="button secondary"
-                disabled={!can('call')}
-                onClick={() => action('call')}
+                disabled={!can('fold')}
+                title={fixture ? fixtureReason : undefined}
+                onClick={() => action('fold')}
               >
-                {t('Gör · {min}', { min: Math.min(chips, call) })}
+                {t('Bırak')}
               </button>
-            )}
+              {legal.includes('check') ? (
+                <button
+                  className="button secondary"
+                  disabled={!can('check')}
+                  onClick={() => action('check')}
+                >
+                  {t('Kontrol et')}
+                </button>
+              ) : (
+                <button
+                  className="button secondary"
+                  disabled={!can('call')}
+                  onClick={() => action('call')}
+                >
+                  {t('Gör · {min}', { min: Math.min(chips, call) })}
+                </button>
+              )}
+              <button
+                className="button primary"
+                disabled={!can('raise') || !raiseValid}
+                title={fixture ? fixtureReason : undefined}
+                onClick={() => raiseTo(amount)}
+              >
+                {amount >= range.maxRaise
+                  ? t('All-in · {maxRaise}', { maxRaise: range.maxRaise })
+                  : t('{amount} fişe artır', { amount })}
+              </button>
+            </div>
+          )}
+          {finished && (
             <button
               className="button primary"
-              disabled={!can('raise') || !raiseValid}
-              title={fixture ? fixtureReason : undefined}
-              onClick={() => raiseTo(amount)}
+              disabled={!can('start') || !!startReason}
+              title={fixture ? fixtureReason : startReason}
+              onClick={() => void send({ type: 'game.action', action: 'start' })}
             >
-              {amount >= range.maxRaise
-                ? t('All-in · {maxRaise}', { maxRaise: range.maxRaise })
-                : t('{amount} fişe artır', { amount })}
+              {t('Sonraki el')}
             </button>
-          </div>
-        )}
-        {finished && (
-          <button
-            className="button primary"
-            disabled={!can('start') || !!startReason}
-            title={fixture ? fixtureReason : startReason}
-            onClick={() => void send({ type: 'game.action', action: 'start' })}
-          >
-            {t('Sonraki el')}
-          </button>
-        )}
-        {own && !own.connected && (
-          <button
-            className="button secondary"
-            disabled={fixture || !ready || busy}
-            onClick={() => void send({ type: 'game.sit', seat: own.seat })}
-          >
-            {t('Masaya geri dön')}
-          </button>
-        )}
-      </div>
-      {playing && myTurn && legal.includes('raise') && (
-        <div className="ho-raise" role="group" aria-label={t('Artırma tutarı')}>
-          <div className="ho-raise-presets">
-            {presets.map((preset) => (
-              <button
-                key={preset.key}
-                className="button secondary small"
-                aria-pressed={amount === preset.amount}
-                disabled={!can('raise')}
-                onClick={() => setAmount(preset.amount)}
-              >
-                {preset.label} · {preset.amount.toLocaleString(locale)}
-              </button>
-            ))}
-          </div>
-          <label className="ho-raise-range">
-            <span>{raiseFloor(range).toLocaleString(locale)}</span>
-            <input
-              ref={slider}
-              aria-label={t('Artırma tutarı')}
-              type="range"
-              min={raiseFloor(range)}
-              max={range.maxRaise}
-              value={Number.isFinite(amount) ? amount : 0}
-              disabled={!can('raise')}
-              onChange={(event) => setAmount(Number(event.target.value))}
-            />
-            <span>{range.maxRaise.toLocaleString(locale)}</span>
-          </label>
-          <label className="ho-raise-amount">
-            {t('Bu turdaki toplam tutarın')}
-            <input
-              type="number"
-              min={raiseFloor(range)}
-              max={range.maxRaise}
-              value={amount}
-              disabled={!can('raise')}
-              onChange={(event) => setAmount(Number(event.target.value))}
-              onBlur={() => setAmount(clampRaise(range, amount || 0))}
-            />
-          </label>
-          <p>
-            {range.maxRaise < range.minRaise
-              ? t('All-in toplamı {maxRaise}. Minimum artırma için yeterli fişin yok.', {
-                  maxRaise: range.maxRaise.toLocaleString(locale),
-                })
-              : t(
-                  'Minimum toplam artırma {minRaise}. Bunun {call} fişi görme, {max} fişi artırmadır.',
-                  {
-                    minRaise: range.minRaise.toLocaleString(locale),
-                    call: call.toLocaleString(locale),
-                    max: Math.max(0, range.minRaise - maximumBet).toLocaleString(locale),
-                  },
-                )}
-          </p>
+          )}
+          {own && !own.connected && (
+            <button
+              className="button secondary"
+              disabled={fixture || !ready || busy}
+              onClick={() => void send({ type: 'game.sit', seat: own.seat })}
+            >
+              {t('Masaya geri dön')}
+            </button>
+          )}
         </div>
-      )}
-      {log.length > 0 && (
-        <details className="ho-hand-log" open>
-          <summary>{t('Bu elin hamleleri · {count}', { count: log.length })}</summary>
-          <ActionLog entry={historyEntry} />
-        </details>
-      )}
-      <p className="rg-footer-note">
-        {t(
-          'Yalnızca sunucunun açtığı eller görünür. Katlanmış eller diğer oyunculara gösterilmez.',
+        {playing && myTurn && legal.includes('raise') && (
+          <div className="ho-raise" role="group" aria-label={t('Artırma tutarı')}>
+            <div className="ho-raise-presets">
+              {presets.map((preset) => (
+                <button
+                  key={preset.key}
+                  className="button secondary small"
+                  aria-pressed={amount === preset.amount}
+                  disabled={!can('raise')}
+                  onClick={() => setAmount(preset.amount)}
+                >
+                  {preset.label} · {preset.amount.toLocaleString(locale)}
+                </button>
+              ))}
+            </div>
+            <label className="ho-raise-range">
+              <span>{raiseFloor(range).toLocaleString(locale)}</span>
+              <input
+                ref={slider}
+                aria-label={t('Artırma tutarı')}
+                type="range"
+                min={raiseFloor(range)}
+                max={range.maxRaise}
+                value={Number.isFinite(amount) ? amount : 0}
+                disabled={!can('raise')}
+                onChange={(event) => setAmount(Number(event.target.value))}
+              />
+              <span>{range.maxRaise.toLocaleString(locale)}</span>
+            </label>
+            <label className="ho-raise-amount">
+              {t('Bu turdaki toplam tutarın')}
+              <input
+                type="number"
+                min={raiseFloor(range)}
+                max={range.maxRaise}
+                value={amount}
+                disabled={!can('raise')}
+                onChange={(event) => setAmount(Number(event.target.value))}
+                onBlur={() => setAmount(clampRaise(range, amount || 0))}
+              />
+            </label>
+            <p>
+              {range.maxRaise < range.minRaise
+                ? t('All-in toplamı {maxRaise}. Minimum artırma için yeterli fişin yok.', {
+                    maxRaise: range.maxRaise.toLocaleString(locale),
+                  })
+                : t(
+                    'Minimum toplam artırma {minRaise}. Bunun {call} fişi görme, {max} fişi artırmadır.',
+                    {
+                      minRaise: range.minRaise.toLocaleString(locale),
+                      call: call.toLocaleString(locale),
+                      max: Math.max(0, range.minRaise - maximumBet).toLocaleString(locale),
+                    },
+                  )}
+            </p>
+          </div>
         )}
-      </p>
+      </TableDock>
     </>
   );
 }

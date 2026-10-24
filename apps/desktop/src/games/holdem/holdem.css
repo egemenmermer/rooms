@@ -7,7 +7,7 @@
 .rg-board {
   /* Where the pot sits on the felt; bets slide here and won pots leave from here. */
   --ho-pot-x: 50%;
-  --ho-pot-y: 27%;
+  --ho-pot-y: 36%;
 }
 
 /* Chips */
@@ -75,66 +75,66 @@
   margin-right: 2px;
 }
 
-/* Seat spots on the felt (bets, the dealer chip, pushed pots), as % of the board. */
+/* Seat spots on the felt (bets, pushed pots), as % of the board: between a seat and the center. */
 .ho-at-0 {
-  --ho-x: 40%;
-  --ho-y: 18%;
+  --ho-x: 37%;
+  --ho-y: 25%;
 }
 .ho-at-1 {
-  --ho-x: 73%;
-  --ho-y: 31%;
+  --ho-x: 77%;
+  --ho-y: 40%;
 }
 .ho-at-2 {
-  --ho-x: 70%;
-  --ho-y: 64%;
+  --ho-x: 74%;
+  --ho-y: 72%;
 }
 .ho-at-3 {
-  --ho-x: 38%;
-  --ho-y: 63%;
+  --ho-x: 40%;
+  --ho-y: 80%;
 }
 .ho-at-4 {
-  --ho-x: 30%;
-  --ho-y: 64%;
+  --ho-x: 26%;
+  --ho-y: 72%;
 }
 .ho-at-5 {
-  --ho-x: 27%;
-  --ho-y: 31%;
+  --ho-x: 23%;
+  --ho-y: 40%;
 }
 .rg-nine-layout .ho-at-0 {
-  --ho-x: 43%;
-  --ho-y: 18%;
+  --ho-x: 42%;
+  --ho-y: 32%;
 }
 .rg-nine-layout .ho-at-1 {
   --ho-x: 66%;
-  --ho-y: 18%;
+  --ho-y: 32%;
 }
 .rg-nine-layout .ho-at-2 {
-  --ho-x: 75%;
-  --ho-y: 33%;
+  --ho-x: 78%;
+  --ho-y: 48%;
 }
 .rg-nine-layout .ho-at-3 {
-  --ho-x: 72%;
-  --ho-y: 62%;
+  --ho-x: 76%;
+  --ho-y: 72%;
 }
 .rg-nine-layout .ho-at-4 {
-  --ho-x: 58%;
-  --ho-y: 64%;
+  --ho-x: 59%;
+  --ho-y: 80%;
 }
 .rg-nine-layout .ho-at-5 {
-  --ho-x: 38%;
+  --ho-x: 27%;
   --ho-y: 66%;
 }
 .rg-nine-layout .ho-at-6 {
-  --ho-x: 27%;
-  --ho-y: 60%;
+  --ho-x: 20%;
+  --ho-y: 62%;
 }
 .rg-nine-layout .ho-at-7 {
-  --ho-x: 25%;
-  --ho-y: 33%;
+  --ho-x: 22%;
+  --ho-y: 48%;
 }
 .rg-nine-layout .ho-at-8 {
-  --ho-x: 32%;
-  --ho-y: 18%;
+  --ho-x: 34%;
+  --ho-y: 32%;
 }
 .ho-bet {
   position: absolute;
@@ -164,14 +164,12 @@
     top: var(--ho-y);
   }
 }
+/* The dealer button rides on its seat chip, next to the blind tag. */
 .ho-dealer {
-  position: absolute;
-  left: calc(var(--ho-x) + 4%);
-  top: calc(var(--ho-y) - 3%);
-  transform: translate(-50%, -50%);
-  z-index: 3;
-  width: 22px;
-  height: 22px;
+  flex-shrink: 0;
+  margin-left: auto;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -181,9 +179,9 @@
   background: #ece3c8;
   border: 2px solid #c9bb92;
   box-shadow: 0 2px 5px #0005;
-  transition:
-    left 450ms var(--motion-ease-in-out, ease-in-out),
-    top 450ms var(--motion-ease-in-out, ease-in-out);
+}
+.ho-dealer + .ho-blind {
+  margin-left: 0;
 }
 
 /* Last action over each seat */
@@ -208,8 +206,13 @@
   box-shadow: 0 3px 8px #0004;
   animation: ho-pop 200ms var(--motion-ease-out, ease-out);
 }
+/* Your seat has no cards on the felt: the bubble sits beside the chip. */
 .rg-table-seat.own .ho-bubble {
-  top: -18px;
+  top: 50%;
+  left: auto;
+  right: calc(100% + 6px);
+  transform: translateY(-50%);
+  animation: none;
 }
 .ho-bubble.raise,
 .ho-bubble.all-in {
@@ -264,14 +267,58 @@
   border-style: dashed;
 }
 
-/* Inline raise bar */
+/* The dock (TableDock): your cards, the hand status and timer, the moves, then the raise bar. */
+.ho-dock .rg-hand-strip {
+  gap: 12px;
+  margin: 0;
+  min-height: 0;
+  padding: 8px 14px;
+}
+.ho-dock .rg-hand-strip > div:first-child {
+  margin-right: 0;
+}
+.ho-dock .rg-hand-strip > .ho-status {
+  margin-right: auto;
+  min-width: 0;
+}
+.ho-dock .rg-hand-strip .eyebrow {
+  margin-bottom: 2px;
+}
+.ho-dock .rg-hand-strip h3 {
+  margin: 0 0 2px;
+}
+.ho-hole-cards {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+.ho-hole-cards .playing-card {
+  width: 46px;
+  height: 66px;
+  flex: 0 0 46px;
+  padding: 5px;
+}
+.ho-hole-cards .playing-card > span {
+  font-size: 13px;
+}
+.ho-hole-cards .playing-card > b {
+  font-size: 24px;
+}
+.ho-hole-cards.settled .playing-card:not(.winning) {
+  opacity: 0.55;
+}
+.ho-dock .playing-card.winning {
+  outline: 2px solid #bda1f2;
+  outline-offset: 2px;
+}
+
+/* Raise bar: presets, slider and total on one row, the rule hint under it. */
 .ho-raise {
-  display: grid;
-  grid-template-columns: auto minmax(160px, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px 14px;
-  margin-top: 8px;
-  padding: 10px 14px;
+  gap: 6px 14px;
+  padding: 8px 14px;
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-8);
   background: var(--color-background-raised);
@@ -287,6 +334,7 @@
 }
 .ho-raise-range {
   display: flex;
+  flex: 1 1 140px;
   align-items: center;
   gap: 10px;
   font-size: var(--font-size-metadata);
@@ -304,37 +352,50 @@
   gap: 8px;
   font-size: var(--font-size-metadata);
   color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 .ho-raise-amount input {
-  width: 96px;
+  width: 86px;
 }
 .ho-raise > p {
-  grid-column: 1 / -1;
+  flex: 1 0 100%;
   margin: 0;
   font-size: var(--font-size-metadata);
   color: var(--color-text-secondary);
 }
-@media (max-width: 1099px) {
-  .ho-raise {
-    grid-template-columns: 1fr;
-  }
-}
 
-/* Hand log */
+/* Hand log: a chip in the felt's top-left corner that opens over the table. */
 .ho-hand-log {
-  margin-top: 10px;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-8);
-  padding: 8px 12px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 6;
+  max-width: min(320px, 46%);
   font-size: var(--font-size-metadata);
 }
 .ho-hand-log > summary {
   cursor: pointer;
+  width: max-content;
+  max-width: 100%;
+  padding: 3px 10px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--color-background-raised);
   color: var(--color-text-secondary);
 }
-.ho-hand-log .rh-action-log {
-  max-height: 180px;
+.ho-hand-log > div {
+  margin-top: 6px;
+  padding: 8px 12px;
+  max-height: 62cqh;
   overflow: auto;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-8);
+  background: var(--color-background-raised);
+  box-shadow: 0 8px 24px #0006;
+}
+.ho-hand-log > div > p {
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
 }
 .ho-form-note {
   display: block;
@@ -356,8 +417,5 @@
   .ho-bet.ho-push {
     left: var(--ho-x);
     top: var(--ho-y);
-  }
-  .ho-dealer {
-    transition: none;
   }
 }
