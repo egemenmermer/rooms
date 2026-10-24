@@ -414,24 +414,7 @@
 .minimal-room-ui .reference-voice-controls {
   display: none;
 }
-.minimal-messages {
-  padding: 24px;
-}
-.minimal-messages > button {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  gap: 12px;
-  background: none;
-  border: 0;
-  text-align: left;
-  padding: 12px;
-  color: #d9d4e6;
-  border-radius: 6px;
-}
-.minimal-messages > button:hover {
-  background: #ffffff04;
-}
+
 .quiet-inline-state {
   padding: 24px;
   color: #bfb9cf;
@@ -463,12 +446,7 @@
 .minimal-room-ui .compact-nav-toggle {
   display: none;
 }
-.minimal-room-ui .reference-room-card,
-.minimal-room-ui .reference-home-feature {
-  background: none;
-  box-shadow: none;
-  border-color: #ffffff08;
-}
+
 @media (max-width: 1000px) {
   .minimal-room-ui .minimal-sidebar {
     display: none;
@@ -516,22 +494,6 @@
   }
 }
 
-.minimal-home {
-  padding: 28px;
-}
-.minimal-home h1 {
-  font-size: 19px;
-  font-weight: 500;
-  margin-bottom: 18px;
-}
-.minimal-home-room {
-  display: block;
-  background: none;
-  color: #c5c0d2;
-  border: 0;
-  padding: 10px 0;
-  font-size: 14px;
-}
 .minimal-room-ui .toolbar.minimal-toolbar {
   display: flex !important;
 }

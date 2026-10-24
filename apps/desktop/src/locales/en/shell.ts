@@ -66,7 +66,6 @@ export const shell: Catalog = {
   'Bir ses odasına katıl': 'Join a voice room',
   'Bir şeye geç…': 'Jump to…',
   'Bir yönetici kanal açınca burada görünür.': 'Channels show up here once an admin creates them.',
-  Birlikte: 'Together',
   'Birlikte izle': 'Watch together',
   'Birlikte çiz, birlikte karar ver': 'Draw together, decide together',
   'Birlikte çiz, yaz; imleçler canlı görünür.': 'Draw and write together; cursors show live.',
