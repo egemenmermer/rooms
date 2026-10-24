@@ -1,6 +1,6 @@
 import { t } from '../../i18n';
 import type { GameCreateDefinition } from '../registry';
-import { MATCH_TARGETS, matchToLabel } from './model';
+import { MATCH_TARGETS } from './model';
 
 const matchTo = (value: Record<string, unknown>) =>
   MATCH_TARGETS.find((target) => target === Number(value.matchTo)) ?? 5;
@@ -20,7 +20,7 @@ export const tavlaCreate: GameCreateDefinition = {
             onClick={() => onChange({ matchTo: target })}
           >
             <strong>{t('{points} puan', { points: target })}</strong>
-            <small>{t('Maç {target} biter', { target: matchToLabel(target) })}</small>
+            <small>{t('{points} puana ulaşan kazanır', { points: target })}</small>
           </button>
         ))}
       </div>
