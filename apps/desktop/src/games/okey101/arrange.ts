@@ -31,7 +31,8 @@ function bestSets(all: Face[], wrapAround: boolean): { sets: Face[][]; rest: Fac
   let best: Face[][] = [],
     bestScore = 0,
     nodes = 0;
-  const search = (remaining: Face[], free: Face[], sets: Face[][]) => {
+  // `skipped`: tiles left out so far; a skipped 1 can still end a 12-13-1 run.
+  const search = (remaining: Face[], free: Face[], sets: Face[][], skipped: Face[]) => {
     if (++nodes > NODE_LIMIT) return;
     if (!remaining.length) {
       const value = score(sets);
@@ -46,21 +47,29 @@ function bestSets(all: Face[], wrapAround: boolean): { sets: Face[][]; rest: Fac
     const run: Face[] = [tile];
     let pool = others,
       spare = free,
+      spareSkipped = skipped,
       value = tile.value;
     while (run.length < 13) {
       if (value === 13 && !wrapAround) break;
       if (value === 1 && run.length > 1) break; // 12-13-1 ends the run
       const nextValue = value === 13 ? 1 : value + 1;
       const natural = pool.find((face) => face.color === tile.color && face.value === nextValue);
+      const high =
+        nextValue === 1
+          ? spareSkipped.find((face) => face.color === tile.color && face.value === 1)
+          : undefined;
       if (natural) {
         run.push(natural);
         pool = pool.filter((face) => face !== natural);
+      } else if (high) {
+        run.push(high);
+        spareSkipped = spareSkipped.filter((face) => face !== high);
       } else if (spare.length) {
         run.push(spare[0]);
         spare = spare.slice(1);
       } else break;
       value = nextValue;
-      if (run.length >= 3) search(pool, spare, [...sets, [...run]]);
+      if (run.length >= 3) search(pool, spare, [...sets, [...run]], spareSkipped);
     }
     // Groups with this number: one tile per other colour, okeys making up 3 or 4.
     const partners: Face[] = [];
@@ -80,12 +89,13 @@ function bestSets(all: Face[], wrapAround: boolean): { sets: Face[][]; rest: Fac
           others.filter((face) => !chosen.includes(face)),
           free.slice(needed),
           [...sets, [tile, ...chosen, ...free.slice(0, needed)]],
+          skipped,
         );
       }
     }
-    search(others, free, sets);
+    search(others, free, sets, [...skipped, tile]);
   };
-  search(naturals, wilds, []);
+  search(naturals, wilds, [], []);
   const used = new Set(best.flat().map((face) => face.id));
   return {
     sets: best,

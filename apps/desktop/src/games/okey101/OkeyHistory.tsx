@@ -9,7 +9,8 @@ import { OkeyTileView } from './OkeyTile';
 export function OkeyHistory({ entry }: { entry: GameHistoryEntry }) {
   const result = entry.result;
   const nameOf = (seat: number) =>
-    entry.seats?.find((item) => item.position === seat)?.name ?? t('Koltuk {number}', { number: seat + 1 });
+    entry.seats?.find((item) => item.position === seat)?.name ??
+    t('Koltuk {number}', { number: seat + 1 });
   const winner = typeof result.winner === 'number' ? result.winner : null,
     ending = (result.ending as Okey101Ending | null | undefined) ?? null,
     log = array<PenaltyEntry>(result.penaltyLog);

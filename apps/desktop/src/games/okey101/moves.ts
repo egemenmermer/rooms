@@ -45,7 +45,11 @@ export function describeMoves(
   for (let seat = 0; seat < 4; seat++) {
     const taker = (seat + 1) % 4,
       gone = topsBefore[seat];
-    if (gone && topsAfter[seat]?.id !== gone.id && (countAfter[taker] ?? 0) > (countBefore[taker] ?? 0)) {
+    if (
+      gone &&
+      topsAfter[seat]?.id !== gone.id &&
+      (countAfter[taker] ?? 0) > (countBefore[taker] ?? 0)
+    ) {
       takenFrom.add(taker);
       lines.push(
         t('{name} yandan {tile} aldı', { name: nameOf(taker), tile: tileLabel(gone, okey) }),
@@ -77,7 +81,11 @@ export function describeMoves(
     lines.push(t('{name} yerdeki pere taş işledi', { name: nameOf(mover) }));
   for (let seat = 0; seat < 4; seat++) {
     const top = topsAfter[seat];
-    if (top && top.id !== topsBefore[seat]?.id && (countAfter[seat] ?? 0) < (countBefore[seat] ?? 0))
+    if (
+      top &&
+      top.id !== topsBefore[seat]?.id &&
+      (countAfter[seat] ?? 0) < (countBefore[seat] ?? 0)
+    )
       lines.push(t('{name} {tile} attı', { name: nameOf(seat), tile: tileLabel(top, okey) }));
   }
   array<PenaltyEntry>(after.penaltyLog)

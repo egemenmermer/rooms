@@ -154,8 +154,10 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
     if (!lines.length) return;
     setLog((current) => ({
       round: game.history.length,
-      lines: [...lines.reverse(), ...(current.round === game.history.length ? current.lines : [])]
-        .slice(0, 5),
+      lines: [
+        ...lines.reverse(),
+        ...(current.round === game.history.length ? current.lines : []),
+      ].slice(0, 5),
     }));
   }, [view]);
 
@@ -241,14 +243,16 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
       if (ok) setSelected([]);
     });
   const process = (meld: number, ids: string[], replace?: string) =>
-    void action('process', { amount: meld, tileIds: ids, ...(replace ? { cardId: replace } : {}) }).then(
-      (ok) => {
-        if (ok) {
-          setSelected([]);
-          setJoker('');
-        }
-      },
-    );
+    void action('process', {
+      amount: meld,
+      tileIds: ids,
+      ...(replace ? { cardId: replace } : {}),
+    }).then((ok) => {
+      if (ok) {
+        setSelected([]);
+        setJoker('');
+      }
+    });
   const gostergeTile =
     indicator &&
     tiles.find(
@@ -276,7 +280,9 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
   };
 
   const meldZone = (owner: number) => {
-    const list = melds.map((meld, index) => ({ meld, index })).filter((x) => x.meld.owner === owner);
+    const list = melds
+      .map((meld, index) => ({ meld, index }))
+      .filter((x) => x.meld.owner === owner);
     if (!list.length) return null;
     return (
       <div className="o1-meld-row" aria-label={t('{name} perleri', { name: nameOf(owner) })}>
@@ -317,9 +323,7 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
                       small
                       fake={false}
                       label={
-                        tile.joker
-                          ? t('Okey · {face} yerine', { face: faceName(tile) })
-                          : undefined
+                        tile.joker ? t('Okey · {face} yerine', { face: faceName(tile) }) : undefined
                       }
                     />
                   </span>
@@ -359,8 +363,7 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
                 <small>
                   {t('{count} taş · {state}', {
                     count,
-                    state:
-                      state === 'pairs' ? t('Çift açtı') : state ? t('Açtı') : t('Açmadı'),
+                    state: state === 'pairs' ? t('Çift açtı') : state ? t('Açtı') : t('Açmadı'),
                   })}
                 </small>
               </div>
@@ -384,7 +387,7 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
             <div
               key={`pile-${seat}`}
               className={`o1-pile ${CORNERS[offset]} ${mine && dragId && canDiscard ? 'o1-drop-target' : ''}`}
-              {...(mine ? pileDrop : {})}
+              {...(mine ? { ...pileDrop, 'data-drop': 'discard' } : {})}
             >
               <small>{mine ? t('Attığın taş') : t('{name} attı', { name: nameOf(seat) })}</small>
               {top ? (
