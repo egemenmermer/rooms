@@ -224,7 +224,8 @@ export function target(state: BatakState, seat: number): number | null {
   if (state.variant === 'esli') return seat % 2 === state.bidder % 2 ? state.bid : null;
   return seat === state.bidder ? state.bid : null;
 }
-const teamTricks = (state: BatakState, seat: number) =>
+/** Tricks that count towards `target`: the partnership's in Eşli, the seat's own elsewhere. */
+export const takenBy = (state: Pick<BatakState, 'variant' | 'tricks'>, seat: number) =>
   state.variant === 'esli'
     ? (state.tricks[seat % 2] ?? 0) + (state.tricks[(seat % 2) + 2] ?? 0)
     : (state.tricks[seat] ?? 0);
@@ -234,6 +235,8 @@ export interface SummaryRow {
   seat: number;
   contract: number | null;
   tricks: number;
+  /** Tricks counted against the contract (the team's in Eşli). */
+  taken: number;
   points: number;
   mark: SummaryMark;
 }
@@ -246,12 +249,12 @@ export function roundSummary(state: BatakState): SummaryRow[] {
     const contract = target(state, seat),
       tricks = state.tricks[seat] ?? 0,
       points = state.scores[seat] ?? 0,
-      taken = state.variant === 'koz-maca' ? tricks : teamTricks(state, seat);
+      taken = takenBy(state, seat);
     let mark: SummaryMark = null;
     if (contract !== null) mark = taken >= contract ? 'made' : 'set';
     else if (state.rules.defenderBatakPenalty && state.variant !== 'koz-maca' && taken === 0)
       mark = 'batak';
-    return { seat, contract, tricks, points, mark };
+    return { seat, contract, tricks, taken, points, mark };
   });
 }
 

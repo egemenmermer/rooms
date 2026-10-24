@@ -15,6 +15,7 @@ import {
   roundSeats,
   roundSummary,
   scoreSheet,
+  takenBy,
   sortHand,
   target,
   variantName,
@@ -89,7 +90,12 @@ function useTableEvents(game: GamePublicState, state: BatakState) {
       for (const play of last.plays.slice(done === before.done + 1 ? before.played : 0))
         lines.push(playLine(game, play));
       lines.push(t('{name} eli aldı', { name: seatName(game, last.winner) }));
-      setHeld({ key: `${game.history.length}:${done}`, ...last, sweeping: false });
+      // The next lead in the same update sweeps the finished trick at once.
+      setHeld({
+        key: `${game.history.length}:${done}`,
+        ...last,
+        sweeping: state.trick.length > 0,
+      });
       playBatakCue('take');
     }
     const from = !fresh && done === before.done ? before.played : 0;
@@ -192,7 +198,7 @@ function BatakBoard({ game, can, action, timer, state }: TableUI & { state: Bata
             disabled={state.trick.length > 0 || !!held}
             onClick={() => setShowLast((value) => !value)}
           >
-            {t('Son el')}
+            {t('Son eli göster')}
           </button>
         )}
       </div>
@@ -208,7 +214,7 @@ function BatakBoard({ game, can, action, timer, state }: TableUI & { state: Bata
               count = state.handCounts[round] ?? 0,
               own = round === state.viewerSeat,
               goal = target(state, round),
-              tricks = state.tricks[round] ?? 0,
+              tricks = takenBy(state, round),
               said = state.stage === 'bidding' ? lastBid(state, round) : null,
               partner =
                 teams && state.viewerSeat !== null && !own && round % 2 === state.viewerSeat % 2;
@@ -586,7 +592,7 @@ function RoundSummary({ game, state }: { game: GamePublicState; state: BatakStat
                 {seatName(game, row.seat)}
               </th>
               <td>
-                {row.contract === null ? row.tricks : `${row.tricks} / ${row.contract}`}
+                {row.contract === null ? row.tricks : `${row.taken} / ${row.contract}`}
                 {row.mark && <em className={`bt-mark ${row.mark}`}>{mark(row.mark)}</em>}
               </td>
               <td>{row.points > 0 ? `+${row.points}` : row.points}</td>

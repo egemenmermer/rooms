@@ -1287,7 +1287,11 @@ export const games: Catalog = {
   "5'e": 'to 5',
   "7'ye": 'to 7',
   // Batak table (GF-batak)
-  '{name} {count} el dedi': '{name} called {count} tricks',
+  'Son eli göster': 'Show last trick',
+  '{name} {count} el dedi': {
+    one: '{name} called {count} trick',
+    other: '{name} called {count} tricks',
+  },
   '{name} pas dedi': '{name} passed',
   '{name} {bid} dedi': '{name} bid {bid}',
   'Koz {trump} oldu': 'Trump is {trump}',
@@ -1297,7 +1301,7 @@ export const games: Catalog = {
   'Koz kırıldı': 'Trump broken',
   'Koz kırılmadı': 'Trump not broken',
   'Batak masası': 'Batak table',
-  '{count} el aldı': 'took {count} tricks',
+  '{count} el aldı': { one: 'took {count} trick', other: 'took {count} tricks' },
   '{count} / {goal} el': '{count} of {goal} tricks',
   'İhaleyi aldı': 'Won the bidding',
   'Son sözü: {bid}': 'Last call: {bid}',

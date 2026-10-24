@@ -139,9 +139,20 @@ it('does not replay a finished trick when the page opens on it', () => {
   render(<ReferenceBatak {...ui(scene('trick-complete'))} />);
   expect(document.querySelectorAll('.bt-trick .bt-played')).toHaveLength(0);
   expect(cues).not.toHaveBeenCalled();
-  // "Son el" shows it on demand.
-  fireEvent.click(screen.getByRole('button', { name: 'Son el' }));
+  // "Son eli göster" shows it on demand.
+  fireEvent.click(screen.getByRole('button', { name: 'Son eli göster' }));
   expect(document.querySelectorAll('.bt-trick .bt-played')).toHaveLength(4);
+});
+
+it('counts the partnership tricks against the contract in Eşli', () => {
+  const game = scene('opponent-turn');
+  Object.assign(game.view, { variant: 'esli', bid: 8, bidder: 0, tricks: [4, 1, 4, 3] });
+  render(<ReferenceBatak {...ui(game)} />);
+  // Ece and Zeynep (across) took 4 + 4 = 8 of their 8: both badges turn green.
+  expect(screen.getAllByLabelText('8 / 8 el')).toHaveLength(2);
+  expect(document.querySelectorAll('.bt-tricks.made')).toHaveLength(2);
+  expect(seatAt('top')).toBe('Zeynep (demo)');
+  expect(document.querySelector('.bt-seat.pos-top small')?.textContent).toContain('Eşin');
 });
 
 it('shows the auction over the table with every bid and pass, and bids from the minimum', () => {
