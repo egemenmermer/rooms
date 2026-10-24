@@ -275,7 +275,6 @@ export const social: Catalog = {
   'Yerel örnekte bu kanal veya mesaj bulunamadı.':
     'This channel or message wasn’t found in the local sample.',
   'Nereye gitmek istersin?': 'Where do you want to go?',
-  'Bizim Oda’da ara': 'Search in Bizim Oda',
   '{name} içinde ara': 'Search in {name}',
   Konuşma: 'Conversation',
   'Mesaj, dosya veya kanal ara': 'Search messages, files or channels',

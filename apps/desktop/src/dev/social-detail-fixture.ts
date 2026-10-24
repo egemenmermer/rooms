@@ -9,6 +9,27 @@ import type { CommunityMessage, CommunityState } from '../community';
 import type { CommunityNotification } from '../CommunitySettings';
 import { people, places, sample } from './sample';
 
+/**
+ * Original passive artwork inlined as a data URI, so the S14 image renders without the private
+ * reference folder (`ROOMS_REFERENCE_ROOT`). SVG in an <img> runs no script.
+ */
+export const S14_IMAGE_URL = `data:image/svg+xml,${encodeURIComponent(
+  [
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200">',
+    '<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1">',
+    '<stop offset="0" stop-color="#2b2350"/><stop offset=".55" stop-color="#b86b7a"/>',
+    '<stop offset="1" stop-color="#f0b27a"/></linearGradient>',
+    '<linearGradient id="w" x1="0" y1="0" x2="0" y2="1">',
+    '<stop offset="0" stop-color="#3c4f7a"/><stop offset="1" stop-color="#1b2140"/></linearGradient></defs>',
+    '<rect width="320" height="200" fill="url(#s)"/>',
+    '<circle cx="214" cy="118" r="26" fill="#ffd9a0" opacity=".9"/>',
+    '<rect y="124" width="320" height="76" fill="url(#w)"/>',
+    '<path d="M150 136h128M178 148h76M196 160h40" stroke="#ffd9a0" stroke-width="3" stroke-linecap="round" opacity=".55"/>',
+    '<path d="M0 124c40-22 70-30 104-18s52 8 76 18z" fill="#1f1a3a"/>',
+    '</svg>',
+  ].join(''),
+)}`;
+
 export const SOCIAL_DETAIL_FIXTURE_VARIANTS = {
   S12: ['default', 'blocked', 'nonfriend'],
   S13: ['default', 'empty', 'files', 'quick'],
@@ -280,7 +301,7 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
     name: sample('Kıyıda bir akşam', 'An evening by the coast'),
     size: 3172,
     mime: 'image/svg+xml',
-    url: '/__reference/01_brand/cinema-still.svg',
+    url: S14_IMAGE_URL,
   };
   const makeMessage = (
     key: string,
@@ -444,7 +465,7 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
             ? sample('dağ bisikleti', 'mountain bike')
             : variant === 'files'
               ? 'pdf'
-              : 'film',
+              : sample('film', 'movie'),
       ...(variant === 'quick'
         ? {
             quickDestinations: [
@@ -683,7 +704,7 @@ export function getSocialDetailFixture(id: string, value: string): SocialDetailF
       ),
       attachments: {
         [pdfId]: '/__reference/06_handoff/examples/weekend-list.pdf',
-        [imageId]: '/__reference/01_brand/cinema-still.svg',
+        [imageId]: S14_IMAGE_URL,
       },
     },
   };
