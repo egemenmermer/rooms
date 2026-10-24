@@ -184,8 +184,9 @@ it('never acknowledges a server alert it did not show: a burst is summarised, no
     }),
   );
   const shown: string[] = [];
+  const client = { instanceUrl: 'https://qa.invalid', getToken: () => 'token' };
   const bridge = setupHostOps(
-    () => ({ instanceUrl: 'https://qa.invalid', getToken: () => 'token' }),
+    () => client,
     () => null,
     () => {},
     (message) => shown.push(message),
