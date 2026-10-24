@@ -42,7 +42,7 @@ await viteBuild({
 });
 await writeFile(
   join(out, 'preload.cjs'),
-  `const {contextBridge,ipcRenderer}=require('electron');contextBridge.exposeInMainWorld('rooms',{providers:{status:async()=>[{id:'qa-connection'}],epg:async()=>[],acknowledgePlayback:async()=>{},nativePlayer:{status:()=>ipcRenderer.invoke('rooms:provider-native-status'),start:url=>ipcRenderer.invoke('rooms:provider-native-start',url),state:token=>ipcRenderer.invoke('rooms:provider-native-state',token),bounds:(token,rect)=>ipcRenderer.invoke('rooms:provider-native-bounds',token,rect),control:(token,input)=>ipcRenderer.invoke('rooms:provider-native-control',token,input),stop:token=>ipcRenderer.invoke('rooms:provider-native-stop',token)}}});`,
+  `const {contextBridge,ipcRenderer}=require('electron');contextBridge.exposeInMainWorld('rooms',{locale:{preference:'tr',resolved:'tr'},providers:{status:async()=>[{id:'qa-connection'}],epg:async()=>[],acknowledgePlayback:async()=>{},nativePlayer:{status:()=>ipcRenderer.invoke('rooms:provider-native-status'),start:url=>ipcRenderer.invoke('rooms:provider-native-start',url),state:token=>ipcRenderer.invoke('rooms:provider-native-state',token),bounds:(token,rect)=>ipcRenderer.invoke('rooms:provider-native-bounds',token,rect),control:(token,input)=>ipcRenderer.invoke('rooms:provider-native-control',token,input),stop:token=>ipcRenderer.invoke('rooms:provider-native-stop',token)}}});`,
 );
 await writeFile(
   join(out, 'main.ts'),
