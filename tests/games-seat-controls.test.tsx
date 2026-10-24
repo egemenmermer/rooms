@@ -63,7 +63,10 @@ vi.mock('../apps/desktop/src/games/registry', async (importOriginal) => {
     'test-seats-v1': definition('test-seats-v1', 'points'),
     'test-chips-v1': definition('test-chips-v1', 'chips'),
   };
-  return { ...actual, gameDefinition: (kind: string) => tables[kind] ?? actual.gameDefinition(kind) };
+  return {
+    ...actual,
+    gameDefinition: (kind: string) => tables[kind] ?? actual.gameDefinition(kind),
+  };
 });
 
 import { ReferenceOtherGame } from '../apps/desktop/src/games/shared/TableShell';

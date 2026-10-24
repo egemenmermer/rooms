@@ -3,7 +3,6 @@ import { UserMinus } from 'lucide-react';
 import { Avatar } from '@rooms/design';
 import { t } from '../../i18n';
 import { mediaProvider } from '../../runtime-sources';
-import { useVoiceContext } from '../../realtime';
 import { VoiceAvatar } from '../../VoiceAvatar';
 import type { GamePublicState } from '../../../../../packages/activity-protocol/src';
 import './seat-avatar.css';
@@ -36,14 +35,10 @@ export function seatRemovable(
   );
 }
 
+// Reads the media snapshot directly (not `realtime.ts`), so the lazy game views stay light.
 const subscribeMedia = (listener: () => void) => {
   try {
-    const unsubscribeMedia = mediaProvider().subscribeState(listener),
-      unsubscribeVoice = useVoiceContext.subscribe(listener);
-    return () => {
-      unsubscribeMedia();
-      unsubscribeVoice();
-    };
+    return mediaProvider().subscribeState(listener);
   } catch {
     return () => {};
   }
@@ -52,7 +47,6 @@ const subscribeMedia = (listener: () => void) => {
 export function useSpeaking(userId: string) {
   return useSyncExternalStore(subscribeMedia, () => {
     try {
-      if (useVoiceContext.getState().busy) return false;
       const snapshot = mediaProvider().snapshot();
       if (snapshot.status !== 'connected') return false;
       const person = snapshot.participants.find((p) => p.id === userId);

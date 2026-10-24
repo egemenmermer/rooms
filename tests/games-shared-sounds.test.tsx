@@ -128,9 +128,7 @@ it('follows game signals for exact move cues instead of turn changes', () => {
     after = table({ turn: 2, view: { played: 4, captured: 1 } });
   expect(gameCues(before, after, 'ece', { signals })).toEqual(['capture', 'play']);
   // No counter moved: the turn change alone is not a card on the felt.
-  expect(gameCues(before, table({ turn: 2, view: { played: 3 } }), 'ece', { signals })).toEqual(
-    [],
-  );
+  expect(gameCues(before, table({ turn: 2, view: { played: 3 } }), 'ece', { signals })).toEqual([]);
   expect(gameCues(table({ turn: 1 }), table({ turn: 2 }), 'ece', { move: 'tile' })).toEqual([
     'tile',
   ]);
@@ -138,9 +136,7 @@ it('follows game signals for exact move cues instead of turn changes', () => {
 
 it('ignores a different table and a reset history', () => {
   expect(gameCues(table(), table({ ownerId: 'mert', turn: 0 }), 'ece')).toEqual([]);
-  expect(gameCues(table({ history: [finishedHand([0])] }), table({ turn: 0 }), 'ece')).toEqual(
-    [],
-  );
+  expect(gameCues(table({ history: [finishedHand([0])] }), table({ turn: 0 }), 'ece')).toEqual([]);
 });
 
 function Table({ game }: { game: GamePublicState }) {
@@ -155,13 +151,18 @@ it('plays cues through an audio element at the sound effects level and output de
   const view = render(<Table game={table({ turn: 1 })} />);
   expect(f.audios).toHaveLength(0);
   view.rerender(<Table game={table({ turn: 0 })} />);
-  expect(f.audios.map((audio) => audio.src)).toEqual([gameCueSource('play'), gameCueSource('turn')]);
+  expect(f.audios.map((audio) => audio.src)).toEqual([
+    gameCueSource('play'),
+    gameCueSource('turn'),
+  ]);
   expect(f.audios[0].volume).toBeCloseTo(0.4);
   return Promise.resolve().then(() => expect(f.audios[0].sink).toBe('speakers-2'));
 });
 
 it('stays silent with room sounds off, while deafened or signed out', () => {
-  useRooms.setState({ preferences: { ...useRooms.getState().preferences, roomEventSounds: false } });
+  useRooms.setState({
+    preferences: { ...useRooms.getState().preferences, roomEventSounds: false },
+  });
   const view = render(<Table game={table({ turn: 1 })} />);
   view.rerender(<Table game={table({ turn: 0 })} />);
   expect(f.audios).toHaveLength(0);
