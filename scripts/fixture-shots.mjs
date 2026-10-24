@@ -24,9 +24,10 @@ const USAGE = `Usage: node scripts/fixture-shots.mjs [options]
   --out <dir>            output directory (default .local/fixture-shots/latest)
   --compare <dir>        baseline directory from an earlier run; exits 1 on differences
   --only <regex>         only fixtures whose "S42/full_table" key matches (case-insensitive)
-  --viewports <list>     comma separated WxH list (default 1280x800,900x700)
+  --sizes <list>         comma separated WxH list (default 1280x800); --viewports is an alias
+  --timeout <seconds>    per-capture time limit (default 15); a slow capture is reported and skipped
   --theme light|dark     colour scheme (default dark; the app has no light theme yet)
-  --locale tr|en         interface language, sent as ?lang= (default tr; honoured once i18n is merged)
+  --locale tr|en         interface language, forced through the renderer's ?lang= query (default tr)
   --full                 also capture the whole scrolling page area as <name>-full.png (taller viewport)
   --workers <n>          parallel pages (default 2)
   --max-diff-pixels <n>  allowed differing pixels per image (default 0)
@@ -40,7 +41,8 @@ function parseArgs(argv) {
     out: '.local/fixture-shots/latest',
     compare: null,
     only: null,
-    viewports: '1280x800,900x700',
+    viewports: '1280x800',
+    timeout: 15,
     theme: 'dark',
     locale: 'tr',
     full: false,
@@ -55,6 +57,8 @@ function parseArgs(argv) {
     '--compare': 'compare',
     '--only': 'only',
     '--viewports': 'viewports',
+    '--sizes': 'viewports',
+    '--timeout': 'timeout',
     '--theme': 'theme',
     '--locale': 'locale',
     '--workers': 'workers',
@@ -78,8 +82,10 @@ function parseArgs(argv) {
   }
   if (!['light', 'dark'].includes(opts.theme)) throw new Error('--theme must be light or dark');
   if (!['tr', 'en'].includes(opts.locale)) throw new Error('--locale must be tr or en');
-  for (const key of ['workers', 'maxDiffPixels', 'pixelTolerance']) opts[key] = Number(opts[key]);
+  for (const key of ['workers', 'maxDiffPixels', 'pixelTolerance', 'timeout'])
+    opts[key] = Number(opts[key]);
   if (!Number.isInteger(opts.workers) || opts.workers < 1) throw new Error('Invalid --workers');
+  if (!(opts.timeout >= 3 && opts.timeout <= 15)) throw new Error('--timeout must be 3-15 seconds');
   if (!Number.isInteger(opts.maxDiffPixels) || opts.maxDiffPixels < 0)
     throw new Error('Invalid --max-diff-pixels');
   if (!Number.isInteger(opts.pixelTolerance) || opts.pixelTolerance < 0)
@@ -168,9 +174,9 @@ const ROUTES = {
 function routeFor(id, variant) {
   if (id === 'S38' && variant === 'playing') return '/media?player=1';
   if (ROUTES[id]) return ROUTES[id];
-  // S40/S41 are the lobby (Kıraathane); S42-S50 and S52 are table states, shown on the table tab.
+  // S40/S41 are the lobby (Kıraathane); S42-S50, S52 and S73-S75 are table states, shown on the table tab.
   if (/^S4[01]$/.test(id)) return '/games';
-  if (/^S(4[2-9]|50|52)$/.test(id)) return '/games?tab=table';
+  if (/^S(4[2-9]|50|52|7[3-5])$/.test(id)) return '/games?tab=table';
   return null;
 }
 
@@ -289,8 +295,13 @@ const fileName = (fixture, viewport, suffix = '') =>
   `${fixture.id}__${fixture.variant}__${viewport.key}${suffix}.png`;
 const MAX_FULL_HEIGHT = 2400;
 
-async function capture(browser, base, opts, job) {
+// One capture gets `limitMs` in total (navigation retries included). When it runs out the context is
+// closed, which aborts whatever the page was doing, and the capture is reported as a timeout.
+async function capture(browser, base, opts, job, limitMs = opts.timeout * 1000) {
   const { fixture, viewport } = job;
+  const deadline = Date.now() + limitMs;
+  const left = (cap) => Math.max(1000, Math.min(cap, deadline - Date.now()));
+  let timedOut = false;
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
     deviceScaleFactor: 1,
@@ -301,6 +312,10 @@ async function capture(browser, base, opts, job) {
     serviceWorkers: 'block',
   });
   const problems = [];
+  const timer = setTimeout(() => {
+    timedOut = true;
+    context.close().catch(() => {});
+  }, limitMs);
   try {
     // Fixtures are self-contained; anything that is not the dev server would be nondeterministic.
     await context.route(
@@ -322,18 +337,16 @@ async function capture(browser, base, opts, job) {
     });
     const url = `${base}/?${query}${route ? `#${route}` : ''}`;
     let failure = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 3 && Date.now() < deadline; attempt++) {
       failure = null;
       try {
-        await page.goto(url, { waitUntil: 'load', timeout: 60_000 });
+        await page.goto(url, { waitUntil: 'load', timeout: left(12_000) });
         await page.waitForFunction(
           () => document.querySelector('#root')?.childElementCount > 0,
           null,
-          {
-            timeout: 30_000,
-          },
+          { timeout: left(10_000) },
         );
-        await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {});
+        await page.waitForLoadState('networkidle', { timeout: left(3_000) }).catch(() => {});
         await page.evaluate(() => document.fonts.ready);
         await page.evaluate(
           () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
@@ -347,6 +360,7 @@ async function capture(browser, base, opts, job) {
         problems.length = 0;
       }
     }
+    if (timedOut) failure = `timeout after ${limitMs / 1000}s`;
     if (failure) return { ...job, ok: false, failure, problems };
     await page.evaluate(
       () => document.activeElement instanceof HTMLElement && document.activeElement.blur(),
@@ -386,8 +400,12 @@ async function capture(browser, base, opts, job) {
     }
     return { ...job, ok: true, failure: null, problems };
   } catch (error) {
-    return { ...job, ok: false, failure: String(error.message).split('\n')[0], problems };
+    const failure = timedOut
+      ? `timeout after ${limitMs / 1000}s`
+      : String(error.message).split('\n')[0];
+    return { ...job, ok: false, failure, problems };
   } finally {
+    clearTimeout(timer);
     await context.close().catch(() => {});
   }
 }
@@ -585,7 +603,7 @@ async function run() {
     });
     // Warm vite's dependency optimiser once so the first real fixtures are not reloaded mid-capture.
     const warmup = { fixture: { id: 'S10', variant: 'default' }, viewport: opts.viewports[0] };
-    await capture(browser, base, opts, warmup);
+    await capture(browser, base, opts, warmup, 60_000);
     await rm(path.join(opts.out, fileName(warmup.fixture, warmup.viewport)), { force: true });
     const queue = [...jobs];
     let done = 0;
