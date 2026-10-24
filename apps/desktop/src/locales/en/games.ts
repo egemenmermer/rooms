@@ -148,6 +148,7 @@ export const games: Catalog = {
   'Koltuğun boşalır; başka biri oturabilir.': 'Your seat is freed; someone else can take it.',
   Hamle: 'Move',
   Elin: 'Your hand',
+  Kartların: 'Your cards',
   'El {hand}': 'Hand {hand}',
   '{seatName} · {chips} fiş': '{seatName} · {chips} chips',
   'Tamamlanmış el yok.': 'No completed hands.',

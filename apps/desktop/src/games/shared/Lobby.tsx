@@ -5,6 +5,7 @@ import { locale, t, uiError } from '../../i18n';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  ArrowLeft,
   Bot,
   Eye,
   Headphones,
@@ -13,8 +14,11 @@ import {
   SlidersHorizontal,
   Gamepad2,
   History,
+  LogOut,
   Plus,
+  Power,
   RefreshCw,
+  ShieldCheck,
   Spade,
   Trophy,
 } from 'lucide-react';
@@ -35,6 +39,7 @@ import { gameDefinition, type GameSetupValues } from '../registry';
 import { array, names, object, tableTitle } from './model';
 import { SeatAvatar, SeatControlsContext, seatRemovable, type SeatControls } from './SeatAvatar';
 import { useGameSounds } from './sounds';
+import { TableDockContext } from './TableDock';
 
 export function ReferenceGames({
   activity,
@@ -66,7 +71,9 @@ export function ReferenceGames({
     [end, setEnd] = useState(false),
     [rules, setRules] = useState(false),
     [buyIn, setBuyIn] = useState<number | null>(null),
-    [now, setNow] = useState(Date.now());
+    [now, setNow] = useState(Date.now()),
+    // The docked bottom region of a table this page renders (`LobbyTable`), as in TableShell.
+    [dock, setDock] = useState<HTMLElement | null>(null);
   const fixture = import.meta.env.DEV && new URLSearchParams(location.search).has('fixture');
   const fixtureReason = t('Yerel görsel örnekte gerçek oyun işlemi kapalı');
   useEffect(() => {
@@ -80,6 +87,9 @@ export function ReferenceGames({
     owner = game?.ownerId === c.user?.id,
     definition = game ? gameDefinition(game.kind) : undefined;
   const access = !!own || view.watching === true;
+  // A playing or finished `tableInLobby` game (Hold'em) gets the table layout of TableShell:
+  // one-row header, the table filling the page and its own controls docked at the bottom.
+  const tableView = !!game && !waiting && !!definition?.LobbyTable;
   // A table rendered on this page (`LobbyTable`) gets its cues here, where the hook also sees the
   // waiting view and so cues the first deal; the other tables call useGameSounds themselves.
   useGameSounds(definition?.LobbyTable ? game : null);
@@ -325,73 +335,136 @@ export function ReferenceGames({
     );
   return (
     <SeatControlsContext.Provider value={seatControls}>
-      <div className={`rg-page ${game && !waiting ? 'rg-playing' : ''}`}>
-        <header className="rg-heading">
-          <div>
-            <div className="rg-title">
-              <h1>
-                {game
-                  ? game.status === 'finished'
-                    ? t('El tamamlandı')
-                    : title
-                  : t('Masa hazır. Sen de gel.')}
-              </h1>
-              {game && (
-                <span>
-                  {game.seats.length} / {capacity}
-                </span>
-              )}
-              {playing && <span>{t('Kurallar kilitli')}</span>}
-            </div>
-            <p>
-              {game
-                ? t('{roomName} · {names} · Sanal fiş', { roomName, names: names[game.kind] })
-                : t('Bir oyun seç, arkadaşlarınla aynı masaya otur.')}
-            </p>
-          </div>
-          <div>
-            {waiting && (
-              <button
-                disabled={fixture || !roomId || c.status !== 'connected'}
-                title={
-                  fixture
-                    ? fixtureReason
-                    : c.status !== 'connected'
-                      ? t('Topluluk bağlantısı gerekli')
-                      : undefined
-                }
-                onClick={() => setInviteOpen(true)}
-              >
-                <UserPlus size={16} />
-                {t('Arkadaş davet et')}
-              </button>
-            )}
-            {game && own && (
-              <button
-                disabled={fixture || activity.busy || !ready}
-                title={fixture ? fixtureReason : undefined}
-                onClick={() => void send({ type: 'game.leave' })}
-              >
-                <X size={16} />
-                {t('Masadan kalk')}
-              </button>
-            )}
-            <button
-              disabled={!!game && !access}
-              title={game && !access ? t('Geçmiş için izleyici olarak katıl') : undefined}
-              onClick={() => navigate('/games?tab=history')}
+      <div
+        className={`rg-page ${game && !waiting ? 'rg-playing' : ''}${tableView ? ` rx-game rx-${game.kind}` : ''}`}
+      >
+        {tableView ? (
+          <header className="rx-head">
+            <IconButton
+              className="rx-back"
+              label={t('Kıraathaneye dön')}
+              onClick={() => navigate('/games')}
             >
-              <History size={16} />
-              {game ? t('Geçmiş') : t('Masa geçmişi')}
-            </button>
-            {game && (
+              <ArrowLeft size={17} />
+            </IconButton>
+            <div className="rx-head-title">
+              <h1>{title}</h1>
+              <small>
+                {t('{roomName} · {names} · Sanal fiş', { roomName, names: names[game.kind] })} ·{' '}
+                {game.seats.length} / {capacity}
+              </small>
+            </div>
+            <div className="rx-head-actions">
+              <button className="rx-chip" onClick={() => setRules(true)}>
+                <ShieldCheck size={15} />
+                {t('Masa kuralları')}
+              </button>
+              <button
+                className="rx-chip"
+                disabled={!access}
+                aria-label={t('Geçmiş')}
+                title={!access ? t('Geçmiş için izleyici olarak katıl') : t('Geçmiş')}
+                onClick={() => navigate('/games?tab=history')}
+              >
+                <History size={15} />
+                <span>{t('Geçmiş')}</span>
+              </button>
               <IconButton label={t('Masayı yenile')} onClick={refresh}>
-                <RefreshCw size={17} />
+                <RefreshCw size={16} />
               </IconButton>
-            )}
-          </div>
-        </header>
+              {own && (
+                <IconButton
+                  label={t('Masadan kalk')}
+                  disabled={fixture || activity.busy || !ready}
+                  onClick={() => void send({ type: 'game.leave' })}
+                >
+                  <LogOut size={16} />
+                </IconButton>
+              )}
+              {owner && (
+                <IconButton
+                  label={t('Masayı kapat')}
+                  disabled={fixture || activity.busy || !ready}
+                  onClick={() => setEnd(true)}
+                >
+                  <Power size={16} />
+                </IconButton>
+              )}
+            </div>
+          </header>
+        ) : (
+          <header className="rg-heading">
+            <div>
+              <div className="rg-title">
+                <h1>
+                  {game
+                    ? game.status === 'finished'
+                      ? t('El tamamlandı')
+                      : title
+                    : t('Masa hazır. Sen de gel.')}
+                </h1>
+                {game && (
+                  <span>
+                    {game.seats.length} / {capacity}
+                  </span>
+                )}
+                {playing && <span>{t('Kurallar kilitli')}</span>}
+              </div>
+              <p>
+                {game
+                  ? t('{roomName} · {names} · Sanal fiş', { roomName, names: names[game.kind] })
+                  : t('Bir oyun seç, arkadaşlarınla aynı masaya otur.')}
+              </p>
+            </div>
+            <div>
+              {waiting && (
+                <button
+                  disabled={fixture || !roomId || c.status !== 'connected'}
+                  title={
+                    fixture
+                      ? fixtureReason
+                      : c.status !== 'connected'
+                        ? t('Topluluk bağlantısı gerekli')
+                        : undefined
+                  }
+                  onClick={() => setInviteOpen(true)}
+                >
+                  <UserPlus size={16} />
+                  {t('Arkadaş davet et')}
+                </button>
+              )}
+              {game && own && (
+                <button
+                  disabled={fixture || activity.busy || !ready}
+                  title={fixture ? fixtureReason : undefined}
+                  onClick={() => void send({ type: 'game.leave' })}
+                >
+                  <X size={16} />
+                  {t('Masadan kalk')}
+                </button>
+              )}
+              <button
+                disabled={!!game && !access}
+                title={game && !access ? t('Geçmiş için izleyici olarak katıl') : undefined}
+                onClick={() => navigate('/games?tab=history')}
+              >
+                <History size={16} />
+                {game ? t('Geçmiş') : t('Masa geçmişi')}
+              </button>
+              {game && (
+                <IconButton label={t('Masayı yenile')} onClick={refresh}>
+                  <RefreshCw size={17} />
+                </IconButton>
+              )}
+            </div>
+          </header>
+        )}
         {game && <GameRecovery activity={activity} game={game} />}
+        {tableView && activity.error && (
+          <div className="rg-banner error" role="alert">
+            {activity.error}
+          </div>
+        )}
         {!ready && (
           <div className={`rg-banner ${activity.status === 'error' ? 'error' : ''}`} role="status">
             {activity.status === 'loading'
@@ -620,21 +693,31 @@ export function ReferenceGames({
             </div>
           </>
         ) : definition?.LobbyTable ? (
-          <definition.LobbyTable
-            game={game}
-            userId={c.user?.id}
-            can={can}
-            send={send}
-            onSit={setBuyIn}
-            shortcuts={shortcuts}
-            ready={ready}
-            busy={activity.busy}
-            fixtureReason={fixture ? fixtureReason : undefined}
-            timer={seatTimer}
-            startReason={startReason}
-          />
+          <>
+            <div className="rx-stage">
+              <TableDockContext.Provider value={dock}>
+                <definition.LobbyTable
+                  game={game}
+                  userId={c.user?.id}
+                  can={can}
+                  send={send}
+                  onSit={setBuyIn}
+                  shortcuts={shortcuts}
+                  ready={ready}
+                  busy={activity.busy}
+                  fixtureReason={fixture ? fixtureReason : undefined}
+                  timer={seatTimer}
+                  startReason={startReason}
+                />
+              </TableDockContext.Provider>
+            </div>
+            {/* The table's own hand, status and action bar portal in here (`TableDock`). */}
+            <div className="rx-dock">
+              <div className="rx-dock-slot" ref={setDock} />
+            </div>
+          </>
         ) : null}
-        {game && owner && (
+        {game && owner && !tableView && (
           <button
             className="rg-end"
             disabled={fixture || activity.busy || !ready}
@@ -644,7 +727,7 @@ export function ReferenceGames({
             {t('Masayı kapat')}
           </button>
         )}
-        {activity.error && (
+        {!tableView && activity.error && (
           <div className="rg-banner error" role="alert">
             {activity.error}
           </div>
