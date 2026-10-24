@@ -94,7 +94,15 @@ const actor = (userId: string) => ({
 
 describe('game registry', () => {
   it('hosts the four built-in games and rejects malformed modules', () => {
-    expect(gameKinds()).toEqual(['holdem', 'blackjack', 'batak', '101']);
+    expect(gameKinds()).toEqual([
+      'holdem',
+      'blackjack',
+      'batak',
+      '101',
+      'rooms-pisti-v1',
+      'rooms-okey-v1',
+      'rooms-tavla-v1',
+    ]);
     expect(() => registerGame({ ...pickModule, kind: 'Bad Kind' })).toThrow('kind');
     expect(() => registerGame({ ...pickModule, kind: 'cinema' })).toThrow('kind');
     expect(() => registerGame({ ...pickModule, actions: ['start'] })).toThrow('actions');

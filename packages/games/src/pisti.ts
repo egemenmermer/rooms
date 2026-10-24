@@ -1,4 +1,5 @@
 import { shuffledDeck, type Card } from './cards';
+import type { GameModule } from './module';
 
 /**
  * Pişti (`rooms-pisti-v1`): 52 cards, 2 players or 4 players in two teams of partners seated across (seats 0+2 vs 1+3).
@@ -8,24 +9,6 @@ import { shuffledDeck, type Card } from './cards';
  * Ranks follow `cards.ts`: 11 = jack (vale), 14 = ace.
  */
 
-/** Structurally identical to the G-REG `GameModule` contract; swapped for the import at merge. */
-type GameModuleShape<State, Command, View, Options = unknown> = {
-  kind: string;
-  seats: readonly number[];
-  actions: readonly string[];
-  parseCommand(input: { action: string; payload?: unknown }): Command | { error: string };
-  start(seatCount: number, options: Options, first: number, rng: () => number): State;
-  action(
-    state: State,
-    seat: number,
-    command: Command,
-    rng: () => number,
-  ): State | { error: string };
-  view(state: State, viewerSeat: number | null): View;
-  turn(state: State): number | null;
-  botCommand(state: State, seat: number, rng: () => number): Command;
-  settle(state: State): { points: number[]; winners: number[] } | null;
-};
 
 export const PISTI_TARGETS = [101, 151, 251] as const;
 export const PISTI_JACK = 11;
@@ -386,4 +369,4 @@ export const pistiModule = {
   turn: (state: PistiState) => state.turn,
   botCommand: botPisti,
   settle: settlePisti,
-} satisfies GameModuleShape<PistiState, PistiCommand, PistiView, Partial<PistiOptions> | undefined>;
+} satisfies GameModule<PistiState, PistiCommand, PistiView, Partial<PistiOptions> | undefined>;

@@ -23,52 +23,11 @@
  * Not implemented on purpose: elden bitme bonus, okey-discard penalties, team play.
  */
 import type { OkeyTile, TileColor } from './okey101';
+import type { GameModule } from './module';
 
 // The deck/dealing code in okey101-table.ts is not exported and uses node:crypto randomInt, so it cannot be
 // reused under the seeded-rng contract; this file builds the same physical deck with the caller's rng.
 
-/** Structural copy of GameModule (packages/games/src/module.ts, track G-REG); the coordinator swaps it at merge. */
-type GameModuleShape<State, Command, View, Options = unknown> = {
-  /** Protocol id, e.g. 'rooms-pisti-v1'. */
-  kind: string;
-  /** Allowed seat counts, e.g. [2, 4]. */
-  seats: readonly number[];
-  /** Command names the client may send in game.action (validated server-side before action()). */
-  actions: readonly string[];
-  /** Zod-free plain validator for the per-game payload; returns the typed command or an error string. */
-  parseCommand(input: { action: string; payload?: unknown }): Command | { error: string };
-  /** New round. `rng` must be the only randomness source (tests pass a seeded one). */
-  start(seatCount: number, options: Options, first: number, rng: () => number): State;
-  /** Apply one seated player's command. Returns the new state or an error string (never throws for player mistakes). */
-  action(
-    state: State,
-    seat: number,
-    command: Command,
-    rng: () => number,
-  ): State | { error: string };
-  /** What `viewerSeat` may see (null = spectator). MUST hide other players' hidden cards/tiles and the deck order. */
-  view(state: State, viewerSeat: number | null): View;
-  /** Whose turn it is (seat index) or null when nobody must act (round over). */
-  turn(state: State): number | null;
-  /** A legal, reasonable command for a bot or a timed-out player in `seat`. */
-  botCommand(
-    state: State,
-    seat: number,
-    rng: () => number,
-    context?: { timedOut: boolean },
-  ): Command;
-  /** Final result once `turn(state) === null`: points per seat (this round) and winner seats. */
-  settle(state: State): { points: number[]; winners: number[] } | null;
-  // Optional G-REG refinements (coordinator/specs/game-module.md).
-  title?: string;
-  seatsFor?(options: Options): readonly number[];
-  parseOptions?(
-    input: Record<string, string | number | boolean> | undefined,
-  ): Options | { error: string };
-  legalActions?(state: State, seat: number): readonly string[];
-  summary?(state: State): Record<string, unknown>;
-  phase?(state: State): string | number | null;
-};
 
 export const OKEY_CLASSIC_KIND = 'rooms-okey-v1';
 const SEATS = 4;
@@ -705,7 +664,7 @@ export const okeyClassicModule = {
   parseOptions: (input) => resolveOkeyClassicOptions(input),
   legalActions: okeyClassicLegalActions,
   summary: okeyClassicSummary,
-} satisfies GameModuleShape<
+} satisfies GameModule<
   OkeyClassicState,
   OkeyClassicCommand,
   OkeyClassicView,

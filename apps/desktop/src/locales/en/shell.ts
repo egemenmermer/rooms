@@ -692,6 +692,52 @@ export const shell: Catalog = {
   'Şu anda bağlanamıyoruz': 'We can’t connect right now',
   'Şu anda başka bir kayıt sürüyor. Birkaç saniye sonra yeniden dene.':
     'Another sign-up is in progress right now. Try again in a few seconds.',
+  'Bu oyun bu sunucuda yok. Uygulamayı güncelleyip yeniden dene.':
+    'This game isn’t available on this server. Update the app and try again.',
+  'Bu oyun bu oyuncu sayısıyla oynanmıyor. Koltukları düzenleyip yeniden başlat.':
+    'This game can’t be played with this many players. Adjust the seats and start again.',
+  'Seçilen masa kuralları bu oyunda kullanılamıyor.':
+    'The chosen table rules can’t be used in this game.',
+  'Seçilen masa kuralları geçersiz.':
+    'The chosen table rules aren’t valid.',
+  'Bu hamle bu oyunda yok. Masa güncellendiğinde yeniden dene.':
+    'This move doesn’t exist in this game. Try again once the table updates.',
+  'Krupiyenin açık kartı as. Önce sigorta alıp almayacağını seç.':
+    'The dealer shows an ace. Decide on insurance first.',
+  'Şu anda sigorta alınamaz.':
+    'Insurance isn’t available right now.',
+  'Bu elde teslim olamazsın.':
+    'You can’t surrender this hand.',
+  'Bu elde ikiye katlayamazsın.':
+    'You can’t double this hand.',
+  'Bu eli ayıramazsın.':
+    'You can’t split this hand.',
+  'Bu masada yerden aldığın taşı geri bırakamazsın. Kullan ya da at; kullanılmazsa 101 ceza yazılır.':
+    'At this table you can’t put back a tile you picked up. Use it or discard; an unused tile costs 101 penalty points.',
+  'Göstergeyi yalnızca ilk sıranda, elindeki eşini göstererek açabilirsin.':
+    'You can only show the indicator on your first turn, with its twin in your hand.',
+  'Bu kartı şimdi oynayamazsın. Kurala uyan bir kart seç.':
+    'You can’t play this card now. Pick a card the rules allow.',
+  'Seçilen kart elinde değil. Güncel elinden yeniden seç.':
+    'That card isn’t in your hand. Pick again from your current hand.',
+  'Taşını çektin. Şimdi bir taş at.':
+    'You’ve drawn. Now discard a tile.',
+  'Ortada çekilecek taş kalmadı.':
+    'There are no tiles left to draw.',
+  'Önce zar at.':
+    'Roll the dice first.',
+  'Zarı zaten attın. Taşlarını oyna.':
+    'You’ve already rolled. Move your checkers.',
+  'Bu hamle kurala uymuyor. Zarlara uyan bir hamle seç.':
+    'That move isn’t allowed. Pick a move that matches the dice.',
+  'Oynayabileceğin zar kaldı. Hamleni tamamla.':
+    'You still have dice to play. Finish your move.',
+  'Geri alınacak hamle yok.':
+    'There’s no move to undo.',
+  'Bu el bitti. Masa sahibi yeni eli başlatabilir.':
+    'This round is over. The table owner can start the next one.',
+  'El sürüyor. Sonraki elde oturabilirsin.':
+    'A hand is in progress. You can sit down for the next one.',
   'Şu anda sıra sende değil. Masa güncellendiğinde yeniden dene.':
     'It isn’t your turn right now. Try again once the table updates.',
   '“{query}” için bir şey bulunamadı.': 'Nothing found for “{query}”.',

@@ -7,38 +7,8 @@
 // One state is one round (one game). The match score so far comes in through `options.scores`; the
 // service adds `settle().points` and starts the next round until `tavlaMatchStatus()` reports the end.
 
-/** Local copy of the wave-1 GameModule contract (packages/games/src/module.ts once G-REG merges). */
-type GameModuleShape<State, Command, View, Options = unknown> = {
-  kind: string;
-  seats: readonly number[];
-  actions: readonly string[];
-  parseCommand(input: { action: string; payload?: unknown }): Command | { error: string };
-  start(seatCount: number, options: Options, first: number, rng: () => number): State;
-  action(
-    state: State,
-    seat: number,
-    command: Command,
-    rng: () => number,
-  ): State | { error: string };
-  view(state: State, viewerSeat: number | null): View;
-  turn(state: State): number | null;
-  botCommand(
-    state: State,
-    seat: number,
-    rng: () => number,
-    context?: { timedOut: boolean },
-  ): Command;
-  settle(state: State): { points: number[]; winners: number[] } | null;
-  // G-REG optional refinements.
-  title?: string;
-  seatsFor?(options: Options): readonly number[];
-  parseOptions?(
-    input: Record<string, string | number | boolean> | undefined,
-  ): Options | { error: string };
-  legalActions?(state: State, seat: number): readonly string[];
-  summary?(state: State): Record<string, unknown>;
-  phase?(state: State): string | number | null;
-};
+import type { GameModule } from './module';
+
 
 export const TAVLA_KIND = 'rooms-tavla-v1';
 export const TAVLA_CHECKERS = 15;
@@ -678,4 +648,4 @@ export const tavlaModule = {
   legalActions: tavlaLegalActions,
   // Each roll and each turn change restarts the timer; single checker steps within a turn do not.
   phase: (state) => `${state.phase}:${state.turn}:${state.dice?.join('') ?? ''}`,
-} satisfies GameModuleShape<TavlaState, TavlaCommand, TavlaView, TavlaOptions>;
+} satisfies GameModule<TavlaState, TavlaCommand, TavlaView, TavlaOptions>;

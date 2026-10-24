@@ -896,6 +896,7 @@ export const errorMessages: Record<string, string> = {
   TAKE_A_SEAT_FIRST: 'Önce masada boş bir koltuğa otur.',
   GAME_TABLE_REQUIRED: 'Bu masanın etkinliği sona erdi. Yeni bir masa kur.',
   HAND_FINISHED: 'Bu el tamamlandı. Masa sahibi yeni eli başlatabilir.',
+  ROUND_FINISHED: 'Bu el tamamlandı. Masa sahibi yeni eli başlatabilir.',
   HAND_ALREADY_PLAYING: 'Bir el zaten devam ediyor. Tamamlanmasını bekle.',
   CHECK_UNAVAILABLE: 'Karşılanmamış bahis var. Gör, artır veya eli bırak.',
   INVALID_RAISE: 'Artırma miktarı geçersiz. Mevcut bahis ile puanın arasındaki bir miktarı seç.',
@@ -929,6 +930,54 @@ export const errorMessages: Record<string, string> = {
   SESSION_PARTICIPANT_NOT_FOUND: 'Bu kişi şu an sinemada değil.',
   SESSION_HOST_TARGET_DENIED: 'Bu kişinin odada etkinlik yönetme izni yok; host yapılamaz.',
   SESSION_HOST_ALREADY: 'Bu kişi zaten oturumun hostu.',
+  UNKNOWN_GAME:
+    'Bu oyun bu sunucuda yok. Uygulamayı güncelleyip yeniden dene.',
+  SEAT_COUNT_UNSUPPORTED:
+    'Bu oyun bu oyuncu sayısıyla oynanmıyor. Koltukları düzenleyip yeniden başlat.',
+  GAME_OPTIONS_UNSUPPORTED:
+    'Seçilen masa kuralları bu oyunda kullanılamıyor.',
+  INVALID_OPTIONS:
+    'Seçilen masa kuralları geçersiz.',
+  INVALID_GAME_ACTION:
+    'Bu hamle bu oyunda yok. Masa güncellendiğinde yeniden dene.',
+  INSURANCE_DECISION_REQUIRED:
+    'Krupiyenin açık kartı as. Önce sigorta alıp almayacağını seç.',
+  INSURANCE_UNAVAILABLE:
+    'Şu anda sigorta alınamaz.',
+  SURRENDER_UNAVAILABLE:
+    'Bu elde teslim olamazsın.',
+  DOUBLE_UNAVAILABLE:
+    'Bu elde ikiye katlayamazsın.',
+  SPLIT_UNAVAILABLE:
+    'Bu eli ayıramazsın.',
+  PICKUP_UNDO_DISABLED:
+    'Bu masada yerden aldığın taşı geri bırakamazsın. Kullan ya da at; kullanılmazsa 101 ceza yazılır.',
+  GOSTERGE_NOT_ALLOWED:
+    'Göstergeyi yalnızca ilk sıranda, elindeki eşini göstererek açabilirsin.',
+  CANNOT_SHOW_INDICATOR:
+    'Göstergeyi yalnızca ilk sıranda, elindeki eşini göstererek açabilirsin.',
+  ILLEGAL_CARD:
+    'Bu kartı şimdi oynayamazsın. Kurala uyan bir kart seç.',
+  CARD_NOT_IN_HAND:
+    'Seçilen kart elinde değil. Güncel elinden yeniden seç.',
+  DISCARD_REQUIRED:
+    'Taşını çektin. Şimdi bir taş at.',
+  STOCK_EMPTY:
+    'Ortada çekilecek taş kalmadı.',
+  ROLL_REQUIRED:
+    'Önce zar at.',
+  ALREADY_ROLLED:
+    'Zarı zaten attın. Taşlarını oyna.',
+  ILLEGAL_MOVE:
+    'Bu hamle kurala uymuyor. Zarlara uyan bir hamle seç.',
+  MOVES_REMAINING:
+    'Oynayabileceğin zar kaldı. Hamleni tamamla.',
+  NOTHING_TO_UNDO:
+    'Geri alınacak hamle yok.',
+  ROUND_OVER:
+    'Bu el bitti. Masa sahibi yeni eli başlatabilir.',
+  WAIT_FOR_NEXT_HAND:
+    'El sürüyor. Sonraki elde oturabilirsin.',
   REQUEST_SEAT_RETURN_FIRST: 'Kontrolü geri almak için Masaya geri dön düğmesine bas.',
   'You do not have permission to manage roles.': 'Bu işlem için rol yönetme yetkin yok.',
   'You cannot change a role permission you do not have.':

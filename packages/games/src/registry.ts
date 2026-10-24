@@ -6,8 +6,10 @@ import {
 import { batakModule } from './batak-module';
 import { blackjackModule } from './blackjack-module';
 import { holdemModule } from './holdem-module';
+import { pistiMatchModule, tavlaMatchModule } from './matches';
 import type { AnyGameModule } from './module';
 import { okey101Module } from './okey101-module';
+import { okeyClassicModule } from './okey-classic';
 
 /**
  * Every table game the activity service can host. Adding a game is one module file that
@@ -19,6 +21,9 @@ const registeredModules: AnyGameModule[] = [
   blackjackModule,
   batakModule,
   okey101Module,
+  pistiMatchModule,
+  okeyClassicModule,
+  tavlaMatchModule,
 ];
 
 /** Names the service handles at table level before a module sees a command. */
