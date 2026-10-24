@@ -28,7 +28,6 @@ export const games: Catalog = {
   'Oyunu yalnızca masa sahibi başlatabilir': 'Only the table owner can start the game',
   'Etkinlik bağlantısı bekleniyor': 'Waiting for the activity connection',
   'Başlamak için koltukları doldurun': 'Fill the seats to start',
-  'Bir oyuncunun fişi blind için yetersiz': 'A player’s chips aren’t enough for the blind',
   Oda: 'Room',
   'Oyun alanı': 'Game area',
   Oyuncu: 'Player',
@@ -136,7 +135,6 @@ export const games: Catalog = {
   Bırak: 'Fold',
   'Kontrol et': 'Check',
   'Gör · {min}': 'Call · {min}',
-  'Artır · {min}': 'Raise · {min}',
   'Sonraki el': 'Next hand',
   'Masaya geri dön': 'Back to the table',
   'Yalnızca sunucunun açtığı eller görünür. Katlanmış eller diğer oyunculara gösterilmez.':
@@ -156,10 +154,7 @@ export const games: Catalog = {
   Vazgeç: 'Cancel',
   Katıl: 'Join',
   'Artırma tutarı': 'Raise amount',
-  'Karşılanacak bahis': 'Bet to call',
-  '{call} sanal fiş': '{call} play chips',
   'Bu turdaki toplam tutarın': 'Your total this round',
-  'Minimum {min}': 'Minimum {min}',
   'All-in · {maxRaise}': 'All-in · {maxRaise}',
   'All-in toplamı {maxRaise}. Minimum artırma için yeterli fişin yok.':
     'All-in total is {maxRaise}. You don’t have enough chips for the minimum raise.',
@@ -1462,4 +1457,25 @@ export const games: Catalog = {
   '{name} teslim oldu': '{name} surrendered',
   'İlk iki kartta el bırakılır, bahsin yarısı geri gelir':
     'Give up on the first two cards and get half the bet back',
+  // Hold'em table (GF-holdem)
+  'Kaybedenin kartı kuralı masa kurulurken seçilir.':
+    'The losing-hands rule is chosen when the table is set up.',
+  'Kaybeden kartını açmasın': 'Losers may muck their cards',
+  'Showdown’da pot alamayan oyuncunun kartları kapalı kalır. Biri all-in ise bütün eller açılır.':
+    'At showdown, a player who wins no pot keeps their cards hidden. If anyone is all-in, every hand is shown.',
+  'All-in {amount}': 'All-in {amount}',
+  'Küçük kör {amount}': 'Small blind {amount}',
+  'Büyük kör {amount}': 'Big blind {amount}',
+  Kontrol: 'Check',
+  'Gör {amount}': 'Call {amount}',
+  'Artır {amount}': 'Raise {amount}',
+  Min: 'Min',
+  '½ pot': '½ pot',
+  Pot: 'Pot',
+  'All-in, kalan kartlar açıldı': 'All-in, the rest of the board was dealt',
+  'Krupiye: {name}': 'Dealer: {name}',
+  'Kartını açmadı': 'Mucked',
+  'Herkes bıraktı, kartlar açılmadı': 'Everyone folded, no cards shown',
+  'Bu elin hamleleri · {count}': 'Moves this hand · {count}',
+  'En az iki oyuncunun fişi olmalı': 'At least two players need chips',
 };
