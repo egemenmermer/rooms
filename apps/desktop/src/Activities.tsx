@@ -31,7 +31,7 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
     onClose();
   };
   const route = primary ? activityRoute(primary.activity) : null;
-  // Nothing running: the searchable catalogue; the DJ keeps its own button.
+  // Nothing running: the searchable catalogue of everything the room can start.
   if (!primary && !forbidden)
     return (
       <Modal title={t('Etkinlikler')} hideHeading onClose={onClose} className="appdir-modal">
@@ -76,7 +76,7 @@ export function ActivityLauncher({ onClose }: { onClose(): void }) {
                     ? t('Sinema salonu')
                     : primary.activity === 'screen'
                       ? t('Ekran paylaşımı')
-                      : t('Oyun masası')}
+                      : t('Kıraathane')}
               </small>
             </div>
             <span className="reference-live-pill">{t('Etkin')}</span>

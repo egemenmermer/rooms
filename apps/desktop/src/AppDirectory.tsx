@@ -7,6 +7,7 @@ import {
   MonitorUp,
   Music2,
   PenTool,
+  Popcorn,
   Search,
   type LucideIcon,
 } from 'lucide-react';
@@ -16,6 +17,7 @@ import { useRealtime } from './realtime';
 import { useCommunity } from './community';
 import { useActivityRoom } from './activity';
 import { activityRoute, openActivity } from './activity-route';
+import { useCommunityCinema } from './cinema/cinema-status';
 import { locale, t } from './i18n';
 import './app-directory.css';
 
@@ -38,6 +40,8 @@ interface DirectoryItem {
   tint: string;
   /** Needs a joined voice room; otherwise the reason is shown. */
   voice?: boolean;
+  /** An assistant with its own page, not something the room starts; left out of the launcher. */
+  bot?: boolean;
   run(open: (path: string) => void): void;
 }
 const games = gameCatalog.map((game): DirectoryItem => ({
@@ -69,14 +73,25 @@ export const directoryItems: DirectoryItem[] = [
     keywords: t('claude yapay zeka ai bot'),
     icon: Bot,
     tint: '#6b5bd6',
+    bot: true,
     run: (open) => open('/agent'),
+  },
+  {
+    id: 'cinema',
+    name: t('Sinema salonu'),
+    detail: t('Topluluğun salonunda canlı kanal, film, dizi ve YouTube.'),
+    section: 'watch',
+    keywords: t('sinema film dizi kanal iptv stremio youtube canlı tv'),
+    icon: Popcorn,
+    tint: '#c2543a',
+    run: (open) => open('/cinema'),
   },
   {
     id: 'screen',
     name: t('Ekran paylaş'),
     detail: t('Pencere, oyun ya da tarayıcı; Instagram ve diğer siteler.'),
     section: 'watch',
-    keywords: t('yayın pencere stremio iptv instagram reels'),
+    keywords: t('yayın pencere instagram reels'),
     icon: MonitorUp,
     tint: '#2f7fb8',
     voice: true,
@@ -104,7 +119,8 @@ export const directoryItems: DirectoryItem[] = [
     run: (open) => open('/together?tab=polls'),
   },
 ];
-const featured = ['holdem', '101', 'board', 'poll'];
+// The first four that this community offers; the grid has two columns.
+const featured = ['cinema', 'holdem', '101', 'board', 'poll'];
 const sections: Section[] = ['apps', 'watch', 'cards', 'tables', 'tools'];
 const fold = (value: string) => value.toLocaleLowerCase(locale).normalize('NFD');
 
@@ -126,7 +142,8 @@ function Tile({ item, large = false }: { item: DirectoryItem; large?: boolean })
 
 /**
  * Discord-style catalogue of what can be opened in this room: apps, watch-together, games and
- * tools, searchable. `apps` adds the bots that also have their own buttons (DJ, Asistan).
+ * tools, searchable. `apps={false}` (the activity launcher) leaves out the assistant, which is a
+ * page of its own rather than something the room starts.
  */
 export function AppDirectory({
   onClose,
@@ -143,16 +160,22 @@ export function AppDirectory({
   const roomId = voice.channelId ?? community.activeChannelId;
   const activity = useActivityRoom(roomId);
   const primary = activity.room?.primary;
+  const cinema = useCommunityCinema();
+  // Same rule as the sidebar's hall row: a hall exists, or the owner can set one up there.
+  const hasCinema =
+    cinema.available && !!cinema.status && (!!cinema.hallId || cinema.status.isOwner);
   const [query, setQuery] = useState('');
   const items = useMemo(
-    () => directoryItems.filter((item) => apps || item.section !== 'apps'),
-    [apps],
+    () =>
+      directoryItems.filter((item) => (apps || !item.bot) && (hasCinema || item.id !== 'cinema')),
+    [apps, hasCinema],
   );
   const highlights = useMemo(
     () =>
       featured
         .map((id) => items.find((item) => item.id === id))
-        .filter((item): item is DirectoryItem => !!item),
+        .filter((item): item is DirectoryItem => !!item)
+        .slice(0, 4),
     [items],
   );
   const matches = useMemo(() => {

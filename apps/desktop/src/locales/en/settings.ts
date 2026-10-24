@@ -211,32 +211,27 @@ export const settings: Catalog = {
     'Asks for confirmation before you close the window and leave the voice connection.',
   'Yerel görsel örnekte gerçek hesap işlemi kapalı.':
     'Real account actions are off in the local visual sample.',
-  'Topluluk oluşturma ve ad düzenleme bağlantısı henüz uygulanmadı.':
-    'Community creation and renaming aren’t connected yet.',
   'Topluluk düzenleme yetkisi gerekli.': 'You need permission to edit the community.',
-  'Odan hazır. · Yerel referans': 'Your room is ready. · Local reference',
-  'Odan hazır.': 'Your room is ready.',
+  'Topluluk oluşturmak ve düzenlemek için önce sunucuna bağlan.':
+    'Connect to your server first to create or edit a community.',
+  'Topluluğun hazır · Yerel referans': 'Your community is ready · Local reference',
+  'Topluluğun hazır': 'Your community is ready',
+  'Topluluk oluştur': 'Create community',
+  'Davet oluşturuluyor…': 'Creating invite…',
   '{name}’yı düzenle': 'Edit {name}',
   'Topluluğu düzenle': 'Edit community',
-  'Kendi odanı kur.': 'Set up your own room.',
   '{name} · Yerel oluşturuldu görünümü. Gerçek topluluk oluşturulmadı.':
     '{name} · Local created view. No real community was created.',
   '{name} oluşturuldu.': '{name} was created.',
   'Arkadaşlarınla buluşacağın özel topluluğun.':
     'Your private community for meeting up with friends.',
-  'Topluluk ikonu için güvenli yerel yükleme arayüzü henüz uygulanmadı.':
-    'A secure local upload for the community icon isn’t implemented yet.',
-  'İkon değiştir': 'Change icon',
   'Topluluk adı': 'Community name',
   'Kısa açıklama': 'Short description',
-  'Açıklama düzenleme henüz uygulanmadı': 'Editing the description isn’t implemented yet',
   'Yalnızca davetle': 'Invite only',
   'Yerel referans politikası; sunucu ayarı uygulanmadı.':
     'Local reference policy; the server setting wasn’t applied.',
   'Davet gerekliliği bağlantıdan alındı.': 'The invite requirement came from the connection.',
   'Davet dışı erişim açık.': 'Access without an invite is open.',
-  'Görünürlük politikası bu bağlantıda henüz alınamıyor.':
-    'The visibility policy can’t be read on this connection yet.',
   Bitti: 'Done',
   'Topluluğu oluştur': 'Create community',
   SOHBET: 'CHAT',

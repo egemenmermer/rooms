@@ -9,7 +9,7 @@ const firstLoad = { timeout: 10000 };
 async function openPolls(client: RoomsClient, room: string) {
   await new VoiceView(client).join(room);
   await client.goto('/together');
-  await expect(client.page.getByRole('heading', { name: 'Oda anketi' })).toBeVisible();
+  await expect(client.page.getByRole('heading', { name: 'Anketler' })).toBeVisible();
 }
 
 test.describe('shared room activities', () => {

@@ -26,7 +26,7 @@
   margin: 8px 0;
 }
 .rcs-heading > div > span {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-weight: 700;
   letter-spacing: 1.8px;
   color: #b9b2ff;
@@ -194,20 +194,13 @@
   border-color: #48505e;
   opacity: 0.8;
 }
-.rcs-icon-picker {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 23px 0;
-}
-.rcs-icon-picker > span {
-  width: 68px;
-  height: 68px;
-  border-radius: 20px;
-  display: grid;
-  place-items: center;
-  background: #8078ec;
-  color: #211a39;
+.rcs-readonly {
+  margin: 0;
+  font-size: var(--font-size-ui);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  letter-spacing: 0;
 }
 .rcs-option {
   display: flex;
@@ -362,7 +355,7 @@
 }
 .rcs-members-table th {
   text-align: left;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   letter-spacing: 1.2px;
   color: #969daf;
   padding: 10px 0 13px;
@@ -402,13 +395,13 @@
 }
 .rcs-member small {
   display: block;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #969daf;
   margin-top: 7px;
 }
 .rcs-badge {
   display: inline-block;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   font-weight: 600;
   letter-spacing: 0.3px;
   border-radius: 5px;
@@ -476,7 +469,7 @@
 }
 .rcs-invite-row small {
   display: block;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #969daf;
   margin-top: 7px;
 }
@@ -487,7 +480,7 @@
 }
 .rcs-two-columns > div > small {
   display: block;
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #b1b5c2;
   margin-bottom: 16px;
 }
@@ -538,7 +531,7 @@
   border-right: 1px solid #424b5b;
 }
 .rcs-permission-grid h6 {
-  font-size: 10px;
+  font-size: var(--font-size-micro);
   color: #969daf;
   letter-spacing: 1.5px;
   font-weight: 500;
@@ -802,7 +795,7 @@
     margin-left: auto;
   }
   .rcs-members-toolbar > span {
-    font-size: 10px;
+    font-size: var(--font-size-micro);
   }
 }
 @media (max-width: 650px) {
@@ -916,9 +909,6 @@
   margin: 0 0 18px;
   line-height: 1.55;
   font-weight: 400;
-}
-:is(.rcs-community-editor, .rcs-channel-editor) .rcs-icon-picker {
-  margin: 0 0 23px;
 }
 :is(.rcs-community-editor, .rcs-channel-editor) .rcs-field {
   gap: 9px;
