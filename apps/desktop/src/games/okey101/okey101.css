@@ -745,20 +745,29 @@ button.o1-meld:hover,
 
 /* Short windows: smaller face-up tiles on the felt so the docked rack keeps its room. */
 @media (max-height: 820px) {
+  .o1-editor .rx-draft-groups .rx-tile.small,
   .o1-meld-zone .rx-tile.small {
     width: 22px;
     flex-basis: 22px;
     height: 31px;
   }
+  .o1-editor .rx-draft-groups .rx-tile.small strong,
   .o1-meld-zone .rx-tile.small strong {
     font-size: 14px;
   }
+  .o1-editor .rx-draft-groups .rx-tile.small > span,
   .o1-meld-zone .rx-tile.small > span {
     display: none;
   }
   .o1-side.left > .o1-meld-zone,
   .o1-side.right > .o1-meld-zone {
     min-height: 52px;
+  }
+  .o1-editor .rx-draft-groups {
+    gap: var(--space-4);
+  }
+  .o1-editor .rx-draft-groups article {
+    padding: 2px var(--space-4);
   }
   /* The dock's turn line already names the step; keep the builder's heading for screen readers. */
   .o1-editor > header > h3 {
