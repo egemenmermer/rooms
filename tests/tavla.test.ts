@@ -361,8 +361,13 @@ describe('tavla turn commands', () => {
     });
     expect(tavlaModule.parseOptions({ matchTo: '3' })).toEqual({ matchTo: 3 });
     expect(tavlaModule.parseOptions(undefined)).toEqual({});
-    for (const bad of [{ matchTo: 4 }, { starterRerolls: 'yes' }, { cube: true }])
-      expect(tavlaModule.parseOptions(bad)).toEqual({ error: 'INVALID_OPTIONS' });
+    const bad: Record<string, string | number | boolean>[] = [
+      { matchTo: 4 },
+      { starterRerolls: 'yes' },
+      { cube: true },
+    ];
+    for (const input of bad)
+      expect(tavlaModule.parseOptions(input)).toEqual({ error: 'INVALID_OPTIONS' });
   });
 });
 
@@ -390,8 +395,10 @@ describe('tavla bot and match', () => {
       if (s.moves.at(-1)?.hit) hits++;
       if (s.phase === 'roll' || s.phase === 'over') turns++;
     });
-    // 167 pips each at most 24 per non-double roll: a real game needs well over a dozen turns.
+    // 167 pips each at most 24 per non-double roll: a real game needs well over a dozen turns,
+    // and a bot that keeps moving forward finishes long before a few hundred.
     expect(turns).toBeGreaterThan(14);
+    expect(turns).toBeLessThan(200);
     expect(hits).toBeGreaterThan(0);
     const result = tavlaModule.settle(final)!;
     expect(result.winners).toHaveLength(1);
