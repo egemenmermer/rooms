@@ -2,7 +2,6 @@ import { useMentionInput } from './MentionInput';
 import { ChatAttachment } from './ChatAttachment';
 import { ScreenShareGallery } from './ScreenShareGallery';
 import { VoiceRoomViewActions } from './VoiceRoomViewActions';
-import { QuietMenu } from './QuietMenu';
 import { openActivity, retiredActivity } from './activity-route';
 import { FriendRequestButton } from './FriendRequestButton';
 import { MediaStage } from './MediaStage';
@@ -38,6 +37,7 @@ import { reactionCodepoints, reactionEmoji } from './reactions';
 import { useActivityRoom } from './activity';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
+  ArrowDown,
   ArrowRight,
   AlertCircle,
   Bell,
@@ -46,8 +46,6 @@ import {
   Gamepad2,
   Heart,
   MoreHorizontal,
-  Pin,
-  Search,
   Smile,
   Star,
   AudioLines,
@@ -58,7 +56,7 @@ import {
   ThumbsUp,
   FileText,
   Check,
-  Copy,
+  CornerUpLeft,
   Edit3,
   Hash,
   Headphones,
@@ -86,7 +84,7 @@ import {
   Dice5,
   LayoutGrid,
 } from 'lucide-react';
-import { Avatar, EmptyState, IconButton, Modal } from '@rooms/design';
+import { Avatar, EmptyState, IconButton, Modal, Notice } from '@rooms/design';
 import {
   parseInviteLink,
   type SocialInvite,
@@ -109,6 +107,7 @@ import {
   startRoomAudio,
 } from './realtime';
 import { silencedHere } from './participant-audio';
+import { VoiceRejoinNotice } from './VoiceRejoinNotice';
 /** Who watches a screen share, from each viewer's own announcement. */
 export function viewerSummary(
   people: { id: string; name: string; local: boolean; watching?: string | null }[],
@@ -130,16 +129,22 @@ const clockText = (timestamp: string) => {
   });
   return locale === 'tr-TR' ? time.replace(':', '.') : time;
 };
+/**
+ * Replies travel as a quote until native replies land: the first lines quote the original
+ * (`> name: text`, at most 400 characters), then a blank line and the reply itself.
+ */
+export function quoteReply(message: Pick<CommunityMessage, 'author' | 'content'>, text: string) {
+  const name = message.author.displayName || message.author.username;
+  return `> ${name}: ${message.content.slice(0, 400).replace(/\n/g, '\n> ')}\n\n${text}`;
+}
 const report = (operation: Promise<unknown>, notify: (message: string) => void) => {
   void operation.catch((e) => notify(uiError(e)));
 };
 export function CommunityChat({
   notify,
-  membersVisible,
-  onToggleMembers,
-  onSearch,
   composerPlaceholder,
 }: {
+  // Unused since the toolbar owns members and search (UI-06); kept until callers stop passing them.
   membersVisible?: boolean;
   onToggleMembers?(): void;
   onSearch?(): void;
@@ -263,9 +268,6 @@ export function CommunityChat({
     target?.scrollIntoView({ block: 'center', behavior: 'instant' });
     target?.focus({ preventScroll: true });
   }, [chatLocation.search, c.activeChannelId, c.loadingMessages, c.messages.length]);
-  const setPreference = useRooms((s) => s.setPreference);
-  const storedFriends = useRooms((s) => s.preferences.showFriends);
-  const showFriends = membersVisible ?? storedFriends;
   const voice = useRealtime();
   const activity = useActivityRoom(c.user ? (voice.channelId ?? c.activeChannelId) : null);
   // Inside the hall the screen is already on the page; no banner pointing back to it.
@@ -284,12 +286,9 @@ export function CommunityChat({
       active = false;
     };
   }, []);
-  const [searchOpen, setSearchOpen] = useState(false),
-    [query, setQuery] = useState('');
   const [options, setOptions] = useState<CommunityMessage | null>(null),
     [reactionTarget, setReactionTarget] = useState<CommunityMessage | null>(null);
-  const [reply, setReply] = useState<CommunityMessage | null>(null),
-    [replyText, setReplyText] = useState('');
+  const [reply, setReply] = useState<CommunityMessage | null>(null);
   const [actionBusy, setActionBusy] = useState(false),
     [actionError, setActionError] = useState('');
   const unreadAnchor = useRef<string | null>(null);
@@ -302,12 +301,31 @@ export function CommunityChat({
         : null;
   }
   const closeOptions = useCallback(() => setOptions(null), []);
-  const closeReactions = useCallback(() => setReactionTarget(null), []);
-  const closeReply = useCallback(() => {
-    setReply(null);
-    setReplyText('');
-    setActionError('');
-  }, []);
+  // The reaction picker is a popover on its message: outside pointer or Escape closes it.
+  const reactionPopover = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!reactionTarget) return;
+    const popover = reactionPopover.current;
+    popover?.scrollIntoView?.({ block: 'nearest' });
+    popover?.querySelector('button')?.focus();
+    const outside = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (popover?.contains(target) || target?.closest('[data-reaction-trigger]')) return;
+      setReactionTarget(null);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      setReactionTarget(null);
+    };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [reactionTarget]);
+  const closeReply = useCallback(() => setReply(null), []);
   const saveEdit = async () => {
     const content = mentionInput.serialize().trim();
     if (!editing || !content || actionBusy) return;
@@ -320,21 +338,6 @@ export function CommunityChat({
     try {
       if (content !== editing.content) await c.editMessage(editing.id, content);
       closeEdit();
-    } catch (error) {
-      setActionError(uiError(error));
-    } finally {
-      setActionBusy(false);
-    }
-  };
-  const sendReply = async () => {
-    if (!reply || !replyText.trim() || actionBusy) return;
-    setActionBusy(true);
-    setActionError('');
-    try {
-      await c.send(
-        `> ${reply.author.displayName || reply.author.username}: ${reply.content.slice(0, 400).replace(/\n/g, '\n> ')}\n\n${replyText.trim()}`,
-      );
-      closeReply();
     } catch (error) {
       setActionError(uiError(error));
     } finally {
@@ -375,6 +378,23 @@ export function CommunityChat({
     });
   };
   const closeAgent = useCallback(() => setAgentPrompt(null), []);
+  // Assistant controls appear only when this account reaches a connected assistant.
+  const [assistant, setAssistant] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setAssistant(false);
+    const agent = window.rooms?.agent;
+    if (!c.user || typeof agent?.status !== 'function') return;
+    void agent
+      .status()
+      .then((status) => {
+        if (active) setAssistant(status.connected);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [c.user?.id, c.serverUrl]);
   const saveMemory = (message: CommunityMessage) => {
     if (!c.activeChannelId || !window.rooms?.agent) return;
     report(
@@ -416,9 +436,13 @@ export function CommunityChat({
   const channel =
     c.channels.find((ch) => ch.id === c.activeChannelId) ??
     c.dms.find((ch) => ch.id === c.activeChannelId);
+  const dmPeer = c.dms.some((dm) => dm.id === channel?.id)
+    ? (channel?.recipients?.find((person) => person.id !== c.user?.id) ?? null)
+    : null;
   const startEdit = (message: CommunityMessage) => {
     if (message.author.id !== c.user?.id) return;
     if (!editing) draftBeforeEdit.current = draft;
+    setReply(null);
     setEditing(message);
     setActionError('');
     mentionInput.load(message.content);
@@ -428,6 +452,12 @@ export function CommunityChat({
     setActionError('');
     mentionInput.load(draftBeforeEdit.current);
     draftBeforeEdit.current = '';
+  };
+  /** Replies are written in the composer itself; the quote is added when the message is sent. */
+  const startReply = (message: CommunityMessage) => {
+    if (editing) closeEdit();
+    setReply(message);
+    requestAnimationFrame(() => mentionInput.input.current?.focus());
   };
   const closeDelete = useCallback(() => setDeleting(null), []);
   useEffect(() => {
@@ -441,7 +471,6 @@ export function CommunityChat({
     });
     setDeleting(null);
     setActionError('');
-    setQuery('');
   }, [c.activeChannelId]);
   useEffect(() => {
     nearBottom.current = true;
@@ -458,27 +487,25 @@ export function CommunityChat({
       return;
     }
     if (!draft.trim() && !attachments.length) return;
-    const content = mentionInput.serialize().trim();
+    const text = mentionInput.serialize().trim();
+    const content = reply ? quoteReply(reply, text) : text;
     if (content.length > 4000) {
       notify(t('Mesaj çok uzun. Biraz kısaltıp yeniden dene.'));
       return;
     }
     report(
       c.send(content, attachments).then(async () => {
-        if (!/^@agent(?:\s|$)/i.test(content)) return;
+        if (!/^@agent(?:\s|$)/i.test(text)) return;
         const capabilities =
           (await window.rooms?.agent.status().catch(() => null))?.capabilities ?? [];
-        if (
-          !capabilities.includes('stoat-mentions') &&
-          /^@agent(?:\s|$)/i.test(content) &&
-          content.replace(/^@agent\s*/i, '').trim()
-        )
-          setAgentPrompt(content.replace(/^@agent\s*/i, '').trim());
+        if (!capabilities.includes('stoat-mentions') && text.replace(/^@agent\s*/i, '').trim())
+          setAgentPrompt(text.replace(/^@agent\s*/i, '').trim());
       }),
       notify,
     );
     setDraft('');
     setAttachments([]);
+    setReply(null);
     nearBottom.current = true;
   };
   const typingSent = useRef<{ channel: string; time: number } | null>(null);
@@ -539,13 +566,6 @@ export function CommunityChat({
       if (current) void window.rooms?.social.typing(current.channel, false).catch(() => {});
     },
     [c.activeChannelId],
-  );
-  const visibleMessages = c.messages.filter(
-    (m) =>
-      !query ||
-      `${m.content} ${m.author.displayName} ${m.attachments?.map((a) => a.name).join(' ') ?? ''}`
-        .toLocaleLowerCase(locale)
-        .includes(query.toLocaleLowerCase(locale)),
   );
   // `id` is the codepoint key used for display; `emoji` is what the picker sends upstream.
   const reactionOptions = [
@@ -625,13 +645,20 @@ export function CommunityChat({
         void addFiles([...e.dataTransfer.files]);
       }}
     >
+      {/* Members and search live in the app toolbar; the heading only names the conversation. */}
       <header className="chat-heading">
-        <Hash size={24} />
-        <h2>{channel?.name ?? t('Sohbet')}</h2>
+        {dmPeer ? (
+          <VoiceAvatar id={dmPeer.id} name={dmPeer.displayName || dmPeer.username} />
+        ) : channel?.type === 2 ? (
+          <Volume2 size={24} aria-hidden="true" />
+        ) : (
+          <Hash size={24} aria-hidden="true" />
+        )}
+        <h2 title={channel?.name}>{channel?.name ?? t('Sohbet')}</h2>
         {channel?.topic && (
           <>
             <span className="chat-topic-divider" />
-            <p>{channel.topic}</p>
+            <p title={channel.topic}>{channel.topic}</p>
           </>
         )}
         <div className="chat-header-tools">
@@ -641,53 +668,8 @@ export function CommunityChat({
           >
             <Bell size={19} />
           </IconButton>
-          <IconButton label={t('Sabitlenmiş mesajlar — sunucu bağlantısı desteklemiyor')} disabled>
-            <Pin size={19} />
-          </IconButton>
-          <IconButton
-            label={showFriends ? t('Üyeler panelini kapat') : t('Üyeler panelini aç')}
-            aria-pressed={showFriends}
-            onClick={onToggleMembers ?? (() => setPreference('showFriends', !showFriends))}
-          >
-            <Users size={19} />
-          </IconButton>
-          <IconButton
-            label={t('Yüklenen mesajlarda ara')}
-            aria-expanded={searchOpen}
-            onClick={
-              onSearch ??
-              (() => {
-                setSearchOpen((v) => !v);
-                setQuery('');
-              })
-            }
-          >
-            <Search size={19} />
-          </IconButton>
         </div>
       </header>
-      {searchOpen && (
-        <div className="chat-local-search">
-          <Search size={16} />
-          <input
-            autoFocus
-            aria-label={t('Yüklenen mesajlarda ara')}
-            placeholder={t('Yüklenen mesajlarda ara')}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <span>{t('{count} sonuç', { count: visibleMessages.length })}</span>
-          <IconButton
-            label={t('Aramayı kapat')}
-            onClick={() => {
-              setSearchOpen(false);
-              setQuery('');
-            }}
-          >
-            <X size={15} />
-          </IconButton>
-        </div>
-      )}
       {primary && (
         <div className="chat-announcement">
           <Film size={20} />
@@ -753,24 +735,36 @@ export function CommunityChat({
           </p>
         )}
         {!c.messages.length && !c.loadingMessages && (
-          <div className="chat-welcome">
-            <span>
-              <MessageCircle size={40} />
-            </span>
-            <h2>
-              {channel ? t('#{name} kanalına hoş geldin.', { name: channel.name }) : t('Kanal seç')}
-            </h2>
-            {channel && (
-              <button
-                className="button primary"
-                onClick={() => {
-                  report(c.send(t('Selam!')), notify);
-                }}
-              >
-                {t('Selam gönder')}
-              </button>
-            )}
-          </div>
+          <EmptyState
+            size="inline"
+            className="chat-welcome"
+            icon={<MessageCircle size={40} />}
+            title={
+              !channel
+                ? t('Kanal seç')
+                : dmPeer
+                  ? t('{name} ile konuşman burada başlıyor.', {
+                      name: dmPeer.displayName || dmPeer.username,
+                    })
+                  : channel.type === 2
+                    ? t('{name} odasının sohbetine hoş geldin.', { name: channel.name })
+                    : t('#{name} kanalına hoş geldin.', { name: channel.name })
+            }
+            action={
+              channel && (
+                <button
+                  className="button primary"
+                  onClick={() => {
+                    report(c.send(t('Selam!')), notify);
+                  }}
+                >
+                  {t('Selam gönder')}
+                </button>
+              )
+            }
+          >
+            {channel && t('Henüz mesaj yok. İlk mesajı sen gönder.')}
+          </EmptyState>
         )}
         {c.loadingMessages && c.messages.length === 0 && (
           <div className="chat-loading" role="status" aria-label={t('Mesajlar yükleniyor')}>
@@ -785,11 +779,8 @@ export function CommunityChat({
             ))}
           </div>
         )}
-        {query && !visibleMessages.length && (
-          <p className="chat-search-empty">{t('Yüklenen mesajlarda sonuç yok.')}</p>
-        )}
-        {visibleMessages.map((m, index) => {
-          const previous = visibleMessages[index - 1];
+        {c.messages.map((m, index) => {
+          const previous = c.messages[index - 1];
           const day = new Date(m.timestamp).toLocaleDateString(locale, {
             day: 'numeric',
             month: 'long',
@@ -810,18 +801,17 @@ export function CommunityChat({
               )}
               {unread && (
                 <div className="chat-unread-divider">
-                  <span>{t('YENİ MESAJLAR')}</span>
+                  <span>{t('Yeni mesajlar')}</span>
                 </div>
               )}
               <article
                 id={`message-${m.id}`}
                 tabIndex={-1}
+                // Name colours come from tokens in reference-chat.css; only dev fixtures override them.
                 style={
-                  {
-                    '--message-name-color':
-                      nameColors[m.author.id] ||
-                      (m.author.id === c.user?.id ? '#b7aeff' : '#dfe2ec'),
-                  } as React.CSSProperties
+                  nameColors[m.author.id]
+                    ? ({ '--message-name-color': nameColors[m.author.id] } as React.CSSProperties)
+                    : undefined
                 }
                 className={`message ${own ? 'own' : ''}`}
               >
@@ -899,15 +889,45 @@ export function CommunityChat({
                 </div>
                 {m.delivery !== 'pending' && m.delivery !== 'failed' && (
                   <div className="message-actions">
-                    <IconButton label={t('Reaksiyon ekle')} onClick={() => setReactionTarget(m)}>
+                    <IconButton
+                      label={t('Reaksiyon ekle')}
+                      data-reaction-trigger
+                      aria-expanded={reactionTarget?.id === m.id}
+                      onClick={() =>
+                        setReactionTarget((current) => (current?.id === m.id ? null : m))
+                      }
+                    >
                       <Smile size={16} />
                     </IconButton>
-                    <IconButton label={t('Alıntıyla yanıtla')} onClick={() => setReply(m)}>
-                      <MessageCircle size={16} />
+                    <IconButton label={t('Yanıtla')} onClick={() => startReply(m)}>
+                      <CornerUpLeft size={16} />
                     </IconButton>
                     <IconButton label={t('Mesaj seçenekleri')} onClick={() => setOptions(m)}>
                       <MoreHorizontal size={16} />
                     </IconButton>
+                  </div>
+                )}
+                {reactionTarget?.id === m.id && (
+                  <div
+                    ref={reactionPopover}
+                    className="chat-reaction-popover"
+                    role="dialog"
+                    aria-label={t('Bir reaksiyon bırak')}
+                  >
+                    {reactionOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        title={option.label}
+                        aria-label={t('{name} reaksiyonunu ekle', { name: option.label })}
+                        onClick={() => {
+                          void react(m, option.emoji);
+                          setReactionTarget(null);
+                        }}
+                      >
+                        <option.icon size={18} />
+                      </button>
+                    ))}
                   </div>
                 )}
               </article>
@@ -924,11 +944,28 @@ export function CommunityChat({
             setUnseen(false);
           }}
         >
-          {t('Yeni mesajlar ↓')}
+          {t('Yeni mesajlar')}
+          <ArrowDown size={14} aria-hidden="true" />
         </button>
       )}
       {c.activeChannelId && (
         <div className="composer-wrap">
+          {reply && !editing && (
+            <div className="composer-editing composer-replying" role="status">
+              <CornerUpLeft size={14} aria-hidden="true" />
+              <span>
+                {t('Yanıtlanıyor: {name}', {
+                  name: reply.author.displayName || reply.author.username,
+                })}
+              </span>
+              <span className="composer-reply-snippet" title={reply.content}>
+                {reply.content}
+              </span>
+              <IconButton label={t('Yanıtı iptal et')} onClick={closeReply}>
+                <X size={14} />
+              </IconButton>
+            </div>
+          )}
           {editing && (
             <div className="composer-editing" role="status">
               <Edit3 size={14} />
@@ -1028,6 +1065,12 @@ export function CommunityChat({
                   closeEdit();
                   return;
                 }
+                if (e.key === 'Escape' && reply) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  closeReply();
+                  return;
+                }
                 if (e.key === 'ArrowUp' && !draft && !editing && !e.nativeEvent.isComposing) {
                   const own = [...c.messages]
                     .reverse()
@@ -1088,17 +1131,17 @@ export function CommunityChat({
             >
               <LayoutGrid size={20} />
             </IconButton>
-            <IconButton
-              label={t('Asistanı etiketle')}
-              onClick={() => {
-                setDraft((value) => (value.startsWith('@agent') ? value : `@agent ${value}`));
-                document
-                  .querySelector<HTMLTextAreaElement>('.reference-chat .chat-composer textarea')
-                  ?.focus();
-              }}
-            >
-              <Bot size={20} />
-            </IconButton>
+            {assistant && (
+              <IconButton
+                label={t('Asistanı etiketle')}
+                onClick={() => {
+                  setDraft((value) => (value.startsWith('@agent') ? value : `@agent ${value}`));
+                  mentionInput.input.current?.focus();
+                }}
+              >
+                <Bot size={20} />
+              </IconButton>
+            )}
             <button
               type="submit"
               className="send-button"
@@ -1264,11 +1307,7 @@ export function CommunityChat({
               )}
             </>
           )}
-          {memberError && (
-            <div className="error-pane" role="alert">
-              <p>{memberError}</p>
-            </div>
-          )}
+          {memberError && <Notice kind="error">{memberError}</Notice>}
         </Modal>
       )}
       {options && (
@@ -1276,16 +1315,21 @@ export function CommunityChat({
           title={t('Mesaj seçenekleri')}
           className="chat-message-modal chat-options-modal"
           onClose={closeOptions}
+          footer={
+            <button className="button subtle" onClick={closeOptions}>
+              {t('Kapat')}
+            </button>
+          }
         >
           <div className="chat-modal-body chat-option-list">
             <button
               onClick={() => {
-                setReply(options);
+                startReply(options);
                 closeOptions();
               }}
             >
-              <MessageCircle size={20} />
-              {t('Alıntıyla yanıtla')}
+              <CornerUpLeft size={20} />
+              {t('Yanıtla')}
             </button>
             <button
               disabled={options.author.id !== c.user?.id}
@@ -1311,14 +1355,6 @@ export function CommunityChat({
               <Smile size={20} />
               {t('Reaksiyon ekle')}
             </button>
-            <button disabled title={t('Mesaj bağlantısı sözleşmesi bu sunucu bağlantısında yok')}>
-              <Copy size={20} />
-              {t('Mesaj bağlantısını kopyala')}
-            </button>
-            <button disabled title={t('Mesaj sabitleme bu sunucu bağlantısında desteklenmiyor')}>
-              <Pin size={20} />
-              {t('Mesajı sabitle')}
-            </button>
             <button
               disabled={options.author.id !== c.user?.id && !moderates}
               title={
@@ -1336,15 +1372,17 @@ export function CommunityChat({
               {t('Mesajı sil')}
             </button>
             <div className="chat-extra-actions">
-              <button
-                onClick={() => {
-                  setAgentPrompt(options.content);
-                  closeOptions();
-                }}
-              >
-                <Bot size={16} />
-                {t('Asistana gönder')}
-              </button>
+              {assistant && (
+                <button
+                  onClick={() => {
+                    setAgentPrompt(options.content);
+                    closeOptions();
+                  }}
+                >
+                  <Bot size={16} />
+                  {t('Asistana gönder')}
+                </button>
+              )}
               <button
                 onClick={() => {
                   setReminder(options);
@@ -1354,87 +1392,19 @@ export function CommunityChat({
                 <Clock3 size={16} />
                 {t('Hatırlat')}
               </button>
-              <button
-                onClick={() => {
-                  saveMemory(options);
-                  closeOptions();
-                }}
-              >
-                <BookmarkPlus size={16} />
-                {t('Oda hafızasına kaydet')}
-              </button>
+              {assistant && (
+                <button
+                  onClick={() => {
+                    saveMemory(options);
+                    closeOptions();
+                  }}
+                >
+                  <BookmarkPlus size={16} />
+                  {t('Oda hafızasına kaydet')}
+                </button>
+              )}
             </div>
           </div>
-          <footer className="chat-modal-footer">
-            <button className="button subtle" onClick={closeOptions}>
-              {t('Kapat')}
-            </button>
-          </footer>
-        </Modal>
-      )}
-      {reactionTarget && (
-        <Modal
-          title={t('Bir reaksiyon bırak')}
-          className="chat-message-modal chat-reactions-modal"
-          onClose={closeReactions}
-        >
-          <div className="chat-modal-body chat-reaction-grid">
-            {reactionOptions.map((option) => (
-              <button
-                key={option.id}
-                aria-label={t('{name} reaksiyonunu ekle', { name: option.label })}
-                onClick={() => {
-                  void react(reactionTarget, option.emoji);
-                  closeReactions();
-                }}
-              >
-                <option.icon size={30} />
-              </button>
-            ))}
-          </div>
-          <footer className="chat-modal-footer">
-            <button className="button subtle" onClick={closeReactions}>
-              {t('Kapat')}
-            </button>
-          </footer>
-        </Modal>
-      )}
-      {reply && (
-        <Modal
-          title={t('{name} kişisine yanıtla', {
-            name: reply.author.displayName || reply.author.username,
-          })}
-          className="chat-message-modal chat-reply-modal"
-          onClose={closeReply}
-        >
-          <div className="chat-modal-body">
-            <blockquote>
-              {reply.author.displayName || reply.author.username} · {reply.content}
-            </blockquote>
-            <textarea
-              className="edit-textarea"
-              aria-label={t('Alıntılı yanıt')}
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              maxLength={3500}
-            />
-            <small>{t('Yanıt alıntı metni olarak gönderilir.')}</small>
-            {actionError && (
-              <div className="error-pane" role="alert">
-                {actionError}
-              </div>
-            )}
-          </div>
-          <footer className="chat-modal-footer">
-            <button
-              className="button primary"
-              disabled={actionBusy || !replyText.trim()}
-              onClick={() => void sendReply()}
-            >
-              <Send size={18} />
-              {t('Yanıt gönder')}
-            </button>
-          </footer>
         </Modal>
       )}
       {deleting && (
@@ -1442,6 +1412,28 @@ export function CommunityChat({
           title={t('Mesajı sil?')}
           className="chat-message-modal chat-delete-modal"
           onClose={closeDelete}
+          footer={
+            <>
+              <button className="button secondary" disabled={actionBusy} onClick={closeDelete}>
+                {t('Vazgeç')}
+              </button>
+              <button
+                className="button danger"
+                disabled={actionBusy}
+                onClick={() => {
+                  setActionBusy(true);
+                  setActionError('');
+                  void c
+                    .deleteMessage(deleting)
+                    .then(closeDelete)
+                    .catch((error) => setActionError(uiError(error)))
+                    .finally(() => setActionBusy(false));
+                }}
+              >
+                {t('Mesajı sil')}
+              </button>
+            </>
+          }
         >
           <div className="chat-modal-body">
             <p>{t('Bu mesaj kanaldaki herkes için silinecek. Bu işlem geri alınamaz.')}</p>
@@ -1459,32 +1451,8 @@ export function CommunityChat({
                 </div>
               );
             })()}
-            {actionError && (
-              <div className="error-pane" role="alert">
-                {actionError}
-              </div>
-            )}
+            {actionError && <Notice kind="error">{actionError}</Notice>}
           </div>
-          <footer className="chat-modal-footer">
-            <button className="button secondary" disabled={actionBusy} onClick={closeDelete}>
-              {t('Vazgeç')}
-            </button>
-            <button
-              className="button danger"
-              disabled={actionBusy}
-              onClick={() => {
-                setActionBusy(true);
-                setActionError('');
-                void c
-                  .deleteMessage(deleting)
-                  .then(closeDelete)
-                  .catch((error) => setActionError(uiError(error)))
-                  .finally(() => setActionBusy(false));
-              }}
-            >
-              {t('Mesajı sil')}
-            </button>
-          </footer>
         </Modal>
       )}
     </div>
@@ -1615,6 +1583,7 @@ export function CommunityVoice({
     ? c.channels.find((channel) => channel.type === 2 && channel.name === places.lounge)
     : undefined;
   const selectedRoom = c.channels.find((ch) => ch.id === c.activeChannelId && ch.type === 2);
+  const stageRoom = emptyFixture ? fixtureRoom : selectedRoom;
   const roomName =
     r.roomName ??
     selectedRoom?.name ??
@@ -1756,7 +1725,7 @@ export function CommunityVoice({
       <header className="reference-voice-heading">
         <div>
           <span className="reference-voice-eyebrow">
-            {share ? t('EKRAN PAYLAŞIMI') : video ? t('GÖRÜNTÜLÜ ODA') : t('SES ODASI')}
+            {share ? t('Ekran paylaşımı') : video ? t('Görüntülü oda') : t('Ses odası')}
           </span>
           <h2 title={roomName ?? undefined}>{roomName ?? t('Ses odaları')}</h2>
           <p>
@@ -1775,7 +1744,9 @@ export function CommunityVoice({
                     ? t('Yeniden bağlanıyor…')
                     : r.channelId
                       ? t('Bağlantı kesildi')
-                      : t('Bir ses odası seç.')}
+                      : selectedRoom
+                        ? t('Henüz bu odada değilsin.')
+                        : t('Bir ses odası seç.')}
           </p>
         </div>
         <div className="reference-voice-header-actions">
@@ -1817,6 +1788,7 @@ export function CommunityVoice({
           )}
         </div>
       </header>
+      <VoiceRejoinNotice />
       {r.channelId && !connected && (
         <div className="reference-media-notice" role="status">
           <ReferenceIcon name="alert-triangle" size={18} />
@@ -1851,52 +1823,55 @@ export function CommunityVoice({
         </div>
       )}
       {!r.channelId || emptyFixture ? (
-        emptyFixture ? (
-          <div className="reference-voice-empty-stage">
-            <div>
-              <ReferenceIcon name="headphones" size={42} />
-              <h3>{t('Oda sana hazır')}</h3>
-              <p>
-                {t(
-                  'Katıldığında arkadaşların seni burada görebilir. Mikrofonunu açmak tamamen sana bağlı.',
-                )}
-              </p>
-              <button
-                className="button primary"
-                disabled={!fixtureRoom || r.busy}
-                onClick={() =>
-                  fixtureRoom && report(joinVoice(fixtureRoom.id, fixtureRoom.name), notify)
-                }
-              >
-                <ReferenceIcon name="headphones" size={17} />
-                {t('Salona katıl')}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="reference-voice-empty">
-            <ReferenceIcon name="headphones" size={38} />
-            <h3>{t('Ses odaları')}</h3>
-            {channels.length ? (
-              <div className="voice-join-list">
-                {(selectedRoom ? [selectedRoom] : channels).map((ch) => (
-                  <button
-                    className="button secondary"
-                    disabled={r.busy}
-                    key={ch.id}
-                    onClick={() => report(joinVoice(ch.id, ch.name), notify)}
-                  >
-                    <ReferenceIcon name="volume" size={18} />
-                    {ch.name}
-                    <span>{t('Katıl')}</span>
-                  </button>
-                ))}
-              </div>
+        // One stage for every "not in a room yet" state: the selected room, a room list, or none.
+        <div className="reference-voice-empty-stage">
+          <div>
+            <ReferenceIcon name="headphones" size={42} />
+            {stageRoom ? (
+              <>
+                <h3>{t('Oda sana hazır')}</h3>
+                <p>
+                  {t(
+                    'Katıldığında arkadaşların seni burada görebilir. Mikrofonunu açmak tamamen sana bağlı.',
+                  )}
+                </p>
+                <button
+                  className="button primary"
+                  disabled={r.busy}
+                  onClick={() => report(joinVoice(stageRoom.id, stageRoom.name), notify)}
+                >
+                  <ReferenceIcon name="headphones" size={17} />
+                  {r.busy ? t('Bağlanıyor…') : t('Katıl')}
+                </button>
+              </>
+            ) : channels.length ? (
+              <>
+                <h3>{t('Bir ses odası seç')}</h3>
+                <p>{t('Katıldığında arkadaşların seni burada görebilir.')}</p>
+                <div className="voice-join-list">
+                  {channels.map((ch) => (
+                    <button
+                      className="button secondary"
+                      disabled={r.busy}
+                      key={ch.id}
+                      title={ch.name}
+                      onClick={() => report(joinVoice(ch.id, ch.name), notify)}
+                    >
+                      <ReferenceIcon name="volume" size={18} />
+                      <span className="voice-join-name">{ch.name}</span>
+                      <span>{t('Katıl')}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
             ) : (
-              <p>{t('Ses odası yok.')}</p>
+              <>
+                <h3>{t('Henüz ses odası yok')}</h3>
+                <p>{t('Topluluğa bir ses odası eklendiğinde burada görünür.')}</p>
+              </>
             )}
           </div>
-        )
+        </div>
       ) : share ? (
         <div className="reference-share-content">
           {screens.length > 0 ? (
@@ -2028,8 +2003,8 @@ export function CommunityVoice({
                     {t('Arkadaş davet et')}
                   </button>
                   <button className="button secondary" onClick={openLauncher}>
-                    <ReferenceIcon name="plus" size={18} />
-                    {t('Etkinlik seç')}
+                    <ReferenceIcon name="grid" size={18} />
+                    {t('Etkinlikler')}
                   </button>
                 </div>
               </div>
@@ -2079,7 +2054,7 @@ export function CommunityVoice({
             {t('Ses ayarları')}
           </button>
           <button onClick={openLauncher}>
-            <ReferenceIcon name="plus" size={13} />
+            <ReferenceIcon name="grid" size={13} />
             {t('Etkinlikler')}
           </button>
         </div>
@@ -2112,7 +2087,7 @@ export function CommunityVoice({
           {!person.local && (
             <>
               <label className="field-label">
-                {t('KİŞİSEL SES · {percent}%', { percent: Math.round(person.volume * 100) })}
+                {t('Kişisel ses · {percent}%', { percent: Math.round(person.volume * 100) })}
                 <input
                   type="range"
                   aria-label={t('Katılımcı sesi')}
@@ -2263,10 +2238,6 @@ export function RealVoiceDock({
     navigate = useNavigate();
   const identity = useCommunity((state) => state.user?.id ?? null);
   const familiarRoom = true;
-  const videoMode =
-    new URLSearchParams(location.search).get('view') === 'video' ||
-    r.camera ||
-    r.participants.some((person) => person.camera);
   const [shareQuality, setShareQuality] =
       useState<import('@rooms/media').ScreenShareQuality>('1080p60'),
     [shareAudio, setShareAudio] = useState(false);
@@ -2275,8 +2246,7 @@ export function RealVoiceDock({
     [selected, setSelected] = useState(''),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
-    [sourceType, setSourceType] = useState<'window' | 'screen'>('window'),
-    [more, setMore] = useState(false);
+    [sourceType, setSourceType] = useState<'window' | 'screen'>('window');
   const [captureStatus, setCaptureStatus] = useState<{
     screen: string;
     systemAudio: boolean;
@@ -2349,7 +2319,11 @@ export function RealVoiceDock({
         <div
           className={`voice-dock real-voice-dock reference-voice-dock glass ${r.sharing ? 'is-sharing' : ''} ${familiarRoom ? 'familiar-room-dock' : ''}`}
         >
-          <button className="dock-context" onClick={() => navigate('/voice')}>
+          <button
+            className="dock-context"
+            title={r.roomName ?? undefined}
+            onClick={() => navigate('/voice')}
+          >
             <ReferenceIcon name="headphones" size={18} />
             <div>
               <strong>{r.roomName}</strong>
@@ -2375,24 +2349,15 @@ export function RealVoiceDock({
             >
               <ReferenceIcon name={r.muted ? 'mic-off' : 'mic'} size={19} />
             </IconButton>
-            <QuietMenu label={t('Mikrofon ayarları')} compact arrow>
-              <button onClick={() => navigate('/settings?tab=audio')}>
-                {t('Ses giriş ve çıkış cihazları')}
-              </button>
-              <button disabled={!connected} onClick={() => report(toggleDeafen(), notify)}>
-                {r.deafened ? t('Sağırlaştırmayı kapat') : t('Sağırlaştır')}
-              </button>
-            </QuietMenu>
-            {!videoMode && !familiarRoom && (
-              <IconButton
-                disabled={!connected}
-                label={r.deafened ? t('Oda sesini aç') : t('Oda sesini kapat')}
-                className={r.deafened ? 'muted-control' : ''}
-                onClick={() => report(toggleDeafen(), notify)}
-              >
-                <ReferenceIcon name={r.deafened ? 'headphones-off' : 'headphones'} size={19} />
-              </IconButton>
-            )}
+            {/* Same terms as the sidebar voice panel: Sağırlaştır / Sesten ayrıl. */}
+            <IconButton
+              disabled={!connected}
+              label={r.deafened ? t('Sağırlaştırmayı kapat') : t('Sağırlaştır')}
+              className={r.deafened ? 'muted-control' : ''}
+              onClick={() => report(toggleDeafen(), notify)}
+            >
+              <ReferenceIcon name={r.deafened ? 'headphones-off' : 'headphones'} size={19} />
+            </IconButton>
             <IconButton
               disabled={!connected}
               label={r.camera ? t('Kamerayı kapat') : t('Kamerayı aç')}
@@ -2408,11 +2373,6 @@ export function RealVoiceDock({
             >
               <ReferenceIcon name={r.camera ? 'video' : 'video-off'} size={19} />
             </IconButton>
-            <QuietMenu label={t('Kamera ayarları')} compact arrow>
-              <button onClick={() => navigate('/settings?tab=audio')}>
-                {t('Kamera ve video ayarları')}
-              </button>
-            </QuietMenu>
           </div>
           <div className="room-dock-group room-activity-controls">
             {r.sharing ? (
@@ -2432,12 +2392,11 @@ export function RealVoiceDock({
             <div className="dock-divider" />
             <button
               className="button primary reference-start-activity"
-              aria-label={t('Etkinlik başlat')}
-              title={t('Etkinlik başlat')}
+              title={t('Etkinlikler')}
               onClick={openLauncher}
             >
-              <ReferenceIcon name="plus" size={18} />
-              <span>{familiarRoom ? t('Etkinlikler') : t('Etkinlik başlat')}</span>
+              <ReferenceIcon name="grid" size={18} />
+              <span>{t('Etkinlikler')}</span>
             </button>
             <IconButton
               label="Soundboard"
@@ -2445,37 +2404,13 @@ export function RealVoiceDock({
             >
               <AudioLines size={19} />
             </IconButton>
-            <div className="reference-dock-more">
-              <IconButton label={t('Daha fazla ses kontrolü')} onClick={() => setMore(!more)}>
-                <ReferenceIcon name="more" size={18} />
-              </IconButton>
-              {more && (
-                <div className="reference-dock-menu">
-                  <button
-                    disabled={!connected}
-                    onClick={() => {
-                      setMore(false);
-                      report(toggleDeafen(), notify);
-                    }}
-                  >
-                    <ReferenceIcon name={r.deafened ? 'headphones-off' : 'headphones'} size={16} />
-                    {r.deafened ? t('Oda sesini aç') : t('Oda sesini kapat')}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setMore(false);
-                      navigate('/settings?tab=audio');
-                    }}
-                  >
-                    <ReferenceIcon name="settings" size={16} />
-                    {t('Cihaz ayarları')}
-                  </button>
-                </div>
-              )}
-            </div>
+            {/* One entry for microphone, speaker and camera devices (Settings > Ses ve görüntü). */}
+            <IconButton label={t('Cihaz ayarları')} onClick={() => navigate('/settings?tab=audio')}>
+              <ReferenceIcon name="settings" size={18} />
+            </IconButton>
           </div>
           <IconButton
-            label={t('Odadan ayrıl')}
+            label={t('Sesten ayrıl')}
             className="leave-control"
             onClick={() => report(leaveVoice(), notify)}
           >

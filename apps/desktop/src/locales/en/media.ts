@@ -733,4 +733,17 @@ export const media: Catalog = {
   'Hoşça kal': 'Goodbye',
   'Bir parça bulunamadı ya da çalınamadı; DJ sıradakine geçti. Atlanan parça kuyrukta işaretli.':
     'A track couldn’t be found or played; the DJ moved on to the next one. The skipped track is marked in the queue.',
+  'Ses bağlantısı geri gelmedi': 'Voice didn’t come back',
+  '{room} odasına {count} denemede yeniden bağlanılamadı. İnternet bağlantını kontrol edip tekrar dene.':
+    {
+      one: 'Couldn’t reconnect to {room} after {count} attempt. Check your internet connection and try again.',
+      other:
+        'Couldn’t reconnect to {room} after {count} attempts. Check your internet connection and try again.',
+    },
+  'Yeniden bağlanılıyor…': 'Reconnecting…',
+  'Vazgeç ve ayrıl': 'Stop and leave',
+  '{room} odasına yeniden bağlanılamadı. Tekrar katılmak için odayı seç.':
+    'Couldn’t reconnect to {room}. Select the room to join it again.',
+  '{room} odasıyla bağlantı koptu. Deneme {attempt}/{max}. Mikrofonun kapalı kalır.':
+    'Lost the connection to {room}. Attempt {attempt}/{max}. Your microphone stays off.',
 };

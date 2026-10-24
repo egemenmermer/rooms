@@ -36,7 +36,8 @@ export class VoiceView {
 
   async join(roomName: string) {
     await this.client.nav.getByRole('button', { name: roomName, exact: true }).click();
-    await expect(this.page.getByRole('button', { name: 'Odadan ayrıl' })).toBeVisible();
+    // The sidebar voice panel and the room dock both offer "Sesten ayrıl".
+    await expect(this.page.getByRole('button', { name: 'Sesten ayrıl' }).first()).toBeVisible();
   }
 
   /** Participant tile; the accessible name starts with the display name. */
@@ -55,8 +56,8 @@ export class VoiceView {
   }
 
   async leave() {
-    await this.page.getByRole('button', { name: 'Odadan ayrıl' }).click();
-    await expect(this.page.getByRole('button', { name: 'Odadan ayrıl' })).toHaveCount(0);
+    await this.page.getByRole('button', { name: 'Sesten ayrıl' }).first().click();
+    await expect(this.page.getByRole('button', { name: 'Sesten ayrıl' })).toHaveCount(0);
   }
 
   /** Sum of packetsReceived across inbound RTP streams of one kind. */
