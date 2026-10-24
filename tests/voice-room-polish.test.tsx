@@ -72,6 +72,10 @@ it('names dock actions with the sidebar terms and offers deafen once', () => {
   expect(f.leave).toHaveBeenCalledTimes(1);
   // The activity launcher's accessible name matches what it shows.
   expect(screen.getByRole('button', { name: 'Etkinlikler' }).textContent).toBe('Etkinlikler');
+  // One device-settings entry instead of single-item microphone and camera menus.
+  expect(screen.queryByRole('button', { name: 'Mikrofon ayarları' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Kamera ayarları' })).toBeNull();
+  expect(screen.getByRole('button', { name: 'Cihaz ayarları' })).toBeTruthy();
 });
 
 it('shows the ready stage for the selected room and joins that room', () => {

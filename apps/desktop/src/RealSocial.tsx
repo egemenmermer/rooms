@@ -2,7 +2,6 @@ import { useMentionInput } from './MentionInput';
 import { ChatAttachment } from './ChatAttachment';
 import { ScreenShareGallery } from './ScreenShareGallery';
 import { VoiceRoomViewActions } from './VoiceRoomViewActions';
-import { QuietMenu } from './QuietMenu';
 import { openActivity, retiredActivity } from './activity-route';
 import { FriendRequestButton } from './FriendRequestButton';
 import { MediaStage } from './MediaStage';
@@ -2348,16 +2347,10 @@ export function RealVoiceDock({
             >
               <ReferenceIcon name={r.muted ? 'mic-off' : 'mic'} size={19} />
             </IconButton>
-            <QuietMenu label={t('Mikrofon ayarları')} compact arrow>
-              <button onClick={() => navigate('/settings?tab=audio')}>
-                {t('Ses giriş ve çıkış cihazları')}
-              </button>
-            </QuietMenu>
             {/* Same terms as the sidebar voice panel: Sağırlaştır / Sesten ayrıl. */}
             <IconButton
               disabled={!connected}
               label={r.deafened ? t('Sağırlaştırmayı kapat') : t('Sağırlaştır')}
-              aria-pressed={r.deafened}
               className={r.deafened ? 'muted-control' : ''}
               onClick={() => report(toggleDeafen(), notify)}
             >
@@ -2378,11 +2371,6 @@ export function RealVoiceDock({
             >
               <ReferenceIcon name={r.camera ? 'video' : 'video-off'} size={19} />
             </IconButton>
-            <QuietMenu label={t('Kamera ayarları')} compact arrow>
-              <button onClick={() => navigate('/settings?tab=audio')}>
-                {t('Kamera ve video ayarları')}
-              </button>
-            </QuietMenu>
           </div>
           <div className="room-dock-group room-activity-controls">
             {r.sharing ? (
@@ -2414,6 +2402,7 @@ export function RealVoiceDock({
             >
               <AudioLines size={19} />
             </IconButton>
+            {/* One entry for microphone, speaker and camera devices (Settings > Ses ve görüntü). */}
             <IconButton label={t('Cihaz ayarları')} onClick={() => navigate('/settings?tab=audio')}>
               <ReferenceIcon name="settings" size={18} />
             </IconButton>
