@@ -1,0 +1,124 @@
+/* Shared game seat avatar (games/shared/SeatAvatar.tsx). */
+.rg-seat-avatar {
+  display: inline-grid;
+  justify-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.rg-seat-face {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  transition:
+    box-shadow 160ms ease,
+    transform 200ms ease;
+}
+.rg-seat-face > .avatar,
+.rg-seat-face > .voice-photo {
+  border-radius: 50%;
+}
+.rg-seat-avatar.speaking .rg-seat-face {
+  box-shadow:
+    0 0 0 2px var(--color-background-main),
+    0 0 0 4px var(--color-status-success);
+}
+.rg-seat-avatar.turn .rg-seat-face {
+  transform: scale(1.06);
+}
+.rg-seat-avatar.away .rg-seat-face > * {
+  opacity: 0.55;
+}
+.rg-seat-ring {
+  position: absolute;
+  inset: -9px;
+  width: calc(100% + 18px);
+  height: calc(100% + 18px);
+  pointer-events: none;
+  transform: rotate(-90deg);
+}
+.rg-seat-ring circle {
+  fill: none;
+  stroke-width: 3;
+}
+.rg-seat-ring circle:first-child {
+  stroke: var(--color-border-subtle);
+}
+.rg-seat-ring circle:last-child {
+  stroke: var(--color-action-primary);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 250ms linear;
+}
+.rg-seat-avatar.low .rg-seat-ring circle:last-child {
+  stroke: var(--color-status-error);
+}
+.rg-seat-clock {
+  position: absolute;
+  right: -10px;
+  bottom: -6px;
+  min-width: 20px;
+  padding: 1px 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-action-primary);
+  color: var(--color-text-onAccent);
+  font-size: var(--font-size-micro);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+.rg-seat-avatar.low .rg-seat-clock {
+  background: var(--color-status-error);
+  color: var(--color-text-onDanger);
+}
+.rg-seat-badge {
+  position: absolute;
+  top: -6px;
+  left: -8px;
+  padding: 0 5px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  background: var(--color-background-raised);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-micro);
+  font-weight: 700;
+  line-height: 15px;
+}
+.rg-seat-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 120px;
+  padding: 2px 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  background: var(--color-background-raised);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-micro);
+}
+.rg-seat-remove span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rg-seat-remove:hover:not(:disabled) {
+  border-color: var(--color-action-danger);
+  color: var(--color-text-primary);
+}
+.rg-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rg-seat-face,
+  .rg-seat-ring circle:last-child {
+    transition: none;
+  }
+  .rg-seat-avatar.turn .rg-seat-face {
+    transform: none;
+  }
+}

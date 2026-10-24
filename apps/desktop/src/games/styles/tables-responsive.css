@@ -1,0 +1,37 @@
+@media (max-width: 1100px) {
+  .rx-game {
+    padding: 24px;
+  }
+  .rx-create-options {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 800px) {
+  .rx-game {
+    padding: 18px 14px;
+  }
+  .rx-create-body {
+    grid-template-columns: 1fr;
+  }
+  .rx-tile {
+    width: 32px;
+    flex-basis: 32px;
+    height: 49px;
+  }
+  .rx-create {
+    padding: 20px;
+  }
+  .rx-process {
+    flex-wrap: wrap;
+  }
+  .rx-meld-editor footer {
+    align-items: stretch;
+  }
+  .rx-meld-editor footer > span {
+    flex-basis: 100%;
+    order: 3;
+  }
+  .rx-rack .rg-timer {
+    min-width: auto;
+  }
+}

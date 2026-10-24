@@ -1,0 +1,68 @@
+/* Off-/games "Sıra sende" notice (games/TurnNotice.tsx). Loaded with the main bundle. */
+.game-turn-notice {
+  position: fixed;
+  right: var(--space-16);
+  bottom: var(--space-16);
+  z-index: var(--z-toast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  max-width: min(360px, calc(100vw - 2 * var(--space-16)));
+  padding: var(--space-12) var(--space-12) var(--space-12) var(--space-16);
+  border: 1px solid var(--color-action-primaryBorder);
+  border-radius: var(--radius-12);
+  background: var(--color-background-raised);
+  box-shadow: var(--shadow-2);
+  color: var(--color-text-primary);
+  animation: game-turn-notice-in 200ms ease-out;
+}
+.game-turn-notice > svg {
+  flex: none;
+  color: var(--color-text-accent);
+}
+.game-turn-notice > div {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+.game-turn-notice strong {
+  font-size: var(--font-size-ui);
+}
+.game-turn-notice small {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-metadata);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.game-turn-notice > .button {
+  flex: none;
+  white-space: nowrap;
+}
+.game-turn-notice-close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--color-text-muted);
+}
+.game-turn-notice-close:hover {
+  background: var(--color-background-hover);
+  color: var(--color-text-primary);
+}
+@keyframes game-turn-notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-turn-notice {
+    animation: none;
+  }
+}

@@ -1,4 +1,4 @@
-import { randomInt } from 'node:crypto';
+import { secureRandomInt } from './random';
 import {
   okey101Options,
   okeyRuleProfile,
@@ -50,7 +50,7 @@ function makeTiles(): OkeyTile[] {
       for (let value = 1; value <= 13; value++)
         tiles.push({ id: `${color}-${value}-${copy}`, color, value });
   for (let i = tiles.length - 1; i > 0; i--) {
-    const j = randomInt(i + 1);
+    const j = secureRandomInt(i + 1);
     [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
   }
   return tiles;
@@ -72,7 +72,7 @@ export function startOkey101(
     { id: 'false-joker-1', color: indicator.color, value: jokerValue },
   );
   for (let i = stock.length - 1; i > 0; i--) {
-    const j = randomInt(i + 1);
+    const j = secureRandomInt(i + 1);
     [stock[i], stock[j]] = [stock[j], stock[i]];
   }
   const hands = Array.from({ length: 4 }, () => [] as OkeyTile[]);

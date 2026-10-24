@@ -56,7 +56,15 @@ export const holdemTableRulesSchema = z
   });
 export type HoldemTableRules = z.infer<typeof holdemTableRulesSchema>;
 /** Game kinds every current client knows. The server accepts any kind in its game registry. */
-export const builtInGameKinds = ['holdem', 'blackjack', 'batak', '101'] as const;
+export const builtInGameKinds = [
+  'holdem',
+  'blackjack',
+  'batak',
+  '101',
+  'rooms-pisti-v1',
+  'rooms-okey-v1',
+  'rooms-tavla-v1',
+] as const;
 export type BuiltInGameKind = (typeof builtInGameKinds)[number];
 /** A table game's protocol id (`packages/games/src/registry.ts`); built-in kinds keep their literal types. */
 export type GameKind = BuiltInGameKind | (string & {});
@@ -407,6 +415,18 @@ export interface GameRecoveryEvent {
   action?: string;
   toCall?: number;
 }
+/** The table-rule fields the shared game views read whatever the game (seat count, spectators). */
+export interface GameTableRulesCommon {
+  capacity?: number;
+  spectatorsAllowed?: boolean;
+}
+/**
+ * `view.rules`: every game sends its own table rules under this key (Hold'em `HoldemTableRules`,
+ * Batak's house rules, Blackjack's insurance/surrender switches, 101's profile). Shared views read
+ * only the common fields; a game reads its own shape from its own view (Hold'em narrows by kind).
+ */
+export type GameViewRules =
+  HoldemTableRules | (GameTableRulesCommon & { readonly [key: string]: unknown });
 export interface GamePublicState {
   /**
    * Typed as the kinds the current clients render, so their views stay exhaustive. The service may
@@ -434,7 +454,7 @@ export interface GamePublicState {
       events?: GameRecoveryEvent[];
     } | null;
     tableName?: string;
-    rules?: HoldemTableRules;
+    rules?: GameViewRules;
     spectators?: GameSpectator[];
     watching?: boolean;
     spectatorAccess?: boolean;

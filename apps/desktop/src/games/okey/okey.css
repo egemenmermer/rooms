@@ -1,0 +1,450 @@
+/* Classic Okey table. Felt and wood are table materials (local custom properties); chrome uses tokens. */
+.ok-table {
+  --ok-felt-light: #1d4d3a;
+  --ok-felt-dark: #0c271d;
+  --ok-felt-line: #2f5a48;
+  --ok-wood-light: #9a6a43;
+  --ok-wood-dark: #6e4528;
+  --ok-wood-edge: #4a2c18;
+  --ok-tile-back: #e8dcbc;
+  --ok-tile-back-edge: #b4a27a;
+  --ok-okey-glow: #f2c84b;
+  --ok-fake: #2e7d4f;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+/* Felt: seats on the four sides, discard piles in the corners, middle stack in the centre. */
+.ok-felt {
+  display: grid;
+  grid-template-columns: minmax(118px, 1fr) minmax(0, 1.6fr) minmax(118px, 1fr);
+  grid-template-rows: auto minmax(110px, 1fr) auto;
+  grid-template-areas:
+    'top-left top top-right'
+    'left middle right'
+    'bottom-left bottom bottom-right';
+  gap: var(--space-12);
+  padding: var(--space-16);
+  border: 1px solid var(--ok-felt-line);
+  border-radius: var(--radius-16);
+  background: radial-gradient(ellipse at 50% 40%, var(--ok-felt-light), var(--ok-felt-dark));
+  min-width: 0;
+}
+.ok-seat {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  align-content: center;
+  gap: var(--space-4) var(--space-8);
+  padding: var(--space-8) var(--space-12);
+  min-width: 0;
+  border: 1px solid var(--ok-felt-line);
+  border-radius: var(--radius-12);
+  background: color-mix(in srgb, var(--ok-felt-dark) 80%, transparent);
+  color: var(--color-text-primary);
+  transition:
+    border-color 200ms var(--motion-ease-out),
+    box-shadow 200ms var(--motion-ease-out),
+    transform 200ms var(--motion-ease-out);
+}
+.ok-seat.top {
+  grid-area: top;
+  justify-self: center;
+}
+.ok-seat.left {
+  grid-area: left;
+  align-self: center;
+}
+.ok-seat.right {
+  grid-area: right;
+  align-self: center;
+}
+.ok-seat.bottom {
+  grid-area: bottom;
+  justify-self: center;
+}
+.ok-seat .avatar,
+.ok-seat .voice-photo {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+/* The owner's "Koltuğu boşalt" stays an icon inside the compact seat chip. */
+.ok-seat .rg-seat-remove span {
+  display: none;
+}
+.ok-seat > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ok-seat strong {
+  font-size: var(--font-size-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ok-seat small {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-secondary);
+}
+.ok-seat.turn {
+  border-color: var(--color-action-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-action-primary) 35%, transparent);
+  transform: scale(1.03);
+}
+.ok-seat .rg-timer {
+  grid-column: 1 / -1;
+  justify-self: start;
+  font-size: var(--font-size-micro);
+}
+.ok-mini-rack {
+  grid-column: 1 / -1;
+  display: flex;
+  padding-left: var(--space-4);
+}
+.ok-back {
+  display: inline-block;
+  width: 26px;
+  height: 36px;
+  flex: 0 0 auto;
+  border: 1px solid var(--ok-tile-back-edge);
+  border-radius: var(--radius-4);
+  background: linear-gradient(
+    var(--ok-tile-back),
+    color-mix(in srgb, var(--ok-tile-back) 80%, black)
+  );
+  box-shadow: 0 2px 0 var(--ok-tile-back-edge);
+}
+.ok-back.small {
+  width: 9px;
+  height: 14px;
+  margin-left: -3px;
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+/* Corner discard piles: only the top tile is visible, a back hints at the tiles under it. */
+.ok-pile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-8);
+  border: 1px dashed transparent;
+  border-radius: var(--radius-12);
+  transition: border-color 150ms var(--motion-ease-out);
+}
+.ok-pile.top-left {
+  grid-area: top-left;
+}
+.ok-pile.top-right {
+  grid-area: top-right;
+}
+.ok-pile.bottom-left {
+  grid-area: bottom-left;
+}
+.ok-pile.bottom-right {
+  grid-area: bottom-right;
+}
+.ok-pile > small {
+  max-width: 100%;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ok-pile > em {
+  font-style: normal;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-accent);
+}
+.ok-pile-top {
+  position: relative;
+  display: inline-flex;
+}
+.ok-pile-top > .ok-back {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+}
+.ok-pile-top > .ok-tile {
+  position: relative;
+}
+.ok-pile-top.last .rx-tile {
+  box-shadow:
+    0 3px 0 #d7caa5,
+    0 0 0 2px var(--color-action-primary);
+  animation: ok-drop-in 220ms var(--motion-ease-out);
+}
+.ok-pile-empty {
+  display: grid;
+  place-items: center;
+  width: 37px;
+  height: 56px;
+  border: 1px dashed var(--ok-felt-line);
+  border-radius: var(--radius-4);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-micro);
+  text-align: center;
+}
+.ok-drop-target {
+  border-color: var(--color-action-primary);
+  background: color-mix(in srgb, var(--color-action-primary) 12%, transparent);
+}
+
+/* Middle: face-down stack with its count, the gösterge face up next to it. */
+.ok-middle {
+  grid-area: middle;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-24);
+  position: relative;
+  border: 1px dashed transparent;
+  border-radius: var(--radius-16);
+  transition: border-color 150ms var(--motion-ease-out);
+}
+.ok-stock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-8);
+  border: 1px solid transparent;
+  border-radius: var(--radius-8);
+  background: none;
+  color: var(--color-text-primary);
+}
+.ok-stock .ok-back {
+  width: 37px;
+  height: 56px;
+  box-shadow:
+    0 2px 0 var(--ok-tile-back-edge),
+    3px 5px 0 var(--ok-tile-back-edge);
+}
+.ok-stock b {
+  font-size: var(--font-size-h2);
+}
+.ok-stock:not(:disabled) {
+  cursor: pointer;
+  border-color: var(--color-action-primary);
+}
+.ok-stock:not(:disabled):hover {
+  background: color-mix(in srgb, var(--color-action-primary) 12%, transparent);
+}
+.ok-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+.ok-indicator small,
+.ok-middle-hint {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-secondary);
+  font-style: normal;
+}
+.ok-middle-hint {
+  position: absolute;
+  bottom: var(--space-4);
+}
+
+/* Tiles: the 101 tile plus the okey mark and the ★ sahte okey. */
+.ok-tile {
+  display: inline-flex;
+}
+.rx-tile.ok-okey {
+  position: relative;
+}
+.ok-okey-mark {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--ok-okey-glow);
+  box-shadow: 0 0 6px var(--ok-okey-glow);
+}
+.rx-tile.ok-fake {
+  color: var(--ok-fake);
+}
+.ok-table .rx-tile {
+  transition: transform 180ms var(--motion-ease-out);
+}
+.ok-pile .rx-tile:not(:disabled),
+.ok-pile .rx-tile:not(:disabled):hover {
+  cursor: pointer;
+}
+
+/* Log of the latest moves. */
+.ok-log {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-micro);
+  color: var(--color-text-secondary);
+}
+.ok-log li:first-child {
+  color: var(--color-text-primary);
+}
+
+/* Own rack: a wooden ıstaka with two shelves of 15 fixed cells; it never wraps. */
+.ok-rack-section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  margin-bottom: var(--space-8);
+  font-size: var(--font-size-metadata);
+}
+.ok-rack-section > header > div {
+  display: flex;
+  gap: var(--space-8);
+}
+.ok-rack {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: repeat(15, minmax(0, 1fr));
+  gap: 14px 4px;
+  padding: 10px 12px 14px;
+  border-radius: var(--radius-8);
+  border-bottom: 8px solid var(--ok-wood-edge);
+  background:
+    linear-gradient(
+      to bottom,
+      transparent calc(50% - 5px),
+      var(--ok-wood-edge) calc(50% - 5px),
+      var(--ok-wood-edge) calc(50% + 1px),
+      transparent calc(50% + 1px)
+    ),
+    linear-gradient(var(--ok-wood-light), var(--ok-wood-dark));
+  box-shadow: 0 6px 14px #0005;
+}
+.ok-cell {
+  display: flex;
+  min-width: 0;
+  aspect-ratio: 37 / 56;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-4);
+  background: none;
+}
+.ok-cell.empty {
+  background: #0000000f;
+}
+button.ok-cell.empty {
+  outline: 1px dashed #ffffff40;
+  outline-offset: -2px;
+  cursor: pointer;
+}
+.ok-cell[draggable='true'] {
+  cursor: grab;
+}
+.ok-cell.dragging {
+  opacity: 0.4;
+}
+.ok-cell .ok-tile,
+.ok-cell .rx-tile {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+}
+.ok-cell .rx-tile strong {
+  font-size: clamp(13px, 3.2cqi, 22px);
+}
+.ok-cell.fresh .rx-tile {
+  animation: ok-drop-in 240ms var(--motion-ease-out);
+}
+@keyframes ok-drop-in {
+  from {
+    transform: translateY(-14px);
+    opacity: 0;
+  }
+}
+
+/* End of round: the open winning rack and the score line. */
+.ok-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-16);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-12);
+  background: var(--color-background-raised);
+}
+.ok-summary h3 {
+  margin: 0;
+  font-size: var(--font-size-body);
+}
+.ok-summary p {
+  margin: var(--space-4) 0 0;
+  font-size: var(--font-size-metadata);
+  color: var(--color-text-secondary);
+}
+.ok-open-rack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+}
+.ok-meld {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: var(--space-4);
+  border-radius: var(--radius-8);
+  background: linear-gradient(var(--ok-wood-light), var(--ok-wood-dark));
+}
+.ok-meld.finishing {
+  flex-direction: column;
+  background: none;
+}
+.ok-meld small {
+  font-size: var(--font-size-micro);
+  color: var(--color-text-secondary);
+}
+.ok-scores tr.winner td {
+  color: var(--color-text-accent);
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (max-width: 960px) {
+  .ok-felt {
+    grid-template-columns: minmax(96px, 1fr) minmax(0, 1.3fr) minmax(96px, 1fr);
+    padding: var(--space-12);
+    gap: var(--space-8);
+  }
+  .ok-mini-rack {
+    display: none;
+  }
+  .ok-rack {
+    gap: 12px 3px;
+    padding: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ok-seat,
+  .ok-pile,
+  .ok-middle,
+  .ok-table .rx-tile {
+    transition: none;
+  }
+  .ok-seat.turn {
+    transform: none;
+  }
+  .ok-pile-top.last .rx-tile,
+  .ok-cell.fresh .rx-tile {
+    animation: none;
+  }
+}

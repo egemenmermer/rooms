@@ -31,11 +31,13 @@ export function Avatar({
   size = 'normal',
   tone,
 }: {
-  name: string;
+  /** Display name; a missing or blank name renders "?" with a generic label instead of crashing. */
+  name?: string | null;
   size?: 'small' | 'normal' | 'large';
   tone?: string;
 }) {
-  const words = name.trim().split(/\s+/).filter(Boolean);
+  const label = (name ?? '').trim();
+  const words = label.split(/\s+/).filter(Boolean);
   const initials =
     words
       .slice(0, 2)
@@ -43,12 +45,12 @@ export function Avatar({
       .join('')
       .toLocaleUpperCase() || '?';
   const tones = ['sand', 'lavender', 'sage', 'blue'];
-  const color = tone ?? tones[(name.trim().codePointAt(0) ?? 0) % tones.length];
+  const color = tone ?? tones[(label.codePointAt(0) ?? 0) % tones.length];
   return (
     <span
       className={`avatar ${size} ${color}`}
-      aria-label={name.trim() || t('Kullanıcı')}
-      title={name.trim() || undefined}
+      aria-label={label || t('Kullanıcı')}
+      title={label || undefined}
     >
       <span aria-hidden="true">{initials}</span>
     </span>

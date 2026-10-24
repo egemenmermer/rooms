@@ -4,6 +4,7 @@ import { RoomConversation } from './RoomConversation';
 import { Messages } from './Messages';
 import { useConversationRestore } from './last-conversation';
 import { RoomEventSounds } from './room-event-sounds';
+import { GameTurnNotice } from './games/TurnNotice';
 import './minimal-room.css';
 import { ParticipantAudioMenu } from './ParticipantAudioMenu';
 import { MusicDJ, MusicDJEntry, openMusicDJ } from './MusicDJ';
@@ -864,6 +865,7 @@ export default function App() {
       <RemoteControlRuntime />
       <MusicDJ showTrigger={false} />
       <RoomEventSounds />
+      <GameTurnNotice />
       <ParticipantAudioMenu />
 
       {settingsPage && (

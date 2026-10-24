@@ -1,0 +1,123 @@
+.rg-hand-strip .eyebrow {
+  font-size: 10px;
+  color: #bab0fb;
+  letter-spacing: 1.3px;
+  display: block;
+  margin-bottom: 8px;
+}
+.rg-hand-strip.result {
+  border-color: #42795f;
+  background: #20372e;
+}
+.rg-timer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #d8ddeb;
+  font-size: 12px;
+}
+.rg-timer > b {
+  display: grid;
+  place-items: center;
+  width: 37px;
+  height: 37px;
+  border: 3px solid #8b83ff;
+  border-radius: 50%;
+  font-size: 12px;
+  color: #c8bcff;
+}
+.rg-timer small {
+  display: block;
+  color: #9eacc2;
+  font-size: 11px;
+  margin-top: 5px;
+}
+.rg-actions {
+  display: flex;
+  gap: 9px;
+}
+.rg-actions .button {
+  min-width: 99px;
+  justify-content: center;
+}
+.rg-end {
+  background: none;
+  color: #9ba7bc;
+  font-size: 11px;
+  padding: 8px 0;
+}
+.rg-modal {
+  padding: 0 !important;
+  background: #262a33 !important;
+  border: 1px solid #464b58 !important;
+  border-radius: 15px !important;
+  overflow: hidden;
+  max-height: calc(100dvh - 70px);
+  display: flex;
+  flex-direction: column;
+  width: 540px !important;
+  max-width: calc(100vw - 50px);
+}
+.rg-modal .modal-heading {
+  height: 74px;
+  min-height: 74px;
+  padding: 0 26px;
+  border-bottom: 1px solid #393e49;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+.rg-modal .modal-heading h2 {
+  font-size: 20px;
+  letter-spacing: -0.4px;
+  font-weight: 650;
+}
+.rg-modal .modal-heading .icon-button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #4b5260;
+  border-radius: 10px;
+  color: #a7adbc;
+}
+.rg-modal-body {
+  padding: 24px 26px;
+  overflow: auto;
+  min-height: 0;
+}
+.rg-modal-body > p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #d1d6e2;
+  margin: 17px 0 0;
+}
+.rg-modal-footer {
+  padding: 17px 26px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid #3c414e;
+  background: #232730;
+}
+.rg-modal .button {
+  font-size: 12px;
+  min-height: 36px;
+}
+.rg-modal label {
+  display: block;
+  font-size: 12px;
+  color: #c0c7d5;
+  font-weight: 600;
+}
+.rg-modal input:not([type='checkbox']),
+.rg-modal select {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  min-height: 41px;
+  background: #1b1e25;
+  border: 1px solid #636c80;
+  border-radius: 7px;
+  padding: 10px 13px;
+  color: #f1f3f8;
+  font-size: 14px;
+}

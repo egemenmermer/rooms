@@ -1,0 +1,80 @@
+/* S40–S43 game surfaces. Cards, counters and legal actions come from native room projection. */
+.rg-page {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  padding: 26px 29px;
+  background: var(--rooms-main, #22252c);
+  color: #f2f3f7;
+}
+.rg-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+.rg-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.rg-title h1 {
+  font-size: 24px;
+  letter-spacing: -0.6px;
+  margin: 0;
+  font-weight: 650;
+}
+.rg-title > span,
+.rg-section-heading > span {
+  font-size: 10px;
+  background: #363b47;
+  border-radius: 4px;
+  color: #b7c0d1;
+  font-weight: 650;
+  padding: 5px 8px;
+}
+.rg-heading p {
+  font-size: 12px;
+  color: #9aa5b9;
+  margin: 10px 0 0;
+}
+.rg-heading > div:last-child {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.rg-heading button:not(.icon-button) {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: none;
+  color: #adb7c9;
+  padding: 5px;
+  font-size: 12px;
+}
+.rg-banner {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  border: 1px solid #5a4b2d;
+  border-radius: 8px;
+  background: #393224;
+  color: #dcb36b;
+  margin-bottom: 18px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.rg-banner button {
+  background: none;
+  color: #c0b5db;
+  font-size: 12px;
+  font-weight: 600;
+}
+.rg-banner.error {
+  border-color: #68404b;
+  background: #3c2930;
+  color: #e5a0ad;
+}

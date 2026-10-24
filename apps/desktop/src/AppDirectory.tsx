@@ -48,7 +48,7 @@ const games = gameCatalog.map((game): DirectoryItem => ({
   id: game.kind,
   name: gameNames[game.kind],
   detail: `${game.detail} ${game.players}.`,
-  section: game.kind === '101' ? 'tables' : 'cards',
+  section: game.section,
   keywords: t('oyun masa kart kıraathane {kind}', { kind: game.kind }),
   icon: 'game',
   tint: '#1f4a3b',
@@ -131,11 +131,7 @@ function Tile({ item, large = false }: { item: DirectoryItem; large?: boolean })
       style={{ '--tile': item.tint } as CSSProperties}
       aria-hidden="true"
     >
-      {item.icon === 'game' ? (
-        <GameArt kind={item.id as Parameters<typeof GameArt>[0]['kind']} />
-      ) : (
-        <item.icon size={large ? 40 : 20} />
-      )}
+      {item.icon === 'game' ? <GameArt kind={item.id} /> : <item.icon size={large ? 40 : 20} />}
     </span>
   );
 }

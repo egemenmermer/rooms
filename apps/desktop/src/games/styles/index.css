@@ -1,0 +1,26 @@
+/*
+ * Game surfaces (formerly reference-games.css). The fragments below are contiguous slices of the
+ * original file, imported in its original order: rules of equal specificity override by position,
+ * so keep this order and do not import a fragment from anywhere else.
+ */
+@import './base.css'; /* page, heading, title, banners (all tables) */
+@import './catalog.css'; /* game catalog, room table card, voice note (no table yet) */
+@import './lobby.css'; /* waiting lobby: seats, rules, spectators, hand strip, lobby bet */
+@import './holdem-board.css'; /* Hold'em felt and center */
+@import './cards.css'; /* playing cards and card outlines (tables and history) */
+@import './holdem-seats.css'; /* Hold'em table seats and nine-seat layout */
+@import './table-chrome.css'; /* hand strip details, timer, actions, end button, modals */
+@import './holdem-modals.css'; /* Hold'em raise and buy-in modals */
+@import './history-row.css'; /* in-table hand history rows, focus rings */
+@import './lobby-responsive.css'; /* @media for catalog, lobby and Hold'em */
+@import './shell.css'; /* table shell and badges (Blackjack, Batak, 101, ...) */
+@import './shell-results.css'; /* hand results table */
+@import './batak.css'; /* shared hand rack and card rack (Batak, Pişti) */
+@import './okey101.css'; /* okey tiles, 101 meld editor and processing */
+@import './watch-create.css'; /* watch prompt and Batak/101 table setup */
+@import './holdem-form.css'; /* Hold'em rules form and pot details */
+@import './shell-focus.css'; /* spectator button, shell focus rings */
+@import './tables-responsive.css'; /* @media for the table shell, tiles, 101 editor and table setup */
+@import './history.css'; /* history page and hand details */
+@import './holdem-settlement.css'; /* Hold'em winning cards, raise status, pot details */
+@import './misc.css'; /* invite copy, activity replacement consent */

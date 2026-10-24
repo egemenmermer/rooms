@@ -31,12 +31,13 @@ it('waits for the table service instead of inventing tables', () => {
 it('lists only playable games and opens their table setup', () => {
   const f = callbacks();
   render(<Kiraathane {...f} {...base} game={null} ready />);
-  expect(screen.queryByText(/Tavla|Satranç/)).toBeNull();
+  expect(screen.queryByText(/Satranç/)).toBeNull();
   for (const [name, kind] of [
     ['Texas Hold’em', 'holdem'],
     ['Blackjack', 'blackjack'],
     ['Batak', 'batak'],
     ['101 Okey', '101'],
+    ['Tavla', 'rooms-tavla-v1'],
   ] as const) {
     fireEvent.click(gameButton(name));
     expect(f.onCreate).toHaveBeenLastCalledWith(kind);

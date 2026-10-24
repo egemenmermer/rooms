@@ -1,0 +1,43 @@
+.rx-rack header,
+.rx-meld-editor header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.rx-rack {
+  margin: 20px 0;
+}
+.rx-rack header {
+  margin-bottom: 12px;
+}
+.rx-rack header > strong {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #a0a3b9;
+}
+.rx-rack header > div {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.rx-card-rack {
+  display: flex;
+  gap: 7px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 18px 10px;
+  background: #151620;
+  border: 1px solid #282b3a;
+  border-radius: 12px;
+}
+.rx-card-rack .playing-card {
+  width: 53px;
+  height: 76px;
+}
+.rx-card-rack .playing-card:disabled {
+  opacity: 0.55;
+}
+.rx-card-rack .playing-card:not(:disabled):hover {
+  transform: translateY(-7px);
+}
