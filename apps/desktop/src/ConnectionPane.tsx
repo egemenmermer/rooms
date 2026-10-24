@@ -44,6 +44,14 @@ const linkFromParams = (server: string | null, code: string | null): InviteLink 
   return serverUrl && code && LEGACY_INVITE_CODE_PATTERN.test(code) ? { serverUrl, code } : null;
 };
 
+/** Address of this device's sign-up request; kept after the request ends with the account. */
+let signupEmail = '';
+const rememberSignupEmail = (state: { pending: { email?: string } | null }) => {
+  if (state.pending?.email) signupEmail = state.pending.email;
+};
+rememberSignupEmail(useSignup.getState());
+useSignup.subscribe(rememberSignupEmail);
+
 export function ConnectionPane({
   referenceMode,
   sessionExpired = false,
@@ -63,7 +71,15 @@ export function ConnectionPane({
   const fromLink = linkFromParams(params.get('server'), params.get('invite'));
   const [server, setServer] = useState(() => fromLink?.serverUrl || savedServer());
   const [link, setLink] = useState('');
-  const [email, setEmail] = useState('');
+  const signupError = useSignup((state) => state.error);
+  const signupLeft = useSignup((state) => !state.pending || state.hidden);
+  // An approved sign-up whose account exists but whose session did not start ("Hesabın oluştu
+  // ama oturum açılamadı"): signing in is the way on, so the address is filled in already.
+  const createdEmail = !registration && signupError && signupLeft ? signupEmail : '';
+  const [email, setEmail] = useState(createdEmail);
+  useEffect(() => {
+    if (createdEmail) setEmail((current) => current.trim() || createdEmail);
+  }, [createdEmail]);
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [preview, setPreview] = useState<SocialInvite | null>(null);

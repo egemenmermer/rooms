@@ -30,10 +30,13 @@ export function VoiceRejoinNotice() {
           </>
         }
       >
-        {t('{room} odasına {count} denemede yeniden bağlanılamadı. İnternet bağlantını kontrol edip tekrar dene.', {
-          room: rejoin.roomName,
-          count: rejoin.maxAttempts,
-        })}
+        {t(
+          '{room} odasına {count} denemede yeniden bağlanılamadı. İnternet bağlantını kontrol edip tekrar dene.',
+          {
+            room: rejoin.roomName,
+            count: rejoin.maxAttempts,
+          },
+        )}
       </Notice>
     );
   return (
