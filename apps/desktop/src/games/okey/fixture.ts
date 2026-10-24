@@ -125,8 +125,11 @@ const statistics = {
   can: { hands: 2, wins: 0, score: -6 },
 };
 
-/** A table in one of the fixture scenes, as the server sends it to `viewer`. */
-export function okeyFixture(scene: OkeyScene): GamePublicState {
+/**
+ * A table in one of the fixture scenes as the server sends it to the viewer in round seat 0; `viewerId` is
+ * that player's user id (the dev harness signs in as its own demo user).
+ */
+export function okeyFixture(scene: OkeyScene, viewerId = 'ece'): GamePublicState {
   const view: OkeyClassicView = baseView();
   let legalActions: string[] = ['draw'],
     status: GamePublicState['status'] = 'playing',
@@ -176,9 +179,9 @@ export function okeyFixture(scene: OkeyScene): GamePublicState {
   }
   return {
     kind: 'rooms-okey-v1',
-    ownerId: 'ece',
+    ownerId: viewerId,
     status,
-    seats,
+    seats: seats.map((seat) => (seat.seat === 0 ? { ...seat, userId: viewerId } : seat)),
     turn,
     view: {
       ...view,
@@ -186,7 +189,7 @@ export function okeyFixture(scene: OkeyScene): GamePublicState {
       watching: scene === 'spectator',
       ownRecovery: null,
       turnDeadline: 0,
-      statistics: scene === 'finished' ? statistics : {},
+      statistics: scene === 'finished' ? { ...statistics, [viewerId]: statistics.ece } : {},
     },
     history: [],
   } as unknown as GamePublicState;
