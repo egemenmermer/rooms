@@ -548,6 +548,11 @@
 .pp-dock .pp-rack header {
   margin-bottom: 6px;
 }
+/* The shared .rx-rack eyebrow (games/styles/batak.css) is 10 px; keep the 11 px floor here. */
+.rx-rack.pp-rack header > strong {
+  font-size: var(--font-size-micro);
+  letter-spacing: 0.5px;
+}
 .pp-dock .pp-hand {
   padding: 10px;
 }
