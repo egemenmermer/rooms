@@ -47,6 +47,10 @@ Oda başına bir ana Sinema, YouTube veya Ekran etkinliği bulunabilir. Güncel 
 
 Durum: servis ve protokol, test üyelik çözümleyicisi verilerek yerelde doğrulandı. Üretim Stoat yetkisi, dağıtılmış servis, iki gerçek masaüstü oynatıcısı, yerel oynatma eşzamanlaması ve fiziksel bilgisayarın yeniden bağlanması ayrı entegrasyon kabul kontrolleridir. Oynanabilir sunucu yetkili masalar için `game.create` ve türlendirilmiş oyun komutlarını kullanın. Genel medya `start` komutu, oyun kurallarının açık seçilmesini sağlamak için oyun kimliklerini reddeder. Oyun durumları her yetkili kullanıcıya ayrı yansıtılır; özel deste/stok veya diğer oyuncuların açılmamış elleri gösterilmez. Sınanan kural profilleri ve kalan kabul için [oyun kurallarına](GAME_RULES.md) bakın.
 
+## Oyun kaydı
+
+Masa oyunlarının kuralları `packages/games/src/registry.ts` içindeki modüllerden gelir (`GameModule`, `packages/games/src/module.ts`). Yeni oyun bir modül dosyası ve kayıttaki bir satırdır; servis dağıtıcısı, botlar, geçmiş/istatistik ve depolama türü kayıttan okur. Şema `game.create.game` ve `game.action.action` alanlarında yalnızca biçimi denetler (küçük harf, rakam, `-`); sunucu kayıtta olmayan türü `UNKNOWN_GAME`, modülün tanımadığı eylemi `INVALID_GAME_ACTION` ile reddeder. Yeni oyunlar komut verisini `game.action.payload` (en çok 8 KB JSON), masa seçeneklerini `game.create.options` (düz değerler) altında taşır. Holdem, Blackjack, Batak ve 101'in düz alanları (`amount`, `cardId`, `tileIds`, `melds`, `trump`, `variant`, `folding`, `teams`, `holdem`) eski istemciler için aynen geçerlidir.
+
 ## Gerçek masaüstü örnek kabulü
 
 `node scripts/verify-activity-desktop.mjs`, gerçek Activity HTTP sunucusuna bağlanan iki ayrı Electron profili açar. Sosyal yetkilendirme yalnızca test düzeneğindeki Playwright inceleyici işleyicileriyle değiştirilir; QA alt bilgisi ve QA kimlikleri sürekli görünür. Bu, üretim yetkisini aşan bir yol veya Stoat entegrasyon sonucu değildir.
