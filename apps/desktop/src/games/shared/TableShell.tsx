@@ -28,21 +28,11 @@ import { array } from './model';
 import { SeatControlsContext, seatRemovable, type SeatControls } from './SeatAvatar';
 import { TableDockContext } from './TableDock';
 import type { TableUI } from './table-ui';
+import { guardTimer } from './TurnClock';
 
 /** Blackjack: a stack below the smallest bet (2) may buy back up to the 1000 cap. */
 const REBUY_BELOW = 2,
   REBUY_STACK = 1000;
-
-/**
- * Local copy of `guardTimer` from VP-clock (`shared/TurnClock.tsx`); at merge keep that one and
- * import it here. Hides a clock that cannot be a real turn time (far-future deadline, NaN).
- */
-const MAX_TURN_SECONDS = 600;
-function guardTimer(timer: number | null | undefined): number | null {
-  if (timer === null || timer === undefined || Number.isNaN(timer)) return null;
-  if (timer > MAX_TURN_SECONDS) return null;
-  return Math.max(0, Math.floor(timer));
-}
 
 type PopoverTrigger = {
   'aria-expanded': boolean;
