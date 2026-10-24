@@ -39,6 +39,7 @@
   box-shadow: inset 0 0 60px color-mix(in srgb, var(--color-background-canvas) 55%, transparent);
 }
 .bj-dealer {
+  grid-row: 1;
   position: relative;
   display: grid;
   justify-items: center;
@@ -89,6 +90,7 @@
   opacity: 0.45;
 }
 .bj-brand {
+  grid-row: 2;
   align-self: center;
   display: grid;
   justify-items: center;
@@ -233,6 +235,8 @@
 /* Spots: one per seat on an arc, the middle ones closest to the viewer. */
 /* Every spot is as tall as the tallest, the name row at the bottom: highlights line up. */
 .bj-spots {
+  /* Its own row even when the middle (the watermark) is hidden on short windows. */
+  grid-row: 3;
   display: flex;
   justify-content: center;
   align-items: stretch;
