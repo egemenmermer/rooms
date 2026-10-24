@@ -1,5 +1,7 @@
-/* 101 Okey table. Felt and wood are table materials (local custom properties); chrome uses tokens. */
-.o1-table {
+/* 101 Okey table. Felt and wood are table materials (local custom properties); chrome uses tokens.
+   The dock is portalled out of the table, so it carries the materials too. */
+.o1-table,
+.o1-dock {
   --o1-felt-light: #1d4d3a;
   --o1-felt-dark: #0c271d;
   --o1-felt-line: #2f5a48;
@@ -10,6 +12,8 @@
   --o1-tile-back-edge: #b4a27a;
   --o1-okey-glow: #f2c84b;
   --o1-fake: #2e7d4f;
+}
+.o1-table {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -158,10 +162,10 @@
 /* Corner discard piles: only the top tile is visible, a back hints at the tiles under it. */
 .o1-pile {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: var(--space-4);
+  gap: var(--space-4) var(--space-8);
   min-width: 0;
   padding: var(--space-4);
   border: 1px dashed transparent;
@@ -241,9 +245,8 @@
 }
 .o1-stock {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-8);
   padding: var(--space-8);
   border: 1px solid transparent;
   border-radius: var(--radius-8);
@@ -652,8 +655,23 @@ button.o1-meld:hover,
   order: -1;
 }
 .o1-editor .rx-process {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
   margin-top: var(--space-8);
   padding-top: var(--space-8);
+}
+.o1-editor .rx-process label {
+  flex-direction: row;
+  align-items: center;
+}
+.o1-editor .rx-process select {
+  padding: var(--space-4) var(--space-8);
+}
+.o1-editor .rx-process .button {
+  min-height: 30px;
+  padding: var(--space-4) var(--space-12);
+  font-size: var(--font-size-metadata);
 }
 
 /* Round summary: ending, multiplier, penalties. */
@@ -727,6 +745,30 @@ button.o1-meld:hover,
 
 /* Short windows: smaller face-up tiles on the felt so the docked rack keeps its room. */
 @media (max-height: 820px) {
+  .o1-meld-zone .rx-tile.small {
+    width: 22px;
+    flex-basis: 22px;
+    height: 31px;
+  }
+  .o1-meld-zone .rx-tile.small strong {
+    font-size: 14px;
+  }
+  .o1-meld-zone .rx-tile.small > span {
+    display: none;
+  }
+  .o1-side.left > .o1-meld-zone,
+  .o1-side.right > .o1-meld-zone {
+    min-height: 52px;
+  }
+  /* The dock's turn line already names the step; keep the builder's heading for screen readers. */
+  .o1-editor > header > h3 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
   .o1-pile .rx-tile,
   .o1-indicator .rx-tile,
   .o1-pile-empty {

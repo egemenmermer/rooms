@@ -366,6 +366,10 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
 
   const handNumber = Math.max(1, game.history.length + (ended ? 0 : 1)),
     editing = me !== null && !ended && myTurn && stage === 'discard';
+  // The round line; a folding table also shows the opening the next player has to beat.
+  const round = `${t('El {hand}', { hand: handNumber })}${
+    rules.folding && !ended ? ` · ${t('Açılış {threshold}', { threshold })}` : ''
+  }`;
   const moveLog = log.lines.length > 0 && (
     <ol className="o1-log" aria-label={t('Son hamleler')} aria-live="polite">
       {log.lines.map((line, index) => (
@@ -474,10 +478,7 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
               </div>
             )}
           </div>
-          <small className="o1-round">
-            {t('El {hand}', { hand: handNumber })}
-            {rules.folding && !ended ? ` · ${t('Açılış {threshold}', { threshold })}` : ''}
-          </small>
+          {(me === null || ended) && <small className="o1-round">{round}</small>}
           {!melds.length && <p className="o1-no-melds">{t('Henüz per açılmadı.')}</p>}
         </div>
       </section>
@@ -511,7 +512,9 @@ export function ReferenceOkey({ game, userId, can, action, timer }: TableUI) {
               </p>
             </div>
             <div className="o1-tools">
-              <small>{t('Istakan · {count} taş', { count: tiles.length })}</small>
+              <small>
+                {round} · {t('Istakan · {count} taş', { count: tiles.length })}
+              </small>
               <button
                 type="button"
                 className="button secondary small"
