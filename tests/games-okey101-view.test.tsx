@@ -6,6 +6,8 @@ import { okey101Fixture, type Okey101Scene } from '../apps/desktop/src/games/oke
 import { ReferenceOkey } from '../apps/desktop/src/games/okey101/OkeyTable';
 import { OkeyHistory } from '../apps/desktop/src/games/okey101/OkeyHistory';
 import type { TableUI } from '../apps/desktop/src/games/shared/table-ui';
+import { TableDockContext } from '../apps/desktop/src/games/shared/TableDock';
+import { okey101Game } from '../apps/desktop/src/games/okey101/entry';
 
 beforeEach(() => sessionStorage.clear());
 afterEach(cleanup);
@@ -79,6 +81,9 @@ describe('101 Okey table', () => {
     expect(within(melds).getByLabelText('Okey · Mavi 6 yerine')).toBeTruthy();
     // Meld tiles are drawn inside the meld button, never as nested buttons.
     expect(document.querySelector('button button')).toBeNull();
+    // A meld the viewer cannot lay off on is table content, not a greyed-out disabled button.
+    expect(within(melds).queryAllByRole('button')).toHaveLength(0);
+    expect(within(melds).getAllByRole('group')[0].getAttribute('aria-label')).toMatch(/^Per 1 · /);
     expect(screen.queryByRole('button', { name: 'Seçili taşı at' })).toBeNull();
   });
 
@@ -169,7 +174,10 @@ describe('101 Okey table', () => {
   });
 
   it('round end: ending, multiplier, penalties and points', () => {
-    show('finished');
+    const { container } = show('finished');
+    // The stock and its count are gone once the round is over; the hand number never reads 0.
+    expect(screen.queryByRole('button', { name: /^Kapalı taş çek · / })).toBeNull();
+    expect(container.querySelector('.o1-round')!.textContent).toBe('El 1');
     expect(screen.getByRole('heading', { name: 'Osman elden bitirdi' })).toBeTruthy();
     expect(screen.getByText('Cezalar ×2')).toBeTruthy();
     const penalties = screen.getByRole('list', { name: 'Cezalar ve bonuslar' });
@@ -252,6 +260,38 @@ describe('101 Okey table', () => {
       />,
     );
     expect(screen.queryByText(/^Gösterge ·/)).toBeNull();
+  });
+});
+
+describe('101 Okey table layout', () => {
+  it('docks the ıstaka, the turn actions and the opening builder in the shell dock', () => {
+    const game = okey101Fixture('discard', 'ece');
+    const { props } = ui(game, 'ece');
+    const dock = document.createElement('div');
+    document.body.append(dock);
+    const { container } = render(
+      <TableDockContext.Provider value={dock}>
+        <ReferenceOkey {...props} />
+      </TableDockContext.Provider>,
+    );
+    const docked = within(dock).getByRole('region', { name: 'Istakan' });
+    expect(within(docked).getByRole('group', { name: 'Istaka' })).toBeTruthy();
+    expect(within(docked).getByRole('button', { name: 'Seçili taşı at' })).toBeTruthy();
+    expect(within(docked).getByRole('button', { name: 'Seri aç' })).toBeTruthy();
+    expect(within(docked).getByText(/^El 1/)).toBeTruthy();
+    // The felt keeps only the table; the static rule chips live in the rules popover.
+    expect(container.querySelector('.o1-rack')).toBeNull();
+    expect(container.querySelector('.rx-badges')).toBeNull();
+    dock.remove();
+  });
+
+  it('lists the table rules for the rules popover, with folding', () => {
+    const game = okey101Fixture('draw', 'ece');
+    expect(okey101Game.ruleRows(game)[0]).toEqual(['Açılış', '101']);
+    (game.view.rules as Record<string, unknown>).folding = true;
+    const rows = okey101Game.ruleRows(game);
+    expect(rows[0]).toEqual(['Açılış', '101 · her açılış öncekini geçer']);
+    expect(rows).toContainEqual(['Katlamalı', 'Açık']);
   });
 });
 
