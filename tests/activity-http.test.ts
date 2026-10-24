@@ -86,7 +86,7 @@ describe('native Activity command conflict recovery', () => {
     ).rejects.toThrow();
     expect(invalid).not.toHaveBeenCalled();
   });
-  it('bounds repeated precondition conflicts to three writes', async () => {
+  it('bounds repeated precondition conflicts to five writes', async () => {
     let posts = 0;
     const fetcher = vi.fn(async (_url: unknown, options?: RequestInit) =>
       options?.method === 'POST'
@@ -102,8 +102,8 @@ describe('native Activity command conflict recovery', () => {
         fetcher as typeof fetch,
       ),
     ).rejects.toMatchObject({ code: 'REVISION_CONFLICT', status: 409 });
-    expect(posts).toBe(3);
-    expect(fetcher).toHaveBeenCalledTimes(5);
+    expect(posts).toBe(5);
+    expect(fetcher).toHaveBeenCalledTimes(9);
   });
 });
 
