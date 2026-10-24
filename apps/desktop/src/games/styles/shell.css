@@ -1,0 +1,19 @@
+/* S44–S50: public table projections and local, uncommitted hand drafts. */
+.rx-game {
+  max-width: 1160px;
+  margin: auto;
+}
+.rx-badges {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin: 20px 0 16px;
+}
+.rx-badges > span {
+  padding: 6px 10px;
+  background: #171821;
+  border: 1px solid #282a37;
+  border-radius: 7px;
+  color: #b5b6c7;
+  font-size: 11px;
+}

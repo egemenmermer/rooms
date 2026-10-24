@@ -1,0 +1,88 @@
+.rx-watch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 70px 20px;
+  border: 1px solid #2e3040;
+  background: #151620;
+  border-radius: 16px;
+  gap: 10px;
+}
+.rx-watch p {
+  color: #999db7;
+  font-size: 12px;
+}
+.rx-watch h2 {
+  font-size: 21px;
+  margin: 0;
+}
+.rx-create {
+  max-width: 1100px;
+  margin: auto;
+}
+.rx-create-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 25px 0;
+}
+.rx-create-options button {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 9px;
+  text-align: left;
+  background: #181925;
+  border: 1px solid #343547;
+  border-radius: 12px;
+  padding: 20px;
+  color: #d8d9e6;
+}
+.rx-create-options button.selected {
+  border-color: #b395f8;
+  background: #a88bfa10;
+}
+.rx-create-options strong {
+  font-size: 16px;
+}
+.rx-create-options small {
+  color: #a0a3ba;
+  font-size: 11px;
+}
+.rx-create-options span {
+  font-size: 30px;
+  color: #b59bed;
+}
+.rx-create-options.two {
+  grid-template-columns: repeat(2, 1fr);
+}
+.rx-create-body {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 20px;
+}
+.rx-create-body > section,
+.rx-create-body > aside {
+  border: 1px solid #303241;
+  background: #151620;
+  border-radius: 13px;
+  padding: 22px;
+}
+.rx-create-body h3 {
+  font-size: 14px;
+  margin: 0 0 18px;
+}
+.rx-create-participant {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #303241;
+}
+.rx-create footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}

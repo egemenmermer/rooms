@@ -1,0 +1,338 @@
+.rh-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 26px 0;
+}
+.rh-stats article {
+  padding: 22px;
+  border: 1px solid #ffffff0c;
+  border-radius: 13px;
+  background: #161923;
+}
+.rh-stats small {
+  display: block;
+  color: #9298ac;
+  font-size: 11px;
+  margin-bottom: 13px;
+}
+.rh-stats strong {
+  font-size: 28px;
+  font-weight: 650;
+  color: #d9d8ee;
+}
+.rh-history-panel {
+  border: 1px solid #ffffff0e;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #151821;
+}
+.rh-history-panel > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 23px;
+  border-bottom: 1px solid #ffffff0a;
+}
+.rh-history-panel h3 {
+  font-size: 16px;
+  margin: 0;
+}
+.rh-history-panel label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #9399ae;
+}
+.rh-history-panel select {
+  background: #20232e;
+  border: 1px solid #ffffff10;
+  border-radius: 8px;
+  color: #c8cbd8;
+  padding: 8px 12px;
+}
+.rh-history-table {
+  border-collapse: collapse;
+  width: 100%;
+  text-align: left;
+  font-size: 12px;
+}
+.rh-history-table th {
+  color: #7e879e;
+  font-weight: 500;
+  padding: 13px 22px;
+  background: #11141c;
+}
+.rh-history-table td {
+  padding: 19px 22px;
+  border-top: 1px solid #ffffff08;
+  color: #b9bfd0;
+}
+.rh-history-table td strong {
+  display: block;
+  color: #e0e3ee;
+  font-size: 13px;
+}
+.rh-history-table td small {
+  display: block;
+  margin-top: 5px;
+  color: #7e879f;
+  font-size: 10px;
+}
+.rh-history-table td button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #b5a6e0;
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.rh-empty {
+  min-height: 310px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 28px;
+  text-align: center;
+  color: #8f98af;
+}
+.rh-empty h3 {
+  color: #cfd4e2;
+  font-size: 17px;
+  margin-top: 18px;
+}
+.rh-empty p {
+  max-width: 400px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.rh-history-note {
+  font-size: 11px;
+  color: #7f899e;
+  text-align: center;
+  padding: 15px;
+}
+.rh-detail {
+  width: min(660px, calc(100vw - 50px));
+}
+.rh-detail .rg-modal-body > p {
+  font-size: 12px;
+  color: #969eb3;
+  line-height: 1.7;
+}
+.rh-detail-rows {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+}
+.rh-detail-rows > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid #ffffff0a;
+  border-radius: 9px;
+  padding: 15px;
+  background: #151923;
+  font-size: 12px;
+}
+.rh-detail-rows strong {
+  font-size: 12px;
+  color: #c7bfdf;
+}
+.rh-board-cards {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 20px;
+  background: #123a302f;
+  border-radius: 12px;
+}
+.rh-recovery {
+  width: min(600px, calc(100vw - 50px));
+}
+.rh-recovery-callout {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  padding: 18px;
+  border: 1px solid #b8a27833;
+  border-radius: 12px;
+  background: #b8a2780d;
+  color: #d0bfa0;
+}
+.rh-recovery-callout strong {
+  font-size: 15px;
+  color: #e8dfd0;
+}
+.rh-recovery-callout p {
+  font-size: 12px;
+  line-height: 1.6;
+  margin-bottom: 0;
+  color: #aaa190;
+}
+.rh-recovery-callout > b {
+  font-size: 23px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.rh-recovery-steps {
+  display: flex;
+  gap: 8px;
+  margin-top: 22px;
+}
+.rh-recovery-steps span {
+  flex: 1;
+  font-size: 11px;
+  line-height: 1.7;
+  padding: 14px 11px;
+  border: 1px solid #ffffff0a;
+  border-radius: 8px;
+  color: #a1a8bc;
+}
+.rh-error {
+  color: #e99a9a !important;
+}
+@media (max-width: 900px) {
+  .rh-history-table th,
+  .rh-history-table td {
+    padding: 14px 12px;
+  }
+  .rh-stats {
+    gap: 10px;
+  }
+  .rh-stats article {
+    padding: 16px;
+  }
+}
+@media (max-width: 650px) {
+  .rh-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .rh-history-panel {
+    overflow: auto;
+  }
+  .rh-history-table {
+    min-width: 600px;
+  }
+  .rh-recovery-steps {
+    flex-direction: column;
+  }
+}
+.rh-revealed-hand {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 14px 0;
+  padding: 15px;
+  border: 1px solid #ffffff0c;
+  border-radius: 10px;
+}
+.rh-revealed-hand > span {
+  width: 90px;
+  font-size: 12px;
+}
+.rh-revealed-hand > div {
+  display: flex;
+  gap: 7px;
+}
+.rh-revealed-hand > small {
+  font-size: 11px;
+  color: #a398b9;
+}
+.rh-blackjack-history {
+  padding: 17px;
+  border: 1px solid #ffffff0c;
+  border-radius: 12px;
+  margin: 15px 0;
+}
+.rh-blackjack-history h3 {
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 15px;
+}
+.rh-blackjack-history h3 > span {
+  color: #b8abdf;
+}
+.rh-history-hand {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin: 12px 0;
+}
+.rh-history-hand > div:first-child {
+  display: flex;
+  gap: 7px;
+}
+.rh-history-hand strong,
+.rh-history-hand small {
+  display: block;
+  font-size: 12px;
+}
+.rh-history-hand small {
+  color: #939bb0;
+  margin-top: 7px;
+}
+.rh-history-rules {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: #b2aac4;
+  padding: 13px;
+  background: #171b26;
+  border-radius: 8px;
+}
+.rh-last-discard {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  font-size: 12px;
+  color: #a5adc1;
+  padding: 15px;
+  border: 1px solid #ffffff0c;
+  border-radius: 10px;
+}
+.rh-history-teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.rh-history-teams article {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid #ffffff0c;
+  border-radius: 10px;
+  padding: 17px;
+  font-size: 12px;
+}
+.rh-history-teams small {
+  color: #92899e;
+  font-size: 10px;
+}
+.rh-recovery-record {
+  padding: 15px;
+  margin-top: 18px;
+  border: 1px solid #ffffff0c;
+  border-radius: 8px;
+}
+.rh-recovery-record small {
+  font-size: 10px;
+  color: #8c96ae;
+}
+.rh-recovery-record p {
+  font-size: 12px;
+  color: #acb5c8;
+  line-height: 1.7;
+}
+.rh-dealer-history > small {
+  display: block;
+  text-align: center;
+  color: #969fb4;
+  font-size: 11px;
+}

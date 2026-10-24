@@ -1,0 +1,118 @@
+@media (max-width: 1279px) {
+  .rg-catalog-art {
+    height: 118px;
+  }
+  .rg-catalog-card > div:last-child {
+    padding: 12px;
+  }
+  .rg-board {
+    min-height: 430px;
+  }
+  .rg-center {
+    top: 112px;
+  }
+  .rg-table-seat.own .playing-card {
+    width: 55px;
+    height: 79px;
+    min-width: 55px;
+  }
+  .rg-table-seat.own .rg-seat-cards {
+    min-height: 79px;
+  }
+}
+@media (max-width: 1099px) {
+  .rg-page {
+    padding: 20px;
+  }
+  .rg-lobby {
+    grid-template-columns: 1fr;
+  }
+  .rg-board {
+    min-height: 405px;
+  }
+  .rg-center {
+    top: 100px;
+  }
+  .rg-felt {
+    left: 16%;
+    right: 16%;
+    top: 76px;
+    bottom: 74px;
+  }
+  .rg-table-seat {
+    width: 130px;
+  }
+  .rg-seat-info {
+    min-width: 120px;
+  }
+  .rg-hand-strip {
+    flex-wrap: wrap;
+  }
+  .rg-catalog-card h3 {
+    font-size: 15px;
+  }
+  .rg-art-cards {
+    transform: scale(0.8);
+  }
+  .rg-catalog-card p {
+    font-size: 11px;
+    min-height: 32px;
+  }
+}
+@media (max-width: 959px) {
+  .rg-board {
+    min-height: 390px;
+  }
+  .rg-heading > div:last-child {
+    gap: 8px;
+  }
+  .rg-seat-info strong {
+    font-size: 10px;
+  }
+  .rg-seat-info small {
+    font-size: 9px;
+  }
+  .rg-seat-info > .avatar,
+  .rg-seat-info > .voice-photo {
+    width: 25px;
+    height: 25px;
+    min-width: 25px;
+  }
+  .rg-table-seat {
+    width: 124px;
+  }
+  .rg-seat-info {
+    min-width: 112px;
+  }
+  .rg-table-seat.own .playing-card {
+    width: 48px;
+    height: 68px;
+    min-width: 48px;
+  }
+  .rg-table-seat.own .rg-seat-cards {
+    min-height: 68px;
+  }
+  .rg-actions .button {
+    min-width: 81px;
+  }
+  .rg-hand-strip {
+    padding: 12px 14px;
+  }
+  .rg-hand-strip h3 {
+    font-size: 14px;
+  }
+  .rg-hand-strip p {
+    font-size: 11px;
+  }
+  .rg-timer {
+    font-size: 10px;
+  }
+  .rg-timer small {
+    font-size: 9px;
+  }
+  .rg-board.rg-nine-layout .p-5 .avatar,
+  .rg-board.rg-nine-layout .p-8 .avatar,
+  .rg-board.rg-nine-layout .p-1 .avatar {
+    display: none;
+  }
+}

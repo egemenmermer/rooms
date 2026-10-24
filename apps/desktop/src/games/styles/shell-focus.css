@@ -1,0 +1,17 @@
+.rg-spectators button {
+  margin-left: auto;
+  background: #242332;
+  border: 1px solid #4a3c65;
+  color: #c5acf1;
+  padding: 7px 12px;
+  border-radius: 7px;
+}
+.rx-game .button:disabled {
+  opacity: 0.42;
+}
+.rx-game button:focus-visible,
+.rx-create button:focus-visible,
+.rx-tile:focus-visible {
+  outline: 2px solid #c5a8ff;
+  outline-offset: 3px;
+}

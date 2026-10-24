@@ -1,0 +1,92 @@
+@media (max-width: 1100px) {
+  .rx-game {
+    padding: 24px;
+  }
+  .rx-blackjack-felt {
+    min-height: 340px;
+  }
+  .rx-public-melds {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rx-batak-setup {
+    grid-template-columns: 1fr 260px;
+  }
+  .rx-okey-players article {
+    min-width: 0;
+  }
+  .rx-discards {
+    flex-wrap: wrap;
+  }
+  .rx-create-options {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 800px) {
+  .rx-game {
+    padding: 18px 14px;
+  }
+  .rx-batak-setup,
+  .rx-create-body {
+    grid-template-columns: 1fr;
+  }
+  .rx-batak-setup > aside {
+    display: none;
+  }
+  .rx-blackjack-hands {
+    gap: 8px;
+  }
+  .rx-blackjack-hands article {
+    padding: 9px;
+    min-width: 120px;
+  }
+  .rx-batak-felt {
+    height: 330px;
+  }
+  .rx-batak-seat {
+    min-width: 90px;
+    padding: 8px;
+  }
+  .rx-okey-felt {
+    padding: 13px;
+  }
+  .rx-okey-players {
+    gap: 6px;
+  }
+  .rx-okey-players article {
+    padding: 7px;
+  }
+  .rx-okey-middle {
+    grid-template-columns: 1fr 68px;
+    gap: 10px;
+  }
+  .rx-wood-rack {
+    gap: 4px;
+  }
+  .rx-tile {
+    width: 32px;
+    flex-basis: 32px;
+    height: 49px;
+  }
+  .rx-create {
+    padding: 20px;
+  }
+  .rx-process {
+    flex-wrap: wrap;
+  }
+  .rx-meld-editor footer {
+    align-items: stretch;
+  }
+  .rx-meld-editor footer > span {
+    flex-basis: 100%;
+    order: 3;
+  }
+  .rx-trump {
+    gap: 6px;
+  }
+  .rx-trump button {
+    height: 96px;
+  }
+  .rx-rack .rg-timer {
+    min-width: auto;
+  }
+}

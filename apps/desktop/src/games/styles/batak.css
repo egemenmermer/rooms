@@ -1,0 +1,233 @@
+.rx-batak-setup {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(240px, 1fr);
+  gap: 18px;
+}
+.rx-batak-setup > section,
+.rx-batak-setup > aside {
+  border: 1px solid #2b2d3b;
+  border-radius: 14px;
+  background: #151620;
+  padding: 22px;
+}
+.rx-batak-setup header,
+.rx-rack header,
+.rx-meld-editor header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.rx-batak-setup h2 {
+  font-size: 19px;
+  margin: 0;
+}
+.rx-batak-setup p {
+  color: #9295ac;
+  font-size: 12px;
+}
+.rx-batak-setup footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  align-items: center;
+  margin-top: 24px;
+}
+.rx-bid-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 9px;
+  margin-top: 22px;
+}
+.rx-bid-grid button {
+  height: 54px;
+  border: 1px solid #303242;
+  background: #1b1d29;
+  border-radius: 10px;
+  color: #babed3;
+  font-size: 18px;
+  font-weight: 700;
+}
+.rx-bid-grid button.selected,
+.rx-trump button.selected {
+  border-color: #a88bfa;
+  background: #a88bfa12;
+  color: #e4d9ff;
+}
+.rx-bid-grid button:disabled {
+  opacity: 0.45;
+}
+.rx-bid-player {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 0;
+  border-bottom: 1px solid #292b38;
+  font-size: 12px;
+}
+/* Only the status sits at the far right; the avatar is a span too and must stay put. */
+.rx-bid-player > span:not(.avatar) {
+  margin-left: auto;
+  color: #9b94c8;
+}
+.rx-trump {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 27px;
+}
+.rx-trump button {
+  height: 112px;
+  background: #1c1e2b;
+  border: 1px solid #333647;
+  border-radius: 12px;
+  font-size: 38px;
+  color: #c4c8da;
+}
+.rx-trump button.red {
+  color: #dc7b84;
+}
+.rx-trump small {
+  display: block;
+  font-size: 11px;
+  margin-top: 8px;
+}
+.rx-bury-cards {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 24px 0;
+}
+.rx-bury-cards .playing-card {
+  width: 53px;
+  height: 76px;
+  opacity: 1;
+}
+.rx-bury-cards .playing-card.selected {
+  transform: translateY(-5px);
+  outline: 2px solid #ab8cff;
+}
+.rx-batak-felt {
+  height: 390px;
+  position: relative;
+  margin: 12px 0;
+  background: radial-gradient(ellipse, #182e4b, #101a2e);
+  border-radius: 45%;
+  border: 7px solid #252d43;
+  box-shadow: inset 0 0 0 1px #617ba52a;
+}
+.rx-batak-center {
+  position: absolute;
+  inset: 100px 22%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  color: #7c90ad;
+  font-size: 12px;
+}
+.rx-batak-center > div {
+  margin: 0 -7px;
+}
+.rx-batak-center .playing-card {
+  width: 60px;
+  height: 85px;
+  opacity: 1;
+}
+.rx-batak-center small {
+  display: block;
+  font-size: 9px;
+  text-align: center;
+  margin-top: 5px;
+  color: #a8b5c8;
+}
+.rx-batak-seat {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  font-size: 12px;
+  padding: 12px;
+  border: 1px solid #343c51;
+  border-radius: 13px;
+  background: #141b2c;
+  min-width: 112px;
+}
+.rx-batak-seat.side-0 {
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.rx-batak-seat.side-1 {
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.rx-batak-seat.side-2 {
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+}
+.rx-batak-seat.side-3 {
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.rx-batak-seat small {
+  color: #8b9bb6;
+  font-size: 10px;
+  margin: 6px 0;
+}
+.rx-batak-seat.own,
+.rx-batak-seat.turn {
+  border-color: #9479dc;
+}
+.rx-batak-seat .playing-card {
+  width: 26px;
+  height: 36px;
+  margin-top: 3px;
+  opacity: 1;
+}
+.rx-batak-seat .avatar {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 6px;
+}
+.rx-rack {
+  margin: 20px 0;
+}
+.rx-rack header {
+  margin-bottom: 12px;
+}
+.rx-rack header > strong {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #a0a3b9;
+}
+.rx-rack header > div {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.rx-card-rack {
+  display: flex;
+  gap: 7px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 18px 10px;
+  background: #151620;
+  border: 1px solid #282b3a;
+  border-radius: 12px;
+}
+.rx-card-rack .playing-card {
+  width: 53px;
+  height: 76px;
+}
+.rx-card-rack .playing-card:disabled {
+  opacity: 0.55;
+}
+.rx-card-rack .playing-card:not(:disabled):hover {
+  transform: translateY(-7px);
+}
